@@ -131,7 +131,7 @@ chapter("proyectos", () => {
   step("copiar-ajustes", {
     title: "A partir de otro proyecto: qué copiar",
     caption:
-      "Con «A partir de uno existente», el asistente tiene un paso más, «Qué copiar». Eliges el «Proyecto de origen» (con su prefijo y sus casos) y, debajo, lo que quieres llevarte, todo marcado: los campos personalizados, los dígitos del número de caso, el «Historial en el plan exportado» y la retención de evidencias. Cada casilla muestra el valor que tiene el origen (por ejemplo, «3 · PHA-001» para los dígitos). Desmarca lo que no quieras. Nunca se copian el nombre, el prefijo ni los datos: plan, casos, requisitos, ciclos, ejecuciones, defectos y tablero. En la web, la retención de evidencias aparece desactivada, porque es un ajuste de la app de escritorio.",
+      "Con «A partir de uno existente», el asistente tiene un paso más, «Qué copiar». Eliges el «Proyecto de origen» (con su prefijo y sus casos) y, debajo, lo que quieres llevarte, todo marcado: los campos personalizados, los dígitos del número de caso, el «Historial en el plan exportado», las «Bandas de riesgo» y la retención de evidencias. Cada casilla muestra el valor que tiene el origen (por ejemplo, «3 · PHA-001» para los dígitos). Desmarca lo que no quieras. Nunca se copian el nombre, el prefijo ni los datos: plan, casos, requisitos, ciclos, ejecuciones, defectos y tablero. En la web, la retención de evidencias aparece desactivada, porque es un ajuste de la app de escritorio.",
     covers: ["action:project-create-copy-settings"],
     shot: { element: WIZARD },
     run: async () => {

@@ -13,8 +13,11 @@ export function TestPlanPage({
   projectId,
   exportHistory,
   projectName,
+  projectPrefix,
 }: {
   projectId: string;
+  /** The project's case prefix: the plan's default document ID (PLN-04). */
+  projectPrefix?: string;
   /** For a new plan's title suggestion (UX-34). */
   projectName?: string;
   /** The project's «Historial en el plan exportado» (PLN-02). */
@@ -58,6 +61,7 @@ export function TestPlanPage({
       projectId={projectId}
       exportHistory={exportHistory}
       projectName={projectName}
+      projectPrefix={projectPrefix}
       onSaved={(plan) => (plan ? setPlanId(plan.id) : void refresh())}
     />
   );

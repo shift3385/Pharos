@@ -22,7 +22,16 @@ export const projectInputSchema = z.object({
   /** What the exported plan shows of its history (PLN-02); absent keeps
    *  the project's setting (`current` on a create). */
   planExportHistory: z.enum(["current", "revisions"]).optional(),
-});
+  /** Risk bands (TRZ-04, ADR-0043): both or neither, `1 ≤ low < medium ≤
+   *  24`; absent keeps the project's (4 and 12 on a create). */
+  riskBandLow: z.number().int().min(1).max(23).optional(),
+  riskBandMedium: z.number().int().min(2).max(24).optional(),
+}).refine(
+  (p) =>
+    (p.riskBandLow === undefined) === (p.riskBandMedium === undefined) &&
+    (p.riskBandLow === undefined || p.riskBandLow < (p.riskBandMedium as number)),
+  { message: "riskBands: send both thresholds, low < medium", path: ["riskBandLow"] },
+);
 
 export const testPlanInputSchema = z.object({
   projectId: text(200).min(1),

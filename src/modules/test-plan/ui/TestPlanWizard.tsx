@@ -9,6 +9,7 @@ import { LoadError } from "@shared/ui/LoadError";
 import { useConfirm } from "@shared/ui/useConfirm";
 import { aiAvailable, markReviewed, withProvenance, type AiProvenance } from "@modules/ai";
 import { ErrorSummary } from "@shared/ui/FormField";
+import { Alert } from "@shared/ui/Alert";
 import { useSaveGuard } from "@shared/ui/fieldProps";
 import { useHeaderActions } from "@shared/ui/headerActions";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
@@ -25,6 +26,7 @@ import type { TestPlan } from "../model/types";
 import { PLAN_SAVED_EVENT } from "../model/events";
 import {
   applyRevision,
+  changesContent,
   defaults,
   fromInput,
   fromPlan,
@@ -57,16 +59,25 @@ interface Props {
   exportHistory?: "current" | "revisions";
   /** The project's name: a new plan's title suggestion (UX-34). */
   projectName?: string;
+  /** The project's case prefix: the default document ID (PLN-04). */
+  projectPrefix?: string;
 }
 
 /**
- * The plan's 17-step wizard (spec §5.1, SPEC §8 «Plan», ScrPlan, UX-31): step
- * navigation that follows the container's width, «Paso N de 17 · Guardado ·
+ * The plan's 22-step wizard (spec §5.1, SPEC §8 «Plan», ScrPlan, UX-31, PLN-06):
+ * step navigation that follows the container's width, «Paso N de 22 · Guardado ·
  * hace N min» above the step, a one-line footer («Siguiente: …»), «Estado del
  * plan» and the latest revisions beside the form, and «Revisiones»,
  * «Importar / Exportar» and «Guardar» in the project header.
  */
-export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "current", projectName }: Props) {
+export function TestPlanWizard({
+  planId,
+  projectId,
+  onSaved,
+  exportHistory = "current",
+  projectName,
+  projectPrefix,
+}: Props) {
   const { t, i18n } = useTranslation();
   const { confirm, dialog: restoreDialog } = useConfirm();
   const { user } = useAuth();
@@ -132,7 +143,7 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
   function load(p: TestPlan) {
     loadedId.current = p.id;
     setPlan(p);
-    const f = fromPlan(p, tRef.current);
+    const f = fromPlan(p, tRef.current, projectPrefix);
     setForm(f);
     initialRef.current = JSON.stringify(f);
     setSavedAt(p.updatedAt);
@@ -154,7 +165,10 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
           setLoadFailed(true);
         }
       } else if (!cancelled && loadedId.current === null) {
-        const f = defaults(tRef.current, projectName);
+        const f = defaults(tRef.current, projectName, {
+          prefix: projectPrefix,
+          lang: i18n.resolvedLanguage ?? "es",
+        });
         setForm(f);
         initialRef.current = JSON.stringify(f);
       }
@@ -204,18 +218,20 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
     setStep(0);
   }
 
-  async function save() {
+  async function save(override?: Partial<FormState>, message?: string) {
     if (!form) return;
+    // Nothing changed: no new version or revision (PLN-03).
+    if (plan && !dirty && !override) {
+      toast(t("testPlan.noChangesToast"));
+      return;
+    }
     setSaving(true);
-    const input = toInput(form, { plan, projectId: projectId ?? null, author, userId });
+    const input = toInput({ ...form, ...override }, { plan, projectId: projectId ?? null, author, userId });
     const warnings = planWarnings(form);
     try {
       const saved = plan ? await testPlanApi.update(plan.id, input) : await testPlanApi.create(input);
-      toast(
-        warnings > 0
-          ? `${t("testPlan.savedToast")} ${t("validation.savedWithWarnings", { count: warnings })}`
-          : t("testPlan.savedToast"),
-      );
+      const done = message ?? t("testPlan.savedToast");
+      toast(warnings > 0 ? `${done} ${t("validation.savedWithWarnings", { count: warnings })}` : done);
       window.dispatchEvent(new Event(PLAN_SAVED_EVENT));
       // Stay on this step with the saved plan (its new version and revision).
       if (saved) load(saved);
@@ -229,6 +245,38 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
     if (titleIssue) setStep(0);
     guard(() => void save());
   };
+
+  // «Aprobar versión N» (PLN-07): a saved plan in «Revisado», approved by
+  // the signed-in account (another person once there are roles, 0.5.0).
+  const userName = user ? `${user.firstName} ${user.lastName}`.trim() : author;
+  const approveBlocked = !plan
+    ? t("testPlan.approval.needsReviewed")
+    : dirty
+      ? t("testPlan.approval.saveFirst")
+      : plan.status !== "reviewed"
+        ? t("testPlan.approval.needsReviewed")
+        : null;
+  async function approve() {
+    if (!form || approveBlocked) return;
+    const lang = i18n.resolvedLanguage ?? "es";
+    const ok = await confirm({
+      title: t("testPlan.approval.title"),
+      message: t("testPlan.approval.confirm", {
+        version: form.version,
+        name: userName,
+        date: new Intl.DateTimeFormat(lang, { dateStyle: "medium" }).format(new Date()),
+      }),
+      confirmLabel: t("testPlan.approval.action"),
+    });
+    if (!ok) return;
+    await save(
+      {
+        status: "approved",
+        approval: { by: userId, byName: userName, at: new Date().toISOString(), version: form.version },
+      },
+      t("testPlan.approval.toast", { version: form.version }),
+    );
+  }
 
   // The form as exported, with its milestones and the project's cycles
   // (EXP-03) after the template's content.
@@ -246,7 +294,7 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
       history = (await loadHistoryTable(plan, userId, names, t)) ?? undefined;
     }
     return {
-      ...toExportable(f, author, t),
+      ...toExportable(f, author, t, lang),
       history,
       extraTables: await planExtraTables(
         projectId ?? plan?.projectId,
@@ -263,7 +311,7 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
     const { exportPlanXlsx } = await import("../export/planXlsx");
     const name = await unlessReported(
       exportable(form).then((p) =>
-        exportPlanXlsx(p, i18n.resolvedLanguage ?? "es"),
+        exportPlanXlsx(p, i18n.resolvedLanguage ?? "es", t),
       ),
     );
     if (name) toast(t("testPlan.exportedToast", { name }));
@@ -300,7 +348,7 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
 
   function applyImport() {
     if (!importState?.result || !form) return;
-    setForm(fromInput(importState.result.input, t));
+    setForm(fromInput(importState.result.input, t, form));
     setImportState(null);
     toast(t("testPlan.import.applied"));
   }
@@ -386,6 +434,12 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
                 </InfoTip>
               </div>
             </div>
+            {/* Editing an approved plan sends it back to «Revisado» (PLN-07). */}
+            {plan?.status === "approved" && dirty && changesContent(form, plan) && (
+              <Alert kind="warning" role="note" className="tpw-approved-edit">
+                {t("testPlan.approval.editing", { version: plan.version })}
+              </Alert>
+            )}
             {showSummary && titleIssue && (
               <ErrorSummary
                 ref={summaryRef}
@@ -427,6 +481,9 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
             author={author}
             updated={updated}
             onShowRevisions={() => setShowRev(true)}
+            approval={form.approval}
+            approveBlocked={approveBlocked}
+            onApprove={() => void approve()}
           />
         </div>
       </div>

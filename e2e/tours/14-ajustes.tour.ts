@@ -79,6 +79,29 @@ chapter("ajustes", () => {
     },
   });
 
+  step("bandas-riesgo", {
+    title: "Las bandas de riesgo",
+    caption:
+      "«Bandas de riesgo» decide cómo se lee el riesgo de los requisitos de este proyecto (probabilidad × impacto, de 1 a 25, capítulo 7): hasta qué nivel es bajo y hasta cuál es medio; el resto es alto. Por defecto, 4 y 12. El mapa de 5 × 5 se repinta al escribir y cuenta cuántas combinaciones caen en cada banda. Si el bajo no queda por debajo del medio, el campo lo explica y «Guardar bandas» no se activa. Cambiarlas no toca ningún dato: cambia cómo se leen la matriz y su orden por riesgo (capítulo 13) y el informe de estado. «Restablecer (4 y 12)» vuelve a los valores por defecto. En este ejemplo, Liomar prueba 6 y 14, mira el mapa y se queda con los de siempre.",
+    covers: ["action:risk-bands"],
+    focus: '[data-testid="risk-bands"]',
+    run: async () => {
+      const card = $('[data-testid="risk-bands"]');
+      await card.scrollIntoView({ block: "center" });
+      const low = $('[data-testid="risk-band-low"]');
+      const medium = $('[data-testid="risk-band-medium"]');
+      await low.setValue("6");
+      await medium.setValue("14");
+      await expect($('[data-testid="risk-band-high"]')).toHaveText(expect.stringContaining("15"));
+      await expect($('[data-testid="risk-bands-save"]')).toBeEnabled();
+    },
+    after: async () => {
+      // Not saved: the next chapters read the default bands.
+      await clickButton(tf("projects.settings.riskBands.reset", { low: 4, medium: 12 }));
+      await expect($('[data-testid="risk-band-low"]')).toHaveValue("4");
+    },
+  });
+
   step("campo-nuevo", {
     title: "Nuevo campo personalizado",
     caption:

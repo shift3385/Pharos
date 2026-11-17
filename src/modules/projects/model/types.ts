@@ -17,6 +17,10 @@ export interface Project {
   /** What the exported test plan shows of its history (PLN-02):
    *  `current` (only the version in force; also when absent) or `revisions`. */
   planExportHistory?: PlanExportHistory;
+  /** Risk bands (TRZ-04, ADR-0043): a level up to `riskBandLow` is low, up
+   *  to `riskBandMedium` medium, above high; absent = 4 and 12. */
+  riskBandLow?: number;
+  riskBandMedium?: number;
   createdAt: string;
   updatedAt: string;
   revision: number;
@@ -30,6 +34,10 @@ export interface ProjectSummary {
   /** What the exported test plan shows of its history (PLN-02):
    *  `current` (only the version in force; also when absent) or `revisions`. */
   planExportHistory?: PlanExportHistory;
+  /** Risk bands (TRZ-04, ADR-0043): a level up to `riskBandLow` is low, up
+   *  to `riskBandMedium` medium, above high; absent = 4 and 12. */
+  riskBandLow?: number;
+  riskBandMedium?: number;
   updatedAt: string;
   revision: number;
 }
@@ -41,6 +49,10 @@ export interface ProjectInput {
   /** What the exported test plan shows of its history (PLN-02):
    *  `current` (only the version in force; also when absent) or `revisions`. */
   planExportHistory?: PlanExportHistory;
+  /** Risk bands (TRZ-04, ADR-0043): a level up to `riskBandLow` is low, up
+   *  to `riskBandMedium` medium, above high; absent = 4 and 12. */
+  riskBandLow?: number;
+  riskBandMedium?: number;
   /** Authenticated user that owns the project (set on create). */
   ownerId?: string;
 }

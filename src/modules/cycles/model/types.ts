@@ -44,6 +44,39 @@ export interface CaseOption {
 /** Statuses of a progress cell: a result status, or `not_run`. */
 export type CellStatus = "passed" | "failed" | "blocked" | "skipped" | "other" | "not_run";
 
+/** What the composing page's actions of an open cycle get (the status
+ *  report, «Cerrar ciclo…», DOC-02). */
+export interface CycleActionContext {
+  status: string;
+  /** «CYC-007 · Regresión sprint 12». */
+  label: string;
+  /** Reads the cycle again after the action changed it. */
+  onChanged: () => void;
+}
+
+/** The verdict of a cycle's latest closing (DOC-02, `data.closures`), if any. */
+export function latestVerdict(cycle: Pick<TestCycle, "data">): string | null {
+  const list = cycle.data?.closures;
+  if (!Array.isArray(list) || list.length === 0) return null;
+  const v = (list[list.length - 1] as { verdict?: unknown })?.verdict;
+  return v === "go" || v === "goWithRisks" || v === "noGo" ? v : null;
+}
+
+/** The pill tone of a verdict: Go success, Go con riesgos warning, No-go
+ *  error. */
+export function verdictTone(v: string | null): PillTone {
+  if (v === "go") return "success";
+  if (v === "goWithRisks") return "warning";
+  if (v === "noGo") return "error";
+  return "neutral";
+}
+
+/** The statuses the edit dialog offers: closing goes through the quality
+ *  gate (D5), so «Cerrado» only shows for a closed cycle (to reopen it). */
+export function editableStatuses(current: string): readonly CycleStatus[] {
+  return current === "closed" ? CYCLE_STATUSES : CYCLE_STATUSES.filter((s) => s !== "closed");
+}
+
 /** The pill tone of a cycle status (SPEC §4). */
 export function cycleTone(status: string): PillTone {
   if (status === "active") return "info";

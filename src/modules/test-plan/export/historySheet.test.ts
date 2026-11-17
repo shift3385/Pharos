@@ -124,7 +124,7 @@ describe("plan export: «Historial de revisiones» (PLN-02)", () => {
       "2026-11-06 21:03",
       "Test Smoke",
       "Aprobado",
-      "Roles y responsabilidades, Cronograma · Aprobado",
+      "Roles, independencia y formación, Cronograma · Aprobado",
     ]);
 
     const imported = await parsePlanXlsx(buffer, "plan.xlsx", "Ada");
@@ -147,6 +147,6 @@ describe("plan export: «Historial de revisiones» (PLN-02)", () => {
     expect(at).toBeGreaterThan(pdf.indexOf("Autor"));
     expect(at).toBeLessThan(pdf.indexOf("Resumen"));
     expect(pdf).toContain("Test Smoke");
-    expect(pdf).toContain("Roles y responsabilidades, Cronograma · Aprobado");
+    expect(pdf).toContain("Roles, independencia y formación, Cronograma · Aprobado");
   });
 });

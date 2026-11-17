@@ -30,6 +30,16 @@ Cuando el último resultado de un caso es un fallo y uno de sus defectos llega
 a «Corregido» o «Por confirmar» (y ninguno sigue nuevo, abierto o en curso), el
 caso pasa a **Por confirmar** en la matriz y en el Inicio: toca volver a probarlo.
 
+Pharos apunta, en cada cambio de estado, la primera vez que el defecto llega a
+«Corregido» y cuántas veces se **reabre** (vuelve a «Abierto» desde «Por
+confirmar» o «Cerrado»). Con eso calcula el **tiempo de corrección** y la
+**reapertura** de cada ciclo (capítulos 3 y 9).
+
+Si el defecto se encontró **fuera de las pruebas**, por ejemplo en producción,
+marca «Encontrado fuera de las pruebas (escape)». Cuenta como escape del
+último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo
+dejó pasar.
+
 En este manual, Liomar registra dos defectos de Pharos:
 
 - **«El menú lateral sigue mostrando el prefijo anterior»** (mayor, media),

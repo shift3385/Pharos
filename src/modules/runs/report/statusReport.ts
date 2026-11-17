@@ -1,6 +1,7 @@
 import type { ExecutionSummary } from "@shared/contracts/contract";
 import { parseStamp } from "@shared/time/stamp";
 import { criterionValue, evaluateExitCriteria } from "../model/exitCriteria";
+import { decisionSection, type DecisionSection } from "./decisionSection";
 
 // The test status report (EJE-03, ISO/IEC/IEEE 29119-3 «Test Status
 // Report»), built from the execution derivation (contract v1) only: the
@@ -31,13 +32,21 @@ export interface ReportContext {
 export interface StatusReport {
   title: string;
   subtitle: string;
+  /** A closed cycle's go/no-go decision (DOC-02), first; null otherwise. */
+  decision: DecisionSection | null;
   identification: [string, string][];
   progress: [string, string][];
   results: ReportTable;
   defects: ReportTable;
   defectsNote: string;
   coverageLine: string;
+  /** The project's risk bands (TRZ-04), above the table by band. */
+  bandsLine: string;
   coverageByRisk: ReportTable;
+  /** Coverage weighted by risk (TRZ-04, ADR-0043), under the table. */
+  weightedLine: string;
+  /** The same two figures as label and ratio (the .xlsx rows). */
+  weightedRows: [string, number | null][];
   risky: ReportTable;
   exit: ReportTable;
   /** Met / not met / no data per exit criterion, in `exit.rows` order. */
@@ -139,6 +148,7 @@ export function buildStatusReport(
   return {
     title: t("statusReport.title"),
     subtitle: t("statusReport.subtitle"),
+    decision: s.closure ? decisionSection(s.closure, s.previous, t, ctx.lang) : null,
     identification: [
       [t("statusReport.field.project"), ctx.projectName],
       [t("statusReport.field.scope"), ctx.scopeLabel],
@@ -191,6 +201,24 @@ export function buildStatusReport(
       total: s.coverage.requirements,
       pct: pct(s.coverage.coverageRatio),
     }),
+    bandsLine: t("statusReport.bandsLine", {
+      low: s.coverage.riskBands.low,
+      mediumFrom: s.coverage.riskBands.low + 1,
+      medium: s.coverage.riskBands.medium,
+      highFrom: s.coverage.riskBands.medium + 1,
+    }),
+    weightedLine:
+      s.coverage.weighted.totalWeight > 0
+        ? t("statusReport.weightedLine", {
+            coverage: pct(s.coverage.weighted.coverageRatio),
+            passed: pct(s.coverage.weighted.passedRatio),
+            count: s.coverage.weighted.unassessed,
+          })
+        : t("statusReport.weightedNone"),
+    weightedRows: [
+      [t("statusReport.weightedCoverage"), s.coverage.weighted.coverageRatio],
+      [t("statusReport.weightedPassed"), s.coverage.weighted.passedRatio],
+    ],
     coverageByRisk: {
       headers: [
         t("statusReport.col.band"),

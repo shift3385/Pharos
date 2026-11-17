@@ -2,6 +2,11 @@
 
 export type ExitCriterion = { index: number | null, criterion: string, metric: string, 
 /**
- * executed | passRate | criticalDefects | coverage; None = not machine-readable
+ * One of `METRIC_KINDS`; None = not machine-readable (judged by hand).
  */
-kind: string | null, op: string | null, target: number | null, value: number | null, met: boolean | null, };
+kind: string | null, op: string | null, target: number | null, value: number | null, met: boolean | null, 
+/**
+ * Mandatory: it decides the gate and asks for a justification when it
+ * fails (DOC-02, D2). Advisory criteria are shown only.
+ */
+blocking: boolean, };

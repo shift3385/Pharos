@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
 use crate::journal::{self, Action, Actor, Change};
+use crate::runs::derive::{RiskBands, DEFAULT_RISK_BANDS};
 
 #[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
@@ -21,6 +22,9 @@ pub struct ProjectSummary {
     case_id_prefix: String,
     case_id_digits: i64,
     plan_export_history: String,
+    /// Risk bands (TRZ-04), for «Copiar ajustes de…».
+    risk_band_low: i64,
+    risk_band_medium: i64,
     updated_at: String,
     revision: i64,
 }
@@ -38,6 +42,10 @@ pub struct Project {
     /// What the exported plan shows of its history: `current` (only the
     /// version in force, the default) or `revisions` (PLN-02).
     plan_export_history: String,
+    /// Risk bands (TRZ-04, ADR-0043): a level up to `risk_band_low` is low,
+    /// up to `risk_band_medium` medium, above high (defaults 4 and 12).
+    risk_band_low: i64,
+    risk_band_medium: i64,
     created_at: String,
     updated_at: String,
     revision: i64,
@@ -53,6 +61,11 @@ pub struct ProjectInput {
     /// `current` or `revisions` (PLN-02). None keeps what the project has
     /// (`current` on a create); any other value is `current`.
     plan_export_history: Option<String>,
+    /// Risk bands (TRZ-04): both or neither; None keeps what the project has
+    /// (4 and 12 on a create). A pair outside `1 ≤ low < medium ≤ 24` is
+    /// refused.
+    risk_band_low: Option<i64>,
+    risk_band_medium: Option<i64>,
     /// Authenticated user that owns the project (set on create; never changed
     /// by an update).
     owner_id: Option<String>,
@@ -78,6 +91,8 @@ fn map_project(row: &rusqlite::Row) -> rusqlite::Result<Project> {
         case_id_prefix: row.get("case_id_prefix")?,
         case_id_digits: row.get("case_id_digits")?,
         plan_export_history: row.get("plan_export_history")?,
+        risk_band_low: row.get("risk_band_low")?,
+        risk_band_medium: row.get("risk_band_medium")?,
         created_at: row.get("created_at")?,
         updated_at: row.get("updated_at")?,
         revision: row.get("revision")?,
@@ -89,7 +104,7 @@ fn list_projects(conn: &Connection, owner_id: &str) -> Result<Vec<ProjectSummary
     let mut stmt = conn
         .prepare(
             "SELECT id, name, case_id_prefix, case_id_digits, plan_export_history, \
-             updated_at, revision \
+             risk_band_low, risk_band_medium, updated_at, revision \
              FROM projects WHERE owner_id = ?1 AND deleted_at IS NULL \
              ORDER BY name COLLATE NOCASE",
         )
@@ -102,6 +117,8 @@ fn list_projects(conn: &Connection, owner_id: &str) -> Result<Vec<ProjectSummary
                 case_id_prefix: r.get("case_id_prefix")?,
                 case_id_digits: r.get("case_id_digits")?,
                 plan_export_history: r.get("plan_export_history")?,
+                risk_band_low: r.get("risk_band_low")?,
+                risk_band_medium: r.get("risk_band_medium")?,
                 updated_at: r.get("updated_at")?,
                 revision: r.get("revision")?,
             })
@@ -114,8 +131,8 @@ fn list_projects(conn: &Connection, owner_id: &str) -> Result<Vec<ProjectSummary
 fn get_project(conn: &Connection, id: &str, owner_id: &str) -> Result<Option<Project>, String> {
     conn.query_row(
         "SELECT id, workspace_id, owner_id, name, case_id_prefix, case_id_digits, \
-         plan_export_history, created_at, updated_at, revision FROM projects \
-         WHERE id = ?1 AND owner_id = ?2 AND deleted_at IS NULL",
+         plan_export_history, risk_band_low, risk_band_medium, created_at, updated_at, \
+         revision FROM projects WHERE id = ?1 AND owner_id = ?2 AND deleted_at IS NULL",
         params![id, owner_id],
         map_project,
     )
@@ -123,7 +140,20 @@ fn get_project(conn: &Connection, id: &str, owner_id: &str) -> Result<Option<Pro
     .map_err(|e| e.to_string())
 }
 
+/// The input's risk bands: None when it sends neither, an error when the
+/// pair is incomplete or breaks `1 ≤ low < medium ≤ 24`.
+fn input_bands(input: &ProjectInput) -> Result<Option<RiskBands>, String> {
+    match (input.risk_band_low, input.risk_band_medium) {
+        (None, None) => Ok(None),
+        (Some(low), Some(medium)) => RiskBands::checked(low, medium)
+            .map(Some)
+            .ok_or_else(|| "riskBands: 1 <= low < medium <= 24".to_string()),
+        _ => Err("riskBands: send both thresholds".into()),
+    }
+}
+
 pub(crate) fn insert_project(conn: &Connection, input: &ProjectInput) -> Result<String, String> {
+    let bands = input_bands(input)?.unwrap_or(DEFAULT_RISK_BANDS);
     let id = Uuid::new_v4().to_string();
     let workspace_id = ensure_workspace(conn)?;
     let prefix = input
@@ -137,9 +167,9 @@ pub(crate) fn insert_project(conn: &Connection, input: &ProjectInput) -> Result<
         .unwrap_or(DEFAULT_DIGITS);
     conn.execute(
         "INSERT INTO projects (id, workspace_id, owner_id, name, case_id_prefix, \
-         case_id_digits, plan_export_history, created_by, updated_by, created_at, \
-         updated_at, revision) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?3, ?3, datetime('now'), datetime('now'), 1)",
+         case_id_digits, plan_export_history, risk_band_low, risk_band_medium, created_by, \
+         updated_by, created_at, updated_at, revision) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?3, ?3, datetime('now'), datetime('now'), 1)",
         params![
             id,
             workspace_id,
@@ -147,7 +177,9 @@ pub(crate) fn insert_project(conn: &Connection, input: &ProjectInput) -> Result<
             input.name,
             prefix,
             digits,
-            plan_export_history(input.plan_export_history.as_deref())
+            plan_export_history(input.plan_export_history.as_deref()),
+            bands.low,
+            bands.medium
         ],
     )
     .map_err(|e| e.to_string())?;
@@ -194,6 +226,7 @@ pub(crate) fn update_project(
         .optional()
         .map_err(|e| e.to_string())?
         .ok_or("project not found")?;
+    let bands = input_bands(input)?;
     let before = journal::snapshot(conn, "project", id)?;
     let prefix = input
         .case_id_prefix
@@ -212,6 +245,8 @@ pub(crate) fn update_project(
     conn.execute(
         "UPDATE projects SET name = ?2, case_id_prefix = ?3, case_id_digits = ?4, \
          plan_export_history = COALESCE(?7, plan_export_history), \
+         risk_band_low = COALESCE(?8, risk_band_low), \
+         risk_band_medium = COALESCE(?9, risk_band_medium), \
          updated_at = datetime('now'), updated_by = ?6, revision = ?5 WHERE id = ?1",
         params![
             id,
@@ -220,7 +255,9 @@ pub(crate) fn update_project(
             digits,
             revision + 1,
             input.owner_id.clone().unwrap_or_default(),
-            history
+            history,
+            bands.map(|b| b.low),
+            bands.map(|b| b.medium)
         ],
     )
     .map_err(|e| e.to_string())?;
@@ -361,8 +398,38 @@ mod tests {
             case_id_prefix: prefix.map(String::from),
             case_id_digits: None,
             plan_export_history: None,
+            risk_band_low: None,
+            risk_band_medium: None,
             owner_id: Some(OWNER.to_string()),
         }
+    }
+
+    #[test]
+    fn risk_bands_default_persist_and_refuse_a_bad_pair() {
+        let c = conn();
+        let id = insert_project(&c, &input("Risk", None)).unwrap();
+        let bands = |c: &Connection| {
+            let p = get_project(c, &id, OWNER).unwrap().unwrap();
+            (p.risk_band_low, p.risk_band_medium)
+        };
+        assert_eq!(bands(&c), (4, 12));
+        let mut six = input("Risk", None);
+        six.risk_band_low = Some(6);
+        six.risk_band_medium = Some(14);
+        update_project(&c, &id, &six).unwrap();
+        assert_eq!(bands(&c), (6, 14));
+        // A caller that does not send them keeps them.
+        update_project(&c, &id, &input("Risk 2", None)).unwrap();
+        assert_eq!(bands(&c), (6, 14));
+        let mut bad = input("Risk", None);
+        bad.risk_band_low = Some(14);
+        bad.risk_band_medium = Some(6);
+        assert!(update_project(&c, &id, &bad).is_err());
+        bad.risk_band_low = Some(3);
+        bad.risk_band_medium = None;
+        assert!(update_project(&c, &id, &bad).is_err());
+        assert!(insert_project(&c, &bad).is_err());
+        assert_eq!(bands(&c), (6, 14));
     }
 
     #[test]

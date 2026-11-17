@@ -1,6 +1,8 @@
 import { serverApi } from "@modules/sync-offline";
 import { invoke, isTauri } from "@shared/platform";
 import type {
+  CycleCloseInput,
+  CycleClosure,
   ExecutionFilter,
   ExecutionSummary,
 } from "@shared/contracts/contract";
@@ -39,6 +41,17 @@ export const executionApi = {
     isTauri()
       ? invoke("execution_summary", { filter, userId })
       : serverApi.get(`/api/execution/summary?${summaryQuery(filter)}`),
+  /** «Cerrar ciclo» (DOC-02): the core runs the quality gate over the
+   *  cycle's own summary and stores the closing; it refuses a closing that
+   *  breaks a rule (`gate-*`). Null if the cycle is not the user's. */
+  closeCycle: (
+    cycleId: string,
+    input: CycleCloseInput,
+    userId: string,
+  ): Promise<CycleClosure | null> =>
+    isTauri()
+      ? invoke("cycle_close", { cycleId, input, userId })
+      : serverApi.post(`/api/cycles/${encodeURIComponent(cycleId)}/close`, input),
 };
 
 /** Epoch ms of the local midnight of `day` (`YYYY-MM-DD`), for the period

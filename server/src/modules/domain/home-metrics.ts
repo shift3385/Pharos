@@ -18,7 +18,8 @@ export interface HomeRequest {
   projectIds: string[] | null;
   dayStarts: number[];
   now: number;
-  windows: { id: string; fromIndex: number }[];
+  /** RED-W4: `toIndex` (exclusive) ends the window before that day. */
+  windows: { id: string; fromIndex: number; toIndex?: number }[];
   queueLimit: number | null;
 }
 
@@ -27,7 +28,8 @@ export type HomeCore = (userId: string, request: HomeRequest) => Promise<unknown
 const int = z.coerce.number().int().safe();
 const list = (s: string) => (s.trim() ? s.split(",").map((x) => x.trim()) : []);
 
-/** The query: `dayStarts=1,2,…&now=…&windows=today:29,7d:23&projectIds=a,b&queueLimit=5`. */
+/** The query: `dayStarts=1,2,…&now=…&windows=today:29,7d:23,prev-7d:16:23&projectIds=a,b&queueLimit=5`
+ *  (a window is `id:fromIndex` or, ending early, `id:fromIndex:toIndex`). */
 export const homeQuerySchema = z
   .object({
     dayStarts: z.string().max(MAX_DAYS * 16),
@@ -46,14 +48,20 @@ export const homeQuerySchema = z
       return fail(`dayStarts must hold 1 to ${MAX_DAYS} integers`);
     if (dayStarts.some((d, i) => i > 0 && d <= dayStarts[i - 1])) return fail("dayStarts must be strictly ascending");
     if (q.now < dayStarts[0]) return fail("now is before the first day");
-    // `id:fromIndex`, exactly: anything else is refused (as the desktop does).
+    // `id:fromIndex[:toIndex]`, exactly: anything else is refused (as the desktop does).
     const pairs = list(q.windows).map((w) => w.split(":"));
-    if (pairs.some((p) => p.length !== 2 || !/^\d+$/.test(p[1])))
-      return fail("windows must be id:fromIndex pairs");
-    const windows = pairs.map(([id, from]) => ({ id, fromIndex: Number(from) }));
+    if (pairs.some((p) => (p.length !== 2 && p.length !== 3) || p.slice(1).some((n) => !/^\d+$/.test(n))))
+      return fail("windows must be id:fromIndex or id:fromIndex:toIndex");
+    const windows = pairs.map(([id, from, to]) => ({
+      id,
+      fromIndex: Number(from),
+      ...(to === undefined ? {} : { toIndex: Number(to) }),
+    }));
     if (windows.length > MAX_WINDOWS) return fail(`at most ${MAX_WINDOWS} windows`);
     if (windows.some((w) => !w.id || !Number.isInteger(w.fromIndex) || w.fromIndex < 0 || w.fromIndex >= dayStarts.length))
       return fail("a window starts outside dayStarts");
+    if (windows.some((w) => w.toIndex !== undefined && (w.toIndex <= w.fromIndex || w.toIndex > dayStarts.length)))
+      return fail("a window ends before it starts or after dayStarts");
     // Same rules as the desktop entry: at most 200 ids, none blank.
     const projectIds = q.projectIds === undefined ? null : q.projectIds.split(",").map((x) => x.trim());
     if (projectIds && (projectIds.length > MAX_PROJECTS || projectIds.some((x) => !x)))

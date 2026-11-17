@@ -30,6 +30,7 @@ export function cycleError(t: T, e: unknown): string {
   if (msg.includes("configuration-missing")) return t("cycles.error.configurationMissing");
   if (msg.includes("dates-out-of-order")) return t("cycles.error.dates");
   if (msg.includes("configuration-archived")) return t("cycles.error.archivedConfiguration");
+  if (msg.includes("cycle-close-needs-gate")) return t("cycles.error.closeNeedsGate");
   if (msg.includes("cycle-closed")) return t("cycles.error.closed");
   if (msg.includes("cycle-empty")) return t("cycles.error.empty");
   if (msg.includes("no-configuration")) return t("cycles.error.noConfiguration");

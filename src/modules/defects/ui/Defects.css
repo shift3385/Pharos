@@ -414,3 +414,18 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* «Encontrado fuera de las pruebas (escape)» (DOC-06, D4). */
+.df-escaped {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  font-size: var(--fs-ui);
+}
+
+.df-escaped small {
+  display: block;
+  font-size: var(--fs-metadata);
+  color: var(--color-text-secondary);
+}

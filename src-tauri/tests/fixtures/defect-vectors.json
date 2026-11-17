@@ -1,5 +1,5 @@
 {
-  "$comment": "DEF-01 shared vectors (ADR-0016), generated independently with Node's uuid: card → defect + links, link ids, transitions. Rust (defects/), client TS (src/modules/defects/model) and server TS (server/src/modules/sync/defects.ts) assert them.",
+  "$comment": "DEF-01 shared vectors (ADR-0016), generated independently with Node's uuid: card → defect + links, link ids, transitions. Rust (defects/), client TS (src/modules/defects/model) and server TS (server/src/modules/sync/defects.ts) assert them. lifecycleStamps (DOC-06): data.lifecycle after a status change at 2026-11-12T10:00:00.000Z.",
   "transitions": {
     "new": [
       "open",
@@ -512,6 +512,89 @@
       "targetKind": "session_note",
       "targetId": "ü ",
       "id": "6881c6a8-d378-57ef-b63b-519cf1936470"
+    }
+  ],
+  "lifecycleStamps": [
+    {
+      "name": "first fix stamps fixedAt",
+      "previous": null,
+      "from": "in_progress",
+      "to": "fixed",
+      "expected": {
+        "reopens": 0,
+        "fixedAt": "2026-11-12T10:00:00.000Z"
+      }
+    },
+    {
+      "name": "a second fix keeps the first fixedAt",
+      "previous": {
+        "reopens": 1,
+        "fixedAt": "2026-11-01T09:00:00.000Z"
+      },
+      "from": "in_progress",
+      "to": "fixed",
+      "expected": {
+        "reopens": 1,
+        "fixedAt": "2026-11-01T09:00:00.000Z"
+      }
+    },
+    {
+      "name": "retest back to open is a reopening",
+      "previous": {
+        "reopens": 0,
+        "fixedAt": "2026-11-01T09:00:00.000Z"
+      },
+      "from": "retest",
+      "to": "open",
+      "expected": {
+        "reopens": 1,
+        "fixedAt": "2026-11-01T09:00:00.000Z"
+      }
+    },
+    {
+      "name": "closed back to open is a reopening",
+      "previous": {
+        "reopens": 1,
+        "closedAt": "2026-11-02T09:00:00.000Z"
+      },
+      "from": "closed",
+      "to": "open",
+      "expected": {
+        "reopens": 2,
+        "closedAt": "2026-11-02T09:00:00.000Z"
+      }
+    },
+    {
+      "name": "deferred to open is not a reopening",
+      "previous": null,
+      "from": "deferred",
+      "to": "open",
+      "expected": {
+        "reopens": 0
+      }
+    },
+    {
+      "name": "closing stamps closedAt",
+      "previous": {
+        "reopens": 0
+      },
+      "from": "retest",
+      "to": "closed",
+      "expected": {
+        "reopens": 0,
+        "closedAt": "2026-11-12T10:00:00.000Z"
+      }
+    },
+    {
+      "name": "staying in the same status changes nothing",
+      "previous": {
+        "reopens": 2
+      },
+      "from": "open",
+      "to": "open",
+      "expected": {
+        "reopens": 2
+      }
     }
   ]
 }

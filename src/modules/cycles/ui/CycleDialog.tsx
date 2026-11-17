@@ -5,7 +5,7 @@ import { DatePicker } from "@shared/ui/DatePicker";
 import { FormField } from "@shared/ui/FormField";
 import { Select } from "@shared/ui/Select";
 import {
-  CYCLE_STATUSES,
+  editableStatuses,
   attributesLine,
   type Configuration,
   type TestCycle,
@@ -158,7 +158,7 @@ export function CycleDialog({
                   {...p}
                   value={form.status}
                   onChange={(v) => set("status")(v)}
-                  options={CYCLE_STATUSES.map((s) => ({ value: s, label: t(`cycles.status.${s}`) }))}
+                  options={editableStatuses(cycle.status).map((s) => ({ value: s, label: t(`cycles.status.${s}`) }))}
                 />
               )}
             </FormField>

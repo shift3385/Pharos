@@ -151,7 +151,7 @@ describe("project routes (ADR-0029)", () => {
     expect(await screen.findByDisplayValue("Proyecto B")).toBeInTheDocument();
     expect(screen.queryByDisplayValue("Proyecto A")).not.toBeInTheDocument();
     expect(screen.getByDisplayValue("BBB_")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /Guardar/ }));
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
     await waitFor(() => expect(projectApi.update).toHaveBeenCalled());
     expect(projectApi.update).toHaveBeenCalledWith(
       "b",

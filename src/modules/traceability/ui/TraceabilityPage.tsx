@@ -25,6 +25,7 @@ import { ProjectRequirementsModal } from "./ProjectRequirementsModal";
 import { RequirementsFromDesignModal } from "./RequirementsFromDesignModal";
 import type { CsvImportResult } from "../import/requirementCsv";
 import { buildMatrix, type MatrixDefect, type MatrixSort } from "../model/matrix";
+import { DEFAULT_RISK_BANDS, checkedRiskBands } from "@shared/risk/bands";
 import { proposeMigration, type MigrationProposal } from "../model/migration";
 import type { Requirement } from "../model/types";
 import { NO_FILTERS, type MatrixFilters } from "../model/matrixFilters";
@@ -208,10 +209,18 @@ export function TraceabilityPage({
       .catch(() => setAiReady(false));
   }, []);
 
+  // The project's risk bands (TRZ-04) come with the execution summary; the
+  // defaults until it loads (or if it fails).
+  const bandLow = execution?.coverage?.riskBands?.low;
+  const bandMedium = execution?.coverage?.riskBands?.medium;
+  const bands = useMemo(
+    () => checkedRiskBands(bandLow, bandMedium) ?? DEFAULT_RISK_BANDS,
+    [bandLow, bandMedium],
+  );
   const matrix = useMemo(
     () =>
-      data ? buildMatrix(data.requirements, data.cases, data.defects, execution, filters.sort as MatrixSort) : null,
-    [data, execution, filters.sort],
+      data ? buildMatrix(data.requirements, data.cases, data.defects, execution, filters.sort as MatrixSort, bands) : null,
+    [data, execution, filters.sort, bands],
   );
   const proposals = useMemo(
     () => (data ? proposeMigration(data.cases, data.requirements.map((r) => r.requirementKey)) : []),
@@ -402,6 +411,7 @@ export function TraceabilityPage({
         <MatrixView
           projectId={projectId}
           matrix={matrix}
+          coverage={execution?.coverage?.weighted ? execution.coverage : null}
           requirements={data.requirements}
           aiReady={aiReady}
           proposals={proposals.length}
@@ -426,6 +436,7 @@ export function TraceabilityPage({
         <RequirementFormModal
           requirement={editing === "new" ? null : editing}
           existingKeys={keys}
+          bands={bands}
           onSave={save}
           onCancel={() => setEditing(null)}
         />

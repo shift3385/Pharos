@@ -80,6 +80,15 @@ export const responsibilitySuggestionsSchema = z.object({
   reason,
 });
 
+/** Items for one of a plan's text lists (PLN-06): which list and the text. */
+export const planListSuggestionsSchema = z.object({
+  items: z
+    .array(z.object({ list: z.string().trim().min(1).max(40), text: line(300) }))
+    .max(16)
+    .default([]),
+  reason,
+});
+
 export const closureSuggestionsSchema = z.object({
   criteria: z
     .array(z.object({ criterion: line(300), metric: line(120) }))
@@ -232,6 +241,7 @@ export type GeneratedCase = z.infer<typeof generatedCaseSchema>;
 export type RiskSuggestion = z.infer<typeof riskSuggestionsSchema>["risks"][number];
 export type ResponsibilitySuggestion = z.infer<typeof responsibilitySuggestionsSchema>["responsibilities"][number];
 export type ClosureSuggestion = z.infer<typeof closureSuggestionsSchema>["criteria"][number];
+export type PlanListSuggestion = z.infer<typeof planListSuggestionsSchema>["items"][number];
 export type RawListProposal = z.infer<typeof listReviewSchema>["proposals"][number];
 
 // --- Requirements from designs (IA-18, ADR-0037) ------------------------------

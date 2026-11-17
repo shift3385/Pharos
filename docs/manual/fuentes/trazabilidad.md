@@ -30,7 +30,15 @@ Playwright cambia lo que muestra la matriz. Lo matizan tres avisos:
 - **Por confirmar:** el caso falló y su defecto ya está corregido; toca repetirlo.
 
 El **riesgo** del requisito (probabilidad × impacto) ordena la matriz: lo más
-arriesgado, primero.
+arriesgado, primero. Las **bandas** (bajo, medio, alto) son las del proyecto
+(capítulo 14).
+
+La **cobertura ponderada por riesgo** pesa cada requisito evaluado por su
+nivel de riesgo: cubrir un requisito de nivel 20 cuenta cinco veces más que
+uno de nivel 4. Es la suma del nivel de los requisitos cubiertos entre la del
+nivel de todos los evaluados; los requisitos sin riesgo evaluado quedan fuera
+y se cuentan aparte. La **aprobada** hace la misma cuenta con los requisitos
+que tienen todos sus casos ejecutados y en Pasa.
 
 En este manual, Liomar revisa qué está probado de Pharos 0.3.0 cuando ya
 tiene la importación de JUnit, la ejecución manual y los dos defectos.

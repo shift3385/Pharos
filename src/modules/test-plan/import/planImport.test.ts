@@ -81,8 +81,9 @@ describe("parsePlanXlsx (English template)", () => {
     expect(byKey("testPlan.testDataManagement")?.status).toBe("notFound");
     expect(byKey("testPlan.summary")?.status).toBe("filled");
     expect(byKey("testPlan.step.roles")?.count).toBe(1);
-    // one row per field + table + the title
-    expect(rows.length).toBe(25);
+    // one row per field + table + the title + the 29119-3 sheets (PLN-06)
+    expect(rows.length).toBe(27);
+    expect(byKey("testPlan.strategySheet")?.status).toBe("notFound");
   });
 
   it("emits progress for every detected item", async () => {
@@ -93,8 +94,8 @@ describe("parsePlanXlsx (English template)", () => {
       last = p.done;
       total = p.total;
     });
-    expect(total).toBe(25);
-    expect(last).toBe(25);
+    expect(total).toBe(27);
+    expect(last).toBe(27);
   });
 });
 

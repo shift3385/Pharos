@@ -11,7 +11,14 @@ import type { FastifyInstance } from "fastify";
 import type { Pool } from "pg";
 import { setupTestApp, truncateAll } from "./helpers";
 import { runMigrations } from "../src/db/migrate";
-import { convertPlannerDefects, fromCard, linkId, transitionAllowed, DEFECT_STATUSES } from "../src/modules/sync/defects";
+import {
+  convertPlannerDefects,
+  fromCard,
+  linkId,
+  stampLifecycle,
+  transitionAllowed,
+  DEFECT_STATUSES,
+} from "../src/modules/sync/defects";
 import { FEATURES_HEADER, SERVER_FEATURES, SERVER_VERSION, VERSION_HEADER } from "../src/modules/sync/sync.version";
 
 let app: FastifyInstance;
@@ -106,6 +113,14 @@ describe("defect conversion and ids (shared vectors)", () => {
         expect(transitionAllowed(from, to), `${from} → ${to}`).toBe(
           from === to || (VECTORS.transitions[from] as string[]).includes(to),
         );
+  });
+
+  it("stamps data.lifecycle as the desktop does (DOC-06)", () => {
+    const stamps = (VECTORS as unknown as { lifecycleStamps: { name: string; previous: unknown; from: string; to: string; expected: unknown }[] })
+      .lifecycleStamps;
+    expect(stamps.length).toBeGreaterThan(0);
+    for (const x of stamps)
+      expect(stampLifecycle(x.previous, x.from, x.to, "2026-11-12T10:00:00.000Z"), x.name).toEqual(x.expected);
   });
 });
 
@@ -305,6 +320,26 @@ describe("migration 0010 (planner defect cards become defects)", () => {
 describe("defects on the web", () => {
   const call = (token: string, method: string, url: string, payload?: object) =>
     app.inject({ method: method as "GET", url, headers: current(token), payload });
+
+  it("stamp their lifecycle on each status change and keep the escape mark (DOC-06)", async () => {
+    const { token } = await register();
+    const p = (await call(token, "POST", "/api/projects", { name: "Checkout" })).json();
+    const d = (
+      await call(token, "POST", "/api/defects", { projectId: p.id, title: "Bug", data: { escaped: true, lifecycle: { reopens: 9 } } })
+    ).json();
+    // A client never writes the lifecycle.
+    expect(d.data).toMatchObject({ escaped: true, lifecycle: { reopens: 0 } });
+    for (const status of ["open", "in_progress", "fixed", "retest", "open"])
+      expect((await call(token, "POST", `/api/defects/${d.id}/transition`, { status })).statusCode).toBe(200);
+    const now = (await call(token, "GET", `/api/defects/${d.id}`)).json();
+    expect(now.data.lifecycle.reopens).toBe(1);
+    expect(now.data.lifecycle.fixedAt).toMatch(/Z$/);
+    // An edit from a client that does not know `escaped` keeps it.
+    const edited = (
+      await call(token, "PUT", `/api/defects/${d.id}`, { input: { projectId: p.id, title: "Bug 2", data: {} } })
+    ).json();
+    expect(edited.data).toMatchObject({ escaped: true, lifecycle: { reopens: 1 } });
+  });
 
   it("follow the lifecycle, link and delete with their links", async () => {
     const { token } = await register();

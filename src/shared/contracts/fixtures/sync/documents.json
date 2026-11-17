@@ -16,6 +16,8 @@
         "caseIdPrefix": "TC-",
         "caseIdDigits": 4,
         "planExportHistory": "revisions",
+        "riskBandLow": 6,
+        "riskBandMedium": 14,
         "createdAt": "2026-10-29 10:00:00",
         "updatedAt": "2026-10-29 10:05:00",
         "revision": 2

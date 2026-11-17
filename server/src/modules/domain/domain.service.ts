@@ -34,7 +34,7 @@ import {
   linkContext,
   withLinks,
 } from "./defects";
-import { linkId } from "../sync/defects";
+import { linkId, stampLifecycle } from "../sync/defects";
 import type {
   CustomFieldInput,
   DefectInput,
@@ -175,6 +175,8 @@ export function createDomainService(store: DomainStore) {
             caseIdPrefix: p.caseIdPrefix,
             caseIdDigits: p.caseIdDigits,
             planExportHistory: p.planExportHistory === "revisions" ? "revisions" : "current",
+            riskBandLow: typeof p.riskBandLow === "number" ? p.riskBandLow : 4,
+            riskBandMedium: typeof p.riskBandMedium === "number" ? p.riskBandMedium : 12,
             updatedAt: p.updatedAt,
             revision: p.revision,
           })),
@@ -199,6 +201,8 @@ export function createDomainService(store: DomainStore) {
             caseIdPrefix: input.caseIdPrefix?.trim() || DEFAULT_PREFIX,
             caseIdDigits: input.caseIdDigits ?? DEFAULT_DIGITS,
             planExportHistory: input.planExportHistory ?? "current",
+            riskBandLow: input.riskBandLow ?? 4,
+            riskBandMedium: input.riskBandMedium ?? 12,
             createdAt: at,
             updatedAt: at,
           },
@@ -219,6 +223,10 @@ export function createDomainService(store: DomainStore) {
             caseIdDigits: input.caseIdDigits ?? DEFAULT_DIGITS,
             // A client that does not send it keeps the setting (PLN-02).
             planExportHistory: input.planExportHistory ?? doc.payload.planExportHistory ?? "current",
+            // Absent keeps the project's bands (TRZ-04); the schema checks the pair.
+            ...(input.riskBandLow !== undefined && input.riskBandMedium !== undefined
+              ? { riskBandLow: input.riskBandLow, riskBandMedium: input.riskBandMedium }
+              : {}),
             updatedAt: now(),
           },
           doc,
@@ -847,7 +855,11 @@ export function createDomainService(store: DomainStore) {
           projectId: input.projectId,
           defectKey: await nextKey(tx, input.projectId, "defect", DEFECT_PREFIX, DEFECT_DIGITS),
           ...editable(input),
-          data: await defectData(tx, input.projectId, input.data, undefined),
+          data: {
+            ...((await defectData(tx, input.projectId, input.data, undefined)) as Payload),
+            // Only the core writes the lifecycle (DOC-06).
+            lifecycle: stampLifecycle(undefined, status, status, new Date().toISOString()),
+          },
           status,
           resolution,
           reporter: userId,
@@ -864,10 +876,15 @@ export function createDomainService(store: DomainStore) {
         const doc = await liveDefect(tx, id, revision);
         const from = str(doc.payload, "status");
         const status = input.status ?? from;
+        const prevData = (doc.payload.data ?? {}) as Payload;
+        const data = { ...((await defectData(tx, str(doc.payload, "projectId"), input.data, doc.payload.data)) as Payload) };
+        // The lifecycle is the core's (DOC-06); `escaped` survives a client that does not know it.
+        data.lifecycle = stampLifecycle(prevData.lifecycle, from, status, new Date().toISOString());
+        if (data.escaped === undefined && prevData.escaped !== undefined) data.escaped = prevData.escaped;
         const payload = {
           ...doc.payload,
           ...editable(input),
-          data: await defectData(tx, str(doc.payload, "projectId"), input.data, doc.payload.data),
+          data,
           status,
           resolution: checkStatus(from, status, input.resolution),
           updatedAt: now(),
@@ -877,9 +894,12 @@ export function createDomainService(store: DomainStore) {
     transition: (userId: string, id: string, t: DefectTransition) =>
       run(userId, async (tx) => {
         const doc = await liveDefect(tx, id, t.revision);
-        const resolution = checkStatus(str(doc.payload, "status"), t.status, t.resolution);
+        const from = str(doc.payload, "status");
+        const resolution = checkStatus(from, t.status, t.resolution);
+        const prevData = (doc.payload.data ?? {}) as Payload;
         const payload = {
           ...doc.payload,
+          data: { ...prevData, lifecycle: stampLifecycle(prevData.lifecycle, from, t.status, new Date().toISOString()) },
           status: t.status,
           resolution,
           fixedInBuild: t.fixedInBuild?.trim() || doc.payload.fixedInBuild || null,

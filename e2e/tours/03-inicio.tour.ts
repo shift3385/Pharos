@@ -70,7 +70,7 @@ chapter("inicio", () => {
   step("periodo", {
     title: "El periodo de los datos",
     caption:
-      "El selector de periodo («Últimos 14 días», por defecto) decide qué días cuentan para la tasa de éxito y para «Ejecuciones diarias»: hoy, los últimos 7, 14 o 30 días, o el mes en curso. Las demás cifras son el estado actual de cada proyecto. Pharos recuerda el periodo en este equipo. Las opciones por ciclo, el rango personalizado y la comparación con el periodo anterior llegan en una próxima versión.",
+      "El selector de periodo («Últimos 14 días», por defecto) decide qué días cuentan para la tasa de éxito y para «Ejecuciones diarias»: hoy, los últimos 7, 14 o 30 días, o el mes en curso. Las demás cifras son el estado actual de cada proyecto. Pharos recuerda el periodo en este equipo. Las opciones por ciclo y el rango personalizado llegan en una próxima versión.",
     covers: ["action:home-period"],
     focus: ['[data-testid="home-period"]', '[role="menu"]'],
     run: async () => {
@@ -82,6 +82,28 @@ chapter("inicio", () => {
       await expect(byTestId("home-period")).toHaveText(expect.stringContaining(es.dashboard.period["7d"]));
       // The period really filters: 7 days → 7 rows in the chart's data.
       await browser.waitUntil(async () => (await $$(".home-daily .home-lines__data tbody tr")).length === 7);
+    },
+  });
+
+  step("comparar", {
+    title: "Comparar con el periodo anterior",
+    caption:
+      "Al final del menú del periodo, «Comparar con el periodo anterior» enfrenta el periodo con otro de la misma duración justo antes: los 7 días con los 7 anteriores, «Hoy» con ayer y «Este mes» con los mismos días antes del día 1; debajo del interruptor ves sus fechas. Encendido, el botón del periodo dice «vs anterior», la «Tasa de éxito» muestra la diferencia en puntos (▲ en verde si sube, ▼ en rojo si baja) y «Ejecuciones diarias» suma una línea gris de puntos con el total de cada día del periodo anterior, su diferencia en % junto al total y una columna «Anterior» en «Ver los datos». Las demás cifras son el estado de ahora y no cambian. El interruptor no cierra el menú, y Pharos lo recuerda en este equipo, como el periodo.",
+    covers: ["action:home-compare"],
+    focus: ['[data-testid="home-period"]', '[role="menu"]', '[data-gadget="kpiRate"]', "section.home-daily"],
+    run: async () => {
+      await byTestId("home-period").click();
+      const compare = byTestId("period-compare");
+      await expect(compare).toBeDisplayed();
+      await compare.click();
+      await expect(compare).toHaveAttribute("aria-checked", "true");
+      await expect(byTestId("home-period-compare")).toBeDisplayed();
+    },
+    after: async () => {
+      // Back off, so the next pictures show the board as it was.
+      await byTestId("period-compare").click();
+      await browser.keys("Escape");
+      await expect(byTestId("home-period-compare")).not.toBeExisting();
     },
   });
 
@@ -214,6 +236,18 @@ chapter("inicio", () => {
     },
   });
 
+  step("tendencia", {
+    title: "Tendencia de ciclos",
+    caption:
+      "«Tendencia de ciclos» sigue una métrica a lo largo de los últimos ciclos cerrados del proyecto (con las cifras congeladas al cerrarlos) y del ciclo activo, en vivo y punteado: la tasa de éxito, la densidad de defectos, los escapes, el tiempo de corrección, la reapertura o el flaky. La línea verde es el objetivo del plan y el punto bajo cada ciclo, su veredicto (Go, Go con riesgos o No-go). Si una métrica empeora dos ciclos seguidos o se sale del objetivo, el gadget lo avisa. Mientras ningún ciclo se haya cerrado con «Cerrar ciclo…» (capítulo 9), dice cómo empezar.",
+    covers: ["action:home-trend"],
+    focus: '[data-testid="home-trend"]',
+    run: async () => {
+      await expect(byTestId("home-trend")).toBeDisplayed();
+      await expect(byTestId("home-trend-metric")).toBeDisplayed();
+    },
+  });
+
   step("sin-scroll", {
     title: "Todo a la vista, sin desplazarte",
     caption:
@@ -311,7 +345,7 @@ chapter("inicio", () => {
   step("restablecer", {
     title: "Restablecer la distribución",
     caption:
-      "«Restablecer» vuelve a la distribución de siempre, con todos los gadgets visibles: arriba las cuatro cifras clave; debajo «Ejecución por proyecto» y «Criterios de salida», con «Ejecuciones diarias» bajo ambos; y «Próximas pruebas» a lo alto, a la derecha. Antes pide confirmación, y el cambio se guarda al pulsar «Listo».",
+      "«Restablecer» vuelve a la distribución de siempre, con todos los gadgets visibles y sin desplazar la página: arriba las cuatro cifras clave; a la izquierda «Ejecución por proyecto» con «Ejecuciones diarias» debajo; en el centro y a la derecha «Próximas pruebas» y «Criterios de salida», y bajo ambos «Tendencia de ciclos». Antes pide confirmación, y el cambio se guarda al pulsar «Listo».",
     covers: ["action:home-board-reset", "dialogs:src/app/dashboard/DashboardPage.tsx"],
     focus: '[role="alertdialog"]',
     run: async () => {

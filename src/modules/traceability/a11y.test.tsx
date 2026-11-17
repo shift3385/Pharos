@@ -104,6 +104,6 @@ describe("RequirementFormModal › risk (UX-23)", () => {
     await selectValue(screen.getByTestId("requirement-risk-likelihood"), "3");
     await selectValue(screen.getByTestId("requirement-risk-impact"), "4");
     expect(legend).toHaveTextContent("Risk 12 · Medium");
-    expect(screen.getByRole("img", { name: /Low: 1–4/ })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Low 1–4 · Medium 5–12/ })).toBeInTheDocument();
   });
 });

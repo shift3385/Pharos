@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildMatrix,
+  riskOfRecord,
   type MatrixCase,
   type MatrixDefect,
   type MatrixRequirement,
@@ -193,5 +194,14 @@ describe("risk order from the requirement records", () => {
       ["REQ-001", "low", 2],
       ["REQ-003", "unassessed", null],
     ]);
+  });
+});
+
+describe("risk bands per project (TRZ-04)", () => {
+  it("reads the level with the project's bands, the defaults without them", () => {
+    expect(riskOfRecord({ riskLikelihood: 3, riskImpact: 3 })).toEqual({ riskLevel: 9, riskBand: "medium" });
+    expect(riskOfRecord({ riskLikelihood: 3, riskImpact: 3 }, { low: 9, medium: 11 })).toEqual({ riskLevel: 9, riskBand: "low" });
+    expect(riskOfRecord({ riskLikelihood: 3, riskImpact: 4 }, { low: 9, medium: 11 })).toEqual({ riskLevel: 12, riskBand: "high" });
+    expect(riskOfRecord({ riskLikelihood: null, riskImpact: 4 }, { low: 9, medium: 11 }).riskBand).toBe("unassessed");
   });
 });

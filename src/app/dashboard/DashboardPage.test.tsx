@@ -57,11 +57,13 @@ vi.mock("./model/loadHome", () => ({ loadHome: () => load() }));
 
 // The metrics payload (RED-W6) as the shared derivation would return it:
 // portal has 1 of 2 cases run (passed), 1 critical defect and one criterion
-// failing; banca has its case blocked. 30 days end today (29 Oct).
+// failing; banca has its case blocked. 60 days end today (29 Oct): the 30 of
+// the longest period and the 30 before them (RED-W4).
 function metricsPayload(): HomeMetrics {
   const m = homeMetrics({
     windows: {
       "14d": rollup({ passed: 3, failed: 1, executed: 4, passRate: 0.75, unlinked: 2 }),
+      "prev-14d": rollup({ passed: 1, failed: 1, executed: 2, passRate: 0.5 }),
       "7d": rollup({ passed: 1, executed: 1, passRate: 1 }),
       today: rollup(),
     },
@@ -73,9 +75,9 @@ function metricsPayload(): HomeMetrics {
           openBySeverity: { critical: 1, major: 2, minor: 0, trivial: 0 },
         },
         exitCriteria: [
-          { index: 0, criterion: "% de casos ejecutados", metric: "≥ 95 %", kind: "executed", op: ">=", target: 95, value: 50, met: false },
-          { index: 1, criterion: "Defectos críticos abiertos", metric: "0", kind: "criticalDefects", op: "=", target: 0, value: 1, met: false },
-          { index: 2, criterion: "Revisión del cliente", metric: "", kind: null, op: null, target: null, value: null, met: null },
+          { index: 0, criterion: "% de casos ejecutados", metric: "≥ 95 %", kind: "executed", op: ">=", target: 95, value: 50, met: false, blocking: true },
+          { index: 1, criterion: "Defectos críticos abiertos", metric: "0", kind: "criticalDefects", op: "=", target: 0, value: 1, met: false, blocking: true },
+          { index: 2, criterion: "Revisión del cliente", metric: "", kind: null, op: null, target: null, value: null, met: null, blocking: true },
         ],
         queue: {
           notRun: [ref("c2", "PCL-0001", "Login con 2FA", "critical")],
@@ -95,8 +97,10 @@ function metricsPayload(): HomeMetrics {
       }),
     ],
   });
-  m.daily[29] = day({ passed: 2, failed: 1, skipped: 1, manual: 1, imported: 3 });
-  m.daily[25] = day({ passed: 1, manual: 1 });
+  m.daily[59] = day({ passed: 2, failed: 1, skipped: 1, manual: 1, imported: 3 });
+  m.daily[55] = day({ passed: 1, manual: 1 });
+  // The 14 days before the period (RED-W4): one execution.
+  m.daily[40] = day({ passed: 1, manual: 1 });
   return m;
 }
 
@@ -131,6 +135,7 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     fetchMetrics.mockClear();
     clearHomeMetricsCache();
     localStorage.removeItem("pharos.home.period");
+    localStorage.removeItem("pharos.home.compare");
     setViewportWidth(1440);
   });
 
@@ -185,7 +190,7 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(rate).not.toContainElement(unlinked);
     expect(fetchMetrics).toHaveBeenCalledTimes(1);
     expect(fetchMetrics.mock.calls[0][0]).toMatch(
-      /^\/api\/home\/metrics\?dayStarts=\d+(%2C\d+){29}&now=\d+&windows=today%3A29%2C7d%3A23/,
+      /^\/api\/home\/metrics\?dayStarts=\d+(%2C\d+){59}&now=\d+&windows=today%3A59%2Cprev-today%3A58%3A59%2C7d%3A53/,
     );
 
     await user.click(projects);
@@ -222,12 +227,12 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(
       within(menu).getByRole("menuitem", { name: "Ciclo actual" }),
     ).toBeDisabled();
-    const compare = screen.getByTestId("period-compare");
-    expect(compare).toBeDisabled();
-    expect(compare).toHaveAttribute(
-      "title",
-      "Próximamente: comparará con el periodo anterior",
-    );
+    // RED-W4: the comparison is an on/off item, off until turned on.
+    const compare = within(menu).getByRole("menuitemcheckbox", {
+      name: "Comparar con el periodo anterior",
+    });
+    expect(compare).toHaveAttribute("aria-checked", "false");
+    expect(compare).toHaveAccessibleDescription("Con los 14 días anteriores (2 oct – 15 oct)");
 
     await user.click(
       within(menu).getByRole("menuitemradio", { name: "Últimos 7 días" }),
@@ -499,6 +504,36 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(screen.queryAllByRole("alert")).toHaveLength(0);
   });
 
+  it("compares with the previous period: a delta on the rate and the daily total, a dotted line, no refetch (RED-W4)", async () => {
+    const user = userEvent.setup();
+    renderHome();
+    await waitFor(() => expect(screen.getByTestId("kpi-rate")).toHaveTextContent("75,0%"));
+    expect(screen.queryByTestId("kpi-rate-delta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("home-daily-previous")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("home-period"));
+    const menu = screen.getByRole("menu", { name: "Periodo" });
+    await user.click(within(menu).getByRole("menuitemcheckbox", { name: "Comparar con el periodo anterior" }));
+    // An on/off item keeps the menu open.
+    expect(within(menu).getByRole("menuitemcheckbox", { name: "Comparar con el periodo anterior" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(localStorage.getItem("pharos.home.compare")).toBe("1");
+    expect(screen.getByTestId("home-period-compare")).toHaveTextContent("vs anterior");
+
+    const rate = screen.getByTestId("kpi-rate-delta");
+    expect(rate).toHaveTextContent("▲ 25,0 pp");
+    expect(rate).toHaveAttribute("data-direction", "up");
+    expect(rate).toHaveAttribute("title", "25,0 puntos más que en el periodo anterior (50,0 % del 2 oct – 15 oct)");
+    // 5 executions against 1 before: +400 %, in a neutral tone.
+    const daily = screen.getByTestId("home-daily-delta");
+    expect(daily).toHaveTextContent("▲ 400 % vs anterior");
+    expect(daily).toHaveAttribute("data-kind", "count");
+    expect(screen.getByTestId("home-daily-previous")).toBeInTheDocument();
+    expect(fetchMetrics).toHaveBeenCalledTimes(1);
+  });
+
   it("opens the per-day numbers as a table (a native disclosure off the board)", async () => {
     const user = userEvent.setup();
     setViewportWidth(1000);
@@ -522,8 +557,8 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
           projectMetrics("p-amb", {
             counts: counts({ notRun: 1, total: 1 }),
             exitCriteria: [
-              { index: null, criterion: "% de casos ejecutados", metric: "≥ 95 %", kind: "executed", op: ">=", target: 95, value: 0, met: false },
-              { index: null, criterion: "Defectos críticos abiertos", metric: "0", kind: "criticalDefects", op: "=", target: 0, value: 0, met: true },
+              { index: null, criterion: "% de casos ejecutados", metric: "≥ 95 %", kind: "executed", op: ">=", target: 95, value: 0, met: false, blocking: true },
+              { index: null, criterion: "Defectos críticos abiertos", metric: "0", kind: "criticalDefects", op: "=", target: 0, value: 0, met: true, blocking: true },
             ],
           }),
         ],

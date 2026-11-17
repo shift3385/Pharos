@@ -98,6 +98,22 @@ export const DEFAULT_PERIOD: Period = "14d";
 export const isPeriod = (v: unknown): v is Period =>
   PERIODS.includes(v as Period);
 
+/** `count` local days, oldest first and ending today. */
+export function daysEnding(count: number, today: Date): Date[] {
+  return Array.from({ length: count }, (_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    d.setDate(d.getDate() - (count - 1 - i));
+    return d;
+  });
+}
+
+/** The days of the period of the same length right before `period`
+ *  (RED-W4): yesterday for «Hoy», the N days before the 1st for «Este mes». */
+export function previousDays(period: Period, today: Date): Date[] {
+  const len = periodDays(period, today).length;
+  return daysEnding(2 * len, today).slice(0, len);
+}
+
 /** The days of a period, oldest first and ending today. */
 export function periodDays(period: Period, today: Date): Date[] {
   const count =

@@ -1,5 +1,5 @@
 import type { ClosureCriterion, TestPlan } from "../model/types";
-import { deliverableLabels, levelLabels, toolLabels, typeGroupLines, typeLabels } from "../model/catalogLabels";
+import { deliverableLabels, levelLabels, normalizeDeliverables, toolLabels, typeGroupLines, typeLabels } from "../model/catalogLabels";
 import { methodologyLines, methodologyText } from "../model/methodology";
 import { testPlanApi } from "../api/testPlanApi";
 import { buildPlanXlsx, type ExportablePlan } from "./planXlsx";
@@ -7,6 +7,8 @@ import { buildPlanPdf, planPdfName } from "./planPdf";
 import type { CycleExportData } from "@modules/cycles";
 import { planExtraTables } from "./planExtras";
 import { loadHistoryTable } from "./planHistory";
+import { strategyExport } from "./planStrategy";
+import { approvalLine, documentIdFor, hexOf } from "../ui/wizard/formState";
 
 /** The project asks for the revision history in its plan (PLN-02):
  *  `names` maps account ids to official names (first and last name). */
@@ -16,14 +18,17 @@ export interface PlanHistoryOption {
   timeZone?: string;
 }
 
-type Translate = (key: string) => string;
+type Translate = (key: string, opts?: Record<string, unknown>) => string;
 
 /** Maps a stored plan to the export shape (mirrors the wizard's export mapping),
  *  localizing option lists and composing the methodology line. */
-export function planToExportable(plan: TestPlan, t: Translate): ExportablePlan {
+export function planToExportable(plan: TestPlan, t: Translate, lang = "es", prefix?: string | null): ExportablePlan {
   const d = plan.data ?? {};
   const methodology = methodologyText(d, t);
   return {
+    ...strategyExport(d, t, lang),
+    documentId: d.documentId?.trim() || documentIdFor(prefix, hexOf(plan.id)),
+    approvedBy: plan.status === "approved" && d.approval ? approvalLine(d.approval, t, lang) : "",
     filenameBase: plan.title?.trim() || "plan",
     version: plan.version,
     planDate: plan.planDate ?? "",
@@ -116,6 +121,42 @@ export async function projectPlanRef(
   return plan ? { id: plan.id, title: plan.title, version: plan.version } : null;
 }
 
+/** What the test completion report of a cycle (DOC-01) reads of the
+ *  project's plan: its identification and approval, its measurable
+ *  objectives, its deliverables (stored value and label) and its test data
+ *  line. Null when the project has no plan. */
+export async function projectPlanForCompletion(
+  projectId: string,
+  userId: string,
+  t: Translate,
+  prefix?: string | null,
+): Promise<{
+  title: string;
+  version: string;
+  documentId: string;
+  approved: boolean;
+  objectives: { kind: string; op: string; target: number }[];
+  deliverables: { key: string; label: string }[];
+  testData: string;
+} | null> {
+  const plan = await testPlanApi.byProject(projectId, userId);
+  if (!plan) return null;
+  const d = plan.data ?? {};
+  const stored = normalizeDeliverables(d.deliverables ?? []);
+  const labels = deliverableLabels(stored, t);
+  return {
+    title: plan.title,
+    version: plan.version,
+    documentId: d.documentId?.trim() || documentIdFor(prefix, hexOf(plan.id)),
+    approved: plan.status === "approved" && Boolean(d.approval),
+    objectives: (d.metrics ?? [])
+      .filter((m) => m.kind !== null && Number.isFinite(m.target))
+      .map((m) => ({ kind: m.kind as string, op: m.op, target: m.target })),
+    deliverables: stored.map((key, i) => ({ key, label: labels[i] ?? key })),
+    testData: d.testDataManagement ?? "",
+  };
+}
+
 /** Version of a project’s plan (null when it has none), e.g. for the version
  *  of documents derived from the plan such as the traceability matrix. */
 export async function projectPlanVersion(
@@ -141,11 +182,13 @@ export async function projectPlanFiles(
   onSkip?: (name: string) => void,
   cycles?: CycleExportData,
   history?: PlanHistoryOption,
+  /** The project's case prefix, for the default document ID (PLN-04). */
+  prefix?: string,
 ): Promise<{ name: string; buffer: ArrayBuffer | Uint8Array }[]> {
   const plan = await testPlanApi.byProject(projectId, userId);
   if (!plan) return [];
   const exportable = {
-    ...planToExportable(plan, t),
+    ...planToExportable(plan, t, lang, prefix),
     extraTables: await planExtraTables(
       projectId,
       userId,
@@ -158,7 +201,7 @@ export async function projectPlanFiles(
       ? { history: (await loadHistoryTable(plan, userId, history.names, t, history.timeZone)) ?? undefined }
       : {}),
   };
-  const { filename, buffer } = await buildPlanXlsx(exportable, lang);
+  const { filename, buffer } = await buildPlanXlsx(exportable, lang, t);
   onEach?.(filename);
   const files: { name: string; buffer: ArrayBuffer | Uint8Array }[] = [
     { name: filename, buffer },

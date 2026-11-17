@@ -12,6 +12,7 @@ const link = vi.fn();
 const attachmentList = vi.fn();
 const attachmentDelete = vi.fn();
 const remove = vi.fn();
+const update = vi.fn();
 vi.mock("../api/defectsApi", () => ({
   MAX_ATTACHMENT_MB: 200,
   defectsApi: {
@@ -19,6 +20,7 @@ vi.mock("../api/defectsApi", () => ({
     attachmentList: (...a: unknown[]) => attachmentList(...a),
     attachmentDelete: (...a: unknown[]) => attachmentDelete(...a),
     remove: (...a: unknown[]) => remove(...a),
+    update: (...a: unknown[]) => update(...a),
     results: () => Promise.resolve([]),
   },
 }));
@@ -139,6 +141,18 @@ describe("DefectEditor · links and evidence (MAN-03)", () => {
     renderWithProviders(<DefectEditor projectId="p1" userId="u1" defect={null} onClose={vi.fn()} />);
     expect(await screen.findByRole("button", { name: "Guardar" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Eliminar defecto" })).not.toBeInTheDocument();
+  });
+
+  it("marks an escape found outside the tests, kept in the defect's data (DOC-06, D4)", async () => {
+    const user = userEvent.setup();
+    update.mockResolvedValue({ ...DEFECT });
+    render();
+    const box = await screen.findByRole("checkbox", { name: /^Encontrado fuera de las pruebas/ });
+    expect(box).not.toBeChecked();
+    await user.click(box);
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
+    await waitFor(() => expect(update).toHaveBeenCalled());
+    expect(update.mock.calls[0][1].data).toMatchObject({ escaped: true });
   });
 
   it("«Adjuntar archivos» is a Pharos button that opens the hidden picker (NC-037)", async () => {

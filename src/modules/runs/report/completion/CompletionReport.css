@@ -1,0 +1,54 @@
+/* «Informe de cierre» (DOC-01): the status report's layout (StatusReport.css)
+   plus the section numbers, the deliverables list and the approval row. */
+
+.cr-n {
+  display: inline-block;
+  min-width: 1.5em;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Section 4 has its own heading: the decision's one is not repeated. */
+.cr-evaluation .sr-decision > h4 {
+  display: none;
+}
+
+.cr-stale {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+}
+
+.cr-deliverables {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cr-deliverables li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cr-deliverables label {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.cr-approval {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+}

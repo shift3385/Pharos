@@ -16,6 +16,7 @@ import type {
   LastResult,
   RequirementExecution,
 } from "@shared/contracts/contract";
+import { DEFAULT_RISK_BANDS, riskBandOf, type RiskBands } from "@shared/risk/bands";
 import type { RequirementPriority } from "./types";
 
 export type Coverage = "covered" | "not_covered";
@@ -55,16 +56,19 @@ export interface MatrixRequirement {
   riskImpact?: number | null;
 }
 
-/** Level and band with the default bands (≤4 low, ≤12 medium, >12 high), as
- *  `runs::derive::risk_band`. */
-export function riskOfRecord(r: Pick<MatrixRequirement, "riskLikelihood" | "riskImpact">): {
+/** Level and band with the project's bands (TRZ-04; the defaults ≤4 low,
+ *  ≤12 medium, >12 high when it has none), as `runs::derive::risk_band`. */
+export function riskOfRecord(
+  r: Pick<MatrixRequirement, "riskLikelihood" | "riskImpact">,
+  bands: RiskBands = DEFAULT_RISK_BANDS,
+): {
   riskLevel: number | null;
   riskBand: RiskBand;
 } {
   const level = r.riskLikelihood != null && r.riskImpact != null ? r.riskLikelihood * r.riskImpact : null;
   return {
     riskLevel: level,
-    riskBand: level === null ? "unassessed" : level <= 4 ? "low" : level <= 12 ? "medium" : "high",
+    riskBand: level === null ? "unassessed" : riskBandOf(level, bands),
   };
 }
 
@@ -166,6 +170,8 @@ export function buildMatrix(
   defects: MatrixDefect[],
   execution?: MatrixExecution | null,
   sort: MatrixSort = "risk",
+  /** The project's risk bands (TRZ-04); the defaults without them. */
+  bands: RiskBands = DEFAULT_RISK_BANDS,
 ): TraceabilityMatrix {
   const results = new Map(execution?.cases.map((c) => [c.caseId, c]) ?? []);
   const risks = new Map(
@@ -176,7 +182,7 @@ export function buildMatrix(
   // the summary's.
   const riskOf = (key: string) => {
     const record = records.get(key);
-    if (record && (record.riskLikelihood !== undefined || record.riskImpact !== undefined)) return riskOfRecord(record);
+    if (record && (record.riskLikelihood !== undefined || record.riskImpact !== undefined)) return riskOfRecord(record, bands);
     return {
       riskLevel: risks.get(key)?.riskLevel ?? null,
       riskBand: (risks.get(key)?.riskBand ?? "unassessed") as RiskBand,

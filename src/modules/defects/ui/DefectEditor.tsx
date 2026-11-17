@@ -66,6 +66,7 @@ interface Form {
   externalUrl: string;
   labels: string[];
   custom: CustomValues;
+  escaped: boolean;
 }
 
 function formOf(d: Defect | null, draft?: DefectInput): Form {
@@ -88,6 +89,7 @@ function formOf(d: Defect | null, draft?: DefectInput): Form {
     externalUrl: src?.externalUrl ?? "",
     labels: (src?.data?.labels as string[] | undefined) ?? [],
     custom: (src?.data?.custom as CustomValues | undefined) ?? {},
+    escaped: src?.data?.escaped === true,
   };
 }
 
@@ -180,6 +182,7 @@ export function DefectEditor({
         ...(current?.data ?? {}),
         labels: form.labels.map((l) => l.trim()).filter(Boolean),
         custom: form.custom,
+        escaped: form.escaped,
       },
     };
   }
@@ -492,6 +495,20 @@ export function DefectEditor({
             <label className="tp-field">
               <span>{t("defects.field.assignee")}</span>
               <input value={form.assignee} maxLength={200} onChange={(e) => update({ assignee: e.target.value })} />
+            </label>
+            {/* DOC-06 (D4): an escape is marked by hand; the trend and the
+                go/no-go report count it against the cycle closed before. */}
+            <label className="df-escaped">
+              <input
+                type="checkbox"
+                checked={form.escaped}
+                data-testid="defect-escaped"
+                onChange={(e) => update({ escaped: e.target.checked })}
+              />
+              <span>
+                {t("defects.field.escaped")}
+                <small>{t("defects.field.escapedHint")}</small>
+              </span>
             </label>
           </div>
         </section>

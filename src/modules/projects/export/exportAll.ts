@@ -79,6 +79,7 @@ async function addProject(
       skip,
       cycles,
       project.planExportHistory === "revisions" ? { names } : undefined,
+      project.caseIdPrefix,
     )),
     ...(await projectCaseFiles(project.id, ownerId, t, lang, advance, skip, cycles)),
   ];

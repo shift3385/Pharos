@@ -303,7 +303,8 @@ describe("runs on the web", () => {
     expect((await call("PUT", `/api/runs/${run.id}`, { input: { title: "x" }, revision: 1 })).body.code).toBe("stale_write");
     // A run of a closed cycle stays closed.
     const c = (await call("GET", `/api/cycles/${cycle.id}`)).body;
-    await call("PUT", `/api/cycles/${cycle.id}`, { input: { status: "closed" }, revision: c.revision });
+    expect(c.status).not.toBe("closed");
+    await call("POST", `/api/cycles/${cycle.id}/close`, { verdict: "noGo", decisions: [0, 1, 2].map((position) => ({ position, justification: "Cerrado a propósito para probar el bloqueo." })) });
     expect((await call("PUT", `/api/runs/${run.id}`, { input: { status: "in_progress" } })).body).toMatchObject({ code: "cycle_closed", message: "cycle-closed" });
     const c2 = (await call("GET", `/api/cycles/${cycle.id}`)).body;
     await call("PUT", `/api/cycles/${cycle.id}`, { input: { status: "active" }, revision: c2.revision });
@@ -476,7 +477,8 @@ describe("runs on the web", () => {
     expect(progress.summary.failed).toBe(1);
     // Executing a closed cycle is refused.
     const c = (await call("GET", `/api/cycles/${cycle.id}`)).body;
-    await call("PUT", `/api/cycles/${cycle.id}`, { input: { status: "closed" }, revision: c.revision });
+    expect(c.status).not.toBe("closed");
+    await call("POST", `/api/cycles/${cycle.id}/close`, { verdict: "noGo", decisions: [0, 1, 2].map((position) => ({ position, justification: "Cerrado a propósito para probar el bloqueo." })) });
     expect((await call("POST", `/api/cycles/${cycle.id}/execute`, {})).body.message).toBe("cycle-closed");
   });
 

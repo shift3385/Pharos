@@ -306,7 +306,24 @@ fn items_are_static_skip_repeats_and_warn_about_cases_not_approved() {
     );
     assert_eq!(list_items(&c, &cycle, U).unwrap().len(), 2);
     // A closed cycle takes no items until reopened.
-    update_cycle(&c, &cycle, &cycle_input(&p, json!({"status": "closed"}))).unwrap();
+    // Closing goes through the gate (DOC-02, D5), never an edit.
+    assert_eq!(
+        update_cycle(&c, &cycle, &cycle_input(&p, json!({"status": "closed"}))).unwrap_err(),
+        CLOSE_NEEDS_GATE
+    );
+    let decisions: Vec<Value> = (0..3)
+        .map(|p| json!({"position": p, "justification": "Cerrado a propósito para probar el bloqueo."}))
+        .collect();
+    let decide: crate::execution::derive::CycleCloseInput =
+        serde_json::from_value(json!({"verdict": "noGo", "decisions": decisions})).unwrap();
+    let closing = crate::execution::close_cycle(&c, &cycle, &decide, U)
+        .unwrap()
+        .unwrap();
+    assert_eq!(closing.verdict, "noGo");
+    assert_eq!(
+        crate::execution::close_cycle(&c, &cycle, &decide, U).unwrap_err(),
+        "cycle-closed"
+    );
     assert_eq!(
         add_items(&c, &cycle, U, &[item(&approved)]).unwrap_err(),
         "cycle-closed"

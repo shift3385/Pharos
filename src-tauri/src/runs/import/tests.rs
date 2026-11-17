@@ -1595,7 +1595,7 @@ fn a_new_run_imported_into_a_cycle_counts_in_its_progress() {
     );
 
     // A closed cycle takes no new import, neither in the preview nor on commit.
-    cycles::update_cycle(&c, &cycle, &input(json!({"status": "closed"}))).unwrap();
+    cycles::close_for_tests(&c, &cycle, U);
     let again = request(
         &p,
         doc_of(snapshot!("single__ctrf.json")),

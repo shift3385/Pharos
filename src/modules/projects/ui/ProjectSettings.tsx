@@ -20,6 +20,7 @@ import { prefixIssue, type PrefixOwner } from "../model/prefix";
 import type { PlanExportHistory, Project } from "../model/types";
 import { useProjectExport } from "./useProjectExport";
 import { ProjectGeneralFields } from "./ProjectGeneralFields";
+import { RiskBandsCard } from "./RiskBandsCard";
 import "@shared/ui/headerActions.css";
 import "./Projects.css";
 
@@ -100,7 +101,7 @@ interface LossSummary {
 }
 
 /** Ajustes del proyecto (ScrAjustesProyecto): General (name and case
- *  numbering), «Campos personalizados» (FLD-01), «Exportar proyecto (ZIP)»
+ *  numbering), «Campos personalizados» (FLD-01), «Bandas de riesgo» (TRZ-04), «Exportar proyecto (ZIP)»
  *  and «Eliminar proyecto». */
 export function ProjectSettings({ project, onSaved }: { project: Project; onSaved: () => void }) {
   const { t } = useTranslation();
@@ -230,6 +231,8 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
       />
 
       <ConfigurationsCard projectId={project.id} userId={owner} />
+
+      <RiskBandsCard project={project} onSaved={onSaved} />
 
       <PlanHistoryCard project={project} onSaved={onSaved} />
 

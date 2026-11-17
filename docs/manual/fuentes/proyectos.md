@@ -103,7 +103,8 @@ En este manual, Liomar crea dos proyectos:
   casos de los dos proyectos.
 - Para un proyecto parecido a otro (la versión siguiente del mismo producto,
   por ejemplo), créalo «A partir de uno existente» con ese proyecto: nace con sus
-  campos personalizados, sus dígitos, su historial del plan exportado y, en
+  campos personalizados, sus dígitos, su historial del plan exportado, sus
+  bandas de riesgo y, en
   el escritorio, su retención de evidencias. Solo se copian ajustes, nunca el
   nombre, el prefijo ni los datos, y una sola vez: después, cada proyecto
   cambia por su cuenta. Como los proyectos se sincronizan entre tus equipos,

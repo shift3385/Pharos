@@ -14,6 +14,7 @@ import {
   cycleTone,
   type CaseOption,
   type Configuration,
+  type CycleActionContext,
   type CycleSummary,
   type TestCycleInput,
 } from "../model/types";
@@ -43,8 +44,9 @@ export function CyclesPage({
   loadCases: () => Promise<CaseOption[]>;
   requirementKeys: string[];
   /** More actions of an open cycle, from the composing page (the status
-   *  report, EJE-03): cycles depends on no other domain module. */
-  cycleActions?: (cycleId: string) => ReactNode;
+   *  report, EJE-03; «Cerrar ciclo…», DOC-02): cycles depends on no other
+   *  domain module. */
+  cycleActions?: (cycleId: string, ctx: CycleActionContext) => ReactNode;
 }) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
@@ -117,7 +119,7 @@ export function CyclesPage({
         configurations={configurations}
         loadCases={loadCases}
         requirementKeys={requirementKeys}
-        extraActions={cycleActions?.(openId)}
+        extraActions={cycleActions ? (ctx) => cycleActions(openId, ctx) : undefined}
         onBack={() => {
           open(null);
           void reload();

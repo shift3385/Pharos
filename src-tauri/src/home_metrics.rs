@@ -36,6 +36,14 @@ pub fn validate(r: &HomeRequest) -> Result<(), String> {
     {
         return Err("a window starts outside dayStarts".into());
     }
+    // RED-W4: a window that ends early ends after it starts and at most at
+    // the end of `dayStarts`.
+    if r.windows.iter().any(|w| {
+        w.to_index
+            .is_some_and(|to| to <= w.from_index || to > r.day_starts.len())
+    }) {
+        return Err("a window ends before it starts or after dayStarts".into());
+    }
     if r.project_ids
         .as_ref()
         .is_some_and(|ids| ids.len() > MAX_PROJECTS || ids.iter().any(|id| id.trim().is_empty()))
@@ -88,6 +96,7 @@ mod tests {
                 .map(|(id, i)| HomeWindow {
                     id: (*id).into(),
                     from_index: *i,
+                    to_index: None,
                 })
                 .collect(),
             queue_limit: None,
@@ -111,6 +120,23 @@ mod tests {
         r.queue_limit = Some(5);
         assert!(validate(&r).is_ok());
         r.project_ids = Some(vec![" ".into()]);
+        assert!(validate(&r).is_err());
+    }
+
+    #[test]
+    fn a_window_may_end_early_inside_the_days() {
+        let mut r: HomeRequest = serde_json::from_value(json!({
+            "dayStarts": [1, 2, 3, 4], "now": 5,
+            "windows": [{ "id": "prev:7d", "fromIndex": 0, "toIndex": 2 }]
+        }))
+        .unwrap();
+        assert_eq!(r.windows[0].to_index, Some(2));
+        assert!(validate(&r).is_ok());
+        r.windows[0].to_index = Some(4);
+        assert!(validate(&r).is_ok());
+        r.windows[0].to_index = Some(0);
+        assert!(validate(&r).is_err());
+        r.windows[0].to_index = Some(5);
         assert!(validate(&r).is_err());
     }
 

@@ -12,6 +12,8 @@ En «Ajustes del proyecto», la última sección del menú del proyecto, se deci
 - cómo se llama el proyecto y cómo se numeran sus casos: el **prefijo** y los
   **dígitos** del número (con `PH-` y 3 dígitos, PH-001, PH-002…);
 - qué historial llevan el .pdf y el .xlsx del **plan exportado**;
+- sus **bandas de riesgo**: hasta qué nivel (probabilidad × impacto) un
+  requisito es de riesgo bajo y hasta cuál medio;
 - qué **campos personalizados** tienen sus casos y sus defectos;
 - en qué **configuraciones** (navegadores, sistemas, dispositivos) se ejecutan
   sus ciclos;
@@ -29,6 +31,13 @@ selección múltiple, usuario o URL. Cada campo tiene un nombre, una clave fija
 (minúsculas, números y guion bajo), si es obligatorio y, opcionalmente, un
 valor por defecto para los casos nuevos. Los de los casos y los de los
 defectos se definen por separado, con el selector «Casos / Defectos».
+
+Las **bandas de riesgo** reparten el nivel de riesgo de un requisito (de 1 a
+25) en bajo, medio y alto. Por defecto, bajo hasta 4 y medio hasta 12. Cada
+banda necesita al menos un nivel, así que el bajo va de 1 a 23 y el medio,
+por encima del bajo, hasta 24. Cambiarlas no toca ningún dato: cambia cómo se
+leen la matriz de trazabilidad, su orden por riesgo, la cobertura ponderada y
+el informe de estado.
 
 Una **configuración** describe dónde se ejecuta una prueba: navegador,
 sistema, dispositivo e idioma. Sus **etiquetas de importación** son los nombres
@@ -66,6 +75,10 @@ y las configuraciones Chrome y Edge en Windows 11.
 - **No encuentro una configuración en un ciclo nuevo.** Está archivada: márcala
   con «Mostrar archivadas» y restáurala desde su menú.
 - **«No se pudo guardar el ajuste del historial.»** Vuelve a elegir la opción.
+- **«El bajo tiene que ser menor que el medio.»** Con esas bandas, la banda
+  media quedaría vacía. Baja el primero o sube el segundo.
+- **«Guardar bandas» no se activa.** Las bandas son las que ya tiene el
+  proyecto o el par no es válido (mira el mensaje bajo el campo).
 
 ## En el móvil
 
@@ -88,5 +101,6 @@ y las configuraciones Chrome y Edge en Windows 11.
 - Capítulo 4, «Proyectos»: crear, exportar y eliminar proyectos.
 - Capítulo 5, «Plan de pruebas»: el historial en el plan exportado.
 - Capítulo 9, «Ciclos de prueba»: las configuraciones de un ciclo.
+- Capítulo 13, «Trazabilidad»: el orden por riesgo y la cobertura ponderada.
 - [Glosario](../GLOSARIO.md): «Prefijo de ID de caso», «Campo personalizado»,
   «Configuración».

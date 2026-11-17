@@ -115,6 +115,36 @@ describe("Trazabilidad (RED-V3)", () => {
     await expectNoAxeViolations();
   });
 
+  it("weighs the coverage by risk and shows it by band, with the project's bands (TRZ-04)", async () => {
+    setViewportWidth(1440);
+    const band = (requirements: number, covered: number) => ({ requirements, covered, executed: 0, passed: 0, failed: 0 });
+    summary.mockResolvedValue({
+      ...baseSummary(20),
+      coverage: {
+        requirements: 3,
+        covered: 1,
+        coverageRatio: 1 / 3,
+        executed: 0,
+        passed: 0,
+        byRisk: { high: band(1, 1), medium: band(1, 0), low: band(0, 0), unassessed: band(1, 0) },
+        riskBands: { low: 6, medium: 14 },
+        weighted: { totalWeight: 29, coveredWeight: 20, passedWeight: 9, coverageRatio: 20 / 29, passedRatio: 9 / 29, unassessed: 1 },
+      },
+    });
+    renderWithProviders(<TraceabilityPage projectId="p1" projectName="Portal" />);
+    const weighted = await screen.findByTestId("tz-weighted");
+    await waitFor(() => expect(weighted).toHaveTextContent("69 %"));
+    expect(weighted).toHaveTextContent("aprobada 31 % · 1 sin evaluar");
+    const bands = screen.getByRole("list", { name: "Cobertura por banda de riesgo" });
+    expect(within(bands).getAllByRole("listitem").map((li) => li.textContent)).toEqual([
+      "Alto1 / 1",
+      "Medio0 / 1",
+      "Bajo0 / 0",
+      "Sin evaluar0 / 1",
+    ]);
+    await expectNoAxeViolations();
+  });
+
   it("gives the titles the room and up to two lines, and the notes less (NC-053)", async () => {
     setViewportWidth(1440);
     renderWithProviders(<TraceabilityPage projectId="p1" projectName="Portal" />);

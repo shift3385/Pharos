@@ -24,7 +24,9 @@ export async function fetchHomeMetrics(
     const q = new URLSearchParams({
       dayStarts: request.dayStarts.join(","),
       now: String(request.now),
-      windows: request.windows.map((w) => `${w.id}:${w.fromIndex}`).join(","),
+      windows: request.windows
+        .map((w) => (w.toIndex == null ? `${w.id}:${w.fromIndex}` : `${w.id}:${w.fromIndex}:${w.toIndex}`))
+        .join(","),
     });
     payload = await serverApi.get<unknown>(`/api/home/metrics?${q}`);
   }

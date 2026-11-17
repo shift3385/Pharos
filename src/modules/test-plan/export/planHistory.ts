@@ -91,6 +91,18 @@ const FIELD_STEP: Record<string, StepId> = {
   "data.closureCriteria": "closure",
   "data.purpose": "purpose",
   "data.conclusion": "conclusion",
+  "data.documentId": "identification",
+  "data.assumptions": "assumptions",
+  "data.constraints": "assumptions",
+  "data.techniques": "techniques",
+  "data.independence": "roles",
+  "data.independenceNote": "roles",
+  "data.training": "roles",
+  "data.estimation": "estimation",
+  "data.entryCriteria": "entry",
+  "data.suspensionCriteria": "entry",
+  "data.resumptionCriteria": "entry",
+  "data.metrics": "metrics",
 };
 
 /** Fields that are never a revision of their own: the version goes up on
@@ -107,6 +119,8 @@ const IGNORED = new Set([
   "revision",
   "deleted",
   "data.aiProvenance",
+  // Who approved: the status change already says it (PLN-07).
+  "data.approval",
 ]);
 
 const APPROVED = "approved";

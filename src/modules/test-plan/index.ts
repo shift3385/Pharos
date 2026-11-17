@@ -10,6 +10,7 @@ export {
   projectPlanOverview,
   projectPlanVersion,
   projectPlanRef,
+  projectPlanForCompletion,
 } from "./export/batch";
 export { exportPlanPdf } from "./export/planPdf";
 export { planContextForProject } from "./ai/context";

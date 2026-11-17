@@ -17,11 +17,22 @@ El panel con el que se abre Pharos (SPEC §8): saludo, resumen, periodo y
 | `upcoming`      | `UpcomingTests`                  | 7 × 9  |
 | `exitCriteria`  | `ExitCriteriaCard`               | 7 × 11 |
 | `daily`         | `DailyExecutionsChart`           | 8 × 8  |
+| `trend`         | `TrendCard`                      | 8 × 7  |
 
-Distribución por defecto (UX-28, la que guardó el usuario; columna y fila
-desde 0): las cuatro cifras clave en la fila 0 (6 × 4 cada una);
-`byProject` en 0,4 (9 × 10); `daily` en 0,14 (9 × 9); `upcoming` en 9,4
-(7 × 19); `exitCriteria` en 16,4 (8 × 19).
+Distribución por defecto (UX-28, la que guardó el usuario, con la opción A
+de DOC-06 aprobada el 2026-11-11; columna y fila desde 0): las cuatro cifras
+clave en la fila 0 (6 × 4 cada una); `byProject` en 0,4 (9 × 10); `daily`
+en 0,14 (9 × 9); `upcoming` en 9,4 (7 × 11); `exitCriteria` en 16,4
+(8 × 11); `trend` en 9,15 (15 × 8). Ocupa 23 de las 24 filas.
+
+Formato guardado `version: 2` (ADR-0041). `readBoard` migra el 1:
+
+- una distribución igual a la de UX-28 pasa a la de ahora;
+- en otra cualquiera, un gadget que no conocía entra en el primer hueco de
+  las 24 filas, nunca debajo. Si no cabe, espera en «Gadgets ocultos» y
+  `readBoard` lo devuelve en `waiting`. `useHomeBoard` lo expone e Inicio
+  avisa («Personalizar Inicio» / «Entendido», que guarda la distribución)
+  hasta que se guarda.
 
 **Nunca hay scroll dentro de un gadget (UX-28).**
 
@@ -100,6 +111,25 @@ desde 0): las cuatro cifras clave en la fila 0 (6 × 4 cada una);
   flecha con `aria-label` y, en «Por confirmar», cada fila dice cuándo falló
   (`lastAt`). «+N más» cuenta la lista entera.
 
+## «Tendencia de ciclos» (DOC-06, ADR-0041)
+
+- **`TrendCard.tsx`** dibuja una métrica del catálogo
+  (`@shared/metrics/catalog`, `TREND_KINDS`) a lo largo de
+  `HomeProject.trend`: los últimos 6 ciclos cerrados del proyecto, con las
+  cifras congeladas al cerrar, y el activo, en vivo y con la línea punteada.
+  - La línea de objetivo sale del criterio de salida que mide esa métrica o,
+    si no hay, del objetivo del plan (`HomeProject.objectives`).
+  - El punto bajo cada ciclo es su veredicto.
+  - El eje Y va de 0 a 100 en cuartos para los porcentajes; para el resto,
+    números enteros (`yAxisMax`/`yTicks`, FIX-25).
+  - Avisa si la métrica empeora dos o más ciclos cerrados seguidos
+    (`ALERT_STEPS`) o si el último está fuera del objetivo.
+  - Sin scroll interno: por debajo de 300 px de alto se va la fila de las
+    seis minigráficas, y por debajo de 560 px de ancho, la columna lateral.
+  - Una tabla oculta repite los datos para los lectores de pantalla.
+- **`model/trend.ts`** reúne las funciones puras: la serie, el objetivo, la
+  racha, el eje y el proyecto inicial.
+
 ## Añadir un gadget
 
 1. Añade su id a `GADGETS`, su mínimo a `MIN_SIZE` y su sitio a la
@@ -116,6 +146,8 @@ desde 0): las cuatro cifras clave en la fila 0 (6 × 4 cada una);
 - `HomeBoard.test.tsx`: el modo configurar en la página, «Restablecer» con
   confirmación, Esc, persistencia por cuenta, tableta y móvil.
 - `DashboardPage.test.tsx`: el contenido de cada gadget.
+- `TrendCard.test.tsx`: la serie, el objetivo (criterio u objetivo del
+  plan), la racha, los ejes enteros, el aviso y el estado vacío.
 - `model/dailyLines.test.ts` y `DailyLinesChart.test.tsx`: el eje Y con
   mínimo 5, las fechas sin solaparse a 7, 14 y 30 días, la leyenda que filtra,
   la burbuja con el ratón y el teclado y el modo estrecho.

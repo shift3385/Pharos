@@ -270,7 +270,16 @@ describe("cycles through the web's domain API", () => {
     expect((await call("GET", `/api/cycles/${copy.id}/items`)).body).toHaveLength(2);
     expect((await call("POST", `/api/cycles/${c.id}/items/remove`, { ids: [items[0].id] })).body).toBe(1);
     // Closed: no items until it is reopened.
-    await call("PUT", `/api/cycles/${c.id}`, { input: { status: "closed" } });
+    // Closing by editing the status is refused: it goes through the gate (DOC-02, D5).
+    expect((await call("PUT", `/api/cycles/${c.id}`, { input: { status: "closed" } })).body).toMatchObject({ code: "cycle_close_needs_gate" });
+    expect((await call("POST", `/api/cycles/${c.id}/close`, {})).body).toMatchObject({ code: "gate_rejected" });
+    const closing = (await call("POST", `/api/cycles/${c.id}/close`, { verdict: "noGo", decisions: [0, 1, 2].map((position) => ({ position, justification: "Cerrado a propósito para probar el bloqueo." })) })).body;
+    expect(closing).toMatchObject({ verdict: "noGo", closedBy: expect.any(String) });
+    expect((await call("GET", `/api/cycles/${c.id}`)).body).toMatchObject({ status: "closed", data: { closures: [{ verdict: "noGo" }] } });
+    // An edit never touches the gate's record.
+    const reopened = (await call("PUT", `/api/cycles/${c.id}`, { input: { status: "active", data: {} } })).body;
+    expect(reopened.data.closures).toHaveLength(1);
+    await call("POST", `/api/cycles/${c.id}/close`, { verdict: "noGo", decisions: [0, 1, 2].map((position) => ({ position, justification: "Cerrado a propósito para probar el bloqueo." })) });
     expect((await call("POST", `/api/cycles/${c.id}/items`, { items: [{ testCaseId: smoke.id }] })).status).toBe(409);
     const listed = (await call("GET", `/api/cycles?projectId=${projectId}`)).body;
     expect(listed.map((x: { cycleKey: string }) => x.cycleKey).sort()).toEqual(["CYC-001", "CYC-002"]);

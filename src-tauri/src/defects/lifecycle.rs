@@ -87,10 +87,71 @@ pub fn check(from: &str, to: &str, resolution: Option<&str>) -> Result<Option<St
     }
 }
 
+/// True when `from → to` reopens a defect (DOC-06): back to `open` from
+/// `retest` (the fix failed) or `closed`. Out of `rejected` or `deferred`
+/// it is a first opening, not a reopening.
+pub fn reopens(from: &str, to: &str) -> bool {
+    to == "open" && matches!(from, "retest" | "closed")
+}
+
+/// `data.lifecycle` after `from → to` at `now` (DOC-06): `fixedAt` the first
+/// time it reaches `fixed`, `closedAt` the latest closing, `reopens` counted
+/// by `reopens`. It starts from the stored one (`previous`), never from what
+/// a client sends: only the core writes it.
+pub fn stamp(
+    previous: Option<&serde_json::Value>,
+    from: &str,
+    to: &str,
+    now: &str,
+) -> serde_json::Value {
+    let mut l = previous
+        .filter(|v| v.is_object())
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!({ "reopens": 0 }));
+    if l.get("reopens")
+        .and_then(serde_json::Value::as_i64)
+        .is_none()
+    {
+        l["reopens"] = 0.into();
+    }
+    if from != to {
+        if to == "fixed"
+            && l.get("fixedAt")
+                .and_then(serde_json::Value::as_str)
+                .is_none()
+        {
+            l["fixedAt"] = now.into();
+        }
+        if to == "closed" {
+            l["closedAt"] = now.into();
+        }
+        if reopens(from, to) {
+            let n = l["reopens"].as_i64().unwrap_or(0);
+            l["reopens"] = (n + 1).into();
+        }
+    }
+    l
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::Value;
+
+    #[test]
+    fn the_lifecycle_stamps_follow_the_shared_vectors() {
+        let v: Value = serde_json::from_str(VECTORS).unwrap();
+        for case in v["lifecycleStamps"].as_array().unwrap() {
+            let previous = case.get("previous").filter(|p| !p.is_null());
+            let got = stamp(
+                previous,
+                case["from"].as_str().unwrap(),
+                case["to"].as_str().unwrap(),
+                "2026-11-12T10:00:00.000Z",
+            );
+            assert_eq!(got, case["expected"], "{}", case["name"]);
+        }
+    }
 
     const VECTORS: &str = include_str!("../../tests/fixtures/defect-vectors.json");
 
