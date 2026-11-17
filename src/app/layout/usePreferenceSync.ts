@@ -43,9 +43,13 @@ export function usePreferenceSync(): void {
   useEffect(() => {
     if (!userId) return;
     let alive = true;
+    // Each step asks the server; after sign-out (or another account) none of
+    // the remaining ones may go out for the account that left (FIX-07).
     const pull = async () => {
       const lang = await pullSynced(userId, "ui.language", currentLanguage());
+      if (!alive) return;
       const mode = await pullSynced<SyncedTheme>(userId, "ui.theme", theme.current);
+      if (!alive) return;
       const look = await pullSynced<SyncedAppearance>(userId, "ui.appearance", appearanceOf(loadSettings()));
       if (!alive) return;
       applying.current = true;
@@ -59,7 +63,7 @@ export function usePreferenceSync(): void {
       } finally {
         applying.current = false;
       }
-      void syncProfileNames();
+      if (alive) void syncProfileNames();
     };
     const run = () => void pull().catch(() => undefined);
     run();
