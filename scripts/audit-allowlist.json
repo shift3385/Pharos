@@ -1,4 +1,21 @@
 {
   "$comment": "Known high/critical npm advisories tolerated by `npm run check:audit` (BASE-03, ADR-0021). Every entry needs a reason, the backlog item that removes it and an expiry date: after that date the gate fails again. Moderate/low advisories are reported but never fail the gate.",
-  "advisories": []
+  "advisories": [
+    {
+      "id": "GHSA-fc5q-39xc-vjpf",
+      "scope": "root",
+      "package": "picomatch",
+      "reason": "ReDoS through single-branch repeated extglobs (high, 2026-10-19). No patched version exists: <= 4.0.7 is affected and 4.0.7 is the latest. Only in development tooling (vite, vitest, jest, lint-staged, tinyglobby, @wdio/session; dev: true in both lockfiles), never in the installer or the production server; the globs it parses are ours, not user input.",
+      "item": "BASE-23",
+      "expires": "2026-12-17"
+    },
+    {
+      "id": "GHSA-fc5q-39xc-vjpf",
+      "scope": "server",
+      "package": "picomatch",
+      "reason": "ReDoS through single-branch repeated extglobs (high, 2026-10-19). No patched version exists: <= 4.0.7 is affected and 4.0.7 is the latest. Only in development tooling (vite, vitest, jest, lint-staged, tinyglobby, @wdio/session; dev: true in both lockfiles), never in the installer or the production server; the globs it parses are ours, not user input.",
+      "item": "BASE-23",
+      "expires": "2026-12-17"
+    }
+  ]
 }
