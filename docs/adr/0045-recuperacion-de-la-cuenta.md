@@ -103,9 +103,11 @@
   - **D7 · Auditoría.**
     - Cada cambio deja un evento en la cadena web de la propia cuenta
       (AUD-01b, [ADR-0015](0015-registro-de-auditoria.md)), en la misma
-      transacción y con el bloqueo de escritura del usuario: `entity:
-"account"`, `action: "update"`, `changes: {}` y un `summary` con
-      `event` y `method`.
+      transacción. Va en el **workspace personal** de la cuenta (ADR-0042),
+      con su bloqueo de escritura, porque la contraseña es de la persona y
+      no de un proyecto compartido: los demás miembros de un workspace no
+      ven estos eventos. Lleva `entity: "account"`, `action: "update"`,
+      `changes: {}` y un `summary` con `event` y `method`.
       - `event` puede ser `password_changed`, `recovery_codes_generated` o
         `password_reset_requested`.
       - `method` puede ser `profile`, `recovery_code`, `email_link` o, en la

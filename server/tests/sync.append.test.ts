@@ -121,7 +121,9 @@ describe("append_only sync class", () => {
       });
     }
     const [doc] = (await pull(h)).docs;
-    expect(doc.payload).toEqual(event("e1").payload);
+    // The workspace is the server's to say (SYNC-07, ADR-0042 §4).
+    expect(doc.payload).toEqual({ ...event("e1").payload, workspaceId: doc.payload.workspaceId });
+    expect(doc.payload.workspaceId).toMatch(/^[0-9a-f-]{36}$/);
     expect(await seqOf("audit_event", "e1")).toBe(seq);
   });
 
@@ -139,7 +141,8 @@ describe("append_only sync class", () => {
     const res = await push(h, [event("e1", { workspaceId: "ws-2", projectId: "p9" })]);
     expect(res.json()).toMatchObject({ accepted: 1, appendRejected: [] });
     expect(await seqOf("audit_event", "e1")).toBeGreaterThan(seq);
-    expect((await pull(h)).docs[0].payload).toMatchObject({ workspaceId: "ws-2", projectId: "p9" });
+    // Only the project moves: the workspace is the server's to say (SYNC-07).
+    expect((await pull(h)).docs[0].payload).toMatchObject({ projectId: "p9" });
   });
 
   it("refuses upsert or delete of an append-only entity, and append of an lww one", async () => {

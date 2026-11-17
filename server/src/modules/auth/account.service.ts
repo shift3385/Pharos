@@ -15,11 +15,13 @@ import type { Mailer } from "./mailer";
 import { resetEmail, resetLink } from "./reset-email";
 import { appendWebEvent } from "../audit/audit.store";
 import type { ServerClock } from "../sync/sync.hlc";
-import { LOCK_USER_SQL } from "../sync/sync.repository";
+import { lockWorkspaces } from "../sync/sync.repository";
+import { personalOf } from "../workspaces/members";
 
 // Changing and recovering the account password (SEC-08, SEC-09 by email;
-// ADR-0045). Every change runs in one transaction under the user's write
-// lock and leaves an `account` event in the user's web audit chain (AUD-01b)
+// ADR-0045). Every change runs in one transaction under the write lock of
+// the user's personal workspace (ADR-0042) and leaves an `account` event in
+// the user's web audit chain there (AUD-01b)
 // that never holds a password, a code or a token. A password set without the
 // current one (code or link) closes every session; a change from the profile
 // keeps the session it was made from. Access tokens already issued stay
@@ -85,11 +87,18 @@ export function createAccountService(deps: {
     }
   }
 
-  const lock = (client: PoolClient, userId: string) =>
-    client.query(LOCK_USER_SQL, [userId]);
+  /** Account changes live in the user's personal workspace (ADR-0042): its
+   *  write lock serializes them and its web chain holds their events. */
+  const lock = async (client: PoolClient, userId: string) =>
+    lockWorkspaces(client, [await personalOf(client, userId)]);
 
-  function audit(client: PoolClient, userId: string, summary: AccountEvent) {
+  async function audit(
+    client: PoolClient,
+    userId: string,
+    summary: AccountEvent,
+  ) {
     return appendWebEvent(client, clock, {
+      workspaceId: await personalOf(client, userId),
       userId,
       action: "update",
       entity: "account",

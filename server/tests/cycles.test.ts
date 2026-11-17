@@ -362,8 +362,8 @@ describe("cycles through the web's domain API", () => {
       ["result", "x2", result("x2", "s2", "passed", "2026-10-01T10:00:00Z")],
     ] as const) {
       await pool.query(
-        `INSERT INTO documents (user_id, entity, entity_id, payload, revision, author, deleted, hlc)
-         VALUES ($1, $2, $3, $4, 1, 'u', false, $5)`,
+        `INSERT INTO documents (workspace_id, entity, entity_id, payload, revision, author, deleted, hlc)
+         VALUES ((SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal'), $2, $3, $4, 1, 'u', false, $5)`,
         [userId, entity, id, payload, H(Date.now())],
       );
     }

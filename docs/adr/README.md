@@ -47,7 +47,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0039](0039-rumbo-hacia-la-ejecucion-autonoma.md) | Rumbo hacia la ejecución autónoma y nuevos hitos hasta 1.0 (rector desde la línea base del 2026-11-11) | Aceptado | 2026-11-11 |
 | [0040](0040-metricas-del-plan-y-aprobacion.md) | Métricas del plan, criterios de salida enlazados y aprobación con autor (PLN-03/04/06/07) | Aceptado | 2026-11-11 |
 | [0041](0041-quality-gate-y-tendencia-entre-ciclos.md) | Quality gate al cerrar un ciclo (justificación y go/no-go) y tendencia entre ciclos en Inicio (DOC-02, DOC-06) | Aceptado | 2026-11-11 |
-| 0042 | Revisión de los workspaces compartidos para 0.5.0: modelo A, sin RLS, compatibilidad con apps 0.4 (TEN-01, SYNC-07) | Reservado: lo aporta la pista W de 0.5.0 | 2026-11-17 |
+| [0042](0042-revision-workspaces-sync-v2.md) | Revisión de los workspaces compartidos frente al sync de 0.4: funcionalidad `workspaces`, `documents` por workspace, la 0.4 en solo lectura, mover proyectos, API de roles (TEN-01, SYNC-07, SYNC-04b) | Aceptado | 2026-11-17 |
 | [0043](0043-bandas-de-riesgo-cobertura-ponderada-y-periodo-anterior.md) | Bandas de riesgo por proyecto, cobertura ponderada por riesgo y «Comparar con el periodo anterior» en Inicio (TRZ-04, RED-W4) | Aceptado | 2026-11-12 |
 | [0044](0044-informe-de-cierre-29119-3.md) | Informe de cierre de pruebas 29119-3 de un ciclo cerrado, con textos y aprobación en el ciclo (DOC-01) | Aceptado | 2026-11-12 |
 | [0045](0045-recuperacion-de-la-cuenta.md) | Recuperación de la cuenta: cambiar la contraseña, códigos de recuperación y restablecer por correo con SMTP opcional (SEC-08, SEC-09) | Aceptado | 2026-11-17 |

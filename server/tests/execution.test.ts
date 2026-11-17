@@ -137,8 +137,8 @@ describe("GET /api/execution/summary", () => {
   const H = (wall: number) => `${String(wall).padStart(15, "0")}-00000-desk`;
   async function store(userId: string, entity: string, id: string, payload: Record<string, unknown>) {
     await pool.query(
-      `INSERT INTO documents (user_id, entity, entity_id, payload, revision, author, deleted, hlc)
-       VALUES ($1, $2, $3, $4, 1, 'u', false, $5)`,
+      `INSERT INTO documents (workspace_id, entity, entity_id, payload, revision, author, deleted, hlc)
+       VALUES ((SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal'), $2, $3, $4, 1, 'u', false, $5)`,
       [userId, entity, id, payload, H(Date.now())],
     );
   }
@@ -185,7 +185,7 @@ describe("GET /api/execution/summary", () => {
 
     // A newer manual attempt on 3 Nov, against the case's current revision.
     const rev = await pool.query<{ id: string }>(
-      `SELECT entity_id AS id FROM documents WHERE user_id = $1 AND entity = 'test_case_revision'
+      `SELECT entity_id AS id FROM documents WHERE workspace_id = (SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal') AND entity = 'test_case_revision'
           AND payload->>'testCaseId' = $2 ORDER BY seq DESC LIMIT 1`,
       [userId, pay.id],
     );
@@ -245,7 +245,7 @@ describe("GET /api/execution/summary", () => {
     const summary = async () => (await call("GET", `/api/execution/summary?projectId=${projectId}`)).body;
     expect((await summary()).cases[0].status).toBe("failed");
 
-    await pool.query("UPDATE documents SET deleted = true WHERE user_id = $1 AND entity = 'run' AND entity_id = 'gone'", [userId]);
+    await pool.query("UPDATE documents SET deleted = true WHERE workspace_id = (SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal') AND entity = 'run' AND entity_id = 'gone'", [userId]);
 
     const s = await summary();
     expect(s.cases[0]).toMatchObject({ status: "passed", last: { resultId: "ok" }, defectIds: ["d1"] });

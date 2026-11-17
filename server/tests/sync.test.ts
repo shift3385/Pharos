@@ -1,10 +1,10 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import type { Pool } from "pg";
-import { readFileSync } from "node:fs";
 import { setupTestApp, truncateAll } from "./helpers";
+import { applyMigration, schemaAt } from "./schema-at";
 import { FEATURES_HEADER, SERVER_VERSION, VERSION_HEADER } from "../src/modules/sync/sync.version";
-import { createSyncRepository, LOCK_USER_SQL } from "../src/modules/sync/sync.repository";
+import { createSyncRepository, LOCK_WORKSPACE_SQL } from "../src/modules/sync/sync.repository";
 
 let app: FastifyInstance;
 let pool: Pool;
@@ -340,9 +340,9 @@ describe("sync", () => {
     // An in-flight push of this user: it holds the user's lock and took a seq.
     const slow = await pool.connect();
     await slow.query("BEGIN");
-    await slow.query(LOCK_USER_SQL, [userId]);
+    await slow.query(LOCK_WORKSPACE_SQL, [(await pool.query<{ id: string }>("SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal'", [userId])).rows[0].id]);
     await slow.query(
-      `INSERT INTO documents (user_id, entity, entity_id, payload, seq) VALUES ($1, 'test_case', 'slow', '{}', nextval('documents_seq'))`,
+      `INSERT INTO documents (workspace_id, entity, entity_id, payload, seq) VALUES ((SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal'), 'test_case', 'slow', '{}', nextval('documents_seq'))`,
       [userId],
     );
     // A second push starts meanwhile; it must wait instead of taking a later seq
@@ -384,26 +384,34 @@ describe("sync", () => {
   });
 
   it("migration 0004 repairs children of projects deleted before the fix (FIX-05)", async () => {
-    const token = await tokenFor();
-    const { rows } = await pool.query<{ id: string }>("SELECT id FROM users LIMIT 1");
-    const userId = rows[0].id;
-    // As the old server stored it: only the project tombstone.
-    await pool.query(
-      `INSERT INTO documents (user_id, entity, entity_id, payload, revision, deleted, hlc) VALUES
-         ($1, 'project', 'old', '{}', 2, true, '000000000000200-00000-d'),
-         ($1, 'test_case', 'oc', '{"projectId":"old"}', 1, false, '000000000000100-00000-d'),
-         ($1, 'test_case', 'keep', '{"projectId":"live"}', 1, false, '000000000000100-00000-d')`,
-      [userId],
-    );
-    const before = (await pool.query("SELECT max(seq) AS s FROM documents")).rows[0].s;
-    await pool.query(readFileSync(new URL("../migrations/0004_sync_cascade.sql", import.meta.url), "utf8"));
-    const { docs } = await pullAll(token);
-    const byId = Object.fromEntries(docs.map((d) => [d.entityId, d]));
-    expect(byId.oc.deleted).toBe(true);
-    expect(byId.keep.deleted).toBe(false);
-    const repaired = (await pool.query("SELECT seq, hlc, revision FROM documents WHERE entity_id = 'oc'")).rows[0];
-    expect(Number(repaired.seq)).toBeGreaterThan(Number(before));
-    expect(repaired).toMatchObject({ hlc: "000000000000200-00000-d", revision: 2 });
+    // The store as the old server left it, per user, with only the project
+    // tombstone (replayed in its own schema; per workspace since 0019).
+    const { client, drop } = await schemaAt(pool, "mig_0004", "0003_documents_hlc.sql");
+    try {
+      const userId = (
+        await client.query<{ id: string }>(
+          "INSERT INTO users (email, password_hash, display_name, first_name, last_name) VALUES ('s@pharos.dev', 'x', 'S', 'A', 'B') RETURNING id",
+        )
+      ).rows[0].id;
+      await client.query(
+        `INSERT INTO documents (user_id, entity, entity_id, payload, revision, deleted, hlc) VALUES
+           ($1, 'project', 'old', '{}', 2, true, '000000000000200-00000-d'),
+           ($1, 'test_case', 'oc', '{"projectId":"old"}', 1, false, '000000000000100-00000-d'),
+           ($1, 'test_case', 'keep', '{"projectId":"live"}', 1, false, '000000000000100-00000-d')`,
+        [userId],
+      );
+      const before = (await client.query("SELECT max(seq) AS s FROM documents")).rows[0].s;
+      await applyMigration(client, "0004_sync_cascade.sql");
+      const byId = Object.fromEntries(
+        (await client.query("SELECT entity_id, deleted, seq, hlc, revision FROM documents")).rows.map((r) => [r.entity_id, r]),
+      );
+      expect(byId.oc.deleted).toBe(true);
+      expect(byId.keep.deleted).toBe(false);
+      expect(Number(byId.oc.seq)).toBeGreaterThan(Number(before));
+      expect(byId.oc).toMatchObject({ hlc: "000000000000200-00000-d", revision: 2 });
+    } finally {
+      await drop();
+    }
   });
 
   it("clears the content of old tombstones but keeps them, so nothing comes back (SYNC-06)", async () => {
@@ -411,10 +419,10 @@ describe("sync", () => {
     const { rows } = await pool.query<{ id: string }>("SELECT id FROM users LIMIT 1");
     const userId = rows[0].id;
     await pool.query(
-      `INSERT INTO documents (user_id, entity, entity_id, payload, revision, deleted, hlc, updated_at) VALUES
-         ($1, 'test_case', 'old', '{"title":"secret"}', 2, true, 'h1', now() - interval '31 days'),
-         ($1, 'test_case', 'recent', '{"title":"recent"}', 2, true, 'h2', now() - interval '5 days'),
-         ($1, 'test_case', 'live', '{"title":"live"}', 1, false, 'h3', now() - interval '90 days')`,
+      `INSERT INTO documents (workspace_id, entity, entity_id, payload, revision, deleted, hlc, updated_at) VALUES
+         ((SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal'), 'test_case', 'old', '{"title":"secret"}', 2, true, 'h1', now() - interval '31 days'),
+         ((SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal'), 'test_case', 'recent', '{"title":"recent"}', 2, true, 'h2', now() - interval '5 days'),
+         ((SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal'), 'test_case', 'live', '{"title":"live"}', 1, false, 'h3', now() - interval '90 days')`,
       [userId],
     );
     const seqBefore = (await pool.query("SELECT entity_id, seq FROM documents ORDER BY entity_id")).rows;

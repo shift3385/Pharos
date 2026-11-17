@@ -180,8 +180,16 @@ export function fromCard(card: Json): { defect: Json; links: Json[] } {
  *  (same function, same ids) holds the card's base, so it converges without a
  *  push or a conflict. Idempotent: a defect already stored is left alone. */
 export async function convertPlannerDefects(client: PoolClient): Promise<{ defects: number; links: number }> {
+  // It runs inside migration 0010, when documents are per user, and in tests
+  // after 0019 (SYNC-07), when they are per workspace: it partitions by
+  // whichever column the table has.
+  const { rowCount } = await client.query(
+    `SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'documents' AND column_name = 'workspace_id' AND table_schema = current_schema()`,
+  );
+  const part = rowCount ? "workspace_id" : "user_id";
   const { rows } = await client.query<{
-    user_id: string;
+    part: string;
     entity_id: string;
     payload: Json;
     revision: number;
@@ -189,31 +197,31 @@ export async function convertPlannerDefects(client: PoolClient): Promise<{ defec
     deleted: boolean;
     hlc: string;
   }>(
-    `SELECT user_id, entity_id, payload, revision, author, deleted, hlc FROM documents
+    `SELECT ${part} AS part, entity_id, payload, revision, author, deleted, hlc FROM documents
       WHERE entity = 'planner_card' AND payload->>'kind' = 'defect'
-      ORDER BY user_id, seq`,
+      ORDER BY ${part}, seq`,
   );
   let defects = 0;
   let links = 0;
   for (const card of rows) {
     const taken = await client.query(
-      `SELECT 1 FROM documents WHERE user_id = $1 AND entity = 'defect' AND entity_id = $2`,
-      [card.user_id, card.entity_id],
+      `SELECT 1 FROM documents WHERE ${part} = $1 AND entity = 'defect' AND entity_id = $2`,
+      [card.part, card.entity_id],
     );
     if (taken.rowCount) continue;
     const { defect, links: cardLinks } = fromCard({ ...card.payload, id: card.entity_id });
     await client.query(
-      `INSERT INTO documents (user_id, entity, entity_id, payload, revision, author, deleted, hlc, updated_at, seq)
+      `INSERT INTO documents (${part}, entity, entity_id, payload, revision, author, deleted, hlc, updated_at, seq)
        VALUES ($1, 'defect', $2, $3, $4, $5, $6, $7, now(), nextval('documents_seq'))`,
-      [card.user_id, card.entity_id, defect, card.revision, card.author, card.deleted, card.hlc],
+      [card.part, card.entity_id, defect, card.revision, card.author, card.deleted, card.hlc],
     );
     defects++;
     for (const link of cardLinks) {
       await client.query(
-        `INSERT INTO documents (user_id, entity, entity_id, payload, revision, author, deleted, hlc, updated_at, seq)
+        `INSERT INTO documents (${part}, entity, entity_id, payload, revision, author, deleted, hlc, updated_at, seq)
          VALUES ($1, 'defect_link', $2, $3, 1, $4, false, $5, now(), nextval('documents_seq'))
-         ON CONFLICT (user_id, entity, entity_id) DO NOTHING`,
-        [card.user_id, link.id, link, card.author, card.hlc],
+         ON CONFLICT (${part}, entity, entity_id) DO NOTHING`,
+        [card.part, link.id, link, card.author, card.hlc],
       );
       links++;
     }
@@ -221,8 +229,8 @@ export async function convertPlannerDefects(client: PoolClient): Promise<{ defec
       await client.query(
         `UPDATE documents SET deleted = true, revision = revision + 1, updated_at = now(),
                 seq = nextval('documents_seq')
-          WHERE user_id = $1 AND entity = 'planner_card' AND entity_id = $2`,
-        [card.user_id, card.entity_id],
+          WHERE ${part} = $1 AND entity = 'planner_card' AND entity_id = $2`,
+        [card.part, card.entity_id],
       );
     }
   }

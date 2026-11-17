@@ -77,8 +77,11 @@ const auth = (token: string) => ({ authorization: `Bearer ${token}` });
 /** The account events of a user's web audit chain. */
 async function accountEvents(userId: string) {
   const { rows } = await pool.query<{ payload: Record<string, unknown> }>(
-    `SELECT payload FROM documents WHERE user_id = $1 AND entity = 'audit_event'
-        AND payload->>'entity' = 'account' ORDER BY (payload->>'chainSeq')::bigint`,
+    // In the user's personal workspace (ADR-0042), where account events live.
+    `SELECT d.payload FROM documents d
+       JOIN workspaces w ON w.id = d.workspace_id AND w.kind = 'personal' AND w.created_by = $1
+      WHERE d.entity = 'audit_event' AND d.payload->>'entity' = 'account'
+      ORDER BY (d.payload->>'chainSeq')::bigint`,
     [userId],
   );
   return rows.map((r) => ({
