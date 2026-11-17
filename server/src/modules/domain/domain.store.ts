@@ -7,7 +7,8 @@ import {
   COLS,
   KEY_SQL,
   leaseRange,
-  LOCK_USER_SQL,
+  lockWorkspaces,
+  MOVE_TOMBSTONE_SQL,
   storeAppend,
   storeDoc,
   takenKey,
@@ -15,13 +16,19 @@ import {
   type RemoteDoc,
 } from "../sync/sync.repository";
 import type { KeyKind } from "../sync/sync.schemas";
+import { WorkspaceErrors } from "../workspaces/access";
+import { memberships, type Membership } from "../workspaces/members";
+import { can, capabilityFor, type Capability } from "../workspaces/roles";
 
-/** Domain writes of the web (BASE-10, ADR-0004) go to the same per-user
- *  document store the devices sync with: every write is a document with a new
+/** Domain writes of the web (BASE-10, ADR-0004) go to the same document
+ *  store the devices sync with: every write is a document with a new
  *  revision, an HLC stamped by the server and a new `seq`, so the desktops pull
- *  it like any other change. A transaction holds the user's write lock (the
- *  same one `/sync/push` takes), so a web write and a device push never
- *  interleave. */
+ *  it like any other change. The web sees the user's workspaces together
+ *  (SYNC-07, ADR-0042 §4): reads span all of them; a write goes to the
+ *  workspace of its project (a new project, to the personal one) and needs
+ *  the role there (`capabilityFor`, else 403 `forbidden`). A transaction
+ *  holds the write locks of the user's workspaces (the same ones
+ *  `/sync/push` takes), so a web write and a device push never interleave. */
 export interface DomainTx {
   /** The stored version of an entity (live or tombstone), locked. */
   get(entity: string, id: string): Promise<RemoteDoc | null>;
@@ -73,8 +80,8 @@ export interface DomainTx {
 }
 
 /** Reads without locks (the execution derivation, step 10): one consistent
- *  snapshot, no user write lock, no `FOR UPDATE`, so a long read never
- *  blocks a device push or a web write. */
+ *  snapshot, no write lock, no `FOR UPDATE`, so a long read never blocks a
+ *  device push or a web write. */
 export interface DomainReader {
   /** Live documents of an entity (with `withDeleted`, tombstones too) of the
    *  given projects; `project` documents are matched by their own id. */
@@ -95,15 +102,50 @@ export function staleWrite(current: RemoteDoc): AppError {
   });
 }
 
+/** Documents of the user's workspaces, without the tombstones a move left
+ *  in its origin: the entity lives on in the destination (ADR-0042 §5). */
+const VISIBLE = `workspace_id = ANY($1::uuid[]) AND NOT ${MOVE_TOMBSTONE_SQL}`;
+
 export function createDomainStore(pool: Pool, clock: ServerClock) {
-  function txOf(client: PoolClient, userId: string, readOnly = false): DomainTx {
+  function txOf(client: PoolClient, userId: string, members: Membership[], readOnly = false): DomainTx {
     // A read-only transaction takes no row locks.
     const lock = readOnly ? "" : " FOR UPDATE";
+    const ws = members.map((m) => m.workspaceId);
+    const personal = members.find((m) => m.kind === "personal")?.workspaceId ?? ws[0];
+
+    /** Where an entity lives among the user's workspaces, or null. */
+    async function home(entity: string, id: string): Promise<string | null> {
+      const { rows } = await client.query<{ workspace_id: string }>(
+        `SELECT workspace_id FROM documents WHERE ${VISIBLE} AND entity = $2 AND entity_id = $3 LIMIT 1`,
+        [ws, entity, id],
+      );
+      return rows[0]?.workspace_id ?? null;
+    }
+
+    /** The workspace a write of the entity goes to: where it lives; for a
+     *  new one, where its project lives; for a new project (or anything
+     *  without one), the personal workspace. */
+    async function target(entity: string, id: string, payload: Record<string, unknown>): Promise<string> {
+      const found = await home(entity, id);
+      if (found) return found;
+      if (entity !== "project" && typeof payload.projectId === "string") {
+        const project = await home("project", payload.projectId);
+        if (project) return project;
+      }
+      return personal;
+    }
+
+    /** The user's role in `workspaceId` must allow `cap` (403 otherwise). */
+    function check(workspaceId: string, cap: Capability): void {
+      const m = members.find((x) => x.workspaceId === workspaceId);
+      if (!m || !can(m.role, cap)) throw WorkspaceErrors.forbidden(cap);
+    }
+
     return {
       async get(entity, id) {
         const { rows } = await client.query(
-          `SELECT ${COLS} FROM documents WHERE user_id = $1 AND entity = $2 AND entity_id = $3${lock}`,
-          [userId, entity, id],
+          `SELECT ${COLS} FROM documents WHERE ${VISIBLE} AND entity = $2 AND entity_id = $3 LIMIT 1${lock}`,
+          [ws, entity, id],
         );
         return rows[0] ? toDoc(rows[0]) : null;
       },
@@ -115,25 +157,26 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
         const extra = where.map(([k], i) => ` AND payload->>'${k}' = $${5 + i}`).join("");
         const { rows } = await client.query(
           `SELECT ${COLS} FROM documents
-            WHERE user_id = $1 AND entity = $2 AND ($4 OR NOT deleted)
+            WHERE ${VISIBLE} AND entity = $2 AND ($4 OR NOT deleted)
               AND ($3::text IS NULL OR payload->>'projectId' = $3)${extra}`,
-          [userId, entity, projectId ?? null, opts?.withDeleted === true, ...where.map(([, v]) => v)],
+          [ws, entity, projectId ?? null, opts?.withDeleted === true, ...where.map(([, v]) => v)],
         );
         return rows.map(toDoc);
       },
       async keyUse(entity, projectId, key, exceptId = "") {
         const { rows } = await client.query<{ deleted: boolean }>(
           `SELECT deleted FROM documents
-            WHERE user_id = $1 AND entity = $2 AND payload->>'projectId' = $3
+            WHERE ${VISIBLE} AND entity = $2 AND payload->>'projectId' = $3
               AND ${KEY_SQL} = $4 AND entity_id <> $5
             ORDER BY deleted LIMIT 1`,
-          [userId, entity, projectId, key, exceptId],
+          [ws, entity, projectId, key, exceptId],
         );
         if (!rows[0]) return null;
         return rows[0].deleted ? "deleted" : "live";
       },
       async nextNumber(projectId, kind, prefix) {
-        const n = await leaseRange(client, userId, { projectId, kind, prefix, floor: 1 }, 1);
+        const where = await home("project", projectId);
+        const n = where ? await leaseRange(client, where, { projectId, kind, prefix, floor: 1 }, 1) : null;
         if (n === null) throw new AppError(404, "not_found", "Project not found.");
         return n;
       },
@@ -148,11 +191,13 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
           author: userId,
           hlc: clock.stamp(current?.hlc),
         };
+        const into = await target(entity, id, payload);
+        check(into, capabilityFor(entity, current === null));
         // Safety net under the lock: the rules already checked the key.
-        if (await takenKey(client, userId, delta)) {
+        if (await takenKey(client, into, delta)) {
           throw new AppError(409, "key_taken", "Another item of the project already uses this key.");
         }
-        const stored = await storeDoc(client, userId, delta);
+        const stored = await storeDoc(client, { workspaceId: into, userId }, delta);
         if (opts.audit !== "folded") {
           const before = current ? snapshot(current.payload, current.deleted) : null;
           const after = snapshot(stored.payload, deleted);
@@ -163,23 +208,38 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
             await appendWebEvent(
               client,
               clock,
-              { userId, action, entity, entityId: id, ...location(entity, id, before, after), changes, summary },
+              {
+                userId,
+                workspaceId: into,
+                action,
+                entity,
+                entityId: id,
+                ...location(entity, id, before, after),
+                changes,
+                summary,
+              },
               delta.hlc,
             );
           }
         }
-        return { ...delta, deleted, seq: 0 };
+        return { ...delta, payload: stored.payload, deleted, seq: 0 };
       },
       async append(entity, id, payload) {
-        const res = await storeAppend(client, userId, {
-          entity: entity as never,
-          entityId: id,
-          op: "append",
-          payload,
-          revision: 1,
-          author: userId,
-          hlc: String(payload.hlc ?? ""),
-        });
+        const into = await target(entity, id, payload);
+        check(into, capabilityFor(entity, true));
+        const res = await storeAppend(
+          client,
+          { workspaceId: into, userId },
+          {
+            entity: entity as never,
+            entityId: id,
+            op: "append",
+            payload,
+            revision: 1,
+            author: userId,
+            hlc: String(payload.hlc ?? ""),
+          },
+        );
         if (!res.accepted)
           throw new AppError(
             409,
@@ -191,13 +251,15 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
         return clock.stamp();
       },
       async audit(action, entity, id, summary, changes = {}) {
+        const into = await target(entity, id, {});
         const { rows } = await client.query(
-          `SELECT ${COLS} FROM documents WHERE user_id = $1 AND entity = $2 AND entity_id = $3`,
-          [userId, entity, id],
+          `SELECT ${COLS} FROM documents WHERE workspace_id = $1 AND entity = $2 AND entity_id = $3`,
+          [into, entity, id],
         );
         const snap = rows[0] ? snapshot(toDoc(rows[0]).payload, toDoc(rows[0]).deleted) : null;
         await appendWebEvent(client, clock, {
           userId,
+          workspaceId: into,
           action,
           entity,
           entityId: id,
@@ -211,14 +273,14 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
 
   return {
     /** Runs `fn` with a whole `DomainTx` in a read-only, repeatable-read
-     *  transaction, without the user's write lock: a read never waits for (or
-     *  holds up) a push or a web write (the runs API, EJE-06). A write in it
+     *  transaction, without write locks: a read never waits for (or holds
+     *  up) a push or a web write (the runs API, EJE-06). A write in it
      *  fails. `read` is the multi-project reader of the derivation. */
     async readTx<T>(userId: string, fn: (tx: DomainTx) => Promise<T>): Promise<T> {
       const client = await pool.connect();
       try {
         await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
-        const result = await fn(txOf(client, userId, true));
+        const result = await fn(txOf(client, userId, await memberships(client, userId), true));
         await client.query("COMMIT");
         return result;
       } catch (error) {
@@ -233,22 +295,23 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
       const client = await pool.connect();
       try {
         await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+        const ws = (await memberships(client, userId)).map((m) => m.workspaceId);
         const reader: DomainReader = {
           async list(entity, projectIds, opts) {
             const { rows } = await client.query(
               `SELECT ${COLS} FROM documents
-                WHERE user_id = $1 AND entity = $2 AND ($4 OR NOT deleted)
+                WHERE ${VISIBLE} AND entity = $2 AND ($4 OR NOT deleted)
                   AND payload->>'projectId' = ANY($3::text[])`,
-              [userId, entity, projectIds, opts?.withDeleted === true],
+              [ws, entity, projectIds, opts?.withDeleted === true],
             );
             return rows.map(toDoc);
           },
           async projects(ids) {
             const { rows } = await client.query(
               `SELECT ${COLS} FROM documents
-                WHERE user_id = $1 AND entity = 'project' AND NOT deleted
+                WHERE ${VISIBLE} AND entity = 'project' AND NOT deleted
                   AND ($2::text[] IS NULL OR entity_id = ANY($2::text[]))`,
-              [userId, ids ?? null],
+              [ws, ids ?? null],
             );
             return rows.map(toDoc);
           },
@@ -263,13 +326,18 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
         client.release();
       }
     },
-    /** Runs `fn` in one transaction under the user's write lock. */
+    /** Runs `fn` in one transaction under the write locks of the user's
+     *  workspaces. */
     async tx<T>(userId: string, fn: (tx: DomainTx) => Promise<T>): Promise<T> {
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
-        await client.query(LOCK_USER_SQL, [userId]);
-        const result = await fn(txOf(client, userId));
+        const members = await memberships(client, userId);
+        await lockWorkspaces(
+          client,
+          members.map((m) => m.workspaceId),
+        );
+        const result = await fn(txOf(client, userId, members));
         await client.query("COMMIT");
         return result;
       } catch (error) {

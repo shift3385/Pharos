@@ -13,7 +13,7 @@ import { narrow, overlaps, targetsOf } from "../src/modules/domain/runs-targets"
 import { createDomainStore, type DomainStore, type DomainTx } from "../src/modules/domain/domain.store";
 import { createRunService } from "../src/modules/domain/runs";
 import { createServerClock } from "../src/modules/sync/sync.hlc";
-import { LOCK_USER_SQL } from "../src/modules/sync/sync.repository";
+import { LOCK_WORKSPACE_SQL } from "../src/modules/sync/sync.repository";
 
 type Payload = Record<string, unknown>;
 
@@ -381,7 +381,7 @@ describe("runs on the web", () => {
     // A push (or a web write) holds the lock.
     const holder = await pool.connect();
     await holder.query("BEGIN");
-    await holder.query(LOCK_USER_SQL, [userId]);
+    await holder.query(LOCK_WORKSPACE_SQL, [(await pool.query<{ id: string }>("SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal'", [userId])).rows[0].id]);
     try {
       const within = <T>(p: Promise<T>) =>
         Promise.race([p, new Promise<never>((_, reject) => setTimeout(() => reject(new Error("waited for the lock")), 3000))]);

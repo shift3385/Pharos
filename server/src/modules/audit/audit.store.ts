@@ -23,6 +23,11 @@ export type AuditAction = "create" | "update" | "delete" | "import" | "link" | "
 /** A new web event, before it is linked. */
 export interface NewWebEvent {
   userId: string;
+  /** The workspace the event is stored in, which is also its chain
+   *  workspace: one web chain per (user, workspace) since SYNC-07
+   *  (ADR-0042 §4). Absent only in the fixed vectors of the chain "web"
+   *  written before it. */
+  workspaceId?: string;
   action: AuditAction;
   entity: string;
   entityId: string;
@@ -53,9 +58,8 @@ export function buildEvent(
   const changes = sortedJson(ev.changes);
   const event: AuditEvent = {
     id: at.id,
-    // Outside the hash and the content: the desktop files the event under its
-    // own workspace (web payloads carry no real one before ADR-0019).
-    workspaceId: "",
+    // Outside the hash and the content (its location).
+    workspaceId: ev.workspaceId ?? "",
     projectId: ev.projectId,
     at: at.at,
     hlc: at.hlc,
@@ -71,7 +75,7 @@ export function buildEvent(
     summary: ev.summary === undefined || ev.summary === null ? null : sortedJson(ev.summary),
     // No new origin: a desktop's CHECK (local migration 0019) would skip it.
     origin: "local",
-    chainWorkspaceId: WEB_CHAIN_WORKSPACE,
+    chainWorkspaceId: ev.workspaceId ?? WEB_CHAIN_WORKSPACE,
     chainOwner: ev.userId,
     chainSeq: (prev?.seq ?? 0) + 1,
     prevHash: prev?.hash ?? null,
@@ -85,36 +89,44 @@ export function buildEvent(
 /** The last link of the user's web chain among the stored events: what the
  *  head says when its row is missing (lost or removed by hand), so the chain
  *  continues instead of starting again at 1. One scan, only then. */
-async function lastStored(client: PoolClient, userId: string): Promise<{ seq: number; hash: string } | null> {
+async function lastStored(
+  client: PoolClient,
+  userId: string,
+  workspaceId: string,
+  chain: string,
+): Promise<{ seq: number; hash: string } | null> {
   const { rows } = await client.query<{ seq: string; hash: string }>(
     `SELECT payload->>'chainSeq' AS seq, payload->>'hash' AS hash FROM documents
-      WHERE user_id = $1 AND entity = 'audit_event' AND payload->>'deviceId' = $2
+      WHERE workspace_id = $1 AND entity = 'audit_event' AND payload->>'deviceId' = $2
         AND payload->>'chainWorkspaceId' = $3 AND payload->>'chainOwner' = $4
       ORDER BY (payload->>'chainSeq')::bigint DESC LIMIT 1`,
-    [userId, WEB_DEVICE, WEB_CHAIN_WORKSPACE, userId],
+    [workspaceId, WEB_DEVICE, chain, userId],
   );
   return rows[0] ? { seq: Number(rows[0].seq), hash: rows[0].hash } : null;
 }
 
-/** Appends one web event to the user's chain and stores it as an
- *  `audit_event` document. The caller holds the user's write lock and runs
- *  the change in the same transaction. `after`: the HLC of the change, so the
- *  event is stamped after it. */
+/** Appends one web event to the user's chain in the workspace and stores it
+ *  as an `audit_event` document there. The caller holds the workspace's
+ *  write lock and runs the change in the same transaction. `after`: the HLC
+ *  of the change, so the event is stamped after it. */
 export async function appendWebEvent(
   client: PoolClient,
   clock: ServerClock,
-  ev: NewWebEvent,
+  ev: NewWebEvent & { workspaceId: string },
   after?: string,
 ): Promise<AuditEvent> {
+  const chain = ev.workspaceId;
   const { rows } = await client.query<{ seq: string; hash: string }>(
     `SELECT seq, hash FROM audit_chain_heads
       WHERE user_id = $1 AND device_id = $2 AND chain_workspace_id = $3 AND chain_owner = $4
       FOR UPDATE`,
-    [ev.userId, WEB_DEVICE, WEB_CHAIN_WORKSPACE, ev.userId],
+    [ev.userId, WEB_DEVICE, chain, ev.userId],
   );
-  const prev = rows[0] ? { seq: Number(rows[0].seq), hash: rows[0].hash } : await lastStored(client, ev.userId);
+  const prev = rows[0]
+    ? { seq: Number(rows[0].seq), hash: rows[0].hash }
+    : await lastStored(client, ev.userId, ev.workspaceId, chain);
   const event = buildEvent(ev, prev, { id: randomUUID(), at: new Date().toISOString(), hlc: clock.stamp(after) });
-  const stored = await storeAppend(client, ev.userId, {
+  const stored = await storeAppend(client, { workspaceId: ev.workspaceId, userId: ev.userId }, {
     entity: "audit_event",
     entityId: event.id,
     op: "append",
@@ -125,11 +137,11 @@ export async function appendWebEvent(
   });
   if (!stored.accepted) throw new Error("audit: the web event could not be stored");
   await client.query(
-    `INSERT INTO audit_chain_heads (user_id, device_id, chain_workspace_id, chain_owner, seq, hash)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO audit_chain_heads (user_id, device_id, chain_workspace_id, chain_owner, seq, hash, workspace_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      ON CONFLICT (user_id, device_id, chain_workspace_id, chain_owner) DO UPDATE
        SET seq = EXCLUDED.seq, hash = EXCLUDED.hash, updated_at = now()`,
-    [ev.userId, WEB_DEVICE, WEB_CHAIN_WORKSPACE, ev.userId, event.chainSeq, event.hash],
+    [ev.userId, WEB_DEVICE, chain, ev.userId, event.chainSeq, event.hash, ev.workspaceId],
   );
   return event;
 }

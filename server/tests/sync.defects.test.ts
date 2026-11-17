@@ -164,8 +164,8 @@ describe("defects feature", () => {
     const { token, userId } = await register();
     await push(current(token), [project()]);
     await pool.query(
-      `INSERT INTO documents (user_id, entity, entity_id, payload, revision, author, deleted, hlc)
-       VALUES ($1, 'planner_card', 'k1', '{"id":"k1","projectId":"p1","kind":"defect","cardKey":"DEF-001"}', 2, 'u', true, $2)`,
+      `INSERT INTO documents (workspace_id, entity, entity_id, payload, revision, author, deleted, hlc)
+       VALUES ((SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal'), 'planner_card', 'k1', '{"id":"k1","projectId":"p1","kind":"defect","cardKey":"DEF-001"}', 2, 'u', true, $2)`,
       [userId, H(50)],
     );
     expect(entities((await pull(beforeDefects(token))).docs)).toEqual(["project"]);
@@ -206,8 +206,8 @@ describe("defects feature", () => {
 describe("migration 0010 (planner defect cards become defects)", () => {
   const insertCard = (userId: string, id: string, status: string, data: object, deleted = false, revision = 3) =>
     pool.query(
-      `INSERT INTO documents (user_id, entity, entity_id, payload, revision, author, deleted, hlc)
-       VALUES ($1, 'planner_card', $2, $3, $4, 'dev-a', $5, $6)`,
+      `INSERT INTO documents (workspace_id, entity, entity_id, payload, revision, author, deleted, hlc)
+       VALUES ((SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal'), 'planner_card', $2, $3, $4, 'dev-a', $5, $6)`,
       [
         userId,
         id,
@@ -255,14 +255,14 @@ describe("migration 0010 (planner defect cards become defects)", () => {
     await insertCard(a.userId, "5", "backlog", {}, true);
     await insertCard(b.userId, "1", "done", { testCaseIds: ["c9"] });
     await pool.query(
-      `INSERT INTO documents (user_id, entity, entity_id, payload, revision, author, deleted, hlc)
-       VALUES ($1, 'planner_card', 'task', '{"id":"task","projectId":"p1","kind":"task"}', 1, 'u', false, $2)`,
+      `INSERT INTO documents (workspace_id, entity, entity_id, payload, revision, author, deleted, hlc)
+       VALUES ((SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal'), 'planner_card', 'task', '{"id":"task","projectId":"p1","kind":"task"}', 1, 'u', false, $2)`,
       [a.userId, H(1)],
     );
     expect(await convert()).toEqual({ defects: 6, links: 3 });
     const { rows } = await pool.query(
-      `SELECT user_id, entity, entity_id, payload, revision, deleted, hlc FROM documents
-        WHERE entity IN ('defect', 'defect_link', 'planner_card') ORDER BY user_id, entity, entity_id`,
+      `SELECT (SELECT created_by FROM workspaces w WHERE w.id = documents.workspace_id) AS user_id, entity, entity_id, payload, revision, deleted, hlc FROM documents
+        WHERE entity IN ('defect', 'defect_link', 'planner_card') ORDER BY 1, entity, entity_id`,
     );
     const of = (user: string, entity: string, id: string) =>
       rows.find((r) => r.user_id === user && r.entity === entity && r.entity_id === id);
@@ -386,8 +386,8 @@ describe("review (DEF-01)", () => {
     const { token, userId } = await register();
     const p = (await call(token, "POST", "/api/projects", { name: "Checkout" })).json();
     await pool.query(
-      `INSERT INTO documents (user_id, entity, entity_id, payload, revision, author, deleted, hlc)
-       VALUES ($1, 'planner_card', 'k-task', $2, 1, 'u', false, $3)`,
+      `INSERT INTO documents (workspace_id, entity, entity_id, payload, revision, author, deleted, hlc)
+       VALUES ((SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal'), 'planner_card', 'k-task', $2, 1, 'u', false, $3)`,
       [userId, { id: "k-task", projectId: p.id, kind: "task", cardKey: "DEF-006", title: "T" }, H(1)],
     );
     const d = (await call(token, "POST", "/api/defects", { projectId: p.id, title: "Bug", data: {} })).json();
@@ -418,8 +418,8 @@ describe("review (DEF-01)", () => {
       ["result", "res2", { ...imported, id: "res2", testKey: "t::refunds", attributes: { tags: [`@${c2.scenarioId}`] } }],
     ] as const) {
       await pool.query(
-        `INSERT INTO documents (user_id, entity, entity_id, payload, revision, author, deleted, hlc)
-         VALUES ($1, $2, $3, $4, 1, 'u', false, $5)`,
+        `INSERT INTO documents (workspace_id, entity, entity_id, payload, revision, author, deleted, hlc)
+         VALUES ((SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal'), $2, $3, $4, 1, 'u', false, $5)`,
         [userId, entity, id, payload, H(2)],
       );
     }
