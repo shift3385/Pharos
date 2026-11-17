@@ -96,14 +96,14 @@ chapter("navegacion", () => {
   step("notificaciones", {
     title: "Notificaciones",
     caption:
-      "La campana, junto al buscador, abrirá tus notificaciones. Como la búsqueda, todavía es un adelanto: el panel avisa de que llegan en una próxima versión. Los avisos de lo que haces (guardado, exportado, sincronizado) aparecen por ahora un momento abajo a la derecha.",
+      "La campana, junto al buscador, abre tus notificaciones: lo que otras personas hacen y te afecta (una invitación, un caso que te envían a revisar o que te aprueban, un defecto que te asignan, un ciclo que se cierra, quién entra o sale de tu workspace) y los conflictos de sincronización de este equipo. Se agrupan por día, el número rojo de la campana cuenta las que no has leído, «Sin leer» las filtra y cada una tiene su acción directa («Revisar», «Ver defecto», «Resolver»…). Abrirla la marca como leída; «Marcar todo como leído» las marca todas, también en tus otros equipos. Se guardan 90 días. Los avisos de lo que haces tú (guardado, exportado, sincronizado) siguen apareciendo un momento abajo a la derecha.",
     covers: ["dialogs:src/app/layout/TopbarControls.tsx"],
     focus: ".topbar__panel",
     run: async () => {
       await browser.keys("Escape");
       await expect($(".topbar__panel")).not.toBeDisplayed();
       await byTestId("notifications-trigger").click();
-      await expect($(".topbar__panel")).toBeDisplayed();
+      await expect(byTestId("notifications-panel")).toBeDisplayed();
     },
   });
 

@@ -1225,6 +1225,7 @@ const AUDITED: &[&str] = &[
     "sync::sync_conflict_resolve",
     "key_sync::key_conflict_resolve",
     "key_sync::key_blocks_apply",
+    "trash::trash_restore",
 ];
 
 /// Commands that leave no event, and why.
@@ -1316,6 +1317,37 @@ const EXEMPT: &[(&str, &str)] = &[
         "purge::purge_deleted",
         "removes rows already deleted and audited; expired evidence writes its own `redact`",
     ),
+    (
+        "trash::trash_purge",
+        "removes rows already deleted and audited, like the daily purge",
+    ),
+    (
+        "notifications::notifications_apply_pull",
+        "notifications are messages to the person, not data of a project (ADR-0048)",
+    ),
+    (
+        "notifications::notifications_add_local",
+        "notifications are messages to the person, not data of a project (ADR-0048)",
+    ),
+    (
+        "notifications::notifications_mark_read",
+        "a read mark on a notification, not data of a project (ADR-0048)",
+    ),
+    (
+        "notifications::notifications_read_sent",
+        "notification bookkeeping",
+    ),
+    (
+        "notifications::notifications_outbox_add",
+        "notification bookkeeping",
+    ),
+    (
+        "notifications::notifications_outbox_done",
+        "notification bookkeeping",
+    ),
+    ("notifications::notifications_read_pending", "read"),
+    ("notifications::notifications_outbox_list", "read"),
+    ("notifications::notifications_cursor", "read"),
     ("key_sync::key_lease_requests", "read"),
     ("key_sync::key_lease_for", "read"),
     (
@@ -1896,6 +1928,13 @@ fn every_audited_command_leaves_an_event() {
     });
     step("project::project_delete", &mut |tx| {
         project::delete_project(tx, &p, U)
+    });
+    step("trash::trash_restore", &mut |tx| {
+        let item = crate::trash::TrashRef {
+            entity: "project".into(),
+            id: p.clone(),
+        };
+        crate::trash::restore(tx, U, &[item]).map(|_| ())
     });
     // The import keeps its own transaction (the command calls it outside in_tx).
     let p2 = new_project(&c, U);

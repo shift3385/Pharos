@@ -10,8 +10,9 @@ import { makeRequireAuth } from "../auth/middleware";
 import type { TokenService } from "../auth/tokens";
 import { requireSupportedVersion } from "../sync/sync.version";
 
-/** The keys an account may keep. A new preference is added here. */
-export const PREFERENCE_KEYS = ["home.board"] as const;
+/** The keys an account may keep. A new preference is added here. The `ui.*`
+ *  ones are SYNC-09: language, theme and appearance follow the account. */
+export const PREFERENCE_KEYS = ["home.board", "ui.language", "ui.theme", "ui.appearance"] as const;
 
 /** Largest value accepted, as JSON text. */
 export const MAX_VALUE_BYTES = 16 * 1024;
@@ -54,6 +55,16 @@ export function createPreferenceStore(pool: Pool) {
         ? { key, value: row.value, updatedAt: row.updated_at.toISOString() }
         : { key, value: null, updatedAt: null };
     },
+    /** Every key the account has stored (SYNC-09: one request at sign-in). */
+    async list(userId: string): Promise<PreferenceRow[]> {
+      const { rows } = await pool.query<{ key: string; value: unknown; updated_at: Date }>(
+        "SELECT key, value, updated_at FROM user_preferences WHERE user_id = $1 ORDER BY key",
+        [userId],
+      );
+      return rows
+        .filter((r) => (PREFERENCE_KEYS as readonly string[]).includes(r.key))
+        .map((r) => ({ key: r.key, value: r.value, updatedAt: r.updated_at.toISOString() }));
+    },
     /** Keeps `value` unless a newer one is already stored; returns what is
      *  stored afterwards (the client adopts it when it lost). */
     async put(userId: string, key: string, value: unknown, updatedAt: Date): Promise<PreferenceRow> {
@@ -78,6 +89,10 @@ export function preferenceRoutes(
 ) {
   const preHandler = [makeRequireAuth(deps.tokens), requireSupportedVersion];
   const now = deps.now ?? Date.now;
+
+  app.get("/api/me/preferences", { preHandler }, (req: FastifyRequest) =>
+    deps.store.list(req.userId as string),
+  );
 
   app.get("/api/me/preferences/:key", { preHandler }, (req: FastifyRequest) => {
     const { key } = keySchema.parse(req.params);

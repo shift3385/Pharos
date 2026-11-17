@@ -133,3 +133,26 @@
     - sin el texto bajo el gráfico diario.
   - **La altura de fila no baja de 14 px.** Por debajo de unos 700 px de alto
     de ventana aparece un único desplazamiento de página.
+
+## Enmienda SYNC-09 (2026-11-17)
+
+Aprobada con el plan de la pista R de 0.5.0. Más preferencias viajan con la
+cuenta, por el mismo camino y con la misma regla (gana el cambio más
+reciente):
+
+- `PREFERENCE_KEYS` añade `ui.language` (`es` / `en`), `ui.theme`
+  (`light` / `dark` / `system`) y `ui.appearance` (sombra de las tarjetas,
+  opacidad del fondo y fondo `default` / `none`). `GET /api/me/preferences`
+  devuelve todas las de la cuenta en una petición.
+- El shell (`src/app/layout/usePreferenceSync.ts`) las trae al entrar, tras
+  cada sincronización, al recuperar el foco o la conexión y cada 5 minutos,
+  y envía al momento las que se cambian en el equipo. Una que acaba de
+  llegar de la cuenta no se devuelve.
+- Si la cuenta no tiene todavía una, la del equipo pasa a ser la de la
+  cuenta.
+- Se quedan en el equipo: una imagen de fondo propia (puede pasar de los
+  16 KiB de una preferencia y nunca se sustituye), la retención, la
+  sincronización automática y la carpeta de descarga.
+- Los nombres del perfil del escritorio y los de la cuenta (`/auth/me`) se
+  igualan: cuando difieren, gana el cambio más reciente
+  (`src/modules/profile/api/preferenceSync.ts`). La web ya edita la cuenta.

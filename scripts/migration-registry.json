@@ -5,8 +5,7 @@
     "registeredIn": "src-tauri/src/db.rs",
     "reserved": {
       "0040": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-07, ADR-0042): workspaces kind/role/revoked, workspace_members mirror, oplog workspace_id",
-      "0041": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-04b): attachments by hash outside the oplog",
-      "0043": "0.5.0 plan (ADR-0039 milestone «Equipo»), track R (RED-W2, RED-W3): notifications and trash"
+      "0041": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-04b): attachments by hash outside the oplog"
     },
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013",
@@ -27,8 +26,7 @@
       "0019": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-07, ADR-0042): workspaces, members, invitations, documents by workspace",
       "0020": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-04b): blobs by (workspace_id, sha256)",
       "0021": "0.5.0 plan (ADR-0039 milestone «Equipo»), track C (SEC-08, ADR-0045): hashed recovery codes",
-      "0022": "0.5.0 plan (ADR-0039 milestone «Equipo»), track C (SEC-09, ADR-0045): one-time password reset tokens",
-      "0023": "0.5.0 plan (ADR-0039 milestone «Equipo»), track R (RED-W2, ADR-0048): notifications that travel through the server (approved with R's plan)"
+      "0022": "0.5.0 plan (ADR-0039 milestone «Equipo»), track C (SEC-09, ADR-0045): one-time password reset tokens"
     },
     "retired": {
       "0011": "E4 step 9 spare, never used: imports are documents of the step 4 entities",

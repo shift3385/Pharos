@@ -25,6 +25,7 @@ mod journal;
 mod key_sync;
 mod keychain;
 mod keys;
+mod notifications;
 mod oplog;
 mod planner;
 mod profile;
@@ -34,6 +35,7 @@ mod purge;
 mod recovery;
 mod requirement;
 mod requirement_attachments;
+mod restored_copy;
 mod revisions;
 #[cfg(test)]
 mod revisions_sync_tests;
@@ -45,6 +47,7 @@ mod sync_class;
 mod template;
 mod test_case;
 mod test_plan;
+mod trash;
 
 use db::{Db, DbStatus};
 use tauri::Manager;
@@ -330,6 +333,19 @@ pub fn run() {
             sync::sync_conflicts_list,
             sync::sync_conflict_resolve,
             purge::purge_deleted,
+            trash::trash_list,
+            trash::trash_restore,
+            trash::trash_purge,
+            notifications::notifications_list,
+            notifications::notifications_cursor,
+            notifications::notifications_apply_pull,
+            notifications::notifications_add_local,
+            notifications::notifications_mark_read,
+            notifications::notifications_read_pending,
+            notifications::notifications_read_sent,
+            notifications::notifications_outbox_add,
+            notifications::notifications_outbox_list,
+            notifications::notifications_outbox_done,
             key_sync::key_lease_requests,
             key_sync::key_lease_for,
             key_sync::key_blocks_apply,
