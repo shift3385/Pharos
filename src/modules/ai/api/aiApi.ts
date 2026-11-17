@@ -17,6 +17,7 @@ import { onlineKeyTest, onlineModels, onlineProvider } from "../providers/online
 import { browserKeyTest } from "../providers/onlineBrowser";
 import { ollamaModels, ollamaProvider } from "../providers/ollama";
 import { isTauri } from "@shared/platform";
+import { webAccessNow, webAccessUsable, webChat } from "./webAccess";
 
 const CONFIG_KEY = "pharos.ai.config";
 
@@ -104,7 +105,10 @@ export function pickProvider(
 
 /** Probes provider availability (key set, connectivity, Ollama + model). */
 export async function aiStatus(config: AiConfig): Promise<AiStatus> {
-  const onlineKeySet = await onlineConfigured(config);
+  // On the web the online provider is the server, with the desktop's key (IA-12).
+  const web = isTauri() ? null : await webAccessNow();
+  const webOnline = webAccessUsable(web) ? { provider: web.provider, model: web.model } : null;
+  const onlineKeySet = isTauri() ? await onlineConfigured(config) : webOnline !== null;
   const online = typeof navigator !== "undefined" ? navigator.onLine : false;
   let ollamaReachable = false;
   let ollamaModelReady = false;
@@ -117,13 +121,16 @@ export async function aiStatus(config: AiConfig): Promise<AiStatus> {
   } catch {
     /* Ollama not running */
   }
-  return { onlineKeySet, online, ollamaReachable, ollamaModelReady };
+  return { onlineKeySet, online, ollamaReachable, ollamaModelReady, ...(isTauri() ? {} : { webOnline }) };
 }
 
 /** The provider the router would pick right now. */
 export function resolveProvider(config: AiConfig, status: AiStatus): ResolvedProvider {
   return pickProvider(config.mode, {
-    online: status.onlineKeySet && status.online && isTauri() && activeOnlineModel(config) !== "",
+    online:
+      status.onlineKeySet &&
+      status.online &&
+      (isTauri() ? activeOnlineModel(config) !== "" : !!status.webOnline),
     offline: status.ollamaReachable && status.ollamaModelReady,
   });
 }
@@ -135,7 +142,13 @@ export async function aiAvailable(): Promise<boolean> {
 }
 
 /** Maps the router's choice to the concrete provider + model (pure). */
-export function destinationFor(which: ResolvedProvider, config: AiConfig): AiDestination | null {
+export function destinationFor(
+  which: ResolvedProvider,
+  config: AiConfig,
+  status?: Pick<AiStatus, "webOnline">,
+): AiDestination | null {
+  // On the web: the provider and model the desktop uploaded (IA-12).
+  if (which === "online" && status?.webOnline) return { ...status.webOnline, viaServer: true };
   if (which === "online") return { provider: config.onlineProvider, model: activeOnlineModel(config) };
   if (which === "offline") return { provider: "ollama", model: config.offlineModel };
   return null;
@@ -146,7 +159,8 @@ export function destinationFor(which: ResolvedProvider, config: AiConfig): AiDes
  *  hold (IA-17). Null when no AI is available. */
 export async function aiDestinationNow(): Promise<AiDestination | null> {
   const config = loadConfig();
-  return destinationFor(resolveProvider(config, await aiStatus(config)), config);
+  const status = await aiStatus(config);
+  return destinationFor(resolveProvider(config, status), config, status);
 }
 
 /** A drafting request for the "Assist with AI" buttons. */
@@ -271,7 +285,8 @@ export function checkAttachments(messages: AiMessage[], destination: AiDestinati
 /** What the active provider would do with images right now: null = no AI. */
 export async function aiVision(): Promise<VisionCapability | null> {
   const config = loadConfig();
-  const destination = destinationFor(resolveProvider(config, await aiStatus(config)), config);
+  const status = await aiStatus(config);
+  const destination = destinationFor(resolveProvider(config, status), config, status);
   return destination ? visionFor(destination.provider, destination.model) : null;
 }
 
@@ -286,18 +301,27 @@ export async function aiChatWithProvenance(
   const config = loadConfig();
   const status = await aiStatus(config);
   const which = resolveProvider(config, status);
-  const destination = destinationFor(which, config);
+  const destination = destinationFor(which, config, status);
   if (!destination) throw new Error("no-provider");
   checkAttachments(messages, destination);
   const temperature = chatTemperature(config.temperature, json);
   // Online, only what the model accepts is sent (ADR-0031); Ollama always takes it.
-  const sendTemperature = destination.provider === "ollama" || sendsTemperature(config, destination.provider);
+  const sendTemperature =
+    destination.provider === "ollama" ||
+    sendsTemperature(
+      { ...config, onlineModels: { ...config.onlineModels, [destination.provider]: destination.model } },
+      destination.provider,
+    );
   const opts = { model: destination.model, json, ...(sendTemperature ? { temperature } : {}) };
+  if (destination.viaServer) {
+    const reply = await webChat(messages, opts.temperature);
+    return { value: reply.value, provenance: newProvenance({ provider: reply.provider, model: reply.model }) };
+  }
   const value =
     destination.provider === "ollama"
       ? await ollamaProvider(config.ollamaEndpoint).chat(messages, opts)
       : await onlineProvider(destination.provider, config.customBaseUrl).chat(messages, opts);
-  return { value, provenance: newProvenance(destination) };
+  return { value, provenance: newProvenance({ provider: destination.provider, model: destination.model }) };
 }
 
 /** Whether a provider's error is about the key itself (each words it its own way;

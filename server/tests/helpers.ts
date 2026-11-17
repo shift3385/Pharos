@@ -29,15 +29,24 @@ export const testEnv: Env = {
   BODY_LIMIT_BYTES: 1_048_576,
   SYNC_BODY_LIMIT_BYTES: 8_388_608,
   SYNC_TOMBSTONE_DAYS: 30,
+  AI_VAULT_KEY: undefined,
+  AI_CHAT_RATE_LIMIT_MAX: 1000,
+  AI_CHAT_RATE_LIMIT_WINDOW: 60_000,
+  AI_VAULT_RATE_LIMIT_MAX: 1000,
+  AI_VAULT_RATE_LIMIT_WINDOW: 60_000,
+  AI_CHAT_BODY_LIMIT_BYTES: 20_971_520,
 };
 
-export async function setupTestApp(): Promise<{
+export async function setupTestApp(
+  overrides: Partial<Env> = {},
+  deps: Partial<Omit<Parameters<typeof buildApp>[0], "pool" | "env">> = {},
+): Promise<{
   app: FastifyInstance;
   pool: Pool;
 }> {
   const pool = createPool(TEST_DATABASE_URL);
   await runMigrations(pool);
-  const app = buildApp({ pool, env: testEnv });
+  const app = buildApp({ pool, env: { ...testEnv, ...overrides }, ...deps });
   await app.ready();
   return { app, pool };
 }

@@ -162,4 +162,26 @@ describe("environment (BASE-06)", () => {
     expect(startupWarnings(dev("localhost"))).toEqual([]);
     expect(startupWarnings(loadEnv(production))).toEqual([]);
   });
+
+  it("takes AI_VAULT_KEY as 32 bytes of base64, and never repeats a wrong one (IA-12)", () => {
+    expect(loadEnv(production).AI_VAULT_KEY).toBeUndefined();
+    expect(loadEnv({ ...production, AI_VAULT_KEY: "  " }).AI_VAULT_KEY).toBeUndefined();
+    const good = Buffer.alloc(32, 7).toString("base64");
+    expect(loadEnv({ ...production, AI_VAULT_KEY: good }).AI_VAULT_KEY).toBe(good);
+    for (const bad of [Buffer.alloc(16, 7).toString("base64"), "not-base64-at-all!!", "a".repeat(44)]) {
+      let message = "";
+      try {
+        loadEnv({ ...production, AI_VAULT_KEY: bad });
+      } catch (e) {
+        message = (e as Error).message;
+      }
+      expect(message).toMatch(/AI_VAULT_KEY: must be 32 random bytes in base64/);
+      expect(message).not.toContain(bad);
+    }
+    const env = loadEnv(production);
+    expect(env.AI_CHAT_RATE_LIMIT_MAX).toBe(30);
+    expect(env.AI_CHAT_RATE_LIMIT_WINDOW).toBe(60_000);
+    expect(env.AI_VAULT_RATE_LIMIT_MAX).toBe(10);
+    expect(env.AI_VAULT_RATE_LIMIT_WINDOW).toBe(3_600_000);
+  });
 });

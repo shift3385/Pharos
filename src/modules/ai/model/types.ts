@@ -114,6 +114,9 @@ export interface AiStatus {
   ollamaReachable: boolean;
   /** The configured offline model is already pulled. */
   ollamaModelReady: boolean;
+  /** Web only (IA-12): the provider and model of the key the desktop
+   *  uploaded, when the server can use it; null when there is none. */
+  webOnline?: { provider: OnlineProviderId; model: string } | null;
 }
 
 /** The provider the router would use right now (null = none available). */
@@ -127,6 +130,9 @@ export type AiProviderId = OnlineProviderId | "ollama";
 export interface AiDestination {
   provider: AiProviderId;
   model: string;
+  /** On the web: the call goes through the Pharos server with the key the
+   *  desktop uploaded (IA-12). Not part of the provenance. */
+  viaServer?: boolean;
 }
 
 /** Provenance of AI-generated content (IA-01): it stays "pending review" until

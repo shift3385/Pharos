@@ -23,6 +23,7 @@ import { ErrorSummary, FieldMessage } from "@shared/ui/FormField";
 import { controlProps, useSaveGuard } from "@shared/ui/fieldProps";
 import { required } from "@shared/validation";
 import {
+  activeOnlineModel,
   aiChat,
   aiKeys,
   aiListModels,
@@ -56,6 +57,9 @@ import { ProviderLogo } from "./ProviderLogo";
 import { ModelCombobox } from "./ModelCombobox";
 import { ModelParams } from "./ModelParams";
 import { pendingChanges } from "./pendingChanges";
+import { WebAccessSummary, WebAccessSwitch } from "./WebAccessPanel";
+import { askClearWebCopy } from "./clearWebCopy";
+import { followKeyChange } from "../api/webAccess";
 import "./Ai.css";
 
 const mb = (bytes: number) => `${(bytes / 1048576).toFixed(1)} MB`;
@@ -109,6 +113,8 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
   const [models, setModels] = useState<string[]>([]);
   const [modelListOpen, setModelListOpen] = useState(false);
   const [listing, setListing] = useState(false);
+  // Bumped when the key or the config change, so the web switch reads again (IA-12).
+  const [webRefresh, setWebRefresh] = useState(0);
 
   const configDirty = JSON.stringify(draft) !== JSON.stringify(saved);
   const keyTyped = keyInput.trim() !== "";
@@ -154,7 +160,15 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
     const live = loadConfig();
     const liveStatus = JSON.stringify(cfg) === JSON.stringify(live) ? next : await aiStatus(live);
     if (run !== statusRun.current) return;
-    setInUse(destinationFor(resolveProvider(live, liveStatus), live));
+    setInUse(destinationFor(resolveProvider(live, liveStatus), live, liveStatus));
+    setWebRefresh((n) => n + 1);
+  }
+
+  /** After a key is stored: the web's copy follows it (IA-12). */
+  async function keyStoredForWeb(id: OnlineProviderId) {
+    const result = await followKeyChange(id, "stored");
+    if (result === "updated") toast(t("ai.web.toast.keyFollowed"));
+    if (result === "failed") toast(t("ai.web.toast.keyNotFollowed"));
   }
 
   function resetTest() {
@@ -227,6 +241,7 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
       await aiKeys.set(provider, keyInput.trim());
       setKeyInput("");
       setShowKey(false);
+      await keyStoredForWeb(provider);
     }
     saveConfig(draft);
     const fresh = loadConfig();
@@ -256,13 +271,18 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
     setShowKey(false);
     resetTest();
     toast(becameActive ? t("ai.keySavedActive", { provider: providerLabel(provider) }) : t("ai.keySaved"));
+    await keyStoredForWeb(provider);
     await refreshStatus();
   }
 
   async function clearKey() {
+    // A copy used by the web goes too: say so first (IA-12).
+    const webCopy = await askClearWebCopy(provider, providerLabel(provider), confirm, t);
+    if (webCopy === null) return;
     await aiKeys.clear(provider);
+    if (webCopy) await followKeyChange(provider, "cleared");
     resetTest();
-    toast(t("ai.keyCleared"));
+    toast(t(webCopy ? "ai.web.toast.keyClearedBoth" : "ai.keyCleared"));
     await refreshStatus();
   }
 
@@ -333,6 +353,8 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
         ? t("ai.testSaveFirst")
         : null;
   const modes: AiMode[] = ["auto", "online", "offline"];
+  // Web with the desktop's key: provider and model are set on the desktop (IA-12).
+  const webManaged = !canStoreKey && !!status?.webOnline;
   const onlineState = !status
     ? null
     : !status.onlineKeySet
@@ -382,159 +404,169 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
             )}
           </header>
 
-          <div className="ai-providers" role="radiogroup" aria-label={t("ai.onlineProvider")}>
-            {ONLINE_PROVIDERS.map((p) => (
-              <div key={p.id} className="ai-provider-cell">
-                <label className="ai-provider" data-testid={`ai-provider-${p.id}`}>
-                  <input
-                    type="radio"
-                    name={`${uid}-provider`}
-                    value={p.id}
-                    checked={provider === p.id}
-                    aria-describedby={`${uid}-help-${p.id}`}
-                    onChange={() => void selectProvider(p.id)}
-                  />
-                  <span className="ai-provider__box">
-                    <span className="ai-provider__logo">
-                      <ProviderLogo provider={p.id} />
-                    </span>
-                    <span className="ai-provider__text">
-                      <span className="ai-provider__name">{p.id === "custom" ? t("ai.providerCompat") : providerLabel(p.id)}</span>
-                      <span className="ai-provider__sub">{t(`ai.providerSub.${p.id}`)}</span>
-                    </span>
-                    {inUse?.provider === p.id && <InUseMark label={t("ai.using")} />}
-                  </span>
-                </label>
-                {/* Beside the label, not inside it: asking for help does not choose the provider. */}
-                <InfoTip id={`${uid}-help-${p.id}`} label={p.id === "custom" ? t("ai.providerCompat") : providerLabel(p.id)}>
-                  {t(`ai.providerHint.${p.id}`)}
-                  {p.keyUrl && (
-                    <>
-                      {" "}
-                      {t("ai.keyWhere")} <span className="t-id">{p.keyUrl}</span>
-                    </>
-                  )}
-                </InfoTip>
-              </div>
-            ))}
-          </div>
-          {provider === "custom" && (
-            <div className="adm-field">
-              <label htmlFor="ai-base-url" className="adm-label">
-                {t("ai.baseUrl")}
-              </label>
-              <input
-                {...controlProps("ai-base-url", attempted ? baseUrlIssue : null, "ai-base-url-hint")}
-                aria-required
-                className="adm-input"
-                placeholder="https://llm.miempresa.com/v1"
-                spellCheck={false}
-                value={draft.customBaseUrl}
-                onChange={(e) => update({ customBaseUrl: e.target.value })}
-                onBlur={() => void refreshStatus()}
-              />
-              <span id="ai-base-url-hint" className="adm-hint">
-                {t("ai.baseUrlHint")}
-              </span>
-              {attempted && baseUrlIssue && <FieldMessage id="ai-base-url-msg" issue={baseUrlIssue} />}
-            </div>
-          )}
+          {!canStoreKey && <WebAccessSummary onChange={() => void refreshStatus()} />}
 
-          <div className="adm-field">
-            <label htmlFor="ai-key" className="adm-label">
-              {t("ai.keyStatus")}
-              <span className="ai-key__state">
-                {" · "}
-                {info.keyRequired
-                  ? status?.onlineKeySet
-                    ? t("ai.keyConfigured")
-                    : t("ai.keyNotSet")
-                  : t("ai.keyOptional")}
-              </span>
-            </label>
-            <div className="adm-inline">
-              <div className="adm-input adm-input--with-btn">
+          {!webManaged && (
+            <>
+              <div className="ai-providers" role="radiogroup" aria-label={t("ai.onlineProvider")}>
+              {ONLINE_PROVIDERS.map((p) => (
+                <div key={p.id} className="ai-provider-cell">
+                  <label className="ai-provider" data-testid={`ai-provider-${p.id}`}>
+                    <input
+                      type="radio"
+                      name={`${uid}-provider`}
+                      value={p.id}
+                      checked={provider === p.id}
+                      aria-describedby={`${uid}-help-${p.id}`}
+                      onChange={() => void selectProvider(p.id)}
+                    />
+                    <span className="ai-provider__box">
+                      <span className="ai-provider__logo">
+                        <ProviderLogo provider={p.id} />
+                      </span>
+                      <span className="ai-provider__text">
+                        <span className="ai-provider__name">{p.id === "custom" ? t("ai.providerCompat") : providerLabel(p.id)}</span>
+                        <span className="ai-provider__sub">{t(`ai.providerSub.${p.id}`)}</span>
+                      </span>
+                      {inUse?.provider === p.id && <InUseMark label={t("ai.using")} />}
+                    </span>
+                  </label>
+                  {/* Beside the label, not inside it: asking for help does not choose the provider. */}
+                  <InfoTip id={`${uid}-help-${p.id}`} label={p.id === "custom" ? t("ai.providerCompat") : providerLabel(p.id)}>
+                    {t(`ai.providerHint.${p.id}`)}
+                    {p.keyUrl && (
+                      <>
+                        {" "}
+                        {t("ai.keyWhere")} <span className="t-id">{p.keyUrl}</span>
+                      </>
+                    )}
+                  </InfoTip>
+                </div>
+              ))}
+            </div>
+            {provider === "custom" && (
+              <div className="adm-field">
+                <label htmlFor="ai-base-url" className="adm-label">
+                  {t("ai.baseUrl")}
+                </label>
                 <input
-                  id="ai-key"
-                  type={showKey ? "text" : "password"}
-                  autoComplete="off"
+                  {...controlProps("ai-base-url", attempted ? baseUrlIssue : null, "ai-base-url-hint")}
+                  aria-required
+                  className="adm-input"
+                  placeholder="https://llm.miempresa.com/v1"
                   spellCheck={false}
-                  aria-describedby="ai-key-hint"
-                  placeholder={
-                    status?.onlineKeySet && info.keyRequired
-                      ? t("ai.keyReplace")
-                      : t("ai.keyPlaceholder", { provider: providerLabel(provider) })
-                  }
-                  value={keyInput}
-                  onChange={(e) => {
-                    setKeyInput(e.target.value);
-                    resetTest();
-                  }}
+                  value={draft.customBaseUrl}
+                  onChange={(e) => update({ customBaseUrl: e.target.value })}
+                  onBlur={() => void refreshStatus()}
+                />
+                <span id="ai-base-url-hint" className="adm-hint">
+                  {t("ai.baseUrlHint")}
+                </span>
+                {attempted && baseUrlIssue && <FieldMessage id="ai-base-url-msg" issue={baseUrlIssue} />}
+              </div>
+            )}
+
+            <div className="adm-field">
+              <label htmlFor="ai-key" className="adm-label">
+                {t("ai.keyStatus")}
+                <span className="ai-key__state">
+                  {" · "}
+                  {info.keyRequired
+                    ? status?.onlineKeySet
+                      ? t("ai.keyConfigured")
+                      : t("ai.keyNotSet")
+                    : t("ai.keyOptional")}
+                </span>
+              </label>
+              <div className="adm-inline">
+                <div className="adm-input adm-input--with-btn">
+                  <input
+                    id="ai-key"
+                    type={showKey ? "text" : "password"}
+                    autoComplete="off"
+                    spellCheck={false}
+                    aria-describedby="ai-key-hint"
+                    placeholder={
+                      status?.onlineKeySet && info.keyRequired
+                        ? t("ai.keyReplace")
+                        : t("ai.keyPlaceholder", { provider: providerLabel(provider) })
+                    }
+                    value={keyInput}
+                    onChange={(e) => {
+                      setKeyInput(e.target.value);
+                      resetTest();
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="adm-icon-btn"
+                    aria-label={showKey ? t("ai.keyHide") : t("ai.keyShow")}
+                    title={showKey ? t("ai.keyHide") : t("ai.keyShow")}
+                    aria-pressed={showKey}
+                    onClick={() => setShowKey((s) => !s)}
+                  >
+                    {showKey ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="adm-btn adm-btn--secondary"
+                  onClick={() => guard(() => void saveKey())}
+                  disabled={!keyDirty}
+                  title={canStoreKey ? undefined : t("ai.keyWebHint")}
+                >
+                  {t("ai.saveKey")}
+                </button>
+                {info.keyRequired && status?.onlineKeySet && (
+                  <button type="button" className="adm-btn adm-btn--ghost-danger" onClick={() => void clearKey()}>
+                    {t("ai.clearKey")}
+                  </button>
+                )}
+              </div>
+              <span id="ai-key-hint" className="adm-hint">
+                {canStoreKey ? t("ai.keyHint") : t("ai.keyWebHint")}
+              </span>
+            </div>
+
+            <div className="adm-field">
+              <label htmlFor="ai-online-model" className="adm-label">
+                {t("ai.model")}
+              </label>
+              <div className="adm-inline">
+                <ModelCombobox
+                  id="ai-online-model"
+                  placeholder={t("ai.modelPlaceholder")}
+                  value={model}
+                  onChange={(value) => update({ onlineModels: { ...draft.onlineModels, [provider]: value } })}
+                  options={models}
+                  open={modelListOpen}
+                  onOpenChange={setModelListOpen}
                 />
                 <button
                   type="button"
-                  className="adm-icon-btn"
-                  aria-label={showKey ? t("ai.keyHide") : t("ai.keyShow")}
-                  title={showKey ? t("ai.keyHide") : t("ai.keyShow")}
-                  aria-pressed={showKey}
-                  onClick={() => setShowKey((s) => !s)}
+                  className="adm-btn adm-btn--secondary"
+                  onClick={() => void listModels()}
+                  disabled={listing || !status?.onlineKeySet}
+                  title={!status?.onlineKeySet ? t(canStoreKey ? "ai.listModelsNeedsKey" : "ai.listModelsDesktopOnly") : undefined}
                 >
-                  {showKey ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+                  {listing ? t("ai.listingModels") : t("ai.listModels")}
                 </button>
               </div>
-              <button
-                type="button"
-                className="adm-btn adm-btn--secondary"
-                onClick={() => guard(() => void saveKey())}
-                disabled={!keyDirty}
-                title={canStoreKey ? undefined : t("ai.keyWebHint")}
-              >
-                {t("ai.saveKey")}
-              </button>
-              {info.keyRequired && status?.onlineKeySet && (
-                <button type="button" className="adm-btn adm-btn--ghost-danger" onClick={() => void clearKey()}>
-                  {t("ai.clearKey")}
-                </button>
-              )}
             </div>
-            <span id="ai-key-hint" className="adm-hint">
-              {canStoreKey ? t("ai.keyHint") : t("ai.keyWebHint")}
-            </span>
-          </div>
 
-          <div className="adm-field">
-            <label htmlFor="ai-online-model" className="adm-label">
-              {t("ai.model")}
-            </label>
-            <div className="adm-inline">
-              <ModelCombobox
-                id="ai-online-model"
-                placeholder={t("ai.modelPlaceholder")}
-                value={model}
-                onChange={(value) => update({ onlineModels: { ...draft.onlineModels, [provider]: value } })}
-                options={models}
-                open={modelListOpen}
-                onOpenChange={setModelListOpen}
-              />
-              <button
-                type="button"
-                className="adm-btn adm-btn--secondary"
-                onClick={() => void listModels()}
-                disabled={listing || !status?.onlineKeySet}
-                title={!status?.onlineKeySet ? t(canStoreKey ? "ai.listModelsNeedsKey" : "ai.listModelsDesktopOnly") : undefined}
-              >
-                {listing ? t("ai.listingModels") : t("ai.listModels")}
-              </button>
-            </div>
-          </div>
+            {canStoreKey && (
+              <WebAccessSwitch provider={saved.onlineProvider} model={activeOnlineModel(saved)} refresh={webRefresh} />
+            )}
 
-          <ModelParams
-            caps={caps}
-            temperature={draft.temperature}
-            sendTemperature={draft.customSendTemperature}
-            onTemperature={(temperature) => update({ temperature })}
-            onSendTemperature={(customSendTemperature) => update({ customSendTemperature })}
-          />
+            <ModelParams
+              caps={caps}
+              temperature={draft.temperature}
+              sendTemperature={draft.customSendTemperature}
+              onTemperature={(temperature) => update({ temperature })}
+              onSendTemperature={(customSendTemperature) => update({ customSendTemperature })}
+            />
+            </>
+          )}
 
           {showSummary && baseUrlIssue && (
             <ErrorSummary

@@ -53,6 +53,27 @@ const duration = z.string().transform((value, ctx) => {
 
 const LOOPBACK_HOSTS = ["127.0.0.1", "::1", "localhost"];
 
+/** `AI_VAULT_KEY` (IA-12, ADR-0034): 32 random bytes in base64, the key that
+ *  encrypts the AI keys kept for the web. Absent or empty = the feature is off;
+ *  anything else that is not 32 bytes stops the server (the message never
+ *  repeats the value). */
+const vaultKey = z
+  .string()
+  .optional()
+  .transform((value, ctx) => {
+    const trimmed = value?.trim() ?? "";
+    if (!trimmed) return undefined;
+    const bytes = /^[A-Za-z0-9+/]+={0,2}$/.test(trimmed) ? Buffer.from(trimmed, "base64") : null;
+    if (!bytes || bytes.length !== 32) {
+      ctx.addIssue({
+        code: "custom",
+        message: "must be 32 random bytes in base64 (e.g. `openssl rand -base64 32`)",
+      });
+      return z.NEVER;
+    }
+    return trimmed;
+  });
+
 const flag = z
   .enum(["true", "false", "1", "0"])
   .default("false")
@@ -91,6 +112,16 @@ const schema = z
     // After that its payload is cleared; the tombstone itself stays, so a
     // purged record never comes back on a pull. 0 = never clear.
     SYNC_TOMBSTONE_DAYS: z.coerce.number().int().min(0).default(30),
+    // IA-12 (ADR-0034): the web uses the AI key the desktop uploaded. Without
+    // AI_VAULT_KEY the routes answer `ai_vault_disabled` and nothing is stored.
+    AI_VAULT_KEY: vaultKey,
+    // Per account: AI requests from the web, and uploads/removals of the key.
+    AI_CHAT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
+    AI_CHAT_RATE_LIMIT_WINDOW: duration.prefault("1 minute"),
+    AI_VAULT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+    AI_VAULT_RATE_LIMIT_WINDOW: duration.prefault("1 hour"),
+    // An AI request may carry images or a PDF (IA-18): up to 16 MB of base64.
+    AI_CHAT_BODY_LIMIT_BYTES: z.coerce.number().int().positive().default(20_971_520),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== "production") return;

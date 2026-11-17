@@ -51,6 +51,8 @@ services:
       LOGIN_RATE_LIMIT_WINDOW: ${LOGIN_RATE_LIMIT_WINDOW:-1 minute}
       BODY_LIMIT_BYTES: ${BODY_LIMIT_BYTES:-1048576}
       SYNC_BODY_LIMIT_BYTES: ${SYNC_BODY_LIMIT_BYTES:-8388608}
+      # IA-12 (ADR-0034): empty = AI on the web is off.
+      AI_VAULT_KEY: ${AI_VAULT_KEY:-}
     # No published port: in production the API serves only https, through
     # Caddy (SEC-07). It still listens on 3000 inside the compose network.
     expose:

@@ -314,6 +314,7 @@ pub fn run() {
             ai::ai_chat_online,
             ai::ai_key_test,
             ai::ai_list_models,
+            ai::ai_web_access_upload,
             oplog::oplog_pending_count,
             sync::oplog_pending,
             sync::oplog_mark_synced,

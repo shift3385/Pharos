@@ -299,6 +299,96 @@
       "temperature": "temperatura",
       "ollama": "ajustes de Ollama"
     },
+    "web": {
+      "switch": {
+        "label": "Usar esta clave también en la web",
+        "hint": "Al iniciar sesión en la web con tu cuenta tendrás «Asistir con IA» con esta clave y este modelo. El servidor guarda una copia cifrada.",
+        "compatible": "No está disponible con «Compatible»: el servidor no llega a un servidor de IA de tu red. Elige Gemini, OpenAI, Claude u OpenRouter.",
+        "disabled": "Tu servidor no tiene activada la IA en la web. Quien lo administra debe configurar AI_VAULT_KEY (guía de despliegue).",
+        "noKey": "Guarda primero la clave de {{provider}}.",
+        "noModel": "Elige primero un modelo y guarda.",
+        "offline": "Sin conexión con el servidor: inténtalo cuando vuelva."
+      },
+      "consent": {
+        "title": "¿Usar tu clave de {{provider}} en la web?",
+        "lead": "Pharos enviará una copia de la clave al servidor {{server}} por una conexión cifrada.",
+        "local": "Este servidor está en tu equipo.",
+        "encrypted": "El servidor la guarda cifrada y nunca la muestra, ni a ti.",
+        "admin": "Quien administre el servidor y tenga a la vez su base de datos y su clave maestra podría leerla.",
+        "billing": "Lo que pidas a la IA desde la web se cobra a esta clave.",
+        "follows": "Si cambias o quitas la clave en este equipo, la copia se actualiza o se borra.",
+        "revoke": "Puedes desactivarlo cuando quieras, aquí o en la web: la copia se borra.",
+        "check": "Entiendo que el servidor guarda una copia cifrada de mi clave.",
+        "upload": "Subir la clave",
+        "uploading": "Subiendo…"
+      },
+      "off": {
+        "title": "¿Dejar de usar la clave en la web?",
+        "message": "La copia se borra del servidor y la web se queda sin IA en línea.",
+        "confirm": "Borrar la copia"
+      },
+      "model": {
+        "title": "¿Usar el nuevo modelo en la web?",
+        "message": "La web pasará a usar {{model}} con la misma clave.",
+        "confirm": "Usar en la web"
+      },
+      "differs": {
+        "model": "Cambiaste el modelo a {{model}}. La web sigue con {{web}}.",
+        "provider": "Ahora usas {{provider}}. La web sigue con la clave de {{web}}.",
+        "useModel": "Usar el nuevo modelo en la web",
+        "useProvider": "Usar {{provider}} en la web"
+      },
+      "reupload": {
+        "message": "El servidor cambió su clave maestra y ya no puede leer la copia. Súbela otra vez.",
+        "action": "Volver a subir"
+      },
+      "facts": {
+        "inWeb": "En la web",
+        "uploaded": "Subida",
+        "server": "Servidor",
+        "provider": "Proveedor",
+        "model": "Modelo"
+      },
+      "clearKey": {
+        "title": "¿Quitar la clave también de la web?",
+        "message": "El servidor guarda una copia de la clave de {{provider}} para la web. Al quitarla de este equipo, la copia también se borra.",
+        "confirm": "Quitar la clave"
+      },
+      "toast": {
+        "on": "La web ya puede usar tu clave de {{provider}}.",
+        "off": "Copia borrada: la web ya no usa tu clave.",
+        "keyFollowed": "También se actualizó la copia de la web.",
+        "keyNotFollowed": "No se pudo actualizar la copia de la web: hazlo en Motor de IA cuando haya conexión.",
+        "keyClearedBoth": "Clave quitada de este equipo y de la web."
+      },
+      "summary": {
+        "on": "Usas la clave de tu escritorio.",
+        "off": "Para usar en la web tu clave de IA, abre Pharos de escritorio y activa Ajustes › Motor de IA › «Usar esta clave también en la web».",
+        "disabled": "Este servidor no tiene activada la IA en la web. Quien lo administra debe configurar AI_VAULT_KEY.",
+        "reupload": "El servidor ya no puede leer la copia de tu clave. Vuelve a subirla desde el escritorio.",
+        "changeOnDesktop": "Para cambiar la clave o el modelo, hazlo en Pharos de escritorio, en Motor de IA.",
+        "remove": "Dejar de usarla en la web",
+        "removeTitle": "¿Dejar de usar la clave en la web?",
+        "removeMessage": "La copia se borra del servidor. Para volver a usarla, actívala de nuevo desde el escritorio.",
+        "pill": {
+          "on": "IA disponible",
+          "off": "IA en línea no activada",
+          "disabled": "No disponible en este servidor",
+          "reupload": "Hay que volver a subirla"
+        }
+      },
+      "error": {
+        "disabled": "Este servidor no tiene activada la IA en la web (AI_VAULT_KEY).",
+        "off": "No hay una clave de IA para la web en tu cuenta.",
+        "reupload": "El servidor ya no puede leer la copia de tu clave: vuelve a subirla desde el escritorio.",
+        "rateLimited": "Has hecho muchas peticiones seguidas. Prueba dentro de un minuto.",
+        "compatible": "«Compatible» no se puede usar en la web.",
+        "noKey": "No hay una clave guardada para este proveedor.",
+        "signedOut": "Inicia sesión para usar la IA en la web.",
+        "unreachable": "Sin conexión con el servidor.",
+        "other": "El servidor no aceptó la petición."
+      }
+    },
     "keyWebHint": "«Guardar clave» solo está disponible en la app de escritorio.",
     "listModelsDesktopOnly": "«Listar modelos» solo está disponible en la app de escritorio.",
     "modelsShow": "Ver los modelos",
@@ -311,6 +401,7 @@
     "testNeedsModel": "Escribe un modelo para probar la clave. Para listarlos, guarda primero la clave.",
     "send": {
       "cloud": "El contenido sale de este equipo hacia {{provider}}.",
+      "cloudViaServer": "El contenido sale de este equipo hacia {{provider}}, a través de tu servidor Pharos.",
       "local": "El contenido no sale de este equipo: lo procesa {{provider}}."
     }
   },

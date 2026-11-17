@@ -163,6 +163,56 @@ pub fn ai_key_clear(provider: String) -> Result<(), String> {
     crate::keychain::delete(AI_SERVICE, &key_account(provider.id()))
 }
 
+/// The body of `PUT /ai/web-access` (IA-12, ADR-0034). «Compatible» stays on
+/// this computer: the server would reach any address its network can.
+fn web_upload_body(provider: Provider, model: &str, key: Option<String>) -> Result<String, String> {
+    if provider == Provider::Custom {
+        return Err("ai-web-unsupported-provider".into());
+    }
+    validate_model(provider, model)?;
+    let key = key
+        .map(|k| k.trim().to_string())
+        .filter(|k| !k.is_empty())
+        .ok_or_else(|| "AI key not set".to_string())?;
+    Ok(json!({ "provider": provider.id(), "model": model, "key": key }).to_string())
+}
+
+/// Uploads the active provider's key to the chosen server so the web can use
+/// it (IA-12, ADR-0034), after the user agreed in the consent dialog. The key
+/// goes from the keychain to the server here, in Rust, over the same client
+/// and rules as `server_request` (https except to this computer, no redirect):
+/// the webview only sends the session headers and gets back the server's
+/// answer, which never holds the key. Errors never hold it either.
+#[tauri::command]
+pub async fn ai_web_access_upload(
+    state: tauri::State<'_, crate::server::ServerState>,
+    provider: String,
+    model: String,
+    headers: std::collections::BTreeMap<String, String>,
+) -> Result<crate::server::ServerResponse, String> {
+    let provider = Provider::parse(&provider)?;
+    let body = web_upload_body(provider, model.trim(), read_key(provider.id())?)?;
+    let mut headers = headers;
+    headers.insert("content-type".into(), "application/json".into());
+    // The app version, as every request to the server carries (SYNC-08).
+    headers
+        .entry("x-pharos-version".into())
+        .or_insert_with(|| env!("CARGO_PKG_VERSION").into());
+    let request = crate::server::ServerRequest {
+        method: "PUT".into(),
+        path: "/ai/web-access".into(),
+        headers,
+        body: Some(body),
+    };
+    crate::server::send(&state, request).await.map_err(|e| {
+        let kind = serde_json::to_value(e.kind)
+            .ok()
+            .and_then(|v| v.as_str().map(String::from))
+            .unwrap_or_default();
+        format!("server:{kind}")
+    })
+}
+
 #[derive(Deserialize)]
 pub struct AiMessage {
     role: String,
@@ -869,6 +919,40 @@ mod tests {
         assert!(validate_custom_url(Some("ftp://x")).is_err());
         assert!(validate_custom_url(Some("https://")).is_err());
         assert!(validate_custom_url(None).is_err());
+    }
+
+    #[test]
+    fn the_web_upload_carries_the_key_only_in_its_body() {
+        let fake = "sk-test-FAKE-0123456789";
+        let body = web_upload_body(
+            Provider::Anthropic,
+            "claude-opus-5-5",
+            Some(format!(" {fake} ")),
+        )
+        .unwrap();
+        let val: Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(val["provider"], "anthropic");
+        assert_eq!(val["model"], "claude-opus-5-5");
+        assert_eq!(val["key"], fake);
+    }
+
+    #[test]
+    fn the_web_upload_refuses_compatible_a_missing_key_and_bad_models() {
+        let key = || Some("sk-test-FAKE".to_string());
+        assert_eq!(
+            web_upload_body(Provider::Custom, "m", key()).unwrap_err(),
+            "ai-web-unsupported-provider"
+        );
+        assert_eq!(
+            web_upload_body(Provider::OpenAi, "gpt-5", None).unwrap_err(),
+            "AI key not set"
+        );
+        assert_eq!(
+            web_upload_body(Provider::OpenAi, "gpt-5", Some("   ".into())).unwrap_err(),
+            "AI key not set"
+        );
+        let err = web_upload_body(Provider::Gemini, "a/b", key()).unwrap_err();
+        assert!(!err.contains("sk-test"));
     }
 
     #[test]
