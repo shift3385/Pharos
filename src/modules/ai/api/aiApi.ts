@@ -17,7 +17,11 @@ import { onlineKeyTest, onlineModels, onlineProvider } from "../providers/online
 import { browserKeyTest } from "../providers/onlineBrowser";
 import { ollamaModels, ollamaProvider } from "../providers/ollama";
 import { isTauri } from "@shared/platform";
-import { webAccessNow, webAccessUsable, webChat } from "./webAccess";
+
+/** The web's access to the desktop's key (IA-12), loaded only on the web: it
+ *  brings in the auth and sync clients, which the AI layer does not need
+ *  otherwise. */
+const webAccess = () => import("./webAccess");
 
 const CONFIG_KEY = "pharos.ai.config";
 
@@ -106,8 +110,12 @@ export function pickProvider(
 /** Probes provider availability (key set, connectivity, Ollama + model). */
 export async function aiStatus(config: AiConfig): Promise<AiStatus> {
   // On the web the online provider is the server, with the desktop's key (IA-12).
-  const web = isTauri() ? null : await webAccessNow();
-  const webOnline = webAccessUsable(web) ? { provider: web.provider, model: web.model } : null;
+  let webOnline: AiStatus["webOnline"] = null;
+  if (!isTauri()) {
+    const { webAccessNow, webAccessUsable } = await webAccess();
+    const web = await webAccessNow();
+    if (webAccessUsable(web)) webOnline = { provider: web.provider, model: web.model };
+  }
   const onlineKeySet = isTauri() ? await onlineConfigured(config) : webOnline !== null;
   const online = typeof navigator !== "undefined" ? navigator.onLine : false;
   let ollamaReachable = false;
@@ -314,6 +322,7 @@ export async function aiChatWithProvenance(
     );
   const opts = { model: destination.model, json, ...(sendTemperature ? { temperature } : {}) };
   if (destination.viaServer) {
+    const { webChat } = await webAccess();
     const reply = await webChat(messages, opts.temperature);
     return { value: reply.value, provenance: newProvenance({ provider: reply.provider, model: reply.model }) };
   }
