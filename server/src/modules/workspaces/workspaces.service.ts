@@ -36,15 +36,38 @@ export interface InvitationView {
   status: "pending" | "accepted" | "revoked" | "expired";
 }
 
+/** App routes a notification's button opens (the W2 screens). */
+export const WORKSPACE_PATHS = { invitation: "/workspaces/join", members: "/workspaces/members" } as const;
+
 /** Things other tracks hook into, inside the same transaction (R:
- *  notifications, ADR-0042 §8). The defaults do nothing; `app.ts` wires
- *  them. */
+ *  notifications, ADR-0042 §8; the shapes are R's
+ *  `notificationWorkspaceHooks`). The defaults do nothing; `app.ts` wires
+ *  them. Server-internal only: nothing a client sends reaches them. */
 export interface WorkspaceHooks {
-  /** An invitation whose note names a registered account (its e-mail). */
-  invitationCreated?(client: PoolClient, ev: { workspaceId: string; invitedBy: string; recipientId: string }): Promise<void>;
-  /** Someone accepted: `managers` are the workspace's Test Managers. */
-  memberJoined?(client: PoolClient, ev: { workspaceId: string; userId: string; managers: string[] }): Promise<void>;
-  memberRemoved?(client: PoolClient, ev: { workspaceId: string; userId: string; by: string }): Promise<void>;
+  /** An invitation was created. `inviteeUserId`: the registered account
+   *  whose e-mail the note names, or null (the code alone says nobody). */
+  invitationCreated?(
+    client: PoolClient,
+    ev: {
+      invitationId: string;
+      workspaceId: string;
+      workspaceName: string;
+      actorId: string;
+      inviteeUserId: string | null;
+      role: WorkspaceRole;
+      path?: string;
+    },
+  ): Promise<void>;
+  /** Someone accepted an invitation (R notifies the Test Managers). */
+  memberJoined?(
+    client: PoolClient,
+    ev: { workspaceId: string; workspaceName: string; userId: string; role: WorkspaceRole; path?: string },
+  ): Promise<void>;
+  /** A Test Manager removed someone (not when one leaves by oneself). */
+  memberRemoved?(
+    client: PoolClient,
+    ev: { workspaceId: string; workspaceName: string; userId: string; actorId: string },
+  ): Promise<void>;
 }
 
 const EXPIRY_DAYS = [1, 7, 30] as const;
@@ -170,19 +193,26 @@ export function createWorkspaceService(pool: Pool, clock: ServerClock, hooks: Wo
       input: { role: WorkspaceRole; note?: string | null; expiresInDays: ExpiryDays },
     ): Promise<InvitationView & { code: string }> {
       return inTx(async (c) => {
-        await managed(c, userId, workspaceId);
+        const ws = await managed(c, userId, workspaceId);
         const code = newInvitationCode();
         const { rows } = await c.query<{ id: string; created_at: Date; expires_at: Date }>(
           `INSERT INTO workspace_invitations (workspace_id, role, token_hash, note, invited_by, expires_at)
            VALUES ($1, $2, $3, $4, $5, now() + make_interval(days => $6)) RETURNING id, created_at, expires_at`,
           [workspaceId, input.role, hashCode(code), input.note?.trim() || null, userId, input.expiresInDays],
         );
-        const note = input.note?.trim().toLowerCase();
-        if (note && hooks.invitationCreated) {
-          const r = await c.query<{ id: string }>(`SELECT id FROM users WHERE lower(email) = $1`, [note]);
-          if (r.rows[0] && r.rows[0].id !== userId) {
-            await hooks.invitationCreated(c, { workspaceId, invitedBy: userId, recipientId: r.rows[0].id });
-          }
+        if (hooks.invitationCreated) {
+          const note = input.note?.trim().toLowerCase();
+          const r = note ? await c.query<{ id: string }>(`SELECT id FROM users WHERE lower(email) = $1`, [note]) : null;
+          const invitee = r?.rows[0]?.id;
+          await hooks.invitationCreated(c, {
+            invitationId: rows[0].id,
+            workspaceId,
+            workspaceName: ws.name,
+            actorId: userId,
+            inviteeUserId: invitee && invitee !== userId ? invitee : null,
+            role: input.role,
+            path: WORKSPACE_PATHS.invitation,
+          });
         }
         return {
           id: rows[0].id,
@@ -256,8 +286,8 @@ export function createWorkspaceService(pool: Pool, clock: ServerClock, hooks: Wo
      *  removed before). One use only. */
     async accept(userId: string, code: string): Promise<WorkspaceView> {
       const workspaceId = await inTx(async (c) => {
-        const { rows } = await c.query<{ id: string; workspace_id: string; role: string; invited_by: string }>(
-          `SELECT i.id, i.workspace_id, i.role, i.invited_by FROM workspace_invitations i
+        const { rows } = await c.query<{ id: string; workspace_id: string; role: string; invited_by: string; name: string }>(
+          `SELECT i.id, i.workspace_id, i.role, i.invited_by, w.name FROM workspace_invitations i
              JOIN workspaces w ON w.id = i.workspace_id AND w.deleted_at IS NULL
             WHERE i.token_hash = $1 AND i.accepted_at IS NULL AND i.revoked_at IS NULL AND i.expires_at > now()
             FOR UPDATE OF i`,
@@ -281,10 +311,13 @@ export function createWorkspaceService(pool: Pool, clock: ServerClock, hooks: Wo
           inv.id,
           userId,
         ]);
-        if (hooks.memberJoined) {
-          const managers = (await listMembers(c, inv.workspace_id, { roles: ["test_manager"] })).map((m) => m.userId);
-          await hooks.memberJoined(c, { workspaceId: inv.workspace_id, userId, managers });
-        }
+        await hooks.memberJoined?.(c, {
+          workspaceId: inv.workspace_id,
+          workspaceName: inv.name,
+          userId,
+          role: inv.role,
+          path: WORKSPACE_PATHS.members,
+        });
         return inv.workspace_id;
       });
       return view(await requireMembership(pool, userId, workspaceId));
@@ -310,12 +343,13 @@ export function createWorkspaceService(pool: Pool, clock: ServerClock, hooks: Wo
      *  person's devices get `workspace_revoked` on their next sync. */
     async removeMember(userId: string, workspaceId: string, memberId: string): Promise<void> {
       await inTx(async (c) => {
+        let ws: Membership;
         if (memberId === userId) {
-          const m = await requireMembership(c, userId, workspaceId);
-          if (m.kind !== "shared") throw conflict("personal_workspace", "You cannot leave your personal workspace.");
+          ws = await requireMembership(c, userId, workspaceId);
+          if (ws.kind !== "shared") throw conflict("personal_workspace", "You cannot leave your personal workspace.");
           await lockWorkspaces(c, [workspaceId]);
         } else {
-          await managed(c, userId, workspaceId);
+          ws = await managed(c, userId, workspaceId);
           await requireMembership(c, memberId, workspaceId).catch(() => {
             throw new AppError(404, "not_found", "Member not found.");
           });
@@ -325,7 +359,9 @@ export function createWorkspaceService(pool: Pool, clock: ServerClock, hooks: Wo
           workspaceId,
           memberId,
         ]);
-        await hooks.memberRemoved?.(c, { workspaceId, userId: memberId, by: userId });
+        if (memberId !== userId) {
+          await hooks.memberRemoved?.(c, { workspaceId, workspaceName: ws.name, userId: memberId, actorId: userId });
+        }
       });
     },
 

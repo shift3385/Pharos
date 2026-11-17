@@ -419,8 +419,13 @@ Precisiones sobre lo decidido, sin cambiar la decisión:
 - **Ganchos para otras pistas.**
   - `createWorkspaceService` acepta `WorkspaceHooks`
     (`invitationCreated`, `memberJoined` y `memberRemoved`, dentro de la
-    transacción), que se conectan al `emitNotification` de R cuando R esté
-    en `main`.
+    transacción), con las formas de evento de `notificationWorkspaceHooks`
+    de R. Se conectan cuando R esté en `main`.
+  - `invitationCreated` siempre se dispara; su `inviteeUserId` solo lleva
+    un valor cuando la nota es el correo de una cuenta registrada.
+  - `memberRemoved` no se dispara cuando alguien sale por su cuenta.
+  - Las rutas de los botones (`WORKSPACE_PATHS`) son las de las pantallas
+    de W2.
   - `workspaceApproverCheck(pool)` implementa la interfaz de K y se
     registra con `setApproverCheck` cuando K esté en `main`.
 - **Migraciones antiguas.** Los tests de las migraciones 0004 y 0006 las

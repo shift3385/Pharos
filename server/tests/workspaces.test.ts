@@ -11,6 +11,8 @@ import { CAPABILITIES, WORKSPACE_ROLES, can } from "../src/modules/workspaces/ro
 import { workspaceApproverCheck } from "../src/modules/workspaces/approval";
 import { isMember, listMembers, managedMembers } from "../src/modules/workspaces/members";
 import { hashCode, newInvitationCode, normalizeCode } from "../src/modules/workspaces/invitations";
+import { createWorkspaceService, WORKSPACE_PATHS } from "../src/modules/workspaces/workspaces.service";
+import { createServerClock } from "../src/modules/sync/sync.hlc";
 
 let app: FastifyInstance;
 let pool: Pool;
@@ -341,6 +343,33 @@ describe("clients without `workspaces` (ADR-0042 §3)", () => {
     // A change of the moved project would be `rejected`, which it cannot read.
     const res = await push(ana, [project("p1", { name: "x" })], undefined, devBuild(ana));
     expect([res.statusCode, res.json().code]).toEqual([426, "unsupported_client_version"]);
+  });
+});
+
+describe("hooks for notifications (track R)", () => {
+  it("fire inside the transaction with R's event shapes", async () => {
+    const ana = await register("ana@pharos.dev");
+    const luis = await register("luis@pharos.dev");
+    const seen: [string, unknown, boolean][] = [];
+    const inTx = async (c: { query: (q: string) => Promise<{ rows: { tx: boolean }[] }> }) =>
+      (await c.query("SELECT txid_current_if_assigned() IS NOT NULL AS tx")).rows[0].tx;
+    const service = createWorkspaceService(pool, createServerClock(), {
+      invitationCreated: async (c, ev) => void seen.push(["invitationCreated", ev, await inTx(c)]),
+      memberJoined: async (c, ev) => void seen.push(["memberJoined", ev, await inTx(c)]),
+      memberRemoved: async (c, ev) => void seen.push(["memberRemoved", ev, await inTx(c)]),
+    });
+    const ws = await service.create(ana.userId, "Equipo QA");
+    const anonymous = await service.invite(ana.userId, ws.id, { role: "viewer", expiresInDays: 7 });
+    const named = await service.invite(ana.userId, ws.id, { role: "test_analyst", note: "LUIS@pharos.dev", expiresInDays: 7 });
+    await service.accept(luis.userId, named.code);
+    await service.removeMember(ana.userId, ws.id, luis.userId);
+    const base = { workspaceId: ws.id, workspaceName: "Equipo QA" };
+    expect(seen).toEqual([
+      ["invitationCreated", { ...base, invitationId: anonymous.id, actorId: ana.userId, inviteeUserId: null, role: "viewer", path: WORKSPACE_PATHS.invitation }, true],
+      ["invitationCreated", { ...base, invitationId: named.id, actorId: ana.userId, inviteeUserId: luis.userId, role: "test_analyst", path: WORKSPACE_PATHS.invitation }, true],
+      ["memberJoined", { ...base, userId: luis.userId, role: "test_analyst", path: WORKSPACE_PATHS.members }, true],
+      ["memberRemoved", { ...base, userId: luis.userId, actorId: ana.userId }, true],
+    ]);
   });
 });
 
