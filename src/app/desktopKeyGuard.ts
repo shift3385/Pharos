@@ -25,7 +25,9 @@ type Key = Pick<
 const CTRL = new Set(["P", "O", "S", "U", "N", "J", "H", "D"]);
 /** Ctrl + Shift + letter: print preview, new private window. */
 const CTRL_SHIFT = new Set(["P", "N"]);
-/** Ctrl + Shift + letter that open DevTools (inspector, console, picker). */
+/** Ctrl + Shift + letter that open DevTools (inspector, console, picker).
+ *  WebView2 handles Ctrl+Shift+I before the page, so cancelling it does not
+ *  stop it in a debug build; a release build has no DevTools at all. */
 const DEVTOOLS_CTRL_SHIFT = new Set(["I", "J", "C"]);
 
 function letterOf(e: Key): string | null {
