@@ -83,7 +83,13 @@ server's domain API through `serverApi` (`@modules/sync-offline`). Every
 request to the server goes through `serverFetch(path)` in
 `@shared/platform/serverUrl` (SEC-10, ADR-0046), the only place that knows
 the server's address; callers pass a route (`/auth/login`), never a full
-URL. The browser holds **no domain logic and no domain data**: no localStorage store,
+URL. On the web it is the browser's `fetch` to `VITE_API_URL`. On the desktop
+the request goes through the Rust core (`server_request`,
+`src-tauri/src/server.rs`) to the server picked at sign-in: https except to
+this computer, no redirects, routes and Pharos headers only, certificates
+checked against the Windows store. The webview's CSP opens no API port at
+all, so injected script cannot reach any server. The cached session and each
+local account are tied to their server (`server.json`). The browser holds **no domain logic and no domain data**: no localStorage store,
 no outbox, no web conflicts. What stays in localStorage is per-browser
 preferences only (theme, language, Administration settings, AI non-secret
 config, last access, when the recovery key was shown) and, on the web, the
@@ -1441,7 +1447,8 @@ The QA tool tests itself at four levels:
   isolated: its own API on `localhost:3100` (3000 is refused), its own
   database `pharos_test_db_tours` (created and dropped), a debug binary built
   with that `VITE_API_URL` and a CSP override (`tauri build --config`) into
-  `<target>/tours`, an isolated profile, and downloads redirected to
+  `<target>/tours`, an isolated profile whose `server.json` is pinned to the
+  tour API (SEC-10), and downloads redirected to
   `e2e/results/tours/downloads` (the run fails if anything lands in the
   user's Downloads). `scripts/build-manual.mjs` turns the steps into
   `docs/manual/` (Spanish Markdown per chapter, prose from
@@ -1945,11 +1952,12 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   only if it is missing.
 - **Not code-signed:** no certificate is configured, so SmartScreen warns on
   install. Signing is out of scope for 0.1.0 and listed as a known limitation.
-- **Fixed API address:** the desktop build talks to `VITE_API_URL` (read
-  only by `serverUrl()`, `@shared/platform/serverUrl`), which
-  defaults to `http://localhost:3000`, and its CSP (`tauri.conf.json`) allows
-  only that port (plus Ollama on 11434). The CI installer is built without
-  `VITE_API_URL`, so an installed beta needs the API on the same PC.
+- **API address:** the desktop starts with the build's `VITE_API_URL`
+  (`http://localhost:3000` when unset, as in the CI installer) and the user
+  picks another server at sign-in (SEC-10, ADR-0046). Its CSP
+  (`tauri.conf.json`) opens no API port, only Ollama on 11434: requests go
+  through Rust. A shared server needs https through a reverse proxy
+  (SEC-07, [`docs/despliegue.md`](despliegue.md)).
 - **Version compatibility:** the server accepts its own MINOR and the previous
   one (`server/src/modules/sync/sync.version.ts`, SYNC-08), and the local
   upgrade from the previous published version is tested against a fixture

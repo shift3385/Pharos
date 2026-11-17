@@ -247,7 +247,9 @@ function toursTargetDir() {
   return join(metadata.target_directory, "tours");
 }
 
-/** The tour build's config override: the app's CSP with the API port swapped. */
+/** The tour build's config override: the app's CSP, which since SEC-10 opens
+ *  no API port at all (requests go through Rust); the swap and the check stay
+ *  as a guard should a port come back. */
 function writeToursConfig() {
   const conf = JSON.parse(readFileSync(join(repoDir, "src-tauri", "tauri.conf.json"), "utf8"));
   const csp = conf.app.security.csp.replaceAll(":3000", `:${port}`);
@@ -346,6 +348,10 @@ try {
   const configDir = join(process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"), "com.pharos.desktop", "e2e", profile);
   mkdirSync(configDir, { recursive: true });
   writeFileSync(join(configDir, "downloads.json"), JSON.stringify({ downloadDir: downloads }));
+  // The app reaches its server through the Rust core, which talks to the
+  // server in the profile's server.json (SEC-10, src-tauri/src/server.rs): pin
+  // it to the tour API, so no earlier run's choice can reach port 3000.
+  writeFileSync(join(configDir, "server.json"), JSON.stringify({ origin: apiUrl, accounts: [] }));
 
   const userDownloads = userDownloadsDir();
   const before = new Set(existsSync(userDownloads) ? readdirSync(userDownloads) : []);

@@ -38,6 +38,7 @@ mod revisions;
 #[cfg(test)]
 mod revisions_sync_tests;
 mod runs;
+mod server;
 mod steps;
 mod sync;
 mod sync_class;
@@ -55,14 +56,29 @@ use tauri::Manager;
 const KEYCHAIN_SERVICE: &str = "pharos";
 const SESSION_ACCOUNT: &str = "session";
 
+// The cached session records the server it belongs to (SEC-10, ADR-0046): a
+// session of another server is not offered, so the app never sends one
+// server's token to another.
 #[tauri::command]
-fn session_save(data: String) -> Result<(), String> {
-    keychain::write(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT), &data)
+fn session_save(server: tauri::State<server::ServerState>, data: String) -> Result<(), String> {
+    let wrapped = server::wrap_session(&server.origin(), &data);
+    keychain::write(
+        KEYCHAIN_SERVICE,
+        &instance::account(SESSION_ACCOUNT),
+        &wrapped,
+    )
 }
 
 #[tauri::command]
-fn session_load() -> Result<Option<String>, String> {
-    keychain::read(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT))
+fn session_load(server: tauri::State<server::ServerState>) -> Result<Option<String>, String> {
+    let raw = keychain::read(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT))?;
+    Ok(raw.and_then(|raw| server::unwrap_session(&raw, &server.origin())))
+}
+
+/// True while a session is cached, whatever its server: the server can only
+/// change while signed out.
+pub(crate) fn session_cached() -> Result<bool, String> {
+    Ok(keychain::read(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT))?.is_some())
 }
 
 #[tauri::command]
@@ -106,6 +122,13 @@ pub fn run() {
                 prefs_file,
                 app.path().download_dir().ok(),
             ));
+            // The server picked at sign-in (SEC-10), remembered per instance.
+            let server_file = app
+                .path()
+                .app_config_dir()
+                .ok()
+                .map(|dir| instance::scoped_dir(dir).join("server.json"));
+            app.manage(server::ServerState::load(server_file));
             let data_dir = instance::scoped_dir(app.path().app_data_dir()?);
             let started = std::time::Instant::now();
             // A database that cannot be opened (e.g. written by a newer Pharos,
@@ -140,6 +163,12 @@ pub fn run() {
             session_save,
             session_load,
             session_clear,
+            server::server_get,
+            server::server_check,
+            server::server_set,
+            server::server_bind_account,
+            server::server_pending,
+            server::server_request,
             db::db_open_error,
             db::db_recover,
             db::recovery_key_export,

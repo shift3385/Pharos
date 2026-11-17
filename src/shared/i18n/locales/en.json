@@ -500,14 +500,14 @@
     },
     "trash": {
       "title": "Trash",
+      "restore": "Restore",
+      "empty": "Empty trash",
       "desc_one": "Deleted items are kept {{count}} day on this device and then removed for good. Change it in Retention.",
       "desc_other": "Deleted items are kept {{count}} days on this device and then removed for good. Change it in Retention.",
       "emptyDesc_one": "The trash is empty. What you delete is kept here for {{count}} day.",
       "emptyDesc_other": "The trash is empty. What you delete is kept here for {{count}} days.",
       "webOnly": "The web keeps nothing deleted. Open the trash in the desktop app.",
       "loadFailed": "The trash could not be read. Open Administration again.",
-      "restore": "Restore",
-      "empty": "Empty trash",
       "deleteForever": "Delete forever",
       "nothingToEmpty": "There is nothing to empty",
       "breakdown": "Trash breakdown",
@@ -999,8 +999,9 @@
       "email_in_use": "That email is already registered.",
       "validation_error": "Please check the details you entered.",
       "rate_limited": "Too many attempts. Wait a moment and try again.",
-      "network": "Could not reach the server.",
-      "generic": "Something went wrong. Please try again."
+      "network": "Can't connect to {{host}}. Check your connection; if you had signed in on this computer before, the app opens with your local data.",
+      "generic": "Something went wrong. Please try again.",
+      "account_other_server": "This account already has data on this computer from another server ({{host}}). To keep them apart, sign in to that server or use another account."
     }
   },
   "language": {
@@ -1285,9 +1286,9 @@
     "language": "Language",
     "theme": "Theme",
     "themeHelp": "Faro Nocturno, light or dark. “Follow the system” follows your device setting.",
-    "synced": "Applies on all your devices",
     "themeLight": "Light",
-    "themeDark": "Dark"
+    "themeDark": "Dark",
+    "synced": "Applies on all your devices"
   },
   "testPlan": {
     "loadFailed": "The test plan could not be loaded.",
@@ -3058,8 +3059,6 @@
     "searchClose": "Close search",
     "searchClear": "Clear search",
     "notifications": "Notifications",
-    "notificationsUnread_one": "Notifications: {{count}} unread",
-    "notificationsUnread_other": "Notifications: {{count}} unread",
     "themeToDark": "Switch to dark theme",
     "themeToLight": "Switch to light theme",
     "userMenu": "User menu for {{name}}",
@@ -3072,7 +3071,9 @@
     "seeAllProjects": "See all projects",
     "noProjects": "No project matches.",
     "back": "Back to Projects",
-    "projectSections": "Project sections"
+    "projectSections": "Project sections",
+    "notificationsUnread_one": "Notifications: {{count}} unread",
+    "notificationsUnread_other": "Notifications: {{count}} unread"
   },
   "sortMenu": {
     "title": "Sort by",
@@ -4347,6 +4348,70 @@
     "savedToast": "Completion report saved",
     "approvedToast": "Completion report approved",
     "saveFailed": "The completion report could not be saved. Try again."
+  },
+  "server": {
+    "line": {
+      "label": "Server",
+      "change": "Change",
+      "local": "This computer ({{host}})",
+      "secure": "Encrypted connection",
+      "offline": "offline"
+    },
+    "connectedTo": "Connected to {{host}}",
+    "connected": "Connected to {{host}}",
+    "connectedSecure": "Pharos {{version}} · encrypted connection. You can sign in now.",
+    "connectedLocal": "Pharos {{version}} on this computer. You can sign in now.",
+    "connectedReadOnly": "The server runs Pharos {{version}}: this app can only read until you update it.",
+    "panel": {
+      "title": "Server",
+      "intro": "Choose which Pharos server to connect to.",
+      "address": "Server address",
+      "hint": "Ask whoever runs Pharos on your team. It must start with https://, except localhost.",
+      "recent": "Used on this computer",
+      "cancel": "Cancel",
+      "connect": "Connect",
+      "checking": "Checking…"
+    },
+    "pending": {
+      "title_one": "{{count}} change not yet sent to {{host}}.",
+      "title_other": "{{count}} changes not yet sent to {{host}}.",
+      "detail": "They belong to {{email}}. They stay on this computer and are sent when you sign in to that server with that account again. The other server doesn't see them.",
+      "confirm": "Change server"
+    },
+    "error": {
+      "invalid": {
+        "title": "That isn't a valid address.",
+        "detail": "Write it as https://pharos.yourcompany.com, without spaces or paths."
+      },
+      "insecure": {
+        "title": "Pharos only connects to another computer over https://.",
+        "detail": "Without encryption your password and data would travel in the clear. Ask whoever runs the server for its https address. Only localhost may use http."
+      },
+      "unreachable": {
+        "title": "{{host}} doesn't answer.",
+        "detail": "Check the address and your connection. If the server is internal, you may need your company's VPN."
+      },
+      "tls": {
+        "title": "{{host}}'s identity can't be verified.",
+        "detail": "Its certificate has expired, is for another name, or was signed by someone Windows doesn't trust. Pharos won't connect. Tell whoever runs the server."
+      },
+      "notPharos": {
+        "title": "That address answers, but it isn't a Pharos server.",
+        "detail": "Check that it's your Pharos server's address and not another site of your company."
+      },
+      "appTooOld": {
+        "title": "This server needs a newer version of Pharos.",
+        "detail": "The server runs {{version}} and this app is {{app}}. Update the app to connect."
+      },
+      "serverTooOld": {
+        "title": "This server runs an older version of Pharos.",
+        "detail": "The server runs {{version}} and this app is {{app}}. Ask whoever runs it to update it."
+      },
+      "generic": {
+        "title": "The server couldn't be saved.",
+        "detail": "Try again. If it keeps failing, export the diagnostics from Administration."
+      }
+    }
   },
   "notifications": {
     "title": "Notifications",
