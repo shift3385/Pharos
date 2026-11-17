@@ -79,7 +79,11 @@ const AiErrors = {
   reupload: () =>
     new AppError(409, "ai_vault_reupload", "The stored AI key can no longer be read here; upload it again from the desktop."),
   invalid: () => new AppError(400, "validation_error", "Invalid input."),
+  busy: () => new AppError(429, "rate_limited", "Too many AI requests at once. Wait for one to finish."),
 };
+
+/** AI requests one account may have waiting on a provider at once. */
+export const MAX_IN_FLIGHT = 3;
 
 const putSchema = z.object({
   provider: z.enum(WEB_PROVIDERS),
@@ -128,13 +132,19 @@ export function aiRoutes(
   deps: { tokens: TokenService; store: AiVaultStore; env: Env; fetch?: Fetch },
 ) {
   const vault = deps.env.AI_VAULT_KEY ? createVault(deps.env.AI_VAULT_KEY) : null;
-  // A new array per route: the rate-limit plugin appends its check to it.
+  // Authentication, the version check and the limits run on `onRequest`,
+  // before the body is read: a large body is never buffered for someone
+  // without a session or over their limit (security review of IA-12). A new
+  // array per route: the rate-limit plugin appends its check to it.
   const auth = makeRequireAuth(deps.tokens);
-  const preHandler = () => [auth, requireSupportedVersion];
+  const onRequest = () => [auth, requireSupportedVersion];
   // Per account, after authentication (so one account cannot use up another's).
   const perUser = (scope: string, max: number, timeWindow: number) => ({
-    rateLimit: { max, timeWindow, hook: "preHandler" as const, keyGenerator: (req: FastifyRequest) => `${scope}:${req.userId ?? req.ip}` },
+    rateLimit: { max, timeWindow, hook: "onRequest" as const, keyGenerator: (req: FastifyRequest) => `${scope}:${req.userId ?? req.ip}` },
   });
+  // AI requests of one account running at once: each may wait up to two
+  // minutes for the provider and carry 16 MB of images.
+  const inFlight = new Map<string, number>();
   const vaultLimit = perUser("ai-vault", deps.env.AI_VAULT_RATE_LIMIT_MAX, deps.env.AI_VAULT_RATE_LIMIT_WINDOW);
 
   app.setErrorHandler((error, req, reply) => {
@@ -151,11 +161,11 @@ export function aiRoutes(
     return reply.code(500).send({ code: "internal_error", message: "Internal server error." });
   });
 
-  app.get("/ai/web-access", { preHandler: preHandler() }, async (req) =>
+  app.get("/ai/web-access", { onRequest: onRequest() }, async (req) =>
     view(await deps.store.get(req.userId as string), vault),
   );
 
-  app.put("/ai/web-access", { preHandler: preHandler(), config: vaultLimit }, async (req) => {
+  app.put("/ai/web-access", { onRequest: onRequest(), config: vaultLimit }, async (req) => {
     if (!vault) throw AiErrors.disabled();
     const input = parse(putSchema, req.body);
     if (!validModel(input.provider, input.model)) throw AiErrors.invalid();
@@ -164,7 +174,7 @@ export function aiRoutes(
     return view(await deps.store.get(userId), vault);
   });
 
-  app.delete("/ai/web-access", { preHandler: preHandler(), config: vaultLimit }, async (req, reply) => {
+  app.delete("/ai/web-access", { onRequest: onRequest(), config: vaultLimit }, async (req, reply) => {
     await deps.store.remove(req.userId as string);
     return reply.code(204).send();
   });
@@ -172,7 +182,7 @@ export function aiRoutes(
   app.post(
     "/ai/chat",
     {
-      preHandler: preHandler(),
+      onRequest: onRequest(),
       bodyLimit: deps.env.AI_CHAT_BODY_LIMIT_BYTES,
       config: perUser("ai-chat", deps.env.AI_CHAT_RATE_LIMIT_MAX, deps.env.AI_CHAT_RATE_LIMIT_WINDOW),
     },
@@ -185,6 +195,9 @@ export function aiRoutes(
       if (row.kek_id !== vault.kekId) throw AiErrors.reupload();
       const key = vault.open({ nonce: row.nonce, ciphertext: row.ciphertext, kekId: row.kek_id }, userId, row.provider);
       if (key === null) throw AiErrors.reupload();
+      const running = inFlight.get(userId) ?? 0;
+      if (running >= MAX_IN_FLIGHT) throw AiErrors.busy();
+      inFlight.set(userId, running + 1);
       try {
         const value = await chat(row.provider, key, row.model, input.temperature, input.messages, deps.fetch);
         return { value, provider: row.provider, model: row.model };
@@ -196,6 +209,10 @@ export function aiRoutes(
           provider: row.provider,
           ...(e.status ? { providerStatus: e.status } : {}),
         });
+      } finally {
+        const left = (inFlight.get(userId) ?? 1) - 1;
+        if (left > 0) inFlight.set(userId, left);
+        else inFlight.delete(userId);
       }
     },
   );

@@ -46,20 +46,17 @@ beforeEach(async () => {
 });
 
 describe("uploadWebAccess", () => {
-  it("asks Rust to upload with the session only, never a key", async () => {
+  it("asks Rust to upload, with neither a key nor a token from here", async () => {
     m.invoke.mockResolvedValue({ status: 200, body: JSON.stringify(ON) });
     expect(await web.uploadWebAccess("anthropic", "claude-opus-5-5")).toEqual(ON);
-    expect(m.invoke).toHaveBeenCalledWith("ai_web_access_upload", {
-      provider: "anthropic",
-      model: "claude-opus-5-5",
-      headers: { authorization: "Bearer t1" },
-    });
+    expect(m.invoke).toHaveBeenCalledWith("ai_web_access_upload", { provider: "anthropic", model: "claude-opus-5-5" });
   });
 
   it("renews an expired session once, under the same account only", async () => {
     m.invoke.mockResolvedValueOnce({ status: 401, body: "{}" }).mockResolvedValueOnce({ status: 200, body: JSON.stringify(ON) });
     await web.uploadWebAccess("openai", "gpt-5");
-    expect(m.invoke.mock.calls[1][1]).toMatchObject({ headers: { authorization: "Bearer t2" } });
+    expect(m.invoke).toHaveBeenCalledTimes(2);
+    expect(m.renew).toHaveBeenCalledWith("t1");
 
     m.invoke.mockReset();
     m.invoke.mockResolvedValue({ status: 401, body: JSON.stringify({ code: "unauthorized" }) });

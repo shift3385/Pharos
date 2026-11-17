@@ -312,7 +312,7 @@
       "consent": {
         "title": "¿Usar tu clave de {{provider}} en la web?",
         "lead": "Pharos enviará una copia de la clave al servidor {{server}} por una conexión cifrada.",
-        "local": "Este servidor está en tu equipo.",
+        "leadLocal": "Pharos enviará una copia de la clave al servidor {{server}}, que está en este equipo.",
         "encrypted": "El servidor la guarda cifrada y nunca la muestra, ni a ti.",
         "admin": "Quien administre el servidor y tenga a la vez su base de datos y su clave maestra podría leerla.",
         "billing": "Lo que pidas a la IA desde la web se cobra a esta clave.",

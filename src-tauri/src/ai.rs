@@ -181,23 +181,31 @@ fn web_upload_body(provider: Provider, model: &str, key: Option<String>) -> Resu
 /// it (IA-12, ADR-0034), after the user agreed in the consent dialog. The key
 /// goes from the keychain to the server here, in Rust, over the same client
 /// and rules as `server_request` (https except to this computer, no redirect):
-/// the webview only sends the session headers and gets back the server's
-/// answer, which never holds the key. Errors never hold it either.
+/// the webview names the provider and model and gets back the server's answer,
+/// which never holds the key. Errors never hold it either.
+///
+/// The session is the one Rust keeps for the chosen server, never a token from
+/// the webview: injected script cannot send the key to another account
+/// (security review of IA-12, ADR-0034). The headers are fixed here.
 #[tauri::command]
 pub async fn ai_web_access_upload(
     state: tauri::State<'_, crate::server::ServerState>,
     provider: String,
     model: String,
-    headers: std::collections::BTreeMap<String, String>,
 ) -> Result<crate::server::ServerResponse, String> {
     let provider = Provider::parse(&provider)?;
+    let token = crate::session_access_token(&state.origin())?
+        .ok_or_else(|| "not-authenticated".to_string())?;
     let body = web_upload_body(provider, model.trim(), read_key(provider.id())?)?;
-    let mut headers = headers;
-    headers.insert("content-type".into(), "application/json".into());
-    // The app version, as every request to the server carries (SYNC-08).
-    headers
-        .entry("x-pharos-version".into())
-        .or_insert_with(|| env!("CARGO_PKG_VERSION").into());
+    let headers = std::collections::BTreeMap::from([
+        ("authorization".to_string(), format!("Bearer {token}")),
+        ("content-type".to_string(), "application/json".to_string()),
+        // The app version, as every request to the server carries (SYNC-08).
+        (
+            "x-pharos-version".to_string(),
+            env!("CARGO_PKG_VERSION").to_string(),
+        ),
+    ]);
     let request = crate::server::ServerRequest {
         method: "PUT".into(),
         path: "/ai/web-access".into(),

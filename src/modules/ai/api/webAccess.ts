@@ -122,23 +122,21 @@ export async function uploadWebAccess(
   if (!isTauri()) throw new WebAccessError("desktop_only");
   const session = await getSession();
   if (!session) throw new WebAccessError("not-authenticated");
-  const send = async (token: string) => {
+  // Rust sends it with the session it keeps for this server, never with a
+  // token from here (security review of IA-12).
+  const send = async () => {
     try {
-      return await invoke<RustResponse>("ai_web_access_upload", {
-        provider,
-        model,
-        headers: { authorization: `Bearer ${token}` },
-      });
+      return await invoke<RustResponse>("ai_web_access_upload", { provider, model });
     } catch (e) {
       throw new WebAccessError(typeof e === "string" ? e : "upload_failed");
     }
   };
   try {
-    let res = await send(session.accessToken);
+    let res = await send();
     if (res.status === 401) {
+      // Renewing stores the new session where Rust reads it.
       const renewed = await renewSession(session.accessToken);
-      if (renewed?.userId === session.userId)
-        res = await send(renewed.accessToken);
+      if (renewed?.userId === session.userId) res = await send();
     }
     let body: Record<string, unknown> = {};
     try {

@@ -78,8 +78,8 @@ export function WebAccessConsent({
         {t("ai.web.consent.title", { provider })}
       </h3>
       <p id={`${id}-msg`} className="cd__msg">
-        {t("ai.web.consent.lead", { server })}
-        {local && ` ${t("ai.web.consent.local")}`}
+        {/* http only to this computer (SEC-10): then the copy is not sent over the network. */}
+        {t(local ? "ai.web.consent.leadLocal" : "ai.web.consent.lead", { server })}
       </p>
       <ul className="ai-web-consent__points">
         {points.map((p) => (

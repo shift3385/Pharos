@@ -2,7 +2,7 @@
 // The key used here is a fake one; the tests check it never comes back out:
 // not in a response, an error, a log line or the database in clear.
 import { randomBytes } from "node:crypto";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FastifyInstance } from "fastify";
 import type { Pool } from "pg";
 import { setupTestApp, truncateAll } from "./helpers";
@@ -383,6 +383,56 @@ describe("transport", () => {
         expect(res.json().code).toBe("https_required");
         expectNoKey(res.body);
       }
+    } finally {
+      await app.close();
+      await pool.end();
+    }
+  });
+});
+
+describe("security review fixes", () => {
+  it("refuses a large body without a session before reading it, and over the limit", async () => {
+    const p = fakeProvider([]);
+    const { app, pool } = await makeApp({ AI_VAULT_KEY: KEK, AI_CHAT_RATE_LIMIT_MAX: 1 }, p.impl);
+    try {
+      await truncateAll(pool);
+      const big = { messages: [{ role: "user", content: "x".repeat(300_000) }] };
+      const noSession = await app.inject({ method: "POST", url: "/ai/chat", payload: big });
+      expect(noSession.statusCode).toBe(401);
+      const { token } = await register(app, "a@pharos.dev");
+      await upload(app, token);
+      expect((await ask(app, token)).statusCode).toBe(200);
+      const limited = await ask(app, token, big);
+      expect(limited.statusCode).toBe(429);
+      expect(p.sent).toHaveLength(1);
+    } finally {
+      await app.close();
+      await pool.end();
+    }
+  });
+
+  it("an account has at most a few AI requests waiting at once", async () => {
+    const release: Array<() => void> = [];
+    const slow = (async () => {
+      await new Promise<void>((r) => release.push(r));
+      return new Response(JSON.stringify({ choices: [{ message: { content: "ok" } }] }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const { app, pool } = await makeApp({ AI_VAULT_KEY: KEK }, slow);
+    try {
+      await truncateAll(pool);
+      const { token } = await register(app, "a@pharos.dev");
+      await upload(app, token);
+      const waiting = [ask(app, token), ask(app, token), ask(app, token)];
+      await vi.waitFor(() => expect(release).toHaveLength(3));
+      const fourth = await ask(app, token);
+      expect(fourth.statusCode).toBe(429);
+      release.forEach((r) => r());
+      expect((await Promise.all(waiting)).map((r) => r.statusCode)).toEqual([200, 200, 200]);
+      // Once they finished, the account may ask again.
+      const again = ask(app, token);
+      await vi.waitFor(() => expect(release).toHaveLength(4));
+      release[3]();
+      expect((await again).statusCode).toBe(200);
     } finally {
       await app.close();
       await pool.end();

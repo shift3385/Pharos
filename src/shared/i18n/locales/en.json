@@ -312,7 +312,7 @@
       "consent": {
         "title": "Use your {{provider}} key on the web?",
         "lead": "Pharos will send a copy of the key to the server {{server}} over an encrypted connection.",
-        "local": "This server is on your computer.",
+        "leadLocal": "Pharos will send a copy of the key to the server {{server}}, which is on this computer.",
         "encrypted": "The server keeps it encrypted and never shows it, not even to you.",
         "admin": "Whoever runs the server and has both its database and its master key could read it.",
         "billing": "What you ask the AI from the web is charged to this key.",

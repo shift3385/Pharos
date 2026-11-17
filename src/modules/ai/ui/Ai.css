@@ -391,6 +391,7 @@
   font-weight: 600;
 }
 .ai-web__facts {
+  font-size: var(--fs-ui);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--space-1) var(--space-3);
@@ -401,6 +402,7 @@
 }
 .ai-web__facts dd {
   margin: 0;
+  font-size: inherit;
   overflow-wrap: anywhere;
 }
 .ai-web__lead {
@@ -426,4 +428,7 @@
 }
 .ai-web-consent__check input {
   margin-top: 3px;
+}
+.ai-web__facts .t-id {
+  font-size: inherit;
 }
