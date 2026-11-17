@@ -4358,7 +4358,7 @@
     "unreadN": "Sin leer · {{count}}",
     "noUnread": "No hay nada sin leer",
     "emptyTitle": "Estás al día",
-    "emptyText": "Aquí verás invitaciones, revisiones, defectos asignados, ciclos cerrados y conflictos.",
+    "emptyText": "Aquí verás invitaciones, revisiones, defectos asignados, ciclos cerrados, cambios en los miembros y conflictos.",
     "kept": "Se guardan 90 días",
     "today": "Hoy",
     "yesterday": "Ayer",
@@ -4382,6 +4382,10 @@
       "sync": {
         "conflict_one": "{{count}} conflicto de sincronización por revisar",
         "conflict_other": "{{count}} conflictos de sincronización por revisar"
+      },
+      "member": {
+        "joined": "{{actor}} se unió a {{title}}",
+        "removed": "Ya no eres miembro de {{title}}"
       }
     },
     "action": {
@@ -4391,7 +4395,8 @@
       "defect": "Ver defecto",
       "report": "Ver informe",
       "resolve": "Resolver",
-      "open": "Abrir"
+      "open": "Abrir",
+      "members": "Ver miembros"
     }
   }
 }

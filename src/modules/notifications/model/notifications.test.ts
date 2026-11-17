@@ -108,3 +108,13 @@ describe("case review events (K)", () => {
     expect(reviewEventOf(new CustomEvent("pharos:case-review", { detail: { caseId: 1 } }))).toBeNull();
   });
 });
+
+describe("W's kinds", () => {
+  it("member.joined opens where W says; member.removed has no action", () => {
+    expect(targetOf(n("a", "x", { kind: "member.joined", data: { path: "/workspaces/ws-1" } }))).toMatchObject({
+      path: "/workspaces/ws-1",
+      label: "notifications.action.members",
+    });
+    expect(targetOf(n("a", "x", { kind: "member.removed", projectId: null }))).toBeNull();
+  });
+});

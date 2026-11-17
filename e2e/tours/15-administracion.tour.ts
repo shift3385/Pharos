@@ -171,6 +171,7 @@ chapter("administracion", () => {
       "Pharos trabaja sin conexión: guarda todo en este equipo y lo sincroniza con el servidor al iniciar sesión, al recuperar la conexión, cada pocos minutos si lo activas y cuando pulsas «Sincronizar ahora» (también al pie del menú lateral). Esta pestaña muestra el estado, la cuenta, los cambios pendientes de enviar y si hay conflictos que revisar. «Sincronizar ahora» envía y recibe al momento y avisa de cuántos cambios fueron (↑) y vinieron (↓).",
     covers: ["admin:sync", "action:sync-now"],
     run: async () => {
+      await openAdminTab("sync");
       await clickButton(A.sync.now, "#admin-panel");
       await waitForToast(es.sync.doneToast.split("{{")[0], 30_000);
     },

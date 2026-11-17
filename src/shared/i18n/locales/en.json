@@ -4358,7 +4358,7 @@
     "unreadN": "Unread · {{count}}",
     "noUnread": "Nothing is unread",
     "emptyTitle": "You are up to date",
-    "emptyText": "Invitations, reviews, assigned defects, closed cycles and conflicts show up here.",
+    "emptyText": "Invitations, reviews, assigned defects, closed cycles, member changes and conflicts show up here.",
     "kept": "Kept for 90 days",
     "today": "Today",
     "yesterday": "Yesterday",
@@ -4382,6 +4382,10 @@
       "sync": {
         "conflict_one": "{{count}} sync conflict to review",
         "conflict_other": "{{count}} sync conflicts to review"
+      },
+      "member": {
+        "joined": "{{actor}} joined {{title}}",
+        "removed": "You are no longer a member of {{title}}"
       }
     },
     "action": {
@@ -4391,7 +4395,8 @@
       "defect": "View defect",
       "report": "View report",
       "resolve": "Resolve",
-      "open": "Open"
+      "open": "Open",
+      "members": "View members"
     }
   }
 }

@@ -49,12 +49,30 @@
       la acción directa; si no, cada tipo tiene la suya (Revisar, Ver
       defecto, Ver informe…).
   - **Quién puede notificar a quién es cosa del workspace.**
-    - Una interfaz `Membership` (`canNotify`, `members`) responde. La pone W.
-      Hasta que W se fusione, la de por defecto solo acepta al propio emisor,
-      que luego se descarta: no se notifica a nadie más. Así no hay spam entre
-      cuentas que no comparten nada.
-    - `{ workspace: true }` se expande a los miembros del workspace, sin el
-      emisor.
+    - Una interfaz `Membership` (`canNotify`, `members`) responde.
+      `workspaceMembership(q, { isMember, listMembers })` la construye con las
+      consultas de W (`server/src/modules/workspaces/members.ts`): dos
+      personas se notifican si las dos son miembros activos del workspace del
+      evento; sin workspace, nadie más. Hasta que W se fusione, la de por
+      defecto solo acepta al propio emisor, que luego se descarta. Así no hay
+      spam entre cuentas que no comparten nada.
+    - `{ workspace: true }` se expande a los miembros activos del workspace
+      (`listMembers`), sin el emisor; en el servidor se puede limitar por rol
+      (`{ workspaceId, roles }`).
+    - Lo que emite el propio servidor desde los ganchos de W va marcado
+      `trusted`: quien recibe una invitación o a quien quitan del workspace
+      no es (o ya no es) miembro. Un cliente nunca puede marcarlo.
+  - **Los ganchos de W** (`WorkspaceHooks`: `invitationCreated`,
+    `memberJoined`, `memberRemoved`) se conectan a
+    `notificationWorkspaceHooks(membership)`
+    (`server/src/modules/notifications/workspaceHooks.ts`), dentro de la
+    transacción de W:
+    - `invitation.received`, a la cuenta registrada cuyo correo coincide con
+      la invitación; si no hay ninguna, no se avisa a nadie (una invitación
+      es un código).
+    - `member.joined` (pedido por W y aprobado por el coordinador), a los
+      Test Managers del workspace.
+    - `member.removed`, a quien quitan.
   - **Los conflictos de sincronización no viajan.** Son de un equipo: cuando
     sube el número de conflictos, el shell crea una notificación local
     (`sync.conflict`) cuya acción abre los conflictos. El servidor rechaza ese
@@ -67,7 +85,8 @@
     conexión, tras cada sincronización (`pharos:synced`), al volver la
     conexión y al abrir el panel.
   - **Los eventos de 0.5.0.**
-    - `invitation.received`: W, en el servidor.
+    - `invitation.received`, `member.joined` y `member.removed`: W, en el
+      servidor, por sus ganchos.
     - `case.review_requested`, `case.approved`, `case.changes_requested`: K
       dispara `pharos:case-review` en `window` tras guardar; el shell lo
       escucha y lo convierte (el autor, o el workspace para pedir revisión).
@@ -98,9 +117,10 @@
   - Hasta que W fusione sus miembros, el panel muestra solo los conflictos
     locales. Lo demás está construido y probado con una `Membership` de
     prueba.
-  - W debe pasar su `Membership` a `createNotificationStore` en `app.ts` y
-    llamar a `emitNotification` al crear una invitación (con `data.path` a su
-    pantalla). K ya dispara su evento.
+  - W conecta `workspaceMembership(pool, { isMember, listMembers })` a
+    `createNotificationStore` en `app.ts` y `notificationWorkspaceHooks` a
+    sus `WorkspaceHooks`, con `path` a sus pantallas. K ya dispara su
+    evento.
   - Las notificaciones no se auditan: son mensajes a una persona, no datos de
     un proyecto (`audit_tests.rs`, EXEMPT).
 

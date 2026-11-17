@@ -25,6 +25,9 @@ export const NOTIFICATION_KINDS = [
   "case.changes_requested",
   "defect.assigned",
   "cycle.closed",
+  // W (workspaces): someone joined (to the Test Managers), you were removed.
+  "member.joined",
+  "member.removed",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -44,8 +47,37 @@ export const PULL_LIMIT = 500;
 export interface Membership {
   /** True if `actorId` may notify `recipientId` (they share a workspace). */
   canNotify(actorId: string, recipientId: string, workspaceId: string | null): Promise<boolean>;
-  /** Members of a workspace, for `{ workspaceId }` recipients. */
-  members(workspaceId: string): Promise<string[]>;
+  /** Active members of a workspace, for `{ workspaceId }` recipients;
+   *  only those with one of `roles` when given. */
+  members(workspaceId: string, roles?: readonly string[]): Promise<string[]>;
+}
+
+/** W's member queries (`server/src/modules/workspaces/members.ts`). */
+export interface WorkspaceMemberQueries<Q> {
+  isMember(q: Q, userId: string, workspaceId: string): Promise<boolean>;
+  listMembers(
+    q: Q,
+    workspaceId: string,
+    opts?: { roles?: string[] },
+  ): Promise<{ userId: string; role: string }[]>;
+}
+
+/**
+ * The `Membership` of the workspaces: two people may notify each other when
+ * both are active members of the workspace the event is about. Without a
+ * workspace only the sender (dropped later) is accepted.
+ */
+export function workspaceMembership<Q>(q: Q, w: WorkspaceMemberQueries<Q>): Membership {
+  return {
+    async canNotify(actorId, recipientId, workspaceId) {
+      if (!workspaceId) return actorId === recipientId;
+      return (await w.isMember(q, actorId, workspaceId)) && (await w.isMember(q, recipientId, workspaceId));
+    },
+    async members(workspaceId, roles) {
+      const rows = await w.listMembers(q, workspaceId, roles?.length ? { roles: [...roles] } : undefined);
+      return rows.map((r) => r.userId);
+    },
+  };
 }
 
 export const selfOnlyMembership: Membership = {
@@ -71,7 +103,10 @@ export interface EmitInput {
   kind: NotificationKind;
   actorId: string;
   /** People, or every member of a workspace. */
-  recipientIds: string[] | { workspaceId: string };
+  recipientIds: string[] | { workspaceId: string; roles?: readonly string[] };
+  /** Set only by server code that already decided who is told (W's hooks:
+   *  an invitee or a removed person is not a member). Never from a client. */
+  trusted?: boolean;
   workspaceId?: string | null;
   projectId?: string | null;
   subject: z.infer<typeof subjectSchema>;
@@ -101,13 +136,13 @@ type Db = Pool | PoolClient;
 async function resolveRecipients(input: EmitInput, membership: Membership): Promise<string[]> {
   const wanted = Array.isArray(input.recipientIds)
     ? input.recipientIds
-    : await membership.members(input.recipientIds.workspaceId);
+    : await membership.members(input.recipientIds.workspaceId, input.recipientIds.roles);
   const workspace =
     input.workspaceId ?? (Array.isArray(input.recipientIds) ? null : input.recipientIds.workspaceId);
   const out: string[] = [];
   for (const id of new Set(wanted)) {
     if (id === input.actorId) continue;
-    if (await membership.canNotify(input.actorId, id, workspace)) out.push(id);
+    if (input.trusted || (await membership.canNotify(input.actorId, id, workspace))) out.push(id);
   }
   return out;
 }

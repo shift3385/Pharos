@@ -72,6 +72,8 @@ export function targetOf(n: AppNotification): Target | null {
     case "cycle.closed":
       path = projectPath(n, "cycles", "cycle");
       break;
+    // W's events go where W says (`data.path`), handled above; without it,
+    // there is nothing to open.
   }
   return path ? { kind: "path", path, label: labelOf(n.kind) } : null;
 }
@@ -92,6 +94,8 @@ export function labelOf(kind: string): string {
       return "notifications.action.report";
     case "sync.conflict":
       return "notifications.action.resolve";
+    case "member.joined":
+      return "notifications.action.members";
     default:
       return "notifications.action.open";
   }

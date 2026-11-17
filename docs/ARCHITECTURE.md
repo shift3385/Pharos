@@ -247,7 +247,10 @@ moves on read marks (`GET /api/me/notifications?since=`, `POST
 call `emitNotification` inside their transaction; clients call `notify()`
 (`@modules/notifications`, `POST /api/notifications`), which never throws
 and, on the desktop, goes through an outbox while offline. Who may notify
-whom is a `Membership` the workspaces provide (until then, nobody else). The
+whom is a `Membership` built from W's `isMember`/`listMembers`
+(`workspaceMembership`; until W lands, nobody else); W's `WorkspaceHooks`
+plug into `notificationWorkspaceHooks` (invitation, member joined, member
+removed), whose emits are `trusted` because those recipients are not members. The
 desktop keeps an encrypted copy, local `sync.conflict` notifications, the
 outbox and the cursor (local migration 0043, `notifications.rs`); the web
 keeps nothing. `NotificationsProvider` (in the shell) pulls every minute,

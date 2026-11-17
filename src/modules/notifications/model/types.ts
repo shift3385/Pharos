@@ -8,6 +8,8 @@ export const TRAVELLING_KINDS = [
   "case.changes_requested",
   "defect.assigned",
   "cycle.closed",
+  "member.joined",
+  "member.removed",
 ] as const;
 
 export type TravellingKind = (typeof TRAVELLING_KINDS)[number];

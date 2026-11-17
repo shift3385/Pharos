@@ -13,7 +13,9 @@ import {
   MAX_PER_RECIPIENT,
   notificationRoutes,
   type Membership,
+  workspaceMembership,
 } from "../src/modules/notifications/notifications";
+import { notificationWorkspaceHooks } from "../src/modules/notifications/workspaceHooks";
 
 let app: FastifyInstance;
 let pool: Pool;
@@ -181,5 +183,84 @@ describe("/api/notifications (RED-W2)", () => {
     await pool.query("UPDATE notifications SET created_at = now() - interval '91 days' WHERE recipient_id = $1", [recipient]);
     const res = (await pull(teamApp, luis)).json();
     expect(res.keptIds).toEqual([]);
+  });
+});
+
+describe("workspaces (W): membership and hooks", () => {
+  /** W's queries over a fake table: workspace "ws-1" with roles. */
+  const rows: { userId: string; workspaceId: string; role: string }[] = [];
+  const queries = {
+    isMember: async (_q: unknown, userId: string, workspaceId: string) =>
+      rows.some((r) => r.userId === userId && r.workspaceId === workspaceId),
+    listMembers: async (_q: unknown, workspaceId: string, opts?: { roles?: string[] }) =>
+      rows
+        .filter((r) => r.workspaceId === workspaceId && (!opts?.roles || opts.roles.includes(r.role)))
+        .map(({ userId, role }) => ({ userId, role })),
+  };
+
+  it("lets members of the same workspace notify each other, nobody else", async () => {
+    await user("ana");
+    await user("luis");
+    await user("eva");
+    rows.length = 0;
+    rows.push(
+      { userId: ids.get("ana")!, workspaceId: "ws-1", role: "test_manager" },
+      { userId: ids.get("luis")!, workspaceId: "ws-1", role: "test_analyst" },
+    );
+    const m = workspaceMembership(pool, queries);
+    const reached = await emitNotification(
+      pool,
+      { kind: "defect.assigned", actorId: ids.get("ana")!, recipientIds: [ids.get("luis")!, ids.get("eva")!], workspaceId: "ws-1", subject },
+      m,
+    );
+    expect(reached).toEqual([ids.get("luis")]);
+    // Without a workspace, nobody else.
+    expect(
+      await emitNotification(pool, { kind: "defect.assigned", actorId: ids.get("ana")!, recipientIds: [ids.get("luis")!], subject }, m),
+    ).toEqual([]);
+  });
+
+  it("the hooks tell the invitee, the Test Managers on a join and the removed person", async () => {
+    await user("ana");
+    await user("luis");
+    await user("eva");
+    rows.length = 0;
+    rows.push(
+      { userId: ids.get("ana")!, workspaceId: "ws-1", role: "test_manager" },
+      { userId: ids.get("luis")!, workspaceId: "ws-1", role: "test_analyst" },
+    );
+    const hooks = notificationWorkspaceHooks(workspaceMembership(pool, queries));
+    const kinds = async (name: string) =>
+      (await pool.query<{ kind: string }>("SELECT kind FROM notifications WHERE recipient_id = $1 ORDER BY seq", [ids.get(name)]))
+        .rows.map((r) => r.kind);
+
+    await hooks.invitationCreated(pool, {
+      invitationId: "00000000-0000-4000-8000-000000000001",
+      workspaceId: "ws-1",
+      workspaceName: "Banca Móvil",
+      actorId: ids.get("ana")!,
+      inviteeUserId: ids.get("eva")!,
+      role: "test_analyst",
+      path: "/workspaces/invitations",
+    });
+    // An invitation without a known account tells nobody.
+    await hooks.invitationCreated(pool, {
+      invitationId: "x",
+      workspaceId: "ws-1",
+      workspaceName: "Banca Móvil",
+      actorId: ids.get("ana")!,
+      inviteeUserId: null,
+      role: "test_analyst",
+    });
+    expect(await kinds("eva")).toEqual(["invitation.received"]);
+
+    rows.push({ userId: ids.get("eva")!, workspaceId: "ws-1", role: "test_analyst" });
+    await hooks.memberJoined(pool, { workspaceId: "ws-1", workspaceName: "Banca Móvil", userId: ids.get("eva")!, role: "test_analyst" });
+    expect(await kinds("ana")).toEqual(["member.joined"]);
+    expect(await kinds("luis")).toEqual([]);
+
+    rows.splice(rows.findIndex((r) => r.userId === ids.get("eva")), 1);
+    await hooks.memberRemoved(pool, { workspaceId: "ws-1", workspaceName: "Banca Móvil", userId: ids.get("eva")!, actorId: ids.get("ana")! });
+    expect(await kinds("eva")).toEqual(["invitation.received", "member.removed"]);
   });
 });
