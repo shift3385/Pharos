@@ -1,13 +1,10 @@
+import { serverFetch } from "@shared/platform/serverUrl";
 import type {
   AuthUser,
   LoginInput,
   RegisterInput,
   Session,
 } from "../model/types";
-
-const API_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ??
-  "http://localhost:3000";
 
 /** Error carrying the backend's machine-readable code (e.g. "invalid_credentials"). */
 export class ApiError extends Error {
@@ -35,7 +32,7 @@ export async function request<T>(
 ): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, {
+    res = await serverFetch(path, {
       ...options,
       headers: { "Content-Type": "application/json", ...options.headers },
     });
