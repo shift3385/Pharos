@@ -71,6 +71,7 @@ describe("case review events (K)", () => {
     at: "2026-11-17T10:00:00Z",
     version: "1.0",
     revision: 7,
+    workspaceId: "ws-1",
     ...patch,
   });
 
@@ -79,6 +80,7 @@ describe("case review events (K)", () => {
       kind: "case.review_requested",
       to: { workspace: true },
       projectId: "p1",
+      workspaceId: "ws-1",
       subject: { entity: "test_case", id: "c1", key: "BM-CP-0142", title: "Token caducado" },
       dedupeKey: "c1:7:case.review_requested",
     });

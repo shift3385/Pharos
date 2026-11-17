@@ -13,6 +13,9 @@ export interface CaseReviewEvent {
   scenarioId: string;
   title: string;
   projectId: string;
+  /** The case's workspace (CAS-02, #83): the local id on the desktop and
+   *  "local" on the web until the shared workspaces (W2). */
+  workspaceId?: string;
   authorId: string;
   actorId: string;
   actorName: string;
@@ -30,7 +33,7 @@ export function notificationOfReview(e: CaseReviewEvent): NotifyInput | null {
   if (e.selfApproval) return null;
   const subject = { entity: "test_case", id: e.caseId, key: e.scenarioId, title: e.title };
   const data: Record<string, unknown> = { version: e.version, at: e.at };
-  const base = { projectId: e.projectId, subject, data };
+  const base = { projectId: e.projectId, workspaceId: e.workspaceId ?? null, subject, data };
   switch (e.kind) {
     case "sent":
       // To the reviewers; until roles exist, the workspace (without the sender).
