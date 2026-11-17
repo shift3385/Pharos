@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import type { FastifyInstance } from "fastify";
 import type { Pool } from "pg";
 import { setupTestApp, truncateAll } from "./helpers";
-import { FEATURES_HEADER, SERVER_VERSION, VERSION_HEADER } from "../src/modules/sync/sync.version";
+import { FEATURES_HEADER, SERVER_FEATURES, SERVER_VERSION, VERSION_HEADER } from "../src/modules/sync/sync.version";
 import {
   afterSave,
   contentChanged,
@@ -261,5 +261,49 @@ describe("suite baselines over sync (CAS-02)", () => {
     });
     expect(res.statusCode).toBe(400);
     expect(res.json().code).toBe("case_baselines_unsupported");
+  });
+});
+
+describe("suite baselines and move-project (CAS-02 with ADR-0042)", () => {
+  it("moving the project moves its baselines and their case revisions; the web still reads them", async () => {
+    const token = await tokenFor();
+    const { projectId, c } = await newCase(token);
+    await review(token, c.id, { action: "send" });
+    await review(token, c.id, { action: "approve" });
+    const b = (await call(token, "POST", "/api/case-baselines", { projectId, name: "R1", caseIds: [c.id] })).body;
+    const ws = await app.inject({
+      method: "POST",
+      url: "/workspaces",
+      headers: { authorization: `Bearer ${token}`, [VERSION_HEADER]: SERVER_VERSION, [FEATURES_HEADER]: SERVER_FEATURES.join(",") },
+      payload: { name: "Equipo QA" },
+    });
+    expect(ws.statusCode).toBe(201);
+    const shared = ws.json().id as string;
+    const moved = await app.inject({
+      method: "POST",
+      url: `/workspaces/${shared}/move-project`,
+      headers: { authorization: `Bearer ${token}`, [VERSION_HEADER]: SERVER_VERSION, [FEATURES_HEADER]: SERVER_FEATURES.join(",") },
+      payload: { projectId },
+    });
+    expect(moved.statusCode).toBe(200);
+    const rows = (
+      await pool.query(
+        "SELECT workspace_id, entity, deleted, payload FROM documents WHERE entity IN ('case_baseline', 'test_case_revision')",
+      )
+    ).rows as { workspace_id: string; entity: string; deleted: boolean; payload: Record<string, unknown> }[];
+    const live = rows.filter((r) => !r.deleted);
+    // Every live baseline and revision is in the shared workspace, located there.
+    expect(live.length).toBeGreaterThan(1);
+    for (const r of live) expect([r.workspace_id, r.payload.workspaceId]).toEqual([shared, shared]);
+    // The origin keeps only move tombstones.
+    for (const r of rows.filter((x) => x.workspace_id !== shared)) {
+      expect(r.deleted).toBe(true);
+      expect(r.payload).toEqual({ movedTo: shared });
+    }
+    // The content did not change, and the web still resolves it.
+    const base = (await call(token, "GET", `/api/case-baselines/${b.id}`)).body;
+    expect(base).toMatchObject({ name: "R1", itemCount: 1 });
+    expect(base.items[0]).toMatchObject({ caseId: c.id, status: "approved" });
+    expect(base.items[0].data.steps[0].text).toBe("open");
   });
 });

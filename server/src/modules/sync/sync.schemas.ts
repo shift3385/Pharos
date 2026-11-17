@@ -333,11 +333,17 @@ export const deltaSchema = z
     }
   });
 
+/** The workspace a request is about (SYNC-07, ADR-0042 §2). Clients with
+ *  `workspaces` always send it; the others never do. */
+const workspaceIdSchema = z.string().uuid();
+
 export const pushSchema = z.object({
+  workspaceId: workspaceIdSchema.optional(),
   deltas: z.array(deltaSchema).max(MAX_PUSH_DELTAS),
 });
 
 export const pullSchema = z.object({
+  workspace: workspaceIdSchema.optional(),
   since: z.coerce.number().int().nonnegative().default(0),
   limit: z.coerce.number().int().min(1).max(MAX_PULL_LIMIT).default(MAX_PULL_LIMIT),
 });
@@ -377,6 +383,7 @@ export const isProvisionalKey = (key: string): boolean => key.includes("?");
  *  may still use (`floor`: its own next number, so a project numbered before
  *  its first push keeps its keys). */
 export const keyBlocksSchema = z.object({
+  workspaceId: workspaceIdSchema.optional(),
   requests: z
     .array(
       z.object({

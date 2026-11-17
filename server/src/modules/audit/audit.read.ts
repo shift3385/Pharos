@@ -11,6 +11,7 @@ import type { TokenService } from "../auth/tokens";
 import { requireSupportedVersion } from "../sync/sync.version";
 import { verifyChain, type AuditEvent } from "./audit.chain";
 import { WEB_DEVICE } from "./audit.store";
+import { CAPABILITIES } from "../workspaces/roles";
 
 /** Largest page served (the UI asks for 50; the export pages through). */
 export const MAX_LIMIT = 500;
@@ -75,10 +76,17 @@ export interface AuditChainStatus {
 
 const P = "d.payload";
 
+/** The workspaces where the user (`$1`) may read the audit: only the Test
+ *  Manager does (ADR-0019 decision 5, `audit.read`). */
+const AUDIT_SCOPE = `d.workspace_id IN (
+  SELECT m.workspace_id FROM workspace_members m JOIN workspaces w ON w.id = m.workspace_id
+   WHERE m.user_id = $1 AND m.removed_at IS NULL AND w.deleted_at IS NULL
+     AND m.role IN (${CAPABILITIES["audit.read"].map((r) => `'${r}'`).join(", ")}))`;
+
 /** WHERE clause and its arguments; `$1` is the user. */
 function where(userId: string, q: AuditQuery): { sql: string; args: unknown[] } {
   const args: unknown[] = [userId];
-  const parts = ["d.user_id = $1", "d.entity = 'audit_event'", "NOT d.deleted"];
+  const parts = [AUDIT_SCOPE, "d.entity = 'audit_event'", "NOT d.deleted"];
   const bind = (cond: (n: string) => string, v: unknown) => {
     args.push(v);
     parts.push(cond(`$${args.length}`));
@@ -94,7 +102,7 @@ function where(userId: string, q: AuditQuery): { sql: string; args: unknown[] } 
   return { sql: parts.join(" AND "), args };
 }
 
-const PROJECT_JOIN = `LEFT JOIN documents p ON p.user_id = d.user_id AND p.entity = 'project'
+const PROJECT_JOIN = `LEFT JOIN documents p ON p.workspace_id = d.workspace_id AND p.entity = 'project'
   AND p.entity_id = ${P}->>'projectId'`;
 
 function toRow(payload: AuditEvent, projectName: string | null): AuditRow {
@@ -137,7 +145,7 @@ export function createAuditReader(pool: Pool) {
     },
 
     async facets(userId: string) {
-      const base = "d.user_id = $1 AND d.entity = 'audit_event' AND NOT d.deleted";
+      const base = `${AUDIT_SCOPE} AND d.entity = 'audit_event' AND NOT d.deleted`;
       const distinct = async (field: string) =>
         (
           await pool.query<{ v: string }>(
@@ -164,7 +172,7 @@ export function createAuditReader(pool: Pool) {
     async verify(userId: string): Promise<{ chains: AuditChainStatus[]; thisDevice: string }> {
       const { rows } = await pool.query<{ payload: AuditEvent }>(
         `SELECT d.payload FROM documents d
-          WHERE d.user_id = $1 AND d.entity = 'audit_event' AND NOT d.deleted`,
+          WHERE ${AUDIT_SCOPE} AND d.entity = 'audit_event' AND NOT d.deleted`,
         [userId],
       );
       const groups = new Map<string, AuditEvent[]>();
