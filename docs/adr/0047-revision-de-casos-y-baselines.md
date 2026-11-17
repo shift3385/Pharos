@@ -75,7 +75,7 @@
   7. **Notificaciones:** después de que el núcleo acepta una transición, el
      cliente emite `pharos:case-review` (`onCaseReview` en el índice del
      módulo). La carga es `{ kind: sent | approved | returned, caseId,
-     scenarioId, title, projectId, authorId, actorId, actorName, at,
+     scenarioId, title, projectId, workspaceId, authorId, actorId, actorName, at,
      version, revision, comment?, selfApproval? }`. Es un contrato estable:
      se añaden campos, nunca se renombran ni se quitan. `revision` diferencia
      dos envíos de la misma versión, y la pista de notificaciones deduplica

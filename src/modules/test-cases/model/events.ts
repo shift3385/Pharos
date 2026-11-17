@@ -30,6 +30,8 @@ export interface CaseReviewEvent {
   scenarioId: string;
   title: string;
   projectId: string;
+  /** The workspace of the case, so a listener can find its members. */
+  workspaceId: string;
   /** The account that created the case. */
   authorId: string;
   /** Who sent, approved or returned it. */

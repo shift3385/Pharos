@@ -106,6 +106,7 @@ function announceReview(saved: TestCase, input: { action: ReviewAction; comment?
     scenarioId: saved.scenarioId,
     title: saved.title,
     projectId: saved.projectId ?? "",
+    workspaceId: saved.workspaceId,
     authorId: saved.createdBy,
     actorId: input.userId,
     actorName: input.userName,

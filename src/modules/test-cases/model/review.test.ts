@@ -60,6 +60,7 @@ describe("review events (contract with notifications)", () => {
       scenarioId: "ATS-014",
       title: "Pay",
       projectId: "p",
+      workspaceId: "w",
       authorId: "ana",
       actorId: "ana",
       actorName: "Ana",
