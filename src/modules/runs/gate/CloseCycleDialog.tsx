@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
+import { notify } from "@modules/notifications";
 import type { CycleClosure, ExecutionSummary } from "@shared/contracts/contract";
 import { Dialog } from "@shared/ui/Dialog";
 import { StatusPill } from "@shared/ui/StatusPill";
@@ -28,6 +29,19 @@ const STATE_TONE = { met: "success", notMet: "error", noData: "neutral", manual:
  *  the person chooses «Go con riesgos» or «No-go» (D1). Advisory criteria
  *  (D2) are shown and recorded, never asked for. The core checks everything
  *  again and stores the closing (`executionApi.closeCycle`). */
+/** Tells the workspace the cycle was closed (RED-W2). Never waits or fails. */
+function notifyClosed(projectId: string, cycleId: string, cycleLabel: string, closure: CycleClosure) {
+  const [key, ...rest] = cycleLabel.split(" · ");
+  void notify({
+    kind: "cycle.closed",
+    to: { workspace: true },
+    projectId,
+    subject: { entity: "test_cycle", id: cycleId, key: rest.length ? key : undefined, title: rest.length ? rest.join(" · ") : cycleLabel },
+    data: { verdict: closure.verdict, closedAt: closure.closedAt },
+    dedupeKey: `${cycleId}:${closure.closedAt}:cycle.closed`,
+  });
+}
+
 export function CloseCycleDialog({
   projectId,
   cycleId,
@@ -87,8 +101,10 @@ export function CloseCycleDialog({
     setError("");
     try {
       const closure = await executionApi.closeCycle(cycleId, closeInput(criteria, decisions, chosen), userId);
-      if (closure) onClosed(closure);
-      else setError(t("gate.error.generic"));
+      if (closure) {
+        notifyClosed(projectId, cycleId, cycleLabel, closure);
+        onClosed(closure);
+      } else setError(t("gate.error.generic"));
     } catch (e) {
       setError(t(gateErrorKey(e)));
     } finally {

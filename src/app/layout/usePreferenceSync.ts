@@ -1,0 +1,101 @@
+import { useEffect, useRef } from "react";
+import i18n from "i18next";
+import { useAuth } from "@modules/auth";
+import { adoptAppearance, APPEARANCE_EVENT, appearanceOf, loadSettings } from "@modules/admin";
+import {
+  isLanguage,
+  pullSynced,
+  pushSynced,
+  syncProfileNames,
+  type SyncedAppearance,
+  type SyncedLanguage,
+  type SyncedTheme,
+} from "@modules/profile";
+import { useTheme } from "@shared/theme/useTheme";
+
+/** How often the shell brings the account's preferences, besides sign-in,
+ *  focus and reconnection. */
+export const PREFERENCES_EVERY_MS = 5 * 60_000;
+
+const currentLanguage = (): SyncedLanguage => {
+  const l = i18n.resolvedLanguage;
+  return isLanguage(l) ? l : "es";
+};
+
+/**
+ * Profile, language and preferences follow the account (SYNC-09). Mounted
+ * once in the shell: at sign-in, when the window gets the focus back, when
+ * the connection returns and every few minutes it takes the account's
+ * newer values; a change made here is sent at once. A value taken from the
+ * account is not sent back.
+ */
+export function usePreferenceSync(): void {
+  const { user } = useAuth();
+  const userId = user?.id ?? "";
+  const { preference, setPreference } = useTheme();
+  const applying = useRef(false);
+  const theme = useRef(preference);
+  theme.current = preference;
+
+  // Pull: account → this device.
+  useEffect(() => {
+    if (!userId) return;
+    let alive = true;
+    const pull = async () => {
+      const lang = await pullSynced(userId, "ui.language", currentLanguage());
+      const mode = await pullSynced<SyncedTheme>(userId, "ui.theme", theme.current);
+      const look = await pullSynced<SyncedAppearance>(userId, "ui.appearance", appearanceOf(loadSettings()));
+      if (!alive) return;
+      applying.current = true;
+      try {
+        if (lang && lang !== currentLanguage()) await i18n.changeLanguage(lang);
+        if (mode && mode !== theme.current) setPreference(mode);
+        if (look) adoptAppearance(look);
+      } finally {
+        // The theme's effect runs after this render: release on the next tick.
+        window.setTimeout(() => {
+          applying.current = false;
+        }, 0);
+      }
+      void syncProfileNames();
+    };
+    const run = () => void pull().catch(() => undefined);
+    run();
+    const timer = window.setInterval(run, PREFERENCES_EVERY_MS);
+    window.addEventListener("focus", run);
+    window.addEventListener("online", run);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", run);
+      window.removeEventListener("online", run);
+    };
+  }, [userId, setPreference]);
+
+  // Push: language and appearance changed here.
+  useEffect(() => {
+    if (!userId) return;
+    const onLanguage = (lng: string) => {
+      if (!applying.current && isLanguage(lng)) void pushSynced(userId, "ui.language", lng);
+    };
+    const onAppearance = () => {
+      if (!applying.current) void pushSynced(userId, "ui.appearance", appearanceOf(loadSettings()));
+    };
+    i18n.on("languageChanged", onLanguage);
+    window.addEventListener(APPEARANCE_EVENT, onAppearance);
+    return () => {
+      i18n.off("languageChanged", onLanguage);
+      window.removeEventListener(APPEARANCE_EVENT, onAppearance);
+    };
+  }, [userId]);
+
+  // Push: the theme chosen here (not the first value, nor one adopted).
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    if (userId && !applying.current) void pushSynced(userId, "ui.theme", preference);
+  }, [preference, userId]);
+}

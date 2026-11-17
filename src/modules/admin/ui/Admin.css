@@ -684,6 +684,172 @@
   gap: var(--space-2);
 }
 
+/* The live trash (RED-W3): a card with a header row, the breakdown, the
+   selection bar and the list. */
+.adm-trash--live {
+  flex-direction: column;
+  align-items: stretch;
+  background: var(--color-surface-1);
+  border-style: solid;
+}
+
+.adm-trash__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.adm-trash--live .adm-trash__icon {
+  background: var(--color-surface-2);
+}
+
+.adm-trash__count {
+  margin-left: var(--space-2);
+  padding: 1px 8px;
+  font-size: var(--fs-metadata);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-navy-500);
+  background: var(--color-navy-100);
+  border-radius: var(--radius-pill);
+}
+
+.adm-trash__error {
+  color: var(--color-error-text);
+}
+
+.adm-trash__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.adm-trash__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: var(--fs-caption);
+  color: var(--color-text-primary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.adm-trash__chip b {
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-trash__chip.is-on {
+  color: var(--color-navy-500);
+  background: var(--color-navy-100);
+  border-color: var(--color-navy-500);
+}
+
+.adm-trash__selbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  color: var(--color-navy-500);
+  background: var(--color-navy-100);
+  border-radius: var(--radius-md);
+}
+
+.adm-trash__selbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.adm-trash__table-wrap {
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.adm-trash__table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: var(--fs-caption);
+}
+
+.adm-trash__table th,
+.adm-trash__table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.adm-trash__table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: var(--fs-metadata);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+}
+
+.adm-trash__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.adm-trash__table tr.is-selected td {
+  background: var(--color-navy-100);
+}
+
+.adm-trash__check {
+  width: 36px;
+}
+
+.adm-trash__item {
+  min-width: 220px;
+}
+
+.adm-trash__title {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.adm-trash__key {
+  font-family: var(--font-mono);
+  font-size: var(--fs-metadata);
+  color: var(--color-navy-500);
+}
+
+.adm-trash__kind {
+  display: block;
+  font-size: var(--fs-metadata);
+  color: var(--color-text-secondary);
+}
+
+.adm-trash__num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.adm-trash__row-action {
+  text-align: right;
+}
+
+.adm-trash__confirm-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--fs-caption);
+}
+
 /* Short and opacity-only when the user asks for less motion (SPEC §9). */
 @media (prefers-reduced-motion: reduce) {
   .adm-tab,
