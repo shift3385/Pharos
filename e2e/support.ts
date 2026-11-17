@@ -88,10 +88,35 @@ export async function openProjects() {
   await projectListLoaded();
 }
 
-/** The list has loaded: the table (or its «no match» row) or, in an account
- *  without projects, the empty state, which has no search box. */
-async function projectListLoaded() {
-  await $(".pj-table, .pj-empty").waitForExist({ timeoutMsg: "the project list never loaded" });
+type ProjectListState = "table" | "empty";
+
+async function projectListNow(): Promise<ProjectListState | null> {
+  if (await $(".pj-empty").isExisting()) return "empty";
+  if (await $(".pj-table").isExisting()) return "table";
+  return null;
+}
+
+/** The list has loaded and settled: the table (or its «no match» row) or, in
+ *  an account without projects, the empty state, which has no search box.
+ *  «Settled» means two reads 300 ms apart agree, so a table about to turn
+ *  into the empty state (the last test project just deleted) is not taken
+ *  for the final list. That race made the cleanup fail on the missing search
+ *  box in several runs. */
+async function projectListLoaded(): Promise<ProjectListState> {
+  const read: { last: ProjectListState | null; settled: ProjectListState | null } = {
+    last: null,
+    settled: null,
+  };
+  await browser.waitUntil(
+    async () => {
+      const now = await projectListNow();
+      if (now !== null && now === read.last) read.settled = now;
+      read.last = now;
+      return read.settled !== null;
+    },
+    { interval: 300, timeoutMsg: "the project list never loaded" },
+  );
+  return read.settled ?? "table";
 }
 
 /** «Nuevo proyecto» (UX-29) on its blank path: opens the wizard, goes past
@@ -183,10 +208,16 @@ export async function ensureSignedOut() {
 /** Names of the projects whose name starts with `TEST_PROJECT_PREFIX`,
  *  searched for in the list so they are all on its first page. */
 async function testProjectTitles(): Promise<string[]> {
-  await projectListLoaded();
   // No projects left: no search box and nothing to delete.
-  if (await $(".pj-empty").isExisting()) return [];
-  await $(`input[placeholder="${es.projects.list.search}"]`).setValue(TEST_PROJECT_PREFIX);
+  if ((await projectListLoaded()) === "empty") return [];
+  const search = $(`input[placeholder="${es.projects.list.search}"]`);
+  try {
+    await search.setValue(TEST_PROJECT_PREFIX);
+  } catch (error) {
+    // The list emptied between the read and the search: no test projects left.
+    if ((await projectListLoaded()) === "empty") return [];
+    throw error;
+  }
   const titles = await $$("a.pj-row__link .pj-row__name").map((el) => el.getText());
   return titles.map((t) => t.trim()).filter((name) => name.startsWith(TEST_PROJECT_PREFIX));
 }
