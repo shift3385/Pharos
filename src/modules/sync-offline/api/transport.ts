@@ -3,11 +3,8 @@
 // request carries the app version (SYNC-08); pushes go in batches small enough
 // for the server's body limit (FIX-03); transient failures are retried.
 
+import { serverFetch } from "@shared/platform/serverUrl";
 import { APP_VERSION } from "@shared/version";
-
-export const API_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ??
-  "http://localhost:3000";
 
 /** Header with the app version; the server rejects unsupported ones (426). */
 export const VERSION_HEADER = "x-pharos-version";
@@ -199,7 +196,7 @@ export async function syncRequest<T>(
   token: string,
   init: SyncRequestInit = {},
 ): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await serverFetch(path, {
     method: init.method ?? "GET",
     headers: {
       authorization: `Bearer ${token}`,
