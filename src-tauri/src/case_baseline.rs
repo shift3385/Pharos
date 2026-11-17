@@ -196,6 +196,13 @@ pub(crate) fn create_baseline(conn: &Connection, input: &BaselineInput) -> Resul
         )
         .map_err(|e| e.to_string())?;
     }
+    conn.execute(
+        "UPDATE case_baselines SET hlc = ?2 WHERE id = ?1",
+        params![id, crate::oplog::next_hlc(conn)?],
+    )
+    .map_err(|e| e.to_string())?;
+    // Synced as an append-only document (`sync_class.rs`).
+    journal::record_append(conn, ENTITY, &id, user)?;
     let mut changes = Map::new();
     changes.insert("name".into(), json!(name));
     changes.insert("cases".into(), json!(items.len()));
@@ -210,6 +217,138 @@ pub(crate) fn create_baseline(conn: &Connection, input: &BaselineInput) -> Resul
         None,
     )?;
     Ok(id)
+}
+
+/// The `case_baseline` document pushed for a baseline (append-only,
+/// `sync_class.rs`). `workspaceId` and `projectId` are its location, outside
+/// its content: moving the project moves it (ADR-0019).
+pub fn payload(conn: &Connection, id: &str) -> Result<Option<Value>, String> {
+    let head = conn
+        .query_row(
+            "SELECT id, workspace_id, project_id, name, description, scope_label, approved_only, \
+             created_by, created_at, hlc FROM case_baselines WHERE id = ?1",
+            params![id],
+            |r| {
+                Ok(json!({
+                    "id": r.get::<_, String>(0)?,
+                    "workspaceId": r.get::<_, Option<String>>(1)?,
+                    "projectId": r.get::<_, String>(2)?,
+                    "name": r.get::<_, String>(3)?,
+                    "description": r.get::<_, String>(4)?,
+                    "scopeLabel": r.get::<_, String>(5)?,
+                    "approvedOnly": r.get::<_, i64>(6)? == 1,
+                    "createdBy": r.get::<_, String>(7)?,
+                    "createdAt": r.get::<_, String>(8)?,
+                    "hlc": r.get::<_, String>(9)?,
+                }))
+            },
+        )
+        .optional()
+        .map_err(|e| e.to_string())?;
+    let Some(mut head) = head else {
+        return Ok(None);
+    };
+    let mut stmt = conn
+        .prepare(
+            "SELECT case_id, revision_id, revision, scenario_id, title, status \
+             FROM case_baseline_items WHERE baseline_id = ?1 ORDER BY scenario_id, case_id",
+        )
+        .map_err(|e| e.to_string())?;
+    let items = stmt
+        .query_map(params![id], |r| {
+            Ok(json!({
+                "caseId": r.get::<_, String>(0)?,
+                "revisionId": r.get::<_, String>(1)?,
+                "revision": r.get::<_, i64>(2)?,
+                "scenarioId": r.get::<_, String>(3)?,
+                "title": r.get::<_, String>(4)?,
+                "status": r.get::<_, String>(5)?,
+            }))
+        })
+        .map_err(|e| e.to_string())?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(|e| e.to_string())?;
+    head["items"] = Value::Array(items);
+    Ok(Some(head))
+}
+
+/// Stores a pulled baseline unless its id is already here. Its items point
+/// at case revisions that may arrive later: nothing checks them on insert.
+pub fn insert_if_absent(conn: &Connection, _user: &str, p: &Value) -> Result<(), String> {
+    let s = |k: &str| p.get(k).and_then(Value::as_str);
+    let (Some(id), Some(project), Some(name)) = (s("id"), s("projectId"), s("name")) else {
+        tracing::warn!("skipped a pulled case_baseline without its required fields");
+        return Ok(());
+    };
+    if let Some(hlc) = s("hlc") {
+        crate::oplog::observe_hlc(conn, hlc)?;
+    }
+    let inserted = conn
+        .execute(
+            "INSERT OR IGNORE INTO case_baselines (id, workspace_id, project_id, name, description, \
+             scope_label, approved_only, created_by, created_at, hlc) \
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, coalesce(?9, strftime('%Y-%m-%dT%H:%M:%fZ', 'now')), \
+             coalesce(?10, ''))",
+            params![
+                id,
+                match s("workspaceId") {
+                    Some(ws) => ws.to_string(),
+                    None => ensure_workspace(conn)?,
+                },
+                project,
+                name,
+                s("description").unwrap_or(""),
+                s("scopeLabel").unwrap_or(""),
+                i64::from(p.get("approvedOnly").and_then(Value::as_bool).unwrap_or(false)),
+                s("createdBy").unwrap_or(""),
+                s("createdAt"),
+                s("hlc"),
+            ],
+        )
+        .map_err(|e| e.to_string())?;
+    if inserted == 0 {
+        return Ok(());
+    }
+    for item in p
+        .get("items")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+    {
+        let t = |k: &str| item.get(k).and_then(Value::as_str);
+        let (Some(case_id), Some(revision_id)) = (t("caseId"), t("revisionId")) else {
+            continue;
+        };
+        conn.execute(
+            "INSERT OR IGNORE INTO case_baseline_items (baseline_id, case_id, revision_id, revision, \
+             scenario_id, title, status) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                id,
+                case_id,
+                revision_id,
+                item.get("revision").and_then(Value::as_i64).unwrap_or(0),
+                t("scenarioId").unwrap_or(""),
+                t("title").unwrap_or(""),
+                t("status").unwrap_or("draft"),
+            ],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// The account a baseline syncs with: the owner of its project.
+pub fn owner(conn: &Connection, id: &str) -> Result<Option<String>, String> {
+    let owner: Option<Option<String>> = conn
+        .query_row(
+            "SELECT p.owner_id FROM case_baselines b JOIN projects p ON p.id = b.project_id \
+             WHERE b.id = ?1",
+            params![id],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(|e| e.to_string())?;
+    Ok(owner.flatten().filter(|o| !o.is_empty()))
 }
 
 /// The baselines of a project the user owns, newest first.
@@ -480,6 +619,44 @@ mod tests {
         assert_eq!(base.items.len(), 1);
         assert_eq!(base.items[0].status, "approved");
         assert!(base.summary.approved_only);
+    }
+
+    #[test]
+    fn a_baseline_syncs_as_an_append_only_document_and_comes_back_the_same() {
+        let c = conn();
+        let p = project(&c);
+        let a = test_case::insert_case(&c, &case_input(&p, "A")).unwrap();
+        let id = create_baseline(&c, &input(&p, &[&a], false)).unwrap();
+        // Queued for the server, as an append.
+        let queued: i64 = c
+            .query_row(
+                "SELECT count(*) FROM oplog WHERE entity = ?1 AND entity_id = ?2 AND op = 'append'",
+                params![ENTITY, id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(queued, 1);
+        assert!(crate::sync_class::append_only(ENTITY).is_some());
+        let doc = payload(&c, &id).unwrap().unwrap();
+        assert_eq!(doc["projectId"], p.as_str());
+        assert!(doc["workspaceId"].is_string(), "location for move-project");
+        assert_eq!(doc["items"][0]["caseId"], a.as_str());
+        assert_eq!(owner(&c, &id).unwrap().as_deref(), Some(USER));
+
+        // Another device pulls it: same baseline, same items.
+        let other = conn();
+        let ws = ensure_workspace(&other).unwrap();
+        other
+            .execute(
+                "INSERT INTO projects (id, workspace_id, owner_id, name, case_id_prefix, case_id_digits, \
+                 created_by, updated_by, created_at, updated_at, revision) \
+                 VALUES (?1, ?2, ?3, 'P', 'TC-', 3, ?3, ?3, datetime('now'), datetime('now'), 1)",
+                params![p, ws, USER],
+            )
+            .unwrap();
+        insert_if_absent(&other, USER, &doc).unwrap();
+        insert_if_absent(&other, USER, &doc).unwrap();
+        assert_eq!(payload(&other, &id).unwrap().unwrap(), doc);
     }
 
     #[test]

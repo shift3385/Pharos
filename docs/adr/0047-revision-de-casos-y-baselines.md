@@ -95,8 +95,15 @@
      - se crea con todos los casos del proyecto, con el filtro de la lista o
        con la selección. «Solo los casos aprobados» viene marcado y se puede
        desmarcar. Una baseline sin casos se rechaza;
-     - en el servidor es un documento de solo-añadir (`case_baseline`), y
-       la migración 0024 del servidor no hace falta;
+     - se sincroniza como entidad de solo-añadir `case_baseline`
+       (`sync_class.rs`, `APPEND_ONLY_ENTITIES`; `APPLIED_SET_VERSION` 8),
+       con `workspaceId` y `projectId` como ubicación fuera del contenido,
+       así que mover un proyecto mueve sus baselines (ADR-0019), y borrarlo
+       las deja como lápida (`PROJECT_CHILDREN`). Solo la reciben y la
+       envían los clientes que anuncian la función `case-baselines`
+       (VERSIONING §6.5), y el escritorio la retiene hasta que su servidor la
+       anuncia. La pista de workspaces lo aceptó en la ola 1. La migración
+       0024 del servidor no hace falta;
      - comparar es trabajo del cliente (`compareBaselines`) sobre el
        contenido que devuelven los dos lados. Se compara una baseline con
        otra o con el estado actual (`case_baseline_current`), y cada caso
@@ -127,6 +134,8 @@
   - Hasta TEN-01, cada workspace tiene un solo miembro, así que toda
     aprobación es una autoaprobación registrada. Con los roles, el mismo
     código pide otra persona.
-  - Que las baselines del escritorio lleguen a la web depende de registrar
-    `case_baseline` como entidad de solo-añadir en el sync (un commit aparte,
-    coordinado con la pista de workspaces).
+  - La comprobación de roles de la pista de workspaces
+    (`workspaceApproverCheck`) se instala con `setApproverCheck` en el
+    servidor, en TypeScript y en Rust. Responde `notMember`, `role` o
+    `author`, y en un workspace personal de un solo miembro deja la
+    autoaprobación de esta decisión.

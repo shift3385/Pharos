@@ -11,6 +11,7 @@ import {
   FEATURE_DATA_KEYS,
   FEATURE_KEYS,
   isAppendOnly,
+  isBaselineEntity,
   isCycleEntity,
   isDefectEntity,
   isExecution,
@@ -27,6 +28,7 @@ import {
   SERVER_VERSION,
   sendsCompletePayload,
   missingFeatures,
+  understandsCaseBaselines,
   sendsStableSteps,
   understandsAppendOnly,
   understandsCycles,
@@ -95,6 +97,12 @@ export function syncRoutes(
         message: "This client did not announce the cycles sync feature.",
       });
     }
+    if (!understandsCaseBaselines(req) && deltas.some((d) => isBaselineEntity(d.entity))) {
+      return reply.code(400).send({
+        code: "case_baselines_unsupported",
+        message: "This client did not announce the case-baselines sync feature.",
+      });
+    }
     // Defects have their own entity since DEF-01: a client that does not
     // know it can neither push one nor touch a planner defect card, which the
     // server converted (migration 0010). Nothing of the batch is stored.
@@ -152,6 +160,7 @@ export function syncRoutes(
       runs: understandsRuns(req),
       cycles: understandsCycles(req),
       defects: understandsDefects(req),
+      baselines: understandsCaseBaselines(req),
     });
     const { hasMore } = page;
     const cursor = page.docs.length

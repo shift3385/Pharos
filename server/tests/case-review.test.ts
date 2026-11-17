@@ -210,3 +210,56 @@ describe("the save rules", () => {
     expect(afterSave(saved, "T", "1.0", { steps: [2] })).toMatchObject({ status: "draft", version: "1.1" });
   });
 });
+
+describe("suite baselines over sync (CAS-02)", () => {
+  async function pull(token: string, features: string) {
+    const res = await app.inject({
+      method: "GET",
+      url: "/sync/pull?since=0",
+      headers: { authorization: `Bearer ${token}`, [VERSION_HEADER]: SERVER_VERSION, [FEATURES_HEADER]: features },
+    });
+    return (res.json().docs as { entity: string; payload: Record<string, unknown> }[]).filter(
+      (d) => d.entity === "case_baseline",
+    );
+  }
+
+  it("only clients that announce case-baselines pull them, with their location", async () => {
+    const token = await tokenFor();
+    const { projectId, c } = await newCase(token);
+    await call(token, "POST", "/api/case-baselines", { projectId, name: "B", caseIds: [c.id] });
+    const full = "key-conflicts,append-only,complete-payload,stable-steps,runs,custom-fields,cycles,defects,requirement-data";
+    expect(await pull(token, full)).toHaveLength(0);
+    const docs = await pull(token, `${full},case-baselines`);
+    expect(docs).toHaveLength(1);
+    expect(docs[0].payload).toMatchObject({ projectId, name: "B" });
+    expect(typeof docs[0].payload.workspaceId).toBe("string");
+  });
+
+  it("a push of a baseline from a client without the feature is refused", async () => {
+    const token = await tokenFor();
+    const res = await app.inject({
+      method: "POST",
+      url: "/sync/push",
+      headers: {
+        authorization: `Bearer ${token}`,
+        [VERSION_HEADER]: SERVER_VERSION,
+        [FEATURES_HEADER]: "key-conflicts,append-only,complete-payload,stable-steps",
+      },
+      payload: {
+        deltas: [
+          {
+            entity: "case_baseline",
+            entityId: "b1",
+            op: "append",
+            payload: { id: "b1", projectId: "p", name: "B", items: [] },
+            revision: 1,
+            author: "x",
+            hlc: "0000000000001-0000-dev",
+          },
+        ],
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().code).toBe("case_baselines_unsupported");
+  });
+});

@@ -6,6 +6,7 @@ import {
   KEY_ENTITY,
   KEY_FIELD,
   APPEND_ONLY_ENTITIES,
+  BASELINE_ENTITIES,
   CYCLE_ENTITIES,
   DEFECT_ENTITIES,
   EXECUTION_ENTITIES,
@@ -448,13 +449,16 @@ export function createSyncRepository(pool: Pool) {
       userId: string,
       since: number,
       limit = MAX_PULL_LIMIT,
-      opts: { appendOnly: boolean; runs?: boolean; cycles?: boolean; defects?: boolean } = { appendOnly: false },
+      opts: { appendOnly: boolean; runs?: boolean; cycles?: boolean; defects?: boolean; baselines?: boolean } = {
+        appendOnly: false,
+      },
     ): Promise<PullPage> {
       const skipped: string[] = [
         ...(opts.appendOnly ? [] : APPEND_ONLY_ENTITIES),
         ...(opts.runs ? [] : EXECUTION_ENTITIES),
         ...(opts.cycles ? [] : CYCLE_ENTITIES),
         ...(opts.defects ? [] : DEFECT_ENTITIES),
+        ...(opts.baselines ? [] : BASELINE_ENTITIES),
       ];
       // A client without `defects` (DEF-01) gets no planner defect card
       // either: since migration 0010 they are the conversion's tombstones,
