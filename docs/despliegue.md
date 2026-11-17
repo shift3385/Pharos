@@ -148,11 +148,23 @@ app dice «Tu servidor no tiene activada la IA en la web».
 - **Si la cambias**, las copias guardadas dejan de poder leerse. Cada persona
   ve «Hay que volver a subirla» y la sube otra vez desde su escritorio. No hace
   falta borrar nada.
-- **Límites por cuenta:** 30 peticiones de IA por minuto
-  (`AI_CHAT_RATE_LIMIT_MAX`) y 10 subidas o borrados de la clave por hora
-  (`AI_VAULT_RATE_LIMIT_MAX`). El uso se cobra a la clave de cada persona.
+- **Límites por cuenta:**
+  - 30 peticiones de IA por minuto (`AI_CHAT_RATE_LIMIT_MAX`);
+  - como mucho 3 a la vez;
+  - 10 subidas o borrados de la clave por hora (`AI_VAULT_RATE_LIMIT_MAX`).
+
+  El uso se cobra a la clave de cada persona.
 - El servidor llama a Gemini, OpenAI, Claude y OpenRouter, así que necesita
   salida a internet hacia ellos. «Compatible» no está disponible en la web.
+- **Copias de una clave maestra anterior.** No se borran solas: si vuelves a
+  la clave anterior, se pueden leer otra vez. Para borrarlas, ejecuta
+  `DELETE FROM ai_vault WHERE kek_id <> '<id>';` con el `kek_id` de una fila
+  que se haya subido después del cambio.
+- **Sesiones cerradas.** El servidor no comprueba los tokens de acceso contra
+  la base de datos. Una sesión cerrada puede seguir usando la IA de la web
+  hasta que caduque su token (`ACCESS_TOKEN_TTL`, 15 minutos por defecto).
+  Para cortarlo antes, borra la copia: la persona puede hacerlo desde la web o
+  el escritorio, y tú con `DELETE FROM ai_vault WHERE user_id = '…';`.
 
 ## Si algo no sale
 

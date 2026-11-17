@@ -415,13 +415,10 @@ export const INVENTORY: Item[] = [
   I("administracion", "tab", "admin:ai", "Motor de IA"),
   I("administracion", "tab", "tabs:src/modules/admin/ui/AdminTabs.tsx", "Pestañas de Administración"),
   I("administracion", "dialog", "dialogs:src/modules/ai/ui/AiEngineTab.tsx", "Descartar o reemplazar la clave de IA (confirmaciones)"),
-  I("administracion", "dialog", "dialogs:src/modules/ai/ui/clearWebCopy.ts", "Quitar una clave de IA que la web también usa (IA-12)", {
-    pending:
-      "Necesita que la API del tour arranque con AI_VAULT_KEY y una clave de ejemplo ya subida; se añade al tour en la validación de la 0.5.0. Hasta entonces lo cubren webAccess.test.ts y la revisión manual (docs/manual/REVIEW.md).",
-  }),
-  I("administracion", "dialog", "dialogs:src/modules/ai/ui/WebAccessPanel.tsx", "Usar la clave de IA también en la web: consentimiento, desactivar, cambiar el modelo (IA-12)", {
-    pending:
-      "Necesita que la API del tour arranque con AI_VAULT_KEY y una clave de ejemplo en el keychain aislado; se añade al tour en la validación de la 0.5.0. Hasta entonces lo cubren WebAccessPanel.test.tsx y webAccess.test.ts, y la revisión manual (docs/manual/REVIEW.md).",
+  I("administracion", "dialog", "dialogs:src/modules/ai/ui/clearWebCopy.ts", "Quitar una clave de IA que la web también usa (IA-12)"),
+  I("administracion", "dialog", "dialogs:src/modules/ai/ui/WebAccessPanel.tsx", "Usar la clave de IA también en la web: consentimiento, cambiar el modelo, desactivar (IA-12)", {
+    // Covered by the tour except one dialog: the web's «Dejar de usarla en la web».
+    skip: `La confirmación de «Dejar de usarla en la web» solo existe en la versión web; los tours recorren la app de escritorio. La cubren WebAccessPanel.test.tsx y la revisión manual (docs/manual/REVIEW.md).`,
   }),
   I("administracion", "state", "state:ollama-offline", "Ollama no detectado (tarjeta del motor local)"),
   I("administracion", "action", "action:ai-ollama", "Descargar y usar un modelo de Ollama", {
