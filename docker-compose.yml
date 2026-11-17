@@ -43,15 +43,39 @@ services:
       ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
       REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-30}
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
-      # Limits (README, "Production configuration"). Behind a reverse proxy set
-      # TRUST_PROXY=true, or every client shares the proxy's login limit.
-      TRUST_PROXY: ${TRUST_PROXY:-false}
+      # Only the caddy service below reaches the API (its port is not
+      # published), so the protocol and client IP come from Caddy's
+      # X-Forwarded-* headers (SEC-07, docs/despliegue.md).
+      TRUST_PROXY: ${TRUST_PROXY:-true}
       LOGIN_RATE_LIMIT_MAX: ${LOGIN_RATE_LIMIT_MAX:-10}
       LOGIN_RATE_LIMIT_WINDOW: ${LOGIN_RATE_LIMIT_WINDOW:-1 minute}
       BODY_LIMIT_BYTES: ${BODY_LIMIT_BYTES:-1048576}
       SYNC_BODY_LIMIT_BYTES: ${SYNC_BODY_LIMIT_BYTES:-8388608}
+    # No published port: in production the API serves only https, through
+    # Caddy (SEC-07). It still listens on 3000 inside the compose network.
+    expose:
+      - "3000"
+
+  # Ends TLS for the API (SEC-07, ADR-0046, docs/despliegue.md). With a public
+  # domain in PHAROS_DOMAIN it gets a Let's Encrypt certificate; with
+  # localhost or an internal name it uses its own CA, which Windows must trust.
+  caddy:
+    image: caddy:2-alpine
+    container_name: pharos-caddy
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      PHAROS_DOMAIN: ${PHAROS_DOMAIN:-localhost}
     ports:
-      - "3000:3000"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
 
 volumes:
   pharos_pg_data:
+  caddy_data:
+  caddy_config:
