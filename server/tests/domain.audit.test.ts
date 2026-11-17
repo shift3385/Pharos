@@ -51,7 +51,7 @@ async function call(token: string, method: Method, url: string, payload?: unknow
 /** The user's web chain, in order, as stored. */
 async function chain(userId: string): Promise<AuditEvent[]> {
   const { rows } = await pool.query<{ payload: AuditEvent }>(
-    `SELECT payload FROM documents WHERE user_id = $1 AND entity = 'audit_event'
+    `SELECT payload FROM documents WHERE workspace_id = (SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal') AND entity = 'audit_event'
       ORDER BY (payload->>'chainSeq')::bigint`,
     [userId],
   );
@@ -91,12 +91,14 @@ describe("web audit (AUD-01b)", () => {
     for (const e of events) {
       expect(e).toMatchObject({
         deviceId: "web",
-        chainWorkspaceId: "web",
+        // The workspace the event is stored in is also its chain workspace
+        // (SYNC-07, ADR-0042 §4).
+        chainWorkspaceId: e.workspaceId,
         chainOwner: userId,
         actor: `user:${userId}`,
         onBehalfOf: null,
         origin: "local",
-        workspaceId: "",
+        workspaceId: expect.stringMatching(/^[0-9a-f-]{36}$/),
         projectId: p.id,
         redactedAt: null,
       });
@@ -114,7 +116,7 @@ describe("web audit (AUD-01b)", () => {
     expect(verifyChain(events)).toEqual({ ok: true, count: 4 });
     // Stamped after the change it records.
     const doc = await pool.query<{ hlc: string }>(
-      "SELECT hlc FROM documents WHERE user_id = $1 AND entity = 'test_case'",
+      "SELECT hlc FROM documents WHERE workspace_id = (SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal') AND entity = 'test_case'",
       [userId],
     );
     expect(events[3].hlc > doc.rows[0].hlc).toBe(true);
@@ -328,7 +330,7 @@ describe("web audit (AUD-01b)", () => {
     await call(token, "PUT", `/api/projects/${p.id}`, { input: { name: "Again" } });
     await pool.query(
       `UPDATE documents SET payload = jsonb_set(payload, '{changes}', to_jsonb('{"name":["Checkout","Hacked"]}'::text))
-        WHERE user_id = $1 AND entity = 'audit_event' AND payload->>'chainSeq' = '2'`,
+        WHERE workspace_id = (SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal') AND entity = 'audit_event' AND payload->>'chainSeq' = '2'`,
       [userId],
     );
     expect(verifyChain(await chain(userId))).toEqual({ ok: false, break: { kind: "changes", seq: 2 } });

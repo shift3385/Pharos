@@ -22,6 +22,8 @@ import { homeMetricsRoutes } from "./modules/domain/home-metrics";
 import { createPreferenceStore, preferenceRoutes } from "./modules/preferences/preferences";
 import { auditRoutes, createAuditReader } from "./modules/audit/audit.read";
 import { AppError } from "./modules/auth/errors";
+import { createWorkspaceService } from "./modules/workspaces/workspaces.service";
+import { workspaceRoutes } from "./modules/workspaces/workspaces.routes";
 
 /** Routes limited per client IP: guessing passwords on login, and burning
  *  Argon2 CPU on register. */
@@ -87,7 +89,9 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
   const service = createAuthService({ repo, tokens });
 
   const syncRepo = createSyncRepository(pool);
-  const domainStore = createDomainStore(pool, createServerClock());
+  const clock = createServerClock();
+  const domainStore = createDomainStore(pool, clock);
+  const workspaces = createWorkspaceService(pool, clock);
   const domain = createDomainService(domainStore);
   const cycles = createCycleService(domainStore);
   const runs = createRunService(domainStore);
@@ -98,7 +102,10 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
     authRoutes(instance, { service, tokens });
   });
   void app.register(async (instance) => {
-    syncRoutes(instance, { repo: syncRepo, tokens });
+    syncRoutes(instance, { repo: syncRepo, tokens, pool });
+  });
+  void app.register(async (instance) => {
+    workspaceRoutes(instance, { service: workspaces, tokens });
   });
   void app.register(async (instance) => {
     domainRoutes(instance, { domain, tokens });
