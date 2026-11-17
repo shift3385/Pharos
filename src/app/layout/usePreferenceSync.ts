@@ -24,8 +24,8 @@ const currentLanguage = (): SyncedLanguage => {
 
 /**
  * Profile, language and preferences follow the account (SYNC-09). Mounted
- * once in the shell: at sign-in, when the window gets the focus back, when
- * the connection returns and every few minutes it takes the account's
+ * once in the shell: at sign-in, after every sync, when the window gets the
+ * focus back, when the connection returns and every few minutes it takes the account's
  * newer values; a change made here is sent at once. A value taken from the
  * account is not sent back.
  */
@@ -36,6 +36,8 @@ export function usePreferenceSync(): void {
   const applying = useRef(false);
   const theme = useRef(preference);
   theme.current = preference;
+  /** The theme just taken from the account: its render must not send it back. */
+  const adoptedTheme = useRef<SyncedTheme | null>(null);
 
   // Pull: account → this device.
   useEffect(() => {
@@ -49,13 +51,13 @@ export function usePreferenceSync(): void {
       applying.current = true;
       try {
         if (lang && lang !== currentLanguage()) await i18n.changeLanguage(lang);
-        if (mode && mode !== theme.current) setPreference(mode);
+        if (mode && mode !== theme.current) {
+          adoptedTheme.current = mode;
+          setPreference(mode);
+        }
         if (look) adoptAppearance(look);
       } finally {
-        // The theme's effect runs after this render: release on the next tick.
-        window.setTimeout(() => {
-          applying.current = false;
-        }, 0);
+        applying.current = false;
       }
       void syncProfileNames();
     };
@@ -64,11 +66,13 @@ export function usePreferenceSync(): void {
     const timer = window.setInterval(run, PREFERENCES_EVERY_MS);
     window.addEventListener("focus", run);
     window.addEventListener("online", run);
+    window.addEventListener("pharos:synced", run);
     return () => {
       alive = false;
       window.clearInterval(timer);
       window.removeEventListener("focus", run);
       window.removeEventListener("online", run);
+      window.removeEventListener("pharos:synced", run);
     };
   }, [userId, setPreference]);
 
@@ -96,6 +100,10 @@ export function usePreferenceSync(): void {
       first.current = false;
       return;
     }
-    if (userId && !applying.current) void pushSynced(userId, "ui.theme", preference);
+    if (adoptedTheme.current === preference) {
+      adoptedTheme.current = null;
+      return;
+    }
+    if (userId) void pushSynced(userId, "ui.theme", preference);
   }, [preference, userId]);
 }

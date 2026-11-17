@@ -20,7 +20,7 @@ const PULL_EVERY_MS = 60_000;
 
 /**
  * Mounted once in the shell, inside `SyncStatusProvider`. It keeps the list,
- * pulls it every minute (and when the connection comes back), turns new sync
+ * pulls it every minute, after every sync and when the connection comes back, turns new sync
  * conflicts into a local notification, and turns K's case review events into
  * notifications for the other people concerned.
  */
@@ -49,12 +49,15 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     const onOnline = () => refresh();
     window.addEventListener(NOTIFICATIONS_CHANGED, onChanged);
     window.addEventListener("online", onOnline);
+    // After every sync too: a notification often comes with the change.
+    window.addEventListener("pharos:synced", onOnline);
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible" && navigator.onLine !== false) refresh();
     }, PULL_EVERY_MS);
     return () => {
       window.removeEventListener(NOTIFICATIONS_CHANGED, onChanged);
       window.removeEventListener("online", onOnline);
+      window.removeEventListener("pharos:synced", onOnline);
       window.clearInterval(timer);
     };
   }, [reload, refresh]);
