@@ -146,6 +146,25 @@ chapter("administracion", () => {
     },
   });
 
+  step("papelera", {
+    title: "Papelera",
+    caption:
+      "Al final de «General», la «Papelera» reúne lo que has borrado en este equipo y aún no se ha eliminado para siempre: el número de elementos, su desglose por tipo (proyectos, casos, requisitos, defectos…) y, en cada fila, cuándo se borró y en cuántos días se eliminará según la retención. Marca filas para «Restaurar» (vuelven a su sitio con su clave y su historial, y se sincronizan) o «Eliminar para siempre»; un proyecto vuelve con lo que se borró con él. «Vaciar papelera» pide confirmación y conserva lo que tiene cambios sin sincronizar. En la web no se guarda lo borrado: la papelera está en la app de escritorio.",
+    covers: ["dialogs:src/modules/admin/ui/TrashSection.tsx"],
+    focus: '[data-testid="admin-trash"]',
+    run: async () => {
+      await openAdminTab("general");
+      await byTestId("admin-trash").scrollIntoView();
+      await expect(byTestId("trash-table")).toBeDisplayed();
+      await byTestId("trash-empty").click();
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
+    },
+    after: async () => {
+      await clickButton(es.common.cancel, '[role="alertdialog"]');
+      await $('[role="alertdialog"]').waitForExist({ reverse: true });
+    },
+  });
+
   step("sincronizacion", {
     title: "Sincronización",
     caption:

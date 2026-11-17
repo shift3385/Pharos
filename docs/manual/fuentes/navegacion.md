@@ -59,8 +59,14 @@ lo cierras.
   mide menos de 1280 px de ancho. Agrándala o maximízala: la pestaña de
   contraer y expandir, en el borde derecho del menú, solo existe en pantallas
   anchas.
-- **La búsqueda y la campana solo dicen «próximamente».** Es lo esperado en
-  esta versión. Usa el buscador de cada lista y, en los casos, Ctrl+P.
+- **La búsqueda solo dice «próximamente».** Es lo esperado en esta versión.
+  Usa el buscador de cada lista y, en los casos, Ctrl+P.
+- **La campana no muestra nada de otra persona.** Las notificaciones de otras
+  personas llegan cuando trabajáis en el mismo workspace. Sin conexión, el
+  panel enseña lo último que llegó; lo nuevo aparece al volver la conexión o
+  tras sincronizar.
+- **Una notificación no se abre.** Lo que señala ya no existe o no tienes
+  acceso: la acción queda desactivada.
 - **Ctrl+K no hace nada.** Hay un diálogo abierto: ciérralo antes con Esc.
 - **«Sincronizar ahora» no aparece.** Estás sin conexión. Pharos sincroniza
   solo cuando vuelve la conexión. En la tira de iconos, el botón de las
@@ -97,6 +103,7 @@ lo cierras.
   escritorio.
 - La lupa convierte la barra superior en un buscador. La flecha o Esc lo
   cierran.
+- La campana abre las notificaciones como una hoja desde abajo.
 - El tema y la sincronización están en el menú de tu avatar, arriba a la
   derecha.
 - Los menús se abren como hojas desde abajo.

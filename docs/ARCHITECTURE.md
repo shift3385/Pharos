@@ -230,6 +230,43 @@ module README has the details. The layout is an **account preference**:
 wins by the client's `updatedAt` (clamped to now + 5 min), with a per-account
 copy on each device (`@modules/profile` `savePreference`/`pullPreference`,
 pending while offline). Signing in always opens Inicio (`App.tsx`).
+Since SYNC-09 the language, theme and appearance travel the same way
+(`ui.language`, `ui.theme`, `ui.appearance`; `GET /api/me/preferences`
+lists them): `app/layout/usePreferenceSync.ts` takes the account's values at
+sign-in, after each sync, on focus, on reconnection and every 5 minutes, and
+sends a change made here at once (never one it just took). A background
+image of the device's own, the retention, auto-sync and the download folder
+stay on the device. The desktop's profile names and the account's
+(`/auth/me`) follow the newer change (`profile/api/preferenceSync.ts`).
+
+**Notifications (RED-W2, ADR-0048).** What someone did that concerns
+another person travels through the server: `notifications` (server
+migration 0023), one row per recipient, pulled by a `seq` cursor that also
+moves on read marks (`GET /api/me/notifications?since=`, `POST
+/api/me/notifications/read`), 90 days and 500 per person. Server modules
+call `emitNotification` inside their transaction; clients call `notify()`
+(`@modules/notifications`, `POST /api/notifications`), which never throws
+and, on the desktop, goes through an outbox while offline. Who may notify
+whom is a `Membership` the workspaces provide (until then, nobody else). The
+desktop keeps an encrypted copy, local `sync.conflict` notifications, the
+outbox and the cursor (local migration 0043, `notifications.rs`); the web
+keeps nothing. `NotificationsProvider` (in the shell) pulls every minute,
+after each sync and on reconnection; it turns K's `pharos:case-review`
+window events and a rise in sync conflicts into notifications. The bell's
+panel groups by day, filters unread and runs one direct action per row.
+
+**Trash (RED-W3).** `trash.rs` lists what the account deleted and the
+purge (SYNC-06) has not removed, with the purge's scope; rows that went with
+a parent (a project's, a run's items, a cycle's items, a defect's links) are
+not listed and come back with it. A restore is a new audited change of each
+row (`Action::Restore`, op `upsert`, revision + 1), so the push sends it
+like any edit and it wins over the server's tombstone by HLC; a row of a
+project still in the trash waits for the project, and a defect comes back
+without its attachments (their content was released, ADR-0014).
+«Eliminar para siempre» and «Vaciar papelera» run `purge::purge_now`: the
+same purge with no retention left, for a selection or for everything;
+held rows (pending or in conflict) stay. The web keeps no deleted rows, so
+the trash is desktop-only.
 
 **Quality gate and cycle trend (DOC-02, DOC-06, ADR-0041).** The same
 derivation measures the metric catalog per scope (`ExecutionSummary.metrics`:
@@ -727,8 +764,12 @@ through `src-tauri/src/journal.rs`:
   `rejectedAuditEvents`. A failed push of events is logged and never fails the
   sync. A pull stores events without checking their hash: `verify_chain` does.
 - **A copy of the database forks nothing:** a database recovered with the
-  recovery key gets a new `device_id`, so its events start a new chain. A
-  `.bak` copied back by hand keeps the old one (AUD-01c).
+  recovery key gets a new `device_id`, so its events start a new chain. So
+  does a copy put back by hand (AUD-01c, `restored_copy.rs`): each save
+  bumps `sync_state.save_seq` and writes the same number to
+  `pharos.db.enc.seq`; an image whose count is below that mark is a restored
+  copy and its `device_id` is rotated on open. Without the mark nothing is
+  rotated. The diagnostics carry `restoredCopyDetectedAt`.
 - **Growth.** Every audited change writes two oplog rows (the entity's and its
   event's) and an event with the changed values; a planner reorder writes one
   event per moved card. Nothing is compacted yet: synced oplog rows are kept
