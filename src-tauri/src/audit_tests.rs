@@ -1286,6 +1286,10 @@ const EXEMPT: &[(&str, &str)] = &[
         "no data change; the typed key is used for one call and never stored",
     ),
     ("ai::ai_list_models", "read"),
+    (
+        "ai::ai_web_access_upload",
+        "no local data change; the key goes to the server, which keeps the copy (IA-12)",
+    ),
     ("oplog::oplog_pending_count", "read"),
     (
         "sync::oplog_pending",
