@@ -79,8 +79,11 @@ be addable without touching existing modules.
 desktop app or as the web build: `isTauri()`, `invoke()` (Tauri, loaded on
 demand) and `capabilities` (what only the desktop has). Each module's `api/`
 file sends a call either to the Rust core (`invoke`) or, on the web, to the
-server's domain API through `serverApi` (`@modules/sync-offline`). The
-browser holds **no domain logic and no domain data**: no localStorage store,
+server's domain API through `serverApi` (`@modules/sync-offline`). Every
+request to the server goes through `serverFetch(path)` in
+`@shared/platform/serverUrl` (SEC-10, ADR-0046), the only place that knows
+the server's address; callers pass a route (`/auth/login`), never a full
+URL. The browser holds **no domain logic and no domain data**: no localStorage store,
 no outbox, no web conflicts. What stays in localStorage is per-browser
 preferences only (theme, language, Administration settings, AI non-secret
 config, last access, when the recovery key was shown) and, on the web, the
@@ -1898,7 +1901,8 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   only if it is missing.
 - **Not code-signed:** no certificate is configured, so SmartScreen warns on
   install. Signing is out of scope for 0.1.0 and listed as a known limitation.
-- **Fixed API address:** the desktop build talks to `VITE_API_URL`, which
+- **Fixed API address:** the desktop build talks to `VITE_API_URL` (read
+  only by `serverUrl()`, `@shared/platform/serverUrl`), which
   defaults to `http://localhost:3000`, and its CSP (`tauri.conf.json`) allows
   only that port (plus Ollama on 11434). The CI installer is built without
   `VITE_API_URL`, so an installed beta needs the API on the same PC.
