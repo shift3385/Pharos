@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import i18n from "i18next";
 import { notify } from "@shared/ui/notify";
 import { authApi, ApiError, NetworkError } from "../api/authApi";
+import { accountApi, type RecoverInput } from "../api/accountApi";
 import type { LoginInput, RegisterInput, Session } from "../model/types";
 import {
   defaultSessionStore,
@@ -120,9 +121,34 @@ export function AuthProvider({
     [applySession],
   );
 
+  // A new account waits here while its recovery codes are shown (SEC-08):
+  // the app opens only after the user says they saved them.
+  const pending = useRef<Session | null>(null);
+
   const register = useCallback(
     async (input: RegisterInput) => {
-      await applySession(await authApi.register(input));
+      const { recoveryCodes = [], ...next } = await authApi.register(input);
+      if (recoveryCodes.length === 0) {
+        await applySession(next);
+        return [];
+      }
+      pending.current = next;
+      return recoveryCodes;
+    },
+    [applySession],
+  );
+
+  const completeRegistration = useCallback(async () => {
+    const next = pending.current;
+    pending.current = null;
+    if (next) await applySession(next);
+  }, [applySession]);
+
+  const recover = useCallback(
+    async (input: RecoverInput) => {
+      const { recoveryCodesRemaining, ...next } = await accountApi.recover(input);
+      await applySession(next);
+      return recoveryCodesRemaining;
     },
     [applySession],
   );
@@ -154,8 +180,8 @@ export function AuthProvider({
   );
 
   const value = useMemo(
-    () => ({ status, user, offline, login, register, logout, updateUser }),
-    [status, user, offline, login, register, logout, updateUser],
+    () => ({ status, user, offline, login, register, completeRegistration, recover, logout, updateUser }),
+    [status, user, offline, login, register, completeRegistration, recover, logout, updateUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

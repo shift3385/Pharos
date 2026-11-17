@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
+import { useLocation, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Eye, EyeOff, FileText, GitFork, ListChecks, Lock } from "lucide-react";
 import { Logo } from "@shared/ui/Logo";
@@ -8,13 +9,19 @@ import { APP_VERSION } from "@shared/version";
 import { useAuth } from "../state/useAuth";
 import { ApiError, NetworkError } from "../api/authApi";
 import { GoogleMark } from "./GoogleMark";
+import { Field } from "./AuthField";
+import { RecoverView, ResetView } from "./AccountRecovery";
+import { RecoveryCodesPanel } from "./RecoveryCodesPanel";
 import { LoginLanguageMenu } from "./LoginLanguageMenu";
 // The prototype's 1024 px photo; production should ship a ≥ 2400 px version
 // of the same image (SPEC §1, ADR-0028).
 import lighthouse from "./assets/login-faro.jpg";
 import "./AuthScreen.css";
 
-type Mode = "login" | "register";
+type Mode = "login" | "register" | "codes" | "recover" | "reset";
+
+/** Where the reset email's link lands (`#/restablecer?token=…`, ADR-0045). */
+export const RESET_PATH = "/restablecer";
 
 const KNOWN_ERROR_CODES = new Set([
   "invalid_credentials",
@@ -40,7 +47,28 @@ function errorMessageKey(error: unknown): string {
  *  the photo never. */
 export function AuthScreen() {
   const mobile = useBreakpoint() === "mobile";
-  const [mode, setMode] = useState<Mode>("login");
+  const { t } = useTranslation();
+  const { completeRegistration } = useAuth();
+  const { pathname, search } = useLocation();
+  const navigate = useNavigate();
+  const linkToken = pathname === RESET_PATH ? new URLSearchParams(search).get("token") : null;
+  const [mode, setMode] = useState<Mode>(linkToken ? "reset" : "login");
+  const [token, setToken] = useState<string | null>(linkToken);
+  const [recoverTab, setRecoverTab] = useState<"code" | "email">("code");
+  // The codes of a new account, shown once (SEC-08) and dropped on continue.
+  const [newCodes, setNewCodes] = useState<{ codes: string[]; email: string } | null>(null);
+  const [finishing, setFinishing] = useState(false);
+
+  // The token leaves the address as soon as it is read: it is a secret.
+  useEffect(() => {
+    if (linkToken) void navigate(RESET_PATH, { replace: true });
+  }, [linkToken, navigate]);
+
+  const toLogin = () => {
+    setToken(null);
+    setMode("login");
+    if (pathname === RESET_PATH) void navigate("/", { replace: true });
+  };
 
   // html and body stop scrolling only while this screen is shown.
   useEffect(() => {
@@ -49,11 +77,72 @@ export function AuthScreen() {
     return () => root.classList.remove("auth-route");
   }, []);
 
-  const form = <AuthForm mode={mode} onModeChange={setMode} />;
+  let form;
+  if (mode === "codes" && newCodes) {
+    form = (
+      <div className="auth-form">
+        <div className="auth-form__head">
+          <h1 className="auth-form__title">{t("recoveryCodes.title")}</h1>
+        </div>
+        <RecoveryCodesPanel
+          codes={newCodes.codes}
+          email={newCodes.email}
+          doneLabel={t("recoveryCodes.continue")}
+          busy={finishing}
+          onDone={() => {
+            setFinishing(true);
+            setNewCodes(null);
+            void completeRegistration();
+          }}
+        />
+      </div>
+    );
+  } else if (mode === "recover") {
+    form = (
+      <RecoverView
+        initialTab={recoverTab}
+        onBack={toLogin}
+        onReset={(pasted) => {
+          setToken(pasted);
+          setMode("reset");
+        }}
+      />
+    );
+  } else if (mode === "reset" && token) {
+    form = (
+      <ResetView
+        token={token}
+        onDone={toLogin}
+        onAskAgain={() => {
+          setToken(null);
+          setRecoverTab("email");
+          setMode("recover");
+          if (pathname === RESET_PATH) void navigate("/", { replace: true });
+        }}
+      />
+    );
+  } else {
+    form = (
+      <AuthForm
+        mode={mode === "register" ? "register" : "login"}
+        onModeChange={setMode}
+        onForgot={() => {
+          setRecoverTab("code");
+          setMode("recover");
+        }}
+        onRegistered={(codes, email) => {
+          setNewCodes({ codes, email });
+          setMode("codes");
+        }}
+      />
+    );
+  }
+  // The longer forms take the compact sizes of «Crear cuenta».
+  const layout = mode === "login" ? "login" : "register";
 
   if (mobile) {
     return (
-      <div className="auth auth--mobile screen-root" data-mode={mode}>
+      <div className="auth auth--mobile screen-root" data-mode={layout}>
         <div className="auth-hero">
           <img className="auth-photo auth-photo--mobile" src={lighthouse} alt="" />
           <span className="auth-hero__shade" aria-hidden="true" />
@@ -72,7 +161,7 @@ export function AuthScreen() {
   }
 
   return (
-    <div className="auth screen-root" data-mode={mode}>
+    <div className="auth screen-root" data-mode={layout}>
       <div className="auth-col">
         <span className="auth-brand">
           <Logo size={40} decorative />
@@ -124,7 +213,18 @@ function BrandPanel() {
   );
 }
 
-function AuthForm({ mode, onModeChange }: { mode: Mode; onModeChange: (m: Mode) => void }) {
+function AuthForm({
+  mode,
+  onModeChange,
+  onForgot,
+  onRegistered,
+}: {
+  mode: "login" | "register";
+  onModeChange: (m: Mode) => void;
+  onForgot: () => void;
+  /** The new account's recovery codes, to show before the app opens. */
+  onRegistered: (codes: string[], email: string) => void;
+}) {
   const { t } = useTranslation();
   const { login, register } = useAuth();
   const [form, setForm] = useState({
@@ -151,7 +251,8 @@ function AuthForm({ mode, onModeChange }: { mode: Mode; onModeChange: (m: Mode) 
     setSubmitting(true);
     try {
       if (isRegister) {
-        await register(form);
+        const codes = await register(form);
+        if (codes.length > 0) onRegistered(codes, form.email.trim().toLowerCase());
       } else {
         await login({ email: form.email, password: form.password });
       }
@@ -248,6 +349,11 @@ function AuthForm({ mode, onModeChange }: { mode: Mode; onModeChange: (m: Mode) 
             )}
           </button>
         </Field>
+        {!isRegister && (
+          <button type="button" className="auth-form__link auth-form__forgot" onClick={onForgot}>
+            {t("auth.forgot")}
+          </button>
+        )}
       </div>
 
       {error && (
@@ -285,25 +391,5 @@ function AuthForm({ mode, onModeChange }: { mode: Mode; onModeChange: (m: Mode) 
         {t("auth.encryptedNote")}
       </p>
     </form>
-  );
-}
-
-interface FieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  id: string;
-  label: string;
-  children?: ReactNode;
-}
-
-function Field({ id, label, children, ...rest }: FieldProps) {
-  return (
-    <div className="auth-field">
-      <label className="auth-field__label" htmlFor={id}>
-        {label}
-      </label>
-      <div className="auth-field__box">
-        <input id={id} name={id} className="auth-field__input" {...rest} />
-        {children}
-      </div>
-    </div>
   );
 }

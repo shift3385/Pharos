@@ -9,6 +9,7 @@ import { ThemeProvider } from "@shared/theme/ThemeProvider";
 import { AuthProvider } from "./state/AuthProvider";
 import { AuthScreen } from "./ui/AuthScreen";
 import { renderWithProviders } from "@test/utils";
+import { TestRouter } from "@test/TestRouter";
 import { setViewportWidth } from "@test/viewport";
 import { expectNoAxeViolations } from "@test/axe";
 
@@ -53,7 +54,9 @@ function renderAuthScreen() {
     <ThemeProvider>
       <I18nextProvider i18n={i18n}>
         <AuthProvider store={emptyStore}>
-          <AuthScreen />
+          <TestRouter route="/">
+            <AuthScreen />
+          </TestRouter>
         </AuthProvider>
       </I18nextProvider>
     </ThemeProvider>,

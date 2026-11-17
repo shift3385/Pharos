@@ -10,6 +10,7 @@ import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { TruncatedText } from "@shared/ui/TruncatedText";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { profileApi } from "../api/profileApi";
+import { AccountSecuritySection } from "./AccountSecuritySection";
 import type { Profile } from "../model/types";
 import "./ProfilePage.css";
 
@@ -222,6 +223,8 @@ export function ProfilePage() {
             </dl>
           )}
         </form>
+
+        <AccountSecuritySection />
 
         <Preferences />
       </div>
