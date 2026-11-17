@@ -22,6 +22,9 @@ agrupadas:
     sincronización automática.
   - **Seguridad:** la clave de recuperación de tus datos.
   - **Evidencias:** retención y espacio de las evidencias (capítulo 16).
+  - **Auditoría:** cada cambio de tu cuenta, con quién lo hizo (tú, un agente
+    en tu nombre o el sistema), el antes y el después, la comprobación de que
+    el registro está íntegro y la exportación a Excel o CSV.
 - **Soporte**
   - **Diagnóstico:** un ZIP para informar de un fallo.
 
@@ -35,7 +38,8 @@ archivo, y no se incluyen en exportaciones ni diagnósticos.
 
 En este manual, Liomar deja preparado su Pharos: una plantilla de plan
 propia, la sincronización, su clave de recuperación guardada y el diagnóstico
-a mano por si algo falla.
+a mano por si algo falla. Al final repasa en «Auditoría» lo que ha cambiado
+hoy.
 
 ## Paso a paso
 
@@ -121,7 +125,23 @@ Si algo falla, «Exportar diagnóstico» guarda un ZIP con la versión, el siste
 
 ![Diagnóstico](img/administracion/15-diagnostico.png)
 
-### 15.16. Reemplazar una clave de IA guardada
+### 15.16. Auditoría
+
+«Auditoría» lista cada cambio de tu cuenta, el más reciente arriba: quién lo hizo (tú, un agente en tu nombre o el sistema), qué acción, sobre qué elemento y desde dónde (este equipo, la web u otro equipo). Por defecto ves los últimos 30 días; filtra por periodo, quién, elemento, acción o proyecto, o busca una clave. Arriba, Pharos comprueba que el registro está íntegro: ningún cambio se ha borrado, reordenado ni modificado.
+
+![Auditoría](img/administracion/16-auditoria.png)
+
+### 15.17. El antes y el después de un cambio
+
+Pulsa un elemento de la lista para ver el cambio campo a campo: lo que había, tachado en rojo, y lo que hay ahora, en verde. Una importación o un borrado en cascada muestra sus recuentos. «Ver todo su historial» lista todos los cambios de ese elemento; «Copiar como JSON» copia el evento tal como se guardó.
+
+![El antes y el después de un cambio](img/administracion/17-auditoria-detalle.png)
+
+### 15.18. Exportar la auditoría
+
+«Exportar» guarda lo que muestran los filtros, todas las páginas, en Excel (.xlsx) o CSV: una fila por campo cambiado, con quién, cuándo, el antes y el después. El Excel lleva una hoja «Integridad» con el resultado de la comprobación.
+
+### 15.19. Reemplazar una clave de IA guardada
 
 Si ya hay una clave guardada y guardas otra sin probarla, Pharos pide confirmación, porque la anterior no se puede recuperar. «Probar conexión» comprueba la nueva sin reemplazar nada; si responde, se guarda sin preguntar.
 
@@ -133,6 +153,7 @@ Si ya hay una clave guardada y guardas otra sin probarla, Pharos pide confirmaci
 | Inicio, Fin | Pestañas de Administración | Van a la primera o a la última |
 | Esc | Diálogos de plantilla y de conflictos | Los cierran; con cambios, preguntan antes |
 | Esc | Clave de recuperación mostrada | No la cierra: marca «Ya la he guardado» |
+| Esc | Detalle de un evento de auditoría | Lo cierra |
 
 ## Si algo no sale
 
@@ -155,11 +176,22 @@ Si ya hay una clave guardada y guardas otra sin probarla, Pharos pide confirmaci
 - **«No se pudo leer la clave de recuperación.»** Pasa si el almacén de
   credenciales de Windows no está disponible. Vuelve a intentarlo; en la web
   no existe esta opción.
+- **«La cadena de … está rota en el evento n.º N».** Alguien modificó o
+  borró el registro de auditoría fuera de Pharos (editando la base de datos),
+  o se restauró a mano una copia `.bak` en este equipo. Pharos no repara el
+  registro: «Ver evento» lleva a ese cambio; exporta la auditoría y el
+  diagnóstico si necesitas investigarlo.
+- **«Auditoría» no muestra cambios de otra persona.** Hasta que lleguen los
+  roles del equipo, cada cuenta ve solo sus propios cambios.
+- **«Ningún evento coincide con los filtros».** El periodo por defecto son
+  los últimos 30 días: elige «Todo» o quita algún filtro.
 
 ## En el móvil
 
 - Las pestañas se desplazan de lado; desliza para ver las demás.
 - La clave de recuperación y «Listar modelos» son de la app de escritorio.
+- En «Auditoría», la lista se ve como tarjetas y el detalle de un cambio se
+  abre desde abajo.
 
 ## Consejos
 
@@ -173,6 +205,9 @@ Si ya hay una clave guardada y guardas otra sin probarla, Pharos pide confirmaci
 - Si algo falla, adjunta el ZIP de **«Exportar diagnóstico»** al informe: lleva
   la versión, el sistema y los registros recientes, y nunca tus proyectos,
   tus casos ni tus claves.
+- Para revisar qué hizo un **agente de IA** en tu nombre, filtra «Auditoría»
+  por «Quién» y elige el agente; copia la dirección de la página para volver
+  a esa vista.
 
 ## Véase también
 
@@ -180,7 +215,7 @@ Si ya hay una clave guardada y guardas otra sin probarla, Pharos pide confirmaci
 - Capítulo 17, «Asistente de IA»: cómo saber qué modelo está activo y qué
   hace la IA en cada pantalla.
 - [Glosario](../GLOSARIO.md): «Pestaña de Administración», «Plantilla»,
-  «Papelera».
+  «Papelera», «Registro de auditoría».
 
 ---
 

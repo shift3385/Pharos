@@ -19,14 +19,24 @@ corrija y se pueda volver a probar. Cada defecto lleva:
 - **Evidencias:** capturas, vídeos o registros, guardados cifrados en este
   equipo.
 
-Su **ciclo de vida**: Nuevo → Abierto → En curso → Corregido → En retest →
+Su **ciclo de vida**: Nuevo → Abierto → En curso → Corregido → Por confirmar →
 Cerrado, y además Rechazado (con su resolución) o Aplazado. Rechazado y
 Cerrado piden siempre una **resolución**. Un defecto aplazado sigue contando
 como abierto.
 
 Cuando el último resultado de un caso es un fallo y uno de sus defectos llega
-a «Corregido» o «En retest» (y ninguno sigue nuevo, abierto o en curso), el
-caso pasa a **Re-test** en la matriz y en el Inicio: toca volver a probarlo.
+a «Corregido» o «Por confirmar» (y ninguno sigue nuevo, abierto o en curso), el
+caso pasa a **Por confirmar** en la matriz y en el Inicio: toca volver a probarlo.
+
+Pharos apunta, en cada cambio de estado, la primera vez que el defecto llega a
+«Corregido» y cuántas veces se **reabre** (vuelve a «Abierto» desde «Por
+confirmar» o «Cerrado»). Con eso calcula el **tiempo de corrección** y la
+**reapertura** de cada ciclo (capítulos 3 y 9).
+
+Si el defecto se encontró **fuera de las pruebas**, por ejemplo en producción,
+marca «Encontrado fuera de las pruebas (escape)». Cuenta como escape del
+último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo
+dejó pasar.
 
 En este manual, Liomar registra dos defectos de Pharos:
 
@@ -87,33 +97,49 @@ Una vez guardado, los resultados vinculados aparecen como fichas en «Vínculos�
 
 ![Quitar el vínculo con un resultado](img/defectos/08-quitar-vinculo.png)
 
-### 12.9. La lista de defectos
+### 12.9. Eliminar desde el editor
+
+El editor de un defecto guardado también tiene «Eliminar defecto», así que se puede borrar desde cualquier vista, también desde el tablero y el móvil, que abren el editor. Pide la misma confirmación crítica que la papelera de la tabla y, al confirmar, vuelve a la lista (en este ejemplo, Liomar cancela).
+
+### 12.10. La lista de defectos
 
 La lista muestra ID, título, severidad, prioridad, estado, casos vinculados y fecha. Cambia entre abiertos, todos o cerrados, filtra por severidad o busca por texto (en este ejemplo, «prefijo» deja solo el del menú lateral). Un clic en el título abre el defecto.
 
-![La lista de defectos](img/defectos/09-lista.png)
+![La lista de defectos](img/defectos/10-lista.png)
 
-### 12.10. El tablero de defectos
+### 12.11. El tablero de defectos
 
-«Tablero» agrupa los defectos por estado, una columna por cada etapa de su ciclo de vida: nuevo, abierto, en curso, corregido, en re-test, cerrado y «Otros» (rechazado o aplazado). Para avanzar un defecto, arrastra su tarjeta o, con el teclado, lleva el foco a su asa y usa Espacio y las flechas. Pharos solo permite los cambios de estado válidos, así que una columna que no admite el defecto no lo acepta. En este ejemplo, Liomar confirma el del menú lateral y lo pasa a «Abierto».
+«Tablero» agrupa los defectos por estado, una columna por cada etapa de su ciclo de vida: nuevo, abierto, en curso, corregido, por confirmar, cerrado y «Otros» (rechazado o aplazado). Para avanzar un defecto, arrastra su tarjeta o, con el teclado, lleva el foco a su asa y usa Espacio y las flechas. Pharos solo permite los cambios de estado válidos, así que una columna que no admite el defecto no lo acepta. En este ejemplo, Liomar confirma el del menú lateral y lo pasa a «Abierto».
 
-![El tablero de defectos](img/defectos/10-tablero.png)
+![El tablero de defectos](img/defectos/11-tablero.png)
 
-### 12.11. Rechazar o aplazar un defecto
+### 12.12. Rechazar o aplazar un defecto
 
 Al soltar un defecto en «Otros», Pharos pregunta a qué estado pasa: «Rechazado» pide la resolución (duplicado, no reproducible, no se corregirá, funciona según el diseño…) y «Aplazado» lo deja abierto para más adelante. Al soltarlo en «Cerrado», pide la resolución y, si quieres, la build en la que se corrigió, para saber desde qué versión volver a probar. En este ejemplo, Liomar aplaza el del menú lateral a la 0.4.0: es molesto, pero no bloquea la entrega.
 
-![Rechazar o aplazar un defecto](img/defectos/11-otros.png)
+![Rechazar o aplazar un defecto](img/defectos/12-otros.png)
 
-### 12.12. Eliminar un defecto
+### 12.13. Eliminar un defecto
 
 Normalmente un defecto se cierra o se rechaza, no se borra. Si se creó por error (en este ejemplo, Liomar registró dos veces el fallo de acceso), la papelera de su fila (o «Eliminar defecto» en su editor, también desde el tablero y el móvil) lo borra tras una confirmación crítica: solo responden «Cancelar» y «Sí, eliminar». Su clave no se vuelve a usar.
 
-![Eliminar un defecto](img/defectos/12-eliminar.png)
+![Eliminar un defecto](img/defectos/13-eliminar.png)
 
-### 12.13. Defecto eliminado
+### 12.14. Defecto eliminado
 
 Al confirmar, el defecto desaparece de la lista. Si no se pudiera eliminar, un aviso lo dice y el defecto sigue ahí.
+
+### 12.15. Un defecto que se escapó de las pruebas
+
+Si el defecto se encontró fuera de las pruebas, por ejemplo en producción o en una demostración, marca «Encontrado fuera de las pruebas (escape)» en «Detalles». Cuenta como escape del último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo dejó pasar, y la recogen la tendencia de ciclos del Inicio (capítulo 3) y el informe de go/no-go (capítulo 9). En este ejemplo, un usuario de la beta avisa de que el enlace del correo de bienvenida abre la versión anterior, y Liomar lo registra como escape.
+
+![Un defecto que se escapó de las pruebas](img/defectos/15-escape.png)
+
+### 12.16. Corregir, confirmar y reabrir
+
+El camino de un defecto corregido, en el tablero o con el campo «Estado» del editor (que solo ofrece los estados siguientes): «En curso» mientras se arregla, «Corregido» cuando el equipo de desarrollo lo da por resuelto y «Por confirmar» mientras QA vuelve a probarlo. Si la prueba pasa, va a «Cerrado»; si no, se reabre: vuelve a «Abierto» desde «Por confirmar» (o desde «Cerrado»). Pharos apunta la primera vez que llega a «Corregido» y cuántas veces se reabre, y con eso calcula el tiempo de corrección y la reapertura de cada ciclo (capítulos 3 y 9). En este ejemplo, Liomar comprueba el arreglo del enlace, sigue abriendo la versión anterior y lo reabre.
+
+![Corregir, confirmar y reabrir](img/defectos/16-reabrir.png)
 
 ## Atajos de teclado
 
@@ -180,7 +206,7 @@ Al confirmar, el defecto desaparece de la lista. Si no se pudiera eliminar, un a
 - Capítulo 11, «Ejecución manual»: «Crear defecto» desde un intento.
 - Capítulo 13, «Trazabilidad»: los defectos en la matriz.
 - Capítulo 14, «Ajustes del proyecto»: los campos de los defectos.
-- [Glosario](../GLOSARIO.md): «Re-test», y la sección «Execution model
+- [Glosario](../GLOSARIO.md): «Por confirmar», y la sección «Execution model
   identifiers».
 
 ---
