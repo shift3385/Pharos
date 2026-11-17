@@ -32,12 +32,14 @@ Estos atajos funcionan en cualquier pantalla. Cada capítulo explica los suyos.
 Dentro de un diálogo, Tab no sale de él: recorre solo sus controles hasta que
 lo cierras.
 
-En la app de escritorio, los atajos propios de un navegador no hacen nada:
-imprimir (Ctrl+P), buscar en la página (Ctrl+F, F3), recargar (F5, Ctrl+R),
-guardar la página (Ctrl+S), ver el código (Ctrl+U), descargas (Ctrl+J) o el
-zoom (Ctrl con +, − o 0, y Ctrl con la rueda). Los atajos de Pharos sí actúan:
-por ejemplo, Ctrl+P en el editor de casos abre «Ir a un caso…». En la versión
-web, esos atajos siguen siendo los de tu navegador.
+En la app de escritorio no hacen nada los atajos de navegador que sacarían algo
+de Pharos: imprimir (Ctrl+P), abrir un archivo (Ctrl+O), guardar la página
+(Ctrl+S), ver el código (Ctrl+U), abrir otra ventana (Ctrl+N), descargas
+(Ctrl+J), historial (Ctrl+H), favoritos (Ctrl+D) y las herramientas de
+desarrollo (F12). Recargar (F5), el zoom (Ctrl con +, − o 0, o con la rueda) y
+buscar en la página (Ctrl+F) sí funcionan. Los atajos de Pharos van primero:
+Ctrl+P en el editor de casos abre «Ir a un caso…». En la versión web, esos
+atajos siguen siendo los de tu navegador.
 
 ### 3. Inicio
 
