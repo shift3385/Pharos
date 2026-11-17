@@ -68,8 +68,9 @@ export function syncRoutes(
   // Push one batch of local pending deltas; rejected ones come back as
   // conflicts. Clients split large pushes into batches (FIX-03).
   app.post("/sync/push", { preHandler }, async (req, reply) => {
-    // A client that does not know stable steps may only read (DAT-02,
-    // VERSIONING §6.5): nothing it sends is parsed or stored.
+    // A client that does not know stable steps (DAT-02), or one of the
+    // earlier minor that does not know workspaces (ADR-0042 §3), may only
+    // read (VERSIONING §6.5): nothing it sends is parsed or stored.
     if (!sendsStableSteps(req) || readOnlyByWorkspaces(req)) return readOnlyClient(reply);
     const { deltas, workspaceId: requested } = pushSchema.parse(req.body);
     const userId = req.userId as string;
