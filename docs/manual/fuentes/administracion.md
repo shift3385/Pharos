@@ -13,7 +13,9 @@ agrupadas:
   - **Motor de IA:** cómo se usa la IA (automático, solo online o solo
     local), el proveedor online (Gemini, OpenAI, Claude, OpenRouter o uno
     compatible), su clave y su modelo, o un modelo local con Ollama para
-    trabajar sin internet.
+    trabajar sin internet. En el escritorio, «Usar esta clave también en la
+    web» sube una copia cifrada de la clave a tu servidor para usar la IA en
+    la web (capítulo 17).
   - **Plantillas:** las de plan y de caso, las incluidas con Pharos y las
     tuyas.
 - **Aplicación**

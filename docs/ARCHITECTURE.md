@@ -23,10 +23,16 @@ backend; data-compatibility rules for migrations and sync): `docs/VERSIONING.md`
   A key just typed can be tried once without storing it: `ai_key_test` on
   desktop, and straight from the browser to the provider on the web, which
   cannot store keys (`providers/onlineBrowser.ts`,
-  [ADR-0033](adr/0033-probar-clave-ia-antes-de-guardarla.md)). Using the desktop
-  key on the web is decided but not built (IA-12,
-  [ADR-0034](adr/0034-boveda-de-claves-ia-para-la-web.md)): until then the rest
-  of the online AI needs the desktop app.
+  [ADR-0033](adr/0033-probar-clave-ia-antes-de-guardarla.md)). The web uses
+  the desktop's key through the server (IA-12,
+  [ADR-0034](adr/0034-boveda-de-claves-ia-para-la-web.md)): after the user
+  agrees, Rust reads the key from the keychain and uploads it
+  (`ai_web_access_upload`, over `server_request`'s client); the server keeps
+  one copy per account in `ai_vault`, encrypted with AES-256-GCM under
+  `AI_VAULT_KEY` (outside the database, bound to user and provider), and the
+  web's online provider is `POST /ai/chat` (`server/src/modules/ai/`). It
+  calls Gemini, OpenAI, Claude and OpenRouter, never «Compatible»; the key never
+  goes into a response, an error or a log line.
   Offline: Ollama, called from the frontend. Structured answers (IA-05 cases
   from a requirement, IA-10 risks and preconditions, IA-13 responsibilities of
   the roles the user wrote, dropping any role it invents, IA-14 exit criteria of
