@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import i18n from "i18next";
 import { notify } from "@shared/ui/notify";
+import { bindAccount, isServerErrorBody } from "@shared/platform/serverUrl";
 import { authApi, ApiError, NetworkError } from "../api/authApi";
 import type { LoginInput, RegisterInput, Session } from "../model/types";
 import {
@@ -113,18 +114,35 @@ export function AuthProvider({
     };
   }, [store, applySession, initialSession]);
 
-  const login = useCallback(
-    async (input: LoginInput) => {
-      await applySession(await authApi.login(input));
+  // A new session belongs to the server it came from (SEC-10): an account
+  // whose local data on this computer belongs to another server is refused,
+  // and the session just created is ended on the server again.
+  const signIn = useCallback(
+    async (next: Session) => {
+      try {
+        await bindAccount(next.user.id, next.user.email);
+      } catch (e) {
+        if (!isServerErrorBody(e) || e.kind !== "account_other_server") throw e;
+        await authApi.logout(next.refreshToken).catch(() => undefined);
+        throw new ApiError(409, "account_other_server", e.origin ?? "");
+      }
+      await applySession(next);
     },
     [applySession],
   );
 
+  const login = useCallback(
+    async (input: LoginInput) => {
+      await signIn(await authApi.login(input));
+    },
+    [signIn],
+  );
+
   const register = useCallback(
     async (input: RegisterInput) => {
-      await applySession(await authApi.register(input));
+      await signIn(await authApi.register(input));
     },
-    [applySession],
+    [signIn],
   );
 
   const logout = useCallback(async () => {

@@ -5,6 +5,8 @@ import { Eye, EyeOff, FileText, GitFork, ListChecks, Lock } from "lucide-react";
 import { Logo } from "@shared/ui/Logo";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { APP_VERSION } from "@shared/version";
+import { serverHost } from "@shared/platform/serverUrl";
+import { ServerLine, ServerPanel, useServerInfo, type ConnectedNotice } from "@modules/server-picker";
 import { useAuth } from "../state/useAuth";
 import { ApiError, NetworkError } from "../api/authApi";
 import { GoogleMark } from "./GoogleMark";
@@ -21,6 +23,7 @@ const KNOWN_ERROR_CODES = new Set([
   "email_in_use",
   "validation_error",
   "rate_limited",
+  "account_other_server",
 ]);
 
 function errorMessageKey(error: unknown): string {
@@ -124,7 +127,55 @@ function BrandPanel() {
   );
 }
 
+/** The sign-in or sign-up form, or the server panel in its place (SEC-10). */
 function AuthForm({ mode, onModeChange }: { mode: Mode; onModeChange: (m: Mode) => void }) {
+  const server = useServerInfo();
+  const [pickingServer, setPickingServer] = useState(false);
+  const [notice, setNotice] = useState<ConnectedNotice | null>(null);
+
+  if (pickingServer) {
+    return (
+      <ServerPanel
+        info={server.info}
+        onCancel={() => setPickingServer(false)}
+        onDone={(next) => {
+          setNotice(next);
+          setPickingServer(false);
+          server.reload();
+        }}
+      />
+    );
+  }
+  return (
+    <CredentialsForm
+      mode={mode}
+      onModeChange={onModeChange}
+      serverLine={
+        <ServerLine
+          info={server.info}
+          notice={notice}
+          onChange={() => {
+            setNotice(null);
+            setPickingServer(true);
+          }}
+        />
+      }
+      serverHostName={serverHost(server.info.origin)}
+    />
+  );
+}
+
+function CredentialsForm({
+  mode,
+  onModeChange,
+  serverLine,
+  serverHostName,
+}: {
+  mode: Mode;
+  onModeChange: (m: Mode) => void;
+  serverLine: ReactNode;
+  serverHostName: string;
+}) {
   const { t } = useTranslation();
   const { login, register } = useAuth();
   const [form, setForm] = useState({
@@ -156,7 +207,12 @@ function AuthForm({ mode, onModeChange }: { mode: Mode; onModeChange: (m: Mode) 
         await login({ email: form.email, password: form.password });
       }
     } catch (err) {
-      setError(t(errorMessageKey(err)));
+      // The server's name in «can't connect» (SEC-10), so a wrong server shows.
+      const host =
+        err instanceof ApiError && err.code === "account_other_server"
+          ? serverHost(err.message)
+          : serverHostName;
+      setError(t(errorMessageKey(err), { host }));
     } finally {
       setSubmitting(false);
     }
@@ -180,6 +236,8 @@ function AuthForm({ mode, onModeChange }: { mode: Mode; onModeChange: (m: Mode) 
           </button>
         </p>
       </div>
+
+      {serverLine}
 
       <div className="auth-form__fields">
         {isRegister && (

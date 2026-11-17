@@ -1232,6 +1232,25 @@ const EXEMPT: &[(&str, &str)] = &[
         "the session token lives in the keychain, not in the data",
     ),
     ("session_load", "read"),
+    // The server picked at sign-in (SEC-10): device configuration in
+    // server.json, not data; the server records what reaches it.
+    (
+        "server::server_check",
+        "read: asks a server's /health, saves nothing",
+    ),
+    (
+        "server::server_set",
+        "device configuration (server.json), only while signed out",
+    ),
+    (
+        "server::server_bind_account",
+        "device configuration: which server an account belongs to",
+    ),
+    ("server::server_pending", "read: counts unsent oplog rows"),
+    (
+        "server::server_request",
+        "transport only: the server audits the requests it receives",
+    ),
     ("cycles::cycle_filter_preview", "read"),
     ("cycles::cycle_runs", "read"),
     (
