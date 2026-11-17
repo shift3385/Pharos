@@ -21,6 +21,8 @@ import { createExecutionService, executionRoutes } from "./modules/domain/execut
 import { homeMetricsRoutes } from "./modules/domain/home-metrics";
 import { createPreferenceStore, preferenceRoutes } from "./modules/preferences/preferences";
 import { auditRoutes, createAuditReader } from "./modules/audit/audit.read";
+import { httpsOnly } from "./modules/security/httpsOnly";
+import { SERVER_VERSION, acceptedMinors } from "./modules/sync/sync.version";
 import { AppError } from "./modules/auth/errors";
 
 /** Routes limited per client IP: guessing passwords on login, and burning
@@ -45,6 +47,9 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
     bodyLimit: env.BODY_LIMIT_BYTES,
     trustProxy: env.TRUST_PROXY,
   });
+
+  // SEC-07: only https in production (from the reverse proxy), before anything else.
+  app.addHook("onRequest", httpsOnly(env));
 
   void app.register(cors, {
     origin: env.CORS_ORIGIN === "*" ? true : parseOrigins(env.CORS_ORIGIN),
@@ -93,7 +98,14 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
   const runs = createRunService(domainStore);
   const execution = createExecutionService(domainStore);
 
-  app.get("/health", async () => ({ status: "ok" }));
+  // The app checks a server with this before signing in to it (SEC-10): it
+  // must say it is Pharos, and the version tells an incompatible one apart.
+  app.get("/health", async () => ({
+    status: "ok",
+    service: "pharos",
+    version: SERVER_VERSION,
+    accepted: acceptedMinors(),
+  }));
   void app.register(async (instance) => {
     authRoutes(instance, { service, tokens });
   });

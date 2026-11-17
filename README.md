@@ -516,13 +516,22 @@ Optional limits (defaults in brackets):
 | `BODY_LIMIT_BYTES`        | Largest request body [1 MiB]; above it the API answers 413                                                                    |
 | `SYNC_BODY_LIMIT_BYTES`   | Largest body on `/sync/*` (push batches) [8 MiB]                                                                              |
 | `SYNC_TOMBSTONE_DAYS`     | Days the server keeps the content of a deleted record before clearing it (the tombstone stays) [30]; `0` = never clear        |
-| `TRUST_PROXY`             | `true` behind a reverse proxy, so the limit counts real client IPs [false]                                                    |
+| `TRUST_PROXY`             | `true` behind a reverse proxy, so the limit counts real client IPs and the API sees https from `X-Forwarded-Proto` [false]   |
 
-The `api` service of `docker-compose.yml` runs in production mode. It reads
-every variable above from `.env`, so set at least `JWT_ACCESS_SECRET` and
-`CORS_ORIGIN` there before `docker compose up`, and `TRUST_PROXY=true` behind a
-reverse proxy. The database-only setup (`docker compose up -d db`, `dev.bat`) is
-unaffected.
+**Only https in production (SEC-07).** With `NODE_ENV=production` the API
+answers `403 https_required` to any plain http request that does not come
+straight from its own machine. TLS is ended by a reverse proxy that sends
+`X-Forwarded-Proto` (Caddy in the guide), with `TRUST_PROXY=true` and
+`HOST=127.0.0.1`; https answers carry HSTS. The full guide, with Caddy, an
+internal CA and troubleshooting, is [`docs/despliegue.md`](docs/despliegue.md).
+The desktop app picks its server at sign-in (SEC-10) and sends its requests
+from the Rust core, so it needs no `CORS_ORIGIN` entry.
+
+The `api` service of `docker-compose.yml` runs in production mode behind the
+`caddy` service (ports 80 and 443; the API's own port is not published). It
+reads every variable above from `.env`, so set at least `JWT_ACCESS_SECRET`,
+`CORS_ORIGIN` and `PHAROS_DOMAIN` there before `docker compose up`. The
+database-only setup (`docker compose up -d db`, `dev.bat`) is unaffected.
 
 ## Logs and diagnostics
 
