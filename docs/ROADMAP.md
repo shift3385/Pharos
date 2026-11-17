@@ -297,7 +297,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | DEF-01  | El defecto como entidad propia (severidad, estado, clave externa, enlace a Result)                                            | P1  | Aceptado: [ADR-0016](adr/0016-defecto-como-entidad.md). Hecho (E4, paso 8): módulo Defectos (lista, tablero, editor, «Desde un resultado»), migración de las tarjetas (local 0029, servidor 0010), sync `defects`, API web |
 | CYC-01  | Ciclo o conjunto de pruebas y matriz de configuración                                                                         | P1  | Aceptado: [ADR-0017](adr/0017-ciclos-y-configuraciones.md). Hecho (E4, paso 6): configuraciones con etiquetas de importación, ciclos `CYC-`, elementos a mano y por filtro, clonar, «Ejecutar» (un run por configuración, escritorio) y progreso por configuración |
 | FLD-01  | Campos personalizados tipados por proyecto y tipo de caso                                                                     | P1  | Aceptado: [ADR-0018](adr/0018-campos-personalizados.md). Hecho (E3, paso 5): `case_type`, `automation_status`, campos por proyecto, checklist mínima, hoja «Campos personalizados» del `.xlsx`                                                                  |
-| TEN-01  | Diseño de workspaces compartidos ([ADR-0003](adr/0003-workspaces-compartidos.md))                                             | P0  | Aceptado: modelo en [ADR-0003](adr/0003-workspaces-compartidos.md), diseño técnico en [ADR-0019](adr/0019-diseno-workspaces-compartidos.md); revisión para 0.5.0 en [ADR-0042](adr/0042-revision-de-workspaces-para-0.5.0.md) (Propuesto, pista W) |
+| TEN-01  | Diseño de workspaces compartidos ([ADR-0003](adr/0003-workspaces-compartidos.md))                                             | P0  | Aceptado: modelo en [ADR-0003](adr/0003-workspaces-compartidos.md), diseño técnico en [ADR-0019](adr/0019-diseno-workspaces-compartidos.md); revisión para 0.5.0 en ADR-0042, que aporta la pista W |
 | SYNC-02 | Conflictos por entidad hasta 0.5.0 ([ADR-0002](adr/0002-conflictos-por-entidad.md))                                           | —   | Decidido                                                                                                                                    |
 
 ## 5. Backlog por área
@@ -319,10 +319,10 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | SEC-04  | Spike de cifrado por página: sqlite3mc frente a SQLCipher                                                            | P1  | 0.6.0   | Pendiente         | —               | Informe con una opción que compila y su licencia                                                     |
 | SEC-05  | SQLite en disco con cifrado por página + WAL                                                                         | P1  | 0.6.0   | Pendiente         | SEC-04, CORE-01 | Guardar no es O(tamaño de la BD); otro proceso escribe con la app abierta                            |
 | CORE-01 | `pharos-core` sin dependencia de Tauri (db, migraciones, repos, oplog)                                               | P0  | 0.6.0   | Pendiente         | Compuerta A     | El CLI y el escritorio usan el mismo crate                                                           |
-| SEC-07  | TLS obligatorio en despliegue autoalojado ([ADR-0006](adr/0006-claves-ia-y-tls.md))                                  | P1  | 0.5.0   | Pendiente · pista D ([ADR-0046](adr/0046-despliegue-tls-y-servidor-configurable.md)): proxy con Caddy | —               | El servidor rechaza http fuera de localhost en producción                                            |
-| SEC-08  | Cuenta: cambiar la contraseña en «Mi perfil» y códigos de recuperación generados al registrarse (hoy no hay forma de cambiarla ni de recuperarla; no confundir con SEC-03, que protege la BD local) | P1  | 0.5.0   | Pendiente · pista C ([ADR-0045](adr/0045-recuperacion-de-la-cuenta.md)) | —               | Con un código de un solo uso se fija una contraseña nueva y se cierran las demás sesiones; los códigos se guardan con hash en el servidor; los datos locales no se tocan |
-| SEC-09  | Restablecer la contraseña por correo (enlace de un solo uso) y por un administrador | P2  | 0.5.0   | Pendiente · pista C: por correo en la ola 1 (SMTP opcional, apagado por defecto); por un administrador en la ola 2, tras SYNC-07 ([ADR-0045](adr/0045-recuperacion-de-la-cuenta.md)) | SEC-08, SYNC-07 | El enlace caduca y solo sirve una vez; un administrador del workspace restablece sin ver la contraseña; ambos quedan en auditoría |
-| SEC-10  | Servidor elegido en el inicio de sesión, no al compilar: solo HTTPS salvo en localhost; datos locales separados por servidor y cuenta; la app solo habla con el servidor elegido ([ADR-0046](adr/0046-despliegue-tls-y-servidor-configurable.md)) | P1  | 0.5.0   | Pendiente · pista D (se fusiona primero) | — | Con la URL https de otro servidor, la app inicia sesión y sincroniza; rechaza http fuera de localhost; cambiar de servidor no mezcla datos |
+| SEC-07  | TLS obligatorio en despliegue autoalojado ([ADR-0006](adr/0006-claves-ia-y-tls.md))                                  | P1  | 0.5.0   | Pendiente · pista D (ADR-0046): proxy con Caddy | —               | El servidor rechaza http fuera de localhost en producción                                            |
+| SEC-08  | Cuenta: cambiar la contraseña en «Mi perfil» y códigos de recuperación generados al registrarse (hoy no hay forma de cambiarla ni de recuperarla; no confundir con SEC-03, que protege la BD local) | P1  | 0.5.0   | Pendiente · pista C (ADR-0045) | —               | Con un código de un solo uso se fija una contraseña nueva y se cierran las demás sesiones; los códigos se guardan con hash en el servidor; los datos locales no se tocan |
+| SEC-09  | Restablecer la contraseña por correo (enlace de un solo uso) y por un administrador | P2  | 0.5.0   | Pendiente · pista C: por correo en la ola 1 (SMTP opcional, apagado por defecto); por un administrador en la ola 2, tras SYNC-07 (ADR-0045) | SEC-08, SYNC-07 | El enlace caduca y solo sirve una vez; un administrador del workspace restablece sin ver la contraseña; ambos quedan en auditoría |
+| SEC-10  | Servidor elegido en el inicio de sesión, no al compilar: solo HTTPS salvo en localhost; datos locales separados por servidor y cuenta; la app solo habla con el servidor elegido (ADR-0046) | P1  | 0.5.0   | Pendiente · pista D (se fusiona primero) | — | Con la URL https de otro servidor, la app inicia sesión y sincroniza; rechaza http fuera de localhost; cambiar de servidor no mezcla datos |
 
 ### Sincronización
 
@@ -334,7 +334,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | SYNC-04a | Ver compuerta A                                                                                           | P0  | 0.1.0   | Hecho (A1, revisado y en main)             | —          | —                                                                 |
 | SYNC-06  | Ver compuerta A                                                                                           | P1  | 0.1.0   | Hecho (A3, en main)                        | —          | —                                                                 |
 | SYNC-05  | Paquetes de oplog firmados `.pharos-bundle` (modo aislado)                                                | P2  | 0.10.0  | Pendiente                                  | SYNC-01    | Exportar e importar por USB entre dos PCs sin servidor            |
-| SYNC-07  | Workspaces con roles, `project_members` activo ([ADR-0003](adr/0003-workspaces-compartidos.md))           | P1  | 0.5.0   | Pendiente · pista W ([ADR-0042](adr/0042-revision-de-workspaces-para-0.5.0.md)): modelo A, sin RLS, tests de aislamiento | TEN-01     | Un auditor ve el proyecto y no puede editarlo                     |
+| SYNC-07  | Workspaces con roles, `project_members` activo ([ADR-0003](adr/0003-workspaces-compartidos.md))           | P1  | 0.5.0   | Pendiente · pista W (ADR-0042): modelo A, sin RLS, tests de aislamiento | TEN-01     | Un auditor ve el proyecto y no puede editarlo                     |
 | SYNC-04b | Sincronizar plantillas; adjuntos por hash fuera del oplog (las tarjetas del planificador van en SYNC-04a) | P1  | 0.5.0   | Pendiente · pista W, después de SYNC-07 | DAT-03     | Una tarjeta con adjunto creada en escritorio se ve en otro equipo |
 | SYNC-09  | Perfil, idioma y preferencias sincronizados (spec §10.3)                                                  | P2  | 0.5.0   | Pendiente · pista R: reutiliza `user_preferences` (servidor 0017) | FIX-07     | Cambiar el idioma en un equipo se refleja en otro                 |
 | SYNC-02  | Fusión de conflictos por campo ([ADR-0002](adr/0002-conflictos-por-entidad.md))                           | P1  | 0.6.0   | Decidido: por entidad hasta 0.6.0 (ADR-0039) | SYNC-01    | Dos ediciones de campos distintos se fusionan sin preguntar       |
@@ -373,7 +373,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | ID     | Ítem                                                                        | P   | Versión | Criterio de aceptación                                                              |
 | ------ | --------------------------------------------------------------------------- | --- | ------- | ----------------------------------------------------------------------------------- |
 | CAS-01 | Pasos compartidos, parámetros y datasets                                    | P1  | 0.6.0   | Cambiar un paso compartido actualiza N casos; un dataset de 3 filas da 3 resultados |
-| CAS-02 | Flujo borrador → revisión → aprobado y baselines de suite                   | P1  | 0.5.0 · pista K ([ADR-0047](adr/0047-revision-y-aprobacion-de-casos.md)); la regla de roles, en la ola 2 tras SYNC-07 | Editar un caso aprobado lo devuelve a borrador; una baseline queda congelada; aprueba un Test Manager o Test Analyst que no es el autor |
+| CAS-02 | Flujo borrador → revisión → aprobado y baselines de suite                   | P1  | 0.5.0 · pista K (ADR-0047); la regla de roles, en la ola 2 tras SYNC-07 | Editar un caso aprobado lo devuelve a borrador; una baseline queda congelada; aprueba un Test Manager o Test Analyst que no es el autor |
 | EXP-01 | Sesiones exploratorias (charter, timebox, notas, evidencias desde el móvil) | P2  | 0.10.0  | Una sesión genera un Run con notas y un defecto vinculado                           |
 | FLD-02 | Selector de columnas en la lista de casos (campos personalizados como columnas; ADR-0018, Q4 de E3) | P2  | Sin versión | Mostrar u ocultar columnas, también de campos personalizados, y que se recuerde por proyecto |
 | FLD-03 | Campos personalizados de defectos definidos en los Ajustes del proyecto (seguimiento de E4, ADR-0016/0018) | P2  | 0.2.0 · Hecho (E6p): selector «Casos / Defectos» en la tarjeta, copia por entidad | Un campo de defecto creado en Ajustes aparece en el editor de defectos y se sincroniza |
@@ -705,17 +705,17 @@ prueba de los diálogos con teclado se reescribió el 2026-11-16 y está pendien
 - **Reparto de 0.5.0 «Equipo» (aprobado por el usuario el 2026-11-17).** Cada pista empieza con
   su plan y sus bocetos, y los ADR pasan a «Aceptado» cuando el usuario los aprueba.
   - **Ola 1:**
-    - **D** · SEC-07 y SEC-10 ([ADR-0046](adr/0046-despliegue-tls-y-servidor-configurable.md)). Se
+    - **D** · SEC-07 y SEC-10 (ADR-0046). Se
       fusiona primero, con un PR pequeño solo para la URL; las demás pistas hacen rebase.
-    - **W** · TEN-01, SYNC-07 y después SYNC-04b ([ADR-0042](adr/0042-revision-de-workspaces-para-0.5.0.md)).
+    - **W** · TEN-01, SYNC-07 y después SYNC-04b (ADR-0042).
       Migraciones: servidor 0019 y 0020; local 0040 y 0041.
-    - **C** · SEC-08 y SEC-09 por correo ([ADR-0045](adr/0045-recuperacion-de-la-cuenta.md)).
+    - **C** · SEC-08 y SEC-09 por correo (ADR-0045).
       Migraciones del servidor 0021 y 0022.
     - **R** · RED-W2, RED-W3, SYNC-09 y AUD-01c. ADR-0048 (notificaciones, lo escribe la pista).
       Migraciones: local 0043; servidor 0023, porque las notificaciones viajan por el servidor
       (aprobado con el plan de R el 2026-11-17). La local 0044 se retiró: AUD-01c usa un contador en `sync_state` y un
       fichero lateral.
-    - **K** · CAS-02 en local ([ADR-0047](adr/0047-revision-y-aprobacion-de-casos.md)). Migraciones:
+    - **K** · CAS-02 en local (ADR-0047). Migraciones:
       local 0042. La 0024 del servidor se retiró: las baselines son documentos append-only.
   - **Ola 2:**
     - **I** · IA-12 ([ADR-0034](adr/0034-boveda-de-claves-ia-para-la-web.md)), migración del
