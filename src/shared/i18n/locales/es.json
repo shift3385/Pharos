@@ -953,8 +953,9 @@
       "email_in_use": "Ese correo ya está registrado.",
       "validation_error": "Revisa los datos introducidos.",
       "rate_limited": "Demasiados intentos. Espera un momento y vuelve a intentarlo.",
-      "network": "No se pudo conectar con el servidor.",
-      "generic": "Algo salió mal. Inténtalo de nuevo."
+      "network": "No se puede conectar con {{host}}. Revisa tu conexión; si ya habías iniciado sesión en este equipo, la app abre con tus datos locales.",
+      "generic": "Algo salió mal. Inténtalo de nuevo.",
+      "account_other_server": "Esta cuenta ya tiene datos en este equipo de otro servidor ({{host}}). Para no mezclarlos, entra en ese servidor o usa otra cuenta."
     },
     "forgot": "¿Olvidaste tu contraseña?",
     "recover": {
@@ -4393,5 +4394,69 @@
     "savedToast": "Informe de cierre guardado",
     "approvedToast": "Informe de cierre aprobado",
     "saveFailed": "No se pudo guardar el informe de cierre. Vuelve a intentarlo."
+  },
+  "server": {
+    "line": {
+      "label": "Servidor",
+      "change": "Cambiar",
+      "local": "Este equipo ({{host}})",
+      "secure": "Conexión cifrada",
+      "offline": "sin conexión"
+    },
+    "connectedTo": "Conectado a {{host}}",
+    "connected": "Conectado a {{host}}",
+    "connectedSecure": "Pharos {{version}} · conexión cifrada. Ya puedes iniciar sesión.",
+    "connectedLocal": "Pharos {{version}} en este equipo. Ya puedes iniciar sesión.",
+    "connectedReadOnly": "El servidor es Pharos {{version}}: esta app solo podrá leer hasta que la actualices.",
+    "panel": {
+      "title": "Servidor",
+      "intro": "Elige a qué servidor de Pharos te conectas.",
+      "address": "Dirección del servidor",
+      "hint": "Te la da quien administra Pharos en tu equipo. Debe empezar por https://, salvo localhost.",
+      "recent": "Usados en este equipo",
+      "cancel": "Cancelar",
+      "connect": "Conectar",
+      "checking": "Comprobando…"
+    },
+    "pending": {
+      "title_one": "Hay {{count}} cambio sin enviar a {{host}}.",
+      "title_other": "Hay {{count}} cambios sin enviar a {{host}}.",
+      "detail": "Son de {{email}}. Se quedan guardados en este equipo y se envían cuando vuelvas a entrar en ese servidor con esa cuenta. En el otro servidor no se ven.",
+      "confirm": "Cambiar de servidor"
+    },
+    "error": {
+      "invalid": {
+        "title": "Esa dirección no es válida.",
+        "detail": "Escríbela como https://pharos.miempresa.com, sin espacios ni rutas."
+      },
+      "insecure": {
+        "title": "Pharos solo se conecta con https:// a otro equipo.",
+        "detail": "Sin cifrado, tu contraseña y tus datos viajarían a la vista. Pide la dirección https a quien administra el servidor. Solo localhost puede ir con http."
+      },
+      "unreachable": {
+        "title": "{{host}} no responde.",
+        "detail": "Revisa la dirección y tu conexión. Si el servidor es interno, puede que necesites la VPN de tu empresa."
+      },
+      "tls": {
+        "title": "No se puede comprobar la identidad de {{host}}.",
+        "detail": "Su certificado está caducado, es de otro nombre o lo firmó alguien en quien Windows no confía. Pharos no se conecta. Avisa a quien administra el servidor."
+      },
+      "notPharos": {
+        "title": "Esa dirección responde, pero no es un servidor de Pharos.",
+        "detail": "Comprueba que sea la dirección del servidor de Pharos y no la de otra web de tu empresa."
+      },
+      "appTooOld": {
+        "title": "Este servidor necesita una versión más nueva de Pharos.",
+        "detail": "El servidor es la {{version}} y esta app es la {{app}}. Actualiza la app para conectarte."
+      },
+      "serverTooOld": {
+        "title": "Este servidor tiene una versión anterior de Pharos.",
+        "detail": "El servidor es la {{version}} y esta app es la {{app}}. Pide a quien lo administra que lo actualice."
+      },
+      "generic": {
+        "title": "No se pudo guardar el servidor.",
+        "detail": "Inténtalo de nuevo. Si sigue fallando, exporta el diagnóstico desde Administración."
+      }
+    }
   }
 }

@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft } from "lucide-react";
 import { Alert } from "@shared/ui/Alert";
+import { serverHost, serverUrl } from "@shared/platform/serverUrl";
 import { notify } from "@shared/ui/notify";
 import { ApiError, NetworkError } from "../api/authApi";
 import { accountApi, tokenFromLink } from "../api/accountApi";
@@ -134,7 +135,7 @@ function CodeForm() {
         left <= FEW_CODES ? "warning" : "success",
       );
     } catch (err) {
-      setError(t(errorKey(err)));
+      setError(t(errorKey(err), { host: serverHost(serverUrl()) }));
       setBusy(false);
     }
   }
@@ -225,7 +226,7 @@ function EmailForm({ onReset }: { onReset: (token: string) => void }) {
       );
       setSent(true);
     } catch (err) {
-      setError(t(errorKey(err)));
+      setError(t(errorKey(err), { host: serverHost(serverUrl()) }));
     } finally {
       setBusy(false);
     }
@@ -338,7 +339,7 @@ export function ResetView({
         if (err instanceof ApiError && err.code === "invalid_reset_token")
           setState("invalid");
         else {
-          setError(t(errorKey(err)));
+          setError(t(errorKey(err), { host: serverHost(serverUrl()) }));
           setState("ready");
         }
       });
@@ -363,7 +364,7 @@ export function ResetView({
     } catch (err) {
       if (err instanceof ApiError && err.code === "invalid_reset_token")
         setState("invalid");
-      else setError(t(errorKey(err)));
+      else setError(t(errorKey(err), { host: serverHost(serverUrl()) }));
     } finally {
       setBusy(false);
     }

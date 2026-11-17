@@ -51,7 +51,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0043](0043-bandas-de-riesgo-cobertura-ponderada-y-periodo-anterior.md) | Bandas de riesgo por proyecto, cobertura ponderada por riesgo y «Comparar con el periodo anterior» en Inicio (TRZ-04, RED-W4) | Aceptado | 2026-11-12 |
 | [0044](0044-informe-de-cierre-29119-3.md) | Informe de cierre de pruebas 29119-3 de un ciclo cerrado, con textos y aprobación en el ciclo (DOC-01) | Aceptado | 2026-11-12 |
 | [0045](0045-recuperacion-de-la-cuenta.md) | Recuperación de la cuenta: cambiar la contraseña, códigos de recuperación y restablecer por correo con SMTP opcional (SEC-08, SEC-09) | Aceptado | 2026-11-17 |
-| 0046 | Despliegue autoalojado: TLS con un proxy (Caddy) y servidor elegido al iniciar sesión, solo HTTPS salvo localhost (SEC-07, SEC-10) | Reservado: lo aporta la pista D de 0.5.0 | 2026-11-17 |
+| [0046](0046-despliegue-tls-y-servidor-configurable.md) | Despliegue: TLS con proxy inverso (Caddy) y servidor elegido al iniciar sesión, con las peticiones del escritorio por Rust (SEC-07, SEC-10) | Aceptado | 2026-11-17 |
 | 0047 | Revisión y aprobación de casos por otra persona y baselines de suite (CAS-02) | Reservado: lo aporta la pista K de 0.5.0 | 2026-11-17 |
 | 0048 | Notificaciones que viajan por el servidor (RED-W2) | Reservado: lo aporta la pista R de 0.5.0 | 2026-11-17 |
 

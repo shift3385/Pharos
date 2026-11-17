@@ -67,7 +67,7 @@
       petición, para que no se pueda envenenar.
     - `APP_PUBLIC_URL` tiene que ser https (http solo en localhost), porque
       el enlace lleva un secreto y el servidor rechaza http fuera de
-      localhost en producción (ADR-0046, pista D).
+      localhost en producción ([ADR-0046](0046-despliegue-tls-y-servidor-configurable.md)).
       El servidor no arranca con un valor que no cumpla esto.
     - El token va detrás de `#`, así que no llega a los logs de ningún
       servidor. La página lo quita de la dirección en cuanto lo lee.
@@ -174,6 +174,9 @@
     se usa con SMTP configurado.
   - «Mi perfil» muestra en la web y en el escritorio una tarjeta que necesita
     conexión.
-  - La guía de despliegue (ADR-0046) explica las variables `SMTP_*` y
-    `APP_PUBLIC_URL`. Mientras no exista, las explica el README, en
-    «Production configuration».
+  - La guía de despliegue ([`docs/despliegue.md`](../despliegue.md),
+    apartado «Correo para restablecer contraseñas»;
+    [ADR-0046](0046-despliegue-tls-y-servidor-configurable.md)) explica las
+    variables `SMTP_*` y `APP_PUBLIC_URL`. El README las recoge en
+    «Production configuration», y `docker-compose.yml` se las pasa a la API,
+    vacías (correo apagado) por defecto.

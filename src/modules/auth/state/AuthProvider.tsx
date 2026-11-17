@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import i18n from "i18next";
 import { notify } from "@shared/ui/notify";
+import { bindAccount, isServerErrorBody } from "@shared/platform/serverUrl";
 import { authApi, ApiError, NetworkError } from "../api/authApi";
 import { accountApi, type RecoverInput } from "../api/accountApi";
 import type { LoginInput, RegisterInput, Session } from "../model/types";
@@ -114,28 +115,51 @@ export function AuthProvider({
     };
   }, [store, applySession, initialSession]);
 
+  // A new session belongs to the server it came from (SEC-10): an account
+  // whose local data on this computer belongs to another server is refused,
+  // and the session just created is ended on the server again.
+  const bind = useCallback(async (next: Session) => {
+    try {
+      await bindAccount(next.user.id, next.user.email);
+    } catch (e) {
+      if (!isServerErrorBody(e) || e.kind !== "account_other_server") throw e;
+      await authApi.logout(next.refreshToken).catch(() => undefined);
+      throw new ApiError(409, "account_other_server", e.origin ?? "");
+    }
+  }, []);
+
+  const signIn = useCallback(
+    async (next: Session) => {
+      await bind(next);
+      await applySession(next);
+    },
+    [bind, applySession],
+  );
+
   const login = useCallback(
     async (input: LoginInput) => {
-      await applySession(await authApi.login(input));
+      await signIn(await authApi.login(input));
     },
-    [applySession],
+    [signIn],
   );
 
   // A new account waits here while its recovery codes are shown (SEC-08):
-  // the app opens only after the user says they saved them.
+  // the app opens only after the user says they saved them. The account is
+  // bound to its server first, so a refusal comes before the codes.
   const pending = useRef<Session | null>(null);
 
   const register = useCallback(
     async (input: RegisterInput) => {
       const { recoveryCodes = [], ...next } = await authApi.register(input);
       if (recoveryCodes.length === 0) {
-        await applySession(next);
+        await signIn(next);
         return [];
       }
+      await bind(next);
       pending.current = next;
       return recoveryCodes;
     },
-    [applySession],
+    [bind, signIn],
   );
 
   const completeRegistration = useCallback(async () => {
@@ -147,10 +171,10 @@ export function AuthProvider({
   const recover = useCallback(
     async (input: RecoverInput) => {
       const { recoveryCodesRemaining, ...next } = await accountApi.recover(input);
-      await applySession(next);
+      await signIn(next);
       return recoveryCodesRemaining;
     },
-    [applySession],
+    [signIn],
   );
 
   const logout = useCallback(async () => {

@@ -11,6 +11,7 @@ import {
   type RecoveryStatus,
 } from "@modules/auth";
 import { Alert } from "@shared/ui/Alert";
+import { serverHost, serverUrl } from "@shared/platform/serverUrl";
 import { Dialog } from "@shared/ui/Dialog";
 import "./RecoveryKeySection.css";
 import "./AccountSecuritySection.css";
@@ -127,7 +128,7 @@ function ChangePassword({ disabled }: { disabled: boolean }) {
       setForm(empty);
       setClosed(sessionsClosed);
     } catch (err) {
-      setError(t(errorKey(err)));
+      setError(t(errorKey(err), { host: serverHost(serverUrl()) }));
     } finally {
       setBusy(false);
     }
@@ -236,7 +237,7 @@ function RecoveryCodes({ disabled }: { disabled: boolean }) {
       setCodes(recoveryCodes);
       setStep("shown");
     } catch (err) {
-      setError(t(errorKey(err)));
+      setError(t(errorKey(err), { host: serverHost(serverUrl()) }));
     } finally {
       setBusy(false);
     }
