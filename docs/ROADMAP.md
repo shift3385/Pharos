@@ -712,8 +712,8 @@ prueba de los diálogos con teclado se reescribió el 2026-11-16 y está pendien
     - **C** · SEC-08 y SEC-09 por correo ([ADR-0045](adr/0045-recuperacion-de-la-cuenta.md)).
       Migraciones del servidor 0021 y 0022.
     - **R** · RED-W2, RED-W3, SYNC-09 y AUD-01c. ADR-0048 (notificaciones, lo escribe la pista).
-      Migraciones: local 0043; servidor 0023, si el usuario aprueba que las notificaciones viajen
-      por el servidor. La local 0044 se retiró: AUD-01c usa un contador en `sync_state` y un
+      Migraciones: local 0043; servidor 0023, porque las notificaciones viajan por el servidor
+      (aprobado con el plan de R el 2026-11-17). La local 0044 se retiró: AUD-01c usa un contador en `sync_state` y un
       fichero lateral.
     - **K** · CAS-02 en local ([ADR-0047](adr/0047-revision-y-aprobacion-de-casos.md)). Migraciones:
       local 0042. La 0024 del servidor se retiró: las baselines son documentos append-only.
