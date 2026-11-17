@@ -98,16 +98,18 @@ describe("audit read (AUD-01)", () => {
     await seed(token);
     const ok = await call(token, "GET", "/api/audit-events/verify");
     expect(ok.body.chains).toEqual([
-      expect.objectContaining({ deviceId: "web", chainWorkspaceId: "web", chainOwner: userId, count: 3, broken: null }),
+      // One web chain per (user, workspace) since SYNC-07: its chain workspace
+      // is the workspace id (ADR-0042 §4).
+      expect.objectContaining({ deviceId: "web", chainWorkspaceId: expect.stringMatching(/^[0-9a-f-]{36}$/), chainOwner: userId, count: 3, broken: null }),
     ]);
     // Someone edits the second event in the database.
     await pool.query(
       `UPDATE documents SET payload = jsonb_set(payload, '{actor}', '"user:mallory"')
-        WHERE user_id = $1 AND entity = 'audit_event' AND payload->>'chainSeq' = '2'`,
+        WHERE workspace_id = (SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal') AND entity = 'audit_event' AND payload->>'chainSeq' = '2'`,
       [userId],
     );
     const { rows } = await pool.query<{ id: string; element: string }>(
-      `SELECT entity_id AS id, payload->>'entityId' AS element FROM documents WHERE user_id = $1 AND entity = 'audit_event' AND payload->>'chainSeq' = '2'`,
+      `SELECT entity_id AS id, payload->>'entityId' AS element FROM documents WHERE workspace_id = (SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal') AND entity = 'audit_event' AND payload->>'chainSeq' = '2'`,
       [userId],
     );
     const bad = await call(token, "GET", "/api/audit-events/verify");

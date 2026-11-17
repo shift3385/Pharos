@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import type { Pool } from "pg";
-import { readFileSync } from "node:fs";
 import { setupTestApp, truncateAll } from "./helpers";
+import { applyMigration, schemaAt } from "./schema-at";
 import { FEATURES_HEADER, SERVER_VERSION, VERSION_HEADER } from "../src/modules/sync/sync.version";
 
 let app: FastifyInstance;
@@ -193,30 +193,40 @@ describe("duplicate keys on push (DAT-01)", () => {
   });
 
   it("migration 0006 renames duplicates already stored, keeping the lowest id", async () => {
-    await tokenFor("a@pharos.dev");
-    const { rows } = await pool.query<{ id: string }>("SELECT id FROM users LIMIT 1");
-    await pool.query(
-      `INSERT INTO documents (user_id, entity, entity_id, payload, revision, hlc) VALUES
-         ($1, 'test_case', 'b', '{"projectId":"p1","scenarioId":"ATS_004"}', 1, 'h'),
-         ($1, 'test_case', 'a', '{"projectId":"p1","scenarioId":"ATS_004"}', 1, 'h'),
-         ($1, 'test_case', 'c', '{"projectId":"p1","scenarioId":"ATS_004"}', 1, 'h'),
-         ($1, 'requirement', 'r2', '{"projectId":"p1","requirementKey":"REQ-001"}', 1, 'h'),
-         ($1, 'requirement', 'r1', '{"projectId":"p1","requirementKey":"REQ-001"}', 1, 'h'),
-         ($1, 'test_case', 'elsewhere', '{"projectId":"p2","scenarioId":"ATS_004"}', 1, 'h')`,
-      [rows[0].id],
-    );
-    const before = Number((await pool.query("SELECT max(seq) AS s FROM documents")).rows[0].s);
-    await pool.query(readFileSync(new URL("../migrations/0006_document_keys.sql", import.meta.url), "utf8"));
-    const after = await pool.query(
-      `SELECT entity_id, coalesce(payload->>'scenarioId', payload->>'requirementKey') AS key, revision, seq
-         FROM documents ORDER BY entity_id`,
-    );
-    const byId = Object.fromEntries(after.rows.map((r) => [r.entity_id, r]));
-    expect([byId.a.key, byId.b.key, byId.c.key]).toEqual(["ATS_004", "ATS_004-dup1", "ATS_004-dup2"]);
-    expect([byId.r1.key, byId.r2.key]).toEqual(["REQ-001", "REQ-001-dup1"]);
-    expect(byId.elsewhere.key).toBe("ATS_004");
-    expect(byId.b.revision).toBe(2);
-    expect(Number(byId.b.seq)).toBeGreaterThan(before);
-    expect(Number(byId.a.seq)).toBeLessThanOrEqual(before);
+    // The store as a 0.1 server left it: per user (replayed in its own schema;
+    // the store is per workspace since 0019).
+    const { client, drop } = await schemaAt(pool, "mig_0006", "0005_key_blocks.sql");
+    try {
+      const user = (
+        await client.query<{ id: string }>(
+          "INSERT INTO users (email, password_hash, display_name, first_name, last_name) VALUES ('a@pharos.dev', 'x', 'A', 'A', 'B') RETURNING id",
+        )
+      ).rows[0].id;
+      await client.query(
+        `INSERT INTO documents (user_id, entity, entity_id, payload, revision, hlc) VALUES
+           ($1, 'test_case', 'b', '{"projectId":"p1","scenarioId":"ATS_004"}', 1, 'h'),
+           ($1, 'test_case', 'a', '{"projectId":"p1","scenarioId":"ATS_004"}', 1, 'h'),
+           ($1, 'test_case', 'c', '{"projectId":"p1","scenarioId":"ATS_004"}', 1, 'h'),
+           ($1, 'requirement', 'r2', '{"projectId":"p1","requirementKey":"REQ-001"}', 1, 'h'),
+           ($1, 'requirement', 'r1', '{"projectId":"p1","requirementKey":"REQ-001"}', 1, 'h'),
+           ($1, 'test_case', 'elsewhere', '{"projectId":"p2","scenarioId":"ATS_004"}', 1, 'h')`,
+        [user],
+      );
+      const before = Number((await client.query("SELECT max(seq) AS s FROM documents")).rows[0].s);
+      await applyMigration(client, "0006_document_keys.sql");
+      const after = await client.query(
+        `SELECT entity_id, coalesce(payload->>'scenarioId', payload->>'requirementKey') AS key, revision, seq
+           FROM documents ORDER BY entity_id`,
+      );
+      const byId = Object.fromEntries(after.rows.map((r) => [r.entity_id, r]));
+      expect([byId.a.key, byId.b.key, byId.c.key]).toEqual(["ATS_004", "ATS_004-dup1", "ATS_004-dup2"]);
+      expect([byId.r1.key, byId.r2.key]).toEqual(["REQ-001", "REQ-001-dup1"]);
+      expect(byId.elsewhere.key).toBe("ATS_004");
+      expect(byId.b.revision).toBe(2);
+      expect(Number(byId.b.seq)).toBeGreaterThan(before);
+      expect(Number(byId.a.seq)).toBeLessThanOrEqual(before);
+    } finally {
+      await drop();
+    }
   });
 });

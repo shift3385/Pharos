@@ -211,7 +211,7 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
    - **Dentro de una MENOR**, la versión no distingue un build de otro: lo
      hace la cabecera `x-pharos-sync-features` (`key-conflicts`, `append-only`,
      `complete-payload`, `stable-steps`, `runs`, `custom-fields`, `cycles`,
-     `defects`). Un cliente que
+     `defects`, `workspaces`). Un cliente que
      aún no ha visto `stable-steps` en las respuestas del servidor no le envía
      casos ni revisiones (los retiene y el diagnóstico los cuenta). Del mismo
      modo, sin `runs` no le envía runs, elementos, reglas de enlace, shards ni
@@ -260,6 +260,28 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
        vínculos hasta que el servidor lista `defects`; una tarjeta de defecto
        que aún le llegue por pull la convierte al aplicarla, sin pisar un
        defecto que ya tenga en esa revisión o en una posterior.
+   - **`workspaces` (SYNC-07, ADR-0042)** cambia dónde vive cada documento:
+     el servidor guarda por workspace, no por usuario (migración de servidor
+     0019), y decide por cada delta según el rol.
+     - **Una MENOR anterior sin `workspaces`** (0.4 frente a un servidor
+       0.5) queda **en solo lectura**: todo push recibe 426
+       `read_only_client_version` antes de escribir nada, porque no conoce
+       los roles y, si pudiera enviar, un Viewer editaría. Su pull es la
+       unión de todos sus workspaces con su cursor único, sin las lápidas
+       que deja un traslado (`{ movedTo }`). Así sigue viendo, con las
+       ediciones de sus compañeros, los proyectos que creó y que se movieron
+       a un workspace compartido.
+     - **Una compilación de la misma MENOR sin `workspaces`** (solo las de
+       desarrollo) trabaja en su workspace personal y recibe 426 en lugar de
+       un `rejected` que no sabría leer.
+     - **Un cliente con `workspaces`** nombra el workspace en cada push,
+       pull y bloque de claves. Un delta que su rol no permite, o de una
+       entidad que vive en otro workspace, vuelve en `rejected` sin escribir
+       nada.
+     - **El `workspaceId` de cada carga lo fija el servidor.** Hasta 0.4
+       era un id aleatorio por equipo, o `"local"` en la web; la migración
+       0019 lo reescribió. Está fuera del contenido de los `append_only` y
+       del hash de la auditoría.
    - **Una clave nueva dentro de un blob opaco no necesita puerta** si se
      cumplen las tres: el escritorio y el servidor guardan el blob tal cual sin
      leer esa parte; todo cliente que aún puede hacer push la conoce; y el

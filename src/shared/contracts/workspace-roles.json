@@ -1,0 +1,24 @@
+{
+  "$comment": "Workspace roles and what each may do (SYNC-07, ADR-0019 permission table, ADR-0042 §1). The single source for the desktop (Rust include_str!), the client and the server; the server keeps a TypeScript mirror (server/src/modules/workspaces/roles.ts) because its image is built from server/ alone, and a test holds both equal.",
+  "roles": ["test_manager", "test_analyst", "automation_engineer", "product_owner", "viewer"],
+  "capabilities": {
+    "read": ["test_manager", "test_analyst", "automation_engineer", "product_owner", "viewer"],
+    "export": ["test_manager", "test_analyst", "automation_engineer", "product_owner", "viewer"],
+    "members.manage": ["test_manager"],
+    "project.manage": ["test_manager"],
+    "plan.edit": ["test_manager", "test_analyst"],
+    "plan.approve": ["test_manager"],
+    "requirement.edit": ["test_manager", "test_analyst", "product_owner"],
+    "case.edit": ["test_manager", "test_analyst", "automation_engineer"],
+    "case.approve": ["test_manager", "test_analyst"],
+    "cycle.edit": ["test_manager", "test_analyst"],
+    "config.edit": ["test_manager", "test_analyst", "automation_engineer"],
+    "field.edit": ["test_manager", "test_analyst"],
+    "planner.edit": ["test_manager", "test_analyst", "automation_engineer"],
+    "run.execute": ["test_manager", "test_analyst", "automation_engineer"],
+    "result.import": ["test_manager", "test_analyst", "automation_engineer"],
+    "defect.edit": ["test_manager", "test_analyst", "automation_engineer"],
+    "defect.create": ["test_manager", "test_analyst", "automation_engineer", "product_owner"],
+    "audit.read": ["test_manager"]
+  }
+}

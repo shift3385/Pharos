@@ -73,7 +73,7 @@ describe("GET /api/home/metrics (RED-W6)", () => {
     const H = (wall: number) => `${String(wall).padStart(15, "0")}-00000-desk`;
     const doc = (entity: string, id: string, payload: Record<string, unknown>) =>
       pool.query(
-        "INSERT INTO documents (user_id, entity, entity_id, payload, revision, author, deleted, hlc) VALUES ($1, $2, $3, $4, 1, 'u', false, $5)",
+        "INSERT INTO documents (workspace_id, entity, entity_id, payload, revision, author, deleted, hlc) VALUES ((SELECT id FROM workspaces WHERE created_by = $1 AND kind = 'personal'), $2, $3, $4, 1, 'u', false, $5)",
         [userId, entity, id, payload, H(Date.now())],
       );
     // A manual run (synced from the desktop) fails Pay at 10:00 UTC on day 2.
