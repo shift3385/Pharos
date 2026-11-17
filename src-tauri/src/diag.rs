@@ -385,6 +385,10 @@ struct DatabaseInfo {
     /// resent; a number above 0 points at a bug or a tampered copy.
     #[serde(skip_serializing_if = "Option::is_none")]
     rejected_audit_events: Option<i64>,
+    /// When this database was last found to be a copy put back by hand, and
+    /// got a new device id (AUD-01c).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    restored_copy_detected_at: Option<String>,
     /// Test cases with pending changes this device holds back because the
     /// server has not listed `stable-steps` (DAT-02): an older server would
     /// serve their stable steps to clients that only know text steps. They go
@@ -559,6 +563,7 @@ fn build_bundle(
             migrations: applied_migrations(conn)?,
             pending_audit_events: Some(crate::audit::pending_count(conn)?),
             rejected_audit_events: Some(crate::audit::rejected_count(conn)?),
+            restored_copy_detected_at: crate::restored_copy::detected_at(conn)?,
             held_back_cases: Some(crate::sync::held_back_cases(conn)?),
             held_back_reason: (crate::sync::held_back_cases(conn)? > 0)
                 .then_some("server-without-stable-steps"),
@@ -574,6 +579,7 @@ fn build_bundle(
             migrations: Vec::new(),
             pending_audit_events: None,
             rejected_audit_events: None,
+            restored_copy_detected_at: None,
             held_back_cases: None,
             held_back_reason: None,
             held_back_fields: None,
