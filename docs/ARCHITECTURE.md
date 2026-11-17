@@ -701,15 +701,18 @@ through `src-tauri/src/journal.rs`:
   and names the event at a break.
 - **Web edits (AUD-01b)** are audited by the server
   (`server/src/modules/audit/`). `DomainTx.put` writes, in the same
-  transaction and under the user's write lock, one `audit_event` document
+  transaction and under the workspace's write lock, one `audit_event` document
   per domain write with the journal's rules (`audit.diff.ts` ports
   `journal::diff` and `location`): create, update or delete with the diff,
   nothing for a no-diff update or a refused write (409/404), one `import`
   event for a requirement import (its rows are `folded`), one `delete` with
-  the cascade counts for a project delete. The events form the chain
-  `("web", "web", user)`: `deviceId "web"`, `chainWorkspaceId "web"`,
-  `origin "local"` (a new origin would fail the desktop's CHECK), an empty
-  `workspaceId` so each desktop files them under its own workspace. Its head
+  the cascade counts for a project delete. Since SYNC-07 (ADR-0042 §4) the
+  events form one chain per user and workspace,
+  `("web", <workspace id>, user)`: `deviceId "web"`, `chainWorkspaceId` and
+  `workspaceId` the workspace the event is stored in, `origin "local"` (a new
+  origin would fail the desktop's CHECK). The chain `("web", "web", user)`
+  written before (empty `workspaceId`) stays, closed, in the personal
+  workspace and still verifies. Its head
   lives in `audit_chain_heads` (server migration 0007). `audit.chain.ts` is
   a port of `audit.rs` (JCS subset, `hashOf`, `verifyChain`); the shared
   vectors `src/shared/contracts/fixtures/audit/chain.json` (canonical forms,
@@ -1452,7 +1455,32 @@ the SQL is rolled back and the migration is not recorded. The first is
 core Postgres lacks). Modules:
 
 - `auth` — accounts and sessions (below).
-- `sync` — per-user document store for the oplog: `POST /sync/push` (one
+- `workspaces` (SYNC-07, ADR-0042) — the store is per workspace, not per
+  user. Every account has a `personal` workspace (migration 0019 and a
+  trigger on `users`); anyone creates `shared` ones and is their Test
+  Manager. One role per workspace (`test_manager`, `test_analyst`,
+  `automation_engineer`, `product_owner`, `viewer`); what each may do is the
+  capability matrix `src/shared/contracts/workspace-roles.json`, mirrored by
+  `roles.ts` (a test holds them equal). Routes: `GET/POST /workspaces`,
+  `PATCH/DELETE /workspaces/:id`, invitations
+  (`POST/GET /workspaces/:id/invitations`, `DELETE …/:invitation`,
+  `POST /invitations/preview` and `/accept`: one-time `PHX-…` codes of 128
+  bits, only their SHA-256 stored), members (`PATCH/DELETE
+  /workspaces/:id/members/:user`; never without a Test Manager) and
+  `POST /workspaces/:id/move-project`, which moves a project with every
+  document under it to a shared workspace (same revision and HLC, a new seq)
+  and leaves `{ movedTo }` tombstones in the origin. `documents` has the
+  key `(workspace_id, entity, entity_id)`; `author_user_id` says who stored
+  the last version (no cascade on account delete). Writers take the
+  workspace's advisory lock (`LOCK_WORKSPACE_SQL`); a reader of several
+  workspaces takes their shared locks. For other modules: `can(role, cap)`,
+  `requireCapability(pool, cap, { from })` (a preHandler that sets
+  `req.workspace` or answers 403 `forbidden` / `workspace_revoked`, 404
+  `workspace_not_found`), `membership`, `isMember`, `listMembers`,
+  `managedMembers` and `workspaceApproverCheck` (CAS-02). Isolation has no
+  RLS: every query names the workspace, and a test scans the server's SQL
+  for any that does not.
+- `sync` — per-workspace document store for the oplog: `POST /sync/push` (one
   batch of up to 500 deltas; last-write-wins by HLC; rejects a desktop delta
   whose base revision the server no longer holds and returns its own version as
   a conflict; a project delete also tombstones its plans, cases, requirements
@@ -1464,7 +1492,20 @@ core Postgres lacks). Modules:
   answers others with 426 (ADR-0020). Inside one minor the
   `x-pharos-sync-features` header tells builds apart (`key-conflicts`,
   `append-only`, `complete-payload`, `stable-steps`, `runs`, `custom-fields`,
-  `cycles`, `defects`, `requirement-data`). A requirement upsert from a
+  `cycles`, `defects`, `requirement-data`, `workspaces`). With `workspaces`
+  a push and a key lease name their workspace (`workspaceId`; the personal
+  one when absent) and a pull pulls one (`?workspace=`, its own cursor). A
+  delta is refused, writing nothing, in `rejected`: `forbidden` (the role
+  lacks `capabilityFor(entity)`; in a shared workspace a pushed audit event
+  must be the user's own), `moved` (the entity lives in another workspace of
+  the user, whose id is returned) or `not_found` (in one the user left). A
+  client of the earlier minor without `workspaces` is read only (426
+  `read_only_client_version` on push) and pulls the union of its workspaces
+  with its single cursor, without move tombstones; a build of this minor
+  without it works in its personal workspace and gets 426 instead of a
+  `rejected` it could not read. The server sets every payload's
+  `workspaceId` to the workspace it is stored in, and audit events only reach
+  the workspaces where the role reads the audit. A requirement upsert from a
   client without `requirement-data` (IA-17) keeps the stored `data`
   (`FEATURE_KEYS`). Configurations, test cycles and their items (CYC-01)
   only reach clients that send `cycles`, and only those may push them (else
