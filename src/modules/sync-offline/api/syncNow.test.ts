@@ -12,6 +12,17 @@ vi.mock("@modules/auth", () => ({
 const invoke = vi.fn();
 vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invoke(...a) }));
 
+// The fake backend is the stubbed `fetch`: the desktop's requests reach it as
+// the web's do. Their real path through the Rust core (`server_request`,
+// SEC-10) is tested in @shared/platform/serverUrl.test.ts.
+vi.mock("@shared/platform/serverUrl", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@shared/platform/serverUrl")>();
+  return {
+    ...actual,
+    serverFetch: (path: string, init?: RequestInit) => fetch(`${actual.serverUrl()}${path}`, init),
+  };
+});
+
 const { syncNow } = await import("./syncApi");
 
 const delta = (i: number): PendingDelta => ({

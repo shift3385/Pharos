@@ -3,6 +3,9 @@ import { useNavigate } from "react-router";
 import { ChevronsUpDown, CircleUser, LogOut, Moon, Settings2, Sun } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { SyncIndicator } from "@modules/sync-offline";
+import { useServerInfo } from "@modules/server-picker";
+import { isTauri } from "@shared/platform";
+import { serverHost } from "@shared/platform/serverUrl";
 import { SUPPORTED_LANGUAGES, type Language } from "@shared/i18n";
 import { useTheme } from "@shared/theme/useTheme";
 import { MenuItem, MenuLabel, MenuSeparator, ResponsiveMenu } from "@shared/ui/Menu";
@@ -30,6 +33,7 @@ export function UserMenu({ variant }: { variant: "sidebar" | "rail" | "mobile" }
   const { theme, setTheme } = useTheme();
   // On mobile the menu is a bottom sheet, a dialog.
   const menu = usePopover(useBreakpoint() === "mobile" ? "dialog" : "menu");
+  const server = useServerInfo();
   if (!user) return null;
 
   const name = user.displayName;
@@ -118,6 +122,11 @@ export function UserMenu({ variant }: { variant: "sidebar" | "rail" | "mobile" }
           </MenuItem>
         ))}
         <MenuSeparator />
+        {/* The server this desktop works with (SEC-10); it changes only from
+            the sign-in screen, after signing out. */}
+        {isTauri() && (
+          <MenuLabel>{t("server.connectedTo", { host: serverHost(server.info.origin) })}</MenuLabel>
+        )}
         <MenuItem icon={LogOut} tone="danger" onSelect={() => void logout()}>
           {t("auth.logout")}
         </MenuItem>
