@@ -308,6 +308,10 @@ están en el código. Cuando se implementen, cada fila puede pasar a la tabla de
 | Tipo de workspace            | `workspace_kind`                                                       | `local` / `personal` / `shared`; columna `workspaces.kind` (como `card_kind`)                                                                              | 0019 |
 | Miembro / rol de workspace   | `workspace_member`, `workspace_role`                                   | `test_manager` / `test_analyst` / `automation_engineer` / `product_owner` / `viewer`                                                                       | 0019 |
 | Invitación                   | `workspace_invitation`                                                 | Enlace o código de un solo uso (hash en BD)                                                                                                                | 0019 |
+| Revisión de caso (estado)    | `review_state` (propuesto, ADR-0047)                                   | `draft` / `in_review` / `approved`; aprueba un Test Manager o Test Analyst que no es el autor; editar un aprobado lo devuelve a borrador (CAS-02, 0.5.0) |
+| Baseline de suite            | `suite_baseline` (propuesto, ADR-0047)                                 | Foto congelada y con nombre de las revisiones aprobadas de un conjunto de casos (CAS-02, 0.5.0) |
+| Código de recuperación de la cuenta | `recovery_code` (propuesto, ADR-0045)                           | De un solo uso, generado al registrarse y guardado con hash; fija una contraseña nueva de la cuenta. No es la clave de recuperación de la BD local (SEC-03) |
+| Servidor elegido             | `serverUrl` (propuesto, ADR-0046)                                      | URL del servidor elegida en el inicio de sesión; solo HTTPS salvo localhost; los datos locales se separan por servidor y cuenta (SEC-10, 0.5.0) |
 
 > API JSON usa camelCase (`accessToken`, `displayName`); las columnas de BD usan snake_case (`access_token`, `display_name`). Mismo concepto, misma raíz.
 
