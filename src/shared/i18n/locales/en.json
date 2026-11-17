@@ -4141,7 +4141,7 @@
     },
     "verdictHelp": {
       "goWithRisks": "The cycle closes and the release may ship; the justified risks go into the report.",
-      "noGo": "The cycle closes, but the release does not ship. Open another cycle for the re-test."
+      "noGo": "The cycle closes, but the release does not ship. Open another cycle to test it again."
     },
     "signs": "Signed by: {{name}} · {{at}} · recorded in Audit",
     "close": "Close cycle",
