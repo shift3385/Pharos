@@ -713,7 +713,7 @@ spikes are in `docs/spikes/`.
 
 ## Status
 
-Current version: **0.4.0-beta.1**, the first beta of 0.4.0 «Estrategia medible» (ADR-0039), waiting for the user's validation with the 0.4.0 exit criteria; 0.3.0 «Diseño asistido y experiencia» is at `0.3.0-beta.1` (branch `release/0.3.0`); 0.2.0 was the test-execution release. It adds runs, imports, cycles, defects, the extended matrix and the status report to the
+Current version: **0.4.0-beta.1**, the first beta of 0.4.0 «Estrategia medible» (ADR-0039), waiting for the user's validation with the 0.4.0 exit criteria; 0.3.0 «Diseño asistido y experiencia» was published on 2026-11-17 (`v0.3.0`, branch `release/0.3.0`); 0.2.0 was the test-execution release. It adds runs, imports, cycles, defects, the extended matrix and the status report to the
 complete interface redesign (wave 4, [ADR-0028](docs/adr/0028-rediseno-de-la-interfaz.md))
 on top of everything in `0.1.0-beta.1`, the first beta of the 0.1.0 milestone
 (planning and design + traceability; tag `v0.1.0-beta.1`). Gates A and B of the

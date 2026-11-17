@@ -83,6 +83,22 @@ migraciones (local `0039`, servidor `0018`). Un servidor 0.4 acepta apps 0.4 y 0
   estado o aprobar no la sube. Guardar sin cambios avisa de que no hay nada
   que guardar.
 
+## [0.3.0] - 2026-11-17
+
+Diseño asistido y experiencia (ADR-0039), versión estable. Es el contenido de
+`0.3.0-beta.1` (abajo), validado por el usuario el 2026-11-17 con los criterios
+de salida de 0.3.0 ajustados por su decisión. La app es la misma que en la beta:
+desde entonces solo ha cambiado un test del servidor.
+
+Queda sin validar, sin ningún fallo conocido, y pasa a la validación de 0.5.0
+(`docs/ROADMAP.md` §6):
+
+- instalar en un Windows 11 limpio, y desinstalar y reinstalar;
+- la IA con Ollama;
+- partes de IA-13/14, IA-16 e IA-18.
+
+El instalador sigue sin firma de código, así que Windows SmartScreen avisa al instalarlo.
+
 ## [0.3.0-beta.1] - 2026-11-12
 
 Diseño asistido y experiencia (ADR-0039): requisitos propuestos por la IA desde un
