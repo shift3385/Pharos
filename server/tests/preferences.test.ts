@@ -55,6 +55,17 @@ describe("/api/me/preferences (UX-27)", () => {
     expect((await get(t)).json().value).toEqual(board);
   });
 
+  it("lists every stored key at once (SYNC-09)", async () => {
+    const t = await token("a@pharos.dev");
+    expect((await get(t, "/api/me/preferences")).json()).toEqual([]);
+    await put(t, "en", "2026-11-17T10:00:00.000Z", "/api/me/preferences/ui.language");
+    await put(t, { mode: "dark" }, "2026-11-17T10:01:00.000Z", "/api/me/preferences/ui.theme");
+    expect((await get(t, "/api/me/preferences")).json()).toEqual([
+      { key: "ui.language", value: "en", updatedAt: "2026-11-17T10:00:00.000Z" },
+      { key: "ui.theme", value: { mode: "dark" }, updatedAt: "2026-11-17T10:01:00.000Z" },
+    ]);
+  });
+
   it("keeps each account's own value", async () => {
     const a = await token("a@pharos.dev");
     const b = await token("b@pharos.dev");
