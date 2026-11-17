@@ -21,7 +21,13 @@ import { createExecutionService, executionRoutes } from "./modules/domain/execut
 import { homeMetricsRoutes } from "./modules/domain/home-metrics";
 import { createPreferenceStore, preferenceRoutes } from "./modules/preferences/preferences";
 import { auditRoutes, createAuditReader } from "./modules/audit/audit.read";
-import { createNotificationStore, notificationRoutes } from "./modules/notifications";
+import {
+  createNotificationStore,
+  notificationRoutes,
+  notificationWorkspaceHooks,
+  workspaceMembership,
+} from "./modules/notifications";
+import { isMember, listMembers } from "./modules/workspaces/members";
 import { httpsOnly } from "./modules/security/httpsOnly";
 import { SERVER_VERSION, acceptedMinors } from "./modules/sync/sync.version";
 import { AppError } from "./modules/auth/errors";
@@ -97,7 +103,11 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
   const syncRepo = createSyncRepository(pool);
   const clock = createServerClock();
   const domainStore = createDomainStore(pool, clock);
-  const workspaces = createWorkspaceService(pool, clock);
+  // Notifications go between members of the event's workspace (RED-W2),
+  // and the workspaces' own events (invitation, join, removal) become
+  // notifications inside their transaction (ADR-0042 §8, ADR-0048).
+  const membership = workspaceMembership(pool, { isMember, listMembers });
+  const workspaces = createWorkspaceService(pool, clock, notificationWorkspaceHooks(membership));
   const domain = createDomainService(domainStore);
   const cycles = createCycleService(domainStore);
   const runs = createRunService(domainStore);
@@ -138,7 +148,7 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
   });
   void app.register(async (instance) => {
     // Who may notify whom comes from the workspaces (W); until then, nobody else.
-    notificationRoutes(instance, { tokens, store: createNotificationStore(pool) });
+    notificationRoutes(instance, { tokens, store: createNotificationStore(pool, membership) });
   });
   void app.register(async (instance) => {
     auditRoutes(instance, { tokens, reader: createAuditReader(pool) });

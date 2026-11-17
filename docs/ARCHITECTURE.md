@@ -1531,7 +1531,11 @@ core Postgres lacks). Modules:
   `requireCapability(pool, cap, { from })` (a preHandler that sets
   `req.workspace` or answers 403 `forbidden` / `workspace_revoked`, 404
   `workspace_not_found`), `membership`, `isMember`, `listMembers`,
-  `managedMembers` and `workspaceApproverCheck` (CAS-02). Isolation has no
+  `managedMembers` and `workspaceApproverCheck` (CAS-02). `app.ts` gives the
+  notifications (RED-W2) `workspaceMembership(pool, { isMember, listMembers })`
+  and plugs `notificationWorkspaceHooks` into the service's `WorkspaceHooks`:
+  an invitation to a registered account, a join (to the Test Managers) and
+  a removal become notifications inside the same transaction. Isolation has no
   RLS: every query names the workspace, and a test scans the server's SQL
   for any that does not.
 - `sync` — per-workspace document store for the oplog: `POST /sync/push` (one

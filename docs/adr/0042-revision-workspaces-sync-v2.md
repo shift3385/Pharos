@@ -420,7 +420,10 @@ Precisiones sobre lo decidido, sin cambiar la decisión:
   - `createWorkspaceService` acepta `WorkspaceHooks`
     (`invitationCreated`, `memberJoined` y `memberRemoved`, dentro de la
     transacción), con las formas de evento de `notificationWorkspaceHooks`
-    de R. Se conectan cuando R esté en `main`.
+    de R. Están conectados en `app.ts` (`notificationWorkspaceHooks` y
+    `workspaceMembership(pool, { isMember, listMembers })`): una invitación
+    a una cuenta registrada, una entrada y una baja llegan como
+    notificaciones.
   - `invitationCreated` siempre se dispara; su `inviteeUserId` solo lleva
     un valor cuando la nota es el correo de una cuenta registrada.
   - `memberRemoved` no se dispara cuando alguien sale por su cuenta.

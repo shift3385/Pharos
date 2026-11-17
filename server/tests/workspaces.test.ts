@@ -346,6 +346,22 @@ describe("clients without `workspaces` (ADR-0042 §3)", () => {
   });
 });
 
+describe("notifications of the app (RED-W2 wired, ADR-0048)", () => {
+  it("an invitation, a join and a removal reach the right people", async () => {
+    const ana = await register("ana@pharos.dev");
+    const luis = await register("luis@pharos.dev");
+    const ws = await createShared(ana);
+    const kinds = async (a: Account) =>
+      ((await call(a, "GET", "/api/me/notifications?since=0")).json().items as { kind: string }[]).map((n) => n.kind);
+    const inv = (await call(ana, "POST", `/workspaces/${ws}/invitations`, { role: "test_analyst", note: "luis@pharos.dev" })).json();
+    expect(await kinds(luis)).toEqual(["invitation.received"]);
+    await call(luis, "POST", "/invitations/accept", { code: inv.code });
+    expect(await kinds(ana)).toEqual(["member.joined"]);
+    await call(ana, "DELETE", `/workspaces/${ws}/members/${luis.userId}`);
+    expect(await kinds(luis)).toEqual(["invitation.received", "member.removed"]);
+  });
+});
+
 describe("hooks for notifications (track R)", () => {
   it("fire inside the transaction with R's event shapes", async () => {
     const ana = await register("ana@pharos.dev");
