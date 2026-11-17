@@ -3,11 +3,12 @@ import { createPool } from "./db/pool";
 import { runMigrations } from "./db/migrate";
 import { buildApp } from "./app";
 import { createSyncRepository } from "./modules/sync/sync.repository";
+import { tlsWarnings } from "./modules/security/httpsOnly";
 
 /** How often old tombstones are cleared (SYNC-06): once at start, then daily. */
 const COMPACT_EVERY_MS = 24 * 60 * 60 * 1000;
 
-for (const warning of startupWarnings(env)) console.warn(`Warning: ${warning}`);
+for (const warning of [...startupWarnings(env), ...tlsWarnings(env)]) console.warn(`Warning: ${warning}`);
 
 const pool = createPool(env.DATABASE_URL);
 
