@@ -12,6 +12,8 @@
     sincronizados quedaban fuera de su alcance en cualquier equipo nuevo.
   - Pharos es autoalojado. Muchos servidores de equipo no tienen correo
     saliente, así que la recuperación no puede depender solo del correo.
+    [ADR-0019](0019-diseno-workspaces-compartidos.md) dejó el SMTP «para el
+    despliegue (0.5.0)».
   - No hay que confundirlo con SEC-03
     ([ADR-0024](0024-clave-de-recuperacion.md)). La clave de recuperación de
     la base local abre los datos cifrados de un equipo y vive en
@@ -132,12 +134,20 @@
     - Fastify no registra cuerpos, y el log de un correo que falla solo
       guarda el id de la cuenta y el error.
     - La app no los guarda: los códigos salen de la memoria al continuar.
-- **Diseño para la ola 2 (restablecer por un administrador):** el
-  administrador del workspace generará para la persona un **enlace de un solo
-  uso** en `password_reset_tokens`, con `issued_by` igual al administrador, y
-  se lo hará llegar por su canal. Nunca verá ni fijará la contraseña. Al
-  usarlo, el evento lleva `method: "admin"`. Falta la regla de quién puede
-  hacerlo, que llega con los roles de ADR-0042 (pista W, revisión de los workspaces).
+- **Diseño para la ola 2 (restablecer por un administrador):**
+  - **Quién puede hacerlo (regla aprobada por el usuario el 2026-11-17):** un
+    Test Manager puede restablecer solo a personas con las que comparte un
+    workspace y que no sean Test Manager en ningún otro workspace. Así un Test
+    Manager no puede tomar la cuenta de otro.
+  - La comprobación usa lo que expone la pista W (ADR-0042) en
+    `server/src/modules/workspaces/`: `managedMembers(q, managerId)` para la
+    lista de personas que puede restablecer y `requireCapability(cap, { from })`
+    en la ruta.
+  - El Test Manager genera para la persona un **enlace de un solo uso** en
+    `password_reset_tokens`, con `issued_by` igual a su id (migración 0022),
+    y se lo hace llegar por su canal. Nunca ve ni fija la contraseña.
+  - Al usarlo, el evento de auditoría lleva `method: "admin"`. Generar el
+    enlace deja además un evento en la cadena del Test Manager.
 - **Alternativas descartadas:**
   - **Preguntas de seguridad.** Son adivinables y no las recomienda ningún
     estándar actual (NIST SP 800-63B).
@@ -164,3 +174,6 @@
     se usa con SMTP configurado.
   - «Mi perfil» muestra en la web y en el escritorio una tarjeta que necesita
     conexión.
+  - La guía de despliegue (ADR-0046) explica las variables `SMTP_*` y
+    `APP_PUBLIC_URL`. Mientras no exista, las explica el README, en
+    «Production configuration».
