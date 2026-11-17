@@ -18,7 +18,7 @@ agrupadas:
     tuyas.
 - **Aplicación**
   - **General:** tema, idioma, fondo, sombra de las tarjetas, carpeta de
-    descarga y retención de lo borrado.
+    descarga, retención de lo borrado y la papelera.
 - **Cuenta y datos**
   - **Sincronización:** estado, cuenta, conflictos, «Sincronizar ahora» y la
     sincronización automática.
@@ -42,6 +42,28 @@ En este manual, Liomar deja preparado su Pharos: una plantilla de plan
 propia, la sincronización, su clave de recuperación guardada y el diagnóstico
 a mano por si algo falla. Al final repasa en «Auditoría» lo que ha cambiado
 hoy.
+
+## La papelera
+
+- Está al final de «General», solo en la app de escritorio: la web no guarda
+  lo borrado.
+- Muestra cuántos elementos hay, su desglose por tipo y, en cada fila, cuándo
+  se borró y en cuántos días se eliminará para siempre según la retención.
+- **Restaurar** devuelve lo marcado a su sitio, con su clave y su historial, y
+  lo sincroniza como cualquier cambio. Un proyecto vuelve con lo que se borró
+  con él; lo de un proyecto que está en la papelera espera a su proyecto. Un
+  defecto vuelve sin sus adjuntos.
+- **Eliminar para siempre** y **Vaciar papelera** piden confirmación. Lo que
+  tiene cambios sin sincronizar o un conflicto se conserva hasta que se envíe
+  («Pendiente de sincronizar»). Las claves eliminadas no se reutilizan.
+
+## Lo que viaja con tu cuenta
+
+- El idioma, el tema, la sombra de las tarjetas, la opacidad del fondo y el
+  fondo predeterminado o ninguno se aplican en todos tus equipos: en Perfil
+  lo indica «Se aplica en todos tus equipos». Gana el cambio más reciente.
+- Una imagen de fondo propia, la retención, la sincronización automática y la
+  carpeta de descarga dependen del equipo y se quedan en él.
 
 ## Atajos de teclado
 

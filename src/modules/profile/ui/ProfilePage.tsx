@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, LogOut, Monitor, Moon, Sun } from "lucide-react";
+import { Check, Cloud, LogOut, Monitor, Moon, Sun } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { SyncIndicator } from "@modules/sync-offline";
 import { SUPPORTED_LANGUAGES, type Language } from "@shared/i18n";
@@ -270,6 +270,10 @@ function Preferences() {
       <div className="profile-pref">
         <div className="profile-pref__text">
           <span className="profile-pref__name">{t("profile.language")}</span>
+          <span className="profile-pref__synced">
+            <Cloud size={13} aria-hidden="true" />
+            {t("profile.synced")}
+          </span>
         </div>
         <div className="profile-pref__control">
           <SegmentedControl
@@ -288,6 +292,10 @@ function Preferences() {
         <div className="profile-pref__text">
           <span className="profile-pref__name">{t("profile.theme")}</span>
           <span className="profile-pref__help">{t("profile.themeHelp")}</span>
+          <span className="profile-pref__synced">
+            <Cloud size={13} aria-hidden="true" />
+            {t("profile.synced")}
+          </span>
         </div>
         <div className="profile-pref__control">
           <SegmentedControl

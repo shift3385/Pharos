@@ -322,3 +322,23 @@ los bocetos de AUD-01. Añade la pantalla de consulta sin cambiar el registro:
   `entity = 'audit_event'`. Sin migración local: bastan los índices de `0019`.
 - **Fuera de alcance:** redactar contenido (SYNC-06), registrar lecturas
   (0.5.0), la restricción por rol (TEN-01) y reparar una cadena (AUD-01c).
+
+## Enmienda AUD-01c (2026-11-17)
+
+Aprobada con el plan de la pista R de 0.5.0. Cierra la bifurcación por una
+copia `.bak` restaurada a mano (ver «Tras la revisión de E1»):
+
+- Cada guardado se cuenta dos veces: dentro de la imagen cifrada
+  (`sync_state.save_seq`) y en un fichero junto a ella,
+  `pharos.db.enc.seq`, que solo lleva ese número
+  (`src-tauri/src/restored_copy.rs`).
+- Al abrir, una imagen con la cuenta por debajo del fichero es más antigua
+  que lo último que escribió este equipo: una copia puesta encima. Recibe un
+  `device_id` nuevo (`oplog::rotate_device_id`, como la recuperación con la
+  clave) y sus eventos empiezan una cadena nueva, íntegra, en lugar de
+  bifurcar la anterior. La cuenta salta a la del fichero y la base se guarda
+  al momento.
+- Sin el fichero (primer arranque tras actualizar, o borrado) no se puede
+  saber y no se rota nada. Rotar de más no hace daño: solo abre otra cadena.
+- El diagnóstico exportado lleva `restoredCopyDetectedAt`.
+- Sin migración local: la reserva 0044 se retiró.

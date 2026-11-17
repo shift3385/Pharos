@@ -2,6 +2,8 @@ import { useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { applyAppearance } from "@modules/admin";
 import { LegacyUnsentNotice, SyncStatusProvider } from "@modules/sync-offline";
+import { NotificationsProvider } from "@modules/notifications";
+import { usePreferenceSync } from "./usePreferenceSync";
 import { isTauri } from "@shared/platform";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { ShellChromeProvider } from "@shared/ui/ShellChrome";
@@ -91,9 +93,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 /** The shell's sync state and what screens may ask of it (ShellChrome). */
 function ShellProviders({ children }: { children: ReactNode }) {
+  usePreferenceSync();
   return (
     <SyncStatusProvider>
-      <ShellChromeProvider>{children}</ShellChromeProvider>
+      <NotificationsProvider>
+        <ShellChromeProvider>{children}</ShellChromeProvider>
+      </NotificationsProvider>
     </SyncStatusProvider>
   );
 }

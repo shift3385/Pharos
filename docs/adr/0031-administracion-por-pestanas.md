@@ -113,3 +113,5 @@
 - La Papelera (RED-W3) aparece en General como «Próximamente», sin datos
   inventados. Cuando llegue, «Vaciar papelera» confirmará con
   `ConfirmDialog variant="destructive"`.
+  Llegó en 0.5.0 (RED-W3, pista R): contador, desglose, restaurar,
+  eliminar para siempre y vaciar, solo en el escritorio.

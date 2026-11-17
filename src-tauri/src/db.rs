@@ -185,6 +185,10 @@ pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
         "0039_risk_bands.sql",
         include_str!("../migrations/0039_risk_bands.sql"),
     ),
+    (
+        "0043_notifications.sql",
+        include_str!("../migrations/0043_notifications.sql"),
+    ),
 ];
 
 /// Migration whose SQL runs only after Rust moved the planner attachment BLOBs
@@ -400,6 +404,8 @@ impl Db {
         }
         run_migrations_with(&conn, Some(&store))?;
         evidence::check::load_damaged(&conn, &store)?;
+        // A copy put back by hand gets a new device id (AUD-01c).
+        let restored = saved.is_some() && crate::restored_copy::check(&conn, &enc_path)?;
         let db = Db {
             conn: Mutex::new(conn),
             enc_path,
@@ -410,7 +416,7 @@ impl Db {
         // Save the migrated image right away, so the backup and the file on
         // disk are always exactly one upgrade apart; then finish the evidence
         // deletions an earlier run saved but did not complete (ADR-0014).
-        if migrate_existing || db.with_conn(evidence::has_pending_deletions)? {
+        if migrate_existing || restored || db.with_conn(evidence::has_pending_deletions)? {
             db.persist_and_collect()?;
         }
         Ok(db)
@@ -477,9 +483,12 @@ impl Db {
     }
 
     fn save(&self, conn: &mut Connection) -> Result<(), String> {
+        // Counted inside and next to the file, to spot a restored copy (AUD-01c).
+        let seq = crate::restored_copy::bump(conn)?;
         let image = conn.serialize(MAIN_DB).map_err(|e| e.to_string())?;
         let blob = encrypt(&self.key, &image)?;
         write_atomic(&self.enc_path, &blob)?;
+        crate::restored_copy::write_mark(&self.enc_path, seq);
         if let Ok(mut disk) = self.disk.lock() {
             *disk = disk_stamp(&self.enc_path);
         }
@@ -974,6 +983,8 @@ mod tests {
         let mut names: Vec<String> = fs::read_dir(dir)
             .unwrap()
             .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+            // The save count next to the file (AUD-01c) has its own tests.
+            .filter(|n| n != "pharos.db.enc.seq")
             .collect();
         names.sort();
         names
@@ -1006,6 +1017,52 @@ mod tests {
             })
             .unwrap();
         assert_eq!(name, "Renamed");
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// AUD-01c: a copy put back by hand gets a new device id; an ordinary
+    /// reopen keeps it.
+    #[test]
+    fn a_restored_copy_gets_a_new_device_id() {
+        let dir = temp_dir();
+        let enc = dir.join("pharos.db.enc");
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        db.with_conn(ensure_workspace).unwrap();
+        db.persist().unwrap();
+        let device = db.with_conn(crate::oplog::device_id).unwrap();
+        db.persist().unwrap();
+        let copy = fs::read(&enc).unwrap();
+        db.persist().unwrap();
+        drop(db);
+        // The mark holds only the count of saves.
+        let mark = fs::read_to_string(dir.join("pharos.db.enc.seq")).unwrap();
+        assert!(mark.trim().parse::<u64>().is_ok(), "{mark}");
+
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        assert_eq!(db.with_conn(crate::oplog::device_id).unwrap(), device);
+        db.persist().unwrap();
+        drop(db);
+
+        fs::write(&enc, &copy).unwrap();
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        let rotated = db.with_conn(crate::oplog::device_id).unwrap();
+        assert_ne!(rotated, device);
+        assert!(db
+            .with_conn(crate::restored_copy::detected_at)
+            .unwrap()
+            .is_some());
+        drop(db);
+        // Saved at once and ahead of the mark again: the next open keeps it.
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        assert_eq!(db.with_conn(crate::oplog::device_id).unwrap(), rotated);
+        drop(db);
+
+        // Without the mark nothing can be told, and nothing changes.
+        fs::write(&enc, &copy).unwrap();
+        fs::remove_file(dir.join("pharos.db.enc.seq")).unwrap();
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        assert_eq!(db.with_conn(crate::oplog::device_id).unwrap(), device);
+        drop(db);
         fs::remove_dir_all(&dir).unwrap();
     }
 
