@@ -1,17 +1,17 @@
 // Browser shortcuts in the desktop window (NC-058, FIX-31). The desktop app is
-// a WebView2 window, and its browser accelerators (print, find, reload, view
-// source, downloads, zoom…) have no place in Pharos. Release builds turn them
-// off in WebView2 itself (`lib.rs`, AreBrowserAcceleratorKeysEnabled); this
-// guard covers debug builds (DevTools stays on there) and anything the native
-// setting lets through. Ctrl + wheel needs nothing here: Tauri leaves
-// `zoomHotkeysEnabled` off, so WebView2 has no zoom control in any build
-// (IsZoomControlEnabled = false). The web build is untouched: a browser's own shortcuts
+// a WebView2 window, and some of its browser shortcuts act outside Pharos or
+// expose it: print, open a local file into the window, save the page, view
+// its source, a new window, downloads, history, bookmarks, caret browsing and,
+// outside development, DevTools. This guard cancels exactly those. Harmless
+// browser keys stay: reload (F5, Ctrl+R), zoom, find in page (Ctrl+F, F3) and
+// Alt+Left/Right, which go through history and so through the unsaved-changes
+// prompt (RED-V3k). The web build is untouched: a browser's own shortcuts
 // belong to its user.
 //
 // A Pharos handler always wins: the guard decides after every other keydown
 // listener ran (React, document, window), and only cancels a key that nobody
-// handled (`defaultPrevented` still false). Ctrl+P in the case editor and
-// Ctrl+K keep working.
+// handled (`defaultPrevented` still false). Ctrl+P in the case editor keeps
+// opening «Ir a un caso…».
 
 import { isTauri } from "@shared/platform";
 
@@ -20,83 +20,54 @@ type Key = Pick<
   "key" | "code" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey"
 >;
 
-/** What the guard does with a key: cancel it, take it as history navigation
- *  (Alt+Left/Right), or leave it alone. */
-export type KeyVerdict = "block" | "back" | "forward" | null;
-
-/** Ctrl + letter shortcuts of the browser, by layout-independent code:
- *  print, find, find next, reload, save page, view source, downloads,
- *  history, bookmark, open file, new window. Ctrl+Shift+J (DevTools console)
- *  is left to the webview, which only enables it in debug builds. */
-const CTRL_LETTERS = new Set([
-  "P",
-  "F",
-  "G",
-  "R",
-  "S",
-  "U",
-  "J",
-  "H",
-  "D",
-  "O",
-  "N",
-]);
-const SHIFT_ALLOWED = new Set(["P", "G", "R"]);
-const ZOOM_CODES = new Set([
-  "Equal",
-  "Minus",
-  "Digit0",
-  "NumpadAdd",
-  "NumpadSubtract",
-  "Numpad0",
-]);
-const ZOOM_KEYS = new Set(["+", "=", "-", "_", "0"]);
+/** Ctrl + letter: print, open file, save page, view source, new window,
+ *  downloads, history, bookmark. */
+const CTRL = new Set(["P", "O", "S", "U", "N", "J", "H", "D"]);
+/** Ctrl + Shift + letter: print preview, new private window. */
+const CTRL_SHIFT = new Set(["P", "N"]);
+/** Ctrl + Shift + letter that open DevTools (inspector, console, picker). */
+const DEVTOOLS_CTRL_SHIFT = new Set(["I", "J", "C"]);
 
 function letterOf(e: Key): string | null {
   if (e.code?.startsWith("Key")) return e.code.slice(3);
   return e.key?.length === 1 ? e.key.toUpperCase() : null;
 }
 
-/** Classifies a keydown. Pure, so the key list is tested on its own. */
-export function browserShortcut(e: Key): KeyVerdict {
+/** True for a browser shortcut the desktop app cancels. `devtools`: whether
+ *  the DevTools keys stay available (development only). Pure, so the key
+ *  list is tested on its own. */
+export function isBlockedShortcut(e: Key, devtools = false): boolean {
+  if (e.altKey) return false;
   const ctrl = e.ctrlKey || e.metaKey;
-  if (e.altKey && !ctrl && !e.shiftKey) {
-    if (e.key === "ArrowLeft") return "back";
-    if (e.key === "ArrowRight") return "forward";
-    return null;
-  }
-  if (e.altKey) return null;
-  // F3 / Shift+F3 find, F5 / Ctrl+F5 / Shift+F5 reload, F7 caret browsing.
-  if (e.key === "F3" || e.key === "F5" || e.key === "F7") return "block";
-  if (!ctrl) return null;
-  if (ZOOM_CODES.has(e.code) || ZOOM_KEYS.has(e.key)) return "block";
+  if (e.key === "F7" && !ctrl && !e.shiftKey) return true;
+  if (e.key === "F12") return !devtools;
+  if (!ctrl) return false;
   const letter = letterOf(e);
-  if (!letter || !CTRL_LETTERS.has(letter)) return null;
-  if (e.shiftKey && !SHIFT_ALLOWED.has(letter)) return null;
-  return "block";
+  if (!letter) return false;
+  if (!e.shiftKey) return CTRL.has(letter);
+  if (CTRL_SHIFT.has(letter)) return true;
+  return !devtools && DEVTOOLS_CTRL_SHIFT.has(letter);
 }
 
 /** Installs the guard on `target` (the window). Returns the uninstaller.
- *  `desktop` defaults to `isTauri()`: on the web it installs nothing. */
+ *  `desktop` defaults to `isTauri()`: on the web it installs nothing.
+ *  `devtools` defaults to the Vite dev server (`tauri dev`). */
 export function installDesktopKeyGuard(
   target: Window = window,
   desktop: boolean = isTauri(),
+  devtools: boolean = import.meta.env.DEV,
 ): () => void {
   if (!desktop) return () => {};
 
   const onCapture = (e: KeyboardEvent) => {
-    const verdict = browserShortcut(e);
-    if (!verdict) return;
+    if (!isBlockedShortcut(e, devtools)) return;
     // A listener added to the window while the event is in its capture phase
     // runs in the window's bubble phase, after every listener already there:
     // the last word, once the page's own handlers had theirs.
     target.addEventListener(
       "keydown",
       (late: Event) => {
-        if (late !== e || e.defaultPrevented) return;
-        e.preventDefault();
-        if (verdict === "back") target.history.back();
-        else if (verdict === "forward") target.history.forward();
+        if (late === e && !e.defaultPrevented) e.preventDefault();
       },
       { once: true },
     );

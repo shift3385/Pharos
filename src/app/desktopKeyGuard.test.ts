@@ -1,73 +1,85 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { browserShortcut, installDesktopKeyGuard } from "./desktopKeyGuard";
+import { afterEach, describe, expect, it } from "vitest";
+import { installDesktopKeyGuard, isBlockedShortcut } from "./desktopKeyGuard";
 
 type Init = KeyboardEventInit & { key: string; code?: string };
 
-function letter(l: string, mods: Partial<KeyboardEventInit> = {}): Init {
+function ctrl(l: string, mods: Partial<KeyboardEventInit> = {}): Init {
   return { key: l.toLowerCase(), code: `Key${l}`, ctrlKey: true, ...mods };
 }
+const shift = { shiftKey: true };
 
-const verdict = (init: Init) =>
-  browserShortcut(new KeyboardEvent("keydown", init));
+const blocked = (init: Init, devtools = false) =>
+  isBlockedShortcut(new KeyboardEvent("keydown", init), devtools);
 
-describe("browserShortcut (NC-058 key list)", () => {
+describe("isBlockedShortcut (NC-058 key list)", () => {
   it.each([
-    ["Ctrl+P print", letter("P")],
-    ["Ctrl+Shift+P print preview", letter("P", { shiftKey: true })],
-    ["Ctrl+F find", letter("F")],
-    ["Ctrl+G find next", letter("G")],
-    ["Ctrl+Shift+G find previous", letter("G", { shiftKey: true })],
-    ["Ctrl+R reload", letter("R")],
-    ["Ctrl+Shift+R hard reload", letter("R", { shiftKey: true })],
-    ["Ctrl+S save page", letter("S")],
-    ["Ctrl+U view source", letter("U")],
-    ["Ctrl+J downloads", letter("J")],
-    ["Ctrl+H history", letter("H")],
-    ["Ctrl+D bookmark", letter("D")],
-    ["Ctrl+O open file", letter("O")],
-    ["Ctrl+N new window", letter("N")],
-    ["⌘P on macOS", letter("P", { ctrlKey: false, metaKey: true })],
-    ["F3", { key: "F3", code: "F3" }],
-    ["Shift+F3", { key: "F3", code: "F3", shiftKey: true }],
-    ["F5", { key: "F5", code: "F5" }],
-    ["Ctrl+F5", { key: "F5", code: "F5", ctrlKey: true }],
+    ["Ctrl+P print", ctrl("P")],
+    ["Ctrl+Shift+P print preview", ctrl("P", shift)],
+    ["Ctrl+O open a local file", ctrl("O")],
+    ["Ctrl+S save page", ctrl("S")],
+    ["Ctrl+U view source", ctrl("U")],
+    ["Ctrl+N new window", ctrl("N")],
+    ["Ctrl+Shift+N new private window", ctrl("N", shift)],
+    ["Ctrl+J downloads", ctrl("J")],
+    ["Ctrl+H history", ctrl("H")],
+    ["Ctrl+D bookmark", ctrl("D")],
     ["F7 caret browsing", { key: "F7", code: "F7" }],
-    ["Ctrl+plus", { key: "+", code: "BracketRight", ctrlKey: true }],
-    ["Ctrl+=", { key: "=", code: "Equal", ctrlKey: true }],
-    ["Ctrl+minus", { key: "-", code: "Slash", ctrlKey: true }],
-    ["Ctrl+0", { key: "0", code: "Digit0", ctrlKey: true }],
-    ["Ctrl+numpad plus", { key: "+", code: "NumpadAdd", ctrlKey: true }],
+    ["⌘P on macOS", ctrl("P", { ctrlKey: false, metaKey: true })],
     // A layout where the P key types another letter: the code decides.
     ["Ctrl+P by code", { key: "π", code: "KeyP", ctrlKey: true }],
+    ["Ctrl+P without code", { key: "p", ctrlKey: true }],
+    ["F12 DevTools", { key: "F12", code: "F12" }],
+    ["Ctrl+Shift+I DevTools", ctrl("I", shift)],
+    ["Ctrl+Shift+J console", ctrl("J", shift)],
+    ["Ctrl+Shift+C element picker", ctrl("C", shift)],
   ])("blocks %s", (_, init) => {
-    expect(verdict(init)).toBe("block");
-  });
-
-  it("takes Alt+Left / Alt+Right as history navigation", () => {
-    expect(verdict({ key: "ArrowLeft", altKey: true })).toBe("back");
-    expect(verdict({ key: "ArrowRight", altKey: true })).toBe("forward");
+    expect(blocked(init)).toBe(true);
   });
 
   it.each([
-    ["Ctrl+K search", letter("K")],
-    ["Ctrl+C copy", letter("C")],
-    ["Ctrl+V paste", letter("V")],
-    ["Ctrl+X cut", letter("X")],
-    ["Ctrl+Z undo", letter("Z")],
-    ["Ctrl+A select all", letter("A")],
-    ["Ctrl+Shift+J DevTools console", letter("J", { shiftKey: true })],
-    ["Ctrl+Shift+I DevTools", letter("I", { shiftKey: true })],
-    ["Ctrl+Shift+S", letter("S", { shiftKey: true })],
-    ["Ctrl+Alt+P", letter("P", { altKey: true })],
     ["F12", { key: "F12", code: "F12" }],
+    ["Ctrl+Shift+I", ctrl("I", shift)],
+    ["Ctrl+Shift+J", ctrl("J", shift)],
+    ["Ctrl+Shift+C", ctrl("C", shift)],
+  ])("keeps DevTools key %s while developing", (_, init) => {
+    expect(blocked(init, true)).toBe(false);
+  });
+
+  it("still blocks print and the rest while developing", () => {
+    expect(blocked(ctrl("P"), true)).toBe(true);
+    expect(blocked(ctrl("U"), true)).toBe(true);
+  });
+
+  it.each([
+    ["Ctrl+R reload", ctrl("R")],
+    ["Ctrl+Shift+R hard reload", ctrl("R", shift)],
+    ["F5 reload", { key: "F5", code: "F5" }],
+    ["Ctrl+F5 reload", { key: "F5", code: "F5", ctrlKey: true }],
+    ["Ctrl+F find", ctrl("F")],
+    ["F3 find next", { key: "F3", code: "F3" }],
+    ["Ctrl+G find next", ctrl("G")],
+    ["Ctrl+plus zoom", { key: "+", code: "BracketRight", ctrlKey: true }],
+    ["Ctrl+minus zoom", { key: "-", code: "Slash", ctrlKey: true }],
+    ["Ctrl+0 zoom", { key: "0", code: "Digit0", ctrlKey: true }],
+    ["Alt+Left back", { key: "ArrowLeft", code: "ArrowLeft", altKey: true }],
+    [
+      "Alt+Right forward",
+      { key: "ArrowRight", code: "ArrowRight", altKey: true },
+    ],
+    ["Ctrl+K search", ctrl("K")],
+    ["Ctrl+C copy", ctrl("C")],
+    ["Ctrl+V paste", ctrl("V")],
+    ["Ctrl+X cut", ctrl("X")],
+    ["Ctrl+Z undo", ctrl("Z")],
+    ["Ctrl+A select all", ctrl("A")],
+    ["Ctrl+Shift+S", ctrl("S", shift)],
+    ["Ctrl+Alt+P", ctrl("P", { altKey: true })],
     ["plain p", { key: "p", code: "KeyP" }],
     ["Tab", { key: "Tab", code: "Tab" }],
-    ["Ctrl+ArrowLeft word jump", { key: "ArrowLeft", ctrlKey: true }],
     ["Alt+ArrowDown (Select, DatePicker)", { key: "ArrowDown", altKey: true }],
-    ["Shift+Alt+Left", { key: "ArrowLeft", altKey: true, shiftKey: true }],
     ["autofill keydown without key", { key: undefined as unknown as string }],
   ])("leaves %s alone", (_, init) => {
-    expect(verdict(init)).toBeNull();
+    expect(blocked(init)).toBe(false);
   });
 });
 
@@ -75,7 +87,6 @@ describe("installDesktopKeyGuard", () => {
   const cleanups: Array<() => void> = [];
   afterEach(() => {
     while (cleanups.length) cleanups.pop()!();
-    vi.restoreAllMocks();
   });
 
   function press(init: Init, target: EventTarget = document.body) {
@@ -96,18 +107,36 @@ describe("installDesktopKeyGuard", () => {
 
   it("does nothing outside the desktop app", () => {
     cleanups.push(installDesktopKeyGuard(window, false));
-    expect(press(letter("P")).defaultPrevented).toBe(false);
+    expect(press(ctrl("P")).defaultPrevented).toBe(false);
   });
 
-  it("cancels a browser shortcut nobody in Pharos handled", () => {
-    cleanups.push(installDesktopKeyGuard(window, true));
-    expect(press(letter("P")).defaultPrevented).toBe(true);
-    expect(press({ key: "F5", code: "F5" }).defaultPrevented).toBe(true);
-    expect(press(letter("C")).defaultPrevented).toBe(false);
+  it("cancels a listed shortcut nobody in Pharos handled", () => {
+    cleanups.push(installDesktopKeyGuard(window, true, false));
+    expect(press(ctrl("P")).defaultPrevented).toBe(true);
+    expect(press(ctrl("O")).defaultPrevented).toBe(true);
+    expect(press({ key: "F12", code: "F12" }).defaultPrevented).toBe(true);
+  });
+
+  it("leaves reload, find, zoom and Alt+Left to the webview", () => {
+    cleanups.push(installDesktopKeyGuard(window, true, false));
+    expect(press({ key: "F5", code: "F5" }).defaultPrevented).toBe(false);
+    expect(press(ctrl("F")).defaultPrevented).toBe(false);
+    expect(
+      press({ key: "0", code: "Digit0", ctrlKey: true }).defaultPrevented,
+    ).toBe(false);
+    expect(press({ key: "ArrowLeft", altKey: true }).defaultPrevented).toBe(
+      false,
+    );
+  });
+
+  it("keeps DevTools keys while developing", () => {
+    cleanups.push(installDesktopKeyGuard(window, true, true));
+    expect(press({ key: "F12", code: "F12" }).defaultPrevented).toBe(false);
+    expect(press(ctrl("P")).defaultPrevented).toBe(true);
   });
 
   it("lets a Pharos handler registered later own the key (editor Ctrl+P)", () => {
-    cleanups.push(installDesktopKeyGuard(window, true));
+    cleanups.push(installDesktopKeyGuard(window, true, false));
     // Like the editor and Ctrl+K: skip a key that is already cancelled.
     let took = false;
     on(window, (e) => {
@@ -115,44 +144,22 @@ describe("installDesktopKeyGuard", () => {
       e.preventDefault();
       took = true;
     });
-    expect(press(letter("P")).defaultPrevented).toBe(true);
+    expect(press(ctrl("P")).defaultPrevented).toBe(true);
     expect(took).toBe(true);
   });
 
   it("runs after document and element handlers too", () => {
-    cleanups.push(installDesktopKeyGuard(window, true));
+    cleanups.push(installDesktopKeyGuard(window, true, false));
     const seen: boolean[] = [];
     on(document.body, (e) => seen.push(e.defaultPrevented));
     on(document, (e) => seen.push(e.defaultPrevented));
-    const e = press(letter("F"));
+    const e = press(ctrl("S"));
     expect(seen).toEqual([false, false]);
     expect(e.defaultPrevented).toBe(true);
   });
 
-  it("turns Alt+Left / Alt+Right into history navigation, once", () => {
-    const back = vi.spyOn(window.history, "back").mockImplementation(() => {});
-    const forward = vi
-      .spyOn(window.history, "forward")
-      .mockImplementation(() => {});
-    cleanups.push(installDesktopKeyGuard(window, true));
-    expect(press({ key: "ArrowLeft", altKey: true }).defaultPrevented).toBe(
-      true,
-    );
-    press({ key: "ArrowRight", altKey: true });
-    expect(back).toHaveBeenCalledTimes(1);
-    expect(forward).toHaveBeenCalledTimes(1);
-  });
-
-  it("leaves Alt+Left to a Pharos handler that takes it", () => {
-    const back = vi.spyOn(window.history, "back").mockImplementation(() => {});
-    cleanups.push(installDesktopKeyGuard(window, true));
-    on(document.body, (e) => e.preventDefault());
-    press({ key: "ArrowLeft", altKey: true });
-    expect(back).not.toHaveBeenCalled();
-  });
-
   it("stops after uninstall", () => {
-    installDesktopKeyGuard(window, true)();
-    expect(press(letter("P")).defaultPrevented).toBe(false);
+    installDesktopKeyGuard(window, true, false)();
+    expect(press(ctrl("P")).defaultPrevented).toBe(false);
   });
 });

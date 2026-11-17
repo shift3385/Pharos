@@ -72,11 +72,6 @@ ignore = "0.4"
 # its default features (gtk3/Wayland) only matter on Linux.
 [target.'cfg(windows)'.dependencies]
 rfd = { version = "0.17", default-features = false }
-# Turns off the WebView2 browser accelerator keys in release builds (NC-058):
-# ICoreWebView2Settings3, cast with windows-core. Both already in the tree
-# through Tauri (wry), at these versions.
-webview2-com = "0.38"
-windows-core = "0.61"
 
 [dev-dependencies]
 # Generated TS contracts (BASE-05, ADR-0026): the derives are test-only, so

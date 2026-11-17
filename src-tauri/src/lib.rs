@@ -86,45 +86,6 @@ fn session_clear() -> Result<(), String> {
     keychain::delete(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT))
 }
 
-/// WebView2 browser accelerator keys (NC-058): only a debug build keeps them,
-/// so F12 / Ctrl+Shift+I still open DevTools while developing. A release build
-/// has no DevTools at all (Tauri's `devtools` feature is off), and none of the
-/// browser shortcuts.
-const fn browser_accelerator_keys_enabled() -> bool {
-    cfg!(debug_assertions)
-}
-
-/// Turns off `AreBrowserAcceleratorKeysEnabled` (ICoreWebView2Settings3).
-/// Tauri does not expose wry's `with_browser_accelerator_keys`, so it is set on
-/// the built webview. The keys still reach the page as keydown events, so the
-/// app's own shortcuts (Ctrl+P in the case editor, Ctrl+K) keep working.
-#[cfg(windows)]
-fn disable_browser_accelerator_keys(window: &tauri::WebviewWindow) {
-    use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings3;
-    use windows_core::Interface;
-    let result = window.with_webview(|webview| {
-        // SAFETY: plain WebView2 COM calls on the webview's own controller,
-        // run by Tauri on the thread that owns it.
-        let outcome = unsafe {
-            webview
-                .controller()
-                .CoreWebView2()
-                .and_then(|core| core.Settings())
-                .and_then(|settings| settings.cast::<ICoreWebView2Settings3>())
-                .and_then(|settings| settings.SetAreBrowserAcceleratorKeysEnabled(false))
-        };
-        if let Err(e) = outcome {
-            tracing::warn!(error = %e, "browser accelerator keys could not be turned off");
-        }
-    });
-    if let Err(e) = result {
-        tracing::warn!(error = %e, "browser accelerator keys could not be turned off");
-    }
-}
-
-#[cfg(not(windows))]
-fn disable_browser_accelerator_keys(_window: &tauri::WebviewWindow) {}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -143,14 +104,7 @@ pub fn run() {
             if let Some(args) = instance::webview_browser_args() {
                 window = window.additional_browser_args(&args);
             }
-            let window = window.build()?;
-            // The WebView's browser shortcuts (print, find, reload, view
-            // source, downloads…) are off in release builds (NC-058); a debug
-            // build keeps them for DevTools. src/app/desktopKeyGuard.ts covers
-            // the rest, in any build.
-            if !browser_accelerator_keys_enabled() {
-                disable_browser_accelerator_keys(&window);
-            }
+            window.build()?;
             // Without a resolvable log dir Pharos runs without a log file.
             let log_dir = app.path().app_log_dir().ok().map(instance::scoped_dir);
             app.manage(diag::init(log_dir));
@@ -399,22 +353,4 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running Pharos");
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[cfg(debug_assertions)]
-    #[test]
-    fn debug_build_keeps_browser_accelerator_keys_for_devtools() {
-        assert!(browser_accelerator_keys_enabled());
-    }
-
-    /// Runs with `cargo test --release` (NC-058): no print, find, reload…
-    #[cfg(not(debug_assertions))]
-    #[test]
-    fn release_build_turns_browser_accelerator_keys_off() {
-        assert!(!browser_accelerator_keys_enabled());
-    }
 }
