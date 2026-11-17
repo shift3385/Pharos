@@ -8,7 +8,7 @@
 import { serverApi } from "@modules/sync-offline";
 
 /** The keys the server accepts (`PREFERENCE_KEYS` in the server). */
-export type PreferenceKey = "home.board";
+export type PreferenceKey = "home.board" | "ui.language" | "ui.theme" | "ui.appearance";
 
 export interface StoredPreference {
   value: unknown;

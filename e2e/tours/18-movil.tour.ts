@@ -29,6 +29,18 @@ chapter("movil", () => {
     },
   });
 
+  step("movil-notificaciones", {
+    title: "Notificaciones en el móvil",
+    caption:
+      "En el móvil, la campana de la barra superior abre las notificaciones como una hoja desde abajo, con los mismos días, el filtro «Sin leer» y la acción de cada una. La ✕ o un toque fuera la cierran.",
+    covers: ["dialogs:src/app/layout/TopbarControls.tsx"],
+    run: async () => {
+      await browser.keys("Escape");
+      await byTestId("notifications-trigger").click();
+      await expect(byTestId("notifications-panel")).toBeDisplayed();
+    },
+  });
+
   step("movil-proyecto", {
     title: "Secciones del proyecto en el móvil",
     caption: "Dentro de un proyecto, sus secciones (Plan, Tablero, Requisitos, Casos, Ciclos, Ejecuciones, Defectos, Trazabilidad y Ajustes) se recorren con las píldoras bajo el título, que se desplazan de lado; la flecha de la barra superior vuelve a Proyectos.",

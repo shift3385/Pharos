@@ -617,6 +617,8 @@ fn opening_the_alpha_1_fixture_with_head_keeps_every_row() {
     let mut names: Vec<String> = fs::read_dir(&dir)
         .unwrap()
         .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+        // The save count next to the file (AUD-01c).
+        .filter(|n| n != "pharos.db.enc.seq")
         .collect();
     names.sort();
     assert_eq!(

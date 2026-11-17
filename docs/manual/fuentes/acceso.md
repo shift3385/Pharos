@@ -144,6 +144,9 @@ los tuyos.
   perfil › Seguridad de la cuenta».
 - Al cambiar la contraseña, tus otros equipos tendrán que volver a entrar. Una
   sesión ya abierta en otro equipo puede seguir funcionando hasta 15 minutos.
+- El idioma, el tema y tus nombres viajan con tu cuenta: si los cambias en un
+  equipo, tus otros equipos los toman al sincronizar («Se aplica en todos tus
+  equipos», en el perfil). Gana el cambio más reciente.
 - La clave de recuperación, que sirve para abrir tus datos en un equipo nuevo,
   ya no está en el perfil: está en «Administración › Seguridad» (capítulo 15).
 

@@ -201,7 +201,7 @@ export const INVENTORY: Item[] = [
   I("navegacion", "action", "action:project-nav", "Secciones del proyecto en el orden del proceso de prueba (UX-21)"),
   I("navegacion", "action", "action:project-switcher", "Cambiar de proyecto desde el menú lateral"),
   I("navegacion", "action", "action:breadcrumbs", "Migas de pan de la barra superior"),
-  I("navegacion", "dialog", "dialogs:src/app/layout/TopbarControls.tsx", "Búsqueda y notificaciones (avisos «próximamente»)"),
+  I("navegacion", "dialog", "dialogs:src/app/layout/TopbarControls.tsx", "Búsqueda, panel de notificaciones y su hoja en el móvil"),
   I("navegacion", "keyboard", "keyboard:ctrl-k", "Ctrl+K abre la búsqueda"),
   I("navegacion", "action", "action:theme-toggle", "Cambio rápido de tema claro u oscuro"),
   I("navegacion", "action", "action:sync-indicator", "Indicador de sincronización y «Sincronizar ahora»"),
@@ -445,6 +445,7 @@ export const INVENTORY: Item[] = [
   I("administracion", "tab", "admin:general", "General (tema, idioma, fondo, carpeta de descarga)"),
   I("administracion", "upload", "upload:src/modules/admin/ui/tabs/GeneralTab.tsx", "Imagen de fondo"),
   I("administracion", "dialog", "dialogs:src/modules/admin/ui/AdminPage.tsx", "Cambiar de pestaña con cambios sin guardar"),
+  I("administracion", "dialog", "dialogs:src/modules/admin/ui/TrashSection.tsx", "Papelera: vaciar o eliminar para siempre (confirmación)"),
   I("administracion", "action", "action:download-folder", "Elegir carpeta de descarga / «Usar Descargas»", {
     skip: "«Elegir carpeta…» abre el selector de carpetas nativo de Windows (rfd, desde Rust), fuera de la WebView que WebDriver maneja; y «Usar Descargas» apuntaría las exportaciones a la carpeta real del usuario, que los tours nunca tocan. El campo se muestra en la captura de «General»; la lógica la cubren los tests de Rust de downloads.rs y la revisión manual (docs/manual/REVIEW.md, «Fuera de los tours»).",
   }),
