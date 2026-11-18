@@ -38,6 +38,8 @@ import { AppError } from "./modules/auth/errors";
 import { createWorkspaceService } from "./modules/workspaces/workspaces.service";
 import { workspaceRoutes } from "./modules/workspaces/workspaces.routes";
 import { aiRoutes, createAiVaultStore, type Fetch } from "./modules/ai";
+import { blobRoutes } from "./modules/blobs/blobs.routes";
+import { diskBlobStore } from "./modules/blobs/blobStore";
 
 /** Routes limited per client IP: guessing passwords on login, and burning
  *  Argon2 CPU on register; guessing passwords, recovery codes or reset links,
@@ -170,6 +172,10 @@ export function buildApp(deps: {
   });
   void app.register(async (instance) => {
     workspaceRoutes(instance, { service: workspaces, tokens });
+  });
+  void app.register(async (instance) => {
+    // SYNC-04b: attachment and template contents by hash, outside the oplog.
+    blobRoutes(instance, { pool, tokens, store: diskBlobStore(env.BLOB_DIR), maxBytes: env.BLOB_MAX_BYTES });
   });
   void app.register(async (instance) => {
     domainRoutes(instance, { domain, tokens });

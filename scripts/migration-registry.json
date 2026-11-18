@@ -4,9 +4,7 @@
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
     "inOrder": true,
-    "reserved": {
-      "0046": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-04b): attachments by hash outside the oplog (was 0041, below 0043)"
-    },
+    "reserved": {},
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013",
       "0025": "E3 step 4 spare, never used: step 4 shipped as the single 0024",
@@ -23,9 +21,7 @@
   },
   "server": {
     "dir": "server/migrations",
-    "reserved": {
-      "0020": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-04b): blobs by (workspace_id, sha256)"
-    },
+    "reserved": {},
     "retired": {
       "0011": "E4 step 9 spare, never used: imports are documents of the step 4 entities",
       "0012": "E5 step 7 (EJE-02) spare, never used: no server change",

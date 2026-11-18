@@ -9,6 +9,7 @@ import {
   KEY_FIELD,
   APPEND_ONLY_ENTITIES,
   BASELINE_ENTITIES,
+  BLOB_ENTITIES,
   CYCLE_ENTITIES,
   DEFECT_ENTITIES,
   EXECUTION_ENTITIES,
@@ -198,6 +199,7 @@ const CASCADE_KEY: Partial<Record<(typeof PROJECT_CHILDREN)[number], string>> = 
   test_cycle_item: "test_cycle_items",
   defect: "defects",
   defect_link: "defect_links",
+  attachment: "attachments",
 };
 
 /** The live document of the same project that already uses the key of an
@@ -597,6 +599,7 @@ export function createSyncRepository(pool: Pool) {
         legacy?: boolean;
         auditIn?: string[];
         baselines?: boolean;
+        blobs?: boolean;
       } = { appendOnly: false },
     ): Promise<PullPage> {
       if (workspaceIds.length === 0) return { docs: [], hasMore: false };
@@ -606,6 +609,7 @@ export function createSyncRepository(pool: Pool) {
         ...(opts.cycles ? [] : CYCLE_ENTITIES),
         ...(opts.defects ? [] : DEFECT_ENTITIES),
         ...(opts.baselines ? [] : BASELINE_ENTITIES),
+        ...(opts.blobs ? [] : BLOB_ENTITIES),
       ];
       const client = await pool.connect();
       try {

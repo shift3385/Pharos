@@ -1,3 +1,5 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import dotenv from "dotenv";
 import type { FastifyInstance } from "fastify";
 import type { Pool } from "pg";
@@ -43,6 +45,9 @@ export const testEnv: Env = {
   SMTP_FROM: undefined,
   APP_PUBLIC_URL: undefined,
   RESET_TOKEN_TTL: 1_800_000,
+  // A folder per test run, removed by the OS temp cleanup.
+  BLOB_DIR: join(tmpdir(), `pharos-blobs-${process.pid}`),
+  BLOB_MAX_BYTES: 1_048_576,
 };
 
 export async function setupTestApp(

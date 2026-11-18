@@ -17,6 +17,7 @@ import {
   FEATURE_KEYS,
   isAppendOnly,
   isBaselineEntity,
+  isBlobEntity,
   isCycleEntity,
   isDefectEntity,
   isExecution,
@@ -34,6 +35,7 @@ import {
   sendsCompletePayload,
   missingFeatures,
   understandsCaseBaselines,
+  understandsBlobs,
   sendsStableSteps,
   understandsAppendOnly,
   understandsCycles,
@@ -118,6 +120,12 @@ export function syncRoutes(
       return reply.code(400).send({
         code: "case_baselines_unsupported",
         message: "This client did not announce the case-baselines sync feature.",
+      });
+    }
+    if (!understandsBlobs(req) && deltas.some((d) => isBlobEntity(d.entity))) {
+      return reply.code(400).send({
+        code: "blobs_unsupported",
+        message: "This client did not announce the blobs sync feature.",
       });
     }
     // Defects have their own entity since DEF-01: a client that does not
@@ -205,6 +213,7 @@ export function syncRoutes(
         defects: understandsDefects(req),
         legacy: !understandsWorkspaces(req),
         baselines: understandsCaseBaselines(req),
+        blobs: understandsBlobs(req),
         auditIn: members.filter((m) => can(m.role, "audit.read")).map((m) => m.workspaceId),
       },
     );

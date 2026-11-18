@@ -443,6 +443,19 @@ export function createWorkspaceService(pool: Pool, clock: ServerClock, hooks: Wo
               AND ((entity = 'project' AND entity_id = $3) OR payload->>'projectId' = $3)`,
           [origin, destination, projectId, userId],
         );
+        // The contents its attachments name go with them (SYNC-04b): the
+        // destination holds them too; the origin keeps its rows, as other
+        // documents of it may name the same content.
+        await c.query(
+          `INSERT INTO blobs (workspace_id, sha256, size, mime, storage_key, uploaded_by, uploaded_at)
+           SELECT $2, b.sha256, b.size, b.mime, b.storage_key, b.uploaded_by, b.uploaded_at
+             FROM blobs b
+            WHERE b.workspace_id = $1
+              AND b.sha256 IN (SELECT payload->>'sha256' FROM documents
+                                WHERE workspace_id = $2 AND entity = 'attachment' AND payload->>'projectId' = $3)
+           ON CONFLICT (workspace_id, sha256) DO NOTHING`,
+          [origin, destination, projectId],
+        );
         await c.query(`UPDATE key_blocks SET workspace_id = $2, updated_at = now() WHERE project_id = $1`, [
           projectId,
           destination,
