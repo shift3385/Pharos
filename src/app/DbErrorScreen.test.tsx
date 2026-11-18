@@ -6,6 +6,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { renderWithProviders, i18n } from "@test/utils";
 import { DbErrorScreen } from "./DbErrorScreen";
 import {
+  DB_IN_USE_ERROR,
   INVALID_RECOVERY_KEY,
   KEY_MISMATCH_ERROR,
   KEY_MISSING_ERROR,
@@ -24,6 +25,15 @@ describe("DbErrorScreen (SEC-06)", () => {
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(
       screen.getByText("Estos datos son de una versión más nueva de Pharos"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(error)).toBeInTheDocument();
+  });
+
+  it("explains that another Pharos process has the data folder open", () => {
+    const error = `${DB_IN_USE_ERROR}: another Pharos process is using this data folder`;
+    renderWithProviders(<DbErrorScreen error={error} />);
+    expect(
+      screen.getByText("Otro Pharos está usando tus datos"),
     ).toBeInTheDocument();
     expect(screen.getByText(error)).toBeInTheDocument();
   });

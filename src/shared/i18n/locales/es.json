@@ -25,6 +25,8 @@
   "dbError": {
     "title": "No se pudo abrir la base de datos local",
     "body": "Pharos no ha modificado ningún archivo. Cierra la app y vuelve a intentarlo; si el problema sigue, comparte este detalle con soporte.",
+    "inUseTitle": "Otro Pharos está usando tus datos",
+    "inUseBody": "Otra ventana de Pharos o el CLI de Pharos tiene abierta la base de datos de este equipo. Ciérralo y vuelve a abrir Pharos. No se ha modificado ningún archivo.",
     "newerTitle": "Estos datos son de una versión más nueva de Pharos",
     "newerBody": "La base de datos local la guardó una versión más reciente que esta. Para no estropearla, Pharos no la abre ni la modifica. Instala esa versión o una posterior.",
     "keyMissingTitle": "Falta la clave de la base de datos local",

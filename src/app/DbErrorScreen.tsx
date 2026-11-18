@@ -5,6 +5,7 @@ import { Logo } from "@shared/ui/Logo";
 import {
   INVALID_RECOVERY_KEY,
   KEY_MISMATCH_ERROR,
+  DB_IN_USE_ERROR,
   NEWER_DB_ERROR,
   WRONG_RECOVERY_KEY,
   isKeyError,
@@ -28,7 +29,9 @@ export function DbErrorScreen({
   const keyError = isKeyError(error);
   const [title, body] = newer
     ? ["dbError.newerTitle", "dbError.newerBody"]
-    : keyError
+    : error.startsWith(DB_IN_USE_ERROR)
+      ? ["dbError.inUseTitle", "dbError.inUseBody"]
+      : keyError
       ? error.startsWith(KEY_MISMATCH_ERROR)
         ? ["dbError.keyMismatchTitle", "dbError.keyBody"]
         : ["dbError.keyMissingTitle", "dbError.keyBody"]

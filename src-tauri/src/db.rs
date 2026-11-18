@@ -233,6 +233,42 @@ pub struct Db {
     /// modification time), so a change by another process can be told
     /// (DAT-03b: deleting orphan evidence refuses then).
     disk: Mutex<Option<DiskStamp>>,
+    /// `pharos.lock`, held open while this `Db` lives (D4, ADR-0050).
+    _lock: fs::File,
+}
+
+/// Prefix of the `Db::open` error when another process (the app or the CLI)
+/// has this data folder open. Until SEC-05b only one process may use it: a
+/// second one would overwrite the other's saves.
+pub const DB_IN_USE_ERROR: &str = "db-in-use";
+
+/// Name of the lock file next to the database.
+const LOCK_FILE: &str = "pharos.lock";
+
+/// Opens `pharos.lock` sharing only deletion, so a second process fails to
+/// open it until this one closes it (on exit too, so a crash never leaves it
+/// locked), while the folder can still be removed. Windows is the shipped
+/// target; elsewhere the file is opened without a lock.
+fn lock_data_dir(dir: &Path) -> Result<fs::File, String> {
+    let path = dir.join(LOCK_FILE);
+    let mut options = fs::OpenOptions::new();
+    options.read(true).write(true).create(true).truncate(false);
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        // FILE_SHARE_DELETE only: no other reader or writer.
+        options.share_mode(0x4);
+    }
+    options.open(&path).map_err(|e| {
+        // ERROR_SHARING_VIOLATION: another process holds the file.
+        if e.raw_os_error() == Some(32) {
+            format!(
+                "{DB_IN_USE_ERROR}: another Pharos process (the app or the CLI) is using                  this data folder. Close it and try again."
+            )
+        } else {
+            format!("failed to lock the data folder: {e}")
+        }
+    })
 }
 
 /// Length and modification time of a file; None when it is not there.
@@ -386,6 +422,8 @@ impl Db {
 
     pub(crate) fn open_with_key(app_data_dir: &Path, key: [u8; 32]) -> Result<Self, String> {
         fs::create_dir_all(app_data_dir).map_err(|e| e.to_string())?;
+        // Before anything is read: another process may be saving (D4, ADR-0050).
+        let lock = lock_data_dir(app_data_dir)?;
         let enc_path = app_data_dir.join("pharos.db.enc");
         // Read the latest save without changing any file yet: a database from a
         // newer version must be refused before anything on disk is touched.
@@ -424,6 +462,7 @@ impl Db {
             key,
             evidence: store,
             disk: Mutex::new(disk),
+            _lock: lock,
         };
         // Save the migrated image right away, so the backup and the file on
         // disk are always exactly one upgrade apart; then finish the evidence
@@ -1062,6 +1101,8 @@ mod tests {
             .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
             // The save count next to the file (AUD-01c) has its own tests.
             .filter(|n| n != "pharos.db.enc.seq")
+            // The lock held while the database is open (ADR-0050) has its own test.
+            .filter(|n| n != LOCK_FILE)
             .collect();
         names.sort();
         names
@@ -1140,6 +1181,24 @@ mod tests {
         let db = Db::open_with_key(&dir, KEY).unwrap();
         assert_eq!(db.with_conn(crate::oplog::device_id).unwrap(), device);
         drop(db);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// D4, ADR-0050: while one `Db` has the folder open, a second open fails
+    /// without reading or writing anything; once the first is gone it opens.
+    #[cfg(windows)]
+    #[test]
+    fn a_second_open_of_the_same_folder_is_refused_until_the_first_closes() {
+        let dir = temp_dir();
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        db.with_conn(ensure_workspace).unwrap();
+        db.persist().unwrap();
+        let before = fs::read(dir.join("pharos.db.enc")).unwrap();
+        let err = Db::open_with_key(&dir, KEY).err().unwrap();
+        assert!(err.starts_with(DB_IN_USE_ERROR), "{err}");
+        assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), before);
+        drop(db);
+        Db::open_with_key(&dir, KEY).unwrap();
         fs::remove_dir_all(&dir).unwrap();
     }
 

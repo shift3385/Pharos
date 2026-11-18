@@ -669,12 +669,12 @@ fn orphans_are_not_deleted_when_another_process_saved_the_database() {
         .evidence()
         .relative(&db.evidence().path_for(&orphan.sha256).unwrap())
         .unwrap();
-    // A second Pharos on the same data folder saves its database.
+    // Another writer replaces the database file: a copy put back by hand, or
+    // a Pharos from before the folder lock (ADR-0050), which a second
+    // `Db` here can no longer be.
     std::thread::sleep(Duration::from_millis(20));
-    let other = Db::open_with_key(&dir, KEY).unwrap();
-    other.with_conn(ensure_workspace).unwrap();
-    other.persist().unwrap();
-    drop(other);
+    let enc = dir.join("pharos.db.enc");
+    fs::write(&enc, fs::read(&enc).unwrap()).unwrap();
     let check = EvidenceCheck::default();
     let files = [file];
     let err = delete_confirmed(&db, &check, &files, None, later(), ORPHAN_MIN_AGE).unwrap_err();
