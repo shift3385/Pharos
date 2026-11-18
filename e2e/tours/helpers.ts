@@ -3,7 +3,7 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { $, $$, browser, expect } from "@wdio/globals";
-import { button, es, startBlankProject } from "../support";
+import { button, es, projectListLoaded, startBlankProject } from "../support";
 
 export const fixturesDir = join(fileURLToPath(new URL(".", import.meta.url)), "fixtures");
 export const repoDir = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
@@ -39,12 +39,21 @@ export async function goHome() {
 
 /** Opens a project from «Todos los proyectos». When a chapter runs on its
  *  own (`npm run manual -- --spec 04`), the project chapter 2 makes may not
- *  exist yet: it is created then, so every chapter can run alone. */
+ *  exist yet: it is created then, so every chapter can run alone.
+ *  BASE-24: it waits for the loaded list, not its skeleton (which also has
+ *  the class pj-table), and searches before deciding the project is missing;
+ *  reading the skeleton made it create an empty twin of the project, whose
+ *  requirements list then had nothing to click. */
 export async function openProject(name: string) {
   await byTestId("nav-projects").click();
   await expect($(`h1=${es.projects.title}`)).toBeDisplayed();
-  await $(".pj-table, .pj-empty").waitForExist();
+  const list = await projectListLoaded();
   const row = $(`a.pj-row__link*=${name}`);
+  if (list === "table" && !(await row.isExisting())) {
+    // Not on the first page: the search shows it wherever it is.
+    await $(".pj-search input").setValue(name);
+    await row.waitForExist({ timeout: 5_000 }).catch(() => undefined);
+  }
   if (!(await row.isExisting())) {
     await startBlankProject(name);
     await button(es.projects.wizard.create).click();
