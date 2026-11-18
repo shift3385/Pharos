@@ -432,17 +432,17 @@ Precisiones sobre lo decidido, sin cambiar la decisión:
   - `workspaceApproverCheck(pool)` implementa la interfaz de K. `app.ts`
     lo instala con `setApproverCheck` al arrancar.
     - La comprobación en sí solo exige pertenecer al workspace. El resto lo
-      deciden las `policies`, en orden, y la primera que rechaza decide.
-      Las de por defecto (`DEFAULT_APPROVAL_POLICIES`) son la regla del
-      usuario:
+      decide su `rule`, que se puede sustituir, más las `policies` extra.
+      Se evalúan en orden, y la primera que rechaza decide.
+    - La regla por defecto, `roleAndNotAuthor`, es la del usuario:
       - `requiresApproverRole`: `case.approve` o `plan.approve`, según
         el `subject` de la petición (`"case"` por defecto, o `"plan"`);
-      - `authorNeverApproves`.
+      - después, `authorNeverApproves`.
     - El veredicto aprobado lleva `selfApproval` cuando quien aprueba es
       el autor.
-    - PLN-08 sustituirá las de por defecto por su «Aprobación
-      independiente». Desactivada, sin políticas, cualquier miembro aprueba
-      y el autor queda como autoaprobación.
+    - PLN-08 instalará `independentApproval(pool)` como regla. Con la
+      «Aprobación independiente» desactivada, cualquier miembro aprueba y
+      el autor queda como autoaprobación.
     - `ApprovalRequest` gana `subject?: "case" | "plan"` (en
       `case-review.ts` y en su gemelo del cliente). El autor de un plan es
       su `created_by`.

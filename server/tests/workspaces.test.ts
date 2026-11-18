@@ -10,8 +10,8 @@ import { FEATURES_HEADER, SERVER_FEATURES, SERVER_VERSION, VERSION_HEADER } from
 import { CAPABILITIES, WORKSPACE_ROLES, can } from "../src/modules/workspaces/roles";
 import {
   authorNeverApproves,
-  DEFAULT_APPROVAL_POLICIES,
   requiresApproverRole,
+  roleAndNotAuthor,
   workspaceApproverCheck,
 } from "../src/modules/workspaces/approval";
 import { isMember, listMembers, managedMembers } from "../src/modules/workspaces/members";
@@ -427,7 +427,7 @@ describe("another person approves a case (exit criterion, CAS-02 wired)", () => 
     expect(ok.json()).toMatchObject({ status: "approved", data: { approval: { selfApproved: false } } });
   });
 
-  it("policies decide what is required (PLN-08 swaps the defaults)", async () => {
+  it("the rule decides what is required (PLN-08 replaces it); policies add refusals", async () => {
     const ana = await register("ana@pharos.dev");
     const luis = await register("luis@pharos.dev");
     const marta = await register("marta@pharos.dev");
@@ -436,23 +436,30 @@ describe("another person approves a case (exit criterion, CAS-02 wired)", () => 
     await join(ana, ws, marta, "viewer");
     const ask = (check: ReturnType<typeof workspaceApproverCheck>, approverId: string, authorId: string, subject?: "case" | "plan") =>
       check.canApprove({ workspaceId: ws, projectId: "p1", caseId: "c1", authorId, approverId, ...(subject ? { subject } : {}) });
-    // The defaults: role (by subject), then never the author.
+    // The default rule: role (by subject), then never the author.
     const defaults = workspaceApproverCheck(pool);
     expect(await ask(defaults, luis.userId, ana.userId)).toEqual({ ok: true, selfApproval: false });
     expect(await ask(defaults, luis.userId, ana.userId, "plan")).toEqual({ ok: false, reason: "role" });
     expect(await ask(defaults, ana.userId, luis.userId, "plan")).toEqual({ ok: true, selfApproval: false });
     expect(await ask(defaults, ana.userId, ana.userId)).toEqual({ ok: false, reason: "author" });
     expect(await ask(defaults, marta.userId, ana.userId)).toEqual({ ok: false, reason: "role" });
-    // «Aprobación independiente» off: no policy; anyone in the workspace,
-    // the author too, as a self-approval.
-    const off = workspaceApproverCheck(pool, { policies: [] });
+    // «Aprobación independiente» off (a rule that requires nothing): anyone
+    // in the workspace, the author too, as a self-approval.
+    const off = workspaceApproverCheck(pool, { rule: async () => null });
     expect(await ask(off, ana.userId, ana.userId)).toEqual({ ok: true, selfApproval: true });
     expect(await ask(off, marta.userId, ana.userId, "plan")).toEqual({ ok: true, selfApproval: false });
     // The parts compose: the author rule alone.
-    const authorOnly = workspaceApproverCheck(pool, { policies: [authorNeverApproves] });
+    const authorOnly = workspaceApproverCheck(pool, { rule: authorNeverApproves });
     expect(await ask(authorOnly, marta.userId, ana.userId)).toEqual({ ok: true, selfApproval: false });
     expect(await ask(authorOnly, ana.userId, ana.userId)).toEqual({ ok: false, reason: "author" });
-    expect(DEFAULT_APPROVAL_POLICIES).toEqual([requiresApproverRole, authorNeverApproves]);
+    // An extra policy refuses on top of the rule.
+    const tmOnly = workspaceApproverCheck(pool, {
+      policies: [async (_req, m) => (m.role === "test_manager" ? null : { ok: false, reason: "role" })],
+    });
+    expect(await ask(tmOnly, luis.userId, ana.userId)).toEqual({ ok: false, reason: "role" });
+    expect(await ask(tmOnly, ana.userId, luis.userId)).toEqual({ ok: true, selfApproval: false });
+    expect(await roleAndNotAuthor({ workspaceId: ws, projectId: "p", caseId: "c", authorId: "x", approverId: "y" }, { workspaceId: ws, role: "viewer", kind: "shared", name: "W" })).toEqual({ ok: false, reason: "role" });
+    expect(await requiresApproverRole({ workspaceId: ws, projectId: "p", caseId: "c", authorId: "x", approverId: "y", subject: "plan" }, { workspaceId: ws, role: "test_manager", kind: "shared", name: "W" })).toBeNull();
   });
 });
 
