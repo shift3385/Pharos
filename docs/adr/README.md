@@ -8,7 +8,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | ADR                                                | Decisión                                                                             | Estado   | Fecha      |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------ | -------- | ---------- |
 | [0001](0001-linea-base-tres-compuertas.md)         | Línea base: tres compuertas antes de construir encima del MVP                        | Aceptado | 2026-10-28 |
-| [0002](0002-conflictos-por-entidad.md)             | Conflictos de sincronización por entidad hasta 0.5.0 (0.6.0 desde ADR-0039)           | Aceptado; enmendado por ADR-0039 | 2026-10-28 |
+| [0002](0002-conflictos-por-entidad.md)             | Conflictos de sincronización por entidad hasta 0.5.0 (0.6.0 desde ADR-0039)           | Sustituido por ADR-0051; enmendado por ADR-0039 | 2026-10-28 |
 | [0003](0003-workspaces-compartidos.md)             | Equipo en workspaces compartidos desde 0.3.0 (0.5.0 desde ADR-0039)                  | Aceptado; enmendado por ADR-0039 | 2026-10-28 |
 | [0004](0004-web-cliente-del-servidor.md)           | La web es un cliente del servidor                                                    | Aceptado | 2026-10-28 |
 | [0005](0005-alcance-hasta-1-0.md)                  | Recortes de alcance hasta 1.0                                                        | Aceptado | 2026-10-28 |
@@ -56,6 +56,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0048](0048-notificaciones.md) | Notificaciones que viajan por el servidor, una API `notify`/`emitNotification` para las pistas y copia cifrada en el escritorio (RED-W2) | Aceptado | 2026-11-17 |
 | [0049](0049-estados-del-plan-y-aprobacion-independiente.md) | Estados del plan por acciones, como los casos, y política «Aprobación independiente» por workspace para planes y casos (PLN-08); cambia la decisión 4 del ADR-0040 y la regla de edición de casos del ADR-0047 | Aceptado | 2026-11-17 |
 | [0050](0050-pharos-core-y-sqlite-en-disco-cifrado.md) | `pharos-core`: toda la biblioteca en un crate con Tauri opcional, que comparten el escritorio y el CLI (CORE-01); SQLite en disco con cifrado por página y WAL, conversión desde `pharos.db.enc` con imagen testigo (SEC-05) | Aceptado | 2026-11-18 |
+| [0051](0051-fusion-por-campo-oplog-y-lapidas-de-revisiones.md) | Fusión de conflictos por campo a tres bandas en el cliente, compactar el oplog sincronizado y lápidas de las revisiones de caso (SYNC-02, SYNC-10, SYNC-11); sustituye al ADR-0002 | Aceptado | 2026-11-18 |
 | [0053](0053-hallazgos-metricas-y-paquete-de-formatos.md) | Hallazgos y métricas importados: parsers en el paquete `@pharos/formats`, tablas, severidad, huella y vínculos (ING-06, ING-07); completa el ADR-0012 | Aceptado | 2026-11-18 |
 
 Los ADR 0011 a 0019 son la compuerta C

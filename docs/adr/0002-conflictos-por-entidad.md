@@ -1,6 +1,8 @@
 # ADR-0002 · Conflictos de sincronización por entidad hasta 0.5.0
 
-- **Estado:** Aceptado (decisión D2 del usuario, 2026-10-28). Enmienda la spec §9.
+- **Estado:** Sustituido por [ADR-0051](0051-fusion-por-campo-oplog-y-lapidas-de-revisiones.md)
+  (2026-11-18): la fusión por campo llega con SYNC-02 en 0.6.0. Fue
+  Aceptado (decisión D2 del usuario, 2026-10-28). Enmienda la spec §9.
   **Enmendado por [ADR-0039](0039-rumbo-hacia-la-ejecucion-autonoma.md) (2026-11-11):**
   la fusión por campo (SYNC-02) pasa a 0.6.0; donde abajo dice 0.5.0, léase 0.6.0.
 - **Contexto:** la spec §9 pide "last-write-wins por campo". El sync se
