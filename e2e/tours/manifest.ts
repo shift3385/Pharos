@@ -453,6 +453,8 @@ export const INVENTORY: Item[] = [
   I("administracion", "dialog", "dialogs:src/modules/workspaces/ui/InviteDialog.tsx", "Invitar a un workspace (código de un solo uso)", { pending: WORKSPACES_PENDING }),
   I("administracion", "dialog", "dialogs:src/modules/workspaces/ui/ShareProjectDialog.tsx", "Compartir un proyecto con un workspace", { pending: WORKSPACES_PENDING }),
   I("administracion", "dialog", "dialogs:src/modules/workspaces/ui/WorkspaceMembersPage.tsx", "Quitar a un miembro o salir de un workspace", { pending: WORKSPACES_PENDING }),
+  // PLN-08 (ADR-0049): «Aprobación independiente», seen from one account.
+  I("administracion", "action", "action:workspace-rules", "«Reglas»: aprobación independiente del workspace (PLN-08)"),
   I("administracion", "tab", "admin:ai", "Motor de IA"),
   I("administracion", "tab", "tabs:src/modules/admin/ui/AdminTabs.tsx", "Pestañas de Administración"),
   I("administracion", "dialog", "dialogs:src/modules/ai/ui/AiEngineTab.tsx", "Descartar o reemplazar la clave de IA (confirmaciones)"),
