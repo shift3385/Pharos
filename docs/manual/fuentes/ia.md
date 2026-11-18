@@ -55,7 +55,12 @@ En este manual, Liomar trabaja con **Claude** (Anthropic).
 - **Los botones de IA están en gris.** No hay IA configurada: el aviso del
   botón lo dice. Configúrala en el capítulo 15.
 - **«No hay IA disponible…».** Ni un proveedor online con clave y modelo, ni
-  Ollama en marcha.
+  Ollama en marcha. En la web: activa en el escritorio «Usar esta clave también
+  en la web».
+- **«Has hecho muchas peticiones seguidas».** El servidor limita la IA de la
+  web por cuenta. Espera un minuto.
+- **«Hay que volver a subirla».** El servidor cambió su clave maestra. En el
+  escritorio, pulsa «Volver a subir» en Motor de IA.
 - **«Falló la conexión con la IA…» o «El proveedor rechazó la clave…».**
   Revisa la clave, el modelo y la red con «Probar conexión».
 - **«El proveedor respondió vacío».** Prueba otro modelo o vuelve a pedirlo.
@@ -64,10 +69,34 @@ En este manual, Liomar trabaja con **Claude** (Anthropic).
 - **«Requisitos desde diseños» no lee las imágenes.** El modelo no ve
   imágenes: elige uno con visión.
 
+## En la web
+
+- La IA en línea de la web usa **la clave de tu escritorio**. En Pharos de
+  escritorio, en «Administración › Motor de IA», activa «Usar esta clave
+  también en la web». Antes de subirla, Pharos te dice qué implica y te pide
+  que lo confirmes:
+  - el servidor guarda una copia cifrada y nunca la muestra;
+  - quien administre el servidor y tenga su base de datos y su clave maestra
+    podría leerla;
+  - lo que pidas desde la web se cobra a tu clave.
+- En la web, «Motor de IA» muestra «IA disponible» con el proveedor y el
+  modelo que usa. Para cambiarlos, hazlo en el escritorio: si guardas una
+  clave nueva del mismo proveedor, la copia se actualiza sola; si cambias el
+  modelo o el proveedor, Pharos te pregunta antes.
+- **Para dejar de usarla**, desactiva el interruptor en el escritorio o pulsa
+  «Dejar de usarla en la web» en la web: la copia se borra del servidor. Si
+  quitas la clave del escritorio, la copia también se borra.
+- Si recuperas tu cuenta con un código de recuperación o un enlace para
+  restablecer la contraseña, la copia se borra. Vuelve a activarla desde el
+  escritorio. Cambiar la contraseña desde «Mi perfil» no la borra.
+- No está disponible con «Compatible», ni si tu servidor no tiene activada la
+  IA en la web (lo configura quien lo administra).
+
 ## En el móvil
 
 - «Requisitos desde un proyecto» y «Listar modelos» son de la app de
-  escritorio; el resto de la IA funciona también en la web.
+  escritorio; el resto de la IA funciona también en la web, con la clave de tu
+  escritorio.
 
 ## Consejos
 

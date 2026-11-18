@@ -442,6 +442,11 @@ export const INVENTORY: Item[] = [
   I("administracion", "tab", "admin:ai", "Motor de IA"),
   I("administracion", "tab", "tabs:src/modules/admin/ui/AdminTabs.tsx", "Pestañas de Administración"),
   I("administracion", "dialog", "dialogs:src/modules/ai/ui/AiEngineTab.tsx", "Descartar o reemplazar la clave de IA (confirmaciones)"),
+  I("administracion", "dialog", "dialogs:src/modules/ai/ui/clearWebCopy.ts", "Quitar una clave de IA que la web también usa (IA-12)"),
+  I("administracion", "dialog", "dialogs:src/modules/ai/ui/WebAccessPanel.tsx", "Usar la clave de IA también en la web: consentimiento, cambiar el modelo, desactivar (IA-12)", {
+    // Covered by the tour except one dialog: the web's «Dejar de usarla en la web».
+    skip: `La confirmación de «Dejar de usarla en la web» solo existe en la versión web; los tours recorren la app de escritorio. La cubren WebAccessPanel.test.tsx y la revisión manual (docs/manual/REVIEW.md).`,
+  }),
   I("administracion", "state", "state:ollama-offline", "Ollama no detectado (tarjeta del motor local)"),
   I("administracion", "action", "action:ai-ollama", "Descargar y usar un modelo de Ollama", {
     skip: "Necesita Ollama instalado y en marcha en el equipo, y descargar un modelo de varios GB: un servicio externo que el tour aislado no instala. Se recorre el estado «No detectado»; la descarga y el uso local se revisan a mano (docs/manual/REVIEW.md, «Fuera de los tours»).",

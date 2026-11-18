@@ -144,6 +144,53 @@ Debe responder algo como
 Al arrancar, la API avisa en el log de dos errores típicos de despliegue:
 `TRUST_PROXY` apagado y una API que escucha fuera de `127.0.0.1`.
 
+## IA en la web (opcional)
+
+Quien tiene su clave de IA en la app de escritorio puede usarla también en la
+web: activa «Usar esta clave también en la web» en Motor de IA y la app sube
+una copia al servidor (IA-12, [ADR-0034](adr/0034-boveda-de-claves-ia-para-la-web.md)).
+Para que el servidor lo permita:
+
+1. Genera una clave maestra de 32 bytes:
+
+   ```bash
+   openssl rand -base64 32
+   ```
+
+2. Ponla en `AI_VAULT_KEY` (en el `.env` de Docker Compose o en el entorno de
+   la API) y reinicia la API.
+
+Sin `AI_VAULT_KEY` la función queda apagada y el servidor arranca igual: la
+app dice «Tu servidor no tiene activada la IA en la web».
+
+- **Guarda `AI_VAULT_KEY` fuera de las copias de la base de datos.** Quien
+  tenga las dos puede leer las claves de IA guardadas. Tú, como administrador,
+  también: el aviso que acepta cada persona lo dice.
+- **Si la cambias**, las copias guardadas dejan de poder leerse. Cada persona
+  ve «Hay que volver a subirla» y la sube otra vez desde su escritorio. No hace
+  falta borrar nada.
+- **Límites por cuenta:**
+  - 30 peticiones de IA por minuto (`AI_CHAT_RATE_LIMIT_MAX`);
+  - como mucho 3 a la vez;
+  - 10 subidas o borrados de la clave por hora (`AI_VAULT_RATE_LIMIT_MAX`).
+
+  El uso se cobra a la clave de cada persona.
+- El servidor llama a Gemini, OpenAI, Claude y OpenRouter, así que necesita
+  salida a internet hacia ellos. «Compatible» no está disponible en la web.
+- **Copias de una clave maestra anterior.** No se borran solas: si vuelves a
+  la clave anterior, se pueden leer otra vez. Para borrarlas, ejecuta
+  `DELETE FROM ai_vault WHERE kek_id <> '<id>';` con el `kek_id` de una fila
+  que se haya subido después del cambio.
+- **Sesiones cerradas.** El servidor no comprueba los tokens de acceso contra
+  la base de datos. Una sesión cerrada puede seguir usando la IA de la web
+  hasta que caduque su token (`ACCESS_TOKEN_TTL`, 15 minutos por defecto).
+  Para cortarlo antes, borra la copia: la persona puede hacerlo desde la web o
+  el escritorio, y tú con `DELETE FROM ai_vault WHERE user_id = '…';`.
+- **Recuperar una cuenta borra su copia.** Con un código de recuperación, un
+  enlace por correo o un enlace que des tú, la clave guardada se borra, porque
+  quien recupera la cuenta puede no ser su dueño. El dueño la vuelve a subir
+  desde su escritorio. Cambiar la contraseña desde «Mi perfil» no la borra.
+
 ## Si algo no sale
 
 | Lo que dice la app | Causa probable | Qué hacer |

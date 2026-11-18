@@ -33,7 +33,7 @@ export function AiSendNotice({
           <strong>
             {local
               ? t("ai.send.local", { provider })
-              : t("ai.send.cloud", { provider })}
+              : t(destination.viaServer ? "ai.send.cloudViaServer" : "ai.send.cloud", { provider })}
           </strong>
         </p>
         {children}

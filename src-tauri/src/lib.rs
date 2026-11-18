@@ -77,6 +77,18 @@ fn session_load(server: tauri::State<server::ServerState>) -> Result<Option<Stri
     Ok(raw.and_then(|raw| server::unwrap_session(&raw, &server.origin())))
 }
 
+/// The access token of the session cached for `origin` (IA-12): Rust sends the
+/// AI key with this token, never with one the webview hands over, so the key
+/// only goes to the account signed in on the chosen server.
+pub(crate) fn session_access_token(origin: &str) -> Result<Option<String>, String> {
+    let raw = keychain::read(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT))?;
+    Ok(raw
+        .and_then(|raw| server::unwrap_session(&raw, origin))
+        .and_then(|data| serde_json::from_str::<serde_json::Value>(&data).ok())
+        .and_then(|v| v["accessToken"].as_str().map(String::from))
+        .filter(|t| !t.is_empty()))
+}
+
 /// True while a session is cached, whatever its server: the server can only
 /// change while signed out.
 pub(crate) fn session_cached() -> Result<bool, String> {
@@ -322,6 +334,7 @@ pub fn run() {
             ai::ai_chat_online,
             ai::ai_key_test,
             ai::ai_list_models,
+            ai::ai_web_access_upload,
             oplog::oplog_pending_count,
             sync::oplog_pending,
             sync::oplog_mark_synced,

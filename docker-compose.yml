@@ -51,6 +51,8 @@ services:
       LOGIN_RATE_LIMIT_WINDOW: ${LOGIN_RATE_LIMIT_WINDOW:-1 minute}
       BODY_LIMIT_BYTES: ${BODY_LIMIT_BYTES:-1048576}
       SYNC_BODY_LIMIT_BYTES: ${SYNC_BODY_LIMIT_BYTES:-8388608}
+      # IA-12 (ADR-0034): empty = AI on the web is off.
+      AI_VAULT_KEY: ${AI_VAULT_KEY:-}
       # Password reset by email (SEC-09, ADR-0045): empty = off, the default.
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
