@@ -4,7 +4,7 @@ Desktop QA test-management suite (offline-first). Guides each testing project
 safely to port, following ISO/IEC/IEEE 29119, ISO/IEC 25010 and the ISTQB CTFL
 Syllabus v4.0.1.
 
-> **Version 0.4.0-beta.1** (measurable strategy: the full ISO 29119-3 test plan with metrics and approval, a quality gate when closing a cycle, the closure report, the audit view, risk bands and cycle trends, on top of 0.3.0's AI-assisted design) —
+> **Version 0.5.0-beta.1** (team: shared workspaces with roles, review and approval by another person, account recovery and a server administrator, a server chosen from the app with TLS, AI on the web, synced attachments, on top of 0.4.0's measurable strategy and 0.3.0's AI-assisted design) —
 > test plans, test cases with Gherkin, templates,
 > local planner, AI assist with several providers, offline sync with conflict
 > panel, exports, requirements with a traceability matrix, a recovery key for
@@ -35,7 +35,7 @@ The **Installer** workflow builds the NSIS installer on every push to `main`
 (see "Continuous integration"). To install it:
 
 1. On GitHub: **Actions → Installer**, filter by the release tag (for the current
-   version, `v0.4.0-beta.1`), open that green run and download the artifact
+   version, `v0.5.0-beta.1`), open that green run and download the artifact
    `pharos-<version>-<commit>-windows` under **Artifacts** (you must be signed
    in to GitHub; artifacts expire after 30 days). Use the tag's run only:
    later pushes to `main` build artifacts with the same version number but
@@ -758,7 +758,7 @@ spikes are in `docs/spikes/`.
 
 ## Status
 
-Current version: **0.4.0-beta.1**, the first beta of 0.4.0 «Estrategia medible» (ADR-0039), waiting for the user's validation with the 0.4.0 exit criteria; 0.3.0 «Diseño asistido y experiencia» was published on 2026-11-17 (`v0.3.0`, branch `release/0.3.0`); 0.2.0 was the test-execution release. It adds runs, imports, cycles, defects, the extended matrix and the status report to the
+Current version: **0.5.0-beta.1**, the first beta of 0.5.0 «Equipo» (ADR-0039), waiting for the user's validation with the 0.5.0 exit criteria (two people in one workspace with roles); 0.4.0 «Estrategia medible» (`v0.4.0-beta.1`) also waits for the user's validation; 0.3.0 «Diseño asistido y experiencia» was published on 2026-11-17 (`v0.3.0`, branch `release/0.3.0`); 0.2.0 was the test-execution release. It adds runs, imports, cycles, defects, the extended matrix and the status report to the
 complete interface redesign (wave 4, [ADR-0028](docs/adr/0028-rediseno-de-la-interfaz.md))
 on top of everything in `0.1.0-beta.1`, the first beta of the 0.1.0 milestone
 (planning and design + traceability; tag `v0.1.0-beta.1`). Gates A and B of the
