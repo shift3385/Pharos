@@ -10,6 +10,11 @@ export interface TokenServiceOptions {
   accessSecret: string;
   accessTtl: string; // e.g. "15m"
   refreshTtlDays: number;
+  /** Throws when the account may not use the server now (SEC-12: disabled).
+   *  Checked on every authenticated request, after the token itself, so a
+   *  disabled account's live access token stops working at once. Tests and
+   *  tools that build a token service without a database leave it out. */
+  checkAccount?: (userId: string) => Promise<void>;
 }
 
 const ISSUER = "pharos";
@@ -33,6 +38,11 @@ export function createTokenService(opts: TokenServiceOptions) {
     async verifyAccessToken(token: string): Promise<AccessTokenClaims> {
       const { payload } = await jwtVerify(token, secret, { issuer: ISSUER });
       return { sub: String(payload.sub), role: String(payload.role) };
+    },
+
+    /** The account check of `checkAccount` (SEC-12); a no-op without one. */
+    async checkAccount(userId: string): Promise<void> {
+      await opts.checkAccount?.(userId);
     },
 
     generateRefreshToken() {

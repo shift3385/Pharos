@@ -496,6 +496,16 @@ export const INVENTORY: Item[] = [
   I("administracion", "action", "action:admin-revoke", "Quitar el rol de administrador", {
     skip: "Necesita una segunda cuenta en la lista, y el manual solo muestra a su persona (NC-052). Lo cubren server/tests/admin.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
   }),
+  // Disabling an account (SEC-12; ADR-0045 amendment B).
+  I("administracion", "dialog", "dialogs:src/modules/admin/ui/tabs/DisableAccountDialog.tsx", "Desactivar una cuenta: motivo, sucesor del último Test Manager y confirmación", {
+    skip: "Necesita una segunda cuenta en la lista, y el manual solo muestra a su persona (NC-052). Lo cubren server/tests/account-disable.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
+  }),
+  I("administracion", "action", "action:admin-disable", "Desactivar una cuenta", {
+    skip: "Necesita una segunda cuenta en la lista, y el manual solo muestra a su persona (NC-052). Lo cubren server/tests/account-disable.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
+  }),
+  I("administracion", "action", "action:admin-enable", "Reactivar una cuenta desactivada", {
+    skip: "Necesita una segunda cuenta en la lista, y el manual solo muestra a su persona (NC-052). Lo cubren server/tests/account-disable.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
+  }),
   I("administracion", "tab", "admin:sync", "Sincronización"),
   I("administracion", "action", "action:sync-now", "Sincronizar ahora"),
   I("administracion", "action", "action:sync-auto", "Sincronización automática y su intervalo"),

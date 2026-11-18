@@ -195,7 +195,52 @@
     `account.admin_revoked`.
   - **A7 · Fuera de esta enmienda.** Desactivar una cuenta es otro ítem,
     SEC-12: hay que decidir qué pasa con sus sesiones, con sus workspaces
-    (sobre todo si es el último Test Manager de uno) y con su auditoría.
+    (sobre todo si es el último Test Manager de uno) y con su auditoría. Lo
+    decide la enmienda B.
+- **Enmienda B 2026-11-18 · Desactivar una cuenta (SEC-12; 0.6.0, pista S).**
+  El usuario aprobó el plan y sus recomendaciones ese mismo día («Sí, los
+  dos»).
+  - **B1 · Qué es.** `users.disabled_at`, con `disabled_by` y un motivo
+    opcional de hasta 200 caracteres (migración del servidor 0027). No borra
+    nada y se puede deshacer.
+  - **B2 · Quién.** Un administrador del servidor, desde «Administración ›
+    Usuarios» (`PUT /admin/users/:id/disabled`). Nunca a sí mismo
+    (`disable_self`) ni al último administrador activo (`last_admin`). Un
+    administrador desactivado no administra: `requireAdmin` y el recuento de
+    administradores solo cuentan las cuentas activas. Para nombrar
+    administradora o restablecer una cuenta desactivada hay que reactivarla
+    antes (`account_disabled_target`).
+  - **B3 · Efecto inmediato.** Se revocan sus refresh tokens y se anulan sus
+    enlaces de restablecimiento abiertos. Cada petición autenticada lee la
+    cuenta en la BD (`checkAccount` del servicio de tokens, una lectura por
+    clave primaria), así que un token de acceso vivo recibe
+    `403 account_disabled` al momento: web, sync, blobs y, cuando llegue, la
+    API v1. A diferencia de D8, aquí no se acepta el margen de 15 minutos. El
+    margen de D8 para el cambio de contraseña sigue como estaba (decisión del
+    usuario).
+  - **B4 · Entrar y recuperar.** Con la contraseña correcta, `403
+    account_disabled`; con una equivocada, el error de siempre, para no
+    revelar qué cuentas existen. La recuperación por código y por correo
+    responde como para una cuenta que no existe.
+  - **B5 · Workspaces.** Las pertenencias y los roles se conservan, y la
+    lista de miembros la marca «Desactivada» (`disabled` en cada miembro).
+    No es un miembro activo: no recibe notificaciones y no cuenta como Test
+    Manager. Si es el único Test Manager activo de un workspace compartido
+    con otros miembros activos, el administrador elige el sucesor en el mismo
+    diálogo (`successor_required` si falta) y sube a Test Manager en la misma
+    transacción, con un evento `test_manager_succession` en ese workspace.
+    Sin otros miembros activos, el workspace queda sin Test Manager activo
+    hasta que se reactive la cuenta. `GET /admin/users/:id/disable-impact`
+    dice qué workspaces afecta y si es el último administrador.
+  - **B6 · Su escritorio.** El sync se para con «Tu cuenta está desactivada
+    en el servidor». No se borra nada local y los pendientes esperan.
+  - **B7 · Rastro y avisos.** `account_disabled` (con `reason`,
+    `sessionsClosed` y los `successors`) y `account_enabled`, en la cadena
+    personal de quien actúa y en la de la persona. `member.disabled` a los
+    Test Manager de sus workspaces compartidos y `account.enabled` a la
+    persona al reactivarla.
+  - **B8 · Reactivar.** Borra `disabled_at`. Las sesiones no vuelven, los
+    roles son los que tenía y un sucesor conserva el suyo.
 - **Alternativas descartadas:**
   - **Preguntas de seguridad.** Son adivinables y no las recomienda ningún
     estándar actual (NIST SP 800-63B).
@@ -224,7 +269,13 @@
     conexión.
   - (Enmienda 2026-11-18) Migración del servidor 0026 (`users.is_admin`) y
     las variables `PHAROS_ADMINS` y `ADMIN_RESET_TTL`. Tres tipos de
-    notificación nuevos. La lista de cuentas solo la ve un administrador, y
+    notificación nuevos.
+  - (Enmienda B) Migración del servidor 0027 (`users.disabled_at`,
+    `disabled_by`, `disabled_reason`), aditiva. Una lectura de la BD más por
+    petición autenticada. Dos tipos de notificación nuevos
+    (`member.disabled`, `account.enabled`). Una app 0.5 frente a una cuenta
+    desactivada ve el error genérico de sesión y deja de sincronizar sin
+    perder nada. La lista de cuentas solo la ve un administrador, y
     sus rutas responden `403 admin_required` a cualquier otra persona.
   - La guía de despliegue ([`docs/despliegue.md`](../despliegue.md),
     apartado «Correo para restablecer contraseñas»;

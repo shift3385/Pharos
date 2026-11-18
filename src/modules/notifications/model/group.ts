@@ -72,10 +72,15 @@ export function targetOf(n: AppNotification): Target | null {
     case "cycle.closed":
       path = projectPath(n, "cycles", "cycle");
       break;
+    // SEC-12: the members of the workspace, where the new state shows.
+    case "member.disabled":
+      path = "/workspaces/members";
+      break;
     // Account security (SEC-09, SEC-11): the profile, where the account is.
     case "account.reset_issued":
     case "account.admin_granted":
     case "account.admin_revoked":
+    case "account.enabled":
       path = "/profile";
       break;
     // W's events go where W says (`data.path`), handled above; without it,
@@ -101,10 +106,12 @@ export function labelOf(kind: string): string {
     case "sync.conflict":
       return "notifications.action.resolve";
     case "member.joined":
+    case "member.disabled":
       return "notifications.action.members";
     case "account.reset_issued":
     case "account.admin_granted":
     case "account.admin_revoked":
+    case "account.enabled":
       return "notifications.action.profile";
     default:
       return "notifications.action.open";

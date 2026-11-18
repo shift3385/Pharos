@@ -17,6 +17,9 @@ export interface MemberView {
   lastName: string;
   role: WorkspaceRole;
   addedAt: string;
+  /** SEC-12: the account was disabled by a server administrator; it keeps
+   *  its membership and role, and is shown as «Desactivada». */
+  disabled: boolean;
 }
 
 export interface WorkspaceView {
@@ -103,8 +106,10 @@ export function createWorkspaceService(pool: Pool, clock: ServerClock, hooks: Wo
       last_name: string;
       role: WorkspaceRole;
       added_at: Date;
+      disabled: boolean;
     }>(
-      `SELECT m.user_id, u.email, u.display_name, u.first_name, u.last_name, m.role, m.added_at
+      `SELECT m.user_id, u.email, u.display_name, u.first_name, u.last_name, m.role, m.added_at,
+              u.disabled_at IS NOT NULL AS disabled
          FROM workspace_members m JOIN users u ON u.id = m.user_id
         WHERE m.workspace_id = $1 AND m.removed_at IS NULL
         ORDER BY m.added_at, u.display_name`,
@@ -118,6 +123,7 @@ export function createWorkspaceService(pool: Pool, clock: ServerClock, hooks: Wo
       lastName: r.last_name,
       role: r.role,
       addedAt: r.added_at.toISOString(),
+      disabled: r.disabled,
     }));
   }
 

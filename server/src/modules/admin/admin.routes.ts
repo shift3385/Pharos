@@ -19,6 +19,16 @@ const resetBody = z.object({
   locale: z.enum(["es", "en"]).optional(),
 });
 const adminBody = z.object({ isAdmin: z.boolean() });
+const statusQuery = z.enum(["active", "disabled", "all"]).default("all");
+// SEC-12: disable or re-enable; a successor per workspace managed alone.
+const disabledBody = z.object({
+  disabled: z.boolean(),
+  reason: z.string().max(200).nullish(),
+  successors: z
+    .array(z.object({ workspaceId: z.uuid(), userId: z.uuid() }))
+    .max(200)
+    .optional(),
+});
 
 export function adminRoutes(
   app: FastifyInstance,
@@ -33,8 +43,31 @@ export function adminRoutes(
 
   app.get("/admin/users", { preHandler: requireAdmin }, async (req) => {
     const { q, offset, limit } = listQuery.parse(req.query);
-    return admin.listUsers({ search: q, offset, limit });
+    const status = statusQuery.parse(
+      (req.query as { status?: unknown }).status,
+    );
+    return admin.listUsers({ search: q, offset, limit, status });
   });
+
+  // SEC-12: what disabling would leave without a Test Manager.
+  app.get(
+    "/admin/users/:id/disable-impact",
+    { preHandler: requireAdmin },
+    async (req) => {
+      const { id } = userParam.parse(req.params);
+      return admin.disableImpact(id);
+    },
+  );
+
+  app.put(
+    "/admin/users/:id/disabled",
+    { preHandler: requireAdmin },
+    async (req) => {
+      const { id } = userParam.parse(req.params);
+      const body = disabledBody.parse(req.body);
+      return admin.setDisabled(req.userId as string, id, body);
+    },
+  );
 
   app.post(
     "/admin/users/:id/password-reset",

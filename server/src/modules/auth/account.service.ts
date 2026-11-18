@@ -270,7 +270,8 @@ export function createAccountService(deps: {
     ): Promise<Session & { recoveryCodesRemaining: number }> {
       const user = await repo.findByEmail(input.email.toLowerCase());
       const code = normalizeRecoveryCode(input.code);
-      if (!user) {
+      // A disabled account answers like one that does not exist (SEC-12).
+      if (!user || user.disabled_at) {
         await verifyRecoveryCode(await decoyHash(), code ?? "0000000000");
         throw AuthErrors.invalidRecovery();
       }
@@ -359,7 +360,7 @@ export function createAccountService(deps: {
     async requestReset(email: string, locale?: "es" | "en"): Promise<void> {
       if (!mailer || !publicUrl) throw AuthErrors.emailResetDisabled();
       const user = await repo.findByEmail(email.toLowerCase());
-      if (!user) return;
+      if (!user || user.disabled_at) return;
       const raw = randomBytes(32).toString("base64url");
       const sent = await tx(async (client) => {
         await lock(client, user.id);
@@ -416,7 +417,8 @@ export function createAccountService(deps: {
         `SELECT u.email, ib.display_name AS issued_by_name
            FROM password_reset_tokens t JOIN users u ON u.id = t.user_id
            LEFT JOIN users ib ON ib.id = t.issued_by
-          WHERE t.token_hash = $1 AND t.used_at IS NULL AND t.expires_at > now()`,
+          WHERE t.token_hash = $1 AND t.used_at IS NULL AND t.expires_at > now()
+            AND u.disabled_at IS NULL`,
         [sha256(token)],
       );
       if (!rows[0]) throw AuthErrors.invalidResetToken();
@@ -445,6 +447,7 @@ export function createAccountService(deps: {
       ]);
       if (!actor) throw AuthErrors.unauthorized();
       if (!target) throw AdminErrors.notFound();
+      if (target.disabled_at) throw AdminErrors.targetDisabled();
       if (delivery === "email" && (!mailer || !publicUrl))
         throw AuthErrors.emailResetDisabled();
       const raw = randomBytes(32).toString("base64url");
@@ -515,6 +518,7 @@ export function createAccountService(deps: {
         }>(
           `UPDATE password_reset_tokens SET used_at = now()
             WHERE token_hash = $1 AND used_at IS NULL AND expires_at > now()
+              AND NOT EXISTS (SELECT 1 FROM users u WHERE u.id = password_reset_tokens.user_id AND u.disabled_at IS NOT NULL)
             RETURNING user_id, issued_by`,
           [sha256(token)],
         );

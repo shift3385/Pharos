@@ -3,7 +3,15 @@ export { AuthProvider } from "./state/AuthProvider";
 export { useAuth } from "./state/useAuth";
 export { AuthScreen, RESET_PATH } from "./ui/AuthScreen";
 export { RecoveryCodesPanel } from "./ui/RecoveryCodesPanel";
-export { accountApi, type AdminReset, type AdminUser, type RecoveryStatus } from "./api/accountApi";
+export {
+  accountApi,
+  type AdminReset,
+  type AdminUser,
+  type AdminUserStatus,
+  type DisableImpact,
+  type ManagedAlone,
+  type RecoveryStatus,
+} from "./api/accountApi";
 export { ApiError, NetworkError } from "./api/authApi";
 export type { AuthUser } from "./model/types";
 

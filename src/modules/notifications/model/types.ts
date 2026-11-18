@@ -10,10 +10,13 @@ export const TRAVELLING_KINDS = [
   "cycle.closed",
   "member.joined",
   "member.removed",
+  // SEC-12: a member of your workspace was disabled (to its Test Managers).
+  "member.disabled",
   // Account security (SEC-09, SEC-11; ADR-0045).
   "account.reset_issued",
   "account.admin_granted",
   "account.admin_revoked",
+  "account.enabled",
 ] as const;
 
 export type TravellingKind = (typeof TRAVELLING_KINDS)[number];

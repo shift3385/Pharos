@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { KeyRound, Search } from "lucide-react";
+import { KeyRound, Search, UserCheck, UserX } from "lucide-react";
 import {
   accountApi,
   ApiError,
@@ -8,19 +8,24 @@ import {
   useAuth,
   type AdminReset,
   type AdminUser,
+  type AdminUserStatus,
 } from "@modules/auth";
 import { Alert } from "@shared/ui/Alert";
 import { Dialog } from "@shared/ui/Dialog";
+import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { useToast } from "@shared/ui/Toast";
 import { useConfirm } from "@shared/ui/useConfirm";
 import "@shared/ui/ConfirmDialog.css";
+import { DisableAccountDialog } from "./DisableAccountDialog";
 import "./UsersTab.css";
 
 // Administración › Usuarios (SEC-11, SEC-09 by an administrator; ADR-0045):
 // every account of this server, for a server administrator. Reset a password
 // with a single-use link (emailed, or shown once to hand over) and name or
 // remove administrators; the last one stays. The server checks the role on
-// every request; a 403 here means it was just removed.
+// every request; a 403 here means it was just removed. Disable or re-enable
+// an account (SEC-12): it keeps its data and trail; the last active
+// administrator and oneself cannot be disabled.
 
 const PAGE = 50;
 
@@ -34,6 +39,10 @@ function failureKey(error: unknown): string {
       "user_not_found",
       "email_reset_disabled",
       "rate_limited",
+      "disable_self",
+      "account_disabled_target",
+      "successor_required",
+      "invalid_successor",
     ];
     if (known.includes(error.code)) return `admin.users.error.${error.code}`;
   }
@@ -48,11 +57,14 @@ export function UsersTab() {
   const searchId = useId();
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<AdminUserStatus>("active");
   const [data, setData] = useState<{
     users: AdminUser[];
     total: number;
     admins: number;
+    disabled?: number;
   } | null>(null);
+  const [disabling, setDisabling] = useState<AdminUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [emailReset, setEmailReset] = useState(false);
@@ -60,12 +72,12 @@ export function UsersTab() {
 
   const load = useCallback(async () => {
     try {
-      setData(await accountApi.adminUsers(query, 0, PAGE));
+      setData(await accountApi.adminUsers(query, 0, PAGE, status));
       setError(null);
     } catch (e) {
       setError(t(failureKey(e)));
     }
-  }, [query, t]);
+  }, [query, status, t]);
 
   useEffect(() => {
     if (!offline) void load();
@@ -128,6 +140,25 @@ export function UsersTab() {
     }
   }
 
+  async function enable(u: AdminUser) {
+    const ok = await confirm({
+      title: t("admin.users.enableTitle", { name: u.displayName }),
+      message: t("admin.users.enableBody", { name: u.displayName }),
+      confirmLabel: t("admin.users.enableConfirm"),
+    });
+    if (!ok) return;
+    setBusy(true);
+    try {
+      await accountApi.setDisabled(u.id, { disabled: false });
+      toast(t("admin.users.enabled", { name: u.displayName }), "success");
+      await load();
+    } catch (e) {
+      toast(t(failureKey(e)), "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (offline) {
     return (
       <div className="adm-stack">
@@ -155,6 +186,17 @@ export function UsersTab() {
           )}
         </div>
         <p className="usr-muted">{t("admin.users.intro")}</p>
+        <SegmentedControl
+          label={t("admin.users.statusLabel")}
+          size="sm"
+          value={status}
+          onChange={setStatus}
+          testId="users-status"
+          options={(["active", "disabled", "all"] as const).map((v) => ({
+            value: v,
+            label: t(`admin.users.status.${v}`),
+          }))}
+        />
         <label className="usr-search" htmlFor={searchId}>
           <Search size={15} aria-hidden="true" />
           <span className="sr-only">{t("admin.users.search")}</span>
@@ -176,15 +218,22 @@ export function UsersTab() {
                   <th scope="col">{t("admin.users.email")}</th>
                   <th scope="col">{t("admin.users.since")}</th>
                   <th scope="col">{t("admin.users.codes")}</th>
+                  <th scope="col">{t("admin.users.state")}</th>
                   <th scope="col">{t("admin.users.actions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {data.users.map((u) => {
                   const self = u.id === user?.id;
-                  const blockRevoke = u.isAdmin && lastAdmin;
+                  const off = u.disabled !== null;
+                  // Only an active administrator counts as the last one.
+                  const blockRevoke = u.isAdmin && !off && lastAdmin;
                   return (
-                    <tr key={u.id} data-testid={`user-${u.id}`}>
+                    <tr
+                      key={u.id}
+                      data-testid={`user-${u.id}`}
+                      className={off ? "usr-row--off" : undefined}
+                    >
                       <td>
                         <span className="usr-name">{u.displayName}</span>{" "}
                         {self && (
@@ -209,8 +258,37 @@ export function UsersTab() {
                             })}
                       </td>
                       <td>
+                        {u.disabled ? (
+                          <span
+                            className="usr-pill usr-pill--off"
+                            title={
+                              [
+                                u.disabled.byName &&
+                                  t("admin.users.disabledBy", {
+                                    name: u.disabled.byName,
+                                  }),
+                                u.disabled.reason &&
+                                  t("admin.users.disabledReason", {
+                                    reason: u.disabled.reason,
+                                  }),
+                              ]
+                                .filter(Boolean)
+                                .join(" · ") || undefined
+                            }
+                          >
+                            {t("admin.users.disabledOn", {
+                              date: date(u.disabled.at),
+                            })}
+                          </span>
+                        ) : (
+                          <span className="usr-pill usr-pill--on">
+                            {t("admin.users.active")}
+                          </span>
+                        )}
+                      </td>
+                      <td>
                         <div className="usr-actions">
-                          {!self && (
+                          {!self && !off && (
                             <button
                               type="button"
                               className="ui-btn ui-btn--small"
@@ -221,21 +299,50 @@ export function UsersTab() {
                               {t("admin.users.reset")}
                             </button>
                           )}
-                          <button
-                            type="button"
-                            className="ui-btn ui-btn--small"
-                            disabled={busy || blockRevoke}
-                            title={
-                              blockRevoke
-                                ? t("admin.users.lastAdmin")
-                                : undefined
-                            }
-                            onClick={() => void toggleAdmin(u)}
-                          >
-                            {u.isAdmin
-                              ? t("admin.users.revoke")
-                              : t("admin.users.grant")}
-                          </button>
+                          {(!off || u.isAdmin) && (
+                            <button
+                              type="button"
+                              className="ui-btn ui-btn--small"
+                              disabled={busy || blockRevoke}
+                              title={
+                                blockRevoke
+                                  ? t("admin.users.lastAdmin")
+                                  : undefined
+                              }
+                              onClick={() => void toggleAdmin(u)}
+                            >
+                              {u.isAdmin
+                                ? t("admin.users.revoke")
+                                : t("admin.users.grant")}
+                            </button>
+                          )}
+                          {!self && !off && (
+                            <button
+                              type="button"
+                              className="ui-btn ui-btn--small usr-danger"
+                              disabled={busy || blockRevoke}
+                              title={
+                                blockRevoke
+                                  ? t("admin.users.disableBlocked")
+                                  : undefined
+                              }
+                              onClick={() => setDisabling(u)}
+                            >
+                              <UserX size={14} aria-hidden="true" />
+                              {t("admin.users.disable")}
+                            </button>
+                          )}
+                          {off && (
+                            <button
+                              type="button"
+                              className="ui-btn ui-btn--small"
+                              disabled={busy}
+                              onClick={() => void enable(u)}
+                            >
+                              <UserCheck size={14} aria-hidden="true" />
+                              {t("admin.users.enable")}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -261,6 +368,21 @@ export function UsersTab() {
           emailReset={emailReset}
           onClose={() => {
             setResetting(null);
+            void load();
+          }}
+        />
+      )}
+      {disabling && (
+        <DisableAccountDialog
+          target={disabling}
+          failureKey={failureKey}
+          onClose={() => setDisabling(null)}
+          onDone={() => {
+            toast(
+              t("admin.users.disabled", { name: disabling.displayName }),
+              "success",
+            );
+            setDisabling(null);
             void load();
           }}
         />

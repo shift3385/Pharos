@@ -22,7 +22,8 @@ agrupadas:
   - **General:** tema, idioma, fondo, sombra de las tarjetas, carpeta de
     descarga, retención de lo borrado y la papelera.
   - **Usuarios** (solo si eres administrador del servidor): las cuentas del
-    servidor, restablecer contraseñas y nombrar o quitar administradores.
+    servidor, restablecer contraseñas, nombrar o quitar administradores y
+    desactivar o reactivar cuentas.
 - **Cuenta y datos**
   - **Sincronización:** estado, cuenta, conflictos, «Sincronizar ahora» y la
     sincronización automática.
@@ -133,6 +134,22 @@ acceso a los proyectos de nadie.
 - **Hacer administrador / Quitar administrador.** Piden confirmación y
   avisan a la persona. Siempre tiene que quedar un administrador: el del
   último sale deshabilitado.
+- **Activas, Desactivadas, Todas.** La lista muestra primero las cuentas
+  activas. Una desactivada lleva «Desactivada · fecha»; al pasar el ratón,
+  quién la desactivó y por qué.
+- **Desactivar cuenta…** Para alguien que deja el equipo, sin borrar nada.
+  - Se cierran todas sus sesiones al momento (web, escritorio y API), y ya no
+    puede entrar ni sincronizar. Lo que tenga en su equipo se queda allí.
+  - Sus datos, su autoría y su auditoría se conservan.
+  - Si es el único Test Manager activo de un workspace compartido, eliges
+    quién pasa a serlo entre los demás miembros activos. Si no hay nadie
+    más, el workspace queda sin Test Manager activo hasta que la reactives.
+  - Puedes escribir un motivo (lo ven los administradores) y confirmas
+    escribiendo su correo. Los Test Manager de sus workspaces reciben un
+    aviso, y queda en tu auditoría y en la suya.
+  - No puedes desactivarte a ti ni al último administrador activo.
+- **Reactivar cuenta.** La persona vuelve a entrar con su contraseña y
+  conserva sus roles; si nombraste un sucesor, también lo sigue siendo.
 
 ## Lo que viaja con tu cuenta
 
@@ -163,6 +180,11 @@ acceso a los proyectos de nadie.
   al último. Nombra antes a otra persona.
 - **«Este servidor no envía correos. Entrega tú el enlace.»** Elige
   «Prefiero entregarlo yo».
+- **«Esta cuenta está desactivada…» al entrar.** Un administrador del
+  servidor la desactivó. Pídele que la reactive; tus datos siguen en tu
+  equipo y en el servidor.
+- **«Tu cuenta está desactivada en el servidor» al sincronizar.** Lo mismo:
+  la sincronización se para y tus cambios pendientes esperan en el equipo.
 
 - **«No detectado (¿está en ejecución?)» en Ollama.** Ollama no está
   instalado o no está abierto en este equipo. Ábrelo y pulsa «Reintentar», o

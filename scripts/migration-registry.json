@@ -5,6 +5,7 @@
     "registeredIn": "src-tauri/src/db.rs",
     "inOrder": true,
     "reserved": {
+      "0047": "0.6.0 track S (SYNC-02, ADR-0051): sync_base.base_payload and sync_conflicts.merge",
       "0048": "0.6.0 track F (ING-06): findings, finding_triage and metrics tables (ADR-0053)"
     },
     "retired": {
@@ -23,7 +24,9 @@
   },
   "server": {
     "dir": "server/migrations",
-    "reserved": {},
+    "reserved": {
+      "0028": "0.6.0 track S (SYNC-11, ADR-0051): tombstones for the case revisions of projects already deleted"
+    },
     "retired": {
       "0011": "E4 step 9 spare, never used: imports are documents of the step 4 entities",
       "0012": "E5 step 7 (EJE-02) spare, never used: no server change",
