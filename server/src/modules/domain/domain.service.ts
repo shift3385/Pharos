@@ -325,7 +325,7 @@ export function createDomainService(store: DomainStore) {
           approverCheck(),
           {
             subject: "plan",
-            // Where the plan is stored: its payload says "local" on the web.
+            // Where the plan is stored, not what its payload says.
             workspaceId: (await tx.workspaceOf("test_plan", id)) ?? (str(project, "workspaceId") || WORKSPACE),
             projectId: str(doc.payload, "projectId"),
             caseId: id,
@@ -577,7 +577,7 @@ export function createDomainService(store: DomainStore) {
           { ...input, userId, at: new Date().toISOString(), revision: doc.revision + 1 },
           approverCheck(),
           {
-            // Where the case is stored: its payload says "local" on the web.
+            // Where the case is stored, not what its payload says.
             workspaceId: (await tx.workspaceOf("test_case", id)) ?? (str(project, "workspaceId") || WORKSPACE),
             projectId: str(doc.payload, "projectId"),
             caseId: id,

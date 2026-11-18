@@ -124,8 +124,10 @@
     `data.review.reopenedFrom` con la versión aprobada; el que responde a un
     «Pedir cambios» vuelve `state` a `pending` y conserva el comentario.
   - El comprobador recibe el workspace donde está guardado el plan o el caso
-    (`DomainTx.workspaceOf`): el `workspaceId` del documento de la web es
-    "local".
+    (`DomainTx.workspaceOf`, la fila del documento entre los workspaces del
+    usuario, sin las lápidas de un traslado), no el `workspaceId` de la carga.
+    Lo guardado ya lo lleva bien (desde #82 el almacén lo reescribe), pero una
+    carga sin la clave o todavía sin guardar dice "local".
   - El autor de un plan en el servidor es el actor de su evento «create» de
     auditoría: el documento del plan no lo lleva, como el del escritorio.
   - Quedan para el PR 2, tras W2: la copia de la política en el escritorio
