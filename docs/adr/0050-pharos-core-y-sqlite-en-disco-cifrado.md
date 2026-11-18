@@ -9,10 +9,10 @@
   - La biblioteca de cifrado (decisión 2) se fija con el spike SEC-04
     (`docs/spikes/SEC-04-cifrado-por-pagina.md`).
   - Implementado:
-    - **decisión 1** (CORE-01a, PR N1).
+    - **decisión 1** (CORE-01a, PR N1);
+    - **decisión 7** y la API para el CLI (CORE-01b, PR N2).
   - Pendientes:
-    - **decisiones 2 a 6** (SEC-05, PRs N4 y N5);
-    - **decisión 7** (PR N2).
+    - **decisiones 2 a 6** (SEC-05, PRs N4 y N5).
 - **Sustituye en parte a:**
   - la sección «Local data» de `ARCHITECTURE.md`: la BD en memoria y la
     imagen `pharos.db.enc` (cuando llegue SEC-05);
@@ -147,6 +147,26 @@
 7. **Cerrojo provisional (D4).** Hasta que llegue SEC-05b, abrir la BD toma
    un cerrojo exclusivo (`pharos.lock`): con la app abierta, el CLI falla
    con un mensaje claro en lugar de pisar datos.
+   - **Cómo es el cerrojo.** `pharos.lock` se abre sin compartir
+     lectura ni escritura (en Windows solo `FILE_SHARE_DELETE`, para que la
+     carpeta se pueda borrar) y queda abierto mientras vive el `Db`. Al
+     salir, también si el proceso cae, Windows lo suelta: nunca queda un
+     cerrojo huérfano.
+   - **Quién llega segundo** recibe `db-in-use`, sin leer ni escribir nada.
+     La app lo explica en la pantalla de error («Otro Pharos está usando tus
+     datos»).
+   - **Una segunda app sobre la misma carpeta** también queda bloqueada.
+     Antes, la última en guardar pisaba en silencio lo que había guardado
+     la otra.
+8. **API para el CLI (N2).**
+   - **`pharos_core::api`** tiene `open`, `import_preview`, `import_report`
+     (con el archivo del informe como `Read`) e `import_attach`. Usan el
+     mismo código que `run_import_preview`, `run_import` y
+     `run_import_attach` (`runs::import`).
+   - **`pharos_core::paths::default_data_dir()`** da la carpeta de datos de
+     la app sin Tauri. Es la carpeta de datos del sistema más el
+     identificador de `tauri.conf.json`; un test comprueba que el
+     identificador coincide.
 
 ## Alternativas
 

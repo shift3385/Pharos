@@ -3,6 +3,9 @@ import { isTauri } from "@shared/platform";
 
 /** Prefix of the Rust error for a database written by a newer Pharos (SEC-06). */
 export const NEWER_DB_ERROR = "db-newer-than-app";
+/** Another Pharos process (the app or the CLI) has the data folder open
+ *  (ADR-0050, until SEC-05b). */
+export const DB_IN_USE_ERROR = "db-in-use";
 /** The keychain has no key but an encrypted database exists (SEC-03). */
 export const KEY_MISSING_ERROR = "db-key-missing";
 /** The keychain key does not decrypt the database (SEC-03). */

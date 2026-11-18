@@ -624,6 +624,8 @@ fn opening_the_alpha_1_fixture_with_head_keeps_every_row() {
         .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
         // The save count next to the file (AUD-01c).
         .filter(|n| n != "pharos.db.enc.seq")
+        // The folder lock (ADR-0050).
+        .filter(|n| n != LOCK_FILE)
         .collect();
     names.sort();
     assert_eq!(
@@ -1358,7 +1360,12 @@ fn a_wrong_key_migrates_nothing_and_touches_no_evidence() {
     assert_eq!(err, DECRYPT_ERROR);
     assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), original);
     assert!(!dir.join("evidence").exists());
-    assert_eq!(fs::read_dir(&dir).unwrap().count(), 1);
+    // Only the database and the folder lock it was read under (ADR-0050).
+    let others = fs::read_dir(&dir)
+        .unwrap()
+        .filter(|e| e.as_ref().unwrap().file_name() != LOCK_FILE)
+        .count();
+    assert_eq!(others, 1);
     fs::remove_dir_all(&dir).unwrap();
 }
 
