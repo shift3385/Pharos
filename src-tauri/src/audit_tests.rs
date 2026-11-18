@@ -586,7 +586,15 @@ fn the_triggers_allow_exactly_a_redaction() {
     fails("DELETE FROM audit_log WHERE chain_seq = 1");
     fails("UPDATE audit_log SET actor = 'user:x' WHERE chain_seq = 1");
     fails("UPDATE audit_log SET changes = '{}' WHERE chain_seq = 1");
-    fails("UPDATE audit_log SET workspace_id = 'w2' WHERE chain_seq = 1");
+    // Its location may move alone, as on the server (SYNC-07, migration 0040),
+    // never together with anything else.
+    fails("UPDATE audit_log SET workspace_id = 'w2', actor = 'user:x' WHERE chain_seq = 1");
+    fails("UPDATE audit_log SET workspace_id = 'w2', changes = NULL WHERE chain_seq = 1");
+    c.execute(
+        "UPDATE audit_log SET workspace_id = 'w2' WHERE chain_seq = 1",
+        [],
+    )
+    .unwrap();
     fails("UPDATE audit_log SET changes = NULL WHERE chain_seq = 1");
     fails("UPDATE audit_log SET changes = NULL, redacted_at = 'now', summary = 'x' WHERE chain_seq = 1");
     // The redaction: content gone, its hash and the chain kept.
@@ -1314,6 +1322,23 @@ const EXEMPT: &[(&str, &str)] = &[
     ("sync::sync_cursor_get", "read"),
     ("sync::sync_cursor_set", "sync bookkeeping"),
     ("sync::sync_server_features_set", "sync bookkeeping"),
+    ("sync::sync_server_lists", "read"),
+    (
+        "workspaces::workspaces_apply",
+        "a mirror of the server's list; moving rows to the personal workspace only changes their location (SYNC-07)",
+    ),
+    ("workspaces::workspaces_list", "read"),
+    ("workspaces::project_workspaces", "read"),
+    (
+        "workspaces::workspace_drop",
+        "drops the copy of a workspace the server took away; its audit events stay (SYNC-07)",
+    ),
+    ("workspaces::sync_refused_record", "sync bookkeeping (refused deltas, SYNC-07)"),
+    ("workspaces::sync_rejections_list", "read"),
+    (
+        "workspaces::sync_rejection_discard",
+        "sync bookkeeping: the refused change never reached the server and the server's version comes back",
+    ),
     ("sync::sync_conflicts_list", "read"),
     ("audit_read::audit_facets", "read"),
     ("audit_read::audit_verify", "read: checks the chains"),

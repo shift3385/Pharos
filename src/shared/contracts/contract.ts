@@ -2,6 +2,7 @@
 // one file per type in generated/. `npm run check:contracts` fails if a file is
 // missing here.
 export type * from "./generated/AddOutcome";
+export type * from "./generated/Applied";
 export type * from "./generated/AttachmentSummary";
 export type * from "./generated/AttachmentTarget";
 export type * from "./generated/CaseBaseline";
@@ -80,6 +81,7 @@ export type * from "./generated/LastResult";
 export type * from "./generated/LeaseRequest";
 export type * from "./generated/LinkTarget";
 export type * from "./generated/LocalNotification";
+export type * from "./generated/MemberDto";
 export type * from "./generated/MetricObjective";
 export type * from "./generated/MetricValues";
 export type * from "./generated/Notification";
@@ -98,7 +100,9 @@ export type * from "./generated/PurgeSummary";
 export type * from "./generated/PushedDelta";
 export type * from "./generated/QueueCounts";
 export type * from "./generated/QueueRef";
+export type * from "./generated/Refused";
 export type * from "./generated/RejectedKey";
+export type * from "./generated/Rejection";
 export type * from "./generated/RemoteDoc";
 export type * from "./generated/ReportImportOutcome";
 export type * from "./generated/ReportImportPreview";
@@ -114,6 +118,7 @@ export type * from "./generated/ResultCandidate";
 export type * from "./generated/ResultInput";
 export type * from "./generated/ResultView";
 export type * from "./generated/RetentionPolicy";
+export type * from "./generated/RevokedWorkspace";
 export type * from "./generated/RiskBands";
 export type * from "./generated/RiskCoverage";
 export type * from "./generated/Run";
@@ -165,3 +170,4 @@ export type * from "./generated/TrashRef";
 export type * from "./generated/UnlinkedTest";
 export type * from "./generated/WeightedCoverage";
 export type * from "./generated/WindowCounts";
+export type * from "./generated/WorkspaceDto";

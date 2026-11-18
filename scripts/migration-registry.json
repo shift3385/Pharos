@@ -4,7 +4,6 @@
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
     "reserved": {
-      "0040": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-07, ADR-0042): workspaces kind/role/revoked, workspace_members mirror, oplog workspace_id",
       "0041": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-04b): attachments by hash outside the oplog"
     },
     "retired": {

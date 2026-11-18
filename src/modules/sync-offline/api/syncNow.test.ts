@@ -594,3 +594,113 @@ describe("syncNow and stable steps (DAT-02)", () => {
     expect(lww).toHaveLength(1);
   });
 });
+
+describe("syncNow with workspaces (SYNC-07)", () => {
+  const PERSONAL = "11111111-1111-4111-8111-111111111111";
+  const SHARED = "22222222-2222-4222-8222-222222222222";
+  const GONE = "33333333-3333-4333-8333-333333333333";
+
+  function workspaceCore(pending: PendingDelta[]) {
+    const calls: { cmd: string; args: Record<string, unknown> }[] = [];
+    invoke.mockImplementation(async (cmd: string, args: Record<string, unknown>) => {
+      calls.push({ cmd, args });
+      if (cmd === "sync_server_lists") return args.feature === "workspaces";
+      if (cmd === "oplog_pending") return { deltas: args.class === "append_only" ? [] : pending };
+      if (cmd === "sync_cursor_get") return "0";
+      if (cmd === "workspaces_apply") return { revoked: [], remapped: 0 };
+      if (cmd === "project_workspaces") return { p1: SHARED };
+      if (cmd === "key_lease_requests") return [{ projectId: "p1", kind: "case", prefix: "PAY-", floor: 1, size: 1 }];
+      return undefined;
+    });
+    return calls;
+  }
+
+  it("lists the workspaces, then leases, pushes and pulls each one apart", async () => {
+    const calls = workspaceCore([
+      { ...delta(1), workspaceId: SHARED },
+      { ...delta(2), workspaceId: null },
+      { ...delta(3), workspaceId: "some-local-id" },
+    ]);
+    const requests: { path: string; body?: Record<string, unknown> }[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string, init: RequestInit) => {
+        const path = new URL(url).pathname + new URL(url).search;
+        const body = init.body ? (JSON.parse(init.body as string) as Record<string, unknown>) : undefined;
+        requests.push({ path, body });
+        if (path === "/workspaces")
+          return json({
+            workspaces: [
+              { id: PERSONAL, name: "Personal", kind: "personal", role: "test_manager", members: [] },
+              { id: SHARED, name: "Equipo QA", kind: "shared", role: "viewer", members: [] },
+              { id: GONE, name: "Antiguo", kind: "shared", role: "viewer", members: [] },
+            ],
+          });
+        if (path === "/sync/key-blocks") return json({ blocks: [], refused: [] });
+        if (path === "/sync/push") {
+          const deltas = (body?.deltas ?? []) as { entity: string; entityId: string }[];
+          // The Viewer may not edit the shared case.
+          const rejected = body?.workspaceId === SHARED ? deltas.map((d) => ({ entity: d.entity, entityId: d.entityId, reason: "forbidden" })) : [];
+          return json({ accepted: deltas.length - rejected.length, conflicts: [], keyConflicts: [], rejected });
+        }
+        if (path.includes(`workspace=${GONE}`)) return json({ code: "workspace_revoked", message: "gone" }, 403);
+        return json({ docs: [{ entity: "test_case", entityId: "x", payload: {}, revision: 1, deleted: false, hlc: "" }], cursor: 7, hasMore: false });
+      }),
+    );
+    const revoked = vi.fn();
+    window.addEventListener("pharos:workspaces-revoked", revoked);
+    try {
+      const res = await syncNow();
+      expect(res).toMatchObject({ pushed: 2, conflicts: 1 });
+    } finally {
+      window.removeEventListener("pharos:workspaces-revoked", revoked);
+    }
+    expect(calls.find((c) => c.cmd === "workspaces_apply")?.args.workspaces).toHaveLength(3);
+    // Key blocks in the project's workspace.
+    expect(requests.find((r) => r.path === "/sync/key-blocks")?.body?.workspaceId).toBe(SHARED);
+    // Pushes per workspace; an unknown or missing workspace goes to the personal one.
+    const pushes = requests.filter((r) => r.path === "/sync/push");
+    expect(pushes.map((p) => [p.body?.workspaceId, (p.body?.deltas as unknown[]).length])).toEqual([
+      [SHARED, 1],
+      [PERSONAL, 2],
+    ]);
+    expect(pushes.every((p) => !(p.body?.deltas as Record<string, unknown>[]).some((d) => "workspaceId" in d))).toBe(true);
+    // The refusal waits for the user; nothing of it is marked synced.
+    expect(calls.find((c) => c.cmd === "sync_refused_record")?.args.items).toEqual([
+      { entity: "test_case", entityId: "c1", reason: "forbidden" },
+    ]);
+    // One pull and one cursor per workspace.
+    expect(requests.filter((r) => r.path.startsWith("/sync/pull")).map((r) => r.path)).toEqual([
+      `/sync/pull?since=0&workspace=${PERSONAL}`,
+      `/sync/pull?since=0&workspace=${SHARED}`,
+      `/sync/pull?since=0&workspace=${GONE}`,
+    ]);
+    expect(calls.filter((c) => c.cmd === "sync_cursor_set").map((c) => c.args.workspaceId)).toEqual([PERSONAL, SHARED]);
+    expect(calls.filter((c) => c.cmd === "apply_remote").map((c) => c.args.workspaceId)).toEqual([PERSONAL, SHARED]);
+    // The lost workspace is announced, not deleted.
+    expect(revoked).toHaveBeenCalledTimes(1);
+    expect((revoked.mock.calls[0][0] as CustomEvent).detail.workspaces).toEqual([
+      { id: GONE, name: "Antiguo", projects: 0, pending: 0 },
+    ]);
+    expect(calls.some((c) => c.cmd === "workspace_drop")).toBe(false);
+  });
+
+  it("asks for no workspace from a server that never listed the feature", async () => {
+    const calls = fakeCore([delta(1)]);
+    const paths: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string, init: RequestInit) => {
+        paths.push(new URL(url).pathname + new URL(url).search);
+        if (url.includes("/sync/push")) {
+          const n = (JSON.parse(init.body as string) as { deltas: unknown[] }).deltas.length;
+          return json({ accepted: n, conflicts: [] });
+        }
+        return json({ docs: [], cursor: 0, hasMore: false });
+      }),
+    );
+    await syncNow();
+    expect(paths).toEqual(["/sync/push", "/sync/pull?since=0"]);
+    expect(calls.some((c) => c.cmd === "workspaces_apply")).toBe(false);
+  });
+});

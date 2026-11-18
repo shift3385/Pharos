@@ -30,7 +30,20 @@ use crate::oplog::{self, SYNCED};
 use crate::revisions;
 use crate::sync_class;
 
-fn table_for(entity: &str) -> Option<&'static str> {
+/// True if `table` has the column (schemas before a migration, in its data
+/// steps and tests).
+fn has_column(conn: &Connection, table: &str, column: &str) -> Result<bool, String> {
+    conn.query_row(
+        "SELECT 1 FROM pragma_table_info(?1) WHERE name = ?2",
+        params![table, column],
+        |_| Ok(()),
+    )
+    .optional()
+    .map_err(|e| e.to_string())
+    .map(|r| r.is_some())
+}
+
+pub(crate) fn table_for(entity: &str) -> Option<&'static str> {
     match entity {
         "project" => Some("projects"),
         "test_plan" => Some("test_plans"),
@@ -72,6 +85,9 @@ pub struct Delta {
     base_hlc: Option<String>,
     /// Oplog row ids covered, marked synced only if the server accepts the delta.
     op_ids: Vec<String>,
+    /// The workspace the change belongs to (SYNC-07): the push goes there.
+    /// From the row's `workspaceId`, else the one stamped on its oplog row.
+    workspace_id: Option<String>,
 }
 
 #[cfg_attr(test, derive(TS), ts(export))]
@@ -142,7 +158,7 @@ pub(crate) fn read_payload(
     }
     let (sql, build): (&str, fn(&rusqlite::Row) -> rusqlite::Result<PayloadRow>) = match entity {
         "project" => (
-            "SELECT id, workspace_id, owner_id, name, case_id_prefix, case_id_digits,
+            "SELECT id, workspace_id, owner_id, creator_id, name, case_id_prefix, case_id_digits,
                     plan_export_history, risk_band_low, risk_band_medium, created_at, updated_at,
                     revision, deleted_at
                FROM projects WHERE id = ?1",
@@ -151,7 +167,9 @@ pub(crate) fn read_payload(
                     json!({
                         "id": r.get::<_, String>("id")?,
                         "workspaceId": r.get::<_, String>("workspace_id")?,
-                        "ownerId": s(r, "owner_id")?,
+                        // Who created it (SYNC-07: `owner_id` is the account of
+                        // this device that holds it).
+                        "ownerId": s(r, "creator_id")?.or(s(r, "owner_id")?),
                         "name": r.get::<_, String>("name")?,
                         "caseIdPrefix": r.get::<_, String>("case_id_prefix")?,
                         "caseIdDigits": r.get::<_, i64>("case_id_digits")?,
@@ -247,7 +265,7 @@ pub(crate) fn read_payload(
         ),
         // Attachments stay on this device until SYNC-04b (content-addressed).
         "planner_card" => (
-            "SELECT id, workspace_id, project_id, owner_id, kind, card_key, title, status, priority,
+            "SELECT id, workspace_id, project_id, owner_id, creator_id, kind, card_key, title, status, priority,
                     position, data, created_at, updated_at, revision, deleted_at FROM planner_cards WHERE id = ?1",
             |r| {
                 Ok((
@@ -255,7 +273,7 @@ pub(crate) fn read_payload(
                         "id": r.get::<_, String>("id")?,
                         "workspaceId": r.get::<_, String>("workspace_id")?,
                         "projectId": r.get::<_, String>("project_id")?,
-                        "ownerId": r.get::<_, String>("owner_id")?,
+                        "ownerId": s(r, "creator_id")?.unwrap_or(r.get::<_, String>("owner_id")?),
                         "kind": r.get::<_, String>("kind")?,
                         "cardKey": s(r, "card_key")?,
                         "title": r.get::<_, String>("title")?,
@@ -274,7 +292,23 @@ pub(crate) fn read_payload(
         ),
         _ => return Ok(None),
     };
-    conn.query_row(sql, params![id], build)
+    // Before migration 0040 (a data step of an older one) there is no
+    // `creator_id`: read it as NULL, the owner then stands for the creator.
+    let sql = if (entity == "project" || entity == "planner_card")
+        && !has_column(
+            conn,
+            if entity == "project" {
+                "projects"
+            } else {
+                "planner_cards"
+            },
+            "creator_id",
+        )? {
+        std::borrow::Cow::Owned(sql.replacen("creator_id", "NULL AS creator_id", 1))
+    } else {
+        std::borrow::Cow::Borrowed(sql)
+    };
+    conn.query_row(&sql, params![id], build)
         .optional()
         .map_err(|e| e.to_string())
 }
@@ -540,6 +574,14 @@ pub fn sync_server_features_set(
     db.persist()
 }
 
+/// True if the account's server listed `feature` in its last answer (the
+/// client asks for workspaces only from a server that has them, SYNC-07).
+#[tauri::command]
+pub fn sync_server_lists(db: State<Db>, user_id: String, feature: String) -> Result<bool, String> {
+    require_user(&user_id)?;
+    db.with_conn(|conn| server_lists(conn, &user_id, &feature))
+}
+
 /// Records the features for one account (the command's body, for tests).
 #[cfg(test)]
 pub(crate) fn record_server_features(conn: &Connection, user: &str, features: &str) {
@@ -561,11 +603,14 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
     // first-change order.
     let mut order: Vec<(String, String)> = Vec::new();
     let mut groups: HashMap<(String, String), (Vec<String>, String, String)> = HashMap::new();
+    // The workspace stamped on the latest oplog row of each entity (SYNC-07).
+    let mut stamped: HashMap<(String, String), String> = HashMap::new();
     {
         let mut stmt = conn
             .prepare(&format!(
-                "SELECT o.entity, o.entity_id, o.id, o.hlc, o.author FROM oplog o
+                "SELECT o.entity, o.entity_id, o.id, o.hlc, o.author, o.workspace_id FROM oplog o
                  WHERE o.synced_at IS NULL AND o.user_id = ?1 AND o.entity IN ({})
+                   AND o.entity_id NOT IN ({})
                    AND NOT EXISTS (SELECT 1 FROM sync_conflicts c WHERE c.user_id = o.user_id
                                    AND c.entity = o.entity AND c.entity_id = o.entity_id
                                    AND c.resolved_at IS NULL)
@@ -578,6 +623,7 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
                    AND (o.entity NOT IN ({}) OR ?6)
                  ORDER BY o.rowid",
                 oplog::synced_sql_list(),
+                crate::workspaces::refused_sql(),
                 crate::runs::entities_sql_list(),
                 crate::cycles::entities_sql_list(),
                 crate::defects::entities_sql_list()
@@ -600,13 +646,18 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
                         r.get::<_, String>(2)?,
                         r.get::<_, String>(3)?,
                         r.get::<_, String>(4)?,
+                        r.get::<_, Option<String>>(5)?,
                     ))
                 },
             )
             .map_err(|e| e.to_string())?;
         for row in rows {
-            let (entity, entity_id, id, row_hlc, author) = row.map_err(|e| e.to_string())?;
+            let (entity, entity_id, id, row_hlc, author, row_ws) =
+                row.map_err(|e| e.to_string())?;
             let key = (entity, entity_id);
+            if let Some(ws) = row_ws {
+                stamped.insert(key.clone(), ws);
+            }
             let g = groups.entry(key.clone()).or_insert_with(|| {
                 order.push(key);
                 (Vec::new(), String::new(), String::new())
@@ -642,6 +693,11 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
             }
             None => ("delete", Value::Null, 0),
         };
+        let workspace_id = payload
+            .get("workspaceId")
+            .and_then(Value::as_str)
+            .map(str::to_string)
+            .or_else(|| stamped.remove(&(entity.clone(), entity_id.clone())));
         deltas.push(Delta {
             op: op.into(),
             entity,
@@ -653,6 +709,7 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
             base_revision: base.as_ref().map(|b| b.0),
             base_hlc: base.map(|b| b.1),
             op_ids,
+            workspace_id,
         });
     }
     Ok(Pending { deltas })
@@ -700,6 +757,10 @@ pub(crate) fn build_pending_append(conn: &Connection, user: &str) -> Result<Pend
         let Some(payload) = (class.read)(conn, &entity_id)? else {
             continue;
         };
+        let payload_ws = payload
+            .get("workspaceId")
+            .and_then(Value::as_str)
+            .map(str::to_string);
         deltas.push(Delta {
             entity,
             entity_id,
@@ -711,6 +772,7 @@ pub(crate) fn build_pending_append(conn: &Connection, user: &str) -> Result<Pend
             base_revision: None,
             base_hlc: None,
             op_ids: vec![op_id],
+            workspace_id: payload_ws,
         });
     }
     Ok(Pending { deltas })
@@ -918,6 +980,11 @@ pub(crate) fn apply_doc(
     if !SYNCED.contains(&doc.entity.as_str()) {
         return Ok(());
     }
+    // A move's tombstone (ADR-0042 §5): the entity lives on in the
+    // destination workspace, whose pull brings it; nothing to delete here.
+    if doc.deleted && doc.payload.get("movedTo").is_some() {
+        return Ok(());
+    }
     if oplog::owner_of(conn, &doc.entity, &doc.entity_id)?.is_some_and(|owner| owner != user) {
         return Ok(());
     }
@@ -933,6 +1000,10 @@ pub(crate) fn apply_doc(
         return upsert_conflict(conn, user, doc, base);
     }
     write_doc(conn, workspace_id, user, doc)?;
+    // A project moved to another workspace takes everything under it along.
+    if doc.entity == "project" && !doc.deleted {
+        crate::workspaces::follow_project(conn, &doc.entity_id, workspace_id)?;
+    }
     drop_drafts_of_remote(conn, user, doc)?;
     set_base(
         conn,
@@ -1079,13 +1150,14 @@ fn write_doc(
                 _ => None,
             };
             conn.execute(
-                "INSERT INTO projects (id, workspace_id, owner_id, name, case_id_prefix, case_id_digits,
+                "INSERT INTO projects (id, workspace_id, owner_id, creator_id, name, case_id_prefix, case_id_digits,
                         plan_export_history, risk_band_low, risk_band_medium, created_by, updated_by,
                         created_at, updated_at, revision, deleted_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, COALESCE(?9, 'current'), COALESCE(?10, 4),
+                 VALUES (?1, ?2, ?7, ?3, ?4, ?5, ?6, COALESCE(?9, 'current'), COALESCE(?10, 4),
                         COALESCE(?11, 12), ?7, ?7, datetime('now'), datetime('now'), ?8, NULL)
                  ON CONFLICT(id) DO UPDATE SET name=excluded.name, case_id_prefix=excluded.case_id_prefix,
                         case_id_digits=excluded.case_id_digits, owner_id=excluded.owner_id,
+                        creator_id=excluded.creator_id, workspace_id=excluded.workspace_id,
                         plan_export_history=COALESCE(?9, plan_export_history),
                         risk_band_low=COALESCE(?10, risk_band_low),
                         risk_band_medium=COALESCE(?11, risk_band_medium),
@@ -1221,7 +1293,10 @@ fn write_doc(
             .map_err(|e| e.to_string())?;
         }
         "planner_card" => {
-            let owner = p
+            // The account of this device that holds it; the creator travels
+            // in `creator_id` (SYNC-07).
+            let owner = user;
+            let creator = p
                 .get("ownerId")
                 .and_then(Value::as_str)
                 .filter(|o| !o.is_empty())
@@ -1229,10 +1304,11 @@ fn write_doc(
             conn.execute(
                 "INSERT INTO planner_cards (id, workspace_id, project_id, owner_id, kind, card_key, title,
                         status, priority, position, data, created_by, updated_by, created_at, updated_at,
-                        revision, deleted_at)
+                        revision, deleted_at, creator_id)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?12, datetime('now'),
-                        datetime('now'), ?13, NULL)
+                        datetime('now'), ?13, NULL, ?14)
                  ON CONFLICT(id) DO UPDATE SET project_id=excluded.project_id, owner_id=excluded.owner_id,
+                        workspace_id=excluded.workspace_id, creator_id=excluded.creator_id,
                         kind=excluded.kind, card_key=excluded.card_key, title=excluded.title,
                         status=excluded.status, priority=excluded.priority, position=excluded.position,
                         data=excluded.data, updated_by=excluded.updated_by, updated_at=datetime('now'),
@@ -1251,6 +1327,7 @@ fn write_doc(
                     data_str("data"),
                     user,
                     doc.revision,
+                    creator,
                 ],
             )
             .map_err(|e| e.to_string())?;
@@ -1350,35 +1427,80 @@ pub(crate) fn cursor_set(conn: &Connection, user: &str, value: &str) -> Result<(
     )
 }
 
-#[tauri::command]
-pub fn sync_cursor_get(db: State<Db>, user_id: String) -> Result<String, String> {
-    require_user(&user_id)?;
-    db.with_conn(|conn| cursor_get(conn, &user_id))
+/// The cursor's scope: the account, or the account in one workspace (SYNC-07:
+/// one cursor per workspace, `cursor:<user>:<workspace>`).
+fn cursor_scope(user: &str, workspace_id: Option<&str>) -> String {
+    match workspace_id {
+        Some(ws) => format!("{user}:{ws}"),
+        None => user.to_string(),
+    }
 }
 
 #[tauri::command]
-pub fn sync_cursor_set(db: State<Db>, user_id: String, value: String) -> Result<(), String> {
+pub fn sync_cursor_get(
+    db: State<Db>,
+    user_id: String,
+    workspace_id: Option<String>,
+) -> Result<String, String> {
     require_user(&user_id)?;
-    db.with_tx(|conn| cursor_set(conn, &user_id, &value))?;
+    db.with_conn(|conn| cursor_get(conn, &cursor_scope(&user_id, workspace_id.as_deref())))
+}
+
+#[tauri::command]
+pub fn sync_cursor_set(
+    db: State<Db>,
+    user_id: String,
+    value: String,
+    workspace_id: Option<String>,
+) -> Result<(), String> {
+    require_user(&user_id)?;
+    db.with_tx(|conn| {
+        cursor_set(
+            conn,
+            &cursor_scope(&user_id, workspace_id.as_deref()),
+            &value,
+        )
+    })?;
     db.persist()
 }
 
-/// Applies one page of remote documents (pulled from the backend).
+/// Applies one page of remote documents (pulled from the backend), of one
+/// workspace when the server has `workspaces` (SYNC-07).
 #[tauri::command]
-pub fn apply_remote(db: State<Db>, user_id: String, docs: Vec<RemoteDoc>) -> Result<(), String> {
+pub fn apply_remote(
+    db: State<Db>,
+    user_id: String,
+    docs: Vec<RemoteDoc>,
+    workspace_id: Option<String>,
+) -> Result<(), String> {
     require_user(&user_id)?;
-    apply_page(&db, &user_id, &docs)
+    apply_page_in(&db, &user_id, workspace_id.as_deref(), &docs)
 }
 
 /// One page of remote documents in one transaction, then saved; files of
 /// drafts the page released are removed after that save
 /// (`persist_and_collect`, ADR-0014).
+#[cfg(test)]
 pub(crate) fn apply_page(db: &Db, user_id: &str, docs: &[RemoteDoc]) -> Result<(), String> {
+    apply_page_in(db, user_id, None, docs)
+}
+
+/// `apply_page` for one workspace's page; None: the device's local workspace
+/// (a server without `workspaces`).
+pub(crate) fn apply_page_in(
+    db: &Db,
+    user_id: &str,
+    workspace: Option<&str>,
+    docs: &[RemoteDoc],
+) -> Result<(), String> {
     if docs.is_empty() {
         return Ok(());
     }
     db.with_conn(|conn| {
-        let workspace_id = ensure_workspace(conn)?;
+        let workspace_id = match workspace {
+            Some(ws) => ws.to_string(),
+            None => ensure_workspace(conn)?,
+        };
         let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
         for doc in docs {
             apply_doc(&tx, &workspace_id, user_id, doc)?;
