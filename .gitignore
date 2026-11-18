@@ -41,3 +41,7 @@ npm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Blob store of a local API (SEC-04b, BLOB_DIR=data/blobs by default):
+# attachments written by tours and dev runs, never committed.
+server/data/
