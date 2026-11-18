@@ -24,9 +24,7 @@
     "dir": "server/migrations",
     "reserved": {
       "0016": "IA-12 (ADR-0034): AI key vault for the web",
-      "0020": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-04b): blobs by (workspace_id, sha256)",
-      "0021": "0.5.0 plan (ADR-0039 milestone «Equipo»), track C (SEC-08, ADR-0045): hashed recovery codes",
-      "0022": "0.5.0 plan (ADR-0039 milestone «Equipo»), track C (SEC-09, ADR-0045): one-time password reset tokens"
+      "0020": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-04b): blobs by (workspace_id, sha256)"
     },
     "retired": {
       "0011": "E4 step 9 spare, never used: imports are documents of the step 4 entities",

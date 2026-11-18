@@ -18,6 +18,13 @@ Tu cuenta tiene dos nombres:
 - El **nombre oficial** (nombre y apellidos) firma los documentos que exportas,
   como el plan de pruebas («Elaborado por»).
 
+Si olvidas la contraseña, entras con uno de tus **códigos de recuperación de
+la cuenta**: diez códigos de un solo uso que Pharos te enseña una sola vez, al
+crear la cuenta. Guárdalos bien. Si el servidor de tu equipo tiene configurado
+el envío de correo, también puedes pedir un enlace para elegir una contraseña
+nueva. No los confundas con la clave de recuperación de la base local, que
+sirve para abrir tus datos en un equipo nuevo (capítulo 15).
+
 **El servidor.** En la app de escritorio, encima del correo aparece
 «Servidor: …», el servidor al que se envían tu correo y tu contraseña.
 
@@ -47,6 +54,8 @@ los tuyos.
 | Tab / Mayús+Tab | Formulario de entrada | Pasa de un campo al siguiente o al anterior |
 | Intro | Formulario de entrada o de registro | Envía el formulario («Entrar» o «Registrarme») |
 | Intro | «Mi perfil» | Guarda el alias y el nombre |
+| Intro | «Recupera el acceso» y «Cambiar la contraseña» | Envía el formulario |
+| ← → | Pestañas «Con un código» / «Por correo» | Pasan de una pestaña a la otra (con Tab y Intro) |
 | ↑ ↓ e Intro | Selector de idioma y menú de usuario | Recorren las opciones y eligen una |
 | Esc | Selector de idioma y menú de usuario | Cierra el menú y devuelve el foco a su botón |
 
@@ -61,6 +70,19 @@ los tuyos.
   entra con ella en lugar de crear otra.
 - **«Revisa los datos introducidos.»** Falta un campo, el correo no tiene
   formato de correo o la contraseña tiene menos de 8 caracteres.
+- **«El correo o el código no son válidos.»** El código no existe, ya lo
+  usaste o generaste códigos nuevos después. Pharos no dice cuál de las dos
+  cosas falla. Mayúsculas, espacios y guiones dan igual.
+- **«Demasiados intentos. Espera 15 minutos y vuelve a intentarlo.»** Tras 5
+  códigos equivocados en 15 minutos, la recuperación por código de esa cuenta
+  se bloquea 15 minutos.
+- **«Este enlace no es válido o ha caducado.»** Los enlaces del correo duran 30
+  minutos y sirven una vez; pedir otro anula el anterior, y cambiar la
+  contraseña anula los que hubiera. Pulsa «Pedir otro enlace».
+- **«Este servidor no envía correos.»** Quien administra el servidor no ha
+  configurado el correo. Usa un código de recuperación.
+- **«La contraseña actual no es correcta.»** Al cambiarla en «Mi perfil» o al
+  generar códigos nuevos, Pharos pide la contraseña que usas ahora.
 - **«No se puede conectar con pharos.miempresa.com.»** Para entrar por primera
   vez en un equipo, Pharos necesita el servidor. Comprueba tu conexión y que
   el nombre del mensaje sea el de tu servidor; si no lo es, cámbialo con
@@ -117,6 +139,11 @@ los tuyos.
 - El idioma también se puede cambiar después, desde el menú de usuario o desde
   el perfil; el tema, desde el perfil, la barra superior o «Administración ›
   General» (capítulo 15), donde además puedes elegir «Según el sistema».
+- Guarda los códigos de recuperación en un gestor de contraseñas o en papel,
+  nunca junto a la contraseña. Cuando te queden pocos, genera otros en «Mi
+  perfil › Seguridad de la cuenta».
+- Al cambiar la contraseña, tus otros equipos tendrán que volver a entrar. Una
+  sesión ya abierta en otro equipo puede seguir funcionando hasta 15 minutos.
 - El idioma, el tema y tus nombres viajan con tu cuenta: si los cambias en un
   equipo, tus otros equipos los toman al sincronizar («Se aplica en todos tus
   equipos», en el perfil). Gana el cambio más reciente.
@@ -135,6 +162,17 @@ los tuyos.
 
 El correo de una cuenta solo puede registrarse una vez. Si ya existe, Pharos
 lo dice («Ese correo ya está registrado»).
+
+### Paso registro-codigos
+
+Los códigos solo se guardan en el servidor como un resumen cifrado: ni Pharos
+ni quien administra el servidor pueden volver a enseñártelos. Si los pierdes,
+genera otros desde «Mi perfil» mientras aún puedas entrar.
+
+### Paso olvidaste
+
+Recuperar el acceso cambia la contraseña de la cuenta en el servidor. Tus datos
+locales no cambian.
 
 ### Paso entrar
 

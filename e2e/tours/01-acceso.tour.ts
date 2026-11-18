@@ -7,7 +7,7 @@ import { $, browser, expect } from "@wdio/globals";
 import { email, signOut, userMenuTrigger } from "../support";
 import { PERSONA } from "../../scripts/manual/persona.mjs";
 import { DESKTOP, MOBILE, chapter, setViewport, step } from "./tour";
-import { button, byTestId, clearInput, es, waitForText } from "./helpers";
+import { button, byTestId, clearInput, dialog, es, waitForText } from "./helpers";
 
 /** The tour account (run-tours passes its e-mail and password). Liomar types
  *  his surname without its accent when he registers and corrects it in his
@@ -20,6 +20,7 @@ const EXAMPLE_PASSWORD = "Ejemplo-2026";
 export const LEAD = { alias: PERSONA.alias, first: PERSONA.first, last: PERSONA.last };
 const REVEAL = `button[aria-label="${es.auth.showPassword}"]`;
 const USER_MENU = '[data-testid="user-menu-trigger"]';
+const SAVED_CHECK = `label=${es.recoveryCodes.saved}`;
 
 chapter("acceso", () => {
   step("pantalla-entrada", {
@@ -114,14 +115,29 @@ chapter("acceso", () => {
     },
   });
 
+  step("registro-codigos", {
+    title: "Guardar los códigos de recuperación",
+    caption:
+      "«Registrarme» (o Intro) crea la cuenta y, antes de entrar, muestra tus 10 códigos de recuperación de la cuenta. Sirven para entrar si un día olvidas la contraseña, y cada uno vale una vez. Es la única vez que Pharos los enseña: cópialos o descarga el .txt y guárdalos en un gestor de contraseñas o en papel, nunca junto a la contraseña. «Continuar» se activa cuando marcas «He guardado los códigos en un lugar seguro».",
+    covers: ["action:register", "screen:signup-recovery-codes"],
+    focus: ['[data-testid="recovery-codes"]', SAVED_CHECK],
+    run: async () => {
+      await button(es.auth.register).click();
+      await expect($(`h1=${es.recoveryCodes.title}`)).toBeDisplayed();
+      await expect(byTestId("recovery-codes")).toBeDisplayed();
+      await expect(button(es.recoveryCodes.continue)).toBeDisabled();
+    },
+  });
+
   step("registro-hecho", {
     title: "Primera entrada con la cuenta nueva",
     caption:
-      "«Registrarme» (o Intro) crea la cuenta y entra directamente, sin pasos intermedios. Como la cuenta es nueva, «Inicio» aparece vacío: el saludo y la invitación a crear tu primer proyecto con «Nuevo proyecto» (capítulo 4). Tu alias y tu correo quedan al pie del menú lateral, junto al estado de la sincronización.",
-    covers: ["action:register", "state:home-empty"],
+      "Con los códigos guardados, «Continuar» abre Pharos. Como la cuenta es nueva, «Inicio» aparece vacío: el saludo y la invitación a crear tu primer proyecto con «Nuevo proyecto» (capítulo 4). Tu alias y tu correo quedan al pie del menú lateral, junto al estado de la sincronización.",
+    covers: ["state:home-empty"],
     focus: USER_MENU,
     run: async () => {
-      await button(es.auth.register).click();
+      await $(SAVED_CHECK).click();
+      await button(es.recoveryCodes.continue).click();
       await expect(userMenuTrigger()).toBeDisplayed();
     },
   });
@@ -152,6 +168,36 @@ chapter("acceso", () => {
     after: async () => {
       await setViewport(DESKTOP);
       await expect($(".auth--mobile")).not.toBeExisting();
+    },
+  });
+
+  step("olvidaste", {
+    title: "¿Olvidaste tu contraseña?",
+    caption:
+      "Bajo la contraseña, «¿Olvidaste tu contraseña?» abre «Recupera el acceso». En «Con un código» escribes tu correo, uno de tus códigos de recuperación y la contraseña nueva dos veces; «Cambiar la contraseña y entrar» la cambia, gasta ese código, cierra la sesión en todos tus equipos y te deja dentro. Si te quedan 3 códigos o menos, Pharos te avisa para que generes otros en «Mi perfil». Tus datos locales no se tocan.",
+    covers: ["screen:recover", "tabs:src/modules/auth/ui/AccountRecovery.tsx"],
+    focus: ".auth-form",
+    run: async () => {
+      await button(es.auth.forgot).click();
+      await expect($(`h1=${es.auth.recover.title}`)).toBeDisplayed();
+      await expect($("#recover-code")).toBeDisplayed();
+    },
+  });
+
+  step("olvidaste-correo", {
+    title: "Recuperar por correo",
+    caption:
+      "En «Por correo» escribes tu correo y «Enviar enlace» te manda un enlace para elegir una contraseña nueva. Caduca en 30 minutos y sirve una vez; Pharos responde lo mismo exista o no la cuenta. Solo funciona si quien administra el servidor configuró el envío de correo: si no, como en este ejemplo, Pharos lo dice y te queda el código. En la app de escritorio, pega el enlace del correo en «¿Ya tienes el enlace?».",
+    covers: ["state:email-reset-off", "screen:reset-link"],
+    focus: ".auth-form",
+    run: async () => {
+      await $(`[role="tab"]=${es.auth.recover.tab.email}`).click();
+      await waitForText(es.auth.recover.emailOff);
+      await expect($("#reset-link")).toBeDisplayed();
+    },
+    after: async () => {
+      await $(`button*=${es.auth.recover.back}`).click();
+      await expect(button(es.auth.login)).toBeDisplayed();
     },
   });
 
@@ -214,6 +260,46 @@ chapter("acceso", () => {
       await expect($(".profile__audit")).toBeDisplayed();
       await expect($("#lastName")).toHaveValue(LEAD.last);
       await expect(userMenuTrigger()).toHaveText(expect.stringContaining(LEAD.alias));
+    },
+  });
+
+  step("perfil-seguridad", {
+    title: "Seguridad de la cuenta",
+    caption:
+      "Más abajo, «Seguridad de la cuenta». En «Cambiar la contraseña» escribes la actual y la nueva dos veces; al guardarla se cierra la sesión en tus otros equipos y este sigue abierto. «Códigos de recuperación de la cuenta» dice cuántos te quedan, cuándo se generaron y cuándo usaste uno por última vez. Las dos cosas necesitan conexión con el servidor. No es la clave de recuperación de la base local, que está en «Administración › Seguridad».",
+    covers: ["screen:account-security"],
+    focus: ".account-security",
+    run: async () => {
+      await $(".account-security").scrollIntoView();
+      await expect(byTestId("codes-remaining")).toHaveText(expect.stringContaining("10"));
+    },
+  });
+
+  step("perfil-codigos-confirmar", {
+    title: "Generar códigos nuevos",
+    caption:
+      "«Generar códigos nuevos» pide tu contraseña actual, porque los códigos que tienes dejan de funcionar. Hazlo si has gastado varios o si crees que alguien los ha visto.",
+    covers: ["dialogs:src/modules/profile/ui/AccountSecuritySection.tsx"],
+    run: async () => {
+      await button(es.account.codesGenerate).click();
+      await expect(dialog()).toBeDisplayed();
+      await dialog().$("#codes-password").setValue(TOUR_PASSWORD);
+    },
+  });
+
+  step("perfil-codigos-nuevos", {
+    title: "Los códigos nuevos, una sola vez",
+    caption:
+      "Pharos muestra los 10 códigos nuevos una sola vez, como al registrarte. Guárdalos, marca «He guardado los códigos en un lugar seguro» y pulsa «Listo». El cambio queda en «Administración › Auditoría» como «Códigos de recuperación generados».",
+    covers: ["dialogs:src/modules/profile/ui/AccountSecuritySection.tsx", "action:regenerate-recovery-codes"],
+    run: async () => {
+      await dialog().$(`button=${es.account.codesGenerate}`).click();
+      await expect(dialog().$('[data-testid="recovery-codes"]')).toBeDisplayed();
+    },
+    after: async () => {
+      await dialog().$(SAVED_CHECK).click();
+      await dialog().$(`button=${es.recoveryCodes.close}`).click();
+      await expect(dialog()).not.toBeExisting();
     },
   });
 });

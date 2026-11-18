@@ -789,7 +789,8 @@
         "configuration": "Configuración",
         "template": "Plantilla",
         "profile": "Perfil",
-        "unlinked_mapping": "Correspondencia sin vincular"
+        "unlinked_mapping": "Correspondencia sin vincular",
+        "account": "Cuenta"
       },
       "fields": {
         "title": "Título",
@@ -834,7 +835,12 @@
         "cycles": "Ciclos",
         "runs": "Ejecuciones",
         "defects": "Defectos",
-        "requirements": "Requisitos"
+        "requirements": "Requisitos",
+        "event": "Evento",
+        "method": "Cómo",
+        "sessionsClosed": "Sesiones cerradas",
+        "codes": "Códigos",
+        "codesRemaining": "Códigos restantes"
       },
       "device": {
         "this": "Este equipo",
@@ -948,6 +954,15 @@
         },
         "capped": "La exportación se detuvo en {{count}} eventos. Acota el periodo para exportar el resto.",
         "failed": "No se pudo exportar: {{reason}}"
+      },
+      "summaryValue": {
+        "password_changed": "Contraseña cambiada",
+        "recovery_codes_generated": "Códigos de recuperación generados",
+        "password_reset_requested": "Enlace de restablecimiento pedido",
+        "profile": "Desde Mi perfil",
+        "recovery_code": "Con un código de recuperación",
+        "email_link": "Con un enlace por correo",
+        "admin": "Por un administrador"
       }
     }
   },
@@ -1002,6 +1017,48 @@
       "network": "No se puede conectar con {{host}}. Revisa tu conexión; si ya habías iniciado sesión en este equipo, la app abre con tus datos locales.",
       "generic": "Algo salió mal. Inténtalo de nuevo.",
       "account_other_server": "Esta cuenta ya tiene datos en este equipo de otro servidor ({{host}}). Para no mezclarlos, entra en ese servidor o usa otra cuenta."
+    },
+    "forgot": "¿Olvidaste tu contraseña?",
+    "recover": {
+      "title": "Recupera el acceso",
+      "subtitle": "Con uno de tus códigos de recuperación o con un enlace por correo.",
+      "tab": {
+        "code": "Con un código",
+        "email": "Por correo"
+      },
+      "back": "Volver a iniciar sesión",
+      "code": "Código de recuperación",
+      "codeHelp": "Uno de los 10 códigos que guardaste al crear la cuenta.",
+      "newPassword": "Contraseña nueva",
+      "repeat": "Repite la contraseña nueva",
+      "passwordHelp": "Mínimo 8 caracteres. Una frase larga es más segura que una palabra rara.",
+      "mismatch": "No coincide con la contraseña nueva.",
+      "submitCode": "Cambiar la contraseña y entrar",
+      "changed": "Contraseña cambiada. Se cerró la sesión en tus otros dispositivos.",
+      "fewCodes_one": "Contraseña cambiada. Te queda {{count}} código de recuperación: genera códigos nuevos en Mi perfil.",
+      "fewCodes_other": "Contraseña cambiada. Te quedan {{count}} códigos de recuperación: genera códigos nuevos en Mi perfil.",
+      "emailOff": "Este servidor no envía correos. Usa un código de recuperación o pide ayuda a quien administra Pharos.",
+      "sendLink": "Enviar enlace",
+      "sent": "Si hay una cuenta con ese correo, te hemos enviado un enlace. Caduca en 30 minutos y sirve una vez.",
+      "haveLink": "¿Ya tienes el enlace?",
+      "haveLinkHelp": "En la app de escritorio, pega aquí el enlace del correo.",
+      "badLink": "Eso no parece el enlace del correo. Cópialo entero.",
+      "continue": "Continuar",
+      "error": {
+        "invalid_recovery": "El correo o el código no son válidos.",
+        "invalid_reset_token": "Este enlace no es válido o ha caducado. Los enlaces duran 30 minutos y sirven una vez.",
+        "rate_limited": "Demasiados intentos. Espera 15 minutos y vuelve a intentarlo.",
+        "validation_error": "Revisa los datos: la contraseña necesita al menos 8 caracteres.",
+        "email_reset_disabled": "Este servidor no envía correos. Usa un código de recuperación."
+      }
+    },
+    "reset": {
+      "title": "Elige una contraseña nueva",
+      "account": "Cuenta: {{email}}",
+      "checking": "Comprobando el enlace…",
+      "save": "Guardar la contraseña",
+      "done": "Contraseña cambiada. Se cerró la sesión en todos tus dispositivos.",
+      "askAgain": "Pedir otro enlace"
     }
   },
   "language": {
@@ -1289,6 +1346,58 @@
     "themeLight": "Claro",
     "themeDark": "Oscuro",
     "synced": "Se aplica en todos tus equipos"
+  },
+  "account": {
+    "title": "Seguridad de la cuenta",
+    "offline": "Para cambiar la contraseña o los códigos hace falta conexión con el servidor. Tus datos locales siguen disponibles.",
+    "changeTitle": "Cambiar la contraseña",
+    "changeIntro": "Al guardarla se cierra la sesión en tus otros dispositivos. Este sigue abierto.",
+    "current": "Contraseña actual",
+    "new": "Contraseña nueva",
+    "repeat": "Repite la contraseña nueva",
+    "show": "Mostrar",
+    "hide": "Ocultar",
+    "change": "Cambiar la contraseña",
+    "changing": "Cambiando…",
+    "changed_one": "Contraseña cambiada. Se cerró la sesión en {{count}} dispositivo.",
+    "changed_other": "Contraseña cambiada. Se cerró la sesión en {{count}} dispositivos.",
+    "codesTitle": "Códigos de recuperación de la cuenta",
+    "codesIntro": "Sirven para entrar si olvidas la contraseña. Cada código vale una vez.",
+    "codesLoadFailed": "No se pudo consultar el estado de los códigos.",
+    "codesNone": "Aún no tienes códigos de recuperación. Si olvidas la contraseña no podrás entrar sin ellos.",
+    "codesState": "Estado",
+    "codesRemaining": "Te quedan {{remaining}} de {{total}}",
+    "codesGenerated": "Generados",
+    "codesLastUsed": "Último uso",
+    "codesReplace": "Generar códigos nuevos anula los que tienes.",
+    "codesGenerate": "Generar códigos nuevos",
+    "codesGenerateFirst": "Generar códigos",
+    "codesConfirmTitle": "Generar códigos de recuperación",
+    "codesConfirmBody": "Los códigos que tienes dejarán de funcionar. Escribe tu contraseña actual para continuar.",
+    "codesConfirmFirst": "Escribe tu contraseña actual para generar tus 10 códigos.",
+    "error": {
+      "wrong_password": "La contraseña actual no es correcta.",
+      "same_password": "La nueva no puede ser igual a la actual.",
+      "rate_limited": "Demasiados intentos. Prueba de nuevo en 1 minuto.",
+      "validation_error": "La contraseña nueva necesita al menos 8 caracteres."
+    }
+  },
+  "recoveryCodes": {
+    "title": "Guarda tus códigos de recuperación",
+    "intro": "Si olvidas la contraseña, entra con tu correo y uno de estos códigos. Cada código vale una vez. No volveremos a mostrarlos.",
+    "listLabel": "Códigos de recuperación",
+    "copy": "Copiar",
+    "copied": "Códigos copiados.",
+    "copyFailed": "No se pudieron copiar. Descarga el .txt o anótalos.",
+    "download": "Descargar .txt",
+    "keepSafe": "Guárdalos en un gestor de contraseñas o en papel, nunca junto a la contraseña.",
+    "saved": "He guardado los códigos en un lugar seguro",
+    "continue": "Continuar",
+    "close": "Listo",
+    "fileTitle": "Pharos · códigos de recuperación de la cuenta",
+    "fileAccount": "Cuenta: {{email}}",
+    "fileDate": "Generados: {{date}}",
+    "fileNote": "Cada código sirve una vez. Generar códigos nuevos en Mi perfil anula estos."
   },
   "testPlan": {
     "loadFailed": "No se pudo cargar el plan de pruebas.",
