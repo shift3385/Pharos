@@ -2,7 +2,7 @@
 
 Estado: **propuesta, sin código.** Rama `claude/compassionate-hopper-d2a385`, desde `main` 98b6ad3.
 Bocetos: https://claude.ai/artifact/UdgokqmtDyT7iUWCP3sHWC (fuente: `f-formatos-bocetos.html` en esta carpeta).
-Borrador de ADR: [`f-adr-formatos-borrador.md`](f-adr-formatos-borrador.md).
+Borrador de ADR-0053: [`f-adr-formatos-borrador.md`](f-adr-formatos-borrador.md).
 
 ## 1. Qué hay hoy (leído en `main`)
 
@@ -32,7 +32,7 @@ El paquete también exporta `ids.ts` (ids deterministas), los límites y `NORMAL
 
 ## 3. Decisión 2: cómo se guardan (ING-06: «se guardan sin cambiar el formato»)
 
-- **Migración local** (número a reservar en `scripts/migration-registry.json`; se propone **0047**, la siguiente libre, a confirmar con N, A y S): tablas `findings`, `finding_triage` y `metrics` con la forma del boceto de ADR-0012, sin columnas nuevas.
+- **Migración local** (**0048**, reservada en `scripts/migration-registry.json`; la 0047 es de S, SYNC-02): tablas `findings`, `finding_triage` y `metrics` con la forma del boceto de ADR-0012, sin columnas nuevas.
 - **Sync:**
   - `finding` y `metric` son `append_only` (`sync_class.rs` y una línea en `sync.schemas.ts` del servidor);
   - `finding_triage` es LWW, con id `UUIDv5(NS_FINDING_TRIAGE, project_id ‖ fingerprint)` (ADR-0012);

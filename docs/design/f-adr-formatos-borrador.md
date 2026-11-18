@@ -1,6 +1,6 @@
-# Borrador · ADR-00xx · Hallazgos y métricas importados: un paquete de formatos, sus tablas y sus vínculos (ING-06, ING-07)
+# Borrador · ADR-0053 · Hallazgos y métricas importados: un paquete de formatos, sus tablas y sus vínculos (ING-06, ING-07)
 
-> El número se asigna al aceptar; hoy la última es la 0049. Este ADR **completa ADR-0012**: fija lo que ese ADR dejó «para ING-06» (las reglas de vínculo, la severidad y la huella) y crea las tablas que aplazó. No cambia ninguna de sus decisiones.
+> Número asignado por el coordinador (N=0050, S=0051, A=0052). Este ADR **completa ADR-0012**: fija lo que ese ADR dejó «para ING-06» (las reglas de vínculo, la severidad y la huella) y crea las tablas que aplazó. No cambia ninguna de sus decisiones.
 
 - **Estado:** Propuesto (pista F, 0.6.0, 2026-11-18).
 - **Relacionados:**
@@ -75,6 +75,6 @@
 
 ## Impacto en sync y migraciones
 
-- **Local:** una migración (número reservado en `scripts/migration-registry.json`, a confirmar). Tiene prueba de actualización desde 0.5.0.
+- **Local:** la migración 0048 (reservada en `scripts/migration-registry.json`). Tiene prueba de actualización desde 0.5.0.
 - **Servidor:** sin migración. Son documentos de tres entidades nuevas en `sync.schemas.ts`, salvo que INT-02 decida tablas.
 - **Sin datos previos que migrar.**
