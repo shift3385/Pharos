@@ -16,7 +16,8 @@
       "0034": "E6 step 10 (EJE-04/EJE-03) spare, never used: the matrix and the status report are derived on read",
       "0035": "E6p DAT-03c/EJE-07 spare, never used: retention fits evidence_retention (0022) and a run delete fits runs.deleted_at (0024)",
       "0036": "E6 EJE-06 (web runs API) spare, never used: the web writes the documents the desktop already syncs",
-      "0044": "0.5.0 track R (AUD-01c) spare, never used: the device_id rotation uses a counter in sync_state and a side file"
+      "0044": "0.5.0 track R (AUD-01c) spare, never used: the device_id rotation uses a counter in sync_state and a side file",
+      "0045": "0.5.0 track P (PLN-08) spare, never used: the independent_approval mirror rides in W's 0040"
     }
   },
   "server": {
