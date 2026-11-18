@@ -26,4 +26,34 @@ export const AuthErrors = {
     ),
   unauthorized: () =>
     new AppError(401, "unauthorized", "Authentication is required."),
+  // Account recovery (SEC-08/09, ADR-0045). None is a 401: the clients take a
+  // 401 as "the session is over".
+  wrongPassword: () =>
+    new AppError(403, "wrong_password", "The current password is not correct."),
+  samePassword: () =>
+    new AppError(
+      400,
+      "same_password",
+      "The new password must differ from the current one.",
+    ),
+  invalidRecovery: () =>
+    new AppError(400, "invalid_recovery", "Invalid email or recovery code."),
+  invalidResetToken: () =>
+    new AppError(
+      400,
+      "invalid_reset_token",
+      "The reset link is invalid or has expired.",
+    ),
+  emailResetDisabled: () =>
+    new AppError(
+      409,
+      "email_reset_disabled",
+      "This server does not send email.",
+    ),
+  tooManyAttempts: () =>
+    new AppError(
+      429,
+      "rate_limited",
+      "Too many attempts. Try again in 15 minutes.",
+    ),
 };

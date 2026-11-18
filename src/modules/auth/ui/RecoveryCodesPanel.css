@@ -1,0 +1,96 @@
+/* The recovery codes shown once (SEC-08): sign-up step and profile dialog. */
+.recovery-codes {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.recovery-codes__intro {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.recovery-codes__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 20px;
+  margin: 0;
+  padding: 14px 16px 14px 44px;
+  background: var(--color-surface-2, var(--color-surface-1));
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.recovery-codes__list li {
+  padding-left: 4px;
+  color: var(--color-text-muted);
+}
+
+.recovery-codes__list code {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.recovery-codes__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recovery-codes__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.recovery-codes__check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-weight: var(--fw-medium);
+}
+
+.recovery-codes__check input {
+  margin-top: 3px;
+}
+
+.recovery-codes__done {
+  align-self: flex-start;
+  padding: 10px 20px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font: inherit;
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+
+.recovery-codes__done:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.recovery-codes__btn:focus-visible,
+.recovery-codes__done:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@container (max-width: 380px) {
+  .recovery-codes__list {
+    grid-template-columns: 1fr;
+  }
+}

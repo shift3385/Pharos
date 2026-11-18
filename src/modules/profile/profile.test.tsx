@@ -13,6 +13,16 @@ vi.mock("./api/profileApi", () => ({
   },
 }));
 
+// The account security card (SEC-08) has its own tests.
+vi.mock("@modules/auth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@modules/auth")>();
+  const status = { total: 10, remaining: 10, generatedAt: null, lastUsedAt: null };
+  return {
+    ...actual,
+    accountApi: { changePassword: vi.fn(), recoveryStatus: vi.fn(async () => status), regenerateCodes: vi.fn() },
+  };
+});
+
 import { profileApi } from "./api/profileApi";
 
 const savedProfile = {

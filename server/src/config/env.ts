@@ -58,6 +58,33 @@ const flag = z
   .default("false")
   .transform((v) => v === "true" || v === "1");
 
+/** An optional value where an empty string (`SMTP_HOST=` in a .env) means
+ *  "not set". */
+const optionalText = z
+  .string()
+  .optional()
+  .transform((v) => (v && v.trim() !== "" ? v.trim() : undefined));
+
+/** Why APP_PUBLIC_URL cannot carry reset links, or null when it can: it must
+ *  be an absolute https URL (http only on this machine), since the link holds
+ *  a secret and the server refuses plain http outside localhost. */
+export function publicUrlProblem(value: string | undefined): string | null {
+  if (!value)
+    return "is required when SMTP_HOST is set (the web address the reset link opens)";
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return `"${value}" is not an absolute URL`;
+  }
+  const loopback = LOOPBACK_HOSTS.includes(
+    url.hostname.replace(/^\[|\]$/g, ""),
+  );
+  if (url.protocol === "https:" || (url.protocol === "http:" && loopback))
+    return null;
+  return `"${value}" must use https (http only for localhost)`;
+}
+
 const schema = z
   .object({
     NODE_ENV: z
@@ -91,8 +118,38 @@ const schema = z
     // After that its payload is cleared; the tombstone itself stays, so a
     // purged record never comes back on a pull. 0 = never clear.
     SYNC_TOMBSTONE_DAYS: z.coerce.number().int().min(0).default(30),
+    // Password reset by email (SEC-09, ADR-0045). Optional and off by
+    // default: without SMTP_HOST the server sends no email, and accounts are
+    // recovered with their recovery codes (SEC-08). With SMTP_HOST, SMTP_FROM
+    // and APP_PUBLIC_URL are required; the link is built from APP_PUBLIC_URL
+    // (the web build's address), never from the request.
+    SMTP_HOST: optionalText,
+    SMTP_PORT: z.coerce.number().int().positive().default(587),
+    // true: TLS from the first byte (port 465); false: STARTTLS when offered.
+    SMTP_SECURE: flag,
+    SMTP_USER: optionalText,
+    SMTP_PASS: optionalText,
+    SMTP_FROM: optionalText,
+    APP_PUBLIC_URL: optionalText,
+    RESET_TOKEN_TTL: duration.prefault("30 minutes"),
   })
   .superRefine((env, ctx) => {
+    if (env.SMTP_HOST) {
+      if (!env.SMTP_FROM) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["SMTP_FROM"],
+          message: "is required when SMTP_HOST is set",
+        });
+      }
+      const problem = publicUrlProblem(env.APP_PUBLIC_URL);
+      if (problem)
+        ctx.addIssue({
+          code: "custom",
+          path: ["APP_PUBLIC_URL"],
+          message: problem,
+        });
+    }
     if (env.NODE_ENV !== "production") return;
     const secret = env.JWT_ACCESS_SECRET;
     if (

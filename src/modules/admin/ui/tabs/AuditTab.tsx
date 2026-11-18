@@ -65,6 +65,13 @@ function ActorCell({ actor, onBehalfOf, labels }: { actor: string; onBehalfOf: s
   );
 }
 
+/** A summary value as shown: a known code (`password_changed`) in words,
+ *  anything else (a count, a file name) as it is. */
+function summaryValue(v: unknown, t: (k: string, o?: Record<string, unknown>) => string): string {
+  const text = String(v);
+  return /^[a-z_]+$/.test(text) ? t(`admin.audit.summaryValue.${text}`, { defaultValue: text }) : text;
+}
+
 /** «Estado, Prioridad, Pasos», «9 campos», or the counts of an import. */
 function changesText(row: AuditRow, labels: AuditLabels, t: (k: string, o?: Record<string, unknown>) => string): string {
   if (row.redactedAt) return t("admin.audit.redacted");
@@ -74,7 +81,8 @@ function changesText(row: AuditRow, labels: AuditLabels, t: (k: string, o?: Reco
   return summaryEntries(row.summary)
     .filter(([, v]) => typeof v === "number" || typeof v === "string")
     .slice(0, 3)
-    .map(([k, v]) => `${t(`admin.audit.summary.${k}`, { defaultValue: k })}: ${String(v)}`)
+    // A known value reads in words (an account event's «Contraseña cambiada»).
+    .map(([k, v]) => `${t(`admin.audit.summary.${k}`, { defaultValue: k })}: ${summaryValue(v, t)}`)
     .join(" · ");
 }
 

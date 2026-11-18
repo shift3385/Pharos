@@ -789,7 +789,8 @@
         "configuration": "Configuration",
         "template": "Template",
         "profile": "Profile",
-        "unlinked_mapping": "Unlinked mapping"
+        "unlinked_mapping": "Unlinked mapping",
+        "account": "Account"
       },
       "fields": {
         "title": "Title",
@@ -834,7 +835,12 @@
         "cycles": "Cycles",
         "runs": "Runs",
         "defects": "Defects",
-        "requirements": "Requirements"
+        "requirements": "Requirements",
+        "event": "Event",
+        "method": "How",
+        "sessionsClosed": "Sessions closed",
+        "codes": "Codes",
+        "codesRemaining": "Codes left"
       },
       "device": {
         "this": "This device",
@@ -948,6 +954,15 @@
         },
         "capped": "The export stopped at {{count}} events. Narrow the period to export the rest.",
         "failed": "Could not export: {{reason}}"
+      },
+      "summaryValue": {
+        "password_changed": "Password changed",
+        "recovery_codes_generated": "Recovery codes generated",
+        "password_reset_requested": "Reset link requested",
+        "profile": "From Profile",
+        "recovery_code": "With a recovery code",
+        "email_link": "With an email link",
+        "admin": "By an administrator"
       }
     }
   },
@@ -1002,6 +1017,48 @@
       "network": "Can't connect to {{host}}. Check your connection; if you had signed in on this computer before, the app opens with your local data.",
       "generic": "Something went wrong. Please try again.",
       "account_other_server": "This account already has data on this computer from another server ({{host}}). To keep them apart, sign in to that server or use another account."
+    },
+    "forgot": "Forgot your password?",
+    "recover": {
+      "title": "Recover access",
+      "subtitle": "With one of your recovery codes or with a link by email.",
+      "tab": {
+        "code": "With a code",
+        "email": "By email"
+      },
+      "back": "Back to sign in",
+      "code": "Recovery code",
+      "codeHelp": "One of the 10 codes you saved when you created the account.",
+      "newPassword": "New password",
+      "repeat": "Repeat the new password",
+      "passwordHelp": "At least 8 characters. A long phrase is safer than an odd word.",
+      "mismatch": "It does not match the new password.",
+      "submitCode": "Change the password and sign in",
+      "changed": "Password changed. Your other devices were signed out.",
+      "fewCodes_one": "Password changed. You have {{count}} recovery code left: generate new codes in Profile.",
+      "fewCodes_other": "Password changed. You have {{count}} recovery codes left: generate new codes in Profile.",
+      "emailOff": "This server does not send email. Use a recovery code or ask whoever runs Pharos for help.",
+      "sendLink": "Send link",
+      "sent": "If there is an account with that email, we sent it a link. It expires in 30 minutes and works once.",
+      "haveLink": "Already have the link?",
+      "haveLinkHelp": "In the desktop app, paste the link from the email here.",
+      "badLink": "That does not look like the link from the email. Copy all of it.",
+      "continue": "Continue",
+      "error": {
+        "invalid_recovery": "The email or the code is not valid.",
+        "invalid_reset_token": "This link is not valid or has expired. Links last 30 minutes and work once.",
+        "rate_limited": "Too many attempts. Wait 15 minutes and try again.",
+        "validation_error": "Check the data: the password needs at least 8 characters.",
+        "email_reset_disabled": "This server does not send email. Use a recovery code."
+      }
+    },
+    "reset": {
+      "title": "Choose a new password",
+      "account": "Account: {{email}}",
+      "checking": "Checking the link…",
+      "save": "Save the password",
+      "done": "Password changed. All your devices were signed out.",
+      "askAgain": "Ask for another link"
     }
   },
   "language": {
@@ -1289,6 +1346,58 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "synced": "Applies on all your devices"
+  },
+  "account": {
+    "title": "Account security",
+    "offline": "Changing the password or the codes needs a connection to the server. Your local data is still available.",
+    "changeTitle": "Change the password",
+    "changeIntro": "Saving it signs out your other devices. This one stays signed in.",
+    "current": "Current password",
+    "new": "New password",
+    "repeat": "Repeat the new password",
+    "show": "Show",
+    "hide": "Hide",
+    "change": "Change the password",
+    "changing": "Changing…",
+    "changed_one": "Password changed. {{count}} device was signed out.",
+    "changed_other": "Password changed. {{count}} devices were signed out.",
+    "codesTitle": "Account recovery codes",
+    "codesIntro": "They let you in if you forget your password. Each code works once.",
+    "codesLoadFailed": "The state of the codes could not be read.",
+    "codesNone": "You have no recovery codes yet. If you forget your password you cannot get in without them.",
+    "codesState": "State",
+    "codesRemaining": "{{remaining}} of {{total}} left",
+    "codesGenerated": "Generated",
+    "codesLastUsed": "Last used",
+    "codesReplace": "Generating new codes cancels the ones you have.",
+    "codesGenerate": "Generate new codes",
+    "codesGenerateFirst": "Generate codes",
+    "codesConfirmTitle": "Generate recovery codes",
+    "codesConfirmBody": "The codes you have will stop working. Type your current password to continue.",
+    "codesConfirmFirst": "Type your current password to generate your 10 codes.",
+    "error": {
+      "wrong_password": "The current password is not correct.",
+      "same_password": "The new password cannot be the current one.",
+      "rate_limited": "Too many attempts. Try again in 1 minute.",
+      "validation_error": "The new password needs at least 8 characters."
+    }
+  },
+  "recoveryCodes": {
+    "title": "Save your recovery codes",
+    "intro": "If you forget your password, sign in with your email and one of these codes. Each code works once. We will not show them again.",
+    "listLabel": "Recovery codes",
+    "copy": "Copy",
+    "copied": "Codes copied.",
+    "copyFailed": "They could not be copied. Download the .txt or write them down.",
+    "download": "Download .txt",
+    "keepSafe": "Keep them in a password manager or on paper, never next to the password.",
+    "saved": "I have saved the codes somewhere safe",
+    "continue": "Continue",
+    "close": "Done",
+    "fileTitle": "Pharos · account recovery codes",
+    "fileAccount": "Account: {{email}}",
+    "fileDate": "Generated: {{date}}",
+    "fileNote": "Each code works once. Generating new codes in Profile cancels these."
   },
   "testPlan": {
     "loadFailed": "The test plan could not be loaded.",
