@@ -35,6 +35,14 @@ export const testEnv: Env = {
   AI_VAULT_RATE_LIMIT_MAX: 1000,
   AI_VAULT_RATE_LIMIT_WINDOW: 60_000,
   AI_CHAT_BODY_LIMIT_BYTES: 20_971_520,
+  SMTP_HOST: undefined,
+  SMTP_PORT: 587,
+  SMTP_SECURE: false,
+  SMTP_USER: undefined,
+  SMTP_PASS: undefined,
+  SMTP_FROM: undefined,
+  APP_PUBLIC_URL: undefined,
+  RESET_TOKEN_TTL: 1_800_000,
 };
 
 export async function setupTestApp(

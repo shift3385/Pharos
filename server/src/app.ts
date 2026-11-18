@@ -8,6 +8,8 @@ import { parseOrigins } from "./config/origins";
 import { createTokenService } from "./modules/auth/tokens";
 import { createAuthRepository } from "./modules/auth/auth.repository";
 import { createAuthService } from "./modules/auth/auth.service";
+import { createAccountService } from "./modules/auth/account.service";
+import { mailerFromEnv, type Mailer } from "./modules/auth/mailer";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { createSyncRepository } from "./modules/sync/sync.repository";
 import { syncRoutes } from "./modules/sync/sync.routes";
@@ -36,8 +38,19 @@ import { workspaceRoutes } from "./modules/workspaces/workspaces.routes";
 import { aiRoutes, createAiVaultStore, type Fetch } from "./modules/ai";
 
 /** Routes limited per client IP: guessing passwords on login, and burning
- *  Argon2 CPU on register. */
-const RATE_LIMITED_ROUTES = ["/auth/login", "/auth/register"];
+ *  Argon2 CPU on register; guessing passwords, recovery codes or reset links,
+ *  and sending reset emails (SEC-08/09). Only their POSTs: reading the
+ *  recovery code status is not limited. */
+const RATE_LIMITED_ROUTES = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/password",
+  "/auth/recovery-codes",
+  "/auth/recover",
+  "/auth/reset/request",
+  "/auth/reset/check",
+  "/auth/reset/confirm",
+];
 
 const CLIENT_ERROR_CODES: Record<number, string> = {
   400: "bad_request",
@@ -53,6 +66,7 @@ const CLIENT_ERROR_CODES: Record<number, string> = {
 export function buildApp(deps: {
   pool: Pool;
   env: Env;
+  mailer?: Mailer | null;
   /** The AI providers' fetch (IA-12); tests pass a fake one. */
   aiFetch?: Fetch;
   /** Where logs go instead of stdout (tests read it). */
@@ -77,7 +91,8 @@ export function buildApp(deps: {
   // them. This hook must be added before the rate-limit plugin loads: the
   // plugin reads `config.rateLimit` from its own onRoute hook.
   app.addHook("onRoute", (route) => {
-    if (RATE_LIMITED_ROUTES.includes(route.url)) {
+    const methods = [route.method].flat();
+    if (RATE_LIMITED_ROUTES.includes(route.url) && methods.includes("POST")) {
       route.config = {
         ...route.config,
         rateLimit: {
@@ -108,9 +123,20 @@ export function buildApp(deps: {
   });
   const repo = createAuthRepository(pool);
   const service = createAuthService({ repo, tokens });
+  // One server clock for every web write and audit event.
+  const clock = createServerClock();
+  const account = createAccountService({
+    pool,
+    repo,
+    clock,
+    issueSession: service.issueSession,
+    mailer: deps.mailer === undefined ? mailerFromEnv(env) : deps.mailer,
+    publicUrl: env.APP_PUBLIC_URL,
+    resetTtlMs: env.RESET_TOKEN_TTL,
+    log: app.log,
+  });
 
   const syncRepo = createSyncRepository(pool);
-  const clock = createServerClock();
   const domainStore = createDomainStore(pool, clock);
   // Notifications go between members of the event's workspace (RED-W2),
   // and the workspaces' own events (invitation, join, removal) become
@@ -131,7 +157,7 @@ export function buildApp(deps: {
     accepted: acceptedMinors(),
   }));
   void app.register(async (instance) => {
-    authRoutes(instance, { service, tokens });
+    authRoutes(instance, { service, tokens, account });
   });
   void app.register(async (instance) => {
     syncRoutes(instance, { repo: syncRepo, tokens, pool });

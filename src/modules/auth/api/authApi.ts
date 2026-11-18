@@ -26,7 +26,7 @@ export class NetworkError extends Error {
   }
 }
 
-async function request<T>(
+export async function request<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
@@ -55,8 +55,10 @@ async function request<T>(
 }
 
 export const authApi = {
+  /** A new account and its session, with the recovery codes shown once
+   *  (SEC-08). */
   register: (input: RegisterInput) =>
-    request<Session>("/auth/register", {
+    request<Session & { recoveryCodes?: string[] }>("/auth/register", {
       method: "POST",
       body: JSON.stringify(input),
     }),

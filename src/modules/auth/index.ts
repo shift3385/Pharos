@@ -1,7 +1,10 @@
 // Public API of the auth module (spec §4).
 export { AuthProvider } from "./state/AuthProvider";
 export { useAuth } from "./state/useAuth";
-export { AuthScreen } from "./ui/AuthScreen";
+export { AuthScreen, RESET_PATH } from "./ui/AuthScreen";
+export { RecoveryCodesPanel } from "./ui/RecoveryCodesPanel";
+export { accountApi, type RecoveryStatus } from "./api/accountApi";
+export { ApiError, NetworkError } from "./api/authApi";
 export type { AuthUser } from "./model/types";
 
 import { defaultSessionStore } from "./state/session-store";

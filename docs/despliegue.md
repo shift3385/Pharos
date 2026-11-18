@@ -91,6 +91,27 @@ Si usas otro proxy (nginx, IIS, un balanceador), tiene que:
 - enviar `X-Forwarded-Proto: https` y `X-Forwarded-For`;
 - redirigir http a https.
 
+## Correo para restablecer contraseñas (opcional)
+
+Sin correo, cada persona recupera su cuenta con los códigos de recuperación
+que Pharos le enseña al crearla ([ADR-0045](adr/0045-recuperacion-de-la-cuenta.md)).
+Si el servidor puede enviar correo, «¿Olvidaste tu contraseña?» › «Por correo»
+manda además un enlace que caduca a los 30 minutos y sirve una vez.
+
+Está apagado por defecto. Para encenderlo, fija en `.env`:
+
+- `SMTP_HOST`, y `SMTP_PORT` si no es 587. Con el puerto 465, pon también
+  `SMTP_SECURE=true`. En los demás, el servidor exige STARTTLS.
+- `SMTP_USER` y `SMTP_PASS`, si tu servidor de correo pide credenciales.
+- `SMTP_FROM`, el remitente, por ejemplo `Pharos <no-reply@miempresa.com>`.
+- `APP_PUBLIC_URL`: la dirección https de la versión web, que es la que abre
+  el enlace (`…/#/restablecer?token=…`). Sin versión web, pon la del servidor:
+  en la app de escritorio, el enlace se pega en «¿Ya tienes el enlace?».
+
+Si falta `SMTP_FROM` o `APP_PUBLIC_URL`, o si la dirección no es https, el
+servidor no arranca y dice por qué. El enlace se construye siempre con
+`APP_PUBLIC_URL`, nunca con la dirección que llega en la petición.
+
 ## Certificado interno
 
 Para un nombre interno o una IP, Caddy crea su propia autoridad (CA). La app

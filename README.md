@@ -515,7 +515,7 @@ Optional limits (defaults in brackets):
 
 | Variable                  | Purpose                                                                                                                       |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `LOGIN_RATE_LIMIT_MAX`    | Attempts per client IP on `/auth/login` and `/auth/register` [10]                                                             |
+| `LOGIN_RATE_LIMIT_MAX`    | Attempts per client IP on `/auth/login`, `/auth/register` and the account recovery routes (`/auth/password`, `/auth/recover`, `/auth/reset/*`) [10] |
 | `LOGIN_RATE_LIMIT_WINDOW` | Window for that limit: milliseconds or `30 seconds`, `1 minute`, `2 hours`… [`1 minute`]; above the limit the API answers 429 |
 | `BODY_LIMIT_BYTES`        | Largest request body [1 MiB]; above it the API answers 413                                                                    |
 | `SYNC_BODY_LIMIT_BYTES`   | Largest body on `/sync/*` (push batches) [8 MiB]                                                                              |
@@ -525,6 +525,25 @@ Optional limits (defaults in brackets):
 | `AI_CHAT_RATE_LIMIT_MAX` / `_WINDOW` | AI requests from the web per account [30 per `1 minute`]                                                         |
 | `AI_VAULT_RATE_LIMIT_MAX` / `_WINDOW` | Uploads and removals of the AI key per account [10 per `1 hour`]                                                |
 | `AI_CHAT_BODY_LIMIT_BYTES` | Largest body on `/ai/chat`, images included [20 MiB]                                                                         |
+
+### Password reset by email (optional)
+
+Accounts recover a forgotten password with their recovery codes, shown once at
+sign-up ([ADR-0045](docs/adr/0045-recuperacion-de-la-cuenta.md)). Reset by email
+is **off by default**. To turn it on, set `SMTP_HOST`. The API then also needs
+`SMTP_FROM` and `APP_PUBLIC_URL`, and refuses to start without them.
+
+| Variable          | Purpose                                                                                                   |
+| ----------------- | --------------------------------------------------------------------------------------------------------- |
+| `SMTP_HOST`       | SMTP server; empty or unset = no email                                                                    |
+| `SMTP_PORT`       | [587]                                                                                                     |
+| `SMTP_SECURE`     | `true` for TLS from the start (port 465); otherwise STARTTLS is required [false]                          |
+| `SMTP_USER`, `SMTP_PASS` | SMTP credentials, if the server asks for them                                                  |
+| `SMTP_FROM`       | Sender, e.g. `Pharos <no-reply@example.com>`                                                              |
+| `APP_PUBLIC_URL`  | The web build's address the link opens (`…/#/restablecer?token=…`); https, http only for localhost        |
+| `RESET_TOKEN_TTL` | How long a link works [`30 minutes`]; each link works once                                               |
+
+The link is built from `APP_PUBLIC_URL`, never from the request's `Host`.
 
 **Only https in production (SEC-07).** With `NODE_ENV=production` the API
 answers `403 https_required` to any plain http request that does not come
