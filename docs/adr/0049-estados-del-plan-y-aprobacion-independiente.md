@@ -2,19 +2,18 @@
 
 - **Estado:** Propuesto (2026-11-17).
   - El usuario aprobó la dirección el 2026-11-17: unificar el flujo del plan
-    con el de los casos y añadir una política por workspace.
-  - Pasa a «Aceptado» cuando el usuario apruebe el plan y los bocetos de la
-    pista P y elija la variante de la decisión 2.
+    con acciones, como los casos, y añadir una política por workspace.
+  - El usuario respondió a las cinco decisiones del plan el mismo día. Sus
+    respuestas están en las decisiones 2, 3, 6 y 7.
+  - Pasa a «Aceptado» cuando el usuario apruebe esta versión y decida la
+    decisión 8 (los casos).
   - Cambia la decisión 4 del [ADR-0040](0040-metricas-del-plan-y-aprobacion.md):
-    editar un plan aprobado ya no lo deja en «Revisado».
+    editar un plan aprobado ya no lo deja en «Revisado», sino «En revisión».
 - **Contexto:**
   - El estado del plan se elige en un desplegable del paso «Identificación»
     (`StepBody.tsx`). Se puede pasar a mano de «Revisado» a «Borrador» o a
     «Obsoleto» sin motivo ni registro. Solo «Aprobado» tiene una acción
     propia (PLN-07, ADR-0040).
-  - Al editar un plan aprobado, este vuelve a «Revisado» (`formState.ts`,
-    `toInput`). En cambio, un caso vuelve a borrador
-    ([ADR-0047](README.md), CAS-02). Son dos reglas para lo mismo.
   - La regla vive solo en el cliente: `update_plan` y
     `PUT /api/test-plans/:id` guardan el estado que les llega.
   - El permiso `plan.approve` (solo `test_manager`,
@@ -22,31 +21,40 @@
   - Pharos sirve a una persona que trabaja sola y a equipos con jerarquía.
     Quien está sola no tiene a nadie que le apruebe nada. En un equipo,
     ISO/IEC/IEEE 29119 y el syllabus ISTQB piden una revisión independiente.
+  - En palabras del usuario, «Borrador» es la idea inicial. Un documento
+    puede revisarse varias veces hasta que se aprueba, y «Aprobado» es la
+    cúspide.
 - **Decisión (propuesta):**
-  1. **Acciones en lugar del desplegable.**
-     - El estado del plan solo cambia con Enviar a revisión (nota opcional),
-       Aprobar versión N (con confirmación), Devolver (comentario
-       obligatorio), Marcar obsoleto y Reactivar (vuelve a Borrador). Son las
-       mismas transiciones que los casos (ADR-0047).
-     - `reviewed` se muestra como «En revisión». Los valores guardados no
-       cambian, así que la app 0.4 sigue leyendo los planes.
-     - Aprobar no sube la versión, igual que en el ADR-0040.
-  2. **Al editar.**
-     - **Variante A (recomendada):** guardar un cambio de contenido (el mismo
-       criterio que sube la versión, PLN-03) en un plan En revisión o Aprobado
-       lo devuelve a Borrador. Si estaba aprobado, sube la versión y quita la
-       aprobación, que queda en el historial.
-     - **Variante B:** un plan aprobado es de solo lectura hasta que se pulsa
-       «Nueva versión», que crea N+1 en Borrador.
-     - El usuario elige una de las dos al aprobar los bocetos.
+  1. **Acciones en lugar del desplegable.** El estado del plan solo cambia
+     con estas acciones:
+     - Enviar a revisión (nota opcional), solo desde Borrador.
+     - Aprobar versión N, con confirmación, desde En revisión.
+     - Pedir cambios, con comentario obligatorio: el plan **sigue En
+       revisión**, marcado «Cambios pedidos» hasta que se guarda un cambio.
+     - Marcar obsoleto, desde cualquier estado.
+     - Reactivar, que lleva a En revisión, o a Borrador si el plan nunca se
+       envió.
+
+     `reviewed` se muestra como «En revisión». Los valores guardados no
+     cambian, así que la app 0.4 sigue leyendo los planes. Aprobar no sube
+     la versión, igual que en el ADR-0040.
+  2. **Al editar** (decisión del usuario):
+     - Guardar un cambio de contenido (el mismo criterio que sube la
+       versión, PLN-03) en un plan **Aprobado** lo lleva a **En revisión**:
+       sube la versión y quita la aprobación, que queda en el historial.
+     - En un plan **En revisión**, el plan sigue En revisión.
+     - En Borrador, el plan sigue en Borrador.
+     - Un plan nunca vuelve a Borrador.
   3. **Las reglas en el núcleo**, como en CAS-02:
      - comando Rust `test_plan_review` y `POST /api/test-plans/:id/review`;
      - un guardado normal conserva el estado, `data.review` y `data.approval`
        guardados, y aplica la regla de la decisión 2;
      - un archivo importado nunca trae aprobación.
-  4. **Datos sin migración del plan.** `data.review` y `data.approval` usan
-     la forma de K: `data.approval` añade `selfApproved` y `revision` a
-     `{ by, byName, at, version }`.
+  4. **Datos sin migración del plan.**
+     - `data.review` usa la forma de K, con `state:
+       "pending" | "changesRequested" | "approved"`.
+     - `data.approval` añade `selfApproved` y `revision` a
+       `{ by, byName, at, version }`.
   5. **Política «Aprobación independiente» por workspace**
      (`workspaces.independent_approval`):
      - Migración del servidor 0025.
@@ -54,46 +62,65 @@
        si la 0040 ya se fusionó.
      - Desactivada y fija en el personal y en el local. Activada por defecto
        en los compartidos.
-     - La cambia un Test Manager (`members.manage`), con confirmación y
-       registro en la auditoría. Las aprobaciones que ya existen no cambian.
-  6. **Quién aprueba**, una sola comprobación para planes y casos: la
-     `workspaceApproverCheck(pool, { policies })` de W (#93), sin un
-     `ApproverCheck` paralelo. `ApprovalRequest` lleva
-     `subject: "case" | "plan"`.
-     1. Quien no es miembro: `notMember`.
-     2. Sin la capacidad del `subject` (`plan.approve` para planes;
-        `case.approve` para casos): `role`.
-     3. El autor: lo decide la regla `independentApproval`, una entrada de
-        `policies`. Con la política activada, `author`. Con la política
-        desactivada, `null`, y el autor aprueba como **aprobación propia**.
-     4. Cualquier otra persona: puede aprobar. El veredicto final lleva
-        `selfApproval: approverId === authorId`.
-     - Para eso, la regla fija «el autor no aprueba» de #93 (su paso 4)
-       pasa a ser la política por defecto (`authorNeverApproves`), y la
-       capacidad sale del `subject`. Son dos cambios pequeños en el código
-       de W que se acuerdan con W.
-     - **El autor** es quien creó el plan o el caso. En un caso, el
-       `createdBy` de su primera revisión, como hace #93. En un plan,
-       `test_plans.created_by` en el escritorio y la misma regla en el
-       servidor.
-     - La aprobación propia se marca en la pantalla, en el historial y en los
-       exportes («Aprobado por: … (aprobación propia)»).
+     - La cambia solo un Test Manager (`members.manage`), con confirmación y
+       registro en la auditoría (decisión del usuario). Las aprobaciones que
+       ya existen no cambian.
+  6. **Quién aprueba** (decisión del usuario):
+     - **Política desactivada:** no se pide rol de aprobación. Aprueba el
+       autor u otra persona que puede editar ese plan o caso (`plan.edit` o
+       `case.edit`). Si aprueba el autor, queda como **aprobación propia**.
+     - **Política activada:** hace falta el rol (`plan.approve`: Test
+       Manager; `case.approve`: Test Manager o Test Analyst) y quien aprueba
+       no puede ser el autor.
+     - Quien no es miembro nunca aprueba.
+     - **El autor** es quien creó el plan o el caso (decisión del usuario).
+       En un caso, el `createdBy` de su primera revisión, como hace #93. En
+       un plan, `test_plans.created_by` en el escritorio y la misma regla en
+       el servidor.
+  7. **Sobre la comprobación de W** (`workspaceApproverCheck(pool, { policies })`,
+     #93), sin un `ApproverCheck` paralelo:
+     - `ApprovalRequest` lleva `subject: "case" | "plan"`.
+     - En #93 los pasos «rol» y «el autor no aprueba» son fijos, y las
+       `policies` solo pueden añadir rechazos. La decisión 6 necesita que la
+       política desactivada quite los dos, así que esos dos pasos pasan a
+       una regla sustituible, `opts.rule`.
+       - Por defecto, `roleAndNotAuthor`, que se comporta igual que #93
+         hoy.
+       - PLN-08 instala `independentApproval(pool)`, que aplica la
+         decisión 6 según la política del workspace.
+     - Las `policies` siguen siendo rechazos extra, después de la regla.
+     - El veredicto final lleva `selfApproval: approverId === authorId`.
+  8. **Los casos (para que decida el usuario).** CAS-02 (#83, ya en `main`)
+     devuelve a Borrador un caso aprobado o En revisión cuando se edita, y
+     «Devolver» lo lleva a Borrador. Con la decisión 2, el plan y los casos
+     tendrían reglas distintas. Hay dos opciones:
+     - **A (recomendada):** los casos siguen la misma regla que el plan.
+       Editar lleva a En revisión, «Devolver» pasa a «Pedir cambios» y un
+       caso solo está en Borrador antes de su primer envío. Lo hace la pista
+       P en el mismo PR, con `case_review.rs`, `case-review.ts` y
+       `CaseReviewPanel`.
+     - **B:** se mantiene la diferencia, y el manual explica por qué un caso
+       vuelve a Borrador y un plan no.
 - **Alternativas:**
-  - Mantener «Revisado» al editar un plan aprobado (ADR-0040): deja dos
-    reglas distintas para planes y casos.
+  - Volver a Borrador al editar un plan aprobado, como CAS-02: el usuario lo
+    descartó, porque Borrador es solo la etapa inicial.
+  - «Nueva versión» (un plan aprobado queda de solo lectura): un paso más en
+    cada cambio. Se descartó.
   - Prohibir siempre la autoaprobación: nadie podría aprobar en el workspace
     personal.
-  - Tratar la autoaprobación como permitida sin marcarla: un informe no
-    distinguiría una aprobación revisada por otra persona de una propia.
-  - Una política por proyecto: el usuario la pidió por workspace, que es
-    donde viven los roles.
+  - Pedir el rol de aprobación también con la política desactivada: el
+    usuario lo descartó, porque quien trabaja sola debe poder aprobar.
+  - Tomar la jerarquía de una integración (por ejemplo, un proyecto de
+    Jira): el usuario lo pidió para más adelante, y queda anotado en INT-05.
+    En 0.5.0 la jerarquía es la de un workspace compartido con roles.
 - **Consecuencias:**
   - La pista P toca `src/modules/test-plan/**`, `src-tauri/src/test_plan*.rs`,
     las rutas de planes de `server/src/modules/domain/**` y
-    `server/src/modules/workspaces/**`. También toca la interfaz
-    `ApproverCheck` de K, en un commit que K y W revisan.
-  - Espera a que #83 (CAS-02) y W2 (workspaces en el escritorio y la UI)
-    estén en `main`.
+    `server/src/modules/workspaces/approval.ts`. Con la opción A de la
+    decisión 8, también toca el flujo de casos de CAS-02. El cambio de
+    `opts.rule` se acuerda con W.
+  - Espera a que W2 (workspaces en el escritorio y la UI) y #93 estén en
+    `main`.
   - La app 0.4 sigue leyendo los planes. Lo que puede escribir un cliente
     anterior en un workspace lo decide el ADR-0042; el núcleo del servidor
     aplica la decisión 3 a cualquier escritura que le llegue.
