@@ -488,10 +488,9 @@ impl Db {
     pub(crate) fn backup_now(&self, label: &str) -> Result<(), String> {
         self.persist()?;
         let blob = fs::read(&self.enc_path).map_err(|e| format!("backup before {label}: {e}"))?;
-        let path = backup_path(&self.enc_path, Some(label));
-        write_atomic_io(&path, &blob).map_err(|e| format!("backup before {label}: {e}"))?;
-        prune_backups(&self.enc_path);
-        Ok(())
+        // Never over another copy: the same rules as before a migration.
+        write_backup(&self.enc_path, &blob, Some(label))
+            .map_err(|e| format!("backup before {label}: {e}"))
     }
 
     /// Serializes the in-memory database and writes it encrypted to disk.
@@ -558,26 +557,50 @@ fn backup_path(enc_path: &Path, last_migration: Option<&str>) -> PathBuf {
     PathBuf::from(name)
 }
 
-/// Keeps the still-encrypted pre-migration blob, then prunes old backups. The
-/// same backup can already exist only if an earlier start backed up this very
-/// file and stopped before saving the migrated one: then it is kept. Anything
-/// else at that path (a folder, other bytes) stops the upgrade.
+/// Most copies kept under one base name (`-2`, `-3`…) before giving up.
+const BACKUP_NAME_TRIES: u32 = 100;
+
+/// Keeps the still-encrypted pre-migration blob, then prunes old backups.
+/// - The same backup can already exist if an earlier start backed up this
+///   very file and stopped before saving the migrated one: then it is kept.
+/// - Another file under the name is another database of the same app version
+///   and last migration: a migration numbered below the last applied one that
+///   landed later (local 0040 after 0043, SYNC-07). It is never overwritten:
+///   this copy takes the next free name (`…-2`, `…-3`).
+/// - Anything else at the path (a folder) stops the upgrade.
 fn write_backup(enc_path: &Path, blob: &[u8], last_migration: Option<&str>) -> Result<(), String> {
-    let path = backup_path(enc_path, last_migration);
-    let name = path
-        .file_name()
-        .unwrap_or_default()
-        .to_string_lossy()
-        .into_owned();
-    if path.exists() {
-        if path.is_file() && fs::read(&path).ok().as_deref() == Some(blob) {
+    let base = backup_path(enc_path, last_migration);
+    let file_name = |p: &Path| {
+        p.file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned()
+    };
+    let mut path = base.clone();
+    let mut n = 1;
+    while path.exists() {
+        let name = file_name(&path);
+        if !path.is_file() {
+            return Err(format!(
+                "failed to save the pre-migration backup: {name} already exists and is \
+                 not a file; nothing was migrated"
+            ));
+        }
+        if fs::read(&path).ok().as_deref() == Some(blob) {
             return Ok(());
         }
-        return Err(format!(
-            "failed to save the pre-migration backup: {name} already exists and is \
-             not a copy of the current database; nothing was migrated"
-        ));
+        n += 1;
+        if n > BACKUP_NAME_TRIES {
+            return Err(format!(
+                "failed to save the pre-migration backup: {name} and the names before it \
+                 already hold other copies; nothing was migrated"
+            ));
+        }
+        let mut next = base.as_os_str().to_owned();
+        next.push(format!("-{n}"));
+        path = PathBuf::from(next);
     }
+    let name = file_name(&path);
     write_atomic_io(&path, blob).map_err(|e| {
         format!("failed to save the pre-migration backup {name}: {e}; nothing was migrated")
     })?;
@@ -1335,6 +1358,30 @@ mod tests {
         assert!(err.contains("pre-migration backup"), "{err}");
         assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), before);
         assert!(squatter.is_dir());
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn a_backup_name_taken_by_another_copy_gets_the_next_name_and_keeps_it() {
+        // An install that applied 0043 before 0040 landed (SYNC-07): its
+        // backup was named after 0043; the next start, still with 0043 as the
+        // last migration but another database, must neither stop nor
+        // overwrite it.
+        let dir = temp_dir();
+        let enc = dir.join("pharos.db.enc");
+        let older = backup_path(&enc, Some("0011_sync_conflicts.sql"));
+        fs::write(&older, b"an earlier copy under the same name").unwrap();
+        let current = write_db_migrated_until(&dir, "0011_sync_conflicts.sql");
+
+        drop(Db::open_with_key(&dir, KEY).unwrap());
+
+        assert_eq!(
+            fs::read(&older).unwrap(),
+            b"an earlier copy under the same name"
+        );
+        let mut next = older.as_os_str().to_owned();
+        next.push("-2");
+        assert_eq!(fs::read(PathBuf::from(next)).unwrap(), current);
         fs::remove_dir_all(&dir).unwrap();
     }
 

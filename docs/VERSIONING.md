@@ -151,6 +151,16 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
    - `npm run check:migrations` (parte de `verify` y de la CI) falla si dos
      migraciones comparten número, si falta un número sin reservar ni retirar,
      o si una migración local no está registrada en `db.rs`.
+   - **En local, en orden.** Una reserva local por debajo de la migración más
+     alta ya fusionada también hace fallar `check:migrations` (`inOrder` en el
+     registro). Una instalación que ya aplicó la más alta aplicaría la nueva
+     fuera de orden. Así le pasó a la 0040 (SYNC-07), que entró después de la
+     0042 y la 0043. En ese caso, la reserva se retira y se toma un número
+     por encima de la más alta.
+   - **La copia de seguridad nunca se pisa.** Si ya existe una copia con el
+     mismo nombre y otro contenido (la misma versión y la misma última
+     migración, pero otra base), la nueva se guarda como `…-2`, `…-3`. La
+     anterior se conserva.
 2. **Actualización desde la versión anterior.** Cada MENOR debe abrir sin
    pérdida una base de datos de la MENOR publicada anterior. El plan de la
    pista que añade migraciones incluye una prueba de esa actualización.
