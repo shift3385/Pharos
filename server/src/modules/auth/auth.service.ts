@@ -86,6 +86,9 @@ export function createAuthService(deps: {
       if (!user) throw AuthErrors.invalidCredentials();
       const ok = await verifyPassword(user.password_hash, input.password);
       if (!ok) throw AuthErrors.invalidCredentials();
+      // Only after the right password, so it never tells which emails exist
+      // (SEC-12, ADR-0045 B4).
+      if (user.disabled_at) throw AuthErrors.accountDisabled();
       return issueSession(user);
     },
 
@@ -102,6 +105,8 @@ export function createAuthService(deps: {
       }
       const user = await repo.findById(record.user_id);
       if (!user) throw AuthErrors.invalidRefreshToken();
+      // Disabling revokes the refresh tokens; this covers one in flight.
+      if (user.disabled_at) throw AuthErrors.accountDisabled();
 
       // Rotate: mint a new refresh token and revoke the old one, linking them.
       const next = tokens.generateRefreshToken();

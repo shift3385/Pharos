@@ -13,7 +13,9 @@ import {
   ShieldOff,
   Undo2,
   UserMinus,
+  UserCheck,
   UserPlus,
+  UserX,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -38,6 +40,8 @@ const ICONS: Record<string, { icon: LucideIcon; tone: string }> = {
   "account.reset_issued": { icon: KeyRound, tone: "warning" },
   "account.admin_granted": { icon: ShieldCheck, tone: "info" },
   "account.admin_revoked": { icon: ShieldOff, tone: "neutral" },
+  "member.disabled": { icon: UserX, tone: "neutral" },
+  "account.enabled": { icon: UserCheck, tone: "success" },
 };
 
 /** «hace 5 min», «11:02», as the day group already says which day. */
@@ -152,6 +156,8 @@ function Row({ n, time, onOpen }: { n: AppNotification; time: string; onOpen: (n
     key: n.subject.key ?? "",
     title: n.subject.title,
     count,
+    // SEC-12: «… ya no tiene acceso a QA Móvil».
+    workspaceName: typeof n.data?.workspaceName === "string" ? n.data.workspaceName : "",
     defaultValue: n.subject.title,
   });
   return (

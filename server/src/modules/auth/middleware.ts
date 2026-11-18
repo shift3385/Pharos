@@ -15,5 +15,8 @@ export function makeRequireAuth(tokens: TokenService) {
     } catch {
       throw AuthErrors.unauthorized();
     }
+    // SEC-12: the account is read on every request, not from the token, so
+    // a disabled one is refused at once (403 account_disabled).
+    await tokens.checkAccount(req.userId);
   };
 }

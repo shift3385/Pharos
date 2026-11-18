@@ -4,7 +4,10 @@
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
     "inOrder": true,
-    "reserved": {},
+    "reserved": {
+      "0047": "0.6.0 track S (SYNC-02, ADR-0051): sync_base.base_payload and sync_conflicts.merge",
+      "0048": "0.6.0 track F (ING-06): findings, finding_triage and metrics tables (ADR-0053)"
+    },
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013",
       "0025": "E3 step 4 spare, never used: step 4 shipped as the single 0024",
@@ -22,8 +25,7 @@
   "server": {
     "dir": "server/migrations",
     "reserved": {
-      "0027": "0.6.0 track S (SEC-12): users.disabled_at (reserved by S; listed here so track A, which ships 0029 first, passes the gap check)",
-      "0028": "0.6.0 track S (SYNC-11): repair of revision tombstones (reserved by S)",
+      "0028": "0.6.0 track S (SYNC-11, ADR-0051): tombstones for the case revisions of projects already deleted",
       "0030": "0.6.0 track A (INT-03): webhooks and webhook_deliveries (outbox, signed deliveries)"
     },
     "retired": {

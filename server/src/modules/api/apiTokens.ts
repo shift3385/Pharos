@@ -10,7 +10,7 @@
 //   web chain, entity `api_token`, in the token's workspace (a personal token
 //   without a workspace: the owner's personal one). Never the token itself.
 import type { Pool, PoolClient } from "pg";
-import { AppError } from "../auth/errors";
+import { AppError, AuthErrors } from "../auth/errors";
 import { appendWebEvent } from "../audit/audit.store";
 import type { ServerClock } from "../sync/sync.hlc";
 import { lockWorkspaces } from "../sync/sync.repository";
@@ -53,8 +53,9 @@ export interface TokenView {
   /** Only for whoever manages the token (owner, Test Manager, administrator). */
   lastUsedIp?: string | null;
   status: TokenStatus;
-  /** Inactive: the owner is no longer a member of the token's workspace. */
-  inactiveReason: "owner_left" | null;
+  /** Inactive: the owner is no longer a member of the token's workspace,
+   *  or an administrator disabled their account (SEC-12). */
+  inactiveReason: "owner_left" | "owner_disabled" | null;
   expiringSoon: boolean;
   revokedAt: string | null;
   revokeReason: RevokeReason | null;
@@ -113,15 +114,18 @@ interface Row {
   revoked_at: Date | null;
   revoke_reason: RevokeReason | null;
   owner_active: boolean;
+  owner_disabled: boolean;
 }
 
 /** Every column a view needs. `owner_active`: the owner is an active member
- *  of the token's workspace (always true for a personal token without one). */
+ *  of the token's workspace (always true for a personal token without one).
+ *  `owner_disabled`: an administrator disabled the owner's account (SEC-12). */
 const SELECT = `
   SELECT t.id, t.kind, t.name, t.display_prefix, t.workspace_id, w.name AS workspace_name,
          t.project_id, p.payload->>'name' AS project_name, t.scopes, t.owner_user_id,
          coalesce(nullif(u.display_name, ''), u.email) AS owner_name,
          t.created_at, t.expires_at, t.last_used_at, t.last_used_ip, t.revoked_at, t.revoke_reason,
+         u.disabled_at IS NOT NULL AS owner_disabled,
          (t.workspace_id IS NULL OR (w.deleted_at IS NULL AND EXISTS (
             SELECT 1 FROM workspace_members m
              WHERE m.workspace_id = t.workspace_id AND m.user_id = t.owner_user_id AND m.removed_at IS NULL))) AS owner_active
@@ -132,7 +136,13 @@ const SELECT = `
 
 function view(r: Row, withIp: boolean, now = Date.now()): TokenView {
   const expired = r.expires_at.getTime() <= now;
-  const status: TokenStatus = r.revoked_at ? "revoked" : expired ? "expired" : r.owner_active ? "active" : "inactive";
+  const status: TokenStatus = r.revoked_at
+    ? "revoked"
+    : expired
+      ? "expired"
+      : r.owner_active && !r.owner_disabled
+        ? "active"
+        : "inactive";
   return {
     id: r.id,
     kind: r.kind,
@@ -149,7 +159,7 @@ function view(r: Row, withIp: boolean, now = Date.now()): TokenView {
     lastUsedAt: r.last_used_at?.toISOString() ?? null,
     ...(withIp ? { lastUsedIp: r.last_used_ip } : {}),
     status,
-    inactiveReason: status === "inactive" ? "owner_left" : null,
+    inactiveReason: status !== "inactive" ? null : r.owner_disabled ? "owner_disabled" : "owner_left",
     expiringSoon: status === "active" && r.expires_at.getTime() - now <= EXPIRING_DAYS * DAY_MS,
     revokedAt: r.revoked_at?.toISOString() ?? null,
     revokeReason: r.revoke_reason,
@@ -467,6 +477,9 @@ export function createApiTokenService(pool: Pool, clock: ServerClock) {
       if (!r) throw TokenErrors.invalid();
       if (r.revoked_at) throw TokenErrors.revoked();
       if (r.expires_at.getTime() <= Date.now()) throw TokenErrors.expired();
+      // SEC-12: a disabled account's tokens are suspended, not revoked: the
+      // same 403 as its sessions, and they work again once it is re-enabled.
+      if (r.owner_disabled) throw AuthErrors.accountDisabled();
       if (!r.owner_active) throw TokenErrors.inactive("owner_left");
       await pool.query(
         `UPDATE api_tokens SET last_used_at = now(), last_used_ip = $2

@@ -50,12 +50,13 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0042](0042-revision-workspaces-sync-v2.md) | Revisión de los workspaces compartidos frente al sync de 0.4: funcionalidad `workspaces`, `documents` por workspace, la 0.4 en solo lectura, mover proyectos, API de roles (TEN-01, SYNC-07, SYNC-04b) | Aceptado | 2026-11-17 |
 | [0043](0043-bandas-de-riesgo-cobertura-ponderada-y-periodo-anterior.md) | Bandas de riesgo por proyecto, cobertura ponderada por riesgo y «Comparar con el periodo anterior» en Inicio (TRZ-04, RED-W4) | Aceptado | 2026-11-12 |
 | [0044](0044-informe-de-cierre-29119-3.md) | Informe de cierre de pruebas 29119-3 de un ciclo cerrado, con textos y aprobación en el ciclo (DOC-01) | Aceptado | 2026-11-12 |
-| [0045](0045-recuperacion-de-la-cuenta.md) | Recuperación de la cuenta: cambiar la contraseña, códigos de recuperación y restablecer por correo con SMTP opcional (SEC-08, SEC-09) | Aceptado | 2026-11-17 |
+| [0045](0045-recuperacion-de-la-cuenta.md) | Recuperación de la cuenta: cambiar la contraseña, códigos de recuperación y restablecer por correo con SMTP opcional (SEC-08, SEC-09); enmiendas: administrador del servidor (SEC-11) y desactivar una cuenta (SEC-12) | Aceptado | 2026-11-17 |
 | [0046](0046-despliegue-tls-y-servidor-configurable.md) | Despliegue: TLS con proxy inverso (Caddy) y servidor elegido al iniciar sesión, con las peticiones del escritorio por Rust (SEC-07, SEC-10) | Aceptado | 2026-11-17 |
 | [0047](0047-revision-de-casos-y-baselines.md) | Revisión de casos (borrador → revisión → aprobado) con autor, fecha y comprobación de quién aprueba, y baselines de suite congeladas (CAS-02) | Aceptado | 2026-11-17 |
 | [0048](0048-notificaciones.md) | Notificaciones que viajan por el servidor, una API `notify`/`emitNotification` para las pistas y copia cifrada en el escritorio (RED-W2) | Aceptado | 2026-11-17 |
 | [0049](0049-estados-del-plan-y-aprobacion-independiente.md) | Estados del plan por acciones, como los casos, y política «Aprobación independiente» por workspace para planes y casos (PLN-08); cambia la decisión 4 del ADR-0040 y la regla de edición de casos del ADR-0047 | Aceptado | 2026-11-17 |
 | [0052](0052-api-v1-tokens-y-webhooks.md) | API pública `/api/v1` con contrato OpenAPI, tokens de proyecto y personales con scopes que nunca pueden más que su dueño, webhooks firmados (Standard Webhooks) y backend compilado con `tsc` (INT-02, INT-03, DEU-01) | Aceptado | 2026-11-18 |
+| [0053](0053-hallazgos-metricas-y-paquete-de-formatos.md) | Hallazgos y métricas importados: parsers en el paquete `@pharos/formats`, tablas, severidad, huella y vínculos (ING-06, ING-07); completa el ADR-0012 | Aceptado | 2026-11-18 |
 
 Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en

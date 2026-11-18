@@ -123,7 +123,8 @@ export function WorkspaceMembersPage() {
     );
   }
 
-  const managers = (members ?? []).filter((m) => m.role === "test_manager").length;
+  // Only active Test Managers count (SEC-12): a disabled one is not.
+  const managers = (members ?? []).filter((m) => m.role === "test_manager" && !m.disabled).length;
   const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(i18n.language) : "");
 
   return (
@@ -182,6 +183,11 @@ export function WorkspaceMembersPage() {
                 <tr key={m.userId} data-testid={`member-${m.userId}`}>
                   <td>
                     {nameOf(m)} {self && <span className="ui-badge">{t("workspaces.members.you")}</span>}
+                    {m.disabled && (
+                      <span className="ui-badge" title={t("workspaces.members.disabledHint")}>
+                        {t("workspaces.members.disabled")}
+                      </span>
+                    )}
                   </td>
                   <td>{m.email}</td>
                   <td>

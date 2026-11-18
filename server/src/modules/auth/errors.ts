@@ -50,6 +50,14 @@ export const AuthErrors = {
       "email_reset_disabled",
       "This server does not send email.",
     ),
+  // A disabled account (SEC-12, ADR-0045 amendment B). A 403, not a 401:
+  // signing in again will not help.
+  accountDisabled: () =>
+    new AppError(
+      403,
+      "account_disabled",
+      "This account is disabled. Ask the server administrator.",
+    ),
   tooManyAttempts: () =>
     new AppError(
       429,

@@ -31,6 +31,8 @@ const KNOWN_ERROR_CODES = new Set([
   "validation_error",
   "rate_limited",
   "account_other_server",
+  // SEC-12: only after the right password.
+  "account_disabled",
 ]);
 
 function errorMessageKey(error: unknown): string {

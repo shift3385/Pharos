@@ -20,6 +20,8 @@ vi.mock("@modules/auth", async (importOriginal) => {
       adminUsers: vi.fn(),
       adminReset: vi.fn(),
       setAdmin: vi.fn(),
+      disableImpact: vi.fn(),
+      setDisabled: vi.fn(),
     },
   };
 });
@@ -36,6 +38,7 @@ const person = (over: Partial<AdminUser>): AdminUser => ({
   createdAt: "2026-11-05T10:00:00Z",
   recoveryCodes: { total: 10, remaining: 10 },
   workspaces: 1,
+  disabled: null,
   ...over,
 });
 const ME = person({
@@ -200,5 +203,137 @@ describe("the Usuarios tab", () => {
     expect(
       await screen.findByText("Ya no eres administrador de este servidor."),
     ).toBeInTheDocument();
+  });
+
+  // SEC-12: disabling and re-enabling an account.
+  it("disables an account: a successor per workspace and the email typed first", async () => {
+    const user = userEvent.setup();
+    vi.mocked(accountApi.disableImpact).mockResolvedValue({
+      lastAdmin: false,
+      managedAlone: [
+        {
+          workspaceId: "w1",
+          name: "QA Móvil",
+          members: 2,
+          candidates: [
+            { userId: "bea", displayName: "Bea", role: "test_analyst" },
+          ],
+        },
+        { workspaceId: "w2", name: "Prototipos", members: 1, candidates: [] },
+      ],
+    });
+    vi.mocked(accountApi.setDisabled).mockResolvedValue({
+      disabled: true,
+      changed: true,
+    });
+    renderWithProviders(<UsersTab />, { admin: true });
+    expect(
+      within(await screen.findByTestId("user-test-user")).queryByRole(
+        "button",
+        { name: "Desactivar cuenta…" },
+      ),
+    ).toBeNull();
+    await user.click(
+      within(screen.getByTestId("user-ana")).getByRole("button", {
+        name: "Desactivar cuenta…",
+      }),
+    );
+    const dialog = await screen.findByRole("dialog", {
+      name: "Desactivar la cuenta de Ana Pérez",
+    });
+    expect(
+      await within(dialog).findByText(
+        /Es el único Test Manager activo de 2 workspaces/,
+      ),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByTestId("managed-w2")).toHaveTextContent(
+      "Sin otros miembros activos",
+    );
+    const go = within(dialog).getByRole("button", {
+      name: "Desactivar cuenta",
+    });
+    expect(go).toBeDisabled();
+    await user.type(within(dialog).getByLabelText(/Motivo/), "dejó el equipo");
+    await user.type(
+      within(dialog).getByLabelText(/para confirmar/),
+      "ana.perez@pharos.dev",
+    );
+    expect(go).toBeDisabled();
+    await user.click(
+      within(dialog).getByRole("combobox", { name: "Nuevo Test Manager" }),
+    );
+    await user.click(await screen.findByRole("option", { name: /Bea/ }));
+    expect(go).toBeEnabled();
+    await expectNoAxeViolations();
+    await user.click(go);
+    await waitFor(() =>
+      expect(accountApi.setDisabled).toHaveBeenCalledWith("ana", {
+        disabled: true,
+        reason: "dejó el equipo",
+        successors: [{ workspaceId: "w1", userId: "bea" }],
+      }),
+    );
+  });
+
+  it("shows a disabled account and enables it again", async () => {
+    const user = userEvent.setup();
+    const off = person({
+      id: "marcos",
+      email: "marcos@pharos.dev",
+      displayName: "Marcos",
+      disabled: { at: "2026-11-18T10:00:00Z", byName: "QA", reason: "baja" },
+    });
+    vi.mocked(accountApi.adminUsers).mockResolvedValue({
+      users: [ME, off],
+      total: 2,
+      admins: 1,
+      disabled: 1,
+    });
+    vi.mocked(accountApi.setDisabled).mockResolvedValue({
+      disabled: false,
+      changed: true,
+    });
+    renderWithProviders(<UsersTab />, { admin: true });
+    const row = await screen.findByTestId("user-marcos");
+    expect(within(row).getByText(/Desactivada/)).toHaveAttribute(
+      "title",
+      "Por QA · Motivo: baja",
+    );
+    expect(
+      within(row).queryByRole("button", { name: "Restablecer contraseña…" }),
+    ).toBeNull();
+    await user.click(
+      within(row).getByRole("button", { name: "Reactivar cuenta" }),
+    );
+    await user.click(
+      within(
+        screen.getByRole("alertdialog", {
+          name: "¿Reactivar la cuenta de Marcos?",
+        }),
+      ).getByRole("button", {
+        name: "Reactivar",
+      }),
+    );
+    await waitFor(() =>
+      expect(accountApi.setDisabled).toHaveBeenCalledWith("marcos", {
+        disabled: false,
+      }),
+    );
+  });
+
+  it("lists active accounts by default and filters by state", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<UsersTab />, { admin: true });
+    await screen.findByTestId("user-ana");
+    expect(accountApi.adminUsers).toHaveBeenLastCalledWith("", 0, 50, "active");
+    await user.click(screen.getByRole("radio", { name: "Desactivadas" }));
+    await waitFor(() =>
+      expect(accountApi.adminUsers).toHaveBeenLastCalledWith(
+        "",
+        0,
+        50,
+        "disabled",
+      ),
+    );
   });
 });

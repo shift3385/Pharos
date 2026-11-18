@@ -153,6 +153,6 @@ Por PR: A1 tokens, A2 subida, A3 webhooks, A4 lecturas, A5 DEU-01.
   - la caducidad se elige entre 30, 90, 180 y 365 días, sin fecha libre;
   - «Usuarios» no muestra una columna con el número de tokens: el botón dice cuántos hay al confirmar;
   - el ejemplo de CI del diálogo usa `curl` hasta que lleguen el CLI y la acción de GitHub (INT-01, INT-04).
+- **SEC-12** (pista S, ya en `main`): `authenticate` comprueba con `isDisabled` que la cuenta del dueño no esté desactivada. Si lo está, responde 403 `account_disabled`, igual que sus sesiones. Los tokens quedan suspendidos, no revocados: la lista los muestra «Inactivo» con el motivo `owner_disabled`, y vuelven a funcionar al reactivar la cuenta.
 - **Pendiente** en otras pistas o PRs:
-  - **SEC-12 (pista S):** comprobar en `authenticate` que la cuenta del dueño no está desactivada, con la función común que exponga S. Desactivar suspende los tokens; reactivar los devuelve.
   - **Avisos (A3):** el aviso de caducidad a 7 días y el aviso a los Test Manager cuando un token queda inactivo llegan con el repartidor de A3.

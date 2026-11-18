@@ -36,6 +36,29 @@ export const AdminErrors = {
       "admin_reset_self",
       "Change your own password from your profile.",
     ),
+  // Disabling an account (SEC-12, ADR-0045 amendment B).
+  disableSelf: () =>
+    new AppError(400, "disable_self", "You cannot disable your own account."),
+  targetDisabled: () =>
+    new AppError(
+      409,
+      "account_disabled_target",
+      "That account is disabled. Enable it first.",
+    ),
+  successorRequired: (workspaces: string[]) =>
+    new AppError(
+      409,
+      "successor_required",
+      "Choose a new Test Manager for each workspace the account manages alone.",
+      { workspaces },
+    ),
+  invalidSuccessor: (workspaceId: string) =>
+    new AppError(
+      400,
+      "invalid_successor",
+      "The new Test Manager must be another active member of that workspace.",
+      { workspaceId },
+    ),
 };
 
 /** What an administrator sees of an account (approved 2026-11-18: every
@@ -50,16 +73,93 @@ export interface AdminUser {
   createdAt: Date;
   recoveryCodes: { total: number; remaining: number };
   workspaces: number;
+  /** SEC-12: when, by whom and why it was disabled; null when active. */
+  disabled: { at: Date; byName: string | null; reason: string | null } | null;
+}
+
+/** Which accounts the list shows (SEC-12). */
+export type UserStatus = "active" | "disabled" | "all";
+
+/** A shared workspace the account is the only active Test Manager of
+ *  (SEC-12): disabling it needs a successor among `candidates`, the other
+ *  active members; with none, the workspace is left without one. */
+export interface ManagedAlone {
+  workspaceId: string;
+  name: string;
+  members: number;
+  candidates: { userId: string; displayName: string; role: string }[];
 }
 
 type Queryable = Pick<PoolClient, "query">;
 
+/** An administrator now: named and not disabled (SEC-12: a disabled
+ *  administrator administers nothing). */
 export async function isAdmin(q: Queryable, userId: string): Promise<boolean> {
   const { rows } = await q.query<{ is_admin: boolean }>(
-    "SELECT is_admin FROM users WHERE id = $1",
+    "SELECT is_admin AND disabled_at IS NULL AS is_admin FROM users WHERE id = $1",
     [userId],
   );
   return rows[0]?.is_admin === true;
+}
+
+/** True when an administrator disabled the account (SEC-12). Read on every
+ *  authenticated request (`checkAccount`), by primary key. */
+export async function isDisabled(
+  q: Queryable,
+  userId: string,
+): Promise<boolean> {
+  const { rows } = await q.query<{ disabled: boolean }>(
+    "SELECT disabled_at IS NOT NULL AS disabled FROM users WHERE id = $1",
+    [userId],
+  );
+  return rows[0]?.disabled === true;
+}
+
+/** Active administrators: named and not disabled. */
+const ACTIVE_ADMINS_SQL =
+  "SELECT count(*) AS n FROM users WHERE is_admin AND disabled_at IS NULL";
+
+/** The shared workspaces `userId` is the only active Test Manager of, with
+ *  the other active members who could take over. */
+async function managedAlone(
+  q: Queryable,
+  userId: string,
+): Promise<ManagedAlone[]> {
+  const { rows } = await q.query<{ id: string; name: string }>(
+    `SELECT w.id, w.name FROM workspace_members me
+       JOIN workspaces w ON w.id = me.workspace_id AND w.kind = 'shared' AND w.deleted_at IS NULL
+      WHERE me.user_id = $1 AND me.role = 'test_manager' AND me.removed_at IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM workspace_members o JOIN users u ON u.id = o.user_id
+           WHERE o.workspace_id = w.id AND o.user_id <> $1 AND o.role = 'test_manager'
+             AND o.removed_at IS NULL AND u.disabled_at IS NULL)
+      ORDER BY lower(w.name), w.id`,
+    [userId],
+  );
+  const out: ManagedAlone[] = [];
+  for (const w of rows) {
+    const { rows: m } = await q.query<{
+      user_id: string;
+      display_name: string;
+      role: string;
+    }>(
+      `SELECT o.user_id, u.display_name, o.role FROM workspace_members o JOIN users u ON u.id = o.user_id
+        WHERE o.workspace_id = $1 AND o.user_id <> $2 AND o.removed_at IS NULL AND u.disabled_at IS NULL
+        ORDER BY lower(u.display_name), o.user_id`,
+      [w.id, userId],
+    );
+    out.push({
+      workspaceId: w.id,
+      name: w.name,
+      members: m.length + 1,
+      candidates: m.map((r) => ({
+        userId: r.user_id,
+        displayName: r.display_name,
+        role: r.role,
+      })),
+    });
+  }
+  return out;
 }
 
 /** An event in `chainUserId`'s web chain, in their personal workspace. The
@@ -158,12 +258,21 @@ export function createAdminService(deps: {
       search?: string;
       offset: number;
       limit: number;
-    }): Promise<{ users: AdminUser[]; total: number; admins: number }> {
+      status?: UserStatus;
+    }): Promise<{
+      users: AdminUser[];
+      total: number;
+      admins: number;
+      disabled: number;
+    }> {
       const search = opts.search?.trim()
         ? `%${opts.search.trim().toLowerCase()}%`
         : null;
+      const status = opts.status ?? "all";
+      // $1: search, $2: status.
       const where = `($1::text IS NULL OR lower(u.email) LIKE $1 OR lower(u.display_name) LIKE $1
-                      OR lower(u.first_name || ' ' || u.last_name) LIKE $1)`;
+                      OR lower(u.first_name || ' ' || u.last_name) LIKE $1)
+                     AND ($2::text = 'all' OR ($2::text = 'disabled') = (u.disabled_at IS NOT NULL))`;
       const { rows } = await pool.query<{
         id: string;
         email: string;
@@ -175,23 +284,31 @@ export function createAdminService(deps: {
         codes_total: string;
         codes_left: string;
         workspaces: string;
+        disabled_at: Date | null;
+        disabled_by_name: string | null;
+        disabled_reason: string | null;
       }>(
         `SELECT u.id, u.email, u.display_name, u.first_name, u.last_name, u.is_admin, u.created_at,
+                u.disabled_at, u.disabled_reason, db.display_name AS disabled_by_name,
                 (SELECT count(*) FROM account_recovery_codes c WHERE c.user_id = u.id) AS codes_total,
                 (SELECT count(*) FROM account_recovery_codes c WHERE c.user_id = u.id AND c.used_at IS NULL) AS codes_left,
                 (SELECT count(*) FROM workspace_members m JOIN workspaces w ON w.id = m.workspace_id
                   WHERE m.user_id = u.id AND m.removed_at IS NULL AND w.kind = 'shared' AND w.deleted_at IS NULL) AS workspaces
-           FROM users u WHERE ${where}
+           FROM users u LEFT JOIN users db ON db.id = u.disabled_by WHERE ${where}
           ORDER BY u.is_admin DESC, lower(u.display_name), u.created_at
-          OFFSET $2 LIMIT $3`,
-        [search, opts.offset, opts.limit],
+          OFFSET $3 LIMIT $4`,
+        [search, status, opts.offset, opts.limit],
       );
       const { rows: counts } = await pool.query<{
         total: string;
         admins: string;
+        disabled: string;
       }>(
-        `SELECT count(*) FILTER (WHERE ${where}) AS total, count(*) FILTER (WHERE u.is_admin) AS admins FROM users u`,
-        [search],
+        `SELECT count(*) FILTER (WHERE ${where}) AS total,
+                count(*) FILTER (WHERE u.is_admin AND u.disabled_at IS NULL) AS admins,
+                count(*) FILTER (WHERE u.disabled_at IS NOT NULL) AS disabled
+           FROM users u`,
+        [search, status],
       );
       return {
         users: rows.map((r) => ({
@@ -207,10 +324,226 @@ export function createAdminService(deps: {
             remaining: Number(r.codes_left),
           },
           workspaces: Number(r.workspaces),
+          disabled: r.disabled_at
+            ? {
+                at: r.disabled_at,
+                byName: r.disabled_by_name,
+                reason: r.disabled_reason,
+              }
+            : null,
         })),
         total: Number(counts[0].total),
         admins: Number(counts[0].admins),
+        disabled: Number(counts[0].disabled),
       };
+    },
+
+    /** What disabling an account would leave without a Test Manager, for
+     *  the dialog (SEC-12). */
+    async disableImpact(targetId: string): Promise<{
+      managedAlone: ManagedAlone[];
+      lastAdmin: boolean;
+    }> {
+      const { rows } = await pool.query<{
+        active_admin: boolean;
+      }>(
+        "SELECT is_admin AND disabled_at IS NULL AS active_admin FROM users WHERE id = $1",
+        [targetId],
+      );
+      if (!rows[0]) throw AdminErrors.notFound();
+      const { rows: c } = await pool.query<{ n: string }>(ACTIVE_ADMINS_SQL);
+      return {
+        managedAlone: await managedAlone(pool, targetId),
+        lastAdmin: rows[0].active_admin && Number(c[0].n) <= 1,
+      };
+    },
+
+    /** Disables or re-enables an account (SEC-12, ADR-0045 amendment B).
+     *  Disabling revokes its sessions and open reset links, names the
+     *  `successors` (one per shared workspace it manages alone that has
+     *  other active members) and leaves everything else as it was. Never
+     *  oneself, never the last active administrator. Audited in both
+     *  people's chains, and in each workspace a successor takes over. */
+    setDisabled(
+      actorId: string,
+      targetId: string,
+      input: {
+        disabled: boolean;
+        reason?: string | null;
+        successors?: { workspaceId: string; userId: string }[];
+      },
+    ): Promise<{ disabled: boolean; changed: boolean }> {
+      return tx(async (client) => {
+        await client.query(ADMINS_LOCK);
+        if (targetId === actorId) throw AdminErrors.disableSelf();
+        const { rows } = await client.query<{
+          display_name: string;
+          active_admin: boolean;
+          disabled_at: Date | null;
+        }>(
+          `SELECT display_name, is_admin AND disabled_at IS NULL AS active_admin, disabled_at
+             FROM users WHERE id = $1 FOR UPDATE`,
+          [targetId],
+        );
+        const target = rows[0];
+        if (!target) throw AdminErrors.notFound();
+        if ((target.disabled_at !== null) === input.disabled)
+          return { disabled: input.disabled, changed: false };
+
+        if (!input.disabled) {
+          await client.query(
+            `UPDATE users SET disabled_at = NULL, disabled_by = NULL, disabled_reason = NULL,
+                    updated_at = now() WHERE id = $1`,
+            [targetId],
+          );
+          await lockPersonal(client, [actorId, targetId]);
+          await auditAccountEvent(client, clock, actorId, targetId, {
+            event: "account_enabled",
+            target: targetId,
+          });
+          await auditAccountEvent(client, clock, targetId, targetId, {
+            event: "account_enabled",
+            by: actorId,
+          });
+          await emitNotification(client, {
+            kind: "account.enabled",
+            actorId,
+            recipientIds: [targetId],
+            trusted: true,
+            subject: {
+              entity: "account",
+              id: targetId,
+              title: target.display_name,
+            },
+          });
+          return { disabled: false, changed: true };
+        }
+
+        if (target.active_admin) {
+          const { rows: c } = await client.query<{ n: string }>(
+            ACTIVE_ADMINS_SQL,
+          );
+          if (Number(c[0].n) <= 1) throw AdminErrors.lastAdmin();
+        }
+        // Every workspace written to, locked in one order (personal chains
+        // and the workspaces a successor takes over).
+        const alone = await managedAlone(client, targetId);
+        const successors = new Map(
+          (input.successors ?? []).map((s) => [s.workspaceId, s.userId]),
+        );
+        for (const workspaceId of successors.keys()) {
+          if (!alone.some((w) => w.workspaceId === workspaceId))
+            throw AdminErrors.invalidSuccessor(workspaceId);
+        }
+        const missing = alone
+          .filter(
+            (w) => w.candidates.length > 0 && !successors.has(w.workspaceId),
+          )
+          .map((w) => w.workspaceId);
+        if (missing.length > 0) throw AdminErrors.successorRequired(missing);
+        for (const w of alone) {
+          const chosen = successors.get(w.workspaceId);
+          if (chosen && !w.candidates.some((c) => c.userId === chosen))
+            throw AdminErrors.invalidSuccessor(w.workspaceId);
+        }
+        await lockWorkspaces(client, [
+          await personalOf(client, actorId),
+          await personalOf(client, targetId),
+          ...alone.map((w) => w.workspaceId),
+        ]);
+
+        const reason = input.reason?.trim() ? input.reason.trim() : null;
+        await client.query(
+          `UPDATE users SET disabled_at = now(), disabled_by = $2, disabled_reason = $3,
+                  updated_at = now() WHERE id = $1`,
+          [targetId, actorId, reason],
+        );
+        const { rowCount: sessionsClosed } = await client.query(
+          `UPDATE refresh_tokens SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL`,
+          [targetId],
+        );
+        await client.query(
+          `UPDATE password_reset_tokens SET used_at = now() WHERE user_id = $1 AND used_at IS NULL`,
+          [targetId],
+        );
+
+        const named: { workspaceId: string; userId: string }[] = [];
+        for (const w of alone) {
+          const successor = successors.get(w.workspaceId);
+          if (!successor) continue;
+          const before = w.candidates.find((c) => c.userId === successor)?.role;
+          await client.query(
+            `UPDATE workspace_members SET role = 'test_manager'
+              WHERE workspace_id = $1 AND user_id = $2 AND removed_at IS NULL`,
+            [w.workspaceId, successor],
+          );
+          await appendWebEvent(client, clock, {
+            userId: actorId,
+            workspaceId: w.workspaceId,
+            action: "update",
+            entity: "workspace",
+            entityId: w.workspaceId,
+            projectId: null,
+            entityKey: w.name,
+            changes: {},
+            summary: {
+              event: "test_manager_succession",
+              from: targetId,
+              to: successor,
+              previousRole: before ?? null,
+            },
+          });
+          named.push({ workspaceId: w.workspaceId, userId: successor });
+        }
+
+        await auditAccountEvent(client, clock, actorId, targetId, {
+          event: "account_disabled",
+          target: targetId,
+          ...(reason && { reason }),
+          sessionsClosed: sessionsClosed ?? 0,
+          ...(named.length > 0 && { successors: named }),
+        });
+        await auditAccountEvent(client, clock, targetId, targetId, {
+          event: "account_disabled",
+          by: actorId,
+          ...(reason && { reason }),
+          sessionsClosed: sessionsClosed ?? 0,
+        });
+
+        // The Test Managers of each shared workspace of the account learn
+        // it no longer has access.
+        const { rows: shared } = await client.query<{
+          workspace_id: string;
+          name: string;
+        }>(
+          `SELECT w.id AS workspace_id, w.name FROM workspace_members m
+             JOIN workspaces w ON w.id = m.workspace_id AND w.kind = 'shared' AND w.deleted_at IS NULL
+            WHERE m.user_id = $1 AND m.removed_at IS NULL`,
+          [targetId],
+        );
+        for (const ws of shared) {
+          const { rows: managers } = await client.query<{ user_id: string }>(
+            `SELECT m.user_id FROM workspace_members m JOIN users u ON u.id = m.user_id
+              WHERE m.workspace_id = $1 AND m.role = 'test_manager' AND m.removed_at IS NULL
+                AND u.disabled_at IS NULL AND m.user_id <> $2`,
+            [ws.workspace_id, targetId],
+          );
+          await emitNotification(client, {
+            kind: "member.disabled",
+            actorId,
+            recipientIds: managers.map((m) => m.user_id),
+            trusted: true,
+            workspaceId: ws.workspace_id,
+            subject: {
+              entity: "account",
+              id: targetId,
+              title: target.display_name,
+            },
+            data: { workspaceName: ws.name },
+          });
+        }
+        return { disabled: true, changed: true };
+      });
     },
 
     /** Names or removes an administrator. The last one cannot be removed,
@@ -225,16 +558,22 @@ export function createAdminService(deps: {
         const { rows } = await client.query<{
           is_admin: boolean;
           display_name: string;
-        }>("SELECT is_admin, display_name FROM users WHERE id = $1", [
-          targetId,
-        ]);
+          disabled_at: Date | null;
+        }>(
+          "SELECT is_admin, display_name, disabled_at FROM users WHERE id = $1",
+          [targetId],
+        );
         const target = rows[0];
         if (!target) throw AdminErrors.notFound();
         if (target.is_admin === value)
           return { isAdmin: value, changed: false };
-        if (!value) {
+        // A disabled account is enabled first (SEC-12).
+        if (value && target.disabled_at) throw AdminErrors.targetDisabled();
+        // Only active administrators count (SEC-12): removing a disabled
+        // one never leaves the server without one.
+        if (!value && !target.disabled_at) {
           const { rows: c } = await client.query<{ n: string }>(
-            "SELECT count(*) AS n FROM users WHERE is_admin",
+            ACTIVE_ADMINS_SQL,
           );
           if (Number(c[0].n) <= 1) throw AdminErrors.lastAdmin();
         }

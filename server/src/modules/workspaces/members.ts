@@ -45,7 +45,9 @@ export async function isMember(q: Queryable, userId: string, workspaceId: string
 }
 
 /** Active members of a workspace, optionally only those with some roles
- *  (R: expands a notification sent to `{ workspace: true }`). */
+ *  (R: expands a notification sent to `{ workspace: true }`). A disabled
+ *  account (SEC-12) is not an active member: it keeps its membership, but
+ *  is not notified and does not count as the workspace's Test Manager. */
 export async function listMembers(
   q: Queryable,
   workspaceId: string,
@@ -54,6 +56,7 @@ export async function listMembers(
   if (!isUuid(workspaceId)) return [];
   const { rows } = await q.query<{ user_id: string; role: WorkspaceRole }>(
     `SELECT m.user_id, m.role FROM workspace_members m JOIN workspaces w ON w.id = m.workspace_id
+       JOIN users u ON u.id = m.user_id AND u.disabled_at IS NULL
       WHERE m.workspace_id = $1 AND ${ACTIVE} AND ($2::text[] IS NULL OR m.role = ANY($2::text[]))
       ORDER BY m.added_at, m.user_id`,
     [workspaceId, opts.roles ?? null],

@@ -89,7 +89,9 @@ export function TokensTable({
                 {tok.status === "inactive" && (
                   <>
                     <br />
-                    <span className="tp__muted">{t("integrations.status.ownerLeft", { name: tok.owner.name })}</span>
+                    <span className="tp__muted">{t(tok.inactiveReason === "owner_disabled" ? "integrations.status.ownerDisabled" : "integrations.status.ownerLeft", {
+                        name: tok.owner.name,
+                      })}</span>
                   </>
                 )}
               </td>

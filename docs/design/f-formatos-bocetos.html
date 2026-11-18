@@ -1,0 +1,408 @@
+<title>Hallazgos y métricas en Pharos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: documento de propuesta (ING-06/07, pista F); cada boceto imita una pantalla de Pharos (marino + tarjetas blancas), como los bocetos de PLN-08. */
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --fg:#1b2433; --muted:#5d6878; --line:#d6dce5;
+  --navy:#13233b; --accent:#1f5fae; --accent-soft:#e3edf9;
+  --ok:#1f7a4d; --ok-soft:#e1f3ea; --warn:#9a5b00; --warn-soft:#fdf0d9; --bad:#b3261e; --bad-soft:#fbe4e2;
+  --crit:#7d1230; --crit-soft:#f6dde4; --low:#2f6f8f; --low-soft:#e0eff6;
+  --info:#5a3fa8; --info-soft:#ece6f8;
+  --code-bg:#f5f7fa; --scrim:rgba(19,35,59,.35);
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1522; --surface:#172234; --fg:#e4e9f1; --muted:#9aa6b8; --line:#2c3a50;
+  --navy:#0a1220; --accent:#6aa5ee; --accent-soft:#1d3352;
+  --ok:#5fcf97; --ok-soft:#163a2a; --warn:#f0b75a; --warn-soft:#3b2c12; --bad:#f08a82; --bad-soft:#3d1c1a;
+  --crit:#ff9fb6; --crit-soft:#46172a; --low:#8cc8e6; --low-soft:#16303d;
+  --info:#b7a2f2; --info-soft:#2a2244;
+  --code-bg:#111a29; --scrim:rgba(0,0,0,.5); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1522; --surface:#172234; --fg:#e4e9f1; --muted:#9aa6b8; --line:#2c3a50;
+  --navy:#0a1220; --accent:#6aa5ee; --accent-soft:#1d3352;
+  --ok:#5fcf97; --ok-soft:#163a2a; --warn:#f0b75a; --warn-soft:#3b2c12; --bad:#f08a82; --bad-soft:#3d1c1a;
+  --crit:#ff9fb6; --crit-soft:#46172a; --low:#8cc8e6; --low-soft:#16303d;
+  --info:#b7a2f2; --info-soft:#2a2244;
+  --code-bg:#111a29; --scrim:rgba(0,0,0,.5); color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.55}
+.wrap{max-width:1080px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:44px}
+header.top{display:grid;gap:8px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:30px;margin:0;text-wrap:balance;line-height:1.2}
+h2{font-size:21px;margin:0 0 4px;text-wrap:balance}
+h3{font-size:16px;margin:0}
+p{margin:0;max-width:72ch}
+.lead{color:var(--muted);max-width:75ch}
+section{display:grid;gap:14px;min-width:0}
+.note{font-size:13.5px;color:var(--muted)}
+ul.tight{margin:0;padding-left:20px;display:grid;gap:4px}
+code{font-family:var(--mono);font-size:12.5px}
+.ids{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:20px;align-items:start}
+
+/* Ventana de app */
+.app{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(10,20,40,.05);min-width:0}
+.app .bar{background:var(--navy);color:#e8eef7;font-size:12.5px;padding:8px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.app .bar .crumb{opacity:.7}
+.app .body{padding:18px;display:grid;gap:14px;min-width:0}
+.head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.head .t{display:flex;gap:10px;align-items:center;flex-wrap:wrap;min-width:0}
+.head h4{margin:0;font-size:18px}
+.pill{display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:600;border-radius:999px;padding:2px 10px;white-space:nowrap}
+.pill.dot::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.p-ok{background:var(--ok-soft);color:var(--ok)}
+.p-bad{background:var(--bad-soft);color:var(--bad)}
+.p-neutral{background:var(--code-bg);color:var(--muted);border:1px solid var(--line)}
+.p-info{background:var(--info-soft);color:var(--info)}
+.p-new{background:var(--accent-soft);color:var(--accent)}
+.sev{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;border-radius:4px;padding:1px 8px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.s-critical{background:var(--crit-soft);color:var(--crit)}
+.s-high{background:var(--bad-soft);color:var(--bad)}
+.s-medium{background:var(--warn-soft);color:var(--warn)}
+.s-low{background:var(--low-soft);color:var(--low)}
+.s-info{background:var(--code-bg);color:var(--muted);border:1px solid var(--line)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:inherit;font-size:13.5px;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:6px;padding:6px 12px;white-space:nowrap;cursor:pointer}
+.btn:focus-visible,.tab:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn.small{font-size:12.5px;padding:3px 9px}
+.btn.ghost{border-style:dashed;color:var(--accent)}
+.banner{border-radius:8px;padding:10px 12px;font-size:13.5px;display:grid;gap:4px}
+.b-info{background:var(--info-soft);border:1px solid color-mix(in srgb,var(--info) 30%,transparent)}
+.b-warn{background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent)}
+.field{border:1px solid var(--line);border-radius:6px;padding:8px 11px;font-size:14px;background:var(--surface);min-height:20px}
+.field.ph{color:var(--muted)}
+.field.area{min-height:56px}
+.lbl{font-size:13px;font-weight:600;display:grid;gap:5px}
+.lbl .hint{font-weight:400;color:var(--muted);font-size:12.5px}
+.mono{font-family:var(--mono);font-size:12.5px}
+.muted{color:var(--muted)}
+
+/* Pestañas */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{font:inherit;font-size:14px;background:none;border:0;border-bottom:2px solid transparent;padding:8px 14px;color:var(--muted);cursor:pointer;white-space:nowrap;display:inline-flex;gap:6px;align-items:center}
+.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent);font-weight:600}
+.tab .n{font-size:11.5px;background:var(--code-bg);border:1px solid var(--line);border-radius:999px;padding:0 7px;font-variant-numeric:tabular-nums}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:3px 10px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+
+/* Tablas */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:620px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600;background:var(--code-bg)}
+tr:last-child td{border-bottom:0}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.fail td{background:color-mix(in srgb,var(--bad-soft) 55%,transparent)}
+
+/* Lista de hallazgos agrupada */
+.rule{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.rule > summary{list-style:none;cursor:pointer;padding:10px 12px;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+.rule > summary::-webkit-details-marker{display:none}
+.rule > summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.rule[open] > summary{border-bottom:1px solid var(--line);background:var(--code-bg)}
+.rule .rn{display:grid;gap:2px;min-width:0}
+.rule .rn b{font-size:14px}
+.rule .rn span{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.loc{display:grid;grid-template-columns:1fr auto;gap:8px 12px;padding:10px 12px;border-bottom:1px solid var(--line);align-items:start}
+.loc:last-child{border-bottom:0}
+.loc .where{font-family:var(--mono);font-size:12.5px;overflow-wrap:anywhere}
+.loc .msg{font-size:13px;color:var(--muted);grid-column:1/-1}
+.loc .meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.refs{display:flex;gap:4px;flex-wrap:wrap}
+.ref{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--muted)}
+
+/* Resumen numérico */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.kpi{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:2px}
+.kpi b{font-size:22px;font-variant-numeric:tabular-nums}
+.kpi span{font-size:12.5px;color:var(--muted)}
+
+/* Diálogo */
+.dlg-wrap{background:var(--scrim);padding:28px 16px;display:grid;place-items:center;border-radius:10px}
+.dlg{background:var(--surface);border:1px solid var(--line);border-radius:10px;max-width:520px;width:100%;padding:18px;display:grid;gap:14px;box-shadow:0 10px 30px rgba(10,20,40,.18)}
+.radios{display:grid;gap:6px}
+.radio{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:13.5px}
+.radio .o{width:14px;height:14px;border-radius:50%;border:2px solid var(--muted);margin-top:3px;flex:none}
+.radio.on{border-color:var(--accent);background:var(--accent-soft)}
+.radio.on .o{border-color:var(--accent);background:radial-gradient(var(--accent) 45%,transparent 50%)}
+.radio small{display:block;color:var(--muted)}
+
+/* Matriz */
+.mx td,.mx th{white-space:nowrap}
+.cell{display:inline-flex;gap:6px;align-items:center}
+.badge-f{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;border-radius:999px;padding:0 7px;font-variant-numeric:tabular-nums}
+
+/* Notas de decisión */
+.q{border-left:3px solid var(--accent);padding:4px 0 4px 12px;font-size:13.5px;color:var(--muted)}
+.q b{color:var(--fg)}
+.run-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+.run-row:last-child{border-bottom:0}
+.run-row .sub{font-size:12.5px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.ico{width:28px;height:28px;border-radius:6px;display:grid;place-items:center;background:var(--code-bg);border:1px solid var(--line);color:var(--muted)}
+.ico svg{width:16px;height:16px}
+.bar2{height:8px;border-radius:4px;background:var(--code-bg);display:flex;overflow:hidden;min-width:120px}
+.bar2 i{display:block;height:100%}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <span class="eyebrow">Pharos 0.6.0 · pista F · ING-06 e ING-07 · bocetos para aprobar</span>
+  <h1>Hallazgos y métricas en Pharos</h1>
+  <p class="lead">Cómo se ven en la app un SARIF (Semgrep, Trivy, ZAP, CodeQL), un JSON de axe y el resumen de k6 una vez importados, por la app o por la API y el CLI. Los datos son de ejemplo. Allure y TRX no tienen pantalla propia: dan resultados, como JUnit.</p>
+</header>
+
+<!-- 1. Importar -->
+<section>
+  <h2>1 · «Importar informe» reconoce los formatos nuevos</h2>
+  <p class="note">El formato se detecta por el contenido. La vista previa cuenta lo que se va a guardar. «Vincular a un caso» es opcional y se aplica a los hallazgos y métricas que no traen su propia etiqueta <span class="ids">@TC-n</span>.</p>
+  <div class="grid2">
+    <div class="app">
+      <div class="bar"><span class="crumb">Proyecto Tienda ›</span> Ejecuciones › Importar informe</div>
+      <div class="body">
+        <div class="head"><div class="t"><h4>Importar informe</h4></div></div>
+        <div class="lbl">Archivo<div class="field mono">semgrep-server.sarif · 412 KB</div></div>
+        <div class="banner b-info"><span><b>SARIF 2.1.0</b> · Semgrep 1.97.0 · commit <span class="mono">a3f9c21</span> · rama <span class="mono">feature/login</span></span></div>
+        <div class="kpis">
+          <div class="kpi"><b>34</b><span>hallazgos</span></div>
+          <div class="kpi"><b>0</b><span>resultados</span></div>
+          <div class="kpi"><b>0</b><span>métricas</span></div>
+        </div>
+        <div class="chips" aria-label="Hallazgos por severidad">
+          <span class="sev s-critical">2 crítica</span><span class="sev s-high">5 alta</span><span class="sev s-medium">17 media</span><span class="sev s-low">10 baja</span>
+        </div>
+        <div class="lbl">Ejecución<div class="field">Nuevo run · «Análisis estático feature/login»</div></div>
+        <div class="lbl">Vincular hallazgos y métricas a un caso <span class="hint">Opcional. Solo para los que no traen su etiqueta.</span><div class="field ph">Ninguno</div></div>
+        <div class="banner b-warn"><span>3 resultados SARIF no se importan: tienen <span class="mono">kind: pass</span> o <span class="mono">baselineState: absent</span>.</span></div>
+        <div class="btns" style="justify-content:flex-end"><button class="btn" type="button">Cancelar</button><button class="btn primary" type="button">Importar 34 hallazgos</button></div>
+      </div>
+    </div>
+    <div class="app">
+      <div class="bar"><span class="crumb">Proyecto Tienda ›</span> Ejecuciones › Importar informe</div>
+      <div class="body">
+        <div class="head"><div class="t"><h4>Importar informe</h4></div></div>
+        <div class="lbl">Archivo<div class="field mono">summary.json · 9 KB</div></div>
+        <div class="banner b-info"><span><b>Resumen de k6</b> (<span class="mono">handleSummary</span>) · duración 2 min 0 s</span></div>
+        <div class="kpis">
+          <div class="kpi"><b>48</b><span>métricas</span></div>
+          <div class="kpi"><b style="color:var(--bad)">1 de 3</b><span>umbrales incumplidos</span></div>
+          <div class="kpi"><b>6</b><span><i>checks</i></span></div>
+        </div>
+        <div class="lbl">Vincular hallazgos y métricas a un caso <span class="hint">2 métricas ya traen <span class="mono">{case:TC-14}</span>.</span><div class="field"><span class="mono">TC-12</span> · Checkout soporta 200 usuarios concurrentes</div></div>
+        <p class="note">Allure se importa como <span class="mono">.zip</span> o, en el escritorio, eligiendo la carpeta <span class="mono">allure-results</span>. Un paquete <span class="mono">.xcresult</span> se rechaza con el paso que hay que dar en el Mac.</p>
+        <div class="btns" style="justify-content:flex-end"><button class="btn" type="button">Cancelar</button><button class="btn primary" type="button">Importar 48 métricas</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. Detalle del run: hallazgos -->
+<section>
+  <h2>2 · Detalle del run: la pestaña «Hallazgos»</h2>
+  <p class="note">Las pestañas solo aparecen si el run tiene hallazgos o métricas. Los hallazgos se agrupan por regla. «Nuevo» quiere decir que la huella no estaba en el run anterior de la misma herramienta. El triaje vale para esa huella en todos los runs del proyecto.</p>
+  <div class="app">
+    <div class="bar"><span class="crumb">Proyecto Tienda › Ejecuciones ›</span> RUN-58</div>
+    <div class="body">
+      <div class="head">
+        <div class="t"><span class="ids">RUN-58</span><h4>Análisis estático feature/login</h4><span class="pill dot p-ok">Cerrado</span><span class="pill dot p-neutral">CI</span></div>
+        <div class="btns"><button class="btn" type="button">Exportar</button></div>
+      </div>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" aria-selected="false" type="button">Casos <span class="n">0</span></button>
+        <button class="tab" role="tab" aria-selected="true" type="button">Hallazgos <span class="n">34</span></button>
+        <button class="tab" role="tab" aria-selected="false" type="button">Métricas <span class="n">0</span></button>
+      </div>
+      <div class="chips" aria-label="Filtrar por severidad">
+        <button class="chip" aria-pressed="true" type="button">Todas · 34</button>
+        <button class="chip" aria-pressed="false" type="button"><span class="sev s-critical">Crítica</span> 2</button>
+        <button class="chip" aria-pressed="false" type="button"><span class="sev s-high">Alta</span> 5</button>
+        <button class="chip" aria-pressed="false" type="button"><span class="sev s-medium">Media</span> 17</button>
+        <button class="chip" aria-pressed="false" type="button"><span class="sev s-low">Baja</span> 10</button>
+        <span class="muted" style="font-size:12.5px">·</span>
+        <button class="chip" aria-pressed="false" type="button">Solo nuevos · 6</button>
+        <button class="chip" aria-pressed="false" type="button">Estado: abiertos</button>
+      </div>
+
+      <details class="rule" open>
+        <summary><span class="sev s-critical">Crítica</span><span class="rn"><b>Inyección SQL por concatenación de cadenas</b><span class="mono">javascript.express.security.audit.sqli · 2 ubicaciones</span></span><span class="refs"><span class="ref">CWE:89</span><span class="ref">OWASP:A03</span></span></summary>
+        <div class="loc">
+          <span class="where">server/src/modules/orders/orders.repo.ts:118:5</span>
+          <span class="meta"><span class="pill p-new">Nuevo</span><button class="btn small" type="button">Triaje</button><button class="btn small" type="button">Crear defecto</button></span>
+          <span class="msg">La consulta se arma con la entrada del usuario (<span class="mono">req.query.sort</span>). Use parámetros enlazados.</span>
+        </div>
+        <div class="loc">
+          <span class="where">server/src/modules/orders/orders.repo.ts:142:5</span>
+          <span class="meta"><span class="pill p-info">Defecto DEF-31</span><button class="btn small" type="button">Triaje</button></span>
+          <span class="msg">La consulta se arma con la entrada del usuario (<span class="mono">req.body.filter</span>).</span>
+        </div>
+      </details>
+
+      <details class="rule">
+        <summary><span class="sev s-high">Alta</span><span class="rn"><b>Secreto JWT escrito en el código</b><span class="mono">generic.secrets.jwt-hardcoded · 1 ubicación</span></span><span class="refs"><span class="ref">CWE:798</span></span></summary>
+      </details>
+      <details class="rule">
+        <summary><span class="sev s-medium">Media</span><span class="rn"><b>Expresión regular vulnerable a ReDoS</b><span class="mono">javascript.lang.security.audit.detect-redos · 4 ubicaciones · 1 falso positivo</span></span><span class="refs"><span class="ref">CWE:1333</span></span></summary>
+      </details>
+      <details class="rule">
+        <summary><span class="sev s-low">Baja</span><span class="rn"><b>Cabecera X-Powered-By expuesta</b><span class="mono">express.security.x-powered-by · 1 ubicación · suprimido en origen</span></span><span class="refs"><span class="ref">CWE:200</span></span></summary>
+      </details>
+      <p class="note">Un hallazgo de axe muestra la URL y el selector en lugar del archivo y la línea: <span class="mono">http://localhost:3100/checkout · #pay &gt;&gt; button.primary</span>, con <span class="ref">WCAG2:1.4.3</span> y el nivel <span class="mono">AA</span>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Triaje -->
+<section>
+  <h2>3 · Triaje de un hallazgo</h2>
+  <p class="note">El estado se guarda por huella, así que el próximo SARIF con el mismo hallazgo ya llega triajado. El motivo es obligatorio, salvo para volver a «Abierto». Queda en la auditoría.</p>
+  <div class="dlg-wrap">
+    <div class="dlg" role="dialog" aria-labelledby="tri-t">
+      <h3 id="tri-t">Triaje · Expresión regular vulnerable a ReDoS</h3>
+      <p class="note mono">server/src/shared/validate.ts:27:14 · huella sarif:primaryLocationLineHash=9e1c…:1</p>
+      <div class="radios" role="radiogroup" aria-label="Estado">
+        <div class="radio"><span class="o"></span><span>Abierto<small>Cuenta en la matriz, en el informe y en las gates.</small></span></div>
+        <div class="radio on"><span class="o"></span><span>Falso positivo<small>La regla no aplica aquí.</small></span></div>
+        <div class="radio"><span class="o"></span><span>Riesgo aceptado<small>Se conoce y se asume. Conviene enlazar una decisión o un defecto.</small></span></div>
+        <div class="radio"><span class="o"></span><span>Corregido<small>Se espera que desaparezca en el próximo análisis.</small></span></div>
+      </div>
+      <label class="lbl" for="tri-r">Motivo<div id="tri-r" class="field area">La entrada está limitada a 64 caracteres en el esquema zod antes de llegar aquí.</div></label>
+      <p class="note">Se aplica a esta huella en los 4 runs del proyecto que la contienen.</p>
+      <div class="btns" style="justify-content:flex-end"><button class="btn" type="button">Cancelar</button><button class="btn primary" type="button">Guardar triaje</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Métricas -->
+<section>
+  <h2>4 · Detalle del run: la pestaña «Métricas»</h2>
+  <p class="note">Los umbrales incumplidos van primero. Cada umbral de k6 se asocia a la agregación que nombra: <span class="mono">p(95)&lt;500</span> va con p95. Si la métrica está vinculada a un caso, un umbral incumplido marca ese caso como fallido en la matriz (pregunta 2 del plan).</p>
+  <div class="app">
+    <div class="bar"><span class="crumb">Proyecto Tienda › Ejecuciones ›</span> RUN-61</div>
+    <div class="body">
+      <div class="head">
+        <div class="t"><span class="ids">RUN-61</span><h4>Carga checkout · 200 VUs</h4><span class="pill dot p-ok">Cerrado</span><span class="pill dot p-neutral">CI</span></div>
+      </div>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" aria-selected="false" type="button">Casos <span class="n">0</span></button>
+        <button class="tab" role="tab" aria-selected="false" type="button">Hallazgos <span class="n">0</span></button>
+        <button class="tab" role="tab" aria-selected="true" type="button">Métricas <span class="n">48</span></button>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><b style="color:var(--bad)">2 / 3</b><span>umbrales cumplidos</span></div>
+        <div class="kpi"><b>98,7 %</b><span><i>checks</i> correctos</span></div>
+        <div class="kpi"><b>41.230</b><span>peticiones · 343,6/s</span></div>
+      </div>
+      <div class="tw">
+        <table>
+          <thead><tr><th scope="col">Métrica</th><th scope="col">Agregación</th><th scope="col">Ámbito</th><th scope="col" class="num">Valor</th><th scope="col">Umbral</th><th scope="col">Estado</th><th scope="col">Caso</th></tr></thead>
+          <tbody>
+            <tr class="fail"><td class="mono">http_req_duration</td><td>p95</td><td class="mono">expected_response:true</td><td class="num">742 ms</td><td class="mono">p(95)&lt;500</td><td><span class="pill dot p-bad">Incumplido</span></td><td class="mono">TC-12</td></tr>
+            <tr><td class="mono">http_req_failed</td><td>rate</td><td class="muted">—</td><td class="num">0,4 %</td><td class="mono">rate&lt;0.01</td><td><span class="pill dot p-ok">Cumplido</span></td><td class="mono">TC-12</td></tr>
+            <tr><td class="mono">http_req_duration</td><td>p95</td><td class="mono">case:TC-14</td><td class="num">310 ms</td><td class="mono">p(95)&lt;800</td><td><span class="pill dot p-ok">Cumplido</span></td><td class="mono">TC-14</td></tr>
+            <tr><td class="mono">http_req_duration</td><td>avg</td><td class="mono">expected_response:true</td><td class="num">268 ms</td><td class="muted">—</td><td class="muted">Sin umbral</td><td class="mono">TC-12</td></tr>
+            <tr><td class="mono">iterations</td><td>rate</td><td class="muted">—</td><td class="num">57,1 /s</td><td class="muted">—</td><td class="muted">Sin umbral</td><td class="mono">TC-12</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Checks</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th scope="col">Grupo › check</th><th scope="col" class="num">Correctos</th><th scope="col" class="num">Fallidos</th><th scope="col" class="num">Tasa</th></tr></thead>
+          <tbody>
+            <tr><td>Pago › status es 200</td><td class="num">13.410</td><td class="num">402</td><td class="num">97,1 %</td></tr>
+            <tr><td>Pago › trae order_id <span class="ids">@TC-14</span></td><td class="num">13.812</td><td class="num">0</td><td class="num">100 %</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Mostrando 5 de 48 métricas. «Ver todas» despliega las agregaciones restantes (min, med, max, p90).</p>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Lista de runs y matriz -->
+<section>
+  <h2>5 · Lista de runs y matriz</h2>
+  <div class="grid2">
+    <div class="app">
+      <div class="bar"><span class="crumb">Proyecto Tienda ›</span> Ejecuciones</div>
+      <div class="body" style="padding:0;gap:0">
+        <div class="run-row">
+          <span class="ico" aria-label="Seguridad"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.5 2.5 3.5v4c0 3.3 2.3 5.9 5.5 7 3.2-1.1 5.5-3.7 5.5-7v-4z"/></svg></span>
+          <span><b>RUN-58</b> Análisis estático feature/login<span class="sub"><span class="sev s-critical">2</span><span class="sev s-high">5</span><span class="sev s-medium">17</span><span class="sev s-low">10</span> 34 hallazgos · 6 nuevos</span></span>
+          <span class="pill dot p-ok">Cerrado</span>
+        </div>
+        <div class="run-row">
+          <span class="ico" aria-label="Rendimiento"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11a6 6 0 1 1 12 0"/><path d="M8 11 11 6"/></svg></span>
+          <span><b>RUN-61</b> Carga checkout · 200 VUs<span class="sub"><span style="color:var(--bad);font-weight:600">1 umbral incumplido</span> · 48 métricas</span></span>
+          <span class="pill dot p-ok">Cerrado</span>
+        </div>
+        <div class="run-row">
+          <span class="ico" aria-label="Accesibilidad"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="3" r="1.5"/><path d="M3 6h10M8 6v4l-2.5 4.5M8 10l2.5 4.5"/></svg></span>
+          <span><b>RUN-62</b> axe · checkout y carrito<span class="sub"><span class="sev s-high">3</span><span class="sev s-medium">4</span> 7 hallazgos · 2 a revisar</span></span>
+          <span class="pill dot p-ok">Cerrado</span>
+        </div>
+        <div class="run-row">
+          <span class="ico" aria-label="Pruebas"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8.5 6.5 12 13 4.5"/></svg></span>
+          <span><b>RUN-60</b> Playwright · regresión<span class="sub"><span class="bar2" aria-hidden="true"><i style="width:86%;background:var(--ok)"></i><i style="width:9%;background:var(--bad)"></i><i style="width:5%;background:var(--line)"></i></span> 124 / 130 ejecutados</span></span>
+          <span class="pill dot p-ok">Cerrado</span>
+        </div>
+      </div>
+    </div>
+    <div class="app">
+      <div class="bar"><span class="crumb">Proyecto Tienda ›</span> Trazabilidad › Matriz</div>
+      <div class="body">
+        <div class="chips"><button class="chip" aria-pressed="false" type="button">Todos</button><button class="chip" aria-pressed="true" type="button">Con hallazgos abiertos · 3</button></div>
+        <div class="tw">
+          <table class="mx" style="min-width:440px">
+            <thead><tr><th scope="col">Requisito</th><th scope="col">Caso</th><th scope="col">Estado</th></tr></thead>
+            <tbody>
+              <tr><td>REQ-4 Pago</td><td class="mono">TC-12</td><td><span class="cell"><span class="pill dot p-bad">Fallido</span><span class="muted" style="font-size:12px">p(95)&lt;500 ms: 742 ms</span></span></td></tr>
+              <tr><td>REQ-4 Pago</td><td class="mono">TC-14</td><td><span class="cell"><span class="pill dot p-ok">Pasado</span><span class="badge-f s-critical" title="1 crítica · 1 alta abiertas">⚠ 2</span></span></td></tr>
+              <tr><td>REQ-7 Accesible</td><td class="mono">TC-21</td><td><span class="cell"><span class="pill dot p-ok">Pasado</span><span class="badge-f s-high" title="3 altas abiertas">⚠ 3</span></span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note">La insignia cuenta los hallazgos <b>abiertos</b> vinculados al caso, con el color de la peor severidad. No cambia el estado (ADR-0012). El umbral incumplido sí lo cambia (TC-12).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Informe de estado -->
+<section>
+  <h2>6 · Informe de estado: sección «Hallazgos y rendimiento»</h2>
+  <p class="note">Va después de «Defectos». El informe de cierre (ADR-0044) usa el mismo bloque. Se compara con el período anterior, como el resto del informe (ADR-0043).</p>
+  <div class="app">
+    <div class="bar"><span class="crumb">Proyecto Tienda › Ejecuciones ›</span> Informe de estado · Ciclo 2026-S47</div>
+    <div class="body">
+      <h3>Hallazgos y rendimiento</h3>
+      <div class="tw">
+        <table style="min-width:520px">
+          <thead><tr><th scope="col">Hallazgos abiertos</th><th scope="col" class="num">Crítica</th><th scope="col" class="num">Alta</th><th scope="col" class="num">Media</th><th scope="col" class="num">Baja</th><th scope="col" class="num">Nuevos</th><th scope="col" class="num">Triajados</th></tr></thead>
+          <tbody>
+            <tr><td>Seguridad (SARIF)</td><td class="num">2</td><td class="num">4</td><td class="num">16</td><td class="num">9</td><td class="num">6</td><td class="num">3</td></tr>
+            <tr><td>Accesibilidad (axe)</td><td class="num">0</td><td class="num">3</td><td class="num">4</td><td class="num">0</td><td class="num">1</td><td class="num">0</td></tr>
+            <tr><td>Período anterior</td><td class="num muted">1</td><td class="num muted">6</td><td class="num muted">22</td><td class="num muted">9</td><td class="num muted">—</td><td class="num muted">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><b>Umbrales de rendimiento: 2 de 3 cumplidos.</b> Incumplido: <span class="mono">http_req_duration p(95)&lt;500</span> en RUN-61 (742 ms), caso TC-12.</p>
+      <p class="note">Sin runs de seguridad, accesibilidad o rendimiento en el período, la sección dice «Sin análisis en este período», en una línea.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Decisiones que piden respuesta</h2>
+  <div class="q"><b>2.</b> ¿Un umbral incumplido de k6 marca el caso vinculado como fallido en la matriz? Propuesta: sí, como ya dice ADR-0012.</div>
+  <div class="q"><b>3.</b> ¿Se vinculan hallazgos a requisitos por <span class="mono">standardRefs</span> en 0.6.0? Propuesta: no, más adelante.</div>
+  <div class="q"><b>4.</b> ¿Se importa <span class="mono">incomplete</span> de axe como «A revisar» (info), sin contar como abierto? Propuesta: sí.</div>
+  <div class="q"><b>6.</b> ¿Se suman a las quality gates «hallazgos críticos o altos abiertos» y «umbrales cumplidos (%)»? Propuesta: como PR F8 opcional.</div>
+  <p class="note">Las preguntas 1 (dónde viven los parsers) y 5 (<span class="mono">.xcresult</span>) están en el plan (<span class="mono">docs/design/f-formatos-plan.md</span>).</p>
+</section>
+</div>

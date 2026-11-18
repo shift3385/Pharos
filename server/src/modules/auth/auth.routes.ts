@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FastifyInstance } from "fastify";
 import type { AuthService } from "./auth.service";
 import type { TokenService } from "./tokens";
 import type { AccountService } from "./account.service";
@@ -15,7 +15,7 @@ import {
   resetRequestSchema,
   resetTokenSchema,
 } from "./auth.schemas";
-import { AuthErrors } from "./errors";
+import { makeRequireAuth } from "./middleware";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -35,17 +35,7 @@ export function authRoutes(
 ) {
   const { service, tokens, account, admin } = deps;
 
-  async function requireAuth(req: FastifyRequest): Promise<void> {
-    const header = req.headers.authorization;
-    if (!header?.startsWith("Bearer ")) throw AuthErrors.unauthorized();
-    try {
-      const claims = await tokens.verifyAccessToken(header.slice(7));
-      req.userId = claims.sub;
-      req.userRole = claims.role;
-    } catch {
-      throw AuthErrors.unauthorized();
-    }
-  }
+  const requireAuth = makeRequireAuth(tokens);
 
   app.post("/auth/register", async (req, reply) => {
     const session = await service.register(registerSchema.parse(req.body));

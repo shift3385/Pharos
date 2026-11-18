@@ -512,7 +512,8 @@
         "noBlock": "Sincroniza antes para obtener números nuevos, o escribe una clave.",
         "failed": "No se pudo usar esa clave: {{reason}}"
       }
-    }
+    },
+    "accountDisabled": "Tu cuenta está desactivada en el servidor. La sincronización está parada; tus datos y tus cambios pendientes se quedan en este equipo y se enviarán si un administrador la reactiva."
   },
   "admin": {
     "title": "Administración",
@@ -936,7 +937,11 @@
         "target": "Cuenta afectada",
         "by": "Hecho por",
         "delivery": "Entrega",
-        "issuedBy": "Enlace de"
+        "issuedBy": "Enlace de",
+        "reason": "Motivo",
+        "from": "Antes",
+        "to": "Ahora",
+        "previousRole": "Rol anterior"
       },
       "device": {
         "this": "Este equipo",
@@ -1063,7 +1068,10 @@
         "admin_granted": "Rol de administrador concedido",
         "admin_revoked": "Rol de administrador quitado",
         "email": "Por correo",
-        "link": "Entregado a mano"
+        "link": "Entregado a mano",
+        "account_disabled": "Cuenta desactivada",
+        "account_enabled": "Cuenta reactivada",
+        "test_manager_succession": "Nuevo Test Manager (cuenta desactivada)"
       }
     },
     "users": {
@@ -1126,8 +1134,47 @@
         "user_not_found": "Esa cuenta ya no existe.",
         "email_reset_disabled": "Este servidor no envía correos. Entrega tú el enlace.",
         "rate_limited": "Demasiados intentos. Espera un momento.",
-        "generic": "Algo salió mal. Inténtalo de nuevo."
-      }
+        "generic": "Algo salió mal. Inténtalo de nuevo.",
+        "disable_self": "No puedes desactivar tu propia cuenta.",
+        "account_disabled_target": "Esa cuenta está desactivada. Reactívala primero.",
+        "successor_required": "Elige un nuevo Test Manager para cada workspace.",
+        "invalid_successor": "El nuevo Test Manager tiene que ser otro miembro activo de ese workspace."
+      },
+      "statusLabel": "Mostrar",
+      "status": {
+        "active": "Activas",
+        "disabled": "Desactivadas",
+        "all": "Todas"
+      },
+      "state": "Estado",
+      "active": "Activa",
+      "disabledOn": "Desactivada · {{date}}",
+      "disabledBy": "Por {{name}}",
+      "disabledReason": "Motivo: {{reason}}",
+      "disable": "Desactivar cuenta…",
+      "disableBlocked": "Es el último administrador activo: nombra a otro antes.",
+      "enable": "Reactivar cuenta",
+      "disableTitle": "Desactivar la cuenta de {{name}}",
+      "disablePoint1": "Se cierran todas sus sesiones al momento, también en la web y en la API.",
+      "disablePoint2": "No podrá entrar ni sincronizar. Lo que tenga en su equipo se queda allí.",
+      "disablePoint3": "Sus datos, su autoría y su auditoría se conservan. Puedes reactivarla cuando quieras.",
+      "disableLastAdmin": "Es el último administrador activo del servidor: nombra a otro antes de desactivarla.",
+      "disableReason": "Motivo (opcional, lo verán los administradores)",
+      "disableReasonPh": "Ej.: dejó el equipo",
+      "disableManaged_one": "Es el único Test Manager activo de {{count}} workspace. Elige quién pasa a serlo:",
+      "disableManaged_other": "Es el único Test Manager activo de {{count}} workspaces. Elige quién pasa a serlo en cada uno:",
+      "disableMembers_one": "· {{count}} miembro",
+      "disableMembers_other": "· {{count}} miembros",
+      "disableNoCandidates": "Sin otros miembros activos: el workspace quedará sin Test Manager activo hasta que reactives la cuenta.",
+      "disableSuccessor": "Nuevo Test Manager",
+      "disableSuccessorPh": "Elige un miembro…",
+      "disableConfirmLabel": "Escribe {{email}} para confirmar",
+      "disableConfirm": "Desactivar cuenta",
+      "disabled": "La cuenta de {{name}} está desactivada.",
+      "enableTitle": "¿Reactivar la cuenta de {{name}}?",
+      "enableBody": "{{name}} podrá volver a entrar con su contraseña y conservará sus roles. Sus sesiones anteriores no vuelven.",
+      "enableConfirm": "Reactivar",
+      "enabled": "La cuenta de {{name}} vuelve a estar activa."
     }
   },
   "importReport": {
@@ -1180,7 +1227,8 @@
       "rate_limited": "Demasiados intentos. Espera un momento y vuelve a intentarlo.",
       "network": "No se puede conectar con {{host}}. Revisa tu conexión; si ya habías iniciado sesión en este equipo, la app abre con tus datos locales.",
       "generic": "Algo salió mal. Inténtalo de nuevo.",
-      "account_other_server": "Esta cuenta ya tiene datos en este equipo de otro servidor ({{host}}). Para no mezclarlos, entra en ese servidor o usa otra cuenta."
+      "account_other_server": "Esta cuenta ya tiene datos en este equipo de otro servidor ({{host}}). Para no mezclarlos, entra en ese servidor o usa otra cuenta.",
+      "account_disabled": "Esta cuenta está desactivada. Habla con el administrador del servidor para reactivarla."
     },
     "forgot": "¿Olvidaste tu contraseña?",
     "recover": {
@@ -4939,12 +4987,14 @@
       },
       "member": {
         "joined": "{{actor}} se unió a {{title}}",
-        "removed": "Ya no eres miembro de {{title}}"
+        "removed": "Ya no eres miembro de {{title}}",
+        "disabled": "{{actor}} desactivó la cuenta de {{title}}: ya no tiene acceso a {{workspaceName}}"
       },
       "account": {
         "reset_issued": "{{actor}} (administrador del servidor) generó un enlace para restablecer tu contraseña. Si no lo pediste, avísale.",
         "admin_granted": "{{actor}} te nombró administrador del servidor",
-        "admin_revoked": "{{actor}} te quitó el rol de administrador del servidor"
+        "admin_revoked": "{{actor}} te quitó el rol de administrador del servidor",
+        "enabled": "{{actor}} reactivó tu cuenta"
       }
     },
     "action": {
@@ -5022,7 +5072,9 @@
       "revoke": "Revocar",
       "noInvitations": "No hay invitaciones.",
       "roles": "¿Qué puede hacer cada rol?",
-      "none": "Sin workspaces compartidos todavía. Crea uno o únete con un código desde el selector de workspace."
+      "none": "Sin workspaces compartidos todavía. Crea uno o únete con un código desde el selector de workspace.",
+      "disabled": "Desactivada",
+      "disabledHint": "Un administrador del servidor desactivó esta cuenta: no puede entrar ni sincronizar, y no cuenta como miembro activo."
     },
     "invite": {
       "title": "Invitar a {{name}}",
@@ -5186,7 +5238,8 @@
       "revokedOn": "Revocado el {{date}}",
       "expiring_one": "Caduca en {{count}} día",
       "expiring_other": "Caduca en {{count}} días",
-      "ownerLeft": "{{name}} ya no es miembro"
+      "ownerLeft": "{{name}} ya no es miembro",
+      "ownerDisabled": "La cuenta de {{name}} está desactivada"
     },
     "errors": {
       "forbidden": "Tu rol no te permite gestionar tokens aquí.",

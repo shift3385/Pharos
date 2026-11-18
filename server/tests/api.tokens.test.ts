@@ -197,6 +197,29 @@ describe("a token stops working", () => {
     expect((await api(token, "/me")).json().code).toBe("token_revoked");
   });
 
+  it("is suspended while its owner's account is disabled, and works again once re-enabled (SEC-12)", async () => {
+    const { ana, luis, ws } = await team();
+    await call(ana, "PATCH", `/workspaces/${ws}/members/${luis.userId}`, { role: "test_manager" });
+    const prj = (await projectToken(luis, ws)).json();
+    const pat = (await call(luis, "POST", "/me/tokens", { name: "Portátil", scopes: ["projects:read"], expiresAt: inDays(30) })).json();
+
+    const off = await call(ana, "PUT", `/admin/users/${luis.userId}/disabled`, { disabled: true, reason: "Baja" });
+    expect(off.statusCode).toBe(200);
+    for (const t of [prj.token, pat.token]) {
+      const res = await api(t, "/me");
+      expect(res.statusCode).toBe(403);
+      expect(res.json().code).toBe("account_disabled");
+    }
+    const listed = (await call(ana, "GET", `/workspaces/${ws}/tokens`)).json().tokens[0];
+    expect(listed).toMatchObject({ status: "inactive", inactiveReason: "owner_disabled" });
+    // Suspended, not revoked.
+    expect((await pool.query("SELECT count(*) AS n FROM api_tokens WHERE revoked_at IS NOT NULL")).rows[0].n).toBe("0");
+
+    expect((await call(ana, "PUT", `/admin/users/${luis.userId}/disabled`, { disabled: false })).statusCode).toBe(200);
+    expect((await api(prj.token, "/me")).statusCode).toBe(200);
+    expect((await api(pat.token, "/projects")).statusCode).toBe(200);
+  });
+
   it("never does more than its owner's current role", async () => {
     const { ana, luis, ws } = await team();
     const { view } = (await projectToken(ana, ws)).json();

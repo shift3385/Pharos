@@ -42,7 +42,7 @@ export interface ApiToken {
   lastUsedAt: string | null;
   lastUsedIp?: string | null;
   status: TokenStatus;
-  inactiveReason: "owner_left" | null;
+  inactiveReason: "owner_left" | "owner_disabled" | null;
   expiringSoon: boolean;
   revokedAt: string | null;
   revokeReason: "manual" | "admin" | "rotated" | null;

@@ -9,7 +9,7 @@ import { createTokenService } from "./modules/auth/tokens";
 import { createAuthRepository } from "./modules/auth/auth.repository";
 import { createAuthService } from "./modules/auth/auth.service";
 import { createAccountService } from "./modules/auth/account.service";
-import { createAdminService } from "./modules/admin/admin.service";
+import { createAdminService, isDisabled } from "./modules/admin/admin.service";
 import { adminRoutes } from "./modules/admin/admin.routes";
 import { mailerFromEnv, type Mailer } from "./modules/auth/mailer";
 import { authRoutes } from "./modules/auth/auth.routes";
@@ -36,7 +36,7 @@ import { independentApproval, workspaceApproverCheck } from "./modules/workspace
 import { setApproverCheck } from "./modules/domain/case-review";
 import { httpsOnly } from "./modules/security/httpsOnly";
 import { SERVER_VERSION, acceptedMinors } from "./modules/sync/sync.version";
-import { AppError } from "./modules/auth/errors";
+import { AppError, AuthErrors } from "./modules/auth/errors";
 import { createWorkspaceService } from "./modules/workspaces/workspaces.service";
 import { workspaceRoutes } from "./modules/workspaces/workspaces.routes";
 import { aiRoutes, createAiVaultStore, type Fetch } from "./modules/ai";
@@ -154,6 +154,11 @@ export function buildApp(deps: {
     accessSecret: env.JWT_ACCESS_SECRET,
     accessTtl: env.ACCESS_TOKEN_TTL,
     refreshTtlDays: env.REFRESH_TOKEN_TTL_DAYS,
+    // SEC-12: one primary-key read per authenticated request, so disabling
+    // an account takes effect at once (ADR-0045 B3).
+    checkAccount: async (userId) => {
+      if (await isDisabled(pool, userId)) throw AuthErrors.accountDisabled();
+    },
   });
   const repo = createAuthRepository(pool);
   const service = createAuthService({ repo, tokens });
