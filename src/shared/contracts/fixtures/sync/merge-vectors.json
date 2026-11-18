@@ -1,0 +1,645 @@
+{
+  "$comment": "Field-level merge vectors (SYNC-02, ADR-0051): the TS engine (src/modules/sync-offline/domain/merge.ts) and the Rust one (src-tauri/src/sync_merge.rs) must give exactly these. `expect.merged` and `expect.origins` are compared whole; `expect.conflicts` lists the conflict keys in order.",
+  "vectors": [
+    {
+      "name": "different scalar fields merge without asking",
+      "entity": "test_case",
+      "base": {
+        "id": "c1",
+        "title": "Login",
+        "priority": "medium",
+        "updatedAt": "2026-11-01",
+        "revision": 3
+      },
+      "local": {
+        "id": "c1",
+        "title": "Login con SSO",
+        "priority": "medium",
+        "updatedAt": "2026-11-02",
+        "revision": 4
+      },
+      "remote": {
+        "id": "c1",
+        "title": "Login",
+        "priority": "high",
+        "updatedAt": "2026-11-03",
+        "revision": 4
+      },
+      "expect": {
+        "kind": "merged",
+        "merged": {
+          "id": "c1",
+          "title": "Login con SSO",
+          "priority": "high",
+          "updatedAt": "2026-11-03",
+          "revision": 4
+        },
+        "origins": { "title": "local", "priority": "remote" }
+      }
+    },
+    {
+      "name": "the same field changed differently is a conflict; the same change is not",
+      "entity": "requirement",
+      "base": {
+        "id": "r1",
+        "title": "A",
+        "priority": "low",
+        "description": "uno"
+      },
+      "local": {
+        "id": "r1",
+        "title": "B",
+        "priority": "high",
+        "description": "uno dos"
+      },
+      "remote": {
+        "id": "r1",
+        "title": "C",
+        "priority": "high",
+        "description": "uno"
+      },
+      "expect": {
+        "kind": "conflict",
+        "merged": {
+          "id": "r1",
+          "title": "C",
+          "priority": "high",
+          "description": "uno dos"
+        },
+        "origins": {
+          "title": "both",
+          "priority": "both",
+          "description": "local"
+        },
+        "conflicts": ["title"]
+      }
+    },
+    {
+      "name": "a choice resolves the conflict",
+      "entity": "requirement",
+      "base": { "id": "r1", "title": "A" },
+      "local": { "id": "r1", "title": "B" },
+      "remote": { "id": "r1", "title": "C" },
+      "choices": { "title": "local" },
+      "expect": {
+        "kind": "merged",
+        "merged": { "id": "r1", "title": "B" },
+        "origins": { "title": "both" }
+      }
+    },
+    {
+      "name": "long text is atomic: both changed it, conflict",
+      "entity": "requirement",
+      "base": { "id": "r1", "description": "El usuario entra." },
+      "local": { "id": "r1", "description": "El usuario entra con SSO." },
+      "remote": {
+        "id": "r1",
+        "description": "El usuario entra. Se registra el acceso."
+      },
+      "expect": {
+        "kind": "conflict",
+        "merged": {
+          "id": "r1",
+          "description": "El usuario entra. Se registra el acceso."
+        },
+        "origins": { "description": "both" },
+        "conflicts": ["description"]
+      }
+    },
+    {
+      "name": "a set: each side's additions, minus each side's removals",
+      "entity": "test_case",
+      "base": {
+        "id": "c1",
+        "data": { "requirementKeys": ["REQ-1", "REQ-2", "REQ-3"] }
+      },
+      "local": {
+        "id": "c1",
+        "data": { "requirementKeys": ["REQ-1", "REQ-3", "REQ-4"] }
+      },
+      "remote": {
+        "id": "c1",
+        "data": { "requirementKeys": ["REQ-2", "REQ-3", "REQ-5"] }
+      },
+      "expect": {
+        "kind": "merged",
+        "merged": {
+          "id": "c1",
+          "data": { "requirementKeys": ["REQ-3", "REQ-4", "REQ-5"] }
+        },
+        "origins": { "data.requirementKeys": "both" }
+      }
+    },
+    {
+      "name": "steps: edits to different steps, an addition on each side",
+      "entity": "test_case",
+      "base": {
+        "id": "c1",
+        "data": {
+          "steps": [
+            { "id": "S1", "text": "Abrir", "expected": "" },
+            { "id": "S2", "text": "Entrar", "expected": "Panel" }
+          ]
+        }
+      },
+      "local": {
+        "id": "c1",
+        "data": {
+          "steps": [
+            { "id": "S1", "text": "Abrir la app", "expected": "" },
+            { "id": "S2", "text": "Entrar", "expected": "Panel" },
+            { "id": "L3", "text": "Salir" }
+          ]
+        }
+      },
+      "remote": {
+        "id": "c1",
+        "data": {
+          "steps": [
+            { "id": "R0", "text": "Preparar" },
+            { "id": "S1", "text": "Abrir", "expected": "" },
+            { "id": "S2", "text": "Entrar", "expected": "Panel de inicio" }
+          ]
+        }
+      },
+      "expect": {
+        "kind": "merged",
+        "merged": {
+          "id": "c1",
+          "data": {
+            "steps": [
+              { "id": "R0", "text": "Preparar" },
+              { "id": "S1", "text": "Abrir la app", "expected": "" },
+              { "id": "S2", "text": "Entrar", "expected": "Panel de inicio" },
+              { "id": "L3", "text": "Salir" }
+            ]
+          }
+        },
+        "origins": { "data.steps": "both" }
+      }
+    },
+    {
+      "name": "steps: the same step's text changed on both sides is a conflict of that key",
+      "entity": "test_case",
+      "base": {
+        "id": "c1",
+        "data": { "steps": [{ "id": "S1", "text": "Abrir", "expected": "OK" }] }
+      },
+      "local": {
+        "id": "c1",
+        "data": {
+          "steps": [{ "id": "S1", "text": "Abrir A", "expected": "OK" }]
+        }
+      },
+      "remote": {
+        "id": "c1",
+        "data": {
+          "steps": [{ "id": "S1", "text": "Abrir B", "expected": "Listo" }]
+        }
+      },
+      "expect": {
+        "kind": "conflict",
+        "merged": {
+          "id": "c1",
+          "data": {
+            "steps": [{ "id": "S1", "text": "Abrir B", "expected": "Listo" }]
+          }
+        },
+        "origins": { "data.steps": "both" },
+        "conflicts": ["data.steps#S1.text"]
+      }
+    },
+    {
+      "name": "steps: removed on one side and unchanged on the other is removed",
+      "entity": "test_case",
+      "base": {
+        "id": "c1",
+        "data": {
+          "steps": [
+            { "id": "S1", "text": "a" },
+            { "id": "S2", "text": "b" }
+          ]
+        }
+      },
+      "local": {
+        "id": "c1",
+        "data": { "steps": [{ "id": "S1", "text": "a" }] }
+      },
+      "remote": {
+        "id": "c1",
+        "data": {
+          "steps": [
+            { "id": "S1", "text": "a2" },
+            { "id": "S2", "text": "b" }
+          ]
+        }
+      },
+      "expect": {
+        "kind": "merged",
+        "merged": {
+          "id": "c1",
+          "data": { "steps": [{ "id": "S1", "text": "a2" }] }
+        },
+        "origins": { "data.steps": "both" }
+      }
+    },
+    {
+      "name": "steps: removed on one side and edited on the other is a conflict of that step",
+      "entity": "test_case",
+      "base": {
+        "id": "c1",
+        "data": {
+          "steps": [
+            { "id": "S1", "text": "a" },
+            { "id": "S2", "text": "b" }
+          ]
+        }
+      },
+      "local": {
+        "id": "c1",
+        "data": {
+          "steps": [
+            { "id": "S1", "text": "a" },
+            { "id": "S2", "text": "b editado" }
+          ]
+        }
+      },
+      "remote": {
+        "id": "c1",
+        "data": { "steps": [{ "id": "S1", "text": "a" }] }
+      },
+      "expect": {
+        "kind": "conflict",
+        "merged": {
+          "id": "c1",
+          "data": { "steps": [{ "id": "S1", "text": "a" }] }
+        },
+        "origins": { "data.steps": "both" },
+        "conflicts": ["data.steps#S2"]
+      }
+    },
+    {
+      "name": "steps: keeping the edited step resolves it",
+      "entity": "test_case",
+      "base": {
+        "id": "c1",
+        "data": {
+          "steps": [
+            { "id": "S1", "text": "a" },
+            { "id": "S2", "text": "b" }
+          ]
+        }
+      },
+      "local": {
+        "id": "c1",
+        "data": {
+          "steps": [
+            { "id": "S1", "text": "a" },
+            { "id": "S2", "text": "b editado" }
+          ]
+        }
+      },
+      "remote": {
+        "id": "c1",
+        "data": { "steps": [{ "id": "S1", "text": "a" }] }
+      },
+      "choices": { "data.steps#S2": "local" },
+      "expect": {
+        "kind": "merged",
+        "merged": {
+          "id": "c1",
+          "data": {
+            "steps": [
+              { "id": "S1", "text": "a" },
+              { "id": "S2", "text": "b editado" }
+            ]
+          }
+        },
+        "origins": { "data.steps": "both" }
+      }
+    },
+    {
+      "name": "steps: only one side reordered, its order wins",
+      "entity": "test_case",
+      "base": {
+        "id": "c1",
+        "data": {
+          "steps": [
+            { "id": "A", "text": "a" },
+            { "id": "B", "text": "b" },
+            { "id": "C", "text": "c" }
+          ]
+        }
+      },
+      "local": {
+        "id": "c1",
+        "data": {
+          "steps": [
+            { "id": "A", "text": "a!" },
+            { "id": "B", "text": "b" },
+            { "id": "C", "text": "c" }
+          ]
+        }
+      },
+      "remote": {
+        "id": "c1",
+        "data": {
+          "steps": [
+            { "id": "C", "text": "c" },
+            { "id": "A", "text": "a" },
+            { "id": "B", "text": "b" }
+          ]
+        }
+      },
+      "expect": {
+        "kind": "merged",
+        "merged": {
+          "id": "c1",
+          "data": {
+            "steps": [
+              { "id": "C", "text": "c" },
+              { "id": "A", "text": "a!" },
+              { "id": "B", "text": "b" }
+            ]
+          }
+        },
+        "origins": { "data.steps": "both" }
+      }
+    },
+    {
+      "name": "steps: both reordered differently is a conflict of the order",
+      "entity": "test_case",
+      "base": {
+        "id": "c1",
+        "data": {
+          "steps": [
+            { "id": "A", "text": "a" },
+            { "id": "B", "text": "b" },
+            { "id": "C", "text": "c" }
+          ]
+        }
+      },
+      "local": {
+        "id": "c1",
+        "data": {
+          "steps": [
+            { "id": "B", "text": "b" },
+            { "id": "A", "text": "a" },
+            { "id": "C", "text": "c" }
+          ]
+        }
+      },
+      "remote": {
+        "id": "c1",
+        "data": {
+          "steps": [
+            { "id": "C", "text": "c" },
+            { "id": "A", "text": "a" },
+            { "id": "B", "text": "b" }
+          ]
+        }
+      },
+      "expect": {
+        "kind": "conflict",
+        "merged": {
+          "id": "c1",
+          "data": {
+            "steps": [
+              { "id": "C", "text": "c" },
+              { "id": "A", "text": "a" },
+              { "id": "B", "text": "b" }
+            ]
+          }
+        },
+        "origins": { "data.steps": "both" },
+        "conflicts": ["data.steps@order"]
+      }
+    },
+    {
+      "name": "examples: rows by id inside the table object",
+      "entity": "test_case",
+      "base": {
+        "id": "c1",
+        "data": {
+          "examples": {
+            "headers": ["u"],
+            "rows": [{ "id": "R1", "values": ["ana"] }]
+          }
+        }
+      },
+      "local": {
+        "id": "c1",
+        "data": {
+          "examples": {
+            "headers": ["u"],
+            "rows": [
+              { "id": "R1", "values": ["ana"] },
+              { "id": "R2", "values": ["bea"] }
+            ]
+          }
+        }
+      },
+      "remote": {
+        "id": "c1",
+        "data": {
+          "examples": {
+            "headers": ["usuario"],
+            "rows": [{ "id": "R1", "values": ["ana"] }]
+          }
+        }
+      },
+      "expect": {
+        "kind": "merged",
+        "merged": {
+          "id": "c1",
+          "data": {
+            "examples": {
+              "headers": ["usuario"],
+              "rows": [
+                { "id": "R1", "values": ["ana"] },
+                { "id": "R2", "values": ["bea"] }
+              ]
+            }
+          }
+        },
+        "origins": { "data.examples": "both" }
+      }
+    },
+    {
+      "name": "custom fields: a map, one key each side; a multi-select is a set",
+      "entity": "test_case",
+      "base": { "id": "c1", "data": { "custom": { "f1": "x", "f2": ["a"] } } },
+      "local": {
+        "id": "c1",
+        "data": { "custom": { "f1": "y", "f2": ["a", "b"] } }
+      },
+      "remote": {
+        "id": "c1",
+        "data": { "custom": { "f1": "x", "f2": ["a", "c"], "f3": 7 } }
+      },
+      "expect": {
+        "kind": "merged",
+        "merged": {
+          "id": "c1",
+          "data": { "custom": { "f1": "y", "f2": ["a", "b", "c"], "f3": 7 } }
+        },
+        "origins": { "data.custom": "both" }
+      }
+    },
+    {
+      "name": "an unknown data key is atomic",
+      "entity": "test_case",
+      "base": { "id": "c1", "data": { "notes": { "a": 1, "b": 1 } } },
+      "local": { "id": "c1", "data": { "notes": { "a": 2, "b": 1 } } },
+      "remote": { "id": "c1", "data": { "notes": { "a": 1, "b": 2 } } },
+      "expect": {
+        "kind": "conflict",
+        "merged": { "id": "c1", "data": { "notes": { "a": 1, "b": 2 } } },
+        "origins": { "data.notes": "both" },
+        "conflicts": ["data.notes"]
+      }
+    },
+    {
+      "name": "the risk group is one field",
+      "entity": "requirement",
+      "base": { "id": "r1", "riskLikelihood": 1, "riskImpact": 1 },
+      "local": { "id": "r1", "riskLikelihood": 3, "riskImpact": 1 },
+      "remote": { "id": "r1", "riskLikelihood": 1, "riskImpact": 2 },
+      "expect": {
+        "kind": "conflict",
+        "merged": { "id": "r1", "riskLikelihood": 1, "riskImpact": 2 },
+        "origins": { "group:risk": "both" },
+        "conflicts": ["group:risk"]
+      }
+    },
+    {
+      "name": "an approval against new content is a conflict of the whole entity",
+      "entity": "test_case",
+      "base": {
+        "id": "c1",
+        "title": "Login",
+        "status": "reviewed",
+        "data": { "review": { "state": "pending" } }
+      },
+      "local": {
+        "id": "c1",
+        "title": "Login",
+        "status": "approved",
+        "data": {
+          "review": { "state": "approved" },
+          "approval": { "by": "u1" }
+        }
+      },
+      "remote": {
+        "id": "c1",
+        "title": "Login con SSO",
+        "status": "reviewed",
+        "data": { "review": { "state": "pending" } }
+      },
+      "expect": { "kind": "entity", "guard": "review" }
+    },
+    {
+      "name": "two content edits that reopen the same review still merge",
+      "entity": "test_case",
+      "base": {
+        "id": "c1",
+        "title": "Login",
+        "priority": "low",
+        "status": "approved",
+        "version": "1.0",
+        "data": { "review": { "state": "approved" } }
+      },
+      "local": {
+        "id": "c1",
+        "title": "Login con SSO",
+        "priority": "low",
+        "status": "reviewed",
+        "version": "1.1",
+        "data": {
+          "review": {
+            "state": "pending",
+            "version": "1.1",
+            "reopenedFrom": "1.0"
+          }
+        }
+      },
+      "remote": {
+        "id": "c1",
+        "title": "Login",
+        "priority": "high",
+        "status": "reviewed",
+        "version": "1.1",
+        "data": {
+          "review": {
+            "state": "pending",
+            "version": "1.1",
+            "reopenedFrom": "1.0"
+          }
+        }
+      },
+      "expect": {
+        "kind": "merged",
+        "merged": {
+          "id": "c1",
+          "title": "Login con SSO",
+          "priority": "high",
+          "status": "reviewed",
+          "version": "1.1",
+          "data": {
+            "review": {
+              "state": "pending",
+              "version": "1.1",
+              "reopenedFrom": "1.0"
+            }
+          }
+        },
+        "origins": {
+          "title": "local",
+          "priority": "remote",
+          "status": "both",
+          "version": "both",
+          "data.review": "both"
+        }
+      }
+    },
+    {
+      "name": "closing a cycle against an edit is a conflict of the whole entity",
+      "entity": "test_cycle",
+      "base": { "id": "y1", "name": "Ciclo 1", "status": "active" },
+      "local": {
+        "id": "y1",
+        "name": "Ciclo 1",
+        "status": "closed",
+        "closedAt": "2026-11-18"
+      },
+      "remote": {
+        "id": "y1",
+        "name": "Ciclo 1 (regresión)",
+        "status": "active"
+      },
+      "expect": { "kind": "entity", "guard": "closed" }
+    },
+    {
+      "name": "a field cleared on one side and untouched on the other is cleared",
+      "entity": "planner_card",
+      "base": {
+        "id": "k1",
+        "title": "T",
+        "priority": "high",
+        "data": { "due": "2026-12-01" }
+      },
+      "local": { "id": "k1", "title": "T", "priority": "high", "data": {} },
+      "remote": {
+        "id": "k1",
+        "title": "T2",
+        "priority": "high",
+        "data": { "due": "2026-12-01" }
+      },
+      "expect": {
+        "kind": "merged",
+        "merged": { "id": "k1", "title": "T2", "priority": "high", "data": {} },
+        "origins": { "title": "remote", "data.due": "local" }
+      }
+    }
+  ]
+}
