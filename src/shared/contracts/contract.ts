@@ -4,7 +4,13 @@
 export type * from "./generated/AddOutcome";
 export type * from "./generated/AttachmentSummary";
 export type * from "./generated/AttachmentTarget";
+export type * from "./generated/CaseBaseline";
+export type * from "./generated/CaseBaselineInput";
+export type * from "./generated/CaseBaselineItem";
+export type * from "./generated/CaseBaselineSummary";
 export type * from "./generated/CaseExecution";
+export type * from "./generated/CaseReviewAction";
+export type * from "./generated/CaseReviewInput";
 export type * from "./generated/CloseDecision";
 export type * from "./generated/ClosureCriterion";
 export type * from "./generated/Configuration";

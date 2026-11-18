@@ -11,6 +11,7 @@ import { DESKTOP, MOBILE, chapter, setViewport, step } from "./tour";
 import {
   PROJECT_A,
   acceptConfirm,
+  byTestId,
   atLeast,
   chooseFile,
   clearInput,
@@ -65,7 +66,7 @@ async function fillSteps(label: string, steps: string[]) {
   }
 }
 
-/** A meta menu (Prioridad / Estado / Automatización) → an option. */
+/** A meta menu (Prioridad / Automatización) → an option. */
 async function setMeta(label: string, option: string) {
   await $(`//*[@class="tc-meta"][./*[contains(@class,"tc-meta__label")][normalize-space(.)=${xpathString(label)}]]//button[contains(@class,"tc-meta__trigger")]`).click();
   await menuItem(option).click();
@@ -142,7 +143,7 @@ chapter("casos", () => {
   step("caso-basico", {
     title: "Un caso básico",
     caption:
-      "Rellena el caso: el título (en este ejemplo, «Iniciar sesión con credenciales válidas»), las precondiciones, los pasos (cada uno con «+ Añadir paso»; la papelera de un paso lo quita, tras confirmarlo si tiene texto) y el resultado esperado, los que muestra la captura. Más arriba se clasifica: prioridad, estado (borrador, revisado, aprobado u obsoleto), tipo de caso, automatización, nivel y versión. En «Requisitos vinculados», «Vincular un requisito…» lo enlaza con lo que comprueba (en este ejemplo, REQ-001): el caso lleva el tag @REQ-001 en su Gherkin y la matriz lo cuenta como cubierto. Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, PH-001).",
+      "Rellena el caso: el título (en este ejemplo, «Iniciar sesión con credenciales válidas»), las precondiciones, los pasos (cada uno con «+ Añadir paso»; la papelera de un paso lo quita, tras confirmarlo si tiene texto) y el resultado esperado, los que muestra la captura. Más arriba se clasifica: prioridad, tipo de caso, automatización, nivel y versión. El estado (borrador, en revisión, aprobado u obsoleto) no se elige aquí: lo mueve la revisión, más adelante en este capítulo. En «Requisitos vinculados», «Vincular un requisito…» lo enlaza con lo que comprueba (en este ejemplo, REQ-001): el caso lleva el tag @REQ-001 en su Gherkin y la matriz lo cuenta como cubierto. Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, PH-001).",
     covers: ["action:case-create-basic", "action:case-meta", "action:case-requirement-link"],
     run: async () => {
       // FIX-12: the ID placeholder carries the project's own prefix.
@@ -155,7 +156,6 @@ chapter("casos", () => {
       ]);
       await (await field(C.expectedResult)).setValue("Se abre «Inicio» con el saludo «Hola» y el nombre de la cuenta.");
       await setMeta(C.priority, C.priorityLabel.high);
-      await setMeta(C.status, C.statusLabel.approved);
       await linkRequirement("REQ-001");
       // The capture shows the steps and the result the caption explains.
       await $(`[role="group"][aria-label="${C.steps}"]`).scrollIntoView({ block: "center" });
@@ -475,6 +475,123 @@ chapter("casos", () => {
       await clickButton(C.list.deleteConfirm, '[role="alertdialog"]');
       await expect($('[role="alertdialog"]')).not.toBeExisting();
       await rows((n) => n === 4, "the 4 remaining cases");
+    },
+  });
+
+  step("enviar-revision", {
+    title: "Enviar un caso a revisión",
+    caption:
+      "Bajo la cabecera de un caso guardado están las acciones de su revisión. «Enviar a revisión» pide una nota opcional para quien revise y pasa el caso a «En revisión». Si alguien edita el contenido antes de aprobarlo, vuelve a Borrador. Con cambios sin guardar, las acciones esperan a que guardes.",
+    covers: ["action:case-review-send", "dialogs:src/modules/test-cases/ui/CaseReviewPanel.tsx"],
+    shot: { element: '[role="alertdialog"]' },
+    run: async () => {
+      await $("a.cl-title*=Iniciar sesión").click();
+      await expect($("#tc-title")).toBeDisplayed();
+      await byTestId("case-send-review").click();
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
+      await $('[role="alertdialog"] textarea').setValue("Listo para revisar: cubre el acceso con una cuenta de prueba.");
+    },
+  });
+
+  step("aprobar-caso", {
+    title: "Aprobar un caso",
+    caption:
+      "Quien revisa ve quién envió el caso y su nota, y, si había una versión anterior aprobada o enviada, qué cambió desde entonces. «Devolver…» lo vuelve a Borrador con un comentario obligatorio. «Aprobar versión N» pide confirmación y deja quién aprobó, cuándo y qué versión. En este ejemplo Liomar está solo en el espacio de trabajo, así que puede aprobar su propio caso y queda como «autoaprobación»; con los roles de la 0.5.0, aprobará otra persona.",
+    covers: ["action:case-review-approve", "dialogs:src/modules/test-cases/ui/CaseReviewPanel.tsx"],
+    focus: ".tc-review",
+    run: async () => {
+      await byTestId("case-send-review-confirm").click();
+      await waitForToast(tf("testCase.review.toast.send", { key: "PH-001" }).split(" ")[0]);
+      await byTestId("case-approve").waitForEnabled();
+      await byTestId("case-approve").click();
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
+      await byTestId("case-approve-confirm").click();
+      await expect($(".case-review-approved")).toBeDisplayed();
+    },
+  });
+
+  step("devolver-caso", {
+    title: "Devolver un caso con un comentario",
+    caption:
+      "Si el caso no está listo, «Devolver…» lo vuelve a Borrador. El comentario es obligatorio: sin él, el diálogo dice «Escribe qué hay que cambiar.». Quien escribió el caso lo verá en un aviso «Devuelto por…» hasta que lo vuelva a enviar, y en la lista el caso lleva la marca «Devuelto».",
+    covers: ["action:case-review-return", "dialogs:src/modules/test-cases/ui/CaseReviewPanel.tsx"],
+    shot: { element: '[role="alertdialog"]' },
+    run: async () => {
+      await backToList();
+      await $("a.cl-title*=Rechazar credenciales").click();
+      await expect($("#tc-title")).toBeDisplayed();
+      await byTestId("case-send-review").click();
+      await byTestId("case-send-review-confirm").click();
+      await byTestId("case-return").waitForEnabled();
+      await byTestId("case-return").click();
+      await $('[role="alertdialog"] textarea').setValue("Falta un ejemplo con el correo en mayúsculas.");
+    },
+    after: async () => {
+      await byTestId("case-return-confirm").click();
+      await expect($(".case-review-returned")).toBeDisplayed();
+    },
+  });
+
+  step("obsoleto", {
+    title: "Marcar un caso como obsoleto",
+    caption:
+      "«Marcar obsoleto» pide confirmación: el caso se conserva en el histórico, pero deja de usarse y, si estaba aprobado, pierde la aprobación.",
+    covers: ["action:case-obsolete", "dialogs:src/modules/test-cases/ui/CaseReviewPanel.tsx"],
+    shot: { element: '[role="alertdialog"]' },
+    run: async () => {
+      await clickButton(C.review.obsolete, ".tc-review");
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
+    },
+  });
+
+  step("reactivar", {
+    title: "Reactivar un caso obsoleto",
+    caption:
+      "Un caso obsoleto se puede «Reactivar»: vuelve a Borrador y, para aprobarlo otra vez, hay que enviarlo a revisión.",
+    covers: ["dialogs:src/modules/test-cases/ui/CaseReviewPanel.tsx"],
+    shot: { element: '[role="alertdialog"]' },
+    run: async () => {
+      await acceptConfirm();
+      await clickButton(C.review.reactivate, ".tc-review");
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
+    },
+    after: async () => {
+      await acceptConfirm();
+    },
+  });
+
+  step("baseline-nueva", {
+    title: "Congelar una baseline",
+    caption:
+      "«Baselines», en la lista de casos, congela un conjunto de casos tal como están: cada uno con su revisión exacta y su estado. «Nueva baseline» pide un nombre y qué casos entran: todos, los del filtro de la lista o los seleccionados («Congelar en baseline» en la barra de selección). «Solo los casos aprobados» viene marcado, y el diálogo dice cuáles se quedan fuera. Una baseline no se edita ni se borra.",
+    covers: ["dialogs:src/modules/test-cases/ui/BaselinesView.tsx", "action:case-baseline-create"],
+    shot: { element: '[role="dialog"]' },
+    run: async () => {
+      await backToList();
+      await byTestId("cases-baselines").click();
+      await byTestId("baseline-new").click();
+      await expect(dialog()).toBeDisplayed();
+      await byTestId("baseline-name").setValue("Regresión 0.5.0");
+    },
+  });
+
+  step("baseline-comparar", {
+    title: "Comparar una baseline",
+    caption:
+      "«Comparar» enfrenta una baseline con el «Estado actual» o con otra baseline. Arriba, los recuentos: añadidos, quitados, contenido cambiado, solo estado cambiado y sin cambios. Debajo, un caso por fila; al pulsar su título se ven los cambios campo a campo, con lo quitado tachado y lo añadido resaltado.",
+    covers: ["action:case-baseline-compare"],
+    focus: ".bl",
+    run: async () => {
+      await byTestId("baseline-create").click();
+      await waitForSettled();
+      await expect(byTestId("baseline-row")).toBeDisplayed();
+      await clickButton(C.baselines.compare);
+      await expect(byTestId("baseline-counts")).toBeDisplayed();
+    },
+    after: async () => {
+      await clickButton(C.baselines.title);
+      await clickButton(C.baselines.back);
+      await expect($("section.cl")).toBeDisplayed();
     },
   });
   step("gherkin-movil", {

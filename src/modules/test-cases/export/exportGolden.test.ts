@@ -40,6 +40,7 @@ function legacyCase(
     automationStatus: null,
     author: "QA Ñandú",
     data: data as TestCase["data"],
+    createdBy: "u1",
     createdAt: "2026-10-01 10:00:00",
     updatedAt: "2026-10-02 10:00:00",
     revision: 3,

@@ -1,0 +1,159 @@
+/* Suite baselines (CAS-02, ADR-0047): list, creation and comparison. */
+.bl {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.bl-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.bl-title {
+  margin: 0;
+  flex: 1 1 auto;
+  font-size: var(--fs-ui);
+  font-weight: var(--fw-semibold);
+}
+.bl-lead,
+.bl-empty {
+  margin: 0;
+  color: var(--color-text-secondary);
+  max-width: 72ch;
+}
+.bl-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.bl-table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: var(--fs-ui);
+}
+.bl-table th {
+  text-align: left;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+.bl-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+.bl-table tr:last-child td {
+  border-bottom: 0;
+}
+.bl-table td .pill + .pill {
+  margin-left: var(--space-1);
+}
+.bl-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bl-id {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  white-space: nowrap;
+}
+.bl-sub {
+  display: block;
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+}
+.bl-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--color-accent);
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.bl-diff-row td {
+  background: var(--color-surface-2);
+}
+.bl-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.bl-pair > * {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.bl-pair > .bl-vs {
+  flex: 0 0 auto;
+  color: var(--color-text-secondary);
+}
+.bl-tiles {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-2);
+}
+.bl-tile {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  display: grid;
+  gap: 2px;
+}
+.bl-tile dt {
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+  order: 2;
+}
+.bl-tile dd {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+.bl-tile[data-kind="added"] dd {
+  color: var(--color-success-text);
+}
+.bl-tile[data-kind="removed"] dd {
+  color: var(--color-error-text);
+}
+.bl-tile[data-kind="content"] dd {
+  color: var(--color-warning-text);
+}
+.bl-check,
+.bl-radio {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  font-size: var(--fs-ui);
+}
+.bl-radio small {
+  display: block;
+  color: var(--color-text-secondary);
+}
+.bl-form {
+  display: grid;
+  gap: var(--space-3);
+}
+.bl-scope {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.bl-scope legend {
+  padding: 0;
+  margin-bottom: var(--space-1);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-secondary);
+}

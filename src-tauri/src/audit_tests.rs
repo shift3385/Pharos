@@ -1167,6 +1167,8 @@ const AUDITED: &[&str] = &[
     "test_case::test_case_create",
     "test_case::test_case_update",
     "test_case::test_case_delete",
+    "test_case::test_case_review",
+    "case_baseline::case_baseline_create",
     "requirement::requirement_create",
     "requirement::requirement_update",
     "custom_fields::custom_field_create",
@@ -1266,6 +1268,11 @@ const EXEMPT: &[(&str, &str)] = &[
     ("db::db_recover", "re-keys the file; no record changes"),
     ("db::recovery_key_export", "read"),
     ("profile::profile_get", "read"),
+    ("test_case::test_case_review_base", "read"),
+    (
+        "case_baseline::case_baseline_current",
+        "read: the project's cases now, nothing is written",
+    ),
     (
         "profile::profile_upsert",
         "the device profile does not sync; accounts are audited on the server (0.3.0)",
@@ -1571,6 +1578,19 @@ fn every_audited_command_leaves_an_event() {
     });
     step("test_case::test_case_update", &mut |tx| {
         test_case::update_case(tx, &case, &case_input(&p, U, "Y", json!({})))
+    });
+    step("test_case::test_case_review", &mut |tx| {
+        let send: crate::case_review::ReviewInput =
+            serde_json::from_value(json!({"action": "send", "userId": U, "userName": "Ada"}))
+                .unwrap();
+        crate::case_review::review_case(tx, &case, &send)
+    });
+    step("case_baseline::case_baseline_create", &mut |tx| {
+        let input: crate::case_baseline::BaselineInput = serde_json::from_value(
+            json!({"projectId": p, "name": "B", "caseIds": [case], "userId": U}),
+        )
+        .unwrap();
+        crate::case_baseline::create_baseline(tx, &input).map(drop)
     });
     let req = in_tx(&c, |tx| {
         requirement::insert_requirement(tx, &req_input("R"))

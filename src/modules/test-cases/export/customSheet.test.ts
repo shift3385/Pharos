@@ -90,6 +90,7 @@ const asCase = (over: Partial<TestCase>): TestCase => ({
   automationStatus: null,
   author: "QA",
   data: { gherkinLevel: "basic", steps: [{ id: "A0000001", text: "pagar" }] },
+  createdBy: "u1",
   createdAt: "",
   updatedAt: "",
   revision: 1,
@@ -209,6 +210,9 @@ describe(".feature batch", () => {
       custom: {},
       requirementKeys: [],
       traceability: "",
+      review: null,
+      approval: null,
+      createdBy: "u1",
       updatedAt: "",
       revision: 1,
     });

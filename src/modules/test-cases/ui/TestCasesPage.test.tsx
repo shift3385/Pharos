@@ -33,6 +33,7 @@ const update = vi.fn();
 const fieldList = vi.fn();
 const revisions = vi.fn();
 const revisionDetail = vi.fn();
+const review = vi.fn();
 vi.mock("@modules/custom-fields", async (orig) => ({
   ...(await orig<typeof import("@modules/custom-fields")>()),
   customFieldApi: { list: (...a: unknown[]) => fieldList(...a) },
@@ -44,6 +45,8 @@ vi.mock("../api/testCaseApi", () => ({
     remove: (...a: unknown[]) => remove(...a),
     revisions: (...a: unknown[]) => revisions(...a),
     revisionDetail: (...a: unknown[]) => revisionDetail(...a),
+    review: (...a: unknown[]) => review(...a),
+    reviewBase: () => Promise.resolve(null),
     create: vi.fn(),
     update: (...a: unknown[]) => update(...a),
   },
@@ -71,6 +74,9 @@ const summary = (n: number, over: Partial<TestCaseSummary> = {}): TestCaseSummar
   custom: {},
   requirementKeys: [],
   traceability: "",
+  review: null,
+  approval: null,
+  createdBy: "u1",
   updatedAt: new Date().toISOString(),
   revision: 1,
   ...over,
@@ -93,6 +99,7 @@ const full = (s: TestCaseSummary): TestCase => ({
   automationStatus: s.automationStatus,
   author: "QA",
   data: { gherkinLevel: "basic", steps: st("Abrir"), expectedResult: "Ok" },
+  createdBy: "u1",
   createdAt: s.updatedAt,
   updatedAt: s.updatedAt,
   revision: 1,
@@ -352,10 +359,12 @@ describe("Casos · editor navigation (RED-V3)", () => {
 
     setViewportWidth(390);
     renderPage("/projects/p1/cases?case=c2");
-    await userEvent.click(await screen.findByRole("button", { name: "Estado Aprobado" }));
-    const sheet = screen.getByRole("dialog", { name: "Estado del caso" });
-    await userEvent.click(within(sheet).getByRole("button", { name: "Revisado" }));
-    expect(screen.getByRole("button", { name: "Estado Revisado" })).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole("button", { name: "Prioridad Crítica" }));
+    const sheet = screen.getByRole("dialog", { name: "Prioridad" });
+    await userEvent.click(within(sheet).getByRole("button", { name: /^Alta/ }));
+    expect(screen.getByRole("button", { name: "Prioridad Alta" })).toBeInTheDocument();
+    // The status is no longer a menu: the review flow moves it (CAS-02).
+    expect(screen.queryByRole("button", { name: /^Estado / })).not.toBeInTheDocument();
   });
 
   it("on mobile offers only Editor and Gherkin, and editing Gherkin shows the keyword bar", async () => {
@@ -626,11 +635,11 @@ describe("Casos · IA sin revisar en el estado y sin filtro Nivel (UX-20)", () =
     expect(pill).toHaveTextContent("Borrador (con IA sin revisar)");
     expect(pill).toHaveAttribute("title", expect.stringMatching(/sugerido por IA/));
     // Moved on without reviewing: its own state, same mark.
-    expect(within(second).getByText("Revisado").closest(".pill")).toHaveTextContent("Revisado (con IA sin revisar)");
+    expect(within(second).getByText("En revisión").closest(".pill")).toHaveTextContent("En revisión (con IA sin revisar)");
     expect(within(third).getByText("Borrador").closest(".pill")).not.toHaveTextContent("IA");
     // The chips count states: an AI case counts in its own.
     expect(screen.getByRole("button", { name: "Borrador 2" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Revisado 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "En revisión 1" })).toBeInTheDocument();
     // No «Nivel» filter; the column stays.
     expect(screen.queryByRole("button", { name: /^Nivel/ })).not.toBeInTheDocument();
     expect(within(table).getByRole("columnheader", { name: "Nivel" })).toBeInTheDocument();
@@ -646,5 +655,63 @@ describe("Casos · IA sin revisar en el estado y sin filtro Nivel (UX-20)", () =
     const sheet = screen.getByRole("dialog", { name: "Filtros" });
     expect(within(sheet).queryByText("Nivel")).not.toBeInTheDocument();
     expect(within(sheet).getByText("Prioridad")).toBeInTheDocument();
+  });
+});
+
+describe("Casos · revisión (CAS-02)", () => {
+  it("sends a saved draft to review with a note, and the status is no longer a menu", async () => {
+    setViewportWidth(1440);
+    review.mockImplementation(async (c: TestCase) => ({ ...c, status: "reviewed", revision: 2 }));
+    renderPage("/projects/p1/cases?case=c1");
+    await userEvent.click(await screen.findByTestId("case-send-review"));
+    const dialog = screen.getByRole("alertdialog", { name: "Enviar PCL-1 a revisión" });
+    await userEvent.type(within(dialog).getByLabelText(/Nota para quien revise/), "listo");
+    await userEvent.click(within(dialog).getByTestId("case-send-review-confirm"));
+    expect(review).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "c1" }),
+      expect.objectContaining({ action: "send", comment: "listo", userId: "test-user" }),
+    );
+    expect(await screen.findByTestId("case-approve")).toBeInTheDocument();
+  });
+
+  it("returning a case needs a comment", async () => {
+    setViewportWidth(1440);
+    review.mockReset();
+    renderPage("/projects/p1/cases?case=c3");
+    await userEvent.click(await screen.findByTestId("case-return"));
+    const dialog = screen.getByRole("alertdialog", { name: "Devolver PCL-3 a Borrador" });
+    await userEvent.click(within(dialog).getByTestId("case-return-confirm"));
+    expect(within(dialog).getByRole("alert")).toHaveTextContent("Escribe qué hay que cambiar.");
+    expect(review).not.toHaveBeenCalled();
+    await userEvent.type(within(dialog).getByLabelText(/Qué hay que cambiar/), "Falta el paso 3");
+    review.mockImplementation(async (c: TestCase) => ({ ...c, status: "draft", revision: 2 }));
+    await userEvent.click(within(dialog).getByTestId("case-return-confirm"));
+    expect(review).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "c3" }),
+      expect.objectContaining({ action: "return", comment: "Falta el paso 3" }),
+    );
+  });
+
+  it("alone in the workspace the author approves, warned that it is a self-approval", async () => {
+    setViewportWidth(1440);
+    get.mockImplementation(async (id: string) => {
+      const s = SUMMARIES.find((x) => x.id === id)!;
+      return { ...full(s), createdBy: "test-user" };
+    });
+    review.mockImplementation(async (c: TestCase) => ({ ...c, status: "approved", revision: 2 }));
+    renderPage("/projects/p1/cases?case=c3");
+    const approve = await screen.findByTestId("case-approve");
+    await waitFor(() => expect(approve).toBeEnabled());
+    await userEvent.click(approve);
+    const dialog = screen.getByRole("alertdialog", { name: "Aprobar la versión 1.0" });
+    expect(dialog).toHaveTextContent("autoaprobación");
+    await userEvent.click(within(dialog).getByTestId("case-approve-confirm"));
+    expect(review).toHaveBeenCalledWith(expect.objectContaining({ id: "c3" }), expect.objectContaining({ action: "approve" }));
+  });
+
+  it("shows «Por revisar» for the cases in review this account may approve", async () => {
+    setViewportWidth(1440);
+    renderPage();
+    expect(await screen.findByRole("button", { name: "Por revisar 1" })).toBeInTheDocument();
   });
 });
