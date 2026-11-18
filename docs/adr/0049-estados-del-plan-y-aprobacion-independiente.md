@@ -58,8 +58,11 @@
   5. **Política «Aprobación independiente» por workspace**
      (`workspaces.independent_approval`):
      - Migración del servidor 0025.
-     - En el escritorio, una copia dentro de la 0040 de W, o en la local 0045
-       si la 0040 ya se fusionó.
+     - En el escritorio, una copia en la columna `workspaces.independent_approval`
+       de la migración local 0040 de W (acordado con W el 2026-11-17). El
+       escritorio la toma de `independentApproval` en `GET /workspaces`
+       (`WorkspaceView`), que añade la pista P junto con la 0025; si falta, se
+       lee como desactivada.
      - Desactivada y fija en el personal y en el local. Activada por defecto
        en los compartidos.
      - La cambia solo un Test Manager (`members.manage`), con confirmación y
