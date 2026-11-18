@@ -295,7 +295,7 @@ async function transferBlobs(
   phase: "upload" | "download",
 ): Promise<void> {
   try {
-    const done = await invoke<{ uploaded: number; downloaded: number; failed: number }>("blobs_transfer", {
+    const done = await invoke<Contract.BlobTransfer>("blobs_transfer", {
       userId,
       workspaceId,
       phase,
