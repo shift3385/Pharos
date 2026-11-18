@@ -24,9 +24,7 @@
   },
   "server": {
     "dir": "server/migrations",
-    "reserved": {
-      "0028": "0.6.0 track S (SYNC-11, ADR-0051): tombstones for the case revisions of projects already deleted"
-    },
+    "reserved": {},
     "retired": {
       "0011": "E4 step 9 spare, never used: imports are documents of the step 4 entities",
       "0012": "E5 step 7 (EJE-02) spare, never used: no server change",

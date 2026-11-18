@@ -137,8 +137,10 @@ export const outsideContent = (entity: string): readonly string[] => [
 
 /** Children removed with their project (FIX-05): their payload carries
  *  `projectId`. Shards and results go too (append-only, ADR-0011: a
- *  tombstone is one of the three changes allowed); case revisions and audit
- *  events stay until SYNC-11. */
+ *  tombstone is one of the three changes allowed). Case revisions follow
+ *  their project by their own rule (`REVISION_TOMBSTONE_SQL`, SYNC-11), which
+ *  spares one that a live result of another project points to; audit events
+ *  stay. */
 export const PROJECT_CHILDREN = [
   "test_plan",
   "test_case",

@@ -296,6 +296,12 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      adjuntos ni plantillas (los retiene) y el servidor no se los da en el
      pull; un push que los traiga recibe 400 `blobs_unsupported`. Su
      contenido no viaja en el oplog: va por hash a `/blobs` antes del push.
+   - **Lápidas de las revisiones de caso (SYNC-11, ADR-0051)**: sin puerta.
+     Borrar un proyecto deja como lápidas sus `test_case_revision`
+     (`payload.deletedWith`), y la migración del servidor 0028 hace lo mismo
+     con los proyectos borrados antes. Todo cliente con `append-only` las
+     recibe y no hace nada con ellas (una lápida append-only no borra nada
+     en un equipo); uno sin `append-only` no recibe revisiones.
    - **Una clave nueva dentro de un blob opaco no necesita puerta** si se
      cumplen las tres: el escritorio y el servidor guardan el blob tal cual sin
      leer esa parte; todo cliente que aún puede hacer push la conoce; y el
