@@ -1118,6 +1118,14 @@ pub(crate) fn delete_defect(conn: &Connection, id: &str, user: &str) -> Result<(
         params![id, user],
     )
     .map_err(err)?;
+    // Its attachments go with it; each delete syncs (SYNC-04b).
+    let attachment_ids: Vec<String> = conn
+        .prepare(
+            "SELECT id FROM attachments WHERE owner_entity = 'defect' AND owner_id = ?1
+               AND deleted_at IS NULL",
+        )
+        .and_then(|mut stmt| stmt.query_map(params![id], |r| r.get(0))?.collect())
+        .map_err(err)?;
     let shas: Vec<String> = {
         let mut stmt = conn
             .prepare(
@@ -1136,6 +1144,9 @@ pub(crate) fn delete_defect(conn: &Connection, id: &str, user: &str) -> Result<(
         params![id, user],
     )
     .map_err(err)?;
+    for attachment in &attachment_ids {
+        crate::blob_sync::queue_attachment(conn, user, attachment, "delete", false)?;
+    }
     for sha in shas {
         evidence::release(conn, &sha)?;
     }
@@ -1564,6 +1575,7 @@ pub(crate) fn delete_attachment(conn: &Connection, id: &str, user: &str) -> Resu
         params![id, user],
     )
     .map_err(err)?;
+    crate::blob_sync::queue_attachment(conn, user, id, "delete", false)?;
     evidence::release(conn, &sha256)?;
     let mut changes = Map::new();
     changes.insert(

@@ -259,6 +259,7 @@ describe("web audit (AUD-01b)", () => {
         test_cycle_items: 0,
         defects: 0,
         defect_links: 0,
+        attachments: 0,
       },
     });
     expect(changesOf(events[0])).toMatchObject({ name: ["Checkout", null] });

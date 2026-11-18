@@ -70,6 +70,8 @@ pub(crate) fn capability_for(entity: &str, is_new: bool) -> &'static str {
         "run" | "run_item" | "unlinked_mapping" | "result" => "run.execute",
         "defect" if is_new => "defect.create",
         "defect" | "defect_link" => "defect.edit",
+        "attachment" => "attachment.add",
+        "template" => "template.edit",
         _ => "members.manage",
     }
 }
@@ -77,7 +79,7 @@ pub(crate) fn capability_for(entity: &str, is_new: bool) -> &'static str {
 /// Entities whose changes are not a role's business: the audit trail (every
 /// member writes it with their changes) and local-only bookkeeping.
 fn role_free(entity: &str) -> bool {
-    matches!(entity, "audit_event" | "template" | "profile")
+    matches!(entity, "audit_event" | "profile")
 }
 
 /// The kind of a workspace (`local`, `personal`, `shared`), or None.
@@ -464,6 +466,15 @@ fn remap(conn: &Connection, user: &str, personal: &str) -> Result<i64, String> {
             params![user, personal],
         )
         .map_err(|e| e.to_string())?;
+    // Its own templates too (SYNC-04b); built-in ones never leave the device.
+    conn.execute(
+        &format!(
+            "UPDATE templates SET workspace_id = ?2
+              WHERE owner_id = ?1 AND is_builtin = 0 AND workspace_id IN {LOCAL}"
+        ),
+        params![user, personal],
+    )
+    .map_err(|e| format!("remap templates: {e}"))?;
     conn.execute(
         &format!(
             "UPDATE oplog SET workspace_id = ?2

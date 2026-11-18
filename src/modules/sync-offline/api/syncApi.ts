@@ -281,6 +281,31 @@ export async function pushAppendOnly(
  *  it refuses for the role wait for the user. Test cases wait while the
  *  server has not listed `stable-steps` (DAT-02): `oplog_pending` leaves
  *  them out. */
+/** Entities whose content travels by hash outside the oplog (SYNC-04b). */
+const BLOB_ENTITIES = new Set(["attachment", "template"]);
+
+/** Moves attachment and template contents of a workspace (SYNC-04b): the
+ *  ones its pending documents name before the push (`upload`), the ones only
+ *  the server has after the pull (`download`). Rust does it, so the bytes
+ *  never cross the webview; a content that fails is tried again next sync. */
+async function transferBlobs(
+  invoke: typeof platformInvoke,
+  userId: string,
+  workspaceId: string,
+  phase: "upload" | "download",
+): Promise<void> {
+  try {
+    const done = await invoke<Contract.BlobTransfer>("blobs_transfer", {
+      userId,
+      workspaceId,
+      phase,
+    });
+    if (done && done.failed > 0) logSyncFailure(new Error(`blobs-${phase}: ${done.failed} failed`), "blobs");
+  } catch (e) {
+    logSyncFailure(e, "blobs");
+  }
+}
+
 async function pushLww(
   request: SyncCaller,
   userId: string,
@@ -299,6 +324,10 @@ async function pushLww(
       request,
       ws,
     );
+    // Contents first: the documents that name them must find them there.
+    if (ws && group.some((d) => BLOB_ENTITIES.has(d.entity))) {
+      await transferBlobs(invoke, userId, ws, "upload");
+    }
     try {
       for (const batch of batchDeltas(group)) {
         // A delta the server refuses for its content (e.g. 413) is skipped and
@@ -450,6 +479,10 @@ export async function syncNow(): Promise<SyncResult> {
     userId,
     features: serverFeatures,
   });
+  // Contents pulled documents name and this device lacks (SYNC-04b).
+  if (route && serverFeatures.includes("blobs")) {
+    for (const ws of route.ids) await transferBlobs(invoke, userId, ws, "download");
+  }
   // Test cases held back until the server listed `stable-steps` (DAT-02, the
   // first sync after an upgrade) go now, and custom field definitions held
   // back until it listed `custom-fields` (FLD-01; such a server also lists

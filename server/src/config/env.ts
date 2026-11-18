@@ -163,6 +163,13 @@ const schema = z
     SMTP_FROM: optionalText,
     APP_PUBLIC_URL: optionalText,
     RESET_TOKEN_TTL: duration.prefault("30 minutes"),
+    // Attachment and template contents (SYNC-04b, ADR-0042 §7): files on
+    // disk, one per sha256, under this folder. Encryption at rest is the
+    // volume's (ADR-0014 decision 2). Relative paths are from the server's
+    // working directory.
+    BLOB_DIR: z.string().default("data/blobs"),
+    // Largest content one upload takes (ADR-0014 decision 1: 200 MB).
+    BLOB_MAX_BYTES: z.coerce.number().int().positive().default(209_715_200),
   })
   .superRefine((env, ctx) => {
     if (env.SMTP_HOST) {

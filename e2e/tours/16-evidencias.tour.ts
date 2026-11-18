@@ -35,7 +35,7 @@ function plantOrphan() {
 chapter("evidencias", () => {
   step("almacen", {
     title: "El almacén de evidencias",
-    caption: "Las evidencias son los archivos que adjuntas: capturas, vídeos, registros y trazas de las tarjetas del Tablero, los defectos, los resultados y los informes importados. Pharos los guarda cifrados en este equipo. En «Administración», la pestaña «Evidencias» empieza por «Almacén de evidencias»: el espacio que ocupan, los adjuntos por tipo (tablero, defectos, reportes, resultados, borradores…) y la retención de los reportes importados. En este ejemplo, las de Pharos: las capturas del fallo de acceso, la del menú lateral y el informe JUnit.",
+    caption: "Las evidencias son los archivos que adjuntas: capturas, vídeos, registros y trazas de las tarjetas del Tablero, los defectos, los resultados y los informes importados. Pharos los guarda cifrados en este equipo y, con un servidor, los comparte con tu workspace: cada archivo viaja una vez por su contenido y llega cifrado a los demás equipos. En «Administración», la pestaña «Evidencias» empieza por «Almacén de evidencias»: el espacio que ocupan, los adjuntos por tipo (tablero, defectos, reportes, resultados, borradores…) y la retención de los reportes importados. En este ejemplo, las de Pharos: las capturas del fallo de acceso, la del menú lateral y el informe JUnit.",
     covers: ["admin:evidence", "screen:evidence-admin"],
     run: async () => {
       plantOrphan();

@@ -6,6 +6,7 @@ mod audit;
 mod audit_read;
 #[cfg(test)]
 mod audit_tests;
+mod blob_sync;
 mod case_baseline;
 mod case_review;
 mod custom_fields;
@@ -332,6 +333,7 @@ pub fn run() {
             template::template_update,
             template::template_delete,
             template::template_seed,
+            blob_sync::blobs_transfer,
             ai::ai_key_set,
             ai::ai_key_status,
             ai::ai_key_clear,

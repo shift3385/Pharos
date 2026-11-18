@@ -220,7 +220,7 @@ indica el workspace.
   en este equipo se eliminará» y, al aceptarlo, se borra la copia local y sus
   pendientes (decisión 2 de ADR-0019). La tarjeta permite exportar antes.
 
-### 7. SYNC-04b: plantillas y adjuntos por hash (migraciones 0020 y 0041)
+### 7. SYNC-04b: plantillas y adjuntos por hash (migraciones 0020 y 0046)
 
 - **Servidor (0020):** `blobs (workspace_id, sha256, size, mime, storage_key,
   uploaded_by, uploaded_at, PK (workspace_id, sha256))`, como en ADR-0014.
@@ -239,9 +239,9 @@ indica el workspace.
     metadatos y se bajan bajo demanda. La opción «disponible sin conexión»
     por proyecto es de ADR-0014.
   - Las plantillas son del workspace. **[cambia]** ADR-0014 las dejaba como
-    BLOB en la BD; la migración local 0041 las pasa al almacén de evidencias
-    (`templates.file` → blob + `sha256`), así que viajan por el mismo
-    camino.
+    BLOB en la BD; la migración local 0046 (antes reservada como 0041) las
+    pasa al almacén de evidencias (`templates.file` → blob + `sha256`), así
+    que viajan por el mismo camino.
   - La puerta es la funcionalidad `blobs`. Sin ella, ni se envían metadatos
     de adjuntos ni se piden bytes.
 
@@ -555,3 +555,58 @@ Precisiones sobre §6, sin cambiar la decisión.
   tour (`WORKSPACES_PENDING`), porque necesitan una segunda cuenta. Las
   cubre la validación de 0.5.0 con dos personas.
 
+## Implementación de SYNC-04b (W3, 2026-11-18)
+
+Precisiones sobre §7, sin cambiar la decisión salvo donde se marca.
+
+- **Migraciones: servidor 0020 y local 0046.** La reserva local 0041 pasó a
+  0046 porque 0042 y 0043 llegaron antes (registro de migraciones).
+- **Servidor.**
+  - `BlobStore` con una implementación en disco (`BLOB_DIR`, por defecto
+    `data/blobs`): un archivo por `sha256` en `<2 hex>/<sha256>`, escrito a
+    un nombre temporal y renombrado, así que nadie lee medio archivo. El
+    mismo contenido otra vez no escribe nada.
+  - La fila `blobs` es por workspace, así que un workspace solo sabe lo que
+    tiene él: ni `missing` ni `GET` revelan lo de otro, aunque el disco lo
+    tenga.
+  - `PUT /blobs/:sha256` pide `attachment.add` (Test Manager, Test Analyst,
+    Automation Engineer, Product Owner): las plantillas, que solo editan
+    Test Manager y Test Analyst, caben en ella. El límite es `BLOB_MAX_BYTES`
+    (200 MB por defecto).
+  - `attachment` y `template` son LWW, con su forma comprobada
+    (`BLOB_PAYLOADS`). `attachment` es hijo del proyecto: se borra con él y
+    se mueve con él. Al mover, las filas `blobs` de sus contenidos se copian
+    al destino; el origen conserva las suyas.
+  - La puerta es la funcionalidad `blobs`: sin ella el push con adjuntos o
+    plantillas recibe 400 `blobs_unsupported` y el pull no los incluye.
+- **Escritorio.**
+  - La 0046 añade `sha256`, `size` y `mime` a `templates`, y su paso en Rust
+    (`blob_sync::migrate`) guarda cada archivo en el almacén de evidencias.
+    **[precisión]** `templates.file` se vacía en lugar de borrarse: borrar
+    una columna hace que SQLite revise todo el esquema, y una base antigua
+    puede fallar por algo que no tiene que ver con las plantillas. El mismo
+    paso encola los adjuntos que existían antes, salvo los de un borrador de
+    ejecución y los caducados.
+  - Cada cambio de un adjunto (añadir, quitar, pasar de un borrador a su
+    resultado) deja su fila en el oplog sin evento propio
+    (`Audit::Folded`): el evento ya lo deja el cambio de su dueño. Lo
+    comprueba el rol (`attachment.add`), como cualquier otro cambio.
+  - Las plantillas son de la cuenta que las tiene en el equipo
+    (`owner_id`, como en W2a): una plantilla bajada se puede editar si el
+    rol lo permite (`template.edit`). Las integradas no se sincronizan.
+  - Un documento bajado cuyo contenido no está aquí crea su fila `blobs` en
+    `remote_only`. El contenido de una plantilla mantiene vivo su archivo
+    (`live_refs`) hasta que la plantilla se purga.
+  - **[cambia]** Los bytes se suben **antes** del push de los metadatos, no
+    después: así otro equipo nunca recibe un documento cuyo contenido el
+    servidor aún no tiene. Si la subida falla, el documento se envía igual y
+    el contenido se intenta otra vez en la siguiente sincronización.
+  - **[cambia]** La bajada es, por ahora, **después de cada pull**, de todos
+    los contenidos `remote_only` del workspace, no bajo demanda. Bajo demanda
+    y «disponible sin conexión» por proyecto (ADR-0014) quedan pendientes.
+  - Las transferencias las hace Rust (`blobs_transfer`, `server::send_bytes`,
+    600 s por archivo): los bytes no pasan por el webview. Hoy un archivo
+    viaja entero en memoria; el streaming queda pendiente.
+- **Pendiente.** Retención en el servidor (borrar el blob y conservar
+  `blob_purged_at`), bajada bajo demanda, streaming de archivos grandes y
+  ver los adjuntos en la web (EJE-06b).

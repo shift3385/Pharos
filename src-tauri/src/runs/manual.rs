@@ -1120,6 +1120,8 @@ pub(crate) fn record_from_draft(conn: &Connection, input: &ResultInput) -> Resul
                 params![attachment, owner_entity, owner_id, user],
             )
             .map_err(err)?;
+            // No longer a draft's: it syncs with its result (SYNC-04b).
+            crate::blob_sync::queue_attachment(conn, user, &attachment, "upsert", true)?;
             let mut changes = Map::new();
             changes.insert(
                 "attachment".into(),

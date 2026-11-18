@@ -99,9 +99,11 @@ local account are tied to their server (`server.json`). The browser holds **no d
 no outbox, no web conflicts. What stays in localStorage is per-browser
 preferences only (theme, language, Administration settings, AI non-secret
 config, last access, when the recovery key was shown) and, on the web, the
-session. Until SYNC-04b, attachments, the user's own templates and revision
-history are desktop-only: the web shows the built-in templates (held in
-memory) and no history, and a desktop-only action says so in a toast. (The
+session. Attachments and the user's own templates sync between desktops
+since SYNC-04b (their content by hash, `/blobs`), but the web does not show
+them yet (EJE-06b), and revision history is desktop-only: the web shows the
+built-in templates (held in memory) and no history, and a desktop-only action
+says so in a toast. (The
 exported plan's «Historial de revisiones», PLN-02, is built from the audit
 events, which the web has: there it starts at the plan's first event.)
 
@@ -541,8 +543,9 @@ its steps; the frozen `test_case_revision`, same id as
   and item, the desktop's stale rules, a shared list of recorded attempts for
   other tabs; cleared on sign-out; dropped when the run reads as cancelled or
   gone; the executor reloads on another tab's `storage` event). Files,
-  imports and the «Sin vincular» tray stay on the desktop
-  (SYNC-04b); the UI says «Los adjuntos solo están disponibles en el escritorio».
+  imports and the «Sin vincular» tray stay on the desktop (the files sync
+  between desktops since SYNC-04b, the web shows them in EJE-06b); the UI
+  says «Los adjuntos solo están disponibles en el escritorio».
 - **Desktop pull:** a `run` pulled as `aborted` drops its local drafts and
   their files, as a local cancel does, and so does a run conflict resolved to
   the remote `aborted` (`sync::drop_drafts_of_remote`); `apply_remote` and
@@ -710,7 +713,7 @@ ADR-0013; built in E4, step 9).** The section «Ejecuciones»
   path (resolved against a folder the user picks) go to their result or step.
   Purging a run deletes those rows too, and the evidence collection frees the
   files.
-  None of them syncs yet (ADR-0014).
+  They sync since SYNC-04b, their content by hash (ADR-0042 §7).
 - **Sync.** Nothing new: the import writes `run`, `run_shard`, `result` and,
   from the tray, `unlinked_mapping`, all under the `runs` feature.
 
@@ -1537,7 +1540,17 @@ core Postgres lacks). Modules:
   `requireCapability(pool, cap, { from })` (a preHandler that sets
   `req.workspace` or answers 403 `forbidden` / `workspace_revoked`, 404
   `workspace_not_found`), `membership`, `isMember`, `listMembers`,
-  `managedMembers` and `workspaceApproverCheck` (CAS-02). `app.ts` gives the
+  `managedMembers` and `workspaceApproverCheck` (CAS-02).
+- `blobs` (SYNC-04b, ADR-0042 §7) — attachment and template contents by
+  hash, outside the oplog. Table `blobs (workspace_id, sha256, …)`
+  (migration 0020) over a `BlobStore`; today `diskBlobStore(BLOB_DIR)`,
+  one file per hash under `<2 hex>/<sha256>`, written once. Routes, all
+  with `?workspace=` (or `workspaceId`) and membership: `POST
+  /blobs/missing` (`read`), `PUT /blobs/:sha256` (`attachment.add`;
+  the server checks the hash; `BLOB_MAX_BYTES`) and `GET /blobs/:sha256`
+  (`read`). A workspace never learns another one's contents. Moving a
+  project copies its contents' rows to the destination.
+- (`workspaces`, continued) `app.ts` gives the
   notifications (RED-W2) `workspaceMembership(pool, { isMember, listMembers })`
   and plugs `notificationWorkspaceHooks` into the service's `WorkspaceHooks`:
   an invitation to a registered account, a join (to the Test Managers) and
@@ -1813,10 +1826,15 @@ and its `VACUUM` can briefly double that image.)
 - **Tables (0022).**
   - `blobs` (local, never synced): one row per content by plaintext `sha256`,
     with `local_state` `present | remote_only | missing | damaged | deleting`
-    (`missing` and `damaged` are set only by «Verificar evidencias», below).
+    (`missing` and `damaged` are set only by «Verificar evidencias», below;
+    `remote_only`: a pulled document names it and the transfer has not
+    downloaded it yet, SYNC-04b).
   - `attachments`: one use of a content (`owner_entity`/`owner_id`, `kind`,
-    name, mime, size, `blob_purged_at`). Shaped as an LWW entity, but not
-    registered for sync yet (step 7 or SYNC-04b).
+    name, mime, size, `blob_purged_at`). An LWW entity since SYNC-04b (below);
+    `blob_purged_at` is local retention and does not travel.
+  - `templates` (0046): a template's file lives here too, by `sha256`;
+    `templates.file` is kept empty. A template keeps its content alive until
+    it is purged.
   - `evidence_retention`: per-project overrides of the retention by kind
     (no row = default, `days NULL` = always). **Local to the device, never
     synced** (DAT-03c): `evidence_retention_get` / `_set` (1..3650 days), one
@@ -2008,6 +2026,24 @@ fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,
     («Solo lectura» for a Viewer, the lost-workspace card). «Proyectos»
     filters by the workspace in use. The conflict panel lists the open
     refusals (`RejectedList`).
+- **Attachments and templates in sync (SYNC-04b, ADR-0042 §7, «Implementación
+  de SYNC-04b»):** `src-tauri/src/blob_sync.rs` and local migration 0046.
+  - `attachment` and `template` are LWW (`oplog::SYNCED`), held back until
+    the server lists `blobs`. Their documents name a content by `sha256`;
+    the bytes never enter the oplog.
+  - Every writer of an attachment queues it (`queue_attachment`, through
+    `journal::record` with `Audit::Folded`: the owner's change leaves the
+    event). A manual execution draft's attachments wait until the draft is a
+    result.
+  - 0046 moves each template file into the evidence store (its Rust step,
+    with the store) and empties `templates.file`; it also queues the
+    attachments written before.
+  - A pulled document whose content is not here gets a `blobs` row in
+    `remote_only`. The transfer (`blobs_transfer`, Rust only, via
+    `server::send_bytes`) uploads the contents the workspace lacks
+    (`POST /blobs/missing`, `PUT /blobs/:sha`) before each push, and
+    downloads the `remote_only` ones after the pull, checking each hash.
+    A failure is logged and retried next sync.
 - **Human-readable keys (DAT-01, ADR-0010):** case, requirement, defect and run keys
   come from `key_counters` (`src-tauri/src/keys.rs`):
   - the counter only moves forward, so a key is never reused;
@@ -2106,7 +2142,7 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
 - **Traceability (former milestone v0.0.2):** requirements, the requirement ↔ case ↔ defect
   matrix with XLSX export, `@REQ-xxx`/case-ID tags in `.feature` files, and
   visible AI provenance. Requirements and planner cards sync since SYNC-04a;
-  templates and attachments follow in SYNC-04b.
+  templates and attachments since SYNC-04b.
 - **Roadmap and backlog:** `docs/ROADMAP.md` (replanned 2026-10-26 from the
   state-of-the-art study). Its target direction: Pharos as a local-first
   _control plane_ that orchestrates external frameworks (Playwright, Karate,

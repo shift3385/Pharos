@@ -197,6 +197,10 @@ pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
         "0043_notifications.sql",
         include_str!("../migrations/0043_notifications.sql"),
     ),
+    (
+        "0046_blobs_sync.sql",
+        include_str!("../migrations/0046_blobs_sync.sql"),
+    ),
 ];
 
 /// Migration whose SQL runs only after Rust moved the planner attachment BLOBs
@@ -837,6 +841,9 @@ pub(crate) fn run_migrations_with(
     for (name, sql) in MIGRATIONS.iter().filter(|(n, _)| pending.contains(n)) {
         // The planner attachment BLOBs leave for the evidence store before 0023
         // drops them; files written outside the database cannot roll back.
+        if *name == crate::blob_sync::TEMPLATES_OUT {
+            vacuum = true;
+        }
         if *name == PLANNER_ATTACHMENTS_OUT {
             evidence::migrate_planner_attachments(conn, store)
                 .map_err(|e| format!("migration {name} failed: {e}"))?;
@@ -851,6 +858,11 @@ pub(crate) fn run_migrations_with(
                 .map_err(|e| format!("migration {name} failed: {e}"))?;
             if let Some((_, step)) = RUST_STEPS.iter().find(|(n, _)| n == name) {
                 step(conn).map_err(|e| format!("migration {name} failed: {e}"))?;
+            }
+            // The template files move into the evidence store (SYNC-04b).
+            if *name == crate::blob_sync::TEMPLATES_OUT {
+                crate::blob_sync::migrate(conn, store)
+                    .map_err(|e| format!("migration {name} failed: {e}"))?;
             }
             conn.execute("INSERT INTO schema_migrations (name) VALUES (?1)", [name])
                 .map_err(|e| e.to_string())?;

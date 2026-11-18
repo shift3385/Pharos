@@ -14,7 +14,8 @@ import {
  *  custom field definitions, CYC-01 configurations, test cycles and their
  *  items): base check, then last-write-wins by HLC
  *  custom field definitions, DEF-01 defects and their links): base check, then last-write-wins by HLC
- *  (ADR-0002). Templates and attachments follow in SYNC-04b. */
+ *  (ADR-0002). SYNC-04b adds attachments and templates: their metadata
+ *  syncs here, their content by hash outside the oplog (`/blobs`). */
 export const LWW_ENTITIES = [
   "project",
   "test_plan",
@@ -30,6 +31,8 @@ export const LWW_ENTITIES = [
   "test_cycle_item",
   "defect",
   "defect_link",
+  "attachment",
+  "template",
 ] as const;
 
 /** Entities of the `append_only` sync class (design 0.2.0 §3.2, ADR-0011):
@@ -74,6 +77,13 @@ export const isCycleEntity = (entity: string): boolean =>
 export const DEFECT_ENTITIES = ["defect", "defect_link"] as const;
 
 export const isDefectEntity = (entity: string): boolean => (DEFECT_ENTITIES as readonly string[]).includes(entity);
+
+/** Attachments and templates (SYNC-04b, ADR-0042 §7): their documents name
+ *  a content by sha256, which the client uploads to `/blobs` before it
+ *  pushes them. Only clients that send the `blobs` feature pull or push them. */
+export const BLOB_ENTITIES = ["attachment", "template"] as const;
+
+export const isBlobEntity = (entity: string): boolean => (BLOB_ENTITIES as readonly string[]).includes(entity);
 
 /** Payload keys a feature introduced on existing entities. A client without
  *  the feature does not know them, so its upsert keeps the stored values even
@@ -146,6 +156,7 @@ export const PROJECT_CHILDREN = [
   "defect",
   "defect_link",
   "case_baseline",
+  "attachment",
 ] as const;
 
 const RESULT_STATUSES = ["passed", "failed", "blocked", "skipped", "other"] as const;
@@ -227,6 +238,30 @@ const CYCLE_PAYLOADS: Partial<Record<string, z.ZodType>> = {
 };
 
 const text = (max: number) => z.string().max(max).nullish();
+const sha256 = z.string().regex(/^[0-9a-f]{64}$/);
+const size = z.number().int().nonnegative();
+
+/** What the server checks of an attachment or template document (SYNC-04b):
+ *  the content it names, and the limits the desktop checks too
+ *  (`evidence.rs`, `template.rs`). Extra keys pass. */
+const BLOB_PAYLOADS: Partial<Record<string, z.ZodType>> = {
+  attachment: z.looseObject({
+    projectId: id,
+    sha256,
+    size,
+    name: z.string().min(1).max(500),
+    ownerEntity: z.string().min(1).max(100),
+    ownerId: id,
+    kind: z.string().min(1).max(100).default("evidence"),
+  }),
+  template: z.looseObject({
+    kind: z.enum(["plan", "case"]),
+    language: z.string().min(1).max(20),
+    name: z.string().min(1).max(500),
+    sha256,
+    size,
+  }),
+};
 
 /** What the server checks of a defect document (DEF-01): the enums and the
  *  limits the desktop checks too (`defects.rs`). Extra keys pass. */
@@ -324,7 +359,10 @@ export const deltaSchema = z
     const schema =
       d.op === "delete"
         ? undefined
-        : (EXECUTION_PAYLOADS[d.entity] ?? CYCLE_PAYLOADS[d.entity] ?? DEFECT_PAYLOADS[d.entity]);
+        : (EXECUTION_PAYLOADS[d.entity] ??
+          CYCLE_PAYLOADS[d.entity] ??
+          DEFECT_PAYLOADS[d.entity] ??
+          BLOB_PAYLOADS[d.entity]);
     const parsed = schema?.safeParse(d.payload);
     if (parsed && !parsed.success) {
       for (const issue of parsed.error.issues) {

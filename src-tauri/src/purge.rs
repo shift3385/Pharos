@@ -441,8 +441,8 @@ fn purge_projects(
     Ok(purged)
 }
 
-/// Templates do not sync yet (SYNC-04b), so their journal rows never leave
-/// this device and never hold a purge.
+/// The account's templates (SYNC-04b: they sync, so a pending delete holds
+/// one like any other row). Their content goes once nothing needs it.
 fn purge_templates(
     conn: &Connection,
     user: &str,
@@ -454,12 +454,22 @@ fn purge_templates(
     );
     let mut purged = 0;
     for (id, _, _) in candidates(conn, &sql, user, days)? {
-        if !chosen(only, "template", &id, "") {
+        if !chosen(only, "template", &id, "") || held(conn, "template", &id)? {
             continue;
         }
+        let sha: Option<String> = conn
+            .query_row(
+                "SELECT sha256 FROM templates WHERE id = ?1",
+                params![id],
+                |r| r.get(0),
+            )
+            .map_err(|e| e.to_string())?;
         conn.execute("DELETE FROM templates WHERE id = ?1", params![id])
             .map_err(|e| e.to_string())?;
         forget(conn, "template", &id)?;
+        if let Some(sha) = sha {
+            crate::evidence::release(conn, &sha)?;
+        }
         purged += 1;
     }
     Ok(purged)
@@ -793,8 +803,8 @@ mod tests {
         c.execute(
             "INSERT INTO templates (id, workspace_id, kind, language, name, file, is_builtin, \
              owner_id, created_at, updated_at, deleted_at) VALUES \
-             ('t-mine', ?1, 'case', 'es', 'T', x'00', 0, ?2, 'now', 'now', datetime('now', '-40 days')), \
-             ('t-builtin', ?1, 'case', 'es', 'T', x'00', 1, NULL, 'now', 'now', datetime('now', '-40 days'))",
+             ('t-mine', ?1, 'case', 'es', 'T', x'', 0, ?2, 'now', 'now', datetime('now', '-40 days')), \
+             ('t-builtin', ?1, 'case', 'es', 'T', x'', 1, NULL, 'now', 'now', datetime('now', '-40 days'))",
             params![ws, A],
         )
         .unwrap();

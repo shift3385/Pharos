@@ -501,7 +501,7 @@ fn a_project_can_override_the_retention_of_a_kind() {
 }
 
 #[test]
-fn nothing_about_attachments_reaches_the_sync_outbox() {
+fn attachments_reach_the_sync_outbox_without_their_bytes() {
     let c = conn();
     let ws = crate::db::ensure_workspace(&c).unwrap();
     c.execute(
@@ -522,10 +522,8 @@ fn nothing_about_attachments_reaches_the_sync_outbox() {
         crate::sync::build_pending_append(&c, OWNER).unwrap(),
     ] {
         let pending = serde_json::to_value(pending).unwrap();
-        for delta in pending["deltas"].as_array().unwrap() {
-            assert_ne!(delta["entity"], "attachment");
-        }
-        // Only the audit events of link/unlink travel, with metadata only.
+        // The attachment travels as metadata (SYNC-04b): its content goes by
+        // hash to /blobs, never in the outbox.
         let text = pending.to_string();
         assert!(
             !text.contains("Ynl0ZXM") && !text.contains("dataBase64"),
@@ -533,15 +531,17 @@ fn nothing_about_attachments_reaches_the_sync_outbox() {
         );
     }
     assert!(crate::sync_class::append_only("attachment").is_none());
-    assert!(!crate::oplog::SYNCED.contains(&"attachment"));
+    assert!(crate::oplog::SYNCED.contains(&"attachment"));
+    // Its add and its delete, with no audit event of their own: the card's
+    // link and unlink are the events.
     assert_eq!(
         c.query_row(
-            "SELECT count(*) FROM oplog WHERE entity = 'attachment'",
+            "SELECT group_concat(op) FROM (SELECT op FROM oplog WHERE entity = 'attachment' ORDER BY rowid)",
             [],
-            |r| r.get::<_, i64>(0)
+            |r| r.get::<_, String>(0)
         )
         .unwrap(),
-        0
+        "upsert,delete"
     );
 }
 

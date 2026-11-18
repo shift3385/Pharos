@@ -581,6 +581,7 @@ pub(crate) fn delete_attachment(conn: &Connection, id: &str, owner_id: &str) -> 
         params![id, owner_id],
     )
     .map_err(|e| e.to_string())?;
+    crate::blob_sync::queue_attachment(conn, owner_id, id, "delete", false)?;
     evidence::release(conn, &found.sha256)?;
     let mut changes = serde_json::Map::new();
     changes.insert(

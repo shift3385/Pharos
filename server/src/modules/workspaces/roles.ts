@@ -37,6 +37,9 @@ export const CAPABILITIES = {
   "result.import": TM_TA_AE,
   "defect.edit": TM_TA_AE,
   "defect.create": ["test_manager", "test_analyst", "automation_engineer", "product_owner"],
+  // SYNC-04b: adding evidence or an attachment, and the workspace's templates.
+  "attachment.add": ["test_manager", "test_analyst", "automation_engineer", "product_owner"],
+  "template.edit": TM_TA,
   "audit.read": TM,
 } as const satisfies Record<string, readonly WorkspaceRole[]>;
 export type Capability = keyof typeof CAPABILITIES;
@@ -83,6 +86,10 @@ export function capabilityFor(entity: string, isNew: boolean): Capability {
       return isNew ? "defect.create" : "defect.edit";
     case "defect_link":
       return "defect.edit";
+    case "attachment":
+      return "attachment.add";
+    case "template":
+      return "template.edit";
     default:
       return "members.manage";
   }

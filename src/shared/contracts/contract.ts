@@ -5,6 +5,7 @@ export type * from "./generated/AddOutcome";
 export type * from "./generated/Applied";
 export type * from "./generated/AttachmentSummary";
 export type * from "./generated/AttachmentTarget";
+export type * from "./generated/BlobTransfer";
 export type * from "./generated/CaseBaseline";
 export type * from "./generated/CaseBaselineInput";
 export type * from "./generated/CaseBaselineItem";

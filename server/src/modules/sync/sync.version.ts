@@ -75,6 +75,8 @@ export const SERVER_FEATURES = [
   // SYNC-07 (ADR-0042): workspaces with roles; push and pull name the
   // workspace, and a push may be refused per delta (`rejected`).
   "workspaces",
+  // SYNC-04b (ADR-0042 §7): attachments and templates, their content by hash.
+  "blobs",
 ] as const;
 
 /** Features the client sent. Inside one minor the version string does not
@@ -153,6 +155,13 @@ export function understandsCaseBaselines(req: FastifyRequest): boolean {
  *  (`readOnlyByWorkspaces`). */
 export function understandsWorkspaces(req: FastifyRequest): boolean {
   return clientFeatures(req).includes("workspaces");
+}
+
+/** True if the client syncs attachments and templates (SYNC-04b): it
+ *  uploads their content to `/blobs` before pushing them. Without it a
+ *  client never sees them on pull, and may not push them. */
+export function understandsBlobs(req: FastifyRequest): boolean {
+  return clientFeatures(req).includes("blobs");
 }
 
 /** True if the client is of an earlier minor than the server (0.4 for a 0.5

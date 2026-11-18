@@ -1,7 +1,8 @@
 //! Template repository + Tauri commands (spec §6). An internal store of .xlsx
 //! templates (plan / case) with metadata (name, description, usage prompt,
-//! version) and the raw file bytes as a blob, kept in the encrypted database so
-//! the repository works offline (FIX-08b):
+//! version); the file itself lives in the evidence store by sha256, encrypted
+//! like every evidence (SYNC-04b, ADR-0014), so the repository works offline
+//! and the file syncs by hash (FIX-08b):
 //! - a user template belongs to the account that imported it; no other account
 //!   lists, reads, edits or deletes it;
 //! - built-in templates are seeded idempotently, every account sees them and
@@ -10,6 +11,10 @@
 //!   not attribute (several accounts on the device), is shared: every account
 //!   sees it, none edits or deletes it. To change it, download it and import
 //!   it again.
+//! - since SYNC-04b a template syncs with its workspace: the account that
+//!   pulled one holds it (`owner_id`), and its role decides whether it may
+//!   change it (`template.edit`). A pulled file arrives with the transfer
+//!   (`blob_sync.rs`); until then reading the template says so.
 
 use base64::Engine as _;
 use rusqlite::{params, Connection, OptionalExtension};
@@ -20,6 +25,7 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
+use crate::evidence::{self, EvidenceStore};
 use crate::journal::{self, Action, Actor, Change};
 
 const B64: base64::engine::general_purpose::GeneralPurpose =
@@ -153,37 +159,67 @@ fn list_templates(conn: &Connection, user_id: &str) -> Result<Vec<TemplateSummar
     Ok(rows)
 }
 
+/// Stores a template file in the evidence store and records it: its sha256
+/// and size.
+fn store_file(
+    conn: &Connection,
+    store: &EvidenceStore,
+    data_base64: &str,
+) -> Result<evidence::Stored, String> {
+    let bytes = B64
+        .decode(data_base64.as_bytes())
+        .map_err(|e| e.to_string())?;
+    let stored = store.put(bytes.as_slice(), evidence::MAX_FILE_BYTES)?;
+    evidence::record_blob(conn, &stored, Some(crate::blob_sync::XLSX))?;
+    Ok(stored)
+}
+
 fn get_template(
     conn: &Connection,
+    store: &EvidenceStore,
     id: &str,
     user_id: &str,
 ) -> Result<Option<TemplateData>, String> {
     require_user(user_id)?;
-    conn.query_row(
-        &format!(
-            "SELECT id, kind, language, name, description, usage_prompt, version, is_builtin,
-                    coalesce(owner_id = ?1, 0) AS is_own, file
+    let found = conn
+        .query_row(
+            &format!(
+                "SELECT id, kind, language, name, description, usage_prompt, version, is_builtin,
+                    coalesce(owner_id = ?1, 0) AS is_own, sha256
              FROM templates WHERE id = ?2 AND {VISIBLE}"
-        ),
-        params![user_id, id],
-        |row| {
-            let bytes: Vec<u8> = row.get("file")?;
-            Ok(TemplateData {
-                id: row.get("id")?,
-                kind: row.get("kind")?,
-                language: row.get("language")?,
-                name: row.get("name")?,
-                description: row.get("description")?,
-                usage_prompt: row.get("usage_prompt")?,
-                version: row.get("version")?,
-                is_builtin: row.get::<_, i64>("is_builtin")? != 0,
-                is_own: row.get::<_, i64>("is_own")? != 0,
-                data_base64: B64.encode(bytes),
-            })
-        },
-    )
-    .optional()
-    .map_err(|e| e.to_string())
+            ),
+            params![user_id, id],
+            |row| {
+                Ok((
+                    row.get::<_, Option<String>>("sha256")?,
+                    TemplateData {
+                        id: row.get("id")?,
+                        kind: row.get("kind")?,
+                        language: row.get("language")?,
+                        name: row.get("name")?,
+                        description: row.get("description")?,
+                        usage_prompt: row.get("usage_prompt")?,
+                        version: row.get("version")?,
+                        is_builtin: row.get::<_, i64>("is_builtin")? != 0,
+                        is_own: row.get::<_, i64>("is_own")? != 0,
+                        data_base64: String::new(),
+                    },
+                ))
+            },
+        )
+        .optional()
+        .map_err(|e| e.to_string())?;
+    let Some((sha, mut data)) = found else {
+        return Ok(None);
+    };
+    let sha = sha.ok_or("evidence-missing: the template has no file")?;
+    // A pulled template whose file the transfer has not brought yet.
+    let mut bytes = Vec::new();
+    store
+        .copy_to(&sha, &mut bytes)
+        .map_err(|e| format!("evidence-missing: {e}"))?;
+    data.data_base64 = B64.encode(bytes);
+    Ok(Some(data))
 }
 
 /// The revision of a live template the account owns. An unknown, deleted or
@@ -211,20 +247,20 @@ fn owned_revision(conn: &Connection, id: &str, user_id: &str) -> Result<i64, Str
 /// returns its new id.
 pub(crate) fn insert_template(
     conn: &Connection,
+    store: &EvidenceStore,
     input: &TemplateInput,
     user_id: &str,
 ) -> Result<String, String> {
     require_user(user_id)?;
     let id = Uuid::new_v4().to_string();
-    let bytes = B64
-        .decode(input.data_base64.as_bytes())
-        .map_err(|e| e.to_string())?;
+    let stored = store_file(conn, store, &input.data_base64)?;
     let workspace_id = ensure_workspace(conn)?;
     conn.execute(
         "INSERT INTO templates
            (id, workspace_id, kind, language, name, description, usage_prompt, version,
-            file, is_builtin, owner_id, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 0, ?10, datetime('now'), datetime('now'))",
+            sha256, size, mime, file, is_builtin, owner_id, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, x'', 0, ?12, datetime('now'),
+                 datetime('now'))",
         params![
             id,
             workspace_id,
@@ -234,7 +270,9 @@ pub(crate) fn insert_template(
             input.description,
             input.usage_prompt,
             input.version.clone().unwrap_or_else(|| "1.0".to_string()),
-            bytes,
+            stored.sha256,
+            stored.size as i64,
+            crate::blob_sync::XLSX,
             user_id,
         ],
     )
@@ -325,7 +363,11 @@ pub(crate) fn delete_template(conn: &Connection, id: &str, user_id: &str) -> Res
 
 /// Inserts the built-in templates missing by id; returns whether it wrote any.
 /// Existing rows (including user-edited metadata) are left untouched.
-fn seed_templates(conn: &Connection, items: &[TemplateSeedItem]) -> Result<bool, String> {
+fn seed_templates(
+    conn: &Connection,
+    store: &EvidenceStore,
+    items: &[TemplateSeedItem],
+) -> Result<bool, String> {
     let mut wrote = false;
     let workspace_id = ensure_workspace(conn)?;
     for item in items {
@@ -340,14 +382,13 @@ fn seed_templates(conn: &Connection, items: &[TemplateSeedItem]) -> Result<bool,
         if exists.is_some() {
             continue;
         }
-        let bytes = B64
-            .decode(item.data_base64.as_bytes())
-            .map_err(|e| e.to_string())?;
+        let stored = store_file(conn, store, &item.data_base64)?;
         conn.execute(
             "INSERT INTO templates
                (id, workspace_id, kind, language, name, description, usage_prompt, version,
-                file, is_builtin, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 1, datetime('now'), datetime('now'))",
+                sha256, size, mime, file, is_builtin, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, x'', 1, datetime('now'),
+                     datetime('now'))",
             params![
                 item.id,
                 workspace_id,
@@ -357,7 +398,9 @@ fn seed_templates(conn: &Connection, items: &[TemplateSeedItem]) -> Result<bool,
                 item.description,
                 item.usage_prompt,
                 item.version.clone().unwrap_or_else(|| "1.0".to_string()),
-                bytes,
+                stored.sha256,
+                stored.size as i64,
+                crate::blob_sync::XLSX,
             ],
         )
         .map_err(|e| e.to_string())?;
@@ -379,7 +422,7 @@ pub fn template_get(
     id: String,
     user_id: String,
 ) -> Result<Option<TemplateData>, String> {
-    db.with_conn(|conn| get_template(conn, &id, &user_id))
+    db.with_conn(|conn| get_template(conn, db.evidence(), &id, &user_id))
 }
 
 #[tauri::command]
@@ -388,9 +431,9 @@ pub fn template_create(
     input: TemplateInput,
     user_id: String,
 ) -> Result<Option<TemplateData>, String> {
-    let id = db.with_tx(|conn| insert_template(conn, &input, &user_id))?;
+    let id = db.with_tx(|conn| insert_template(conn, db.evidence(), &input, &user_id))?;
     db.persist()?;
-    db.with_conn(|conn| get_template(conn, &id, &user_id))
+    db.with_conn(|conn| get_template(conn, db.evidence(), &id, &user_id))
 }
 
 #[tauri::command]
@@ -402,7 +445,7 @@ pub fn template_update(
 ) -> Result<Option<TemplateData>, String> {
     db.with_tx(|conn| update_template(conn, &id, &meta, &user_id))?;
     db.persist()?;
-    db.with_conn(|conn| get_template(conn, &id, &user_id))
+    db.with_conn(|conn| get_template(conn, db.evidence(), &id, &user_id))
 }
 
 #[tauri::command]
@@ -415,15 +458,36 @@ pub fn template_delete(db: State<Db>, id: String, user_id: String) -> Result<(),
 /// rows (including user-edited metadata) are left untouched.
 #[tauri::command]
 pub fn template_seed(db: State<Db>, items: Vec<TemplateSeedItem>) -> Result<(), String> {
-    if db.with_conn(|conn| seed_templates(conn, &items))? {
+    if db.with_conn(|conn| seed_templates(conn, db.evidence(), &items))? {
         db.persist()?;
     }
     Ok(())
 }
 
+/// One evidence store for this crate's tests that write templates.
+#[cfg(test)]
+pub(crate) fn test_store() -> &'static EvidenceStore {
+    static STORE: std::sync::OnceLock<EvidenceStore> = std::sync::OnceLock::new();
+    STORE.get_or_init(|| {
+        let dir = std::env::temp_dir().join(format!("pharos-templates-{}", Uuid::new_v4()));
+        EvidenceStore::new(&dir, &[7u8; 32])
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // The functions under test, with the tests' evidence store.
+    fn insert_template(c: &Connection, i: &TemplateInput, u: &str) -> Result<String, String> {
+        super::insert_template(c, test_store(), i, u)
+    }
+    fn get_template(c: &Connection, id: &str, u: &str) -> Result<Option<TemplateData>, String> {
+        super::get_template(c, test_store(), id, u)
+    }
+    fn seed_templates(c: &Connection, items: &[TemplateSeedItem]) -> Result<bool, String> {
+        super::seed_templates(c, test_store(), items)
+    }
 
     fn conn() -> Connection {
         let c = Connection::open_in_memory().unwrap();

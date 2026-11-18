@@ -354,10 +354,10 @@ fn attachments_of_a_defect_are_owner_scoped() {
         1
     );
     assert_eq!(events(&c, "link") + events(&c, "unlink"), 2);
-    // Attachments never reach the oplog (SYNC-04b).
+    // Its add and its delete sync (SYNC-04b), without events of their own.
     assert_eq!(
         count(&c, "SELECT count(*) FROM oplog WHERE entity = 'attachment'"),
-        0
+        2
     );
 }
 

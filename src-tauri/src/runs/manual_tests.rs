@@ -530,10 +530,10 @@ fn recording_moves_the_drafts_files_to_the_result_and_its_steps_in_one_transacti
         detail.results[0].steps[1].actual.as_deref(),
         Some("declined")
     );
-    // Attachments never reach the oplog (SYNC-04b).
+    // The draft's files sync once they are the result's (SYNC-04b).
     assert_eq!(
         count(&c, "SELECT count(*) FROM oplog WHERE entity = 'attachment'"),
-        0
+        2
     );
 }
 

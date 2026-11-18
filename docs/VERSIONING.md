@@ -221,7 +221,7 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
    - **Dentro de una MENOR**, la versión no distingue un build de otro: lo
      hace la cabecera `x-pharos-sync-features` (`key-conflicts`, `append-only`,
      `complete-payload`, `stable-steps`, `runs`, `custom-fields`, `cycles`,
-     `defects`, `workspaces`). Un cliente que
+     `defects`, `workspaces`, `blobs`). Un cliente que
      aún no ha visto `stable-steps` en las respuestas del servidor no le envía
      casos ni revisiones (los retiene y el diagnóstico los cuenta). Del mismo
      modo, sin `runs` no le envía runs, elementos, reglas de enlace, shards ni
@@ -292,6 +292,10 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
        era un id aleatorio por equipo, o `"local"` en la web; la migración
        0019 lo reescribió. Está fuera del contenido de los `append_only` y
        del hash de la auditoría.
+   - **`blobs` (SYNC-04b, ADR-0042 §7)**: sin ella el cliente no envía
+     adjuntos ni plantillas (los retiene) y el servidor no se los da en el
+     pull; un push que los traiga recibe 400 `blobs_unsupported`. Su
+     contenido no viaja en el oplog: va por hash a `/blobs` antes del push.
    - **Una clave nueva dentro de un blob opaco no necesita puerta** si se
      cumplen las tres: el escritorio y el servidor guardan el blob tal cual sin
      leer esa parte; todo cliente que aún puede hacer push la conoce; y el

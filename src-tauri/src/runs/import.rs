@@ -1239,8 +1239,9 @@ fn write_result(
     journal::record_append(conn, RESULT, &r.id, user)
 }
 
-/// An `attachments` row for a stored content (not synced yet: ADR-0014), and
-/// whether it is new (the same content on the same owner is one row).
+/// An `attachments` row for a stored content, queued for the sync with its
+/// content by hash (SYNC-04b), and whether it is new (the same content on the
+/// same owner is one row).
 #[allow(clippy::too_many_arguments)]
 fn insert_attachment(
     conn: &Connection,
@@ -1287,6 +1288,7 @@ fn insert_attachment(
         ],
     )
     .map_err(err)?;
+    crate::blob_sync::queue_attachment(conn, user, &id, "upsert", true)?;
     Ok((id, true))
 }
 
