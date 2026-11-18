@@ -523,6 +523,7 @@ Optional limits (defaults in brackets):
 | `TRUST_PROXY`             | `true` behind a reverse proxy, so the limit counts real client IPs and the API sees https from `X-Forwarded-Proto` [false]   |
 | `AI_VAULT_KEY`            | 32 random bytes in base64 (`openssl rand -base64 32`) that encrypt the AI keys kept for the web (IA-12) [empty = AI on the web is off] |
 | `AI_CHAT_RATE_LIMIT_MAX` / `_WINDOW` | AI requests from the web per account [30 per `1 minute`]                                                         |
+| `API_RATE_LIMIT_MAX` / `_WINDOW` | Requests to the public API `/api/v1` per API token (without a well-formed token, per IP) [300 per `1 minute`] |
 | `AI_VAULT_RATE_LIMIT_MAX` / `_WINDOW` | Uploads and removals of the AI key per account [10 per `1 hour`]                                                |
 | `AI_CHAT_BODY_LIMIT_BYTES` | Largest body on `/ai/chat`, images included [20 MiB]                                                                         |
 

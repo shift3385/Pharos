@@ -1,4 +1,4 @@
-import Fastify, { type FastifyError } from "fastify";
+import Fastify, { type FastifyError, type FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import { ZodError } from "zod";
@@ -42,6 +42,10 @@ import { workspaceRoutes } from "./modules/workspaces/workspaces.routes";
 import { aiRoutes, createAiVaultStore, type Fetch } from "./modules/ai";
 import { blobRoutes } from "./modules/blobs/blobs.routes";
 import { diskBlobStore } from "./modules/blobs/blobStore";
+import { createApiTokenService } from "./modules/api/apiTokens";
+import { apiTokenRoutes } from "./modules/api/apiTokens.routes";
+import { API_V1, apiV1Routes } from "./modules/api/v1";
+import { hashToken, parseToken } from "./modules/api/tokenFormat";
 
 /** Routes limited per client IP: guessing passwords on login, and burning
  *  Argon2 CPU on register; guessing passwords, recovery codes or reset links,
@@ -69,6 +73,20 @@ const CLIENT_ERROR_CODES: Record<number, string> = {
   429: "rate_limited",
 };
 
+/** A request as the log writes it: Fastify's default fields, with any token
+ *  in the query string blanked. `/api/v1` refuses a token in the URL
+ *  (`token_in_url`), but the request is logged before that answer
+ *  (INT-02, ADR-0052 security review). */
+function logRequest(req: FastifyRequest) {
+  return {
+    method: req.method,
+    url: req.url.replace(/([?&](?:access_)?token=)[^&#]*/gi, "$1[redacted]"),
+    host: req.host,
+    remoteAddress: req.ip,
+    remotePort: req.socket?.remotePort,
+  };
+}
+
 /** Builds the Fastify application wired to the given pool + config. */
 export function buildApp(deps: {
   pool: Pool;
@@ -82,7 +100,9 @@ export function buildApp(deps: {
   const { pool, env } = deps;
   const app = Fastify({
     // Tests may pass a stream to read what would be logged (IA-12: no key in logs).
-    logger: deps.logStream ? { level: "trace", stream: deps.logStream } : env.NODE_ENV !== "test",
+    logger: deps.logStream
+      ? { level: "trace", stream: deps.logStream, serializers: { req: logRequest } }
+      : env.NODE_ENV !== "test" && { serializers: { req: logRequest } },
     bodyLimit: env.BODY_LIMIT_BYTES,
     trustProxy: env.TRUST_PROXY,
   });
@@ -90,8 +110,15 @@ export function buildApp(deps: {
   // SEC-07: only https in production (from the reverse proxy), before anything else.
   app.addHook("onRequest", httpsOnly(env));
 
+  // The public API (INT-02) is for machines with tokens, never for a page in
+  // a browser: no CORS there, except its OpenAPI document.
+  const corsOrigin = env.CORS_ORIGIN === "*" ? true : parseOrigins(env.CORS_ORIGIN);
   void app.register(cors, {
-    origin: env.CORS_ORIGIN === "*" ? true : parseOrigins(env.CORS_ORIGIN),
+    delegator: (req, cb) => {
+      const url = req.url ?? "";
+      const closed = url.startsWith(`${API_V1}/`) && !url.startsWith(`${API_V1}/openapi.json`);
+      cb(null, { origin: closed ? false : corsOrigin });
+    },
   });
 
   // Per-route limits (BASE-06), kept here so route modules stay unaware of
@@ -180,6 +207,26 @@ export function buildApp(deps: {
   });
   void app.register(async (instance) => {
     adminRoutes(instance, { tokens, admin, account });
+  });
+  // API tokens and the public API /api/v1 (INT-02, ADR-0052).
+  const apiTokens = createApiTokenService(pool, clock);
+  void app.register(async (instance) => {
+    apiTokenRoutes(instance, { service: apiTokens, tokens, admin });
+  });
+  void app.register(async (instance) => {
+    apiV1Routes(instance, {
+      pool,
+      service: apiTokens,
+      rateLimit: {
+        max: env.API_RATE_LIMIT_MAX,
+        timeWindow: env.API_RATE_LIMIT_WINDOW,
+        // One bucket per token; a request without a well-formed token, per IP.
+        keyGenerator: (req) => {
+          const raw = req.headers.authorization?.slice(7).trim() ?? "";
+          return parseToken(raw) ? `token:${hashToken(raw)}` : `ip:${req.ip}`;
+        },
+      },
+    });
   });
   void app.register(async (instance) => {
     syncRoutes(instance, { repo: syncRepo, tokens, pool });

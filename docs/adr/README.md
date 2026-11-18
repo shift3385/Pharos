@@ -55,6 +55,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0047](0047-revision-de-casos-y-baselines.md) | Revisión de casos (borrador → revisión → aprobado) con autor, fecha y comprobación de quién aprueba, y baselines de suite congeladas (CAS-02) | Aceptado | 2026-11-17 |
 | [0048](0048-notificaciones.md) | Notificaciones que viajan por el servidor, una API `notify`/`emitNotification` para las pistas y copia cifrada en el escritorio (RED-W2) | Aceptado | 2026-11-17 |
 | [0049](0049-estados-del-plan-y-aprobacion-independiente.md) | Estados del plan por acciones, como los casos, y política «Aprobación independiente» por workspace para planes y casos (PLN-08); cambia la decisión 4 del ADR-0040 y la regla de edición de casos del ADR-0047 | Aceptado | 2026-11-17 |
+| [0052](0052-api-v1-tokens-y-webhooks.md) | API pública `/api/v1` con contrato OpenAPI, tokens de proyecto y personales con scopes que nunca pueden más que su dueño, webhooks firmados (Standard Webhooks) y backend compilado con `tsc` (INT-02, INT-03, DEU-01) | Aceptado | 2026-11-18 |
 
 Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en

@@ -22,7 +22,8 @@
   "server": {
     "dir": "server/migrations",
     "reserved": {
-      "0029": "0.6.0 track A (INT-02): api_tokens (project tokens and personal access tokens, hashed, scoped)",
+      "0027": "0.6.0 track S (SEC-12): users.disabled_at (reserved by S; listed here so track A, which ships 0029 first, passes the gap check)",
+      "0028": "0.6.0 track S (SYNC-11): repair of revision tombstones (reserved by S)",
       "0030": "0.6.0 track A (INT-03): webhooks and webhook_deliveries (outbox, signed deliveries)"
     },
     "retired": {

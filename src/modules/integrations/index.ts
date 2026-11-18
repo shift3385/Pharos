@@ -1,4 +1,8 @@
-// integrations module boundary (spec §7). Reserved for a FUTURE version (JIRA:
-// defects, Xray/Zephyr sync, user stories). Not implemented in v0.0.1; the
-// boundary exists so it can be added without touching the local planner.
+// integrations module boundary (spec §7). INT-02 (ADR-0052): API tokens for
+// the public API /api/v1, a workspace's project tokens (CI) and a person's
+// personal access tokens (CLI). Webhooks (INT-03) and Jira (INT-05) come
+// later in this same module.
 export const INTEGRATIONS_MODULE = "integrations" as const;
+export { ProjectTokensSection } from "./ui/ProjectTokensSection";
+export { PersonalTokensSection } from "./ui/PersonalTokensSection";
+export { AdminRevokeTokensButton } from "./ui/AdminRevokeTokens";

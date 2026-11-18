@@ -1,0 +1,361 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Pharos API",
+    "version": "1.0.0",
+    "description": "Public API of a Pharos server for CI and scripts. Authenticate with a project token or a personal access token: `Authorization: Bearer phr_…`. A token acts as its owner and never does more than the owner's current role allows."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "security": [
+    {
+      "token": []
+    }
+  ],
+  "paths": {
+    "/me": {
+      "get": {
+        "operationId": "getMe",
+        "summary": "The token of the request and its owner.",
+        "responses": {
+          "200": {
+            "description": "The token and its owner.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope) or `forbidden` (its owner's role lacks the capability).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "summary": "Projects the token reaches.",
+        "description": "Scope `projects:read`. A project token lists only its project.",
+        "responses": {
+          "200": {
+            "description": "The projects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope) or `forbidden` (its owner's role lacks the capability).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}": {
+      "get": {
+        "operationId": "getProject",
+        "summary": "One project.",
+        "description": "Scope `projects:read`. A project out of the token's reach is answered 404, like one that does not exist.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope) or `forbidden` (its owner's role lacks the capability).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "token": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "phr_prj_… (project token) or phr_pat_… (personal access token)",
+        "description": "Scopes: projects:read, runs:read, runs:write, cases:read, cycles:read, defects:read, requirements:read."
+      }
+    },
+    "schemas": {
+      "Me": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "project",
+                  "personal"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "prefix": {
+                "type": "string"
+              },
+              "scopes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "projects:read",
+                    "runs:read",
+                    "runs:write",
+                    "cases:read",
+                    "cycles:read",
+                    "defects:read",
+                    "requirements:read"
+                  ]
+                }
+              },
+              "expiresAt": {
+                "type": "string"
+              },
+              "workspaceId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "projectId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "name",
+              "prefix",
+              "scopes",
+              "expiresAt",
+              "workspaceId",
+              "projectId"
+            ]
+          },
+          "owner": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          }
+        },
+        "required": [
+          "token",
+          "owner"
+        ]
+      },
+      "Project": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "caseIdPrefix": {
+            "type": "string"
+          },
+          "workspace": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "caseIdPrefix",
+          "workspace"
+        ]
+      },
+      "ProjectList": {
+        "type": "object",
+        "properties": {
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Project"
+            }
+          }
+        },
+        "required": [
+          "projects"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "additionalProperties": {},
+        "description": "Every error: a stable `code` and a readable `message`, plus fields of that error."
+      }
+    }
+  }
+}
