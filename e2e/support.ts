@@ -92,7 +92,9 @@ type ProjectListState = "table" | "empty";
 
 async function projectListNow(): Promise<ProjectListState | null> {
   if (await $(".pj-empty").isExisting()) return "empty";
-  if (await $(".pj-table").isExisting()) return "table";
+  // The loading skeleton also has the class pj-table (a .sk-region): it is
+  // not the list yet (BASE-24).
+  if (await $(".pj-table:not(.sk-region)").isExisting()) return "table";
   return null;
 }
 
@@ -102,7 +104,7 @@ async function projectListNow(): Promise<ProjectListState | null> {
  *  into the empty state (the last test project just deleted) is not taken
  *  for the final list. That race made the cleanup fail on the missing search
  *  box in several runs. */
-async function projectListLoaded(): Promise<ProjectListState> {
+export async function projectListLoaded(): Promise<ProjectListState> {
   const read: { last: ProjectListState | null; settled: ProjectListState | null } = {
     last: null,
     settled: null,
