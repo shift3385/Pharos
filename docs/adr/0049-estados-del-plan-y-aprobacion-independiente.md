@@ -77,15 +77,17 @@
        En un caso, el `createdBy` de su primera revisión, como hace #93. En
        un plan, `test_plans.created_by` en el escritorio y la misma regla en
        el servidor.
-  7. **Sobre la comprobación de W** (`workspaceApproverCheck(pool, { policies })`,
+  7. **Sobre la comprobación de W** (`workspaceApproverCheck(pool, { rule, policies })`,
      #93), sin un `ApproverCheck` paralelo:
      - `ApprovalRequest.subject?: "case" | "plan"`, por defecto `"case"`.
        Quien llama pasa el autor: en un plan, `test_plans.created_by`.
-     - La comprobación de W solo exige ser miembro activo (si no,
-       `notMember`). En un workspace personal no aplica políticas.
-     - Por defecto, las políticas son
-       `DEFAULT_APPROVAL_POLICIES = [requiresApproverRole, authorNeverApproves]`.
-     - PLN-08 instala `{ policies: [independentApproval(pool)] }`:
+     - La comprobación de W exige ser miembro activo (si no, `notMember`).
+       En un workspace personal no aplica ni la regla ni las políticas.
+     - `rule` es sustituible. Por defecto es `roleAndNotAuthor`:
+       `requiresApproverRole` (la capacidad sale de `subject`) y después
+       `authorNeverApproves`.
+     - Las `policies` son rechazos extra, después de la regla.
+     - PLN-08 instala `{ rule: independentApproval(pool) }`:
        - **Política activada:** aplica `requiresApproverRole` y
          `authorNeverApproves`, y responde con el primer rechazo.
        - **Política desactivada:** rechaza con `role` a quien no puede
@@ -121,7 +123,7 @@
     las rutas de planes de `server/src/modules/domain/**` y
     `server/src/modules/workspaces/approval.ts`. Con la opción A de la
     decisión 8, también toca el flujo de casos de CAS-02. Usa las
-    `policies` de la comprobación de W (#93).
+    `rule` de la comprobación de W (#93).
   - Espera a que W2 (workspaces en el escritorio y la UI) y #93 estén en
     `main`.
   - La app 0.4 sigue leyendo los planes. Lo que puede escribir un cliente
