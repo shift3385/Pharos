@@ -7,6 +7,16 @@ edition = "2021"
 rust-version = "1.77.2"
 publish = false
 
+# Two crates share `src-tauri/src` (CORE-01, ADR-0050):
+# - `pharos-core` (core/Cargo.toml, rooted at src/lib.rs): the database,
+#   migrations, repositories, oplog and sync, with no Tauri unless its `tauri`
+#   feature is on. The desktop and the CLI (INT-01) both use it.
+# - this package, `pharos`: the desktop shell (src/app.rs and src/main.rs),
+#   which builds the Tauri app and registers the core's commands.
+[workspace]
+members = [".", "core"]
+default-members = [".", "core"]
+
 # The library is what the desktop and (future) mobile entrypoints call into.
 # Desktop only needs the rlib: the binary (main.rs) links it.
 # The cdylib/staticlib are mobile artifacts (0.4.0). Under the former GNU
@@ -15,69 +25,16 @@ publish = false
 # ["staticlib", "cdylib"] when the mobile target is set up.
 [lib]
 name = "pharos_lib"
+path = "src/app.rs"
 crate-type = ["rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+pharos-core = { path = "core", features = ["tauri"] }
 tauri = { version = "2", features = [] }
-serde = { version = "1", features = ["derive"] }
-# float_roundtrip: parse floats exactly, so the JCS hash of a case revision
-# (DAT-02) matches the one JavaScript computes for the same JSON.
-serde_json = { version = "1", features = ["float_roundtrip"] }
-# Secure session cache in the Windows Credential Manager (spec §4).
-keyring = { version = "3", features = ["windows-native"] }
-# Local encrypted SQLite: plain SQLite (compiles with gcc, no OpenSSL) + pure-Rust
-# AES-256-GCM encryption at rest, key kept in the OS keychain (spec §16 Phase 2).
-# `serialize` moves the database image to/from memory so plaintext never hits disk;
-# `blob` reads the old planner attachment BLOBs in blocks while moving them out.
-rusqlite = { version = "0.41.1", features = ["bundled", "serialize", "blob"] }
-# `stream`: the evidence files (`evidence/*.pev`, ADR-0014) are encrypted and
-# decrypted in 64 KiB blocks (STREAM construction), never whole in memory.
-aes-gcm = { version = "0.10", features = ["stream"] }
-# Evidence keys and file names (ADR-0014): HKDF-SHA256 derives them from the
-# database key; HMAC-SHA256 of the content hash names each file.
-hkdf = "0.12"
-hmac = "0.12"
-base64 = "0.22"
-uuid = { version = "1", features = ["v4", "v5"] }
-# RFC 8785 (JCS) numbers in ECMAScript form, for the content hash of a case
-# revision (DAT-02, ADR-0011): the server hashes the same JSON in JavaScript.
-ryu-js = "1"
-# Online AI provider calls (Gemini). Reuse the reqwest version already in the
-# tree; default TLS avoids OpenSSL (originally required by the GNU toolchain —
-# see the Phase 2 spike). `json` for request/response bodies.
-reqwest = { version = "0.13", features = ["json"] }
-# Parses and checks the server address picked at sign-in (SEC-10, ADR-0046);
-# already in the tree through reqwest and Tauri.
-url = "2"
-# Observability (BASE-08, ADR-0022): structured JSON-lines logs in a daily
-# rotating file under the app log dir; `log` records from Tauri are bridged in.
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-tracing-appender = "0.2"
-# Diagnostic bundle: OS name/version and redaction of secrets in exported logs.
-os_info = { version = "3", default-features = false }
-regex = "1"
-# Checksum of the recovery key (SEC-03, ADR-0024); already in the tree via Tauri.
-sha2 = "0.10"
-# Walks a project folder for the AI requirement extraction (IA-17, ADR-0036),
-# honouring .gitignore; MIT OR Unlicense, by the author of ripgrep.
-ignore = "0.4"
-
-# Native folder picker for the download folder (UX-02), called only from Rust
-# (downloads.rs): no dialog plugin, so the webview gets no dialog permission.
-# Windows only (the shipped target): rfd uses the system dialog through COM, and
-# its default features (gtk3/Wayland) only matter on Linux.
-[target.'cfg(windows)'.dependencies]
-rfd = { version = "0.17", default-features = false }
-
-[dev-dependencies]
-# Generated TS contracts (BASE-05, ADR-0026): the derives are test-only, so
-# cargo test writes src/shared/contracts/generated/ and the binary never
-# carries ts-rs. Settings in .cargo/config.toml.
-ts-rs = "12"
 
 [features]
 # This feature is used to produce production builds where an extra console

@@ -10,6 +10,7 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -502,6 +503,7 @@ pub(crate) fn import_requirements(
     Ok(summary)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn requirement_list(
     db: State<Db>,
@@ -511,6 +513,7 @@ pub fn requirement_list(
     db.with_conn(|conn| list_requirements(conn, &project_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn requirement_get(
     db: State<Db>,
@@ -520,6 +523,7 @@ pub fn requirement_get(
     db.with_conn(|conn| get_requirement(conn, &id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn requirement_create(
     db: State<Db>,
@@ -530,6 +534,7 @@ pub fn requirement_create(
     db.with_conn(|conn| get_requirement(conn, &id, &input.user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn requirement_update(
     db: State<Db>,
@@ -541,12 +546,14 @@ pub fn requirement_update(
     db.with_conn(|conn| get_requirement(conn, &id, &input.user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn requirement_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_requirement(conn, &id, &user_id))?;
     db.persist()
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn requirement_risk_set(
     db: State<Db>,
@@ -560,6 +567,7 @@ pub fn requirement_risk_set(
     db.with_conn(|conn| get_requirement(conn, &id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn requirement_import(
     db: State<Db>,

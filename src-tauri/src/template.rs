@@ -19,6 +19,7 @@
 use base64::Engine as _;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -411,11 +412,13 @@ fn seed_templates(
 
 // `user_id` is the signed-in account (FIX-08b): commands only change that
 // account's own templates, and return those plus the built-in and shared ones.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn template_list(db: State<Db>, user_id: String) -> Result<Vec<TemplateSummary>, String> {
     db.with_conn(|conn| list_templates(conn, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn template_get(
     db: State<Db>,
@@ -425,6 +428,7 @@ pub fn template_get(
     db.with_conn(|conn| get_template(conn, db.evidence(), &id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn template_create(
     db: State<Db>,
@@ -436,6 +440,7 @@ pub fn template_create(
     db.with_conn(|conn| get_template(conn, db.evidence(), &id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn template_update(
     db: State<Db>,
@@ -448,6 +453,7 @@ pub fn template_update(
     db.with_conn(|conn| get_template(conn, db.evidence(), &id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn template_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_template(conn, &id, &user_id))?;
@@ -456,6 +462,7 @@ pub fn template_delete(db: State<Db>, id: String, user_id: String) -> Result<(),
 
 /// Idempotently inserts the bundled built-in templates (by stable id). Existing
 /// rows (including user-edited metadata) are left untouched.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn template_seed(db: State<Db>, items: Vec<TemplateSeedItem>) -> Result<(), String> {
     if db.with_conn(|conn| seed_templates(conn, db.evidence(), &items))? {

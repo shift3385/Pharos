@@ -49,7 +49,9 @@ use hmac::{Hmac, Mac};
 use rusqlite::{params, Connection, OptionalExtension, MAIN_DB};
 use serde_json::json;
 use sha2::{Digest, Sha256};
+#[cfg(feature = "tauri")]
 use tauri::ipc::{InvokeBody, Request};
+#[cfg(feature = "tauri")]
 use tauri::State;
 
 use crate::db::Db;
@@ -880,6 +882,7 @@ impl Uploads {
 }
 
 /// Starts an upload of `size` bytes; refuses it above the per-file limit.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn evidence_upload_begin(
     db: State<Db>,
@@ -897,6 +900,7 @@ pub fn evidence_upload_begin(
 
 /// Appends a raw chunk to an upload (`x-pharos-upload` names it); returns the
 /// bytes received so far. A failing chunk discards the upload.
+#[cfg(feature = "tauri")]
 #[tauri::command(async)]
 pub fn evidence_upload_chunk(
     uploads: State<'_, Uploads>,
@@ -915,6 +919,7 @@ pub fn evidence_upload_chunk(
 }
 
 /// Drops an upload the user abandoned (its temp file goes with it).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn evidence_upload_cancel(uploads: State<Uploads>, upload_id: String) -> Result<(), String> {
     uploads.remove(&upload_id)
@@ -1087,7 +1092,7 @@ fn fault_point(_moved: usize) -> Result<(), String> {
     Ok(())
 }
 
-pub(crate) mod check;
+pub mod check;
 pub mod retention;
 
 #[cfg(test)]

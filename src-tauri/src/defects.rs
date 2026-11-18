@@ -33,6 +33,7 @@ use std::collections::HashMap;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -2330,6 +2331,7 @@ pub(crate) fn apply_pulled_card(
 
 // ---- commands ----------------------------------------------------------------------
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn defect_list(
     db: State<Db>,
@@ -2339,11 +2341,13 @@ pub fn defect_list(
     db.with_conn(|conn| list_defects(conn, &project_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn defect_get(db: State<Db>, id: String, user_id: String) -> Result<Option<Defect>, String> {
     db.with_conn(|conn| get_defect(conn, &id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn defect_create(db: State<Db>, input: DefectInput) -> Result<Option<Defect>, String> {
     let id = db.with_tx(|conn| insert_defect(conn, &input))?;
@@ -2351,6 +2355,7 @@ pub fn defect_create(db: State<Db>, input: DefectInput) -> Result<Option<Defect>
     db.with_conn(|conn| get_defect(conn, &id, &input.user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn defect_update(
     db: State<Db>,
@@ -2362,6 +2367,7 @@ pub fn defect_update(
     db.with_conn(|conn| get_defect(conn, &id, &input.user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn defect_transition(
     db: State<Db>,
@@ -2385,12 +2391,14 @@ pub fn defect_transition(
     db.with_conn(|conn| get_defect(conn, &id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn defect_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_defect(conn, &id, &user_id))?;
     db.persist_and_collect()
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn defect_link_set(
     db: State<Db>,
@@ -2405,6 +2413,7 @@ pub fn defect_link_set(
 }
 
 /// Read only: the editor's prefill for a defect created from a result.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn defect_draft_from_result(
     db: State<Db>,
@@ -2415,6 +2424,7 @@ pub fn defect_draft_from_result(
     db.with_conn(|conn| draft_from_result(conn, &result_id, step_id.as_deref(), &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn defect_result_list(
     db: State<Db>,
@@ -2426,6 +2436,7 @@ pub fn defect_result_list(
 
 /// Attaches a finished upload (`evidence_upload_*`) to a defect the user
 /// owns, as `planner_attachment_add` does for cards.
+#[cfg(feature = "tauri")]
 #[tauri::command(async)]
 pub fn defect_attachment_add(
     db: State<'_, Db>,
@@ -2472,6 +2483,7 @@ pub fn defect_attachment_add(
     }))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn defect_attachment_list(
     db: State<Db>,
@@ -2483,6 +2495,7 @@ pub fn defect_attachment_list(
 
 /// Saves an attachment into the download folder, decrypted block by block
 /// straight to disk (as `planner_attachment_save`).
+#[cfg(feature = "tauri")]
 #[tauri::command(async)]
 pub fn defect_attachment_save(
     db: State<'_, Db>,
@@ -2510,6 +2523,7 @@ pub fn defect_attachment_save(
     Ok(saved)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn defect_attachment_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_attachment(conn, &id, &user_id))?;

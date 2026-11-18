@@ -24,6 +24,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use regex::{Captures, Regex};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "tauri")]
 use tauri::{AppHandle, Manager, State};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
@@ -630,6 +631,7 @@ fn client_event(level: &str, message: &str) -> (tracing::Level, String) {
 
 /// Writes a frontend error or warning into the log: redacted, truncated and
 /// throttled (`CLIENT_LOG_MAX` per `CLIENT_LOG_WINDOW`).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn diag_log(diag: State<DiagState>, level: String, message: String) {
     let admitted = match diag.throttle.lock() {
@@ -652,6 +654,7 @@ pub fn diag_log(diag: State<DiagState>, level: String, message: String) {
 
 /// Builds the diagnostic bundle; the frontend zips and saves it. Works without
 /// a database, so it is available exactly when the database failed to open.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn diag_export(
     app: AppHandle,

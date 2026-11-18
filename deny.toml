@@ -57,6 +57,10 @@ ignore = true
 # Tauri pulls several versions of some crates; that is not a policy problem.
 multiple-versions = "allow"
 wildcards = "deny"
+# The workspace's own path dependencies (`pharos` → `pharos-core`, ADR-0050)
+# carry no version; both crates are private (publish = false). Registry and git
+# wildcards are still denied.
+allow-wildcard-paths = true
 
 [sources]
 unknown-registry = "deny"

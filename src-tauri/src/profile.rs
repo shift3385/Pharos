@@ -3,6 +3,7 @@
 
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -108,11 +109,13 @@ fn upsert_profile(
     Ok(())
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn profile_get(db: State<Db>) -> Result<Option<Profile>, String> {
     db.with_conn(current_profile)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn profile_upsert(db: State<Db>, input: ProfileInput) -> Result<Option<Profile>, String> {
     let role = input.role.unwrap_or_else(|| "test_manager".to_string());

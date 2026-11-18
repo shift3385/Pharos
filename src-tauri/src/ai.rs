@@ -143,6 +143,7 @@ fn read_key(provider: &str) -> Result<Option<String>, String> {
 }
 
 /// Stores an AI provider's API key in the OS keychain.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn ai_key_set(provider: String, key: String) -> Result<(), String> {
     let provider = Provider::parse(&provider)?;
@@ -150,6 +151,7 @@ pub fn ai_key_set(provider: String, key: String) -> Result<(), String> {
 }
 
 /// Whether a provider's key is configured (never returns the key itself).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn ai_key_status(provider: String) -> Result<bool, String> {
     let provider = Provider::parse(&provider)?;
@@ -157,6 +159,7 @@ pub fn ai_key_status(provider: String) -> Result<bool, String> {
 }
 
 /// Removes a provider's stored key.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn ai_key_clear(provider: String) -> Result<(), String> {
     let provider = Provider::parse(&provider)?;
@@ -187,6 +190,7 @@ fn web_upload_body(provider: Provider, model: &str, key: Option<String>) -> Resu
 /// The session is the one Rust keeps for the chosen server, never a token from
 /// the webview: injected script cannot send the key to another account
 /// (security review of IA-12, ADR-0034). The headers are fixed here.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub async fn ai_web_access_upload(
     state: tauri::State<'_, crate::server::ServerState>,
@@ -609,6 +613,7 @@ fn credentials(
 /// text. Errors are human-readable (missing key, provider message, timeout).
 /// `temperature: None` sends none: the frontend's capabilities table decides
 /// (an OpenAI-compatible endpoint may not accept it, ADR-0031).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub async fn ai_chat_online(
     provider: String,
@@ -634,6 +639,7 @@ pub async fn ai_chat_online(
 
 /// Tries a key the user just typed with one call, without storing it: the key
 /// in the keychain stays as it was whatever the provider answers (ADR-0033).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub async fn ai_key_test(
     provider: String,
@@ -685,6 +691,7 @@ async fn chat(
 
 /// Lists the models the provider offers to this key, so the user picks a real
 /// id instead of typing one that may have been retired.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub async fn ai_list_models(
     provider: String,

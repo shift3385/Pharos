@@ -9,6 +9,7 @@ use base64::Engine;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 use serde_json::{json, Map};
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -151,6 +152,7 @@ fn owned_attachment(
 
 /// Attaches a finished upload (`evidence_upload_*`) to a requirement the
 /// user owns, as `defect_attachment_add` does.
+#[cfg(feature = "tauri")]
 #[tauri::command(async)]
 pub fn requirement_attachment_add(
     db: State<'_, Db>,
@@ -197,6 +199,7 @@ pub fn requirement_attachment_add(
     }))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn requirement_attachment_list(
     db: State<Db>,
@@ -208,6 +211,7 @@ pub fn requirement_attachment_list(
 
 /// A `data:` URL of an image attachment, to show the source; None for other
 /// files, large ones, or a content that is not here.
+#[cfg(feature = "tauri")]
 #[tauri::command(async)]
 pub fn requirement_attachment_preview(
     db: State<'_, Db>,
