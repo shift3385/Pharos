@@ -9,3 +9,12 @@ export {
   type PreferenceKey,
   type StoredPreference,
 } from "./api/accountPreferences";
+export {
+  isLanguage,
+  pullSynced,
+  pushSynced,
+  syncProfileNames,
+  type SyncedAppearance,
+  type SyncedLanguage,
+  type SyncedTheme,
+} from "./api/preferenceSync";

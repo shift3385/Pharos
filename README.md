@@ -511,18 +511,46 @@ Optional limits (defaults in brackets):
 
 | Variable                  | Purpose                                                                                                                       |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `LOGIN_RATE_LIMIT_MAX`    | Attempts per client IP on `/auth/login` and `/auth/register` [10]                                                             |
+| `LOGIN_RATE_LIMIT_MAX`    | Attempts per client IP on `/auth/login`, `/auth/register` and the account recovery routes (`/auth/password`, `/auth/recover`, `/auth/reset/*`) [10] |
 | `LOGIN_RATE_LIMIT_WINDOW` | Window for that limit: milliseconds or `30 seconds`, `1 minute`, `2 hours`… [`1 minute`]; above the limit the API answers 429 |
 | `BODY_LIMIT_BYTES`        | Largest request body [1 MiB]; above it the API answers 413                                                                    |
 | `SYNC_BODY_LIMIT_BYTES`   | Largest body on `/sync/*` (push batches) [8 MiB]                                                                              |
 | `SYNC_TOMBSTONE_DAYS`     | Days the server keeps the content of a deleted record before clearing it (the tombstone stays) [30]; `0` = never clear        |
-| `TRUST_PROXY`             | `true` behind a reverse proxy, so the limit counts real client IPs [false]                                                    |
+| `TRUST_PROXY`             | `true` behind a reverse proxy, so the limit counts real client IPs and the API sees https from `X-Forwarded-Proto` [false]   |
 
-The `api` service of `docker-compose.yml` runs in production mode. It reads
-every variable above from `.env`, so set at least `JWT_ACCESS_SECRET` and
-`CORS_ORIGIN` there before `docker compose up`, and `TRUST_PROXY=true` behind a
-reverse proxy. The database-only setup (`docker compose up -d db`, `dev.bat`) is
-unaffected.
+### Password reset by email (optional)
+
+Accounts recover a forgotten password with their recovery codes, shown once at
+sign-up ([ADR-0045](docs/adr/0045-recuperacion-de-la-cuenta.md)). Reset by email
+is **off by default**. To turn it on, set `SMTP_HOST`. The API then also needs
+`SMTP_FROM` and `APP_PUBLIC_URL`, and refuses to start without them.
+
+| Variable          | Purpose                                                                                                   |
+| ----------------- | --------------------------------------------------------------------------------------------------------- |
+| `SMTP_HOST`       | SMTP server; empty or unset = no email                                                                    |
+| `SMTP_PORT`       | [587]                                                                                                     |
+| `SMTP_SECURE`     | `true` for TLS from the start (port 465); otherwise STARTTLS is required [false]                          |
+| `SMTP_USER`, `SMTP_PASS` | SMTP credentials, if the server asks for them                                                  |
+| `SMTP_FROM`       | Sender, e.g. `Pharos <no-reply@example.com>`                                                              |
+| `APP_PUBLIC_URL`  | The web build's address the link opens (`…/#/restablecer?token=…`); https, http only for localhost        |
+| `RESET_TOKEN_TTL` | How long a link works [`30 minutes`]; each link works once                                               |
+
+The link is built from `APP_PUBLIC_URL`, never from the request's `Host`.
+
+**Only https in production (SEC-07).** With `NODE_ENV=production` the API
+answers `403 https_required` to any plain http request that does not come
+straight from its own machine. TLS is ended by a reverse proxy that sends
+`X-Forwarded-Proto` (Caddy in the guide), with `TRUST_PROXY=true` and
+`HOST=127.0.0.1`; https answers carry HSTS. The full guide, with Caddy, an
+internal CA and troubleshooting, is [`docs/despliegue.md`](docs/despliegue.md).
+The desktop app picks its server at sign-in (SEC-10) and sends its requests
+from the Rust core, so it needs no `CORS_ORIGIN` entry.
+
+The `api` service of `docker-compose.yml` runs in production mode behind the
+`caddy` service (ports 80 and 443; the API's own port is not published). It
+reads every variable above from `.env`, so set at least `JWT_ACCESS_SECRET`,
+`CORS_ORIGIN` and `PHAROS_DOMAIN` there before `docker compose up`. The
+database-only setup (`docker compose up -d db`, `dev.bat`) is unaffected.
 
 ## Logs and diagnostics
 
@@ -713,7 +741,7 @@ spikes are in `docs/spikes/`.
 
 ## Status
 
-Current version: **0.4.0-beta.1**, the first beta of 0.4.0 «Estrategia medible» (ADR-0039), waiting for the user's validation with the 0.4.0 exit criteria; 0.3.0 «Diseño asistido y experiencia» is at `0.3.0-beta.1` (branch `release/0.3.0`); 0.2.0 was the test-execution release. It adds runs, imports, cycles, defects, the extended matrix and the status report to the
+Current version: **0.4.0-beta.1**, the first beta of 0.4.0 «Estrategia medible» (ADR-0039), waiting for the user's validation with the 0.4.0 exit criteria; 0.3.0 «Diseño asistido y experiencia» was published on 2026-11-17 (`v0.3.0`, branch `release/0.3.0`); 0.2.0 was the test-execution release. It adds runs, imports, cycles, defects, the extended matrix and the status report to the
 complete interface redesign (wave 4, [ADR-0028](docs/adr/0028-rediseno-de-la-interfaz.md))
 on top of everything in `0.1.0-beta.1`, the first beta of the 0.1.0 milestone
 (planning and design + traceability; tag `v0.1.0-beta.1`). Gates A and B of the

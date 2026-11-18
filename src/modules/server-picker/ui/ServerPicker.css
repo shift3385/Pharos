@@ -1,0 +1,187 @@
+/* The server line and panel of the sign-in screen (SEC-10). The panel reuses
+   the auth form's field and button classes (AuthScreen.css). */
+
+.server-line-wrap {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.server-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 8px 12px;
+  font-size: 14px;
+  background: var(--color-surface-2, var(--color-surface-1));
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.server-line__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+}
+.server-line__dot--ok {
+  background: var(--color-success);
+}
+
+.server-line__key {
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
+.server-line__host {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.server-line__lock {
+  flex: none;
+  color: var(--color-success);
+}
+
+.server-line__state {
+  flex: none;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.server-line__change {
+  flex: none;
+  padding: 0;
+  font: inherit;
+  font-weight: var(--fw-semibold);
+  color: var(--color-navy-500);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.server-line__change:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.server-msg {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-ui);
+  border: 1px solid;
+  border-radius: 8px;
+}
+.server-msg p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+.server-msg b {
+  font-weight: var(--fw-semibold);
+}
+.server-msg span {
+  color: var(--color-text-secondary);
+}
+.server-msg--ok {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 9%, transparent);
+  border-color: var(--color-success);
+}
+.server-msg--err {
+  color: var(--color-error-text);
+  background: color-mix(in srgb, var(--color-error) 10%, transparent);
+  border-color: var(--color-error);
+}
+.server-msg--warn {
+  gap: var(--space-2);
+  color: var(--color-warning-text);
+  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
+  border-color: var(--color-warning);
+}
+
+.server-panel {
+  display: grid;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.server-panel__input {
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+.server-panel__input[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+
+.server-panel__hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.server-panel__recent {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.server-panel__recent-item {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  text-align: left;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.server-panel__recent-item:hover:not(:disabled) {
+  border-color: var(--color-navy-500);
+}
+
+.server-panel__recent-host {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.server-panel__recent-meta {
+  flex: none;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.server-panel__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.server-panel__buttons > * {
+  flex: 1 1 auto;
+}
+
+.server-panel__secondary {
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+}

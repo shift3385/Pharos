@@ -365,11 +365,13 @@ describe("test_case_revision (append_only)", () => {
     const token = await tokenFor();
     await push(current(token), [revisionDoc()]);
     await push(current(token), [
-      revisionDoc({ workspaceId: "ws-b", createdAt: "2030-01-01 00:00:00" }),
+      revisionDoc({ projectId: "p-b", workspaceId: "ws-b", createdAt: "2030-01-01 00:00:00" }),
     ]);
-    const { payload } = (await pool.query("SELECT payload FROM documents"))
+    const { payload, workspace_id } = (await pool.query("SELECT payload, workspace_id FROM documents"))
       .rows[0];
-    expect(payload.workspaceId).toBe("ws-b");
+    expect(payload.projectId).toBe("p-b");
+    // The workspace is the server's to say (SYNC-07, ADR-0042 §4).
+    expect(payload.workspaceId).toBe(workspace_id);
     expect(payload.createdAt).toBe("2026-10-31 10:00:00");
   });
 
@@ -407,11 +409,12 @@ describe("test_case_revision (append_only)", () => {
       await push(current(token), [event({ projectId: "p2" })])
     ).json();
     expect(moved.appendRejected).toEqual([]);
-    const { payload } = (await pool.query("SELECT payload FROM documents"))
+    const { payload, workspace_id } = (await pool.query("SELECT payload, workspace_id FROM documents"))
       .rows[0];
     expect(payload).toEqual({
       id: "e1",
-      workspaceId: "ws",
+      // The workspace is the server's to say (SYNC-07, ADR-0042 §4).
+      workspaceId: workspace_id,
       projectId: "p2",
       at: "t1",
       hlc: H(5),

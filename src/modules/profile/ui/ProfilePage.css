@@ -276,6 +276,15 @@
   color: var(--color-text-muted);
 }
 
+/* SYNC-09: the preference follows the account. */
+.profile-pref__synced {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-metadata);
+  color: var(--color-success-text);
+}
+
 .profile-pref__control {
   flex: 1.4 1 280px;
   min-width: 0;

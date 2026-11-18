@@ -171,6 +171,24 @@ export const INVENTORY: Item[] = [
   I("acceso", "action", "action:profile-preferences", "Preferencias de idioma y tema en el perfil"),
   I("acceso", "state", "action:login-google", "«Continuar con Google» deshabilitado («Próximamente»)"),
   I("acceso", "platform", "platform:mobile-login", "La entrada en una pantalla estrecha (hoja inferior)"),
+  // Account recovery (SEC-08, SEC-09 by email; ADR-0045).
+  I("acceso", "screen", "screen:signup-recovery-codes", "Códigos de recuperación al crear la cuenta"),
+  I("acceso", "screen", "screen:recover", "«¿Olvidaste tu contraseña?»: «Recupera el acceso»"),
+  I("acceso", "tab", "tabs:src/modules/auth/ui/AccountRecovery.tsx", "Pestañas de «Recupera el acceso» (Con un código / Por correo)"),
+  I("acceso", "state", "state:email-reset-off", "Servidor sin correo: el enlace por correo no está disponible"),
+  I("acceso", "screen", "screen:reset-link", "Pegar el enlace del correo en la app de escritorio"),
+  I("acceso", "action", "action:recover-with-code", "Cambiar la contraseña con un código de recuperación", {
+    skip: "Cambiaría la contraseña y cerraría la sesión de la cuenta que usan todos los capítulos siguientes. Lo cubren server/tests/account.test.ts (el código se gasta, se cierran las sesiones, queda en auditoría) y src/modules/auth/recovery.test.tsx.",
+  }),
+  I("acceso", "screen", "screen:reset-page", "Página «Elige una contraseña nueva» del enlace del correo", {
+    skip: "Necesita un servidor con SMTP y abrir el enlace de un correo real; el tour usa una API sin correo (el valor por defecto). Lo cubren server/tests/account.test.ts con un buzón en memoria, src/modules/auth/recovery.test.tsx y la revisión manual de la versión web (docs/manual/REVIEW.md).",
+  }),
+  I("acceso", "screen", "screen:account-security", "«Mi perfil» › Seguridad de la cuenta"),
+  I("acceso", "action", "action:change-password", "Cambiar la contraseña desde el perfil", {
+    skip: "Cerraría las demás sesiones y cambiaría la contraseña que usan los capítulos siguientes. Lo cubren server/tests/account.test.ts y src/modules/profile/accountSecurity.test.tsx.",
+  }),
+  I("acceso", "action", "action:regenerate-recovery-codes", "Generar códigos de recuperación nuevos"),
+  I("acceso", "dialog", "dialogs:src/modules/profile/ui/AccountSecuritySection.tsx", "Generar códigos nuevos: contraseña y códigos mostrados una vez"),
   I("acceso", "state", "state:session-expired", "Sesión caducada («Tu sesión ha caducado…»)", {
     skip: "Necesita que el servidor rechace la renovación de la sesión de la app, algo que el tour no provoca sin trucar la app. Lo cubren AuthProvider.test.tsx y sessionRenewal.test.ts; el capítulo lo explica en «Si algo no sale».",
   }),
@@ -183,7 +201,7 @@ export const INVENTORY: Item[] = [
   I("navegacion", "action", "action:project-nav", "Secciones del proyecto en el orden del proceso de prueba (UX-21)"),
   I("navegacion", "action", "action:project-switcher", "Cambiar de proyecto desde el menú lateral"),
   I("navegacion", "action", "action:breadcrumbs", "Migas de pan de la barra superior"),
-  I("navegacion", "dialog", "dialogs:src/app/layout/TopbarControls.tsx", "Búsqueda y notificaciones (avisos «próximamente»)"),
+  I("navegacion", "dialog", "dialogs:src/app/layout/TopbarControls.tsx", "Búsqueda, panel de notificaciones y su hoja en el móvil"),
   I("navegacion", "keyboard", "keyboard:ctrl-k", "Ctrl+K abre la búsqueda"),
   I("navegacion", "action", "action:theme-toggle", "Cambio rápido de tema claro u oscuro"),
   I("navegacion", "action", "action:sync-indicator", "Indicador de sincronización y «Sincronizar ahora»"),
@@ -427,6 +445,7 @@ export const INVENTORY: Item[] = [
   I("administracion", "tab", "admin:general", "General (tema, idioma, fondo, carpeta de descarga)"),
   I("administracion", "upload", "upload:src/modules/admin/ui/tabs/GeneralTab.tsx", "Imagen de fondo"),
   I("administracion", "dialog", "dialogs:src/modules/admin/ui/AdminPage.tsx", "Cambiar de pestaña con cambios sin guardar"),
+  I("administracion", "dialog", "dialogs:src/modules/admin/ui/TrashSection.tsx", "Papelera: vaciar o eliminar para siempre (confirmación)"),
   I("administracion", "action", "action:download-folder", "Elegir carpeta de descarga / «Usar Descargas»", {
     skip: "«Elegir carpeta…» abre el selector de carpetas nativo de Windows (rfd, desde Rust), fuera de la WebView que WebDriver maneja; y «Usar Descargas» apuntaría las exportaciones a la carpeta real del usuario, que los tours nunca tocan. El campo se muestra en la captura de «General»; la lógica la cubren los tests de Rust de downloads.rs y la revisión manual (docs/manual/REVIEW.md, «Fuera de los tours»).",
   }),

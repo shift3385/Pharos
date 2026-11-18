@@ -1,13 +1,10 @@
+import { serverFetch } from "@shared/platform/serverUrl";
 import type {
   AuthUser,
   LoginInput,
   RegisterInput,
   Session,
 } from "../model/types";
-
-const API_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ??
-  "http://localhost:3000";
 
 /** Error carrying the backend's machine-readable code (e.g. "invalid_credentials"). */
 export class ApiError extends Error {
@@ -29,13 +26,13 @@ export class NetworkError extends Error {
   }
 }
 
-async function request<T>(
+export async function request<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, {
+    res = await serverFetch(path, {
       ...options,
       headers: { "Content-Type": "application/json", ...options.headers },
     });
@@ -58,8 +55,10 @@ async function request<T>(
 }
 
 export const authApi = {
+  /** A new account and its session, with the recovery codes shown once
+   *  (SEC-08). */
   register: (input: RegisterInput) =>
-    request<Session>("/auth/register", {
+    request<Session & { recoveryCodes?: string[] }>("/auth/register", {
       method: "POST",
       body: JSON.stringify(input),
     }),

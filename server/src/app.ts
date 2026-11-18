@@ -8,6 +8,8 @@ import { parseOrigins } from "./config/origins";
 import { createTokenService } from "./modules/auth/tokens";
 import { createAuthRepository } from "./modules/auth/auth.repository";
 import { createAuthService } from "./modules/auth/auth.service";
+import { createAccountService } from "./modules/auth/account.service";
+import { mailerFromEnv, type Mailer } from "./modules/auth/mailer";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { createSyncRepository } from "./modules/sync/sync.repository";
 import { syncRoutes } from "./modules/sync/sync.routes";
@@ -21,11 +23,33 @@ import { createExecutionService, executionRoutes } from "./modules/domain/execut
 import { homeMetricsRoutes } from "./modules/domain/home-metrics";
 import { createPreferenceStore, preferenceRoutes } from "./modules/preferences/preferences";
 import { auditRoutes, createAuditReader } from "./modules/audit/audit.read";
+import {
+  createNotificationStore,
+  notificationRoutes,
+  notificationWorkspaceHooks,
+  workspaceMembership,
+} from "./modules/notifications";
+import { isMember, listMembers } from "./modules/workspaces/members";
+import { httpsOnly } from "./modules/security/httpsOnly";
+import { SERVER_VERSION, acceptedMinors } from "./modules/sync/sync.version";
 import { AppError } from "./modules/auth/errors";
+import { createWorkspaceService } from "./modules/workspaces/workspaces.service";
+import { workspaceRoutes } from "./modules/workspaces/workspaces.routes";
 
 /** Routes limited per client IP: guessing passwords on login, and burning
- *  Argon2 CPU on register. */
-const RATE_LIMITED_ROUTES = ["/auth/login", "/auth/register"];
+ *  Argon2 CPU on register; guessing passwords, recovery codes or reset links,
+ *  and sending reset emails (SEC-08/09). Only their POSTs: reading the
+ *  recovery code status is not limited. */
+const RATE_LIMITED_ROUTES = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/password",
+  "/auth/recovery-codes",
+  "/auth/recover",
+  "/auth/reset/request",
+  "/auth/reset/check",
+  "/auth/reset/confirm",
+];
 
 const CLIENT_ERROR_CODES: Record<number, string> = {
   400: "bad_request",
@@ -38,13 +62,16 @@ const CLIENT_ERROR_CODES: Record<number, string> = {
 };
 
 /** Builds the Fastify application wired to the given pool + config. */
-export function buildApp(deps: { pool: Pool; env: Env }) {
+export function buildApp(deps: { pool: Pool; env: Env; mailer?: Mailer | null }) {
   const { pool, env } = deps;
   const app = Fastify({
     logger: env.NODE_ENV !== "test",
     bodyLimit: env.BODY_LIMIT_BYTES,
     trustProxy: env.TRUST_PROXY,
   });
+
+  // SEC-07: only https in production (from the reverse proxy), before anything else.
+  app.addHook("onRequest", httpsOnly(env));
 
   void app.register(cors, {
     origin: env.CORS_ORIGIN === "*" ? true : parseOrigins(env.CORS_ORIGIN),
@@ -54,7 +81,8 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
   // them. This hook must be added before the rate-limit plugin loads: the
   // plugin reads `config.rateLimit` from its own onRoute hook.
   app.addHook("onRoute", (route) => {
-    if (RATE_LIMITED_ROUTES.includes(route.url)) {
+    const methods = [route.method].flat();
+    if (RATE_LIMITED_ROUTES.includes(route.url) && methods.includes("POST")) {
       route.config = {
         ...route.config,
         rateLimit: {
@@ -85,20 +113,47 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
   });
   const repo = createAuthRepository(pool);
   const service = createAuthService({ repo, tokens });
+  // One server clock for every web write and audit event.
+  const clock = createServerClock();
+  const account = createAccountService({
+    pool,
+    repo,
+    clock,
+    issueSession: service.issueSession,
+    mailer: deps.mailer === undefined ? mailerFromEnv(env) : deps.mailer,
+    publicUrl: env.APP_PUBLIC_URL,
+    resetTtlMs: env.RESET_TOKEN_TTL,
+    log: app.log,
+  });
 
   const syncRepo = createSyncRepository(pool);
-  const domainStore = createDomainStore(pool, createServerClock());
+  const domainStore = createDomainStore(pool, clock);
+  // Notifications go between members of the event's workspace (RED-W2),
+  // and the workspaces' own events (invitation, join, removal) become
+  // notifications inside their transaction (ADR-0042 §8, ADR-0048).
+  const membership = workspaceMembership(pool, { isMember, listMembers });
+  const workspaces = createWorkspaceService(pool, clock, notificationWorkspaceHooks(membership));
   const domain = createDomainService(domainStore);
   const cycles = createCycleService(domainStore);
   const runs = createRunService(domainStore);
   const execution = createExecutionService(domainStore);
 
-  app.get("/health", async () => ({ status: "ok" }));
+  // The app checks a server with this before signing in to it (SEC-10): it
+  // must say it is Pharos, and the version tells an incompatible one apart.
+  app.get("/health", async () => ({
+    status: "ok",
+    service: "pharos",
+    version: SERVER_VERSION,
+    accepted: acceptedMinors(),
+  }));
   void app.register(async (instance) => {
-    authRoutes(instance, { service, tokens });
+    authRoutes(instance, { service, tokens, account });
   });
   void app.register(async (instance) => {
-    syncRoutes(instance, { repo: syncRepo, tokens });
+    syncRoutes(instance, { repo: syncRepo, tokens, pool });
+  });
+  void app.register(async (instance) => {
+    workspaceRoutes(instance, { service: workspaces, tokens });
   });
   void app.register(async (instance) => {
     domainRoutes(instance, { domain, tokens });
@@ -115,6 +170,10 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
   });
   void app.register(async (instance) => {
     preferenceRoutes(instance, { tokens, store: createPreferenceStore(pool) });
+  });
+  void app.register(async (instance) => {
+    // Who may notify whom comes from the workspaces (W); until then, nobody else.
+    notificationRoutes(instance, { tokens, store: createNotificationStore(pool, membership) });
   });
   void app.register(async (instance) => {
     auditRoutes(instance, { tokens, reader: createAuditReader(pool) });

@@ -62,6 +62,8 @@ pub enum Action {
     Execute,
     /// Content removed by retention while the record of it stays (ADR-0014).
     Redact,
+    /// Taken back out of the trash (RED-W3).
+    Restore,
 }
 
 impl Action {
@@ -76,6 +78,7 @@ impl Action {
             Action::ResolveConflict => "resolve_conflict",
             Action::Execute => "execute",
             Action::Redact => "redact",
+            Action::Restore => "restore",
         }
     }
 }

@@ -1,0 +1,17 @@
+# Caddy in front of the Pharos API (SEC-07, ADR-0046, docs/despliegue.md).
+#
+# Caddy ends TLS and passes X-Forwarded-Proto and X-Forwarded-For to the API,
+# which runs with TRUST_PROXY=true and refuses plain http in production.
+# - A public domain (PHAROS_DOMAIN=pharos.example.com, ports 80 and 443 open):
+#   Caddy gets and renews a Let's Encrypt certificate by itself.
+# - localhost or an IP: Caddy uses its own CA ("tls internal") by itself.
+# - An internal name (pharos.company.lan): uncomment `tls internal`. The app
+#   connects once Windows trusts Caddy's root certificate
+#   (docs/despliegue.md, «Certificado interno»).
+# Plain http on port 80 is redirected to https.
+
+{$PHAROS_DOMAIN:localhost} {
+	# tls internal
+	encode zstd gzip
+	reverse_proxy {$PHAROS_API:api:3000}
+}

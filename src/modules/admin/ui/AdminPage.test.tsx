@@ -155,15 +155,11 @@ describe("Administración", () => {
     expect(within(section).getByRole("button", { name: "Exportar diagnóstico" })).toBeEnabled();
   });
 
-  it("General: the trash is an honest «Próximamente» with disabled actions", () => {
+  it("General: in the browser the trash says it lives in the desktop app (RED-W3)", () => {
     renderAdmin("/admin?tab=general");
     const trash = screen.getByRole("group", { name: /Papelera/ });
-    for (const name of ["Restaurar", "Vaciar papelera"]) {
-      const button = within(trash).getByRole("button", { name });
-      expect(button).toBeDisabled();
-      expect(button).toHaveAttribute("title", expect.stringContaining("Próximamente"));
-    }
-    expect(trash).not.toHaveTextContent(/\d+ elementos/);
+    expect(trash).toHaveTextContent("Abre la papelera en la app de escritorio");
+    expect(within(trash).queryByRole("button")).toBeNull();
   });
 
   it("General: the theme offers «Según el sistema» and uses the theme store", async () => {

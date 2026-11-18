@@ -15,6 +15,7 @@ import { ListField } from "@shared/ui/fields";
 import { notify, unlessReported } from "@shared/ui/notify";
 import { Select } from "@shared/ui/Select";
 import { useToast } from "@shared/ui/Toast";
+import { notify as notifyPeople } from "@modules/notifications";
 import { MAX_ATTACHMENT_MB, defectsApi } from "../api/defectsApi";
 import { NEXT_STATUSES, needsResolution } from "../model/lifecycle";
 import {
@@ -104,6 +105,24 @@ const ids = (d: Defect | null, kind: string) =>
  * result's evidence. Built with the primitives of the case and card editors:
  * `docs/rediseno/` has no design for it.
  */
+/** An account id: the only assignee a notification can reach. Until the
+ *  workspaces (W) give a member picker, the assignee is free text and nobody
+ *  is notified. */
+const ACCOUNT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Tells the new assignee (RED-W2). Never waits or fails. */
+function notifyAssigned(saved: Defect, before: string | null) {
+  const to = saved.assignee?.trim() ?? "";
+  if (!ACCOUNT_ID.test(to) || to === before) return;
+  void notifyPeople({
+    kind: "defect.assigned",
+    to: { userIds: [to] },
+    projectId: saved.projectId,
+    subject: { entity: "defect", id: saved.id, key: saved.defectKey, title: saved.title },
+    dedupeKey: `${saved.id}:${saved.revision}:defect.assigned`,
+  });
+}
+
 export function DefectEditor({
   projectId,
   userId,
@@ -207,7 +226,8 @@ export function DefectEditor({
         ...requirementIds.map((id) => ({ targetKind: "requirement" as const, targetId: id })),
       ];
       if (current) {
-        await defectsApi.update(current.id, input());
+        const saved = await defectsApi.update(current.id, input());
+        if (saved) notifyAssigned(saved, current.assignee);
         const had = new Set(current.links.map((l) => `${l.targetKind}:${l.targetId}`));
         const want = new Set(wanted.map((l) => `${l.targetKind}:${l.targetId}`));
         for (const l of wanted) if (!had.has(`${l.targetKind}:${l.targetId}`)) await defectsApi.link(current.id, userId, l, true);
@@ -216,7 +236,8 @@ export function DefectEditor({
           await defectsApi.link(current.id, userId, { targetKind: l.targetKind as LinkTarget["targetKind"], targetId: l.targetId }, false);
         }
       } else {
-        await defectsApi.create({ ...input(), links: wanted, fromResult: draft?.fromResult });
+        const created = await defectsApi.create({ ...input(), links: wanted, fromResult: draft?.fromResult });
+        if (created) notifyAssigned(created, null);
       }
       toast(t("defects.savedToast"));
       onClose();

@@ -500,11 +500,72 @@
     },
     "trash": {
       "title": "Trash",
-      "soon": "Coming soon",
-      "desc": "Here you will see deleted items, restore them or empty the trash. Until then, deleted items are removed for good from this device after the retention days.",
-      "soonHint": "Coming soon: Pharos cannot show or restore deleted items yet.",
       "restore": "Restore",
-      "empty": "Empty trash"
+      "empty": "Empty trash",
+      "desc_one": "Deleted items are kept {{count}} day on this device and then removed for good. Change it in Retention.",
+      "desc_other": "Deleted items are kept {{count}} days on this device and then removed for good. Change it in Retention.",
+      "emptyDesc_one": "The trash is empty. What you delete is kept here for {{count}} day.",
+      "emptyDesc_other": "The trash is empty. What you delete is kept here for {{count}} days.",
+      "webOnly": "The web keeps nothing deleted. Open the trash in the desktop app.",
+      "loadFailed": "The trash could not be read. Open Administration again.",
+      "deleteForever": "Delete forever",
+      "nothingToEmpty": "There is nothing to empty",
+      "breakdown": "Trash breakdown",
+      "everything": "All",
+      "selected_one": "{{count}} selected",
+      "selected_other": "{{count}} selected",
+      "selectAll": "Select everything shown",
+      "select": "Select “{{title}}”",
+      "col": {
+        "item": "Item",
+        "project": "Project",
+        "deleted": "Deleted",
+        "purge": "Removed",
+        "actions": "Actions"
+      },
+      "withChildren_one": "with {{count}} item",
+      "withChildren_other": "with {{count}} items",
+      "held": "Waiting to sync",
+      "heldHint": "It has unsent changes or a conflict: kept until it syncs",
+      "purgeToday": "today",
+      "purgeIn_one": "in {{count}} day",
+      "purgeIn_other": "in {{count}} days",
+      "restoreHint": "Restoring puts the item back with its key and history, and it syncs like any change. Restoring a project also brings back what was deleted with it. A defect comes back without its attachments.",
+      "restored_one": "{{count}} item restored",
+      "restored_other": "{{count}} items restored",
+      "purged_one": "{{count}} item deleted forever",
+      "purged_other": "{{count}} items deleted forever",
+      "projectFirst": "Restore its project first: it is in the trash",
+      "failed": "It could not be completed. Try again.",
+      "confirmEmptyTitle": "Empty the trash?",
+      "confirmEmpty_one": "{{count}} item will be deleted forever on this device:",
+      "confirmEmpty_other": "{{count}} items will be deleted forever on this device:",
+      "confirmForeverTitle": "Delete forever?",
+      "confirmForever_one": "{{count}} item will be deleted forever on this device:",
+      "confirmForever_other": "{{count}} items will be deleted forever on this device:",
+      "confirmHeld_one": "{{count}} item with unsynced changes is kept until it is sent.",
+      "confirmHeld_other": "{{count}} items with unsynced changes are kept until they are sent.",
+      "confirmIrreversible": "This cannot be undone; keys are not reused.",
+      "kind": {
+        "project_one": "Project",
+        "project_other": "Projects",
+        "test_plan_one": "Test plan",
+        "test_plan_other": "Plans",
+        "test_case_one": "Test case",
+        "test_case_other": "Cases",
+        "requirement_one": "Requirement",
+        "requirement_other": "Requirements",
+        "defect_one": "Defect",
+        "defect_other": "Defects",
+        "test_cycle_one": "Cycle",
+        "test_cycle_other": "Cycles",
+        "run_one": "Run",
+        "run_other": "Runs",
+        "planner_card_one": "Card",
+        "planner_card_other": "Cards",
+        "template_one": "Template",
+        "template_other": "Templates"
+      }
     },
     "sync": {
       "title": "Sync",
@@ -728,7 +789,8 @@
         "configuration": "Configuration",
         "template": "Template",
         "profile": "Profile",
-        "unlinked_mapping": "Unlinked mapping"
+        "unlinked_mapping": "Unlinked mapping",
+        "account": "Account"
       },
       "fields": {
         "title": "Title",
@@ -773,7 +835,12 @@
         "cycles": "Cycles",
         "runs": "Runs",
         "defects": "Defects",
-        "requirements": "Requirements"
+        "requirements": "Requirements",
+        "event": "Event",
+        "method": "How",
+        "sessionsClosed": "Sessions closed",
+        "codes": "Codes",
+        "codesRemaining": "Codes left"
       },
       "device": {
         "this": "This device",
@@ -887,6 +954,15 @@
         },
         "capped": "The export stopped at {{count}} events. Narrow the period to export the rest.",
         "failed": "Could not export: {{reason}}"
+      },
+      "summaryValue": {
+        "password_changed": "Password changed",
+        "recovery_codes_generated": "Recovery codes generated",
+        "password_reset_requested": "Reset link requested",
+        "profile": "From Profile",
+        "recovery_code": "With a recovery code",
+        "email_link": "With an email link",
+        "admin": "By an administrator"
       }
     }
   },
@@ -938,8 +1014,51 @@
       "email_in_use": "That email is already registered.",
       "validation_error": "Please check the details you entered.",
       "rate_limited": "Too many attempts. Wait a moment and try again.",
-      "network": "Could not reach the server.",
-      "generic": "Something went wrong. Please try again."
+      "network": "Can't connect to {{host}}. Check your connection; if you had signed in on this computer before, the app opens with your local data.",
+      "generic": "Something went wrong. Please try again.",
+      "account_other_server": "This account already has data on this computer from another server ({{host}}). To keep them apart, sign in to that server or use another account."
+    },
+    "forgot": "Forgot your password?",
+    "recover": {
+      "title": "Recover access",
+      "subtitle": "With one of your recovery codes or with a link by email.",
+      "tab": {
+        "code": "With a code",
+        "email": "By email"
+      },
+      "back": "Back to sign in",
+      "code": "Recovery code",
+      "codeHelp": "One of the 10 codes you saved when you created the account.",
+      "newPassword": "New password",
+      "repeat": "Repeat the new password",
+      "passwordHelp": "At least 8 characters. A long phrase is safer than an odd word.",
+      "mismatch": "It does not match the new password.",
+      "submitCode": "Change the password and sign in",
+      "changed": "Password changed. Your other devices were signed out.",
+      "fewCodes_one": "Password changed. You have {{count}} recovery code left: generate new codes in Profile.",
+      "fewCodes_other": "Password changed. You have {{count}} recovery codes left: generate new codes in Profile.",
+      "emailOff": "This server does not send email. Use a recovery code or ask whoever runs Pharos for help.",
+      "sendLink": "Send link",
+      "sent": "If there is an account with that email, we sent it a link. It expires in 30 minutes and works once.",
+      "haveLink": "Already have the link?",
+      "haveLinkHelp": "In the desktop app, paste the link from the email here.",
+      "badLink": "That does not look like the link from the email. Copy all of it.",
+      "continue": "Continue",
+      "error": {
+        "invalid_recovery": "The email or the code is not valid.",
+        "invalid_reset_token": "This link is not valid or has expired. Links last 30 minutes and work once.",
+        "rate_limited": "Too many attempts. Wait 15 minutes and try again.",
+        "validation_error": "Check the data: the password needs at least 8 characters.",
+        "email_reset_disabled": "This server does not send email. Use a recovery code."
+      }
+    },
+    "reset": {
+      "title": "Choose a new password",
+      "account": "Account: {{email}}",
+      "checking": "Checking the link…",
+      "save": "Save the password",
+      "done": "Password changed. All your devices were signed out.",
+      "askAgain": "Ask for another link"
     }
   },
   "language": {
@@ -1225,7 +1344,60 @@
     "theme": "Theme",
     "themeHelp": "Faro Nocturno, light or dark. “Follow the system” follows your device setting.",
     "themeLight": "Light",
-    "themeDark": "Dark"
+    "themeDark": "Dark",
+    "synced": "Applies on all your devices"
+  },
+  "account": {
+    "title": "Account security",
+    "offline": "Changing the password or the codes needs a connection to the server. Your local data is still available.",
+    "changeTitle": "Change the password",
+    "changeIntro": "Saving it signs out your other devices. This one stays signed in.",
+    "current": "Current password",
+    "new": "New password",
+    "repeat": "Repeat the new password",
+    "show": "Show",
+    "hide": "Hide",
+    "change": "Change the password",
+    "changing": "Changing…",
+    "changed_one": "Password changed. {{count}} device was signed out.",
+    "changed_other": "Password changed. {{count}} devices were signed out.",
+    "codesTitle": "Account recovery codes",
+    "codesIntro": "They let you in if you forget your password. Each code works once.",
+    "codesLoadFailed": "The state of the codes could not be read.",
+    "codesNone": "You have no recovery codes yet. If you forget your password you cannot get in without them.",
+    "codesState": "State",
+    "codesRemaining": "{{remaining}} of {{total}} left",
+    "codesGenerated": "Generated",
+    "codesLastUsed": "Last used",
+    "codesReplace": "Generating new codes cancels the ones you have.",
+    "codesGenerate": "Generate new codes",
+    "codesGenerateFirst": "Generate codes",
+    "codesConfirmTitle": "Generate recovery codes",
+    "codesConfirmBody": "The codes you have will stop working. Type your current password to continue.",
+    "codesConfirmFirst": "Type your current password to generate your 10 codes.",
+    "error": {
+      "wrong_password": "The current password is not correct.",
+      "same_password": "The new password cannot be the current one.",
+      "rate_limited": "Too many attempts. Try again in 1 minute.",
+      "validation_error": "The new password needs at least 8 characters."
+    }
+  },
+  "recoveryCodes": {
+    "title": "Save your recovery codes",
+    "intro": "If you forget your password, sign in with your email and one of these codes. Each code works once. We will not show them again.",
+    "listLabel": "Recovery codes",
+    "copy": "Copy",
+    "copied": "Codes copied.",
+    "copyFailed": "They could not be copied. Download the .txt or write them down.",
+    "download": "Download .txt",
+    "keepSafe": "Keep them in a password manager or on paper, never next to the password.",
+    "saved": "I have saved the codes somewhere safe",
+    "continue": "Continue",
+    "close": "Done",
+    "fileTitle": "Pharos · account recovery codes",
+    "fileAccount": "Account: {{email}}",
+    "fileDate": "Generated: {{date}}",
+    "fileNote": "Each code works once. Generating new codes in Profile cancels these."
   },
   "testPlan": {
     "loadFailed": "The test plan could not be loaded.",
@@ -2996,7 +3168,6 @@
     "searchClose": "Close search",
     "searchClear": "Clear search",
     "notifications": "Notifications",
-    "notificationsSoon": "Notifications are coming in a future version.",
     "themeToDark": "Switch to dark theme",
     "themeToLight": "Switch to light theme",
     "userMenu": "User menu for {{name}}",
@@ -3009,7 +3180,9 @@
     "seeAllProjects": "See all projects",
     "noProjects": "No project matches.",
     "back": "Back to Projects",
-    "projectSections": "Project sections"
+    "projectSections": "Project sections",
+    "notificationsUnread_one": "Notifications: {{count}} unread",
+    "notificationsUnread_other": "Notifications: {{count}} unread"
   },
   "sortMenu": {
     "title": "Sort by",
@@ -4284,5 +4457,120 @@
     "savedToast": "Completion report saved",
     "approvedToast": "Completion report approved",
     "saveFailed": "The completion report could not be saved. Try again."
+  },
+  "server": {
+    "line": {
+      "label": "Server",
+      "change": "Change",
+      "local": "This computer ({{host}})",
+      "secure": "Encrypted connection",
+      "offline": "offline"
+    },
+    "connectedTo": "Connected to {{host}}",
+    "connected": "Connected to {{host}}",
+    "connectedSecure": "Pharos {{version}} · encrypted connection. You can sign in now.",
+    "connectedLocal": "Pharos {{version}} on this computer. You can sign in now.",
+    "connectedReadOnly": "The server runs Pharos {{version}}: this app can only read until you update it.",
+    "panel": {
+      "title": "Server",
+      "intro": "Choose which Pharos server to connect to.",
+      "address": "Server address",
+      "hint": "Ask whoever runs Pharos on your team. It must start with https://, except localhost.",
+      "recent": "Used on this computer",
+      "cancel": "Cancel",
+      "connect": "Connect",
+      "checking": "Checking…"
+    },
+    "pending": {
+      "title_one": "{{count}} change not yet sent to {{host}}.",
+      "title_other": "{{count}} changes not yet sent to {{host}}.",
+      "detail": "They belong to {{email}}. They stay on this computer and are sent when you sign in to that server with that account again. The other server doesn't see them.",
+      "confirm": "Change server"
+    },
+    "error": {
+      "invalid": {
+        "title": "That isn't a valid address.",
+        "detail": "Write it as https://pharos.yourcompany.com, without spaces or paths."
+      },
+      "insecure": {
+        "title": "Pharos only connects to another computer over https://.",
+        "detail": "Without encryption your password and data would travel in the clear. Ask whoever runs the server for its https address. Only localhost may use http."
+      },
+      "unreachable": {
+        "title": "{{host}} doesn't answer.",
+        "detail": "Check the address and your connection. If the server is internal, you may need your company's VPN."
+      },
+      "tls": {
+        "title": "{{host}}'s identity can't be verified.",
+        "detail": "Its certificate has expired, is for another name, or was signed by someone Windows doesn't trust. Pharos won't connect. Tell whoever runs the server."
+      },
+      "notPharos": {
+        "title": "That address answers, but it isn't a Pharos server.",
+        "detail": "Check that it's your Pharos server's address and not another site of your company."
+      },
+      "appTooOld": {
+        "title": "This server needs a newer version of Pharos.",
+        "detail": "The server runs {{version}} and this app is {{app}}. Update the app to connect."
+      },
+      "serverTooOld": {
+        "title": "This server runs an older version of Pharos.",
+        "detail": "The server runs {{version}} and this app is {{app}}. Ask whoever runs it to update it."
+      },
+      "generic": {
+        "title": "The server couldn't be saved.",
+        "detail": "Try again. If it keeps failing, export the diagnostics from Administration."
+      }
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAll": "Mark all as read",
+    "allReadHint": "Nothing is unread",
+    "filter": "Show",
+    "all": "All",
+    "unread": "Unread",
+    "unreadN": "Unread · {{count}}",
+    "noUnread": "Nothing is unread",
+    "emptyTitle": "You are up to date",
+    "emptyText": "Invitations, reviews, assigned defects, closed cycles, member changes and conflicts show up here.",
+    "kept": "Kept for 90 days",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "someone": "Someone",
+    "unreadMark": "Unread.",
+    "kind": {
+      "invitation": {
+        "received": "{{actor}} invited you to {{title}}"
+      },
+      "case": {
+        "review_requested": "{{actor}} sent {{key}} {{title}} for review",
+        "approved": "{{actor}} approved {{key}} {{title}}",
+        "changes_requested": "{{actor}} returned {{key}} {{title}} with changes"
+      },
+      "defect": {
+        "assigned": "{{actor}} assigned you {{key}} {{title}}"
+      },
+      "cycle": {
+        "closed": "{{actor}} closed the cycle {{key}} {{title}}"
+      },
+      "sync": {
+        "conflict_one": "{{count}} sync conflict to review",
+        "conflict_other": "{{count}} sync conflicts to review"
+      },
+      "member": {
+        "joined": "{{actor}} joined {{title}}",
+        "removed": "You are no longer a member of {{title}}"
+      }
+    },
+    "action": {
+      "invitation": "View invitation",
+      "review": "Review",
+      "openCase": "Open case",
+      "defect": "View defect",
+      "report": "View report",
+      "resolve": "Resolve",
+      "open": "Open",
+      "members": "View members"
+    }
   }
 }

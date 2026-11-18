@@ -676,3 +676,77 @@ html.auth-route body {
     transition: none;
   }
 }
+
+/* ---- Account recovery (SEC-08/09, ADR-0045): «¿Olvidaste tu contraseña?»,
+   the recovery tabs, the reset page. ---- */
+.auth-form__forgot {
+  align-self: flex-end;
+  margin-top: -8px;
+  font-size: var(--fs-ui);
+}
+
+.auth-form__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  font-size: var(--fs-ui);
+}
+
+.auth-field__help {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.auth-tabs__tab {
+  padding: 8px 0;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.auth-tabs__tab[aria-selected="true"] {
+  border-bottom-color: var(--color-accent);
+  color: var(--color-text-primary);
+  font-weight: var(--fw-semibold);
+}
+
+.auth-tabs__tab:focus-visible,
+.auth-form__forgot:focus-visible,
+.auth-form__back:focus-visible,
+.auth-form__secondary:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.auth-form__paste {
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.auth-form__secondary {
+  align-self: flex-start;
+  padding: 9px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+
+.auth-form__secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

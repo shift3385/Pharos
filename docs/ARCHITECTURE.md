@@ -79,8 +79,17 @@ be addable without touching existing modules.
 desktop app or as the web build: `isTauri()`, `invoke()` (Tauri, loaded on
 demand) and `capabilities` (what only the desktop has). Each module's `api/`
 file sends a call either to the Rust core (`invoke`) or, on the web, to the
-server's domain API through `serverApi` (`@modules/sync-offline`). The
-browser holds **no domain logic and no domain data**: no localStorage store,
+server's domain API through `serverApi` (`@modules/sync-offline`). Every
+request to the server goes through `serverFetch(path)` in
+`@shared/platform/serverUrl` (SEC-10, ADR-0046), the only place that knows
+the server's address; callers pass a route (`/auth/login`), never a full
+URL. On the web it is the browser's `fetch` to `VITE_API_URL`. On the desktop
+the request goes through the Rust core (`server_request`,
+`src-tauri/src/server.rs`) to the server picked at sign-in: https except to
+this computer, no redirects, routes and Pharos headers only, certificates
+checked against the Windows store. The webview's CSP opens no API port at
+all, so injected script cannot reach any server. The cached session and each
+local account are tied to their server (`server.json`). The browser holds **no domain logic and no domain data**: no localStorage store,
 no outbox, no web conflicts. What stays in localStorage is per-browser
 preferences only (theme, language, Administration settings, AI non-secret
 config, last access, when the recovery key was shown) and, on the web, the
@@ -230,6 +239,46 @@ module README has the details. The layout is an **account preference**:
 wins by the client's `updatedAt` (clamped to now + 5 min), with a per-account
 copy on each device (`@modules/profile` `savePreference`/`pullPreference`,
 pending while offline). Signing in always opens Inicio (`App.tsx`).
+Since SYNC-09 the language, theme and appearance travel the same way
+(`ui.language`, `ui.theme`, `ui.appearance`; `GET /api/me/preferences`
+lists them): `app/layout/usePreferenceSync.ts` takes the account's values at
+sign-in, after each sync, on focus, on reconnection and every 5 minutes, and
+sends a change made here at once (never one it just took). A background
+image of the device's own, the retention, auto-sync and the download folder
+stay on the device. The desktop's profile names and the account's
+(`/auth/me`) follow the newer change (`profile/api/preferenceSync.ts`).
+
+**Notifications (RED-W2, ADR-0048).** What someone did that concerns
+another person travels through the server: `notifications` (server
+migration 0023), one row per recipient, pulled by a `seq` cursor that also
+moves on read marks (`GET /api/me/notifications?since=`, `POST
+/api/me/notifications/read`), 90 days and 500 per person. Server modules
+call `emitNotification` inside their transaction; clients call `notify()`
+(`@modules/notifications`, `POST /api/notifications`), which never throws
+and, on the desktop, goes through an outbox while offline. Who may notify
+whom is a `Membership` built from W's `isMember`/`listMembers`
+(`workspaceMembership`; until W lands, nobody else); W's `WorkspaceHooks`
+plug into `notificationWorkspaceHooks` (invitation, member joined, member
+removed), whose emits are `trusted` because those recipients are not members. The
+desktop keeps an encrypted copy, local `sync.conflict` notifications, the
+outbox and the cursor (local migration 0043, `notifications.rs`); the web
+keeps nothing. `NotificationsProvider` (in the shell) pulls every minute,
+after each sync and on reconnection; it turns K's `pharos:case-review`
+window events and a rise in sync conflicts into notifications. The bell's
+panel groups by day, filters unread and runs one direct action per row.
+
+**Trash (RED-W3).** `trash.rs` lists what the account deleted and the
+purge (SYNC-06) has not removed, with the purge's scope; rows that went with
+a parent (a project's, a run's items, a cycle's items, a defect's links) are
+not listed and come back with it. A restore is a new audited change of each
+row (`Action::Restore`, op `upsert`, revision + 1), so the push sends it
+like any edit and it wins over the server's tombstone by HLC; a row of a
+project still in the trash waits for the project, and a defect comes back
+without its attachments (their content was released, ADR-0014).
+«Eliminar para siempre» and «Vaciar papelera» run `purge::purge_now`: the
+same purge with no retention left, for a selection or for everything;
+held rows (pending or in conflict) stay. The web keeps no deleted rows, so
+the trash is desktop-only.
 
 **Quality gate and cycle trend (DOC-02, DOC-06, ADR-0041).** The same
 derivation measures the metric catalog per scope (`ExecutionSummary.metrics`:
@@ -701,15 +750,18 @@ through `src-tauri/src/journal.rs`:
   and names the event at a break.
 - **Web edits (AUD-01b)** are audited by the server
   (`server/src/modules/audit/`). `DomainTx.put` writes, in the same
-  transaction and under the user's write lock, one `audit_event` document
+  transaction and under the workspace's write lock, one `audit_event` document
   per domain write with the journal's rules (`audit.diff.ts` ports
   `journal::diff` and `location`): create, update or delete with the diff,
   nothing for a no-diff update or a refused write (409/404), one `import`
   event for a requirement import (its rows are `folded`), one `delete` with
-  the cascade counts for a project delete. The events form the chain
-  `("web", "web", user)`: `deviceId "web"`, `chainWorkspaceId "web"`,
-  `origin "local"` (a new origin would fail the desktop's CHECK), an empty
-  `workspaceId` so each desktop files them under its own workspace. Its head
+  the cascade counts for a project delete. Since SYNC-07 (ADR-0042 §4) the
+  events form one chain per user and workspace,
+  `("web", <workspace id>, user)`: `deviceId "web"`, `chainWorkspaceId` and
+  `workspaceId` the workspace the event is stored in, `origin "local"` (a new
+  origin would fail the desktop's CHECK). The chain `("web", "web", user)`
+  written before (empty `workspaceId`) stays, closed, in the personal
+  workspace and still verifies. Its head
   lives in `audit_chain_heads` (server migration 0007). `audit.chain.ts` is
   a port of `audit.rs` (JCS subset, `hashOf`, `verifyChain`); the shared
   vectors `src/shared/contracts/fixtures/audit/chain.json` (canonical forms,
@@ -727,8 +779,12 @@ through `src-tauri/src/journal.rs`:
   `rejectedAuditEvents`. A failed push of events is logged and never fails the
   sync. A pull stores events without checking their hash: `verify_chain` does.
 - **A copy of the database forks nothing:** a database recovered with the
-  recovery key gets a new `device_id`, so its events start a new chain. A
-  `.bak` copied back by hand keeps the old one (AUD-01c).
+  recovery key gets a new `device_id`, so its events start a new chain. So
+  does a copy put back by hand (AUD-01c, `restored_copy.rs`): each save
+  bumps `sync_state.save_seq` and writes the same number to
+  `pharos.db.enc.seq`; an image whose count is below that mark is a restored
+  copy and its `device_id` is rotated on open. Without the mark nothing is
+  rotated. The diagnostics carry `restoredCopyDetectedAt`.
 - **Growth.** Every audited change writes two oplog rows (the entity's and its
   event's) and an event with the changed values; a planner reorder writes one
   event per moved card. Nothing is compacted yet: synced oplog rows are kept
@@ -1394,7 +1450,8 @@ The QA tool tests itself at four levels:
   isolated: its own API on `localhost:3100` (3000 is refused), its own
   database `pharos_test_db_tours` (created and dropped), a debug binary built
   with that `VITE_API_URL` and a CSP override (`tauri build --config`) into
-  `<target>/tours`, an isolated profile, and downloads redirected to
+  `<target>/tours`, an isolated profile whose `server.json` is pinned to the
+  tour API (SEC-10), and downloads redirected to
   `e2e/results/tours/downloads` (the run fails if anything lands in the
   user's Downloads). `scripts/build-manual.mjs` turns the steps into
   `docs/manual/` (Spanish Markdown per chapter, prose from
@@ -1452,7 +1509,36 @@ the SQL is rolled back and the migration is not recorded. The first is
 core Postgres lacks). Modules:
 
 - `auth` — accounts and sessions (below).
-- `sync` — per-user document store for the oplog: `POST /sync/push` (one
+- `workspaces` (SYNC-07, ADR-0042) — the store is per workspace, not per
+  user. Every account has a `personal` workspace (migration 0019 and a
+  trigger on `users`); anyone creates `shared` ones and is their Test
+  Manager. One role per workspace (`test_manager`, `test_analyst`,
+  `automation_engineer`, `product_owner`, `viewer`); what each may do is the
+  capability matrix `src/shared/contracts/workspace-roles.json`, mirrored by
+  `roles.ts` (a test holds them equal). Routes: `GET/POST /workspaces`,
+  `PATCH/DELETE /workspaces/:id`, invitations
+  (`POST/GET /workspaces/:id/invitations`, `DELETE …/:invitation`,
+  `POST /invitations/preview` and `/accept`: one-time `PHX-…` codes of 128
+  bits, only their SHA-256 stored), members (`PATCH/DELETE
+  /workspaces/:id/members/:user`; never without a Test Manager) and
+  `POST /workspaces/:id/move-project`, which moves a project with every
+  document under it to a shared workspace (same revision and HLC, a new seq)
+  and leaves `{ movedTo }` tombstones in the origin. `documents` has the
+  key `(workspace_id, entity, entity_id)`; `author_user_id` says who stored
+  the last version (no cascade on account delete). Writers take the
+  workspace's advisory lock (`LOCK_WORKSPACE_SQL`); a reader of several
+  workspaces takes their shared locks. For other modules: `can(role, cap)`,
+  `requireCapability(pool, cap, { from })` (a preHandler that sets
+  `req.workspace` or answers 403 `forbidden` / `workspace_revoked`, 404
+  `workspace_not_found`), `membership`, `isMember`, `listMembers`,
+  `managedMembers` and `workspaceApproverCheck` (CAS-02). `app.ts` gives the
+  notifications (RED-W2) `workspaceMembership(pool, { isMember, listMembers })`
+  and plugs `notificationWorkspaceHooks` into the service's `WorkspaceHooks`:
+  an invitation to a registered account, a join (to the Test Managers) and
+  a removal become notifications inside the same transaction. Isolation has no
+  RLS: every query names the workspace, and a test scans the server's SQL
+  for any that does not.
+- `sync` — per-workspace document store for the oplog: `POST /sync/push` (one
   batch of up to 500 deltas; last-write-wins by HLC; rejects a desktop delta
   whose base revision the server no longer holds and returns its own version as
   a conflict; a project delete also tombstones its plans, cases, requirements
@@ -1464,7 +1550,20 @@ core Postgres lacks). Modules:
   answers others with 426 (ADR-0020). Inside one minor the
   `x-pharos-sync-features` header tells builds apart (`key-conflicts`,
   `append-only`, `complete-payload`, `stable-steps`, `runs`, `custom-fields`,
-  `cycles`, `defects`, `requirement-data`). A requirement upsert from a
+  `cycles`, `defects`, `requirement-data`, `workspaces`). With `workspaces`
+  a push and a key lease name their workspace (`workspaceId`; the personal
+  one when absent) and a pull pulls one (`?workspace=`, its own cursor). A
+  delta is refused, writing nothing, in `rejected`: `forbidden` (the role
+  lacks `capabilityFor(entity)`; in a shared workspace a pushed audit event
+  must be the user's own), `moved` (the entity lives in another workspace of
+  the user, whose id is returned) or `not_found` (in one the user left). A
+  client of the earlier minor without `workspaces` is read only (426
+  `read_only_client_version` on push) and pulls the union of its workspaces
+  with its single cursor, without move tombstones; a build of this minor
+  without it works in its personal workspace and gets 426 instead of a
+  `rejected` it could not read. The server sets every payload's
+  `workspaceId` to the workspace it is stored in, and audit events only reach
+  the workspaces where the role reads the audit. A requirement upsert from a
   client without `requirement-data` (IA-17) keeps the stored `data`
   (`FEATURE_KEYS`). Configurations, test cycles and their items (CYC-01)
   only reach clients that send `cycles`, and only those may push them (else
@@ -1898,10 +1997,12 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   only if it is missing.
 - **Not code-signed:** no certificate is configured, so SmartScreen warns on
   install. Signing is out of scope for 0.1.0 and listed as a known limitation.
-- **Fixed API address:** the desktop build talks to `VITE_API_URL`, which
-  defaults to `http://localhost:3000`, and its CSP (`tauri.conf.json`) allows
-  only that port (plus Ollama on 11434). The CI installer is built without
-  `VITE_API_URL`, so an installed beta needs the API on the same PC.
+- **API address:** the desktop starts with the build's `VITE_API_URL`
+  (`http://localhost:3000` when unset, as in the CI installer) and the user
+  picks another server at sign-in (SEC-10, ADR-0046). Its CSP
+  (`tauri.conf.json`) opens no API port, only Ollama on 11434: requests go
+  through Rust. A shared server needs https through a reverse proxy
+  (SEC-07, [`docs/despliegue.md`](despliegue.md)).
 - **Version compatibility:** the server accepts its own MINOR and the previous
   one (`server/src/modules/sync/sync.version.ts`, SYNC-08), and the local
   upgrade from the previous published version is tested against a fixture

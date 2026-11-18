@@ -1,0 +1,131 @@
+/* Mi perfil › Seguridad de la cuenta (SEC-08, ADR-0045). */
+.account-security {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.account-security__cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: 16px;
+}
+
+.account-security__card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.account-security__subtitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: var(--fw-semibold);
+}
+
+.account-security__text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.account-security__help {
+  margin: -4px 0 0;
+  font-size: var(--fs-caption);
+  color: var(--color-text-muted);
+}
+
+.account-security__error {
+  font-size: var(--fs-ui);
+  color: var(--color-error-text);
+}
+
+.account-security__pw {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+
+.account-security__pw input {
+  flex: 1;
+}
+
+.account-security__reveal {
+  flex: none;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.account-security__submit {
+  align-self: flex-start;
+}
+
+.account-security__facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 14px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.account-security__facts div {
+  display: contents;
+}
+
+.account-security__facts dt {
+  color: var(--color-text-muted);
+}
+
+.account-security__facts dd {
+  margin: 0;
+}
+
+.account-security__pill {
+  display: inline-block;
+  padding: 1px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-success-text);
+  background: color-mix(
+    in srgb,
+    var(--color-success, var(--color-success-text)) 14%,
+    transparent
+  );
+}
+
+.account-security__pill--warn {
+  color: var(--color-warning-text, var(--color-text-primary));
+  background: color-mix(
+    in srgb,
+    var(--color-warning, var(--color-text-muted)) 18%,
+    transparent
+  );
+}
+
+.account-security__dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.account-security__reveal:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.account-security .recovery__show {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

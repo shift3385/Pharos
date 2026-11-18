@@ -7,6 +7,10 @@
   SYNC-07, cuando 0.2.0 ya haya cambiado el sync. Detalla
   [ADR-0003](0003-workspaces-compartidos.md), que ya fijó el modelo. Se
   implementa en 0.3.0 (SYNC-07).
+- **Revisado por [ADR-0042](0042-revision-workspaces-sync-v2.md)** (2026-11-17), que lo
+  contrasta con el sync de 0.4: mismo modelo A, sin RLS en 0.5.0, otro
+  protocolo y otra migración, y fija la compatibilidad con apps 0.4. Las
+  menciones a «0.3.0» de este ADR pasan a 0.5.0 (ADR-0039).
 - **Diseño de conjunto:** [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
 
 ## Contexto

@@ -53,6 +53,8 @@ export function createAuthService(deps: {
   }
 
   return {
+    issueSession,
+
     async register(input: RegisterInput): Promise<Session> {
       const email = input.email.toLowerCase();
       if (await repo.findByEmail(email)) throw AuthErrors.emailInUse();

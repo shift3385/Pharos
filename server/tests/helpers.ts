@@ -29,6 +29,14 @@ export const testEnv: Env = {
   BODY_LIMIT_BYTES: 1_048_576,
   SYNC_BODY_LIMIT_BYTES: 8_388_608,
   SYNC_TOMBSTONE_DAYS: 30,
+  SMTP_HOST: undefined,
+  SMTP_PORT: 587,
+  SMTP_SECURE: false,
+  SMTP_USER: undefined,
+  SMTP_PASS: undefined,
+  SMTP_FROM: undefined,
+  APP_PUBLIC_URL: undefined,
+  RESET_TOKEN_TTL: 1_800_000,
 };
 
 export async function setupTestApp(): Promise<{

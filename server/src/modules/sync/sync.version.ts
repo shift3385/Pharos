@@ -70,6 +70,9 @@ export const SERVER_FEATURES = [
   "defects",
   // IA-17 (ADR-0036): requirements carry `data`; kept for clients without it.
   "requirement-data",
+  // SYNC-07 (ADR-0042): workspaces with roles; push and pull name the
+  // workspace, and a push may be refused per delta (`rejected`).
+  "workspaces",
 ] as const;
 
 /** Features the client sent. Inside one minor the version string does not
@@ -134,6 +137,32 @@ export function understandsCycles(req: FastifyRequest): boolean {
  *  them) on pull, and its push that touches a defect card is refused. */
 export function understandsDefects(req: FastifyRequest): boolean {
   return clientFeatures(req).includes("defects");
+}
+
+/** True if the client knows workspaces with roles (SYNC-07, ADR-0042 §2):
+ *  it names the workspace of every push, pull and lease and reads
+ *  `rejected`. A client of an earlier minor without it may only read
+ *  (`readOnlyByWorkspaces`). */
+export function understandsWorkspaces(req: FastifyRequest): boolean {
+  return clientFeatures(req).includes("workspaces");
+}
+
+/** True if the client is of an earlier minor than the server (0.4 for a 0.5
+ *  server). */
+export function isEarlierMinor(req: FastifyRequest, serverVersion = SERVER_VERSION): boolean {
+  const raw = req.headers[VERSION_HEADER];
+  const c = parseMajorMinor(Array.isArray(raw) ? raw[0] : raw);
+  const s = parseMajorMinor(serverVersion);
+  return !!c && !!s && (c.major < s.major || (c.major === s.major && c.minor < s.minor));
+}
+
+/** True for a client that may only read since workspaces (ADR-0042 §3): one
+ *  of an earlier minor without `workspaces`. It does not know roles, so if
+ *  it could push, a Viewer would edit. A build of the server's own minor
+ *  without the feature (a development build) is served in its personal
+ *  workspace instead. */
+export function readOnlyByWorkspaces(req: FastifyRequest): boolean {
+  return !understandsWorkspaces(req) && isEarlierMinor(req);
 }
 
 /** Features of `SERVER_FEATURES` the client did not send. */
