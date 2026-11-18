@@ -1,6 +1,6 @@
 //! Result import (ING-02..05; ADR-0012, ADR-0013, ADR-0005; design 0.2.0 §4
 //! «Importación de un informe»): the one persister of Pharos Run JSON. The
-//! parsers live in TypeScript (`src/shared/contracts/pharos-run/importers/`)
+//! parsers live in TypeScript (`packages/formats/src/importers/`)
 //! and send the document they built; this module links each test to a case,
 //! gives deterministic ids and writes run, shard, results and step results in
 //! one transaction with one `import` audit event.

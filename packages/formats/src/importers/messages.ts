@@ -18,7 +18,7 @@ import {
   testKey,
   uniqueTags,
   worst,
-} from "./common";
+} from "./common.js";
 
 type Step = NonNullable<ImportResult["steps"]>[number];
 

@@ -1,4 +1,4 @@
-import { ReportError } from "@shared/contracts/pharos-run/importers";
+import { ReportError } from "@pharos/formats";
 
 /** The i18n key of an import error: a parser's `ReportError`, or the code at
  *  the start of the desktop's message (`already-imported: RUN-004`). */

@@ -20,7 +20,7 @@
     "manual": "node e2e/tours/run-tours.mjs",
     "manual:build": "node scripts/build-manual.mjs",
     "check:manual": "node scripts/check-manual.mjs",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p e2e",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p e2e && tsc --noEmit -p packages/formats",
     "lint": "eslint . --ext .ts,.tsx --max-warnings 0",
     "format": "prettier --check .",
     "format:write": "prettier --write .",

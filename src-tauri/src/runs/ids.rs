@@ -5,7 +5,7 @@
 //! separator inside a `test_key` (`manual:<case>/…`, a path with `:`) can make
 //! two different tuples collide. Manual attempts use random ids instead: two
 //! simultaneous attempts are two facts. The TS twin is
-//! `src/shared/contracts/pharos-run/ids.ts`; both check
+//! `packages/formats/src/ids.ts`; both check
 //! `tests/fixtures/run-id-vectors.json`.
 
 use serde_json::{json, Value};
