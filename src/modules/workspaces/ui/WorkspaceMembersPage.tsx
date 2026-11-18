@@ -5,6 +5,8 @@ import { useAuth } from "@modules/auth";
 import { Alert } from "@shared/ui/Alert";
 import { Select } from "@shared/ui/Select";
 import { Switch } from "@shared/ui/Switch";
+import { TabPanel, Tabs } from "@shared/ui/Tabs";
+import { ProjectTokensSection } from "@modules/integrations";
 import { useSyncStatus } from "@modules/sync-offline";
 import { isTauri } from "@shared/platform";
 import { useToast } from "@shared/ui/Toast";
@@ -20,13 +22,16 @@ const nameOf = (m: Member) => m.displayName || [m.firstName, m.lastName].filter(
 
 /** «Miembros y roles» (SYNC-07, boceto 2). Everyone sees the members; only a
  *  Test Manager changes roles, removes people and handles invitations. The
- *  server guards all of it (never without a Test Manager). */
+ *  server guards all of it (never without a Test Manager). The tab
+ *  «Integraciones» holds the workspace's project tokens (INT-02, ADR-0052). */
 export function WorkspaceMembersPage() {
   const { t, i18n } = useTranslation();
   const toast = useToast();
   const { user } = useAuth();
   const { confirm, dialog } = useConfirm();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
+  // «Miembros» or «Integraciones» (INT-02, ADR-0052): `?tab=integrations`.
+  const tab = params.get("tab") === "integrations" ? "integrations" : "members";
   const { workspaces, current, reload } = useWorkspace();
   const sync = useSyncStatus();
   const workspace = workspaces.find((w) => w.id === params.get("id")) ?? current;
@@ -128,12 +133,34 @@ export function WorkspaceMembersPage() {
         <h1 id="ws-members-title" className="ws-page__title">
           {t("workspaces.members.title", { name: workspace.name })}
         </h1>
-        {manager && (
+        {manager && tab === "members" && (
           <button type="button" className="ui-btn ui-btn--primary" onClick={() => setInviting(true)} data-testid="members-invite">
             {t("workspaces.members.invite")}
           </button>
         )}
       </header>
+      <Tabs
+        label={t("workspaces.tabs.label")}
+        variant="underline"
+        idPrefix="ws-"
+        items={[
+          { id: "members", label: t("workspaces.tabs.members") },
+          { id: "integrations", label: t("workspaces.tabs.integrations") },
+        ]}
+        value={tab}
+        onChange={(id) => {
+          const next = new URLSearchParams(params);
+          if (id === "members") next.delete("tab");
+          else next.set("tab", id);
+          setParams(next, { replace: true });
+        }}
+      />
+      {tab === "integrations" ? (
+        <TabPanel id="integrations" idPrefix="ws-">
+          <ProjectTokensSection workspace={workspace} manager={can(workspace.role, "token.manage")} />
+        </TabPanel>
+      ) : (
+      <TabPanel id="members" idPrefix="ws-">
       {workspace.kind === "personal" && <Alert kind="info">{t("workspaces.members.personal")}</Alert>}
       {workspace.kind === "shared" && !manager && <p className="tp__muted">{t("workspaces.members.readOnly")}</p>}
 
@@ -291,6 +318,8 @@ export function WorkspaceMembersPage() {
           ))}
         </dl>
       </details>
+      </TabPanel>
+      )}
 
       {inviting && (
         <InviteDialog

@@ -41,6 +41,8 @@ export const CAPABILITIES = {
   "attachment.add": ["test_manager", "test_analyst", "automation_engineer", "product_owner"],
   "template.edit": TM_TA,
   "audit.read": TM,
+  // INT-02/03 (ADR-0052): project tokens and webhooks of the workspace.
+  "token.manage": TM,
 } as const satisfies Record<string, readonly WorkspaceRole[]>;
 export type Capability = keyof typeof CAPABILITIES;
 

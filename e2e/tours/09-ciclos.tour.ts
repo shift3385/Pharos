@@ -67,6 +67,13 @@ chapter("ciclos", () => {
     run: async () => {
       await clickButton(Y.create, D);
       await waitForToast(Y.createdToast.split("{{")[0]);
+      // Creating opens the detail; until it renders, neither the detail nor
+      // the list's key may be on screen (the same race as BASE-24). Wait for
+      // one of them instead of looking once.
+      await browser.waitUntil(
+        async () => (await $("#cy-detail-title").isExisting()) || (await $("button.cy-key").isExisting()),
+        { timeout: 15_000, interval: 200, timeoutMsg: "neither the new cycle's detail nor its key in the list appeared" },
+      );
       if (!(await $("#cy-detail-title").isExisting())) await $("button.cy-key").click();
       await expect($("#cy-detail-title")).toBeDisplayed();
     },
