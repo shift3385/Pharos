@@ -8,6 +8,14 @@ spike, saneadas, son tests de contrato. Su salida normalizada está en
 `src/shared/contracts/pharos-run/fixtures/ing01/normalized/`, y un port de
 los parsers (el CLI de INT-01) tiene que reproducirla.
 
+## Formatos de 0.6.0 (ING-06, ING-07)
+
+SARIF, axe y k6 (hallazgos y métricas), Allure y TRX (resultados) y `.xcresult`
+están aprobados en [ADR-0053](../adr/0053-hallazgos-metricas-y-paquete-de-formatos.md).
+Sus tablas de mapeo están en el [plan de la pista F](../design/f-formatos-plan.md) §7
+y pasan aquí cuando cada parser se implementa. Los parsers se mudan al paquete
+`packages/formats` (`@pharos/formats`), que comparten la app, la web y el servidor.
+
 ## Detección
 
 Se detecta por el **contenido**, nunca por la extensión:
