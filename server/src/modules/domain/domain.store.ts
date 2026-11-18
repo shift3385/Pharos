@@ -32,6 +32,10 @@ import { can, capabilityFor, type Capability } from "../workspaces/roles";
 export interface DomainTx {
   /** The stored version of an entity (live or tombstone), locked. */
   get(entity: string, id: string): Promise<RemoteDoc | null>;
+  /** The workspace an entity is stored in, among the user's, or null. The
+   *  payload's `workspaceId` is not it: the web writes "local" there. The
+   *  approver check needs the real one (CAS-02, PLN-08). */
+  workspaceOf(entity: string, id: string): Promise<string | null>;
   /** Live documents of an entity, optionally of one project; with
    *  `withDeleted`, its tombstones too; with `where`, only those whose
    *  payload text fields equal the given values (one run's items or
@@ -149,6 +153,7 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
         );
         return rows[0] ? toDoc(rows[0]) : null;
       },
+      workspaceOf: home,
       async list(entity, projectId, opts) {
         const where = Object.entries(opts?.where ?? {});
         // Field names are the caller's own constants; only the values are

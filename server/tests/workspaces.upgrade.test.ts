@@ -83,6 +83,8 @@ beforeAll(async () => {
   ({ client, drop } = await schemaAt(pool, SCHEMA, "0018_audit_read_index.sql"));
   await seed04(client);
   await applyMigration(client, "0019_workspaces.sql");
+  // The workspace reads of the app select «Aprobación independiente» (PLN-08).
+  await applyMigration(client, "0025_independent_approval.sql");
   schemaPool = new Pool({ connectionString: TEST_DATABASE_URL, options: `-c search_path=${SCHEMA}` });
   app = buildApp({ pool: schemaPool, env: testEnv });
   await app.ready();

@@ -104,15 +104,17 @@ describe("case review on the web (CAS-02)", () => {
     expect((await call(token, "GET", `/api/test-cases/${c.id}`)).body.status).toBe("reviewed");
   });
 
-  it("returning needs a comment; transitions out of order are refused", async () => {
+  it("«Pedir cambios» needs a comment and keeps the case in review (PLN-08)", async () => {
     const token = await tokenFor();
     const { c } = await newCase(token);
     expect((await review(token, c.id, { action: "approve" })).status).toBe(409);
     await review(token, c.id, { action: "send" });
     expect((await review(token, c.id, { action: "return", comment: "  " })).status).toBe(400);
     const back = await review(token, c.id, { action: "return", comment: "Step 3?" });
-    expect(back.body.status).toBe("draft");
-    expect(back.body.data.review).toMatchObject({ state: "returned", comment: "Step 3?" });
+    expect(back.body.status).toBe("reviewed");
+    expect(back.body.data.review).toMatchObject({ state: "changesRequested", comment: "Step 3?" });
+    // Sending again is not a step of its own: the case is still in review.
+    expect((await review(token, c.id, { action: "send" })).status).toBe(409);
   });
 
   it("a plain save keeps the status and the approval unless the content changes", async () => {
@@ -128,13 +130,13 @@ describe("case review on the web (CAS-02)", () => {
     expect(kept.body).toMatchObject({ status: "approved", version: "1.0", priority: "high" });
     expect(kept.body.data.approval.byName).toBe("Ana Gil");
 
-    // The steps change: back to draft, approval gone, next version.
+    // The steps change: back to review (PLN-08), approval gone, next version.
     const edited = await call(token, "PUT", `/api/test-cases/${c.id}`, {
       input: { projectId, title: "Pay", author: "QA", data: { ...approved.data, steps: [{ id: "x", text: "pay" }] } },
     });
-    expect(edited.body).toMatchObject({ status: "draft", version: "1.1" });
+    expect(edited.body).toMatchObject({ status: "reviewed", version: "1.1" });
     expect(edited.body.data.approval).toBeUndefined();
-    expect(edited.body.data.review).toBeUndefined();
+    expect(edited.body.data.review).toMatchObject({ state: "pending", version: "1.1", reopenedFrom: "1.0" });
   });
 
   it("the review base is the last approved or sent state", async () => {
@@ -144,12 +146,13 @@ describe("case review on the web (CAS-02)", () => {
     await review(token, c.id, { action: "send" });
     const sent = (await call(token, "GET", `/api/test-cases/${c.id}`)).body;
     await review(token, c.id, { action: "return", comment: "More" });
-    await call(token, "PUT", `/api/test-cases/${c.id}`, {
+    const fixed = await call(token, "PUT", `/api/test-cases/${c.id}`, {
       input: { projectId, title: "Pay now", author: "QA", data: sent.data },
     });
-    await review(token, c.id, { action: "send" });
+    // The answer to «Pedir cambios» keeps the case in review (PLN-08).
+    expect(fixed.body).toMatchObject({ status: "reviewed", data: { review: { state: "pending", comment: "More" } } });
     const base = (await call(token, "GET", `/api/test-cases/${c.id}/review-base`)).body;
-    expect(base).toMatchObject({ revision: 2, status: "reviewed", title: "Pay" });
+    expect(base).toMatchObject({ revision: 3, status: "reviewed", title: "Pay" });
   });
 });
 
@@ -183,7 +186,7 @@ describe("suite baselines on the web (CAS-02)", () => {
     expect(base.items[0].data.steps[0].text).toBe("open");
 
     const now = (await call(token, "GET", `/api/case-baselines/current?projectId=${projectId}`)).body;
-    expect(now.items.find((i: { caseId: string }) => i.caseId === c.id)).toMatchObject({ title: "Pay later", status: "draft" });
+    expect(now.items.find((i: { caseId: string }) => i.caseId === c.id)).toMatchObject({ title: "Pay later", status: "reviewed" });
     const list = (await call(token, "GET", `/api/case-baselines?projectId=${projectId}`)).body;
     expect(list).toHaveLength(1);
   });
@@ -207,7 +210,16 @@ describe("the save rules", () => {
     expect(nextVersion("v1")).toBe("v1");
     const saved = { status: "approved", title: "T", version: "1.0", data: { steps: [1], approval: { by: "u" } } };
     expect(afterSave(saved, "T", "1.0", { steps: [1] })).toMatchObject({ status: "approved", data: { approval: { by: "u" } } });
-    expect(afterSave(saved, "T", "1.0", { steps: [2] })).toMatchObject({ status: "draft", version: "1.1" });
+    expect(afterSave(saved, "T", "1.0", { steps: [2] })).toMatchObject({ status: "reviewed", version: "1.1" });
+    // In review, an edit stays in review and answers a «Pedir cambios».
+    const asked = { status: "reviewed", title: "T", version: "1.0", data: { steps: [1], review: { state: "changesRequested", comment: "x" } } };
+    expect(afterSave(asked, "T", undefined, { steps: [2] })).toMatchObject({
+      status: "reviewed",
+      version: "1.0",
+      data: { review: { state: "pending", comment: "x" } },
+    });
+    // A draft stays a draft (Borrador is only the first stage).
+    expect(afterSave({ ...saved, status: "draft" }, "T", "1.0", { steps: [2] }).status).toBe("draft");
   });
 });
 

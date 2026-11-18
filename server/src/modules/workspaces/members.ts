@@ -12,21 +12,30 @@ export interface Membership {
   role: WorkspaceRole;
   kind: WorkspaceKind;
   name: string;
+  /** «Aprobación independiente» (PLN-08, ADR-0049): the approver of a plan
+   *  or a case needs the approval role and is not its author. Always off in
+   *  a personal workspace; on by default in a shared one. */
+  independentApproval: boolean;
 }
 
 const ACTIVE = "m.removed_at IS NULL AND w.deleted_at IS NULL";
+
+/** The workspace's policy; NULL is the default of its kind (migration 0025). */
+const POLICY = "COALESCE(w.independent_approval, w.kind = 'shared') AS independent_approval";
 
 /** The user's role in a workspace, or null when they are not an active
  *  member of a live workspace (removed, never added, or it was deleted). */
 export async function membership(q: Queryable, userId: string, workspaceId: string): Promise<Membership | null> {
   if (!isUuid(workspaceId)) return null;
-  const { rows } = await q.query<{ role: string; kind: WorkspaceKind; name: string }>(
-    `SELECT m.role, w.kind, w.name FROM workspace_members m JOIN workspaces w ON w.id = m.workspace_id
+  const { rows } = await q.query<{ role: string; kind: WorkspaceKind; name: string; independent_approval: boolean }>(
+    `SELECT m.role, w.kind, w.name, ${POLICY} FROM workspace_members m JOIN workspaces w ON w.id = m.workspace_id
       WHERE m.workspace_id = $1 AND m.user_id = $2 AND ${ACTIVE}`,
     [workspaceId, userId],
   );
   const r = rows[0];
-  return r && isRole(r.role) ? { workspaceId, role: r.role, kind: r.kind, name: r.name } : null;
+  return r && isRole(r.role)
+    ? { workspaceId, role: r.role, kind: r.kind, name: r.name, independentApproval: r.independent_approval }
+    : null;
 }
 
 /** True when the user is an active member of the workspace (R: validates
@@ -54,15 +63,27 @@ export async function listMembers(
 
 /** Every active membership of the user, personal first. */
 export async function memberships(q: Queryable, userId: string): Promise<Membership[]> {
-  const { rows } = await q.query<{ workspace_id: string; role: string; kind: WorkspaceKind; name: string }>(
-    `SELECT m.workspace_id, m.role, w.kind, w.name FROM workspace_members m JOIN workspaces w ON w.id = m.workspace_id
+  const { rows } = await q.query<{
+    workspace_id: string;
+    role: string;
+    kind: WorkspaceKind;
+    name: string;
+    independent_approval: boolean;
+  }>(
+    `SELECT m.workspace_id, m.role, w.kind, w.name, ${POLICY} FROM workspace_members m JOIN workspaces w ON w.id = m.workspace_id
       WHERE m.user_id = $1 AND ${ACTIVE}
       ORDER BY (w.kind = 'personal') DESC, w.created_at, w.id`,
     [userId],
   );
   return rows
     .filter((r) => isRole(r.role))
-    .map((r) => ({ workspaceId: r.workspace_id, role: r.role as WorkspaceRole, kind: r.kind, name: r.name }));
+    .map((r) => ({
+      workspaceId: r.workspace_id,
+      role: r.role as WorkspaceRole,
+      kind: r.kind,
+      name: r.name,
+      independentApproval: r.independent_approval,
+    }));
 }
 
 /** The user's personal workspace. Every account has one (migration 0019 and

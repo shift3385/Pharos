@@ -65,6 +65,11 @@ export function domainRoutes(app: FastifyInstance, deps: { domain: DomainService
     const { input, revision } = updateOf(testPlanInputSchema).parse(req.body);
     return domain.testPlans.update(user(req), id(req), input, revision);
   });
+  // The plan's review flow (PLN-08, ADR-0049), as a case's.
+  app.post("/api/test-plans/:id/review", { preHandler }, (req) => {
+    const { revision, ...input } = caseReviewSchema.parse(req.body);
+    return domain.testPlans.review(user(req), id(req), input, revision);
+  });
   app.delete("/api/test-plans/:id", { preHandler }, async (req, reply) => {
     await domain.testPlans.remove(user(req), id(req), revisionOf(req));
     return reply.code(204).send();
