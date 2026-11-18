@@ -56,20 +56,27 @@ try {
 console.log(`Downloaded ${url}`);
 
 rmSync(driverPath, { force: true });
-execFileSync(
-  "powershell.exe",
-  [
-    "-NoProfile",
-    "-Command",
-    `Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${binDir}' -Force`,
-  ],
-  { stdio: "inherit" },
-);
-rmSync(zipPath, { force: true });
+// Windows' own bsdtar (System32, not Git's GNU tar on PATH) unzips it.
+// Expand-Archive broke on the CI runner image («Cannot find an overload for
+// "ExtractToDirectory"») and left no driver behind (BASE-24).
+const tar = join(process.env.SystemRoot ?? "C:/Windows", "System32", "tar.exe");
 try {
-  console.log(`msedgedriver ${driverVersion()} ready in ${binDir}`);
+  execFileSync(tar, ["-xf", zipPath, "-C", binDir], { stdio: "inherit" });
+} catch {
+  console.error(`msedgedriver ${version} could not be extracted from ${zipPath}`);
+  process.exit(1);
+}
+rmSync(zipPath, { force: true });
+let ready;
+try {
+  ready = driverVersion();
 } catch (err) {
   rmSync(driverPath, { force: true });
   console.error(`${err.message} It was deleted.`);
   process.exit(1);
 }
+if (!ready) {
+  console.error(`msedgedriver is not in ${binDir} after extracting ${url}`);
+  process.exit(1);
+}
+console.log(`msedgedriver ${ready} ready in ${binDir}`);
