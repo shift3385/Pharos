@@ -1,6 +1,6 @@
 # Guía de pruebas de Pharos
 
-Esta guía es para quien prueba **Pharos 0.4.0-beta.1** en Windows 11: todo lo
+Esta guía es para quien prueba **Pharos 0.5.0-beta.1** en Windows 11: todo lo
 de la beta `0.1.0-beta.1` con la interfaz rediseñada (apartado 1.1). Explica
 qué trae la versión, cómo instalarla, qué comprobar (con casillas para ir
 marcando) y cómo informar de un problema. Los detalles técnicos están en el
@@ -80,6 +80,23 @@ abre, la pantalla que lo explica no ofrece "Exportar diagnóstico" (apartado 5).
   cada tarjeta «Defecto» pasa a Defectos con la misma clave `DEF-xxx`, sus
   casos vinculados y sus adjuntos.
 
+### 1.3 Qué trae la 0.5.0-beta.1: trabajo en equipo
+
+La 0.5.0 «Equipo» suma workspaces compartidos con roles (Test Manager, Test
+Analyst, Automation Engineer y Viewer), la revisión y aprobación de casos y
+planes por otra persona con la política «Aprobación independiente», la
+recuperación de la contraseña (códigos, correo y administrador del servidor),
+la elección del servidor desde la app y la IA en la web. El detalle está en el
+[CHANGELOG](../CHANGELOG.md).
+
+- **Necesitas dos personas y dos equipos** para su criterio de salida: las dos
+  se conectan al mismo servidor y trabajan en el mismo workspace con roles.
+- **Actualiza todas las apps a la vez.** Una app 0.4 queda en solo lectura
+  frente a un servidor 0.5 hasta que se actualiza; sus cambios pendientes se
+  conservan.
+- **La primera cuenta** que se registra en un servidor nuevo es su
+  administradora (en un servidor que ya existía, la más antigua).
+
 ## 2. Antes de empezar
 
 La app instalada inicia sesión y sincroniza contra la API de Pharos en
@@ -90,7 +107,7 @@ La app instalada inicia sesión y sincroniza contra la API de Pharos en
 - [ ] Git y Node.js ≥ 22.18 con npm, para ejecutar la API.
 - [ ] La API de Pharos en la misma versión que la app: clona el repositorio
       (`git clone https://github.com/shift3385/Pharos.git`) y, dentro,
-      `git checkout v0.4.0-beta.1`. Después, `npm install` en la raíz y en
+      `git checkout v0.5.0-beta.1`. Después, `npm install` en la raíz y en
       `server/`, un `.env` y las bases `pharos_db` / `pharos_test_db`
       (README → "First-time setup"). Cada vez que pruebes:
       `cd server && npm start`. **Al cambiar de versión, vuelve a ejecutar
@@ -107,12 +124,12 @@ compilarla.
 ## 3. Instalar
 
 1. En GitHub, **Actions → Installer**, filtra por la rama o etiqueta
-   **`v0.4.0-beta.1`** y abre esa ejecución (en verde). En **Artifacts**,
-   descarga `pharos-0.4.0-beta.1-<commit>-windows`. Usa solo la ejecución de
+   **`v0.5.0-beta.1`** y abre esa ejecución (en verde). En **Artifacts**,
+   descarga `pharos-0.5.0-beta.1-<commit>-windows`. Usa solo la ejecución de
    la etiqueta: los cambios posteriores en `main` generan artefactos con el
    mismo nombre de versión, pero con código aún no publicado. Hace falta haber
    iniciado sesión en GitHub y el artefacto caduca a los 30 días.
-2. Descomprime el `.zip`: contiene `Pharos_0.4.0-beta.1_x64-setup.exe`.
+2. Descomprime el `.zip`: contiene `Pharos_0.5.0-beta.1_x64-setup.exe`.
 3. Ejecútalo. **El instalador no está firmado**, así que Windows SmartScreen
    muestra "Windows protegió tu PC": pulsa **Más información → Ejecutar de
    todas formas**.
@@ -133,7 +150,7 @@ seguir.
 - [ ] El primer arranque abre la pantalla de inicio de sesión (WebView2
       funciona: no hay ventana en blanco).
 - [ ] Al pie del menú lateral y en Administración → Diagnóstico la versión
-      es `0.4.0-beta.1`.
+      es `0.5.0-beta.1`.
 - [ ] Tras iniciar sesión existe `%APPDATA%\com.pharos.desktop\pharos.db.enc`
       y no quedan archivos `.tmp` ni `.new` al guardar (SEC-01/02).
 - [ ] Hay un log del día en `%LOCALAPPDATA%\com.pharos.desktop\logs`.

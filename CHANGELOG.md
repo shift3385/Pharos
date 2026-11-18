@@ -9,6 +9,188 @@ publicar cada versión ([ADR-0032](docs/adr/0032-fragmentos-del-changelog.md)).
 
 ## [Sin publicar]
 
+## [0.5.0-beta.1] - 2026-11-18
+
+Equipo (ADR-0039): workspaces compartidos con roles (Test Manager, Test Analyst,
+Automation Engineer, Viewer) en el servidor, el escritorio y la web; revisión y
+aprobación de casos y planes por otra persona con la política «Aprobación
+independiente» por workspace; baselines de suite; cuenta con cambio y recuperación
+de la contraseña (códigos, correo y administrador del servidor); servidor elegible
+desde la app con TLS; la IA en la web con la clave del escritorio; adjuntos y
+plantillas sincronizados; notificaciones, papelera y preferencias que viajan con la
+cuenta. Beta para la validación del usuario con el criterio de salida de 0.5.0
+(`docs/ROADMAP.md` §3): dos personas en el mismo workspace con roles.
+
+Trae migraciones del servidor (0016, 0017 y 0019 a 0026) y locales (0040, 0042, 0043
+y 0046), con copia de seguridad previa en el escritorio. **Una app 0.4 queda en
+solo lectura frente a un servidor 0.5** (ver «Cambios incompatibles»): actualiza
+todas las apps de un equipo a la vez.
+
+### Añadido
+
+- **Revisión de casos: borrador → en revisión → aprobado.** El estado del
+  caso ya no se elige en un desplegable. Bajo la cabecera del caso están las
+  acciones del flujo: «Enviar a revisión», con una nota opcional; «Aprobar
+  versión N», con confirmación; «Devolver…», con un comentario obligatorio; y
+  «Marcar obsoleto» y «Reactivar». Queda constancia de quién envió, devolvió
+  o aprobó, y cuándo. Mientras el caso está en revisión, quien lo revisa ve
+  qué cambió desde la última versión aprobada o enviada, campo a campo. Por
+  ahora cada espacio de trabajo tiene una sola persona, así que el autor
+  puede aprobar, y queda como «autoaprobación». Con los roles de la 0.5.0
+  aprobará otra persona.
+- **«Por revisar» y «Devuelto» en la lista de casos.** El filtro «Por
+  revisar» muestra los casos en revisión que puedes aprobar. Un borrador
+  devuelto lleva la marca «Devuelto», y su ayuda emergente dice quién lo
+  devolvió y por qué. La ayuda del estado dice quién envió o aprobó el caso.
+  La selección se puede enviar a revisión de una vez.
+- **Baselines de suite.** «Baselines», en la lista de casos, congela un
+  conjunto de casos en su revisión exacta: todos, los del filtro o la
+  selección («Congelar en baseline»). «Solo los casos aprobados» viene
+  marcado. Una baseline no se edita ni se borra. «Comparar» la enfrenta con
+  el estado actual o con otra baseline y muestra los casos añadidos,
+  quitados, con contenido cambiado o con solo el estado cambiado, con el
+  detalle de cada caso.
+- **Otra persona aprueba el caso** (CAS-02 con roles, [ADR-0042](docs/adr/0042-revision-workspaces-sync-v2.md)).
+  En un workspace compartido, un caso lo aprueba un Test Manager o un Test
+  Analyst que no sea su autor, por ahora en la web. En el workspace personal,
+  donde solo hay una persona, la aprobación del propio autor se sigue
+  registrando como autoaprobación. El autor de un caso es quien escribió su
+  primera versión, y así lo ven todos los miembros.
+- **IA en la web con la clave de tu escritorio.** En el escritorio, «Administración › Motor de IA» tiene un interruptor nuevo: «Usar esta clave también en la web». Antes de subir la clave, Pharos te dice qué implica y te pide que lo confirmes. Después, en la web tienes «Asistir con IA» con esa clave y ese modelo. Al desactivarlo, al quitar la clave del escritorio o al recuperar la cuenta, la copia se borra del servidor. No está disponible con «Compatible».
+- **Para quien administra el servidor:** la IA en la web necesita la variable `AI_VAULT_KEY` (32 bytes aleatorios en base64). Sin ella, la función queda apagada. Ver la guía de despliegue.
+- **Revisión del plan, como la de los casos.** El estado del plan ya no se
+  elige en el paso «Identificación»: cambia con las acciones de «Estado del
+  plan». «Enviar a revisión», con una nota opcional; «Aprobar versión N», con
+  confirmación; «Pedir cambios…», con un comentario obligatorio; y «Marcar
+  obsoleto» y «Reactivar». Queda quién envió, pidió cambios o aprobó, y cuándo.
+- **«Aprobación independiente» en cada espacio de trabajo.** Activada (lo
+  normal en un espacio compartido), aprueba quien tiene el rol (Test Manager
+  para planes; Test Manager o Test Analyst para casos) y no es el autor.
+  Desactivada (siempre en tu espacio personal), aprueba quien puede editar,
+  también el autor, y queda como «aprobación propia» en el plan, el caso, el
+  historial y los exportes. La cambia un Test Manager en «Miembros y roles ›
+  Reglas», y queda en la auditoría. «Aprobar versión N» está en gris si no
+  puedes aprobar, y dice por qué.
+- **Notificaciones.** La campana de la barra superior abre tus notificaciones, agrupadas por día: una invitación, un caso que te envían a revisar, que te aprueban o te devuelven, un defecto que te asignan, un ciclo que se cierra, alguien que entra en tu workspace (si eres Test Manager) o que te quitan de uno, y los conflictos de sincronización de este equipo. El número rojo de la campana cuenta las que no has leído, «Sin leer» las filtra, cada una tiene su acción directa y «Marcar todo como leído» las marca todas, también en tus otros equipos. Se guardan 90 días. En el móvil se abren como una hoja desde abajo. Las de otras personas llegan cuando trabajáis en el mismo workspace.
+- **Papelera.** En «Administración › General» de la app de escritorio, la papelera muestra lo que has borrado y aún no se ha eliminado: cuántos elementos hay, su desglose por tipo y en cuántos días se eliminará cada uno. Puedes restaurar lo que marques (vuelve con su clave y su historial, y un proyecto con lo que se borró con él), eliminarlo para siempre o vaciar la papelera, siempre con confirmación. Lo que tiene cambios sin sincronizar se conserva hasta que se envíe.
+- **Cambiar la contraseña en «Mi perfil»**, en la nueva tarjeta «Seguridad de la cuenta». Al guardarla se cierra la sesión en tus otros equipos y este sigue abierto. Queda en «Administración › Auditoría».
+- **Códigos de recuperación de la cuenta**: al crear la cuenta, Pharos muestra 10 códigos de un solo uso, una sola vez. Si olvidas la contraseña, «¿Olvidaste tu contraseña?» › «Con un código» te deja elegir otra y entrar. En «Mi perfil» ves cuántos te quedan y puedes generar otros. Las cuentas creadas antes ven un aviso para generarlos. Los datos locales no se tocan.
+- **Restablecer la contraseña por correo**: si el servidor tiene configurado el correo (variables `SMTP_*` y `APP_PUBLIC_URL`, apagado por defecto), «¿Olvidaste tu contraseña?» › «Por correo» envía un enlace que caduca a los 30 minutos y sirve una vez. En la app de escritorio, el enlace se pega en «¿Ya tienes el enlace?». Sin correo configurado, Pharos lo explica y quedan los códigos de recuperación.
+- **Elige el servidor al iniciar sesión.** La pantalla de inicio de sesión del escritorio muestra «Servidor: … · Cambiar». Escribe la dirección del servidor de tu equipo y Pharos la comprueba antes de guardarla. Si falla, te dice por qué: no responde, el certificado no es válido, no es un servidor de Pharos o la versión no es compatible. Fuera de este equipo solo se conecta por https.
+- **«Usados en este equipo»** lista los servidores en los que ya entraste. Si cambias de servidor con cambios sin enviar, Pharos te avisa: se quedan en el equipo hasta que vuelvas a ese servidor con esa cuenta.
+- **El menú de la cuenta dice a qué servidor estás conectado.**
+- **Administrador del servidor y «Administración › Usuarios»**: la primera cuenta que se registra en un servidor es su administradora (en un servidor que ya existía, la más antigua). Un administrador ve todas las cuentas del servidor, restablece contraseñas y nombra o quita administradores; siempre queda uno. No es un rol de workspace: un Test Manager no lo es por serlo. Quien gestiona el servidor puede nombrar o recuperar administradores con `PHAROS_ADMINS`.
+- **Restablecer la contraseña de otra persona** (SEC-09): el administrador genera un enlace de un solo uso que dura 24 horas. Si el servidor envía correo, le llega a la persona y el administrador no lo ve; si no, se muestra una vez para entregarlo. Al usarlo se cierran todas las sesiones de la persona; ella recibe un aviso y queda en la auditoría de los dos.
+- **Los adjuntos y las plantillas se sincronizan con tu workspace**
+  (SYNC-04b, [ADR-0042](docs/adr/0042-revision-workspaces-sync-v2.md)):
+  - las evidencias de tarjetas, defectos, resultados e informes importados, y
+    tus plantillas de plan y de casos, llegan a los demás equipos de tu
+    workspace;
+  - el archivo viaja aparte, una sola vez por contenido: el equipo lo sube
+    antes de enviar el cambio que lo usa y los demás lo bajan después de
+    sincronizar, cifrado como cualquier evidencia;
+  - un archivo que aún no ha llegado lo dice al abrirlo; se intenta otra vez
+    en la siguiente sincronización;
+  - añadir adjuntos requiere un rol que lo permita (Viewer no puede), y
+    editar plantillas, Test Manager o Test Analyst;
+  - los adjuntos de una ejecución manual en curso se quedan en este equipo
+    hasta que guardas el resultado.
+
+  Tus plantillas pasan al almacén de evidencias al actualizar; la copia de
+  seguridad previa a la migración las conserva como estaban.
+- **El escritorio sincroniza por workspace** (SYNC-07, [ADR-0042](docs/adr/0042-revision-workspaces-sync-v2.md)):
+  - con un servidor que tiene workspaces compartidos, cada proyecto viaja
+    a su workspace;
+  - en la primera sincronización, tus proyectos de este equipo pasan a tu
+    workspace personal. Antes se guarda una copia de seguridad,
+    `pharos.db.enc.bak-…-workspaces`;
+  - lo que tu rol no permite no se guarda, y se te explica por qué;
+  - un cambio que el servidor rechaza por permisos espera a que lo
+    descartes;
+  - si te quitan de un workspace, su copia en este equipo no se borra hasta
+    que lo confirmes.
+
+  La pantalla de workspaces y miembros llega en la siguiente entrega.
+- **Workspaces compartidos con roles en el servidor** (SYNC-07, [ADR-0042](docs/adr/0042-revision-workspaces-sync-v2.md)):
+  - cada cuenta tiene su workspace personal, y cualquiera puede crear uno
+    compartido, en el que es Test Manager;
+  - a un workspace compartido se invita con un código de un solo uso y se le
+    da a cada persona un rol: Test Manager, Test Analyst, Automation
+    Engineer, Product Owner o Viewer;
+  - un proyecto se comparte moviéndolo a un workspace compartido, con todo lo
+    que cuelga de él;
+  - el servidor comprueba el rol en cada cambio, también en la web: un Viewer
+    ve y exporta, pero no edita;
+  - solo el Test Manager ve la auditoría del workspace.
+
+  La pantalla de workspaces y miembros del escritorio y de la web llega en
+  la siguiente entrega de 0.5.0.
+- **Pantalla de workspaces y miembros** (SYNC-07, [ADR-0042](docs/adr/0042-revision-workspaces-sync-v2.md)):
+  - **Selector de workspace:** está en el menú lateral, muestra tu rol y
+    filtra «Proyectos».
+  - **Crear y unirse:** puedes crear un workspace compartido o unirte con un
+    código de invitación.
+  - **Miembros y roles:** el Test Manager invita con un código de un solo
+    uso, cambia roles y quita personas.
+  - **Compartir:** «Compartir con un workspace…» mueve un proyecto entero.
+  - **Avisos y rechazos:**
+    - un Viewer ve un aviso de solo lectura;
+    - los cambios que tu rol no permite esperan en «Rechazado por permisos»;
+    - si te quitan de un workspace, su copia en este equipo se elimina solo
+      cuando lo confirmas.
+- **Tus preferencias te siguen.** El idioma, el tema, la sombra de las tarjetas y el fondo (el predeterminado o ninguno, y su opacidad) se aplican en todos tus equipos, y tus nombres del perfil también; gana el cambio más reciente. Una imagen de fondo propia, la retención, la sincronización automática y la carpeta de descarga se quedan en cada equipo.
+
+### Cambiado
+
+- **«Revisado» pasa a llamarse «En revisión»:** el caso espera la aprobación.
+- **Un caso importado o creado nunca empieza aprobado ni en revisión.** Entra
+  como Borrador y hay que enviarlo a revisión.
+- **Borrador es solo el principio, en planes y casos.** Al editar un plan o un
+  caso aprobado vuelve a «En revisión» con una versión nueva y hay que
+  aprobarlo otra vez; uno en revisión sigue en revisión. Antes un caso volvía
+  a Borrador y un plan a «Revisado». En un caso basta con cambiar el título o
+  el contenido (la versión sube, 1.0 → 1.1, y el editor lo avisa antes de
+  guardar); cambiar la prioridad, la automatización o los campos
+  personalizados no cuenta.
+- **«Devolver» pasa a ser «Pedir cambios»:** el caso sigue en revisión, con el
+  comentario, y en la lista lleva la marca «Cambios pedidos». «Reactivar» un
+  caso o un plan obsoleto lo lleva a «En revisión» (a Borrador si nunca se
+  envió).
+- **El estado «Revisado» del plan se llama «En revisión»,** como en los casos.
+
+### Corregido
+
+- **Copias de seguridad restauradas a mano.** Si vuelves a poner a mano una copia antigua de la base de datos (`pharos.db.enc.bak-…`), Pharos lo detecta al abrirla y su registro de auditoría empieza una cadena nueva, en lugar de bifurcar la anterior y aparecer como roto en «Auditoría».
+- **App de escritorio: Ctrl+P ya no abre «Imprimir».** Fuera del editor de casos, Ctrl+P abría el diálogo de impresión del navegador interno (NC-058). Ahora tampoco actúan otros atajos de navegador que sacan algo de Pharos: abrir un archivo (Ctrl+O), guardar la página (Ctrl+S), ver el código (Ctrl+U), abrir otra ventana (Ctrl+N), descargas (Ctrl+J), historial (Ctrl+H), favoritos (Ctrl+D) y las herramientas de desarrollo (F12). Siguen funcionando recargar (F5), el zoom, buscar en la página (Ctrl+F) y Alt+← / Alt+→. Los atajos de Pharos no cambian: Ctrl+P en el editor abre «Ir a un caso…» y Ctrl+K, la búsqueda. La versión web no cambia.
+- **La app ya no se niega a abrir por una copia de seguridad con el mismo
+  nombre.** Desde 0.5.0 en desarrollo, una instalación que ya tenía la
+  migración local 0043 podía encontrar, al llegar la 0040, una copia previa
+  a migrar con el mismo nombre y otro contenido. Pharos se paraba con el
+  mensaje «failed to save the pre-migration backup … already exists».
+  - La nueva copia se guarda ahora con el siguiente nombre libre (`…-2`).
+  - La anterior se conserva: nunca se sobrescribe.
+  - Si ya pasaste por ese error, puedes borrar a mano la copia antigua que
+    hubieras apartado.
+- **Defectos:** la casilla «Encontrado fuera de las pruebas (escape)» queda junto a su texto, en lugar de estirarse por toda la fila (NC-055).
+- **Ciclos:** la ayuda del veredicto «No-go» dice «Abre otro ciclo para repetir la prueba», sin «re-test» (NC-057).
+
+### Seguridad
+
+- **El servidor solo atiende por https en producción.** Rechaza la conexión sin cifrar que no venga del propio equipo; el certificado lo pone un proxy (Caddy). Hay una guía de despliegue para compartir el servidor con tu equipo (`docs/despliegue.md`).
+- **La app de escritorio ya no abre conexiones al servidor desde la ventana**: las hace su núcleo, solo al servidor elegido y validando su certificado con Windows.
+
+### Cambios incompatibles
+
+- **Una app 0.4 queda en solo lectura frente a un servidor 0.5** (SYNC-07,
+  [ADR-0042](docs/adr/0042-revision-workspaces-sync-v2.md)):
+  - recibe los datos de todos sus workspaces, pero no puede enviar cambios
+    hasta que se actualiza;
+  - sus cambios pendientes se conservan y se envían al actualizar;
+  - la migración 0019 del servidor reordena el almacén de documentos en una
+    transacción, y el sync espera mientras dura (unos 3 minutos por millón de
+    documentos en un equipo de desarrollo). Conviene hacer una copia de
+    seguridad de la base de datos antes de actualizar.
+
 ## [0.4.0-beta.1] - 2026-11-12
 
 Estrategia medible (ADR-0039): plan de pruebas ISO/IEC/IEEE 29119-3 completo de 22
