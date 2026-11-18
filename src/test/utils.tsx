@@ -25,18 +25,24 @@ interface RenderOptions {
   route?: string;
   /** Start with an authenticated session (default) or the login screen. */
   authenticated?: boolean;
+  /** The signed-in user is a server administrator (SEC-11). */
+  admin?: boolean;
 }
 
 /** Renders a component wrapped in the app-wide providers used in production. */
 export function renderWithProviders(
   ui: ReactElement,
-  { route = "/", authenticated = true }: RenderOptions = {},
+  { route = "/", authenticated = true, admin = false }: RenderOptions = {},
 ) {
   function Wrapper({ children }: { children: ReactNode }) {
     return (
       <ThemeProvider>
         <I18nextProvider i18n={i18n}>
-          <AuthProvider initialSession={authenticated ? FAKE_SESSION : null}>
+          <AuthProvider
+            initialSession={
+              authenticated ? { ...FAKE_SESSION, user: { ...FAKE_SESSION.user, isAdmin: admin } } : null
+            }
+          >
             <TestRouter route={route}>{children}</TestRouter>
           </AuthProvider>
         </I18nextProvider>

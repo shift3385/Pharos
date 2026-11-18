@@ -5,6 +5,9 @@ export interface AuthUser {
   firstName: string;
   lastName: string;
   role: string;
+  /** Server administrator (SEC-11). Shows «Administración › Usuarios»; the
+   *  server checks the role itself on every request. Absent on older servers. */
+  isAdmin?: boolean;
   createdAt: string;
 }
 

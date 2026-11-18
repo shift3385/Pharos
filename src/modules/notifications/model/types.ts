@@ -10,6 +10,10 @@ export const TRAVELLING_KINDS = [
   "cycle.closed",
   "member.joined",
   "member.removed",
+  // Account security (SEC-09, SEC-11; ADR-0045).
+  "account.reset_issued",
+  "account.admin_granted",
+  "account.admin_revoked",
 ] as const;
 
 export type TravellingKind = (typeof TRAVELLING_KINDS)[number];

@@ -558,7 +558,8 @@
       "security": "Security",
       "evidence": "Evidence",
       "audit": "Audit",
-      "diagnostics": "Diagnostics"
+      "diagnostics": "Diagnostics",
+      "users": "Users"
     },
     "groups": {
       "resources": "Resources",
@@ -931,7 +932,11 @@
         "method": "How",
         "sessionsClosed": "Sessions closed",
         "codes": "Codes",
-        "codesRemaining": "Codes left"
+        "codesRemaining": "Codes left",
+        "target": "Account",
+        "by": "Done by",
+        "delivery": "Delivery",
+        "issuedBy": "Link by"
       },
       "device": {
         "this": "This device",
@@ -1053,7 +1058,75 @@
         "profile": "From Profile",
         "recovery_code": "With a recovery code",
         "email_link": "With an email link",
-        "admin": "By an administrator"
+        "admin": "By an administrator",
+        "password_reset_issued": "Reset link made",
+        "admin_granted": "Administrator role granted",
+        "admin_revoked": "Administrator role removed",
+        "email": "By email",
+        "link": "Handed over"
+      }
+    },
+    "users": {
+      "title": "Server users",
+      "intro": "Every account on this server. As an administrator you can reset their password with a single-use link and name or remove administrators. You do not see their projects or their passwords.",
+      "adminsCount_one": "{{count}} administrator",
+      "adminsCount_other": "{{count}} administrators",
+      "total_one": "{{count}} account",
+      "total_other": "{{count}} accounts",
+      "search": "Search by name or email",
+      "person": "Person",
+      "email": "Email",
+      "since": "Joined",
+      "codes": "Codes",
+      "actions": "Actions",
+      "you": "You",
+      "admin": "Administrator",
+      "noCodes": "No codes",
+      "codesLeft": "{{remaining}} of {{total}}",
+      "reset": "Reset password…",
+      "grant": "Make administrator",
+      "revoke": "Remove administrator",
+      "lastAdmin": "There must be at least one administrator.",
+      "more": "Showing {{shown}} of {{total}}. Search by name or email to find the rest.",
+      "recoverHint": "If every administrator is lost, whoever runs the server can recover access with the PHAROS_ADMINS variable.",
+      "offline": "Managing the server's users needs a connection.",
+      "grantTitle": "Make {{name}} an administrator?",
+      "grantBody": "They will see every account on this server, reset their passwords and name or remove administrators. It gives no access to the projects of any workspace.",
+      "grantConfirm": "Make administrator",
+      "revokeTitle": "Remove {{name}}'s administrator role?",
+      "revokeBody": "{{name}} will no longer see «Users». Their projects and workspaces do not change.",
+      "revokeSelfTitle": "Remove your administrator role?",
+      "revokeSelfBody": "You will no longer see «Users». Only another administrator can give it back.",
+      "revokeConfirm": "Remove the role",
+      "granted": "{{name}} is now an administrator.",
+      "revoked": "{{name}} is no longer an administrator.",
+      "resetTitle": "Reset {{name}}'s password?",
+      "resetBody": "Pharos makes a single-use link for {{name}} to choose a new password. You never see or set their password.",
+      "resetPoint1": "The link lasts 24 hours and works once. It cancels any other link they had open.",
+      "resetPoint2": "Using it signs {{name}} out on every device and deletes their AI key stored for the web.",
+      "resetPoint3": "{{name}} gets a notice, and the change is in your audit and theirs.",
+      "resetConfirm": "Make link",
+      "deliverTitle": "Send the link to {{name}}",
+      "deliverBody": "Pharos sends it to {{email}}. You will not see it.",
+      "deliverEmail": "Send by email",
+      "deliverMyself": "I'll hand it over",
+      "resetSentTitle": "Link sent",
+      "resetSent": "Link sent to {{email}}. It expires on {{date}}.",
+      "resetLinkTitle": "Link for {{name}}",
+      "resetTokenHint": "This server has no web address configured: in the app, the person pastes this code into «Forgot your password?» › «By email» › «Already have the link?».",
+      "resetOnce": "Shown only now. Give it to {{name}} through a private channel: whoever has it can change their password until it expires on {{date}}.",
+      "resetCopy": "Copy",
+      "resetCopied": "Link copied.",
+      "done": "Done",
+      "error": {
+        "network": "Could not reach the server.",
+        "admin_required": "You are no longer an administrator of this server.",
+        "last_admin": "There must be at least one administrator.",
+        "admin_reset_self": "Change your own password in «Profile».",
+        "user_not_found": "That account no longer exists.",
+        "email_reset_disabled": "This server does not send email. Hand the link over yourself.",
+        "rate_limited": "Too many attempts. Wait a moment.",
+        "generic": "Something went wrong. Please try again."
       }
     }
   },
@@ -1149,7 +1222,8 @@
       "checking": "Checking the link…",
       "save": "Save the password",
       "done": "Password changed. All your devices were signed out.",
-      "askAgain": "Ask for another link"
+      "askAgain": "Ask for another link",
+      "issuedBy": "Link made by {{name}} (server administrator)"
     }
   },
   "language": {
@@ -1436,7 +1510,8 @@
     "themeHelp": "Faro Nocturno, light or dark. “Follow the system” follows your device setting.",
     "themeLight": "Light",
     "themeDark": "Dark",
-    "synced": "Applies on all your devices"
+    "synced": "Applies on all your devices",
+    "serverAdmin": "Server administrator"
   },
   "account": {
     "title": "Account security",
@@ -4865,6 +4940,11 @@
       "member": {
         "joined": "{{actor}} joined {{title}}",
         "removed": "You are no longer a member of {{title}}"
+      },
+      "account": {
+        "reset_issued": "{{actor}} (server administrator) made a link to reset your password. If you did not ask for it, tell them.",
+        "admin_granted": "{{actor}} made you a server administrator",
+        "admin_revoked": "{{actor}} removed your server administrator role"
       }
     },
     "action": {
@@ -4875,7 +4955,8 @@
       "report": "View report",
       "resolve": "Resolve",
       "open": "Open",
-      "members": "View members"
+      "members": "View members",
+      "profile": "Open my profile"
     }
   },
   "workspaces": {

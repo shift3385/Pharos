@@ -131,6 +131,11 @@ export function ProfilePage() {
             </span>
             <div className="profile__identity">
               <span className="profile__name">{shownName}</span>
+              {user?.isAdmin && (
+                <span className="profile__admin" data-testid="profile-admin">
+                  {t("profile.serverAdmin")}
+                </span>
+              )}
               {user && (
                 <TruncatedText className="profile__email" value={user.email} />
               )}

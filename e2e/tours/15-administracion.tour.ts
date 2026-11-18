@@ -6,6 +6,7 @@ import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { $, $$, browser, expect } from "@wdio/globals";
 import { editOnOtherDevice } from "./other-device";
+import { ensureTeammate, TEAMMATE } from "./second-account";
 import { chapter, step } from "./tour";
 import {
   acceptConfirm,
@@ -162,6 +163,79 @@ chapter("administracion", () => {
     after: async () => {
       await clickButton(es.common.cancel, '[role="alertdialog"]');
       await $('[role="alertdialog"]').waitForExist({ reverse: true });
+    },
+  });
+
+  step("usuarios", {
+    title: "Usuarios del servidor",
+    caption:
+      "«Usuarios», en el grupo «Aplicación», solo la ve un administrador del servidor: la primera cuenta que se registró en él (aquí, la de Liomar), las que nombre otro administrador y las que configure quien gestiona el servidor (PHAROS_ADMINS). Lista todas las cuentas del servidor, con su correo, su alta y si tienen códigos de recuperación. No da acceso a sus proyectos: es un rol de todo el servidor, distinto del Test Manager de un workspace. En tu propia fila no hay «Restablecer contraseña» (la tuya se cambia en «Mi perfil»), y si eres el único administrador no puedes quitarte el rol.",
+    covers: ["admin:users"],
+    focus: ".usr-table",
+    run: async () => {
+      await ensureTeammate();
+      await openAdminTab("users");
+      await waitForText(TEAMMATE.email);
+      await expect(byTestId("admins-count")).toBeDisplayed();
+    },
+  });
+
+  step("usuarios-restablecer", {
+    title: "Restablecer la contraseña de otra persona",
+    caption:
+      "Si Ana olvida su contraseña y no tiene códigos, Liomar pulsa «Restablecer contraseña…» en su fila. Pharos explica qué pasa: genera un enlace de un solo uso que dura 24 horas, Liomar nunca ve ni pone la contraseña de Ana, y al usarlo se cierran todas las sesiones de Ana y se borra su clave de IA guardada en la web. Ana recibe un aviso y el cambio queda en la auditoría de los dos.",
+    covers: ["dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "action:admin-reset"],
+    run: async () => {
+      const row = $(`tr*=${TEAMMATE.email}`);
+      await row.$(`button*=${A.users.reset.replace("…", "")}`).click();
+      await expect(dialog()).toBeDisplayed();
+      await waitForText(A.users.resetPoint1);
+    },
+  });
+
+  step("usuarios-enlace", {
+    title: "El enlace, una sola vez",
+    caption:
+      "«Generar enlace» crea el enlace. Si el servidor envía correo, Pharos ofrece mandárselo a Ana directamente, y entonces Liomar no lo ve. Este servidor no tiene correo, así que el enlace se muestra una sola vez para copiarlo y dárselo a Ana por un canal privado. Ana lo abre (en la app de escritorio lo pega en «¿Ya tienes el enlace?») y elige su contraseña; la página dice qué administrador lo generó.",
+    covers: ["dialogs:src/modules/admin/ui/tabs/UsersTab.tsx"],
+    focus: '[data-testid="admin-reset-link"]',
+    run: async () => {
+      await clickButton(A.users.resetConfirm, D);
+      await expect(byTestId("admin-reset-link")).toBeDisplayed();
+    },
+    after: async () => {
+      await clickButton(A.users.done, D);
+      await $(D).waitForExist({ reverse: true });
+    },
+  });
+
+  step("usuarios-nombrar", {
+    title: "Nombrar a otro administrador",
+    caption:
+      "«Hacer administrador» pide confirmación y explica qué puede hacer un administrador. Conviene que haya al menos dos, para que el servidor no dependa de una sola persona. Pharos no deja quitar el rol al último administrador, y la persona recibe un aviso cuando le dan o le quitan el rol.",
+    covers: ["dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "action:admin-grant"],
+    run: async () => {
+      await $(`tr*=${TEAMMATE.email}`).$(`button=${A.users.grant}`).click();
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
+    },
+    after: async () => {
+      await acceptConfirm();
+      await waitForToast(A.users.granted.replace("{{name}}", TEAMMATE.displayName));
+    },
+  });
+
+  step("usuarios-quitar", {
+    title: "Quitar el rol de administrador",
+    caption:
+      "Con dos administradores, cualquiera de los dos puede quitarle el rol al otro, o quitárselo a sí mismo. En el ejemplo, Liomar se lo quita a Ana: «Quitar administrador» pide confirmación y Ana deja de ver «Usuarios». Si se pierden todos los administradores, quien gestiona el servidor recupera el acceso con la variable PHAROS_ADMINS.",
+    covers: ["dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "action:admin-revoke"],
+    run: async () => {
+      await $(`tr*=${TEAMMATE.email}`).$(`button=${A.users.revoke}`).click();
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
+    },
+    after: async () => {
+      await acceptConfirm();
+      await waitForToast(A.users.revoked.replace("{{name}}", TEAMMATE.displayName));
     },
   });
 

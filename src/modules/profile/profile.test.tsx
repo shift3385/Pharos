@@ -65,6 +65,15 @@ describe("profile page", () => {
     expect(screen.getByTestId("profile-revision")).toHaveTextContent("2");
   });
 
+  it("shows «Administrador del servidor» only to an administrator (SEC-11)", async () => {
+    const { unmount } = renderWithProviders(<ProfilePage />);
+    await screen.findByDisplayValue("Quality");
+    expect(screen.queryByTestId("profile-admin")).toBeNull();
+    unmount();
+    renderWithProviders(<ProfilePage />, { admin: true });
+    expect(await screen.findByTestId("profile-admin")).toHaveTextContent("Administrador del servidor");
+  });
+
   it("keeps the form disabled until the profile has loaded", async () => {
     let finish: (value: typeof savedProfile) => void = () => {};
     vi.mocked(profileApi.get).mockReturnValue(

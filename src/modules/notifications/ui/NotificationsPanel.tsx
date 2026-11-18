@@ -1,7 +1,22 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import { Bell, Bug, CircleCheck, Eye, Flag, RefreshCw, Undo2, UserMinus, UserPlus, Users, type LucideIcon } from "lucide-react";
+import {
+  Bell,
+  Bug,
+  CircleCheck,
+  Eye,
+  Flag,
+  KeyRound,
+  RefreshCw,
+  ShieldCheck,
+  ShieldOff,
+  Undo2,
+  UserMinus,
+  UserPlus,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { groupByDay, isPrimary, targetOf } from "../model/group";
 import type { AppNotification } from "../model/types";
@@ -20,6 +35,9 @@ const ICONS: Record<string, { icon: LucideIcon; tone: string }> = {
   "sync.conflict": { icon: RefreshCw, tone: "warning" },
   "member.joined": { icon: UserPlus, tone: "info" },
   "member.removed": { icon: UserMinus, tone: "neutral" },
+  "account.reset_issued": { icon: KeyRound, tone: "warning" },
+  "account.admin_granted": { icon: ShieldCheck, tone: "info" },
+  "account.admin_revoked": { icon: ShieldOff, tone: "neutral" },
 };
 
 /** «hace 5 min», «11:02», as the day group already says which day. */

@@ -479,6 +479,15 @@ export const INVENTORY: Item[] = [
   I("administracion", "action", "action:download-folder", "Elegir carpeta de descarga / «Usar Descargas»", {
     skip: "«Elegir carpeta…» abre el selector de carpetas nativo de Windows (rfd, desde Rust), fuera de la WebView que WebDriver maneja; y «Usar Descargas» apuntaría las exportaciones a la carpeta real del usuario, que los tours nunca tocan. El campo se muestra en la captura de «General»; la lógica la cubren los tests de Rust de downloads.rs y la revisión manual (docs/manual/REVIEW.md, «Fuera de los tours»).",
   }),
+  // The server administrator (SEC-11) and reset by an administrator (SEC-09); ADR-0045.
+  I("administracion", "tab", "admin:users", "Usuarios del servidor (solo administradores)"),
+  I("administracion", "dialog", "dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "Restablecer la contraseña de otra cuenta; nombrar o quitar administradores"),
+  I("administracion", "action", "action:admin-reset", "Restablecer la contraseña de otra cuenta (enlace de un solo uso)"),
+  I("administracion", "action", "action:admin-reset-email", "Enviar el enlace por correo (el administrador no lo ve)", {
+    skip: "Necesita un servidor con SMTP; la API del tour no envía correo (el valor por defecto). Lo cubren server/tests/admin.test.ts con un buzón en memoria y src/modules/admin/ui/tabs/UsersTab.test.tsx.",
+  }),
+  I("administracion", "action", "action:admin-grant", "Nombrar a otro administrador"),
+  I("administracion", "action", "action:admin-revoke", "Quitar el rol de administrador"),
   I("administracion", "tab", "admin:sync", "Sincronización"),
   I("administracion", "action", "action:sync-now", "Sincronizar ahora"),
   I("administracion", "action", "action:sync-auto", "Sincronización automática y su intervalo"),

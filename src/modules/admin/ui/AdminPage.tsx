@@ -5,7 +5,8 @@ import { AiEngineTab } from "@modules/ai";
 import { TemplatesTab, useTemplateCount } from "@modules/templates";
 import { useUnsavedChangesGuard } from "@shared/ui/useUnsavedChangesGuard";
 import { discardOptions, useConfirm } from "@shared/ui/useConfirm";
-import { ADMIN_PANEL_ID, adminTabFrom, type AdminTab } from "../model/tabs";
+import { useAuth } from "@modules/auth";
+import { ADMIN_PANEL_ID, adminTabFrom, adminTabGroups, type AdminTab } from "../model/tabs";
 import { AdminTabs } from "./AdminTabs";
 import { GeneralTab } from "./tabs/GeneralTab";
 import { SyncTab } from "./tabs/SyncTab";
@@ -13,11 +14,13 @@ import { SecurityTab } from "./tabs/SecurityTab";
 import { EvidenceTab } from "./tabs/EvidenceTab";
 import { AuditTab } from "./tabs/AuditTab";
 import { DiagnosticsTab } from "./tabs/DiagnosticsTab";
+import { UsersTab } from "./tabs/UsersTab";
 import "./Admin.css";
 
 /**
  * Administration (SPEC §8, ScrAdministracion, ADR-0031): one screen with
- * grouped tabs — Recursos (Motor de IA, Plantillas) · Aplicación (General) ·
+ * grouped tabs — Recursos (Motor de IA, Plantillas) · Aplicación (General,
+ * Usuarios: only for a server administrator, SEC-11) ·
  * Cuenta y datos (Sincronización, Seguridad, Evidencias, Auditoría) · Soporte
  * (Diagnóstico). The tab
  * lives in the URL (`/admin?tab=…`, Motor de IA by default); `/templates` and
@@ -27,7 +30,9 @@ import "./Admin.css";
 export function AdminPage() {
   const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
-  const tab = adminTabFrom(params.get("tab"));
+  // «Usuarios» only for a server administrator (SEC-11).
+  const isAdmin = useAuth().user?.isAdmin === true;
+  const tab = adminTabFrom(params.get("tab"), isAdmin);
   // The current tab has unsaved changes (Motor de IA, General).
   const [dirty, setDirty] = useState(false);
   const storedCount = useTemplateCount();
@@ -63,7 +68,12 @@ export function AdminPage() {
         <p className="adm__subtitle">{t("admin.subtitle")}</p>
       </header>
 
-      <AdminTabs current={tab} counts={{ templates: templateCount ?? storedCount }} onSelect={select} />
+      <AdminTabs
+        current={tab}
+        groups={adminTabGroups(isAdmin)}
+        counts={{ templates: templateCount ?? storedCount }}
+        onSelect={select}
+      />
 
       <div
         id={ADMIN_PANEL_ID}
@@ -76,6 +86,7 @@ export function AdminPage() {
         {tab === "ai" && <AiEngineTab onDirtyChange={setDirty} />}
         {tab === "templates" && <TemplatesTab onCount={setTemplateCount} />}
         {tab === "general" && <GeneralTab onDirtyChange={setDirty} />}
+        {tab === "users" && <UsersTab />}
         {tab === "sync" && <SyncTab />}
         {tab === "security" && <SecurityTab />}
         {tab === "evidence" && <EvidenceTab />}
