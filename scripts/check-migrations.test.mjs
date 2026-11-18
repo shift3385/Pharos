@@ -135,3 +135,16 @@ test("reserved numbers that already have a file are reported", () => {
     ["0003"],
   );
 });
+
+test("in order: a reserved number below the highest migration fails (SYNC-07)", () => {
+  const files = ["0001_a.sql", "0002_b.sql", "0004_d.sql"];
+  const errors = checkMigrations({ label: "local", files, reserved: { "0003": "track X" }, inOrder: true });
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /reserved number 0003 is below 0004/);
+  // Above the highest one, or without the rule (the server), it is fine.
+  assert.deepEqual(checkMigrations({ label: "local", files, reserved: { "0003": "x", "0005": "y" } }), []);
+  assert.deepEqual(
+    checkMigrations({ label: "local", files: ["0001_a.sql"], reserved: { "0002": "x" }, inOrder: true }),
+    [],
+  );
+});
