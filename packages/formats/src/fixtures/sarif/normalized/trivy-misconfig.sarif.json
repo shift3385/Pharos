@@ -1,0 +1,85 @@
+{
+  "format": "sarif",
+  "warnings": [],
+  "inline": {},
+  "doc": {
+    "schemaVersion": "1.0.0",
+    "run": {
+      "trigger": "import",
+      "sourceTool": "Trivy",
+      "sourceToolVersion": "0.76.2",
+      "context": {
+        "tools": [
+          {
+            "name": "Trivy",
+            "version": "0.76.2"
+          }
+        ]
+      }
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "sarif",
+        "normalizerVersion": 1,
+        "formatVersion": "2.1.0"
+      }
+    ],
+    "results": [],
+    "attachments": [],
+    "findings": [
+      {
+        "ruleId": "DS002",
+        "ruleName": "Misconfiguration",
+        "severity": "high",
+        "rawSeverity": "error · security-severity 8",
+        "message": "Artifact: server/Dockerfile\nType: dockerfile\nVulnerability DS002\nSeverity: HIGH\nMessage: Specify at least 1 USER command in Dockerfile with non-root user as argument\nLink: [DS002](https://avd.aquasec.com/misconfig/ds002)",
+        "location": {
+          "uri": "server/Dockerfile",
+          "line": 1,
+          "column": 1,
+          "endLine": 1
+        },
+        "fingerprint": "pharos:86dc170b-cabc-5ba5-b6b2-7e268ff0afc0",
+        "standardRefs": [],
+        "helpUri": "https://avd.aquasec.com/misconfig/ds002",
+        "attributes": {
+          "tool": "Trivy",
+          "kind": "fail",
+          "tags": [
+            "misconfiguration",
+            "security",
+            "HIGH"
+          ]
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "DS026",
+        "ruleName": "Misconfiguration",
+        "severity": "low",
+        "rawSeverity": "note · security-severity 2",
+        "message": "Artifact: server/Dockerfile\nType: dockerfile\nVulnerability DS026\nSeverity: LOW\nMessage: Add HEALTHCHECK instruction in your Dockerfile\nLink: [DS026](https://avd.aquasec.com/misconfig/ds026)",
+        "location": {
+          "uri": "server/Dockerfile",
+          "line": 1,
+          "column": 1,
+          "endLine": 1
+        },
+        "fingerprint": "pharos:8ffb0252-56a2-5165-9811-32228c1485d5",
+        "standardRefs": [],
+        "helpUri": "https://avd.aquasec.com/misconfig/ds026",
+        "attributes": {
+          "tool": "Trivy",
+          "kind": "fail",
+          "tags": [
+            "misconfiguration",
+            "security",
+            "LOW"
+          ]
+        },
+        "shardRef": "s1"
+      }
+    ]
+  }
+}

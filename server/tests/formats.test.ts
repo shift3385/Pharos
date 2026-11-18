@@ -63,6 +63,24 @@ describe("@pharos/formats in Node", () => {
     expect(snapshot(r)).toBe(expected);
   });
 
+  it.each([
+    [
+      "an external entity (XXE)",
+      '<?xml version="1.0"?><!DOCTYPE t [<!ENTITY x SYSTEM "file:///etc/passwd">]><testsuites><testsuite name="&x;"/></testsuites>',
+    ],
+    [
+      "an entity bomb",
+      '<!DOCTYPE l [<!ENTITY a "aaaaaaaaaa"><!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;">]><testsuites><testsuite name="&b;"/></testsuites>',
+    ],
+  ])("refuses %s before xmldom sees it", (_, text) => {
+    expect(() => parseReportText(text)).toThrow(
+      expect.objectContaining({
+        code: "invalid-xml",
+        message: "invalid-xml: doctype",
+      }),
+    );
+  });
+
   it("refuses malformed XML as invalid-xml", () => {
     expect(() =>
       parseReportText("<testsuites><testsuite></testsuites>"),

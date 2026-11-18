@@ -228,6 +228,8 @@ export const pharosRunSchema = z.looseObject({
 
 export type PharosRun = z.infer<typeof pharosRunSchema>;
 export type PharosRunResult = z.infer<typeof resultSchema>;
+export type PharosFinding = z.input<typeof findingSchema>;
+export type PharosMetric = z.input<typeof metricSchema>;
 
 export interface PharosRunIssue {
   /** Where, as `results.3.status`. */

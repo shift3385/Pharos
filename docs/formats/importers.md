@@ -13,8 +13,75 @@ los parsers (el CLI de INT-01) tiene que reproducirla.
 
 SARIF, axe y k6 (hallazgos y métricas), Allure y TRX (resultados) y `.xcresult`
 están aprobados en [ADR-0053](../adr/0053-hallazgos-metricas-y-paquete-de-formatos.md).
-Sus tablas de mapeo están en el [plan de la pista F](../design/f-formatos-plan.md) §7
-y pasan aquí cuando cada parser se implementa.
+SARIF, axe y k6 ya tienen parser (abajo); Allure, TRX y `.xcresult` siguen en el
+[plan de la pista F](../design/f-formatos-plan.md) §7 hasta que se implementen.
+Los tres dan `findings[]` y `metrics[]` sin `results[]`, así que no cambian
+Pharos Run JSON 1.0.0. No suben `NORMALIZER_VERSION`: antes nadie podía
+importar esos archivos, así que ningún contenido cambia bajo un id ya escrito.
+
+Comunes:
+
+- **Severidad:** `critical | high | medium | low | info`, con el valor de origen
+  en `rawSeverity`.
+- **Huella** (si la herramienta no trae una): `pharos:` + UUIDv5 de la
+  herramienta, la regla y la ubicación normalizada (`derivedFingerprint` en
+  `ids.ts`). Nunca incluye el mensaje. Es UUIDv5 y no sha256 porque los parsers
+  son síncronos y en el navegador sha256 solo es asíncrono.
+- **Ids** (para los persistentes, F2): `findingId(shard, huella, n)`,
+  `metricId(shard, nombre, agregación, ámbito)` y
+  `findingTriageId(proyecto, huella)` en `ids.ts`.
+- **Etiquetas de caso:** los parsers no vinculan. Dejan las etiquetas
+  (`@TC-1`) en `attributes.tags`, y el persistente las resuelve con el prefijo
+  del proyecto, como con los resultados.
+- **Límites:** 20.000 hallazgos y 5.000 métricas por importación.
+
+### SARIF 2.x → hallazgos
+
+Se detecta por `version` `2.x` y `runs[]`.
+
+| Pharos | SARIF |
+| --- | --- |
+| uno por | resultado con `kind` `fail` (por defecto), `open` o `review`, y sin `baselineState: absent`. Los demás se cuentan en el aviso `sarif-skipped` |
+| `ruleId` / `ruleName` | `ruleId` (o `rule.id`) / `rule.name` o `shortDescription`. La regla se busca por `rule.index`/`ruleIndex` en el `toolComponent` del resultado o en `extensions`, y si no por id |
+| `severity` | `security-severity` del resultado o de la regla (≥9 crítica, ≥7 alta, ≥4 media, >0 baja); si no, `level` del resultado o `defaultConfiguration.level`: `error` alta, `warning` media (también por defecto), `note` baja, `none` info |
+| `rawSeverity` | `level` y `security-severity n`, unidos con ` · ` |
+| `message` | `message.text`, `markdown`, o el `messageStrings` de la regla con `{n}` sustituidos |
+| `location` | `uri` relativa al repo (`file://`, `%20`, `uriBaseId` y prefijos de CI o de usuario fuera), `line`, `column`, `endLine`, `component` (ubicación lógica), `url` (`webRequest.target`) |
+| `fingerprint` | `partialFingerprints` (o `fingerprints`), la primera clave por orden, como `sarif:<herramienta>:<regla>:<clave>=<valor>`: la huella de la herramienta identifica una línea, no una regla. Si no hay, la derivada |
+| `standardRefs` | etiquetas `external/cwe/cwe-79` y `CWE-79`, `owasp…A03`, y `relationships`/`taxa` de CWE u OWASP |
+| `attributes` | `tool`, `kind`, `tags`, `baselineState`, `suppressed` (todas las `suppressions` aceptadas o sin estado), `rank`, `automationId` |
+| run | herramientas (`sourceTool`), `versionControlProvenance` (`commitSha`, `branch`, `repositoryUrl`), `invocations` (horas). `executionSuccessful: false` da el aviso `tool-failed` |
+
+### axe-core → hallazgos y métricas
+
+Se detecta por `testEngine.name: "axe-core"` y `violations[]`, o un arreglo de
+esos (uno por página, `@axe-core/cli`).
+
+| Pharos | axe |
+| --- | --- |
+| hallazgo | uno por **regla violada × nodo** |
+| `severity` | `impact` del nodo, o de la regla: `critical` crítica, `serious` alta, `moderate` media, `minor` baja |
+| `message` / `location` | `failureSummary` / `url`, `selector` (`target` unido con ` >> `, ` >>> ` dentro de un shadow DOM), `html` |
+| `fingerprint` | derivada de la página **sin query ni fragmento** y el selector |
+| `standardRefs` | `wcag143` → `WCAG2:1.4.3`, `EN-9.1.4.3` → `EN301549:9.1.4.3`, `section508.22.a` → `S508:22.a`; el nivel (`wcag21aa`) va a `attributes.wcagLevel` |
+| `incomplete[]` | hallazgo `info` con `attributes.needsReview` («A revisar»): no cuenta como abierto (decisión 4 del usuario) |
+| métricas | por página: `axe.rules_violated`, `axe.rules_incomplete` y `axe.rules_passed` (`count`, ámbito = URL) |
+
+### k6 → métricas
+
+Se detecta por `metrics` y `root_group`. Lee el `data` de `handleSummary` y el
+`--summary-export` (formato antiguo), y los dos dan las mismas métricas.
+
+| Pharos | k6 |
+| --- | --- |
+| métrica | una por **métrica × agregación** presente, en orden fijo (avg, min, med, max, percentiles) |
+| `name` / `scope` | `http_req_duration{expected_response:true}` → `http_req_duration` / `expected_response:true` |
+| `aggregation` | `p(95)` → `p95`; contador: `count` y `rate`; rate: siempre `rate` (el formato antiguo la llama `value`); gauge: `value`, `min` y `max` |
+| `unit` | `time` → `ms`, `data` → `B`, rate → `ratio`, `rate` de un contador → `/s`. En el formato antiguo, que no dice qué contiene, se deduce de las métricas propias de k6 |
+| `threshold` / `passed` | cada expresión va a la agregación que nombra; varias se unen con ` && `. `passed`: `ok` en `handleSummary`; en el formato antiguo, **`true` es que el umbral se superó (falló)**, comprobado con una exportación real |
+| umbral sin valor | `p(99)` fuera de `summaryTrendStats`: aviso `threshold-without-value`, y el umbral queda en `attributes.thresholdsWithoutValue` |
+| checks | uno por check: `checks`, `rate`, ámbito = ruta del grupo y el nombre, `attributes {passes, fails}` |
+| etiquetas | el tag `case` de una submétrica (`{case:TC-1}`) y `@TC-1` en el nombre de un check |
 
 ## Detección
 
@@ -25,12 +92,17 @@ Se detecta por el **contenido**, nunca por la extensión:
 | La primera línea es un sobre de Messages (`{"meta":…}`) | `cucumber_messages` (se lee línea a línea)                    |
 | XML con `<testsuites>` o `<testsuite>`                  | `junit`                                                       |
 | JSON con `reportFormat: "CTRF"`                         | `ctrf`                                                        |
+| JSON con `testEngine.name: "axe-core"` y `violations`, o un arreglo de ellos | `axe` |
+| JSON con `version` `2.x` y `runs[]`                     | `sarif`                                                       |
+| JSON con `metrics` y `root_group`                        | `k6`                                                          |
 | JSON con `schemaVersion`                                | `pharos_run_json`                                             |
 | JSON con `config` y `suites`                            | `playwright_json`                                             |
 | Arreglo JSON de features (Cucumber JSON)                | Se rechaza: hay que usar Messages (conserva reintentos y filas) |
+| XML con un DTD (`<!DOCTYPE` en el prólogo)              | Se rechaza (`invalid-xml: doctype`): un DTD es la vía de XXE y de las bombas de entidades, y ningún formato lo necesita. Un `<!DOCTYPE html>` dentro de la salida capturada de un test es contenido y no cuenta |
 
 Límites: 200 MB por archivo (el límite de evidencia), 50 MB si es JSON o XML
-(se leen enteros) y 20 000 resultados por importación.
+(se leen enteros), y por importación 20 000 resultados, 20 000 hallazgos y
+5 000 métricas.
 
 ## Identidad (`test_key`) e intentos
 

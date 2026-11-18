@@ -4386,10 +4386,14 @@
         "merged-without-shard": "Merged report (merge-reports): it lost its shard and its duration is unreliable. Prefer importing each shard's report.",
         "no-results": "The report has no results.",
         "attachment-url": "{{detail}} attachments are URLs: they are not downloaded.",
+        "sarif-skipped": "{{detail}} SARIF results are not findings (kind pass or similar, or absent from the baseline): they are not imported.",
+        "tool-failed": "The tool {{detail}} did not finish its analysis: some findings may be missing.",
+        "threshold-without-value": "Some thresholds test an aggregation the summary does not carry ({{detail}}): they are kept without a value.",
         "no-revision": "Case {{detail}} has no revision: left unlinked."
       },
       "error": {
         "unknown-format": "The file format is not recognized.",
+        "format-not-stored": "Pharos recognizes this report ({{detail}}), but this version does not store findings or metrics yet.",
         "cucumber-json": "This is Cucumber JSON, which is not imported. Use Cucumber Messages (--format message): it keeps retries and rows.",
         "invalid-json": "The file is not valid JSON.",
         "invalid-xml": "The file is not valid XML.",
