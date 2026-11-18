@@ -1,12 +1,12 @@
 # ADR-0049 · Estados del plan por acciones y «Aprobación independiente» por workspace
 
-- **Estado:** Propuesto (2026-11-17).
+- **Estado:** Aceptado (2026-11-17).
   - El usuario aprobó la dirección el 2026-11-17: unificar el flujo del plan
     con acciones, como los casos, y añadir una política por workspace.
-  - El usuario respondió a las cinco decisiones del plan el mismo día. Sus
-    respuestas están en las decisiones 2, 3, 6 y 7.
-  - Pasa a «Aceptado» cuando el usuario apruebe esta versión y decida la
-    decisión 8 (los casos).
+  - El mismo día respondió a las cinco decisiones del plan (están en las
+    decisiones 2, 5 y 6) y aprobó el plan («Aprobado este plan»).
+  - En la decisión 8 eligió la opción A, la misma regla para los casos
+    («Sí, misma regla»).
   - Cambia la decisión 4 del [ADR-0040](0040-metricas-del-plan-y-aprobacion.md):
     editar un plan aprobado ya no lo deja en «Revisado», sino «En revisión».
 - **Contexto:**
@@ -90,17 +90,18 @@
          decisión 6 según la política del workspace.
      - Las `policies` siguen siendo rechazos extra, después de la regla.
      - El veredicto final lleva `selfApproval: approverId === authorId`.
-  8. **Los casos (para que decida el usuario).** CAS-02 (#83, ya en `main`)
-     devuelve a Borrador un caso aprobado o En revisión cuando se edita, y
-     «Devolver» lo lleva a Borrador. Con la decisión 2, el plan y los casos
-     tendrían reglas distintas. Hay dos opciones:
-     - **A (recomendada):** los casos siguen la misma regla que el plan.
-       Editar lleva a En revisión, «Devolver» pasa a «Pedir cambios» y un
-       caso solo está en Borrador antes de su primer envío. Lo hace la pista
-       P en el mismo PR, con `case_review.rs`, `case-review.ts` y
-       `CaseReviewPanel`.
-     - **B:** se mantiene la diferencia, y el manual explica por qué un caso
-       vuelve a Borrador y un plan no.
+  8. **Los casos siguen la misma regla** (opción A, decisión del usuario).
+     Cambia la regla de edición y la acción «Devolver» del
+     [ADR-0047](0047-revision-de-casos-y-baselines.md):
+     - Editar un caso aprobado lo lleva a En revisión, y editar uno En
+       revisión lo deja ahí.
+     - «Devolver» pasa a «Pedir cambios» y el caso sigue En revisión.
+     - Un caso solo está en Borrador antes de su primer envío.
+     - Lo hace la pista P en el mismo PR, con `case_review.rs`,
+       `case-review.ts`, `model/review.ts` y `CaseReviewPanel`. Las
+       baselines no cambian.
+     - Se descartó la opción B, mantener la diferencia y explicarla en el
+       manual: deja dos reglas para lo mismo.
 - **Alternativas:**
   - Volver a Borrador al editar un plan aprobado, como CAS-02: el usuario lo
     descartó, porque Borrador es solo la etapa inicial.

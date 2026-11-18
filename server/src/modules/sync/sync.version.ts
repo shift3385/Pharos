@@ -70,6 +70,8 @@ export const SERVER_FEATURES = [
   "defects",
   // IA-17 (ADR-0036): requirements carry `data`; kept for clients without it.
   "requirement-data",
+  // CAS-02 (ADR-0047): suite baselines (`case_baseline`, append-only).
+  "case-baselines",
   // SYNC-07 (ADR-0042): workspaces with roles; push and pull name the
   // workspace, and a push may be refused per delta (`rejected`).
   "workspaces",
@@ -137,6 +139,12 @@ export function understandsCycles(req: FastifyRequest): boolean {
  *  them) on pull, and its push that touches a defect card is refused. */
 export function understandsDefects(req: FastifyRequest): boolean {
   return clientFeatures(req).includes("defects");
+}
+
+/** True if the client knows suite baselines (CAS-02, ADR-0047). Without it
+ *  a client never sees them on pull, and may not push them. */
+export function understandsCaseBaselines(req: FastifyRequest): boolean {
+  return clientFeatures(req).includes("case-baselines");
 }
 
 /** True if the client knows workspaces with roles (SYNC-07, ADR-0042 §2):

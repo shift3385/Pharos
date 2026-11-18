@@ -1,6 +1,6 @@
 {
-  "version": "0.2.0",
-  "date": "2026-11-09",
+  "version": "0.4.0-beta.1",
+  "date": "2026-11-13",
   "steps": [
     {
       "chapter": "preparacion",
@@ -58,13 +58,13 @@
       ],
       "image": "acceso/02-idioma-entrada.png",
       "viewport": {
-        "height": 1009,
-        "width": 1920
+        "height": 900,
+        "width": 1440
       },
       "status": "passed",
       "focus": {
         "x": 48,
-        "y": 856,
+        "y": 747,
         "w": 233,
         "h": 117
       }
@@ -301,7 +301,7 @@
       "n": 1,
       "id": "estructura",
       "title": "La pantalla de Pharos",
-      "caption": "Todas las pantallas comparten la misma estructura. A la izquierda, el menú lateral: «Inicio» y «Proyectos» arriba; dentro de un proyecto, el bloque «Proyecto activo» con sus secciones; «Administración» en «Configuración» y, al pie, la sincronización, la versión instalada y tu menú de usuario. Arriba, la barra con la ruta (migas de pan), el buscador, las notificaciones y el cambio de tema. El resto es el contenido de la sección abierta: en este ejemplo, el «Tablero» del proyecto «Pharos».",
+      "caption": "Todas las pantallas comparten la misma estructura. A la izquierda, el menú lateral: «Inicio» y «Proyectos» arriba; dentro de un proyecto, el bloque «Proyecto activo» con sus secciones; «Administración» en «Configuración» y, al pie, la sincronización y tu menú de usuario. Arriba del todo, el logotipo y el nombre «Pharos», que abren «Acerca de Pharos»; en el borde derecho del menú, a media altura, la pestaña que lo contrae. Arriba, la barra con la ruta (migas de pan), el buscador, las notificaciones y el cambio de tema. El resto es el contenido de la sección abierta: en este ejemplo, el «Tablero» del proyecto «Pharos».",
       "covers": [
         "screen:shell"
       ],
@@ -315,13 +315,35 @@
     {
       "chapter": "navegacion",
       "n": 2,
+      "id": "acerca-de",
+      "title": "Acerca de Pharos",
+      "caption": "Un clic en el logotipo o en el nombre «Pharos», arriba del menú lateral, abre «Acerca de Pharos»: la versión instalada y su compilación, la plataforma (escritorio o web), las tecnologías con que está hecha, la licencia, el responsable del proyecto y el asistente de IA que ayuda en su desarrollo. Con el teclado, llega a él con Tab y pulsa Intro o Espacio. Si informas de un fallo, di siempre la versión y la compilación. «Cerrar» o Esc lo cierran. En la tira de iconos también se abre desde el logotipo.",
+      "covers": [
+        "dialogs:src/app/layout/AboutDialog.tsx"
+      ],
+      "image": "navegacion/02-acerca-de.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 460,
+        "y": 209,
+        "w": 520,
+        "h": 483
+      }
+    },
+    {
+      "chapter": "navegacion",
+      "n": 3,
       "id": "menu-proyecto",
       "title": "Las secciones y el proceso de prueba",
       "caption": "El bloque «Proyecto activo» va en el orden del proceso de prueba: cada sección sirve a una de sus actividades, como resume la tabla de debajo. La sección abierta queda resaltada. Al abrir un proyecto existente, Pharos entra en su «Tablero»; uno recién creado se abre en su «Plan de pruebas».",
       "covers": [
         "action:project-nav"
       ],
-      "image": "navegacion/02-menu-proyecto.png",
+      "image": "navegacion/03-menu-proyecto.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -336,14 +358,14 @@
     },
     {
       "chapter": "navegacion",
-      "n": 3,
+      "n": 4,
       "id": "cambiar-proyecto",
       "title": "Cambiar de proyecto",
       "caption": "El selector de la parte superior del bloque, con el prefijo y el nombre del proyecto, salta a otro proyecto sin volver a la lista. Escribe para filtrar (útil con muchos proyectos), muévete con ↑ ↓ y elige con Intro o con un clic. Pharos abre la misma sección en el otro proyecto: si estabas en su «Tablero», llegas al «Tablero» del nuevo. «Ver todos los proyectos», al pie, abre la lista.",
       "covers": [
         "action:project-switcher"
       ],
-      "image": "navegacion/03-cambiar-proyecto.png",
+      "image": "navegacion/04-cambiar-proyecto.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -358,14 +380,14 @@
     },
     {
       "chapter": "navegacion",
-      "n": 4,
+      "n": 5,
       "id": "migas",
       "title": "Dónde estás: las migas de pan",
       "caption": "Tras elegir «API de sincronización», la barra superior muestra la ruta: «Proyectos › API de sincronización › Tablero». Cada tramo, menos el último, es un enlace: «Proyectos» vuelve a la lista. Si un nombre es muy largo, se recorta con «…» y se lee entero al pasar el ratón.",
       "covers": [
         "action:breadcrumbs"
       ],
-      "image": "navegacion/04-migas.png",
+      "image": "navegacion/05-migas.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -380,7 +402,7 @@
     },
     {
       "chapter": "navegacion",
-      "n": 5,
+      "n": 6,
       "id": "busqueda",
       "title": "Buscar (Ctrl+K)",
       "caption": "El buscador de la barra superior, o Ctrl+K desde cualquier pantalla (⌘K en Mac), será la búsqueda global de casos, requisitos y proyectos. En esta versión todavía no busca: el panel avisa de que llega en una próxima versión. Mientras tanto, cada lista tiene su propio buscador y, en los casos, Ctrl+P salta a uno concreto (capítulo 8). Esc cierra el panel.",
@@ -388,7 +410,7 @@
         "keyboard:ctrl-k",
         "dialogs:src/app/layout/TopbarControls.tsx"
       ],
-      "image": "navegacion/05-busqueda.png",
+      "image": "navegacion/06-busqueda.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -403,14 +425,14 @@
     },
     {
       "chapter": "navegacion",
-      "n": 6,
+      "n": 7,
       "id": "notificaciones",
       "title": "Notificaciones",
       "caption": "La campana, junto al buscador, abrirá tus notificaciones. Como la búsqueda, todavía es un adelanto: el panel avisa de que llegan en una próxima versión. Los avisos de lo que haces (guardado, exportado, sincronizado) aparecen por ahora un momento abajo a la derecha.",
       "covers": [
         "dialogs:src/app/layout/TopbarControls.tsx"
       ],
-      "image": "navegacion/06-notificaciones.png",
+      "image": "navegacion/07-notificaciones.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -425,14 +447,14 @@
     },
     {
       "chapter": "navegacion",
-      "n": 7,
+      "n": 8,
       "id": "tema",
       "title": "Tema claro u oscuro",
       "caption": "El botón de la luna, a la derecha de la barra superior, pasa Pharos al tema oscuro («Faro Nocturno»); en el tema oscuro es un sol y vuelve al claro. Se aplica al momento y se recuerda en este equipo. En «Administración › General» (capítulo 15) hay además la opción «Según el sistema», que sigue el ajuste de Windows.",
       "covers": [
         "action:theme-toggle"
       ],
-      "image": "navegacion/07-tema.png",
+      "image": "navegacion/08-tema.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -447,14 +469,14 @@
     },
     {
       "chapter": "navegacion",
-      "n": 8,
+      "n": 9,
       "id": "sincronizar",
       "title": "La sincronización, al pie del menú",
-      "caption": "Al pie del menú lateral, un punto de color y una palabra dicen cómo está la sincronización con el servidor: «Sincronizado», «Cambios pendientes (N)», «Sin conexión» o «Conflictos (N)». Pharos sincroniza solo al entrar y cuando vuelve la conexión (y, si activas «Sincronización automática» en Administración › Sincronización, capítulo 15, cada pocos minutos); «Sincronizar ahora» lo hace al momento y avisa de cuántos cambios envió (↑) y recibió (↓). Con conflictos aparece «Revisar conflictos» (capítulo 15).",
+      "caption": "Al pie del menú lateral, un punto de color y una palabra dicen cómo está la sincronización con el servidor: «Sincronizado», «Cambios pendientes (N)», «Sin conexión» o «Conflictos (N)». Pharos sincroniza solo al entrar y cuando vuelve la conexión (y, si activas «Sincronización automática» en Administración › Sincronización, capítulo 15, cada pocos minutos); «Sincronizar ahora» lo hace al momento y avisa de cuántos cambios envió (↑) y recibió (↓). Mientras sincroniza, también cuando lo hace solo, las flechas del botón giran y el punto se vuelve un anillo; si tu sistema pide reducir el movimiento, las flechas no giran y basta el anillo. Con conflictos aparece «Revisar conflictos» (capítulo 15).",
       "covers": [
         "action:sync-indicator"
       ],
-      "image": "navegacion/08-sincronizar.png",
+      "image": "navegacion/09-sincronizar.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -462,21 +484,21 @@
       "status": "passed",
       "focus": {
         "x": 14,
-        "y": 754,
+        "y": 780,
         "w": 220,
         "h": 50
       }
     },
     {
       "chapter": "navegacion",
-      "n": 9,
+      "n": 10,
       "id": "menu-contraido",
       "title": "Contraer el menú lateral",
-      "caption": "El botón junto al logotipo contrae el menú lateral a una tira de iconos con su nombre corto, para dar más espacio a tablas y editores; al pasar el ratón, cada icono dice su nombre completo. Vuelve a pulsarlo para expandirlo. Pharos recuerda tu elección en este equipo. En la tira, la sincronización es solo el punto: púlsalo para sincronizar.",
+      "caption": "La pestaña con la flecha ‹, en el borde derecho del menú lateral y a media altura, lo contrae a una tira de iconos con su nombre corto, para dar más espacio a tablas y editores; al pasar el ratón, cada icono dice su nombre completo. En la tira la flecha es ›: púlsala para expandirlo. Pharos recuerda tu elección en este equipo. Al pie de la tira, el icono de las flechas con el punto de estado sincroniza al pulsarlo; al pasar el ratón dice cómo está la sincronización, y sus flechas giran mientras sincroniza.",
       "covers": [
         "action:sidebar-collapse"
       ],
-      "image": "navegacion/09-menu-contraido.png",
+      "image": "navegacion/10-menu-contraido.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -491,14 +513,14 @@
     },
     {
       "chapter": "navegacion",
-      "n": 10,
+      "n": 11,
       "id": "tableta",
       "title": "Pantallas medianas: la tira de iconos",
       "caption": "Pharos se adapta al ancho de la ventana. Por debajo de 1280 px (una tableta, o la ventana a media pantalla), el menú lateral es siempre la tira de iconos, el buscador se reduce a la lupa (Ctrl+K sigue funcionando), las tablas ocultan sus columnas menos importantes y lo que no cabe, como las columnas del Tablero, se desplaza de lado. Si la ventana es baja, desplaza la tira para llegar a tu avatar. Por debajo de 600 px pasa al diseño del móvil, con una barra inferior (capítulo 18).",
       "covers": [
         "platform:tablet-icon-strip"
       ],
-      "image": "navegacion/10-tableta.png",
+      "image": "navegacion/11-tableta.png",
       "viewport": {
         "height": 768,
         "width": 1024
@@ -510,7 +532,7 @@
       "n": 1,
       "id": "resumen",
       "title": "Tu Inicio",
-      "caption": "«Inicio» es lo primero que ves al entrar: un resumen de todos tus proyectos abiertos. Arriba, la fecha, el saludo y una frase con lo pendiente (en este ejemplo, las pruebas sin hacer en los proyectos de Liomar); a la derecha, el periodo de los datos y «Nuevo proyecto». Debajo, cuatro tarjetas con las cifras clave y cuatro paneles: la ejecución por proyecto, los criterios de salida, las ejecuciones diarias y las próximas pruebas. Se actualiza solo cada vez que llegan datos de otro equipo.",
+      "caption": "«Inicio» es lo primero que ves al entrar: un resumen de todos tus proyectos abiertos. Arriba, en una sola línea, el saludo y la fecha; a la derecha, el periodo de los datos, «Nuevo proyecto» y el engranaje para personalizarlo. Debajo, cuatro tarjetas con las cifras clave y cuatro paneles: la ejecución por proyecto, las próximas pruebas, los criterios de salida y las ejecuciones diarias. Ningún panel se desplaza por dentro: una lista muestra las filas que caben y termina en «+N más». Se actualiza solo cada vez que llegan datos de otro equipo.",
       "covers": [
         "route:/",
         "state:home-metrics"
@@ -539,9 +561,9 @@
       "status": "passed",
       "focus": {
         "x": 279,
-        "y": 257,
-        "w": 1115,
-        "h": 130
+        "y": 159,
+        "w": 1130,
+        "h": 108
       }
     },
     {
@@ -549,7 +571,7 @@
       "n": 3,
       "id": "periodo",
       "title": "El periodo de los datos",
-      "caption": "El selector de periodo («Últimos 14 días», por defecto) decide qué días cuentan para la tasa de éxito y para «Ejecuciones diarias»: hoy, los últimos 7, 14 o 30 días, o el mes en curso. Las demás cifras son el estado actual de cada proyecto. Pharos recuerda el periodo en este equipo. Las opciones por ciclo, el rango personalizado y la comparación con el periodo anterior llegan en una próxima versión.",
+      "caption": "El selector de periodo («Últimos 14 días», por defecto) decide qué días cuentan para la tasa de éxito y para «Ejecuciones diarias»: hoy, los últimos 7, 14 o 30 días, o el mes en curso. Las demás cifras son el estado actual de cada proyecto. Pharos recuerda el periodo en este equipo. Las opciones por ciclo y el rango personalizado llegan en una próxima versión.",
       "covers": [
         "action:home-period"
       ],
@@ -560,22 +582,44 @@
       },
       "status": "passed",
       "focus": {
-        "x": 965,
-        "y": 158,
+        "x": 940,
+        "y": 95,
         "w": 263,
-        "h": 461
+        "h": 507
       }
     },
     {
       "chapter": "inicio",
       "n": 4,
+      "id": "comparar",
+      "title": "Comparar con el periodo anterior",
+      "caption": "Al final del menú del periodo, «Comparar con el periodo anterior» enfrenta el periodo con otro de la misma duración justo antes: los 7 días con los 7 anteriores, «Hoy» con ayer y «Este mes» con los mismos días antes del día 1; debajo del interruptor ves sus fechas. Encendido, el botón del periodo dice «vs anterior», la «Tasa de éxito» muestra la diferencia en puntos (▲ en verde si sube, ▼ en rojo si baja) y «Ejecuciones diarias» suma una línea gris de puntos con el total de cada día del periodo anterior, su diferencia en % junto al total y una columna «Anterior» en «Ver los datos». Las demás cifras son el estado de ahora y no cambian. El interruptor no cierra el menú, y Pharos lo recuerda en este equipo, como el periodo.",
+      "covers": [
+        "action:home-compare"
+      ],
+      "image": "inicio/04-comparar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 279,
+        "y": 95,
+        "w": 924,
+        "h": 723
+      }
+    },
+    {
+      "chapter": "inicio",
+      "n": 5,
       "id": "ejecucion",
       "title": "Ejecución por proyecto",
       "caption": "Una barra por proyecto abierto con el último resultado de cada uno de sus casos: «Pasa», «Falla», «Bloqueado», «Otro» y «No ejecutado». Así ves de un vistazo cuánto falta por probar y dónde están los fallos. Pasa el ratón por un tramo para ver la cifra; el nombre del proyecto lo abre en su «Tablero».",
       "covers": [
         "screen:home-exec"
       ],
-      "image": "inicio/04-ejecucion.png",
+      "image": "inicio/05-ejecucion.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -583,65 +627,187 @@
       "status": "passed",
       "focus": {
         "x": 279,
-        "y": 411,
-        "w": 705,
-        "h": 407
+        "y": 275,
+        "w": 416,
+        "h": 282
       }
     },
     {
       "chapter": "inicio",
-      "n": 5,
+      "n": 6,
+      "id": "ayuda",
+      "title": "La ayuda de cada panel",
+      "caption": "Junto al título de cada panel, el botón «?» explica qué muestra: «Ejecución por proyecto», el último resultado de cada caso en cada proyecto abierto; «Próximas pruebas», qué ejecutar según su último resultado y por prioridad; «Criterios de salida», los definidos en el plan de pruebas; y «Ejecuciones diarias», qué cuenta como intento. Se abre al pasar el ratón, con un clic o con el teclado (Tab), y se cierra con Esc.",
+      "covers": [
+        "action:home-gadget-help"
+      ],
+      "image": "inicio/06-ayuda.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 471,
+        "y": 292,
+        "w": 20,
+        "h": 20
+      }
+    },
+    {
+      "chapter": "inicio",
+      "n": 7,
       "id": "criterios",
       "title": "Criterios de salida",
       "caption": "«Criterios de salida» evalúa los criterios de cierre del plan de pruebas de un proyecto (capítulo 5): el anillo da el porcentaje ejecutado y cada criterio dice «Cumple», «No cumple» o «Sin datos» (los que Pharos no puede medir solo). El titular resume si el proyecto está «Listo para cerrar» o si «Hay criterios que no se cumplen». Si el plan no define criterios, se usan los de por defecto; «Abrir el plan» lleva a él.",
       "covers": [
         "action:home-exit-criteria"
       ],
-      "image": "inicio/05-criterios.png",
+      "image": "inicio/07-criterios.png",
       "viewport": {
         "height": 900,
         "width": 1440
       },
       "status": "passed",
       "focus": {
-        "x": 1002,
-        "y": 411,
-        "w": 392,
-        "h": 407
+        "x": 1040,
+        "y": 275,
+        "w": 369,
+        "h": 311
       }
     },
     {
       "chapter": "inicio",
-      "n": 6,
+      "n": 8,
       "id": "criterios-filtros",
       "title": "Elegir el proyecto: en riesgo o cumplen",
       "caption": "El botón con el nombre del proyecto abre el selector: escribe para buscar por nombre o prefijo, y filtra con «Todos», «En riesgo» (algún criterio no se cumple) o «Cumplen» (se cumplen todos los que se pueden evaluar). Los proyectos van ordenados por su fecha de cierre, la más próxima primero; por eso el Inicio muestra de entrada el que cierra antes.",
       "covers": [
         "action:home-exit-filter"
       ],
-      "image": "inicio/06-criterios-filtros.png",
+      "image": "inicio/08-criterios-filtros.png",
       "viewport": {
         "height": 900,
         "width": 1440
       },
       "status": "passed",
       "focus": {
-        "x": 1060,
-        "y": 560,
+        "x": 1079,
+        "y": 420,
         "w": 306,
         "h": 143
       }
     },
     {
       "chapter": "inicio",
-      "n": 7,
+      "n": 9,
       "id": "diarias",
       "title": "Ejecuciones diarias y sus datos",
-      "caption": "Una columna por día del periodo con los intentos: cada vez que se ejecutó algo, reintentos y tests sin vincular incluidos, por eso puede sumar más que la tasa de éxito, que cuenta casos. Cada columna separa «Pasa», «Falla» y «Otras», sumando todos los proyectos; arriba a la derecha, el total del periodo. Pasa el ratón por una columna para ver su día. «Ver los datos» despliega la misma información en una tabla (día, pasa, falla, otras, manuales e importadas), más cómoda de leer con un lector de pantalla o para copiar.",
+      "caption": "Una línea por estado («Pasa», «Falla» y «Otras», esta discontinua) con los intentos de cada día del periodo: cada vez que se ejecutó algo, reintentos y tests sin vincular incluidos, por eso puede sumar más que la tasa de éxito, que cuenta casos. Un punto marca cada día con alguno; arriba a la derecha, el total del periodo. «Ver los datos» abre la misma información en una tabla (día, pasa, falla, otras, manuales e importadas), más cómoda de leer con un lector de pantalla o para copiar; en el escritorio se abre en una ventana, para que el panel no crezca.",
       "covers": [
-        "action:home-daily-table"
+        "action:home-daily-table",
+        "dialogs:src/app/dashboard/DailyExecutionsChart.tsx"
       ],
-      "image": "inicio/07-diarias.png",
+      "image": "inicio/09-diarias.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 500,
+        "y": 337,
+        "w": 440,
+        "h": 227
+      }
+    },
+    {
+      "chapter": "inicio",
+      "n": 10,
+      "id": "diarias-30",
+      "title": "Treinta días de un vistazo",
+      "caption": "Con «Últimos 30 días» el eje de fechas solo rotula el primer día, uno por semana y el último, con el mes cuando cambia, para que nunca se pisen; la escala llega al valor más alto que se ve (como poco, 5). Pasa el ratón, toca la gráfica o recórrela con las flechas del teclado: una línea vertical marca el día y una burbuja muestra su fecha y lo de cada estado. La leyenda también filtra: pulsa un estado para ocultar o mostrar su línea (siempre queda al menos uno) y la escala se ajusta a lo visible.",
+      "covers": [
+        "action:home-daily-tooltip",
+        "action:home-daily-legend"
+      ],
+      "image": "inicio/10-diarias-30.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "inicio",
+      "n": 11,
+      "id": "proximas",
+      "title": "Próximas pruebas",
+      "caption": "«Próximas pruebas» propone qué ejecutar a continuación, por prioridad, según el último resultado de cada caso. El selector bajo el título elige la lista, con su número: «No ejecutadas», «Bloqueadas» o «Por confirmar» (casos que fallaron y cuyo defecto ya está corregido; cada fila dice cuándo falló). Cada fila abre el caso; la flecha de la derecha («Ver todas») lleva a la lista de casos, y si no caben todas, «+N más» también.",
+      "covers": [
+        "action:home-upcoming-filter"
+      ],
+      "image": "inicio/11-proximas.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 724,
+        "y": 330,
+        "w": 287,
+        "h": 161
+      }
+    },
+    {
+      "chapter": "inicio",
+      "n": 12,
+      "id": "tendencia",
+      "title": "Tendencia de ciclos",
+      "caption": "«Tendencia de ciclos» sigue una métrica a lo largo de los últimos ciclos cerrados del proyecto (con las cifras congeladas al cerrarlos) y del ciclo activo, en vivo y punteado: la tasa de éxito, la densidad de defectos, los escapes, el tiempo de corrección, la reapertura o el flaky. La línea verde es el objetivo del plan y el punto bajo cada ciclo, su veredicto (Go, Go con riesgos o No-go). Si una métrica empeora dos ciclos seguidos o se sale del objetivo, el gadget lo avisa. Mientras ningún ciclo se haya cerrado con «Cerrar ciclo…» (capítulo 9), dice cómo empezar.",
+      "covers": [
+        "action:home-trend"
+      ],
+      "image": "inicio/12-tendencia.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 707,
+        "y": 594,
+        "w": 702,
+        "h": 224
+      }
+    },
+    {
+      "chapter": "inicio",
+      "n": 13,
+      "id": "sin-scroll",
+      "title": "Todo a la vista, sin desplazarte",
+      "caption": "En el escritorio, el Inicio es una pizarra de 24 columnas por 24 filas que ocupa justo el alto de la ventana: desde 1280 × 800 en una ventana como esta, de 1280 × 820, lo ves todo sin desplazarte, y ningún panel se desplaza por dentro. Con menos alto, los paneles se compactan (menos márgenes y leyendas solo con puntos de color, con su nombre al pasar el ratón); por debajo de unos 700 px de alto aparece un único desplazamiento de página. Cada tarjeta es un «gadget» con su sitio y su tamaño en la cuadrícula. En una tableta los gadgets se apilan uno debajo de otro, y en el móvil se reparten en pestañas.",
+      "covers": [
+        "platform:home-no-scroll"
+      ],
+      "image": "inicio/13-sin-scroll.png",
+      "viewport": {
+        "height": 820,
+        "width": 1280
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "inicio",
+      "n": 14,
+      "id": "personalizar",
+      "title": "Personalizar el Inicio",
+      "caption": "El engranaje junto a «Nuevo proyecto» («Personalizar Inicio») activa el modo configurar: se ve la cuadrícula punteada y cada gadget con un borde discontinuo, su asa para moverlo (arriba a la izquierda), su tamaño y su mínimo («9×10 · mín 8×7») y la esquina inferior derecha para cambiar el tamaño. Al mover o agrandar uno, los demás se apartan y suben a llenar los huecos: nunca se solapan. Cada gadget tiene un tamaño mínimo para que su contenido se lea bien. «Listo» guarda la distribución en tu cuenta, así que la verás igual en tus otros equipos; Esc sale sin guardar (y pregunta si cambiaste algo).",
+      "covers": [
+        "action:home-customize"
+      ],
+      "image": "inicio/14-personalizar.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -649,43 +815,132 @@
       "status": "passed",
       "focus": {
         "x": 279,
-        "y": 517,
-        "w": 549,
-        "h": 414
+        "y": 99,
+        "w": 1130,
+        "h": 458
       }
     },
     {
       "chapter": "inicio",
-      "n": 8,
-      "id": "proximas",
-      "title": "Próximas pruebas",
-      "caption": "«Próximas pruebas» propone qué ejecutar a continuación, por prioridad, según el último resultado de cada caso: «No ejecutadas», «Bloqueadas» y «Re-test» (casos que fallaron y cuyo defecto ya está corregido). Cada fila abre el caso; «Ver todas» lleva a la lista de casos. Cambia de pestaña con un clic o con las flechas ← →.",
+      "n": 15,
+      "id": "teclado",
+      "title": "Mover y cambiar el tamaño con el teclado",
+      "caption": "Con el teclado: pasa de un gadget a otro con Tab, muévelo con las flechas y cambia su tamaño con Mayús + flechas. Dos gadgets iguales y contiguos, como las cifras clave, se intercambian. Cada cambio se anuncia a los lectores de pantalla, por ejemplo «Proyectos abiertos: columna 7, fila 1, 6×4». Aquí, «Proyectos abiertos» ha pasado a la derecha de «Pruebas pendientes».",
       "covers": [
-        "tabs:src/app/dashboard/UpcomingTests.tsx"
+        "keyboard:home-board"
       ],
-      "image": "inicio/08-proximas.png",
+      "image": "inicio/15-teclado.png",
       "viewport": {
         "height": 900,
         "width": 1440
       },
       "status": "passed",
       "focus": {
-        "x": 845,
-        "y": 517,
-        "w": 549,
-        "h": 352
+        "x": 279,
+        "y": 159,
+        "w": 1130,
+        "h": 108
       }
     },
     {
       "chapter": "inicio",
-      "n": 9,
+      "n": 16,
+      "id": "ocultar",
+      "title": "Ocultar un gadget",
+      "caption": "El ojo tachado de cada gadget lo oculta y los demás suben a ocupar su sitio. Aquí se ha ocultado «Criterios de salida». Los gadgets ocultos no se pierden: se cuentan en «Gadgets ocultos», arriba.",
+      "covers": [
+        "action:home-gadget-hide"
+      ],
+      "image": "inicio/16-ocultar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 941,
+        "y": 95,
+        "w": 196,
+        "h": 40
+      }
+    },
+    {
+      "chapter": "inicio",
+      "n": 17,
+      "id": "mostrar",
+      "title": "Volver a mostrar un gadget",
+      "caption": "«Gadgets ocultos» lista los que has ocultado. Al elegir uno, vuelve al primer hueco donde quepa, con su tamaño o, si no cabe, con su tamaño mínimo. Si no queda sitio en las 24 filas, se coloca debajo y el Inicio pasa a tener desplazamiento; la línea de ayuda lo avisa.",
+      "covers": [
+        "action:home-gadget-hide"
+      ],
+      "image": "inicio/17-mostrar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 904,
+        "y": 148,
+        "w": 226,
+        "h": 65
+      }
+    },
+    {
+      "chapter": "inicio",
+      "n": 18,
+      "id": "salir-sin-guardar",
+      "title": "Salir sin guardar",
+      "caption": "Esc sale del modo configurar sin guardar. Si has cambiado algo, Pharos pregunta antes: «Descartar cambios» deja el Inicio como estaba y «Seguir editando» vuelve a la pizarra. Lo mismo ocurre si sales a otra pantalla con cambios sin guardar.",
+      "covers": [
+        "dialogs:src/app/dashboard/DashboardPage.tsx"
+      ],
+      "image": "inicio/18-salir-sin-guardar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 500,
+        "y": 366,
+        "w": 440,
+        "h": 168
+      }
+    },
+    {
+      "chapter": "inicio",
+      "n": 19,
+      "id": "restablecer",
+      "title": "Restablecer la distribución",
+      "caption": "«Restablecer» vuelve a la distribución de siempre, con todos los gadgets visibles y sin desplazar la página: arriba las cuatro cifras clave; a la izquierda «Ejecución por proyecto» con «Ejecuciones diarias» debajo; en el centro y a la derecha «Próximas pruebas» y «Criterios de salida», y bajo ambos «Tendencia de ciclos». Antes pide confirmación, y el cambio se guarda al pulsar «Listo».",
+      "covers": [
+        "action:home-board-reset",
+        "dialogs:src/app/dashboard/DashboardPage.tsx"
+      ],
+      "image": "inicio/19-restablecer.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 500,
+        "y": 356,
+        "w": 440,
+        "h": 189
+      }
+    },
+    {
+      "chapter": "inicio",
+      "n": 20,
       "id": "movil",
       "title": "El Inicio en el móvil",
       "caption": "En el móvil, el Inicio se reparte en tres pestañas para no hacer un desplazamiento interminable: «Resumen» (las cifras clave y los criterios de salida; su burbuja roja cuenta los problemas: defectos críticos y proyectos en riesgo), «Ejecución» (la ejecución por proyecto y las ejecuciones diarias, con su propio selector de periodo) y «Pruebas» (las próximas pruebas; su burbuja cuenta las pendientes).",
       "covers": [
         "tabs:src/app/dashboard/DashboardPage.tsx"
       ],
-      "image": "inicio/09-movil.png",
+      "image": "inicio/20-movil.png",
       "viewport": {
         "height": 844,
         "width": 390
@@ -712,35 +967,29 @@
     {
       "chapter": "proyectos",
       "n": 2,
-      "id": "nombre-obligatorio",
-      "title": "El nombre es obligatorio",
-      "caption": "«Nuevo proyecto» (aquí o en el Inicio) abre una fila para escribir el nombre. Si pulsas «Crear» sin escribirlo, Pharos lo indica bajo el campo («Este campo es obligatorio.») y no crea nada. «Cancelar» cierra la fila.",
+      "id": "nuevo-proyecto",
+      "title": "Nuevo proyecto: cómo empezar",
+      "caption": "«Nuevo proyecto» (aquí o en el Inicio) abre un asistente en una ventana. Arriba, los pasos; en el primero, «Cómo empezar», eliges entre «Proyecto en blanco», que empieza con los ajustes por defecto, y «A partir de uno existente», que reutiliza los ajustes de otro de tus proyectos. Sin proyectos todavía, la segunda opción está desactivada y dice por qué. Las flechas cambian de opción e Intro pasa al paso siguiente, como «Siguiente».",
       "covers": [
-        "state:project-create-required"
+        "dialogs:src/modules/projects/ui/NewProjectWizard.tsx"
       ],
-      "image": "proyectos/02-nombre-obligatorio.png",
+      "image": "proyectos/02-nuevo-proyecto.png",
       "viewport": {
         "height": 900,
         "width": 1440
       },
-      "status": "passed",
-      "focus": {
-        "x": 296,
-        "y": 242,
-        "w": 1096,
-        "h": 24
-      }
+      "status": "passed"
     },
     {
       "chapter": "proyectos",
       "n": 3,
-      "id": "crear-proyecto",
-      "title": "Crear un proyecto",
-      "caption": "Escribe el nombre del producto que vas a probar y pulsa «Crear». En este ejemplo, Liomar crea «Pharos»: el equipo de QA prueba la propia aplicación. A la vez que escribes, el campo de al lado sugiere el prefijo de las claves de sus casos, sacado del nombre y libre entre tus proyectos (aquí, «PHA-», así que los casos serán PHA-001, PHA-002…); puedes cambiarlo antes de crear o después, en sus ajustes. Dos proyectos no pueden tener prefijos que se solapen: iguales, o uno que empiece por el otro (como «PH-» y «PHA-»). Si escribes uno así, Pharos dice con qué proyecto choca y no lo crea. Un proyecto recién creado se abre en su «Plan de pruebas», todavía vacío, porque es lo primero que conviene escribir (capítulo 5).",
+      "id": "nombre-obligatorio",
+      "title": "El nombre es obligatorio",
+      "caption": "Un proyecto en blanco pasa directamente a «Datos generales»: el nombre, el prefijo de las claves de sus casos y los dígitos del número, los mismos campos que en «Ajustes del proyecto». Si pulsas «Crear proyecto» sin escribir el nombre, Pharos lo indica arriba y bajo el campo («Este campo es obligatorio.») y no crea nada. «Cancelar» o Esc cierran el asistente; si ya habías escrito o elegido algo, antes preguntan si quieres descartarlo.",
       "covers": [
-        "action:project-create"
+        "state:project-create-required"
       ],
-      "image": "proyectos/03-crear-proyecto.png",
+      "image": "proyectos/03-nombre-obligatorio.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -750,35 +999,13 @@
     {
       "chapter": "proyectos",
       "n": 4,
-      "id": "cabecera",
-      "title": "La cabecera del proyecto",
-      "caption": "Todas las secciones del proyecto comparten su cabecera: la insignia con el prefijo de sus claves (aquí «PHA», el que Pharos sugirió; Liomar lo acorta a «PH» en el capítulo 14), el nombre, el estado de su plan («Sin plan», «Plan borrador», «Plan aprobado»…) y una línea con sus casos, sus requisitos y la fecha de cierre del ciclo, cuando el plan la tiene. A la derecha van los botones de la sección abierta (aquí, los del plan). En el móvil solo quedan los botones, para ganar espacio.",
+      "id": "crear-proyecto",
+      "title": "Crear un proyecto",
+      "caption": "Escribe el nombre del producto que vas a probar y pulsa «Crear proyecto». En este ejemplo, Liomar crea «Pharos»: el equipo de QA prueba la propia aplicación. A la vez que escribes, Pharos sugiere el prefijo de las claves de sus casos, sacado del nombre y libre entre tus proyectos («✓ Libre»), y muestra cómo se numerarán (aquí, «PHA-», así que los casos serán PHA-001, PHA-002…); puedes cambiarlo antes de crear o después, en sus ajustes. Dos proyectos no pueden tener prefijos que se solapen: iguales, o uno que empiece por el otro (como «PH-» y «PHA-»). Si escribes uno así, Pharos dice con qué proyecto choca y no lo crea. Un proyecto recién creado se abre en su «Plan de pruebas», todavía vacío, porque es lo primero que conviene escribir (capítulo 5).",
       "covers": [
-        "screen:project-header"
+        "action:project-create"
       ],
-      "image": "proyectos/04-cabecera.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed",
-      "focus": {
-        "x": 279,
-        "y": 95,
-        "w": 1115,
-        "h": 58
-      }
-    },
-    {
-      "chapter": "proyectos",
-      "n": 5,
-      "id": "segundo-proyecto",
-      "title": "Crear con Intro",
-      "caption": "Para ir más rápido, escribe el nombre y pulsa Intro en lugar de «Crear». En este ejemplo, el segundo proyecto es «API de sincronización», el servidor con el que se sincroniza Pharos. Como el primero, se abre en su «Plan de pruebas».",
-      "covers": [
-        "keyboard:project-create-enter"
-      ],
-      "image": "proyectos/05-segundo-proyecto.png",
+      "image": "proyectos/04-crear-proyecto.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -787,7 +1014,105 @@
     },
     {
       "chapter": "proyectos",
+      "n": 5,
+      "id": "cabecera",
+      "title": "La cabecera del proyecto",
+      "caption": "Todas las secciones del proyecto comparten su cabecera: la insignia con el prefijo de sus claves (aquí «PHA», el que Pharos sugirió; Liomar lo acorta a «PH» en el capítulo 14), el nombre, el estado de su plan («Sin plan», «Plan borrador», «Plan aprobado»…) y una línea con sus casos, sus requisitos y la fecha de cierre del ciclo, cuando el plan la tiene. A la derecha van los botones de la sección abierta (aquí, los del plan). En el móvil solo quedan los botones, para ganar espacio.",
+      "covers": [
+        "screen:project-header"
+      ],
+      "image": "proyectos/05-cabecera.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 279,
+        "y": 95,
+        "w": 1124,
+        "h": 58
+      }
+    },
+    {
+      "chapter": "proyectos",
       "n": 6,
+      "id": "segundo-proyecto",
+      "title": "Crear con Intro",
+      "caption": "Para ir más rápido, en «Datos generales» escribe el nombre y pulsa Intro en lugar de «Crear proyecto». En este ejemplo, el segundo proyecto es «API de sincronización», el servidor con el que se sincroniza Pharos. Como el primero, se abre en su «Plan de pruebas».",
+      "covers": [
+        "keyboard:project-create-enter"
+      ],
+      "image": "proyectos/06-segundo-proyecto.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 7,
+      "id": "descartar-proyecto",
+      "title": "Cancelar el asistente",
+      "caption": "«Cancelar» o Esc cierran el asistente sin crear nada. Si ya habías escrito o elegido algo (aquí, «A partir de uno existente»), Pharos pregunta antes: «Descartar» lo pierde y «Seguir creando» vuelve al asistente tal como estaba.",
+      "covers": [
+        "dialogs:src/modules/projects/ui/NewProjectWizard.tsx"
+      ],
+      "image": "proyectos/07-descartar-proyecto.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 8,
+      "id": "copiar-ajustes",
+      "title": "A partir de otro proyecto: qué copiar",
+      "caption": "Con «A partir de uno existente», el asistente tiene un paso más, «Qué copiar». Eliges el «Proyecto de origen» (con su prefijo y sus casos) y, debajo, lo que quieres llevarte, todo marcado: los campos personalizados, los dígitos del número de caso, el «Historial en el plan exportado», las «Bandas de riesgo» y la retención de evidencias. Cada casilla muestra el valor que tiene el origen (por ejemplo, «3 · PHA-001» para los dígitos). Desmarca lo que no quieras. Nunca se copian el nombre, el prefijo ni los datos: plan, casos, requisitos, ciclos, ejecuciones, defectos y tablero. En la web, la retención de evidencias aparece desactivada, porque es un ajuste de la app de escritorio.",
+      "covers": [
+        "action:project-create-copy-settings"
+      ],
+      "image": "proyectos/08-copiar-ajustes.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 9,
+      "id": "copiar-datos-generales",
+      "title": "A partir de otro proyecto: datos generales",
+      "caption": "«Siguiente» lleva a «Datos generales» con lo copiado ya puesto: los dígitos del origen aparecen marcados «copiado de Pharos» y se pueden cambiar. El nombre y el prefijo son los del proyecto nuevo, y debajo un resumen dice qué más se copiará. «Atrás» vuelve a «Qué copiar» sin perder lo elegido.",
+      "covers": [],
+      "image": "proyectos/09-copiar-datos-generales.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 10,
+      "id": "ajustes-copiados",
+      "title": "Ajustes copiados",
+      "caption": "Al pulsar «Crear proyecto», el proyecto se crea con los ajustes elegidos y un aviso lo confirma. La copia se hace una sola vez: si después cambias los ajustes de uno, el otro no cambia. Si alguna parte no se pudo copiar, el proyecto se crea igualmente y el aviso dice qué faltó, para que lo ajustes a mano en «Ajustes del proyecto» (capítulo 14) o en «Administración › Evidencias».",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 11,
       "id": "lista-proyectos",
       "title": "Todos los proyectos",
       "caption": "Con proyectos, la lista muestra arriba los «Recientes» (los últimos que abriste) y debajo la tabla de todos: el estado del plan, los casos, la cobertura de requisitos y el último acceso. Busca por nombre o prefijo (en este ejemplo, «sincro» deja solo «API de sincronización») y cambia el orden con el menú de orden: último acceso, nombre, última modificación, cierre del ciclo o cobertura. Con muchos proyectos, la tabla se pagina de 5, 10 o 20.",
@@ -795,7 +1120,7 @@
         "action:projects-search",
         "action:projects-sort"
       ],
-      "image": "proyectos/06-lista-proyectos.png",
+      "image": "proyectos/11-lista-proyectos.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -810,14 +1135,14 @@
     },
     {
       "chapter": "proyectos",
-      "n": 7,
+      "n": 12,
       "id": "abrir-proyecto",
       "title": "Abrir un proyecto",
       "caption": "Haz clic en el nombre de un proyecto (en la tabla, en «Recientes» o en el Inicio) para abrirlo. Un proyecto que ya existe se abre en su «Tablero», donde está el trabajo del día a día del equipo (capítulo 6); desde ahí, el menú lateral lleva a las demás secciones.",
       "covers": [
         "action:project-open"
       ],
-      "image": "proyectos/07-abrir-proyecto.png",
+      "image": "proyectos/12-abrir-proyecto.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -826,14 +1151,14 @@
     },
     {
       "chapter": "proyectos",
-      "n": 8,
+      "n": 13,
       "id": "menu-fila",
       "title": "Acciones de un proyecto",
       "caption": "El menú «⋯» de cada fila reúne las acciones del proyecto: «Abrir», «Ajustes del proyecto» (capítulo 14) y «Exportar proyecto (ZIP)». Se recorre con ↑ ↓ y se cierra con Esc.",
       "covers": [
         "action:projects-row-menu"
       ],
-      "image": "proyectos/08-menu-fila.png",
+      "image": "proyectos/13-menu-fila.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -848,7 +1173,7 @@
     },
     {
       "chapter": "proyectos",
-      "n": 9,
+      "n": 14,
       "id": "exportar-zip",
       "title": "Exportar un proyecto",
       "caption": "«Exportar proyecto (ZIP)» reúne en un solo archivo el plan en PDF, los casos en .xlsx y .feature y la matriz de trazabilidad: sirve como copia o para entregar el trabajo a alguien que no usa Pharos. Una ventana muestra el progreso («Generando archivos…», «Comprimiendo el ZIP…») y no se puede cerrar hasta que termina; al acabar, un aviso dice cuántos archivos se exportaron y en qué carpeta (la carpeta de descarga de «Administración › General»).",
@@ -864,7 +1189,7 @@
     },
     {
       "chapter": "proyectos",
-      "n": 10,
+      "n": 15,
       "id": "exportar-todo",
       "title": "Exportar todos los proyectos",
       "caption": "«Exportar todo», arriba a la derecha de la lista, hace lo mismo con todos tus proyectos a la vez, una carpeta por proyecto dentro del ZIP. Si algún PDF no se pudo generar, el aviso lo dice y el resto del ZIP se guarda igualmente.",
@@ -880,14 +1205,14 @@
     },
     {
       "chapter": "proyectos",
-      "n": 11,
+      "n": 16,
       "id": "eliminar-proyecto",
       "title": "Eliminar un proyecto",
       "caption": "«Eliminar proyecto», al pie de sus ajustes, borra el proyecto con todo lo que contiene. Por eso el diálogo cuenta antes lo que se perderá (planes, casos, requisitos, tarjetas) y, para evitar un borrado por error, pide escribir el prefijo (o el nombre) antes de habilitar «Sí, eliminar todo». Esc no lo cierra: solo «Cancelar». Si quieres conservar una copia, exporta antes el ZIP.",
       "covers": [
         "dialogs:src/modules/projects/ui/ProjectSettings.tsx"
       ],
-      "image": "proyectos/11-eliminar-proyecto.png",
+      "image": "proyectos/16-eliminar-proyecto.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -896,7 +1221,7 @@
     },
     {
       "chapter": "proyectos",
-      "n": 12,
+      "n": 17,
       "id": "eliminado",
       "title": "Proyecto eliminado",
       "caption": "Al confirmar, Pharos vuelve a la lista de proyectos, que ya no lo muestra, y avisa de que se eliminó.",
@@ -913,10 +1238,9 @@
       "n": 1,
       "id": "asistente",
       "title": "El asistente del plan",
-      "caption": "El plan de pruebas dice qué se prueba, cómo, con qué medios, quién y cuándo. Pharos lo redacta con un asistente de 19 pasos que sigue la norma ISO/IEC/IEEE 29119-3: «Plan de pruebas», la primera sección del proyecto. A la izquierda, la lista de pasos con una ✓ en los completos y el porcentaje de avance; en el centro, el paso actual, con «Paso N de 19» y si hay cambios sin guardar; a la derecha, «Estado del plan» (estado, versión, autor y última actualización). El paso 1 pide el título (en este ejemplo, «Plan de pruebas de Pharos 0.3.0») y el estado: Borrador, Revisado, Aprobado u Obsoleto. No hace falta seguir el orden: salta a cualquier paso desde la lista.",
+      "caption": "El plan de pruebas dice qué se prueba, cómo, con qué medios, quién y cuándo. Pharos lo redacta con un asistente de 22 pasos que sigue la norma ISO/IEC/IEEE 29119-3 y el apartado 5.1.1 de ISTQB CTFL v4: «Plan de pruebas», la primera sección del proyecto. A la izquierda, la lista de pasos con una ✓ en los completos y el porcentaje de avance; en el centro, el paso actual, con «Paso N de 22» y si hay cambios sin guardar; a la derecha, «Estado del plan» (estado, versión, autor, última actualización y el botón para aprobarlo) y el «Historial» de sus últimos cambios. No hace falta seguir el orden: salta a cualquier paso desde la lista.",
       "covers": [
-        "section:plan",
-        "wizard:title"
+        "section:plan"
       ],
       "image": "plan/01-asistente.png",
       "viewport": {
@@ -928,46 +1252,59 @@
     {
       "chapter": "plan",
       "n": 2,
-      "id": "meta",
-      "title": "Paso 2 · Versión, fecha y autor",
-      "caption": "«Siguiente: …», al pie, avanza al paso 2 y lo nombra; «Anterior» vuelve. Indica la versión del documento (en este ejemplo, «0.3») y su fecha. «Elaborado por» no se escribe: es tu nombre oficial del perfil (en este ejemplo, Liomar Rodríguez, capítulo 1), el que firma el plan cuando lo exportas.",
+      "id": "identificacion",
+      "title": "Paso 1 · Identificación del plan",
+      "caption": "El paso 1 es el bloque de identificación del documento de ISO/IEC/IEEE 29119-3: el título (en este ejemplo, «Plan de pruebas de Pharos 0.3.0»), el estado (Borrador, Revisado u Obsoleto; «Aprobado» se da con el botón «Aprobar» de «Estado del plan», que deja constancia de quién y cuándo), el ID de documento (por defecto «TP-», el prefijo del proyecto y seis caracteres; se puede cambiar), la versión («0.3») y la fecha. El autor no se escribe: es tu nombre oficial del perfil (en este ejemplo, Liomar Rodríguez, capítulo 1); lo ves en el panel «Estado del plan» y firma el plan cuando lo exportas. El estado se elige en una lista desplegable de Pharos, como todas las de la aplicación: la opción elegida lleva una ✓, y con el teclado ↑ ↓ recorren las opciones, una letra salta a la que empieza por ella, Intro elige y Esc cierra; en el móvil se abre como una hoja desde abajo.",
       "covers": [
-        "wizard:meta",
-        "action:plan-step-nav"
+        "wizard:identification",
+        "action:pharos-select"
       ],
-      "image": "plan/02-meta.png",
+      "image": "plan/02-identificacion.png",
       "viewport": {
         "height": 900,
         "width": 1440
       },
-      "status": "passed"
+      "status": "passed",
+      "focus": {
+        "x": 887,
+        "y": 346,
+        "w": 347,
+        "h": 36
+      }
     },
     {
       "chapter": "plan",
       "n": 3,
-      "id": "resumen",
-      "title": "Paso 3 · Resumen",
-      "caption": "El resumen es lo primero que leerá quien reciba el plan: en pocas líneas, qué se prueba y por qué (en este ejemplo, la versión 0.3.0 de Pharos, en escritorio y en la web). Con un motor de IA configurado (capítulo 15), el botón ✨ «Asistir con IA» redacta un borrador a partir de lo que hayas escrito; lo usas, lo editas o lo descartas, y nada se aplica sin que lo aceptes (capítulo 17).",
+      "id": "fecha",
+      "title": "La fecha: el selector de fechas de Pharos",
+      "caption": "La fecha se escribe dd/mm/aaaa (en este ejemplo, 02/11/2026) o se elige en el calendario de Pharos, el mismo del cronograma: el botón del calendario, al final del campo, lo abre en el mes de la fecha, con el mes y el año arriba («Noviembre de 2026») y ‹ › para cambiar de mes. Hoy lleva un anillo naranja y el día elegido va relleno. Con el teclado, las flechas recorren los días, RePág y AvPág cambian de mes, Inicio y Fin van al principio y al final de la semana, Intro elige y Esc cierra y vuelve al botón. Al pie, «Hoy» elige el día de hoy y «Borrar» vacía el campo. En el móvil se abre como una hoja desde abajo. El mismo selector está en los ciclos (capítulo 9), en el informe de estado (capítulo 11) y en los campos personalizados de tipo fecha (capítulo 14).",
       "covers": [
-        "wizard:summary"
+        "action:date-picker"
       ],
-      "image": "plan/03-resumen.png",
+      "image": "plan/03-fecha.png",
       "viewport": {
         "height": 900,
         "width": 1440
       },
-      "status": "passed"
+      "status": "passed",
+      "focus": {
+        "x": 542,
+        "y": 493,
+        "w": 298,
+        "h": 348
+      }
     },
     {
       "chapter": "plan",
       "n": 4,
-      "id": "alcance",
-      "title": "Paso 4 · Alcance",
-      "caption": "El alcance fija qué se prueba y, tan importante como eso, qué no: así nadie da por cubierto lo que queda fuera. En «Elementos dentro del alcance» y «Fuera del alcance», «+ Añadir» crea una fila por elemento (en este ejemplo, el acceso, el plan con los requisitos y los casos, la ejecución y la sincronización dentro; la integración con Jira y una app móvil nativa fuera). La papelera de cada fila («Quitar») la elimina; si la fila tiene texto, pide confirmarlo con «Sí, eliminar» o «Cancelar». Pharos avisa de las filas repetidas.",
+      "id": "resumen",
+      "title": "Paso 2 · Resumen",
+      "caption": "«Siguiente: …», al pie, avanza al paso siguiente y lo nombra; «Anterior» vuelve. El resumen es lo primero que leerá quien reciba el plan: en pocas líneas, qué se prueba y por qué (en este ejemplo, la versión 0.3.0 de Pharos, en escritorio y en la web). Con un motor de IA configurado (capítulo 15), el botón ✨ «Asistir con IA» redacta un borrador a partir de lo que hayas escrito; lo usas, lo editas o lo descartas, y nada se aplica sin que lo aceptes (capítulo 17).",
       "covers": [
-        "wizard:scope"
+        "wizard:summary",
+        "action:plan-step-nav"
       ],
-      "image": "plan/04-alcance.png",
+      "image": "plan/04-resumen.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -977,13 +1314,13 @@
     {
       "chapter": "plan",
       "n": 5,
-      "id": "tipos",
-      "title": "Paso 5 · Tipos de prueba",
-      "caption": "Marca los tipos de prueba que el equipo se compromete a ejecutar, agrupados en cobertura funcional (funcional, regresión…) y no funcional (seguridad, usabilidad, rendimiento…). En este ejemplo hay cinco marcados. Si el que necesitas no está en la lista, escríbelo en «Especifica otro…» y pulsa Intro o «+ Otro».",
+      "id": "alcance",
+      "title": "Paso 3 · Alcance",
+      "caption": "El alcance fija qué se prueba y, tan importante como eso, qué no: así nadie da por cubierto lo que queda fuera. En «Elementos dentro del alcance» y «Fuera del alcance», «+ Añadir» crea una fila por elemento (en este ejemplo, el acceso, el plan con los requisitos y los casos, la ejecución y la sincronización dentro; la integración con Jira y una app móvil nativa fuera). La papelera de cada fila («Quitar») la elimina; si la fila tiene texto, pide confirmarlo con «Sí, eliminar» o «Cancelar». Pharos avisa de las filas repetidas.",
       "covers": [
-        "wizard:types"
+        "wizard:scope"
       ],
-      "image": "plan/05-tipos.png",
+      "image": "plan/05-alcance.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -993,13 +1330,13 @@
     {
       "chapter": "plan",
       "n": 6,
-      "id": "metodologia",
-      "title": "Paso 6 · Metodología",
-      "caption": "Indica cómo trabaja el equipo. Con «Ágil» eliges la duración del sprint (de 1 a 4 semanas) y las reuniones del equipo (diaria, revisión, retrospectiva, planificación), cada una con su frecuencia; con «Tradicional / V-model», las fases del proyecto. Si falta algo, una línea bajo el paso dice qué. La duración del sprint no es solo informativa: el cronograma (paso 14) la usa para proponer el siguiente sprint y avisa si uno dura otra cosa.",
+      "id": "supuestos",
+      "title": "Paso 4 · Supuestos y restricciones",
+      "caption": "Dos listas, una junto a otra. Los supuestos son lo que se da por hecho al planificar (en este ejemplo, que el servidor de staging esté disponible en horario laboral); si uno deja de cumplirse, hay que revisar el plan. Las restricciones son los límites que el equipo no puede cambiar (una sola persona de QA, la fecha de la versión). Con un motor de IA, «Sugerir supuestos y restricciones con IA» propone elementos de las dos listas a partir del plan, y eliges cuáles añadir.",
       "covers": [
-        "wizard:methodology"
+        "wizard:assumptions"
       ],
-      "image": "plan/06-metodologia.png",
+      "image": "plan/06-supuestos.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -1009,29 +1346,13 @@
     {
       "chapter": "plan",
       "n": 7,
-      "id": "niveles",
-      "title": "Paso 7 · Niveles de prueba",
-      "caption": "Los niveles indican en qué capas del producto se prueba: unitarias, integración, sistema y aceptación. Marca solo los que cubre este plan (en este ejemplo, integración, sistema y aceptación: las pruebas unitarias son cosa del equipo de desarrollo); lo que no marques queda, de forma explícita, fuera de este plan.",
+      "id": "niveles-tipos",
+      "title": "Paso 5 · Niveles y tipos de prueba",
+      "caption": "Qué se prueba, en qué nivel y con qué tipo (ISTQB), en columnas. Los niveles dicen dónde se prueba: unitarias (un componente), integración (sus interfaces), sistema (de extremo a extremo) y aceptación (usuario y negocio); en este ejemplo, integración, sistema y aceptación, porque las unitarias son cosa del equipo de desarrollo. Los tipos dicen qué se comprueba: funcionales, no funcionales (rendimiento, seguridad, usabilidad…) y «Confirmación y regresión», las pruebas que siguen a un cambio: confirmación (volver a probar lo que falló, una vez arreglado), regresión, humo y sanidad; pasa el ratón por cada una para leer qué es. Si falta un tipo, escríbelo al pie de «Propios» y pulsa Intro o «Añadir» (en este ejemplo, «Pruebas de sincronización»); la ✕ lo quita. La ayuda «?» del título lo explica.",
       "covers": [
-        "wizard:levels"
+        "wizard:levelsTypes"
       ],
-      "image": "plan/07-niveles.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed"
-    },
-    {
-      "chapter": "plan",
-      "n": 8,
-      "id": "entregables",
-      "title": "Paso 8 · Entregables",
-      "caption": "Los entregables son los documentos y artefactos que el equipo de pruebas se compromete a producir. La lista sigue la documentación de ISO/IEC/IEEE 29119-3, agrupada en gestión de pruebas, especificación, datos y entorno, ejecución y resultados, y aceptación. Marca los que se acordaron con el proyecto y desmarca los que no se van a entregar: el plan deja constancia de ese acuerdo y sirve de referencia al cerrar el ciclo. Si se acordó algo que no está en la lista, escríbelo en «Otro entregable» y pulsa Intro o «Añadir» (en este ejemplo, «Informe de accesibilidad WCAG 2.2»): aparece en «Aceptación y otros» con la etiqueta «Propio» y su papelera para quitarlo.",
-      "covers": [
-        "wizard:deliverables"
-      ],
-      "image": "plan/08-entregables.png",
+      "image": "plan/07-niveles-tipos.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -1039,60 +1360,87 @@
       "status": "passed",
       "focus": {
         "x": 602,
-        "y": 707,
-        "w": 489,
-        "h": 36
+        "y": 269,
+        "w": 498,
+        "h": 617
+      }
+    },
+    {
+      "chapter": "plan",
+      "n": 8,
+      "id": "tecnicas",
+      "title": "Paso 6 · Técnicas de prueba",
+      "caption": "Cómo se diseñan los casos, con las técnicas de ISTQB CTFL v4 en columnas: de caja negra (particiones de equivalencia, valores límite, tablas de decisión, transición de estados), de caja blanca (sentencias y ramas), basadas en la experiencia (predicción de errores, exploratoria, listas de comprobación) y colaborativas (historias de usuario, criterios de aceptación, ATDD). En este ejemplo, valores límite y particiones para los formularios, transición de estados para los ciclos y exploratoria en cada versión. Las del equipo van en «Propias», como en los entregables.",
+      "covers": [
+        "wizard:techniques"
+      ],
+      "image": "plan/08-tecnicas.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 602,
+        "y": 269,
+        "w": 498,
+        "h": 478
       }
     },
     {
       "chapter": "plan",
       "n": 9,
+      "id": "metodologia",
+      "title": "Paso 7 · Metodología",
+      "caption": "Indica cómo trabaja el equipo, en dos columnas. En «Método de trabajo», la metodología y, con «Ágil», la duración del sprint («2 semanas»; de 1 a 4). En «Reuniones del equipo», una fila por reunión (diaria, revisión, retrospectiva y planificación): su casilla, su nombre y su frecuencia en la misma fila; la frecuencia de una reunión sin marcar se ve en gris y no se puede cambiar hasta marcarla (en este ejemplo, la planificación). Con «Tradicional / V-model», que no trabaja por sprints, la duración y las reuniones desaparecen y la segunda columna pide las fases del proyecto. Si falta algo, una línea bajo el paso dice qué. La duración del sprint no es solo informativa: el cronograma (paso 15) la usa para proponer el siguiente sprint y avisa si uno dura otra cosa.",
+      "covers": [
+        "wizard:methodology"
+      ],
+      "image": "plan/09-metodologia.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 602,
+        "y": 269,
+        "w": 498,
+        "h": 230
+      }
+    },
+    {
+      "chapter": "plan",
+      "n": 10,
+      "id": "entregables",
+      "title": "Paso 8 · Entregables",
+      "caption": "Los entregables son los documentos y artefactos que el equipo de pruebas se compromete a producir. La lista sigue la documentación de ISO/IEC/IEEE 29119-3, en columnas: gestión de pruebas, especificación, datos y entorno, ejecución y resultados, y aceptación. Marca los que se acordaron con el proyecto y desmarca los que no se van a entregar: el plan deja constancia de ese acuerdo y sirve de referencia al cerrar el ciclo. Si se acordó algo que no está en la lista, escríbelo al pie de la sexta columna, «Propios», y pulsa Intro o «Añadir» (en este ejemplo, «Informe de accesibilidad WCAG 2.2»): queda en esa columna con su ✕ para quitarlo.",
+      "covers": [
+        "wizard:deliverables"
+      ],
+      "image": "plan/10-entregables.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 869,
+        "y": 694,
+        "w": 213,
+        "h": 59
+      }
+    },
+    {
+      "chapter": "plan",
+      "n": 11,
       "id": "entorno",
       "title": "Paso 9 · Entorno de pruebas",
       "caption": "Describe dónde se va a probar: la configuración del entorno (en este ejemplo, la app de escritorio en Windows 11 y la versión web contra el servidor de staging) y el hardware y software que necesita. Sirve para preparar el entorno a tiempo y para saber, ante un fallo, en qué condiciones se encontró. Los dos campos tienen su botón ✨ de IA.",
       "covers": [
         "wizard:environment"
       ],
-      "image": "plan/09-entorno.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed"
-    },
-    {
-      "chapter": "plan",
-      "n": 10,
-      "id": "herramientas",
-      "title": "Paso 10 · Herramientas y automatización",
-      "caption": "Elige las herramientas del proyecto: arriba, las más usadas en QA; «Más herramientas» despliega el resto por categorías, con un buscador que no distingue acentos; si la tuya no está, escríbela en «¿No está en la lista?» y pulsa Intro o «Añadir». Las elegidas quedan resaltadas y se cuentan («N seleccionadas»). Después describe la estrategia de automatización: qué se automatiza, con qué y cuándo se ejecuta. El botón ✨ «Asistir con IA» propone un borrador; sin un motor de IA configurado (capítulo 15) aparece en gris, como en esta captura, y su aviso explica por qué.",
-      "covers": [
-        "wizard:tools"
-      ],
-      "image": "plan/10-herramientas.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed",
-      "focus": {
-        "x": 602,
-        "y": 548,
-        "w": 34,
-        "h": 32
-      }
-    },
-    {
-      "chapter": "plan",
-      "n": 11,
-      "id": "datos",
-      "title": "Pasos 11 y 12 · Datos y defectos",
-      "caption": "Dos pasos de texto libre. En el 11, cómo se consiguen y se protegen los datos de prueba (en este ejemplo, cuentas y proyectos de prueba creados por script, sin datos reales). En el 12, el que muestra la captura, cómo se gestionan los defectos: dónde se registran, con qué severidad y prioridad y quién los revisa. Los dos tienen su botón ✨ de IA.",
-      "covers": [
-        "wizard:testData",
-        "wizard:defects"
-      ],
-      "image": "plan/11-datos.png",
+      "image": "plan/11-entorno.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -1102,108 +1450,13 @@
     {
       "chapter": "plan",
       "n": 12,
-      "id": "roles",
-      "title": "Paso 13 · Roles y responsabilidades",
-      "caption": "Cada fila une un rol con su responsabilidad, para que quede claro quién decide y quién hace qué (en este ejemplo, el «Responsable de QA» planifica, prioriza y aprueba el cierre, y el «Analista de pruebas» diseña y ejecuta los casos; en Pharos, Liomar lleva los dos roles). «+ Añadir fila» crea otra y la papelera de cada una la quita. Con un motor de IA, «Sugerir responsabilidades con IA» propone la responsabilidad de los roles que escribiste y aún no la tienen; eliges cuáles usar, y lo ya escrito no cambia.",
+      "id": "herramientas",
+      "title": "Paso 10 · Herramientas y automatización",
+      "caption": "Elige las herramientas del proyecto: arriba, las más usadas en QA; «Más herramientas» despliega el resto por categorías, con un buscador que no distingue acentos; si la tuya no está, escríbela en «¿No está en la lista?» y pulsa Intro o «Añadir». Las elegidas quedan resaltadas y se cuentan («N seleccionadas»). Después describe la estrategia de automatización: qué se automatiza, con qué y cuándo se ejecuta. El botón ✨ «Asistir con IA» propone un borrador; sin un motor de IA configurado (capítulo 15) aparece en gris, como en esta captura, y su aviso explica por qué.",
       "covers": [
-        "wizard:roles"
+        "wizard:tools"
       ],
-      "image": "plan/12-roles.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed"
-    },
-    {
-      "chapter": "plan",
-      "n": 13,
-      "id": "cronograma",
-      "title": "Paso 14 · Cronograma: sprints",
-      "caption": "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas. Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin (Esc cancela el rango a medias): el sprint aparece como una franja y en la lista «Sprints», con su nombre y sus fechas, que puedes editar (dd/mm/aaaa e Intro). «Siguiente sprint» añade el siguiente a continuación, con la duración del paso 6. La leyenda explica el calendario: las franjas alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es hoy y el rojo claro señala días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). El sprint seleccionado se ve en azul oscuro y se resalta su fila; con el ratón puedes arrastrar sus extremos. Las flechas de arriba cambian de mes.",
-      "covers": [
-        "wizard:schedule"
-      ],
-      "image": "plan/13-cronograma.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed",
-      "focus": {
-        "x": 617,
-        "y": 517,
-        "w": 459,
-        "h": 27
-      }
-    },
-    {
-      "chapter": "plan",
-      "n": 14,
-      "id": "cronograma-hito",
-      "title": "Cronograma: hitos",
-      "caption": "Un hito es una fecha clave que no ocupa días, como una congelación de código o una publicación. Elige «Hito» y haz clic en un día: el hito se marca con un rombo ámbar y se añade a la lista «Hitos», donde le das nombre (en este ejemplo, «Congelación de código» y «Publicación de la 0.3.0»; el tercero, «Hito 3», se marcó con el teclado) y puedes corregir la fecha. Todo el calendario funciona también con el teclado: ← → mueven el foco un día, ↑ ↓ una semana, Inicio y Fin van al principio y al final de la semana, RePág y AvPág cambian de mes, e Intro o Espacio marcan el día enfocado.",
-      "covers": [
-        "action:schedule-milestone",
-        "keyboard:schedule-calendar"
-      ],
-      "image": "plan/14-cronograma-hito.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed",
-      "focus": {
-        "x": 776,
-        "y": 551,
-        "w": 142,
-        "h": 13
-      }
-    },
-    {
-      "chapter": "plan",
-      "n": 15,
-      "id": "riesgos",
-      "title": "Paso 15 · Riesgos y mitigación",
-      "caption": "Cada fila es un riesgo que podría afectar a las pruebas y su mitigación, lo que se hará para reducirlo (en este ejemplo, que una actualización de WebView2 rompa la automatización de escritorio se mitiga fijando la versión del controlador). Cada campo crece con su texto, para que se lea entero. Con un motor de IA, «Sugerir riesgos con IA» propone riesgos con su mitigación según el resto del plan, y eliges cuáles añadir (capítulo 17).",
-      "covers": [
-        "wizard:risks"
-      ],
-      "image": "plan/15-riesgos.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed"
-    },
-    {
-      "chapter": "plan",
-      "n": 16,
-      "id": "comunicacion",
-      "title": "Pasos 16 a 18 · Comunicación, cierre y propósito",
-      "caption": "Tres pasos de texto que completan el plan: el plan de comunicación (paso 16: qué se informa, a quién y cada cuánto), los criterios de cierre (paso 17: cada criterio con su métrica objetivo; el plan trae tres por defecto, «% de casos ejecutados ≥ 95%», «Defectos críticos abiertos 0» y «Cobertura de requisitos ≥ 90%», y en este ejemplo se añade «Casos críticos ejecutados» al «100 %»; el Inicio los evalúa como criterios de salida, capítulo 3; con un motor de IA, «Sugerir criterios con IA» propone criterios ligados a los riesgos del plan) y el propósito del documento (paso 18, el de la captura).",
-      "covers": [
-        "wizard:communication",
-        "wizard:closure",
-        "wizard:purpose"
-      ],
-      "image": "plan/16-comunicacion.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed"
-    },
-    {
-      "chapter": "plan",
-      "n": 17,
-      "id": "conclusion",
-      "title": "Paso 19 · Conclusión y «Antes de terminar»",
-      "caption": "El paso 19 recoge la conclusión del plan y, debajo, «Antes de terminar»: cuántos pasos están completos y la lista de los que no, cada uno con un enlace que lleva a él, junto con el estado actual del plan. Úsala como lista de comprobación; un plan con pasos pendientes se guarda igualmente. Solo el título es obligatorio.",
-      "covers": [
-        "wizard:conclusion"
-      ],
-      "image": "plan/17-conclusion.png",
+      "image": "plan/12-herramientas.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -1211,21 +1464,127 @@
       "status": "passed",
       "focus": {
         "x": 602,
-        "y": 539,
-        "w": 489,
-        "h": 153
+        "y": 752,
+        "w": 34,
+        "h": 32
+      }
+    },
+    {
+      "chapter": "plan",
+      "n": 13,
+      "id": "datos",
+      "title": "Pasos 11 y 12 · Datos y defectos",
+      "caption": "Dos pasos de texto libre. En el 11, cómo se consiguen y se protegen los datos de prueba (en este ejemplo, cuentas y proyectos de prueba creados por script, sin datos reales). En el 12, el que muestra la captura, cómo se gestionan los defectos: dónde se registran, con qué severidad y prioridad y quién los revisa. Los dos tienen su botón ✨ de IA.",
+      "covers": [
+        "wizard:testData",
+        "wizard:defects"
+      ],
+      "image": "plan/13-datos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 14,
+      "id": "roles",
+      "title": "Paso 13 · Roles, independencia y formación",
+      "caption": "Cada fila une un rol con su responsabilidad, para que quede claro quién decide y quién hace qué (en este ejemplo, el «Responsable de QA» planifica, prioriza y aprueba el cierre, y el «Analista de pruebas» diseña y ejecuta los casos; en Pharos, Liomar lleva los dos roles). «+ Añadir fila» crea otra y la papelera de cada una la quita. Con un motor de IA, «Sugerir responsabilidades con IA» propone la responsabilidad de los roles que escribiste y aún no la tienen; eliges cuáles usar, y lo ya escrito no cambia. Debajo, la independencia de las pruebas en una escala de cinco, de quien escribe el código a un equipo externo (en este ejemplo, «Probadores del equipo»), con cómo se garantiza, y las necesidades de formación con su plazo.",
+      "covers": [
+        "wizard:roles"
+      ],
+      "image": "plan/14-roles.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 602,
+        "y": 471,
+        "w": 498,
+        "h": 120
+      }
+    },
+    {
+      "chapter": "plan",
+      "n": 15,
+      "id": "estimacion",
+      "title": "Paso 14 · Estimación y presupuesto",
+      "caption": "Cuánto esfuerzo y dinero hace falta y con qué técnica se calculó (CTFL v4 §5.1.4): por proporciones, por extrapolación, Wideband Delphi, tres puntos o juicio experto. Con la de tres puntos escribes el esfuerzo optimista, el más probable y el pesimista en persona-días (en este ejemplo, 12, 18 y 30), y Pharos calcula la estimación, E = (O + 4·M + P) / 6, y su desviación. Debajo, el presupuesto y en qué se basan las cifras.",
+      "covers": [
+        "wizard:estimation"
+      ],
+      "image": "plan/15-estimacion.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 602,
+        "y": 507,
+        "w": 498,
+        "h": 36
+      }
+    },
+    {
+      "chapter": "plan",
+      "n": 16,
+      "id": "cronograma",
+      "title": "Paso 15 · Cronograma: sprints",
+      "caption": "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas. Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin (Esc cancela el rango a medias; la ayuda «?» del título lo recuerda, y el calendario queda justo debajo de la barra): el sprint aparece como una franja y en la lista «Sprints», con su nombre y sus fechas, que puedes editar (dd/mm/aaaa e Intro). «Siguiente sprint» añade el siguiente a continuación, con la duración del paso 7 (Metodología). La leyenda explica el calendario: las franjas alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es hoy y el rojo claro señala días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). El sprint seleccionado se ve en azul oscuro y se resalta su fila; con el ratón puedes arrastrar sus extremos. Las flechas de arriba cambian de mes.",
+      "covers": [
+        "wizard:schedule"
+      ],
+      "image": "plan/16-cronograma.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 617,
+        "y": 592,
+        "w": 468,
+        "h": 27
+      }
+    },
+    {
+      "chapter": "plan",
+      "n": 17,
+      "id": "cronograma-hito",
+      "title": "Cronograma: hitos",
+      "caption": "Un hito es una fecha clave que no ocupa días, como una congelación de código o una publicación. Elige «Hito» y haz clic en un día: el hito se marca con un rombo ámbar y se añade a la lista «Hitos», donde le das nombre (en este ejemplo, «Congelación de código» y «Publicación de la 0.3.0»; el tercero, «Hito 3», se marcó con el teclado) y puedes corregir la fecha. Todo el calendario funciona también con el teclado: ← → mueven el foco un día, ↑ ↓ una semana, Inicio y Fin van al principio y al final de la semana, RePág y AvPág cambian de mes, e Intro o Espacio marcan el día enfocado.",
+      "covers": [
+        "action:schedule-milestone",
+        "keyboard:schedule-calendar"
+      ],
+      "image": "plan/17-cronograma-hito.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 779,
+        "y": 537,
+        "w": 145,
+        "h": 13
       }
     },
     {
       "chapter": "plan",
       "n": 18,
-      "id": "guardar",
-      "title": "Guardar el plan",
-      "caption": "«Finalizar plan» (o «Guardar», en la cabecera, desde cualquier paso) guarda el plan: aparece el aviso «Plan de pruebas guardado», la línea de estado pasa a «Guardado · ahora mismo», sube la versión y la cabecera del proyecto pasa a «Plan borrador». Guarda a menudo: cada guardado crea además una revisión a la que puedes volver.",
+      "id": "riesgos",
+      "title": "Paso 16 · Riesgos y mitigación",
+      "caption": "Cada fila es un riesgo que podría afectar a las pruebas y su mitigación, lo que se hará para reducirlo (en este ejemplo, que una actualización de WebView2 rompa la automatización de escritorio se mitiga fijando la versión del controlador). Cada campo crece con su texto, para que se lea entero. Con un motor de IA, «Sugerir riesgos con IA» propone riesgos con su mitigación según el resto del plan, y eliges cuáles añadir (capítulo 17).",
       "covers": [
-        "action:plan-save"
+        "wizard:risks"
       ],
-      "image": "plan/18-guardar.png",
+      "image": "plan/18-riesgos.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -1235,13 +1594,14 @@
     {
       "chapter": "plan",
       "n": 19,
-      "id": "salir-sin-guardar",
-      "title": "Salir con cambios sin guardar",
-      "caption": "Si cambias algo y vas a otra sección sin guardar (o cierras la ventana), Pharos te avisa antes de perder el trabajo: «Seguir editando» te devuelve al plan para guardarlo; «Descartar cambios» sale sin guardar. La línea de estado del paso ya te lo advertía: «Cambios sin guardar».",
+      "id": "comunicacion",
+      "title": "Pasos 17 y 18 · Comunicación; entrada, suspensión y reanudación",
+      "caption": "El plan de comunicación (paso 17) dice qué se informa, a quién y cada cuánto. El paso 18, el de la captura, fija cuándo puede empezar un ciclo (criterios de entrada: en este ejemplo, la versión instalada en staging y la prueba de humo en verde), cuándo se detiene la prueba (si falla el acceso) y qué tiene que pasar para retomarla (una versión con el bloqueo corregido). Con un motor de IA, «Sugerir criterios con IA» propone elementos de las tres listas.",
       "covers": [
-        "dialogs:src/modules/test-plan/ui/TestPlanWizard.tsx"
+        "wizard:communication",
+        "wizard:entry"
       ],
-      "image": "plan/19-salir-sin-guardar.png",
+      "image": "plan/19-comunicacion.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -1251,13 +1611,80 @@
     {
       "chapter": "plan",
       "n": 20,
-      "id": "revisiones",
-      "title": "Revisiones del plan",
-      "caption": "Cada guardado crea una revisión, una copia fechada del plan. «Ver todas», en el panel «Revisiones» (que enseña las tres últimas, junto al formulario o debajo en pantallas estrechas), abre la lista con el número, el título y la fecha de cada una. «Restaurar» vuelve al contenido de una revisión anterior, tras pedir confirmación. En la versión web todavía no se guardan revisiones.",
+      "id": "metricas",
+      "title": "Paso 19 · Métricas y objetivos medibles",
+      "caption": "Qué se mide y qué objetivo debe alcanzar, una fila por métrica: su comparador (≥, >, ≤, <, =), su objetivo y su unidad. El plan trae cuatro: casos ejecutados ≥ 95 %, tasa de éxito ≥ 90 %, defectos críticos abiertos = 0 y cobertura de requisitos ≥ 90 %. Las del catálogo (también densidad de defectos por cada 100 casos, defectos escapados, tiempo de corrección en días, reapertura e inestables) las mide Pharos y su unidad es fija; una propia lleva nombre y unidad y se valora a mano (en este ejemplo, «Satisfacción del producto en la demo» ≥ 4). «Criterio de salida» la lleva a los criterios de cierre, para que cuente al cerrar un ciclo.",
       "covers": [
-        "dialogs:src/modules/test-plan/ui/wizard/PlanSidePanels.tsx"
+        "wizard:metrics"
       ],
-      "image": "plan/20-revisiones.png",
+      "image": "plan/20-metricas.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 602,
+        "y": -463,
+        "w": 498,
+        "h": 1248
+      }
+    },
+    {
+      "chapter": "plan",
+      "n": 21,
+      "id": "cierre",
+      "title": "Pasos 20 y 21 · Criterios de cierre y propósito",
+      "caption": "Los criterios de cierre (paso 20) son los criterios de salida del plan. «Medido por» dice qué métrica mide cada uno: entonces su texto sale de la métrica y se evalúa solo al cerrar un ciclo (el Inicio también los muestra, capítulo 3). Sin métrica, el criterio es texto libre y se marca a mano. Cada uno es «Bloqueante» (por defecto: en «No cumple» pide una justificación para cerrar el ciclo) u «Orientativo» (solo se informa); en este ejemplo, la satisfacción en la demo es orientativa y se añade «Casos críticos ejecutados» al «100 %». Con un motor de IA, «Sugerir criterios con IA» propone criterios ligados a los riesgos del plan. Después, el propósito del documento (paso 21).",
+      "covers": [
+        "wizard:closure",
+        "wizard:purpose"
+      ],
+      "image": "plan/21-cierre.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 602,
+        "y": 165,
+        "w": 498,
+        "h": 1071
+      }
+    },
+    {
+      "chapter": "plan",
+      "n": 22,
+      "id": "conclusion",
+      "title": "Paso 22 · Conclusión y «Antes de terminar»",
+      "caption": "El paso 22, el último, recoge la conclusión del plan y, debajo, «Antes de terminar»: cuántos pasos están completos y la lista de los que no, cada uno con un enlace que lleva a él, junto con el estado actual del plan. Úsala como lista de comprobación; un plan con pasos pendientes se guarda igualmente. Solo el título es obligatorio.",
+      "covers": [
+        "wizard:conclusion"
+      ],
+      "image": "plan/22-conclusion.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 602,
+        "y": 415,
+        "w": 498,
+        "h": 153
+      }
+    },
+    {
+      "chapter": "plan",
+      "n": 23,
+      "id": "guardar",
+      "title": "Guardar el plan",
+      "caption": "«Finalizar plan» (o «Guardar», en la cabecera, desde cualquier paso) guarda el plan: aparece el aviso «Plan de pruebas guardado», la línea de estado pasa a «Guardado · ahora mismo» y la cabecera del proyecto pasa a «Plan borrador». Guarda a menudo: cada guardado con cambios sube la versión y crea una revisión a la que puedes volver; guardar sin cambios avisa de que no hay nada que guardar.",
+      "covers": [
+        "action:plan-save"
+      ],
+      "image": "plan/23-guardar.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -1266,7 +1693,39 @@
     },
     {
       "chapter": "plan",
-      "n": 21,
+      "n": 24,
+      "id": "salir-sin-guardar",
+      "title": "Salir con cambios sin guardar",
+      "caption": "Si cambias algo y vas a otra sección sin guardar (o cierras la ventana), Pharos te avisa antes de perder el trabajo: «Seguir editando» te devuelve al plan para guardarlo; «Descartar cambios» sale sin guardar. La línea de estado del paso ya te lo advertía: «Cambios sin guardar».",
+      "covers": [
+        "dialogs:src/modules/test-plan/ui/TestPlanWizard.tsx"
+      ],
+      "image": "plan/24-salir-sin-guardar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 25,
+      "id": "revisiones",
+      "title": "Revisiones del plan",
+      "caption": "Cada guardado con cambios crea una revisión, una copia fechada del plan. El panel «Historial», junto al formulario o debajo en pantallas estrechas, enseña los últimos cambios: estado, versión, fecha, quién y qué pasos tocó. Su enlace «Revisiones» abre la lista con el número, el título y la fecha de cada copia. «Restaurar» vuelve al contenido de una revisión anterior, tras pedir confirmación. En la versión web todavía no se guardan copias, pero el «Historial» sí se ve.",
+      "covers": [
+        "dialogs:src/modules/test-plan/ui/wizard/PlanSidePanels.tsx"
+      ],
+      "image": "plan/25-revisiones.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 26,
       "id": "restaurar",
       "title": "Restaurar una revisión",
       "caption": "Al confirmar, el asistente carga el contenido de esa revisión, todavía sin guardar, para que lo revises. Si es lo que buscabas, pulsa «Guardar»: se crea una revisión nueva y las anteriores se conservan, así que restaurar nunca borra el historial.",
@@ -1282,36 +1741,36 @@
     },
     {
       "chapter": "plan",
-      "n": 22,
+      "n": 27,
       "id": "exportar",
       "title": "Exportar el plan",
       "caption": "«Importar / Exportar», en la cabecera, ofrece el plan en .pdf, maquetado y listo para firmar, o en .xlsx, editable en Excel. Al pie, el menú indica qué historial lleva el documento: «Solo la versión vigente» o «Historial de revisiones», según «Ajustes del proyecto» (capítulo 14). Se exporta lo que ves, aunque no esté guardado. El archivo va a tu carpeta de descarga (Administración › General, capítulo 15) y un aviso dice su nombre.",
       "covers": [
         "action:plan-export"
       ],
-      "image": "plan/22-exportar.png",
+      "image": "plan/27-exportar.png",
       "viewport": {
         "height": 900,
         "width": 1440
       },
       "status": "passed",
       "focus": {
-        "x": 1008,
-        "y": 141,
+        "x": 1017,
+        "y": 117,
         "w": 266,
         "h": 217
       }
     },
     {
       "chapter": "plan",
-      "n": 23,
+      "n": 28,
       "id": "importar",
       "title": "Importar un plan desde .xlsx",
       "caption": "Para traer un plan escrito fuera de Pharos, «Importar / Exportar → Importar .xlsx» lee una plantilla rellenada en Excel (Administración › Plantillas) o un plan exportado antes (en este ejemplo, el .xlsx que se acaba de exportar). Antes de tocar nada, el informe de importación muestra, campo a campo, qué reconoció («no detectado», «en blanco»…), para que decidas si aplicarlo.",
       "covers": [
         "upload:src/modules/test-plan/ui/TestPlanWizard.tsx"
       ],
-      "image": "plan/23-importar.png",
+      "image": "plan/28-importar.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -1320,7 +1779,7 @@
     },
     {
       "chapter": "plan",
-      "n": 24,
+      "n": 29,
       "id": "importado",
       "title": "Plan importado",
       "caption": "«Aplicar al formulario» carga los datos reconocidos en el asistente, sin guardar todavía: revisa cada paso y pulsa «Guardar» para conservarlos como una revisión nueva.",
@@ -1331,6 +1790,45 @@
         "width": 1440
       },
       "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 30,
+      "id": "aprobar",
+      "title": "Aprobar el plan",
+      "caption": "Un plan revisado se aprueba en «Estado del plan». Primero pon el estado en «Revisado» (paso 1) y guarda: «Aprobar versión N» solo se activa con el plan guardado y en «Revisado», y si no, dice por qué debajo. Al pulsarlo, Pharos pide confirmación y recuerda que, si después se edita el contenido, el plan volverá a «Revisado» y habrá que aprobarlo de nuevo.",
+      "covers": [
+        "dialogs:src/modules/test-plan/ui/TestPlanWizard.tsx",
+        "action:plan-approve"
+      ],
+      "image": "plan/30-aprobar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 31,
+      "id": "aprobado",
+      "title": "Plan aprobado",
+      "caption": "Al confirmar, el plan pasa a «Aprobado» sin cambiar de versión, y «Estado del plan» muestra quién lo aprobó y cuándo; el PDF y el Excel lo llevan en la cabecera. El «Historial» lo apunta. Si luego cambias el contenido, un aviso lo dice antes de guardar, el plan vuelve a «Revisado» con una versión nueva y el historial indica que perdió la aprobación.",
+      "covers": [
+        "action:plan-approved"
+      ],
+      "image": "plan/31-aprobado.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 1143,
+        "y": 177,
+        "w": 260,
+        "h": 723
+      }
     },
     {
       "chapter": "tablero",
@@ -1381,7 +1879,7 @@
       "status": "passed",
       "focus": {
         "x": 341,
-        "y": 615,
+        "y": 669,
         "w": 476,
         "h": 21
       }
@@ -1601,7 +2099,7 @@
       "n": 6,
       "id": "riesgo-requisito",
       "title": "El riesgo de un requisito",
-      "caption": "En el mismo diálogo, «Riesgo» pide la probabilidad de que falle y su impacto, de 1 a 5 cada uno («Sin evaluar» si aún no lo sabes). Su producto es el nivel de riesgo: hasta 4, bajo; hasta 12, medio; por encima, alto. La matriz de trazabilidad ordena por riesgo (capítulo 13) y «Añadir por filtro» de los ciclos puede elegir los casos de los requisitos más arriesgados (capítulo 9).",
+      "caption": "En el mismo diálogo, «Riesgo» pide la probabilidad de que falle y su impacto, de 1 a 5 cada uno («Sin evaluar» si aún no lo sabes). Su producto es el nivel de riesgo, que cae en una banda: por defecto, hasta 4, bajo; hasta 12, medio; por encima, alto. Cada proyecto puede tener las suyas en «Ajustes del proyecto» (capítulo 14), y el ⓘ dice las que usa. La matriz de trazabilidad ordena por riesgo (capítulo 13) y «Añadir por filtro» de los ciclos puede elegir los casos de los requisitos más arriesgados (capítulo 9).",
       "covers": [
         "action:requirement-risk"
       ],
@@ -1781,7 +2279,7 @@
       "focus": {
         "x": 300,
         "y": 391,
-        "w": 508,
+        "w": 512,
         "h": 117
       }
     },
@@ -1824,7 +2322,7 @@
       },
       "status": "passed",
       "focus": {
-        "x": 1355,
+        "x": 1364,
         "y": 326,
         "w": 34,
         "h": 34
@@ -1899,7 +2397,7 @@
       "n": 12,
       "id": "lista",
       "title": "La lista de casos",
-      "caption": "Con casos, la tabla muestra ID, título, requisito, prioridad, estado, «Ejecución» y fecha de la última edición. «Ejecución» es el último resultado de cada caso, el mismo que la matriz (capítulo 13): «Pasa», «Falla», «Bloqueado», «Omitido» o «Re-test»; «—» si aún no tiene ninguno. Si un caso tiene contenido sugerido por IA que nadie ha revisado, su estado (normalmente «Borrador») lleva un ✨ y un borde discontinuo, y al pasar el puntero lo explica. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, resultado («Ejecución», con «Sin resultados» para los que aún no se han ejecutado), tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta. Haz clic en la cabecera de una columna para ordenar por ella. En este ejemplo, «credenciales» deja los dos casos de acceso.",
+      "caption": "Con casos, la tabla muestra ID, título, requisito, prioridad, estado, «Ejecución» y fecha de la última edición. «Ejecución» es el último resultado de cada caso, el mismo que la matriz (capítulo 13): «Pasa», «Falla», «Bloqueado», «Omitido» o «Por confirmar»; «—» si aún no tiene ninguno. Si un caso tiene contenido sugerido por IA que nadie ha revisado, su estado (normalmente «Borrador») lleva un ✨ y un borde discontinuo, y al pasar el puntero lo explica. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, resultado («Ejecución», con «Sin resultados» para los que aún no se han ejecutado), tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta. Haz clic en la cabecera de una columna para ordenar por ella. En este ejemplo, «credenciales» deja los dos casos de acceso.",
       "covers": [
         "action:cases-search",
         "action:cases-filter",
@@ -1953,7 +2451,7 @@
       "focus": {
         "x": 279,
         "y": 177,
-        "w": 1115,
+        "w": 1124,
         "h": 40
       }
     },
@@ -1990,7 +2488,7 @@
       },
       "status": "passed",
       "focus": {
-        "x": 1048,
+        "x": 1057,
         "y": 229,
         "w": 226,
         "h": 144
@@ -2014,7 +2512,7 @@
       "focus": {
         "x": 279,
         "y": 315,
-        "w": 1115,
+        "w": 1124,
         "h": 127
       }
     },
@@ -2171,7 +2669,7 @@
       "n": 2,
       "id": "nuevo-ciclo",
       "title": "Nuevo ciclo",
-      "caption": "«Nuevo ciclo» pide el título (obligatorio), la build y el entorno contra los que se prueba, el hito y el sprint del plan, las fechas y las configuraciones en las que se ejecutará (las de «Ajustes del proyecto», capítulo 14). En este ejemplo, «Regresión 0.3.0» de la build 0.3.0-rc1 en staging, del 9 al 20 de noviembre, en Chrome y en Edge sobre Windows 11. Sin configuraciones, el ciclo se ejecuta como un único run. Intro en un campo crea el ciclo.",
+      "caption": "«Nuevo ciclo» pide el título (obligatorio), la build y el entorno contra los que se prueba, el hito y el sprint del plan, las fechas (se escriben dd/mm/aaaa o se eligen en el calendario de Pharos, capítulo 5; el de «Termina» abre en el mes de «Empieza» y no deja elegir un día anterior) y las configuraciones en las que se ejecutará (las de «Ajustes del proyecto», capítulo 14). En este ejemplo, «Regresión 0.3.0» de la build 0.3.0-rc1 en staging, del 9 al 20 de noviembre, en Chrome y en Edge sobre Windows 11. Sin configuraciones, el ciclo se ejecuta como un único run. Intro en un campo crea el ciclo.",
       "covers": [
         "dialogs:src/modules/cycles/ui/CycleDialog.tsx"
       ],
@@ -2312,13 +2810,13 @@
     {
       "chapter": "ciclos",
       "n": 11,
-      "id": "clonar",
-      "title": "Clonar y eliminar un ciclo",
-      "caption": "El menú «⋯» del ciclo lo clona, con sus elementos y sin resultados, útil para repetir una regresión en la siguiente versión (el clon se abre solo); también lo elimina, tras confirmar.",
+      "id": "cerrar-ciclo",
+      "title": "Cerrar el ciclo: el quality gate",
+      "caption": "Un ciclo se cierra con «Cerrar ciclo…», nunca desde «Editar». Pharos evalúa los criterios de salida del plan sobre los resultados del ciclo. Cada criterio obligatorio que no se cumple, o que no tiene datos, pide una justificación de al menos 20 caracteres: por qué se acepta el riesgo, quién lo asume y cuándo se resuelve. Los criterios manuales («Visto bueno del PO») se marcan a mano y los orientativos solo se muestran. Si algún obligatorio falla, eliges «Go con riesgos» (la versión puede salir) o «No-go» (no sale). Al pie se ve quién firma y cuándo: queda en Auditoría.",
       "covers": [
-        "dialogs:src/modules/cycles/ui/CycleDetail.tsx"
+        "dialogs:src/modules/runs/gate/CloseCycleDialog.tsx"
       ],
-      "image": "ciclos/11-clonar.png",
+      "image": "ciclos/11-cerrar-ciclo.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -2328,11 +2826,13 @@
     {
       "chapter": "ciclos",
       "n": 12,
-      "id": "eliminar",
-      "title": "Confirmar la eliminación",
-      "caption": "Eliminar un ciclo pide confirmación, con cuántos runs tiene. Los resultados no se pierden: sus runs se conservan, sin ciclo, en «Ejecuciones». Esc no cierra este aviso: solo «Cancelar».",
-      "covers": [],
-      "image": "ciclos/12-eliminar.png",
+      "id": "cierre-sin-guardar",
+      "title": "Salir del cierre sin cerrar",
+      "caption": "Si sales con Esc o «Cancelar» después de escribir una justificación o marcar un criterio, Pharos pregunta antes de descartarlo: «Seguir editando» vuelve al cierre tal como estaba.",
+      "covers": [
+        "dialogs:src/modules/runs/gate/CloseCycleDialog.tsx"
+      ],
+      "image": "ciclos/12-cierre-sin-guardar.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -2342,13 +2842,13 @@
     {
       "chapter": "ciclos",
       "n": 13,
-      "id": "lista",
-      "title": "La lista de ciclos",
-      "caption": "La lista muestra cada ciclo con su clave, su título con la build y el entorno, su estado, sus fechas, sus configuraciones, su progreso y sus runs. Filtra por «Planificados», «Activos» o «Cerrados» (← → también cambian de filtro) para ver de un vistazo lo que está en curso; si ningún ciclo coincide, la lista lo dice.",
+      "id": "ciclo-cerrado",
+      "title": "El veredicto del ciclo",
+      "caption": "«Cerrar ciclo» guarda la decisión con las cifras de ese momento, congeladas: el ciclo queda «Cerrado», con su veredicto al lado, y ya no admite casos ni ejecuciones hasta que lo reabras desde «Editar». Su informe de estado empieza ahora por «Decisión de salida», con cada criterio, su justificación y las métricas frente al ciclo anterior, también en Excel y PDF. Inicio lo suma a «Tendencia de ciclos».",
       "covers": [
-        "action:cycles-filter"
+        "action:cycle-verdict"
       ],
-      "image": "ciclos/13-lista.png",
+      "image": "ciclos/13-ciclo-cerrado.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -2358,13 +2858,91 @@
     {
       "chapter": "ciclos",
       "n": 14,
+      "id": "informe-cierre",
+      "title": "El informe de cierre",
+      "caption": "En un ciclo cerrado, «Cerrar ciclo…» deja paso a «Informe de cierre»: el informe final de la ronda según ISO/IEC/IEEE 29119-3, con su ID (TCR-…). Pharos rellena lo que sabe del cierre: las desviaciones respecto al plan (fecha de fin, casos sin ejecutar, criterios que no se cumplen), la «Decisión de salida» con sus justificaciones, lo que bloqueó el avance, las métricas frente al ciclo anterior y al objetivo del plan, los defectos abiertos y los requisitos sin cubrir o sin pasar por riesgo, los entregables y los activos reutilizables. Tú escribes el resumen, las lecciones aprendidas y los comentarios de cada apartado, marcas los entregables del plan y pulsas «Guardar»: queda en el ciclo, se sincroniza y sale en Excel y PDF.",
+      "covers": [
+        "dialogs:src/modules/runs/report/completion/CompletionReportDialog.tsx"
+      ],
+      "image": "ciclos/14-informe-cierre.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ciclos",
+      "n": 15,
+      "id": "aprobar-informe-cierre",
+      "title": "Aprobar el informe de cierre",
+      "caption": "Con todo guardado, «Aprobar informe» pide confirmación y deja tu nombre y la fecha en el apartado «Aprobación», en la cabecera del PDF y en el Excel. Si después cambias un texto, el informe pierde la aprobación al guardar. Si reabres el ciclo y lo vuelves a cerrar, el informe sigue al cierre nuevo: conserva los textos, pero hay que aprobarlo otra vez.",
+      "covers": [
+        "dialogs:src/modules/runs/report/completion/CompletionReportDialog.tsx"
+      ],
+      "image": "ciclos/15-aprobar-informe-cierre.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ciclos",
+      "n": 16,
+      "id": "clonar",
+      "title": "Clonar y eliminar un ciclo",
+      "caption": "El menú «⋯» del ciclo lo clona, con sus elementos y sin resultados, útil para repetir una regresión en la siguiente versión (el clon se abre solo); también lo elimina, tras confirmar.",
+      "covers": [
+        "dialogs:src/modules/cycles/ui/CycleDetail.tsx"
+      ],
+      "image": "ciclos/16-clonar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ciclos",
+      "n": 17,
+      "id": "eliminar",
+      "title": "Confirmar la eliminación",
+      "caption": "Eliminar un ciclo pide confirmación, con cuántos runs tiene. Los resultados no se pierden: sus runs se conservan, sin ciclo, en «Ejecuciones». Esc no cierra este aviso: solo «Cancelar».",
+      "covers": [],
+      "image": "ciclos/17-eliminar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ciclos",
+      "n": 18,
+      "id": "lista",
+      "title": "La lista de ciclos",
+      "caption": "La lista muestra cada ciclo con su clave, su título con la build y el entorno, su estado, sus fechas, sus configuraciones, su progreso y sus runs. Filtra por «Planificados», «Activos» o «Cerrados» (← → también cambian de filtro) para ver de un vistazo lo que está en curso; si ningún ciclo coincide, la lista lo dice.",
+      "covers": [
+        "action:cycles-filter"
+      ],
+      "image": "ciclos/18-lista.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ciclos",
+      "n": 19,
       "id": "movil",
       "title": "Los ciclos en el móvil",
       "caption": "En el móvil, cada ciclo es una tarjeta con su clave, su estado, su título, sus fechas y su progreso. Dentro de un ciclo, cada elemento es una tarjeta con su caso, su asignado y una pastilla por configuración; su menú «⋯» lo sube, lo baja o lo quita. El asignado se cambia en la propia tarjeta.",
       "covers": [
         "platform:mobile-cycles"
       ],
-      "image": "ciclos/14-movil.png",
+      "image": "ciclos/19-movil.png",
       "viewport": {
         "height": 844,
         "width": 390
@@ -2773,7 +3351,7 @@
       "n": 15,
       "id": "informe-estado",
       "title": "Informe de estado",
-      "caption": "En «Ejecuciones» (o en la cabecera de un ciclo), «Informe de estado» genera el informe de estado de pruebas (ISO/IEC/IEEE 29119-3) del proyecto, de un ciclo o del plan, entre las fechas que elijas: identificación, progreso, resultados por estado, defectos por severidad (a fecha de hoy), cobertura y riesgos, los criterios de salida del plan (cumple / no cumple / sin datos), bloqueos, resumen y recomendaciones. El resumen se rellena solo con las cifras y se puede cambiar; en este ejemplo, Liomar escribe sus recomendaciones. Los dos se guardan solo en este equipo y van en las exportaciones.",
+      "caption": "En «Ejecuciones» (o en la cabecera de un ciclo), «Informe de estado» genera el informe de estado de pruebas (ISO/IEC/IEEE 29119-3) del proyecto, de un ciclo o del plan, entre las fechas que elijas en «Desde» y «Hasta» (con el selector de fechas de Pharos del capítulo 5: «Hasta» abre en el mes de «Desde» y no deja elegir un día anterior): identificación, progreso, resultados por estado, defectos por severidad (a fecha de hoy), cobertura y riesgos, los criterios de salida del plan (cumple / no cumple / sin datos), bloqueos, resumen y recomendaciones. El resumen se rellena solo con las cifras y se puede cambiar; en este ejemplo, Liomar escribe sus recomendaciones. Los dos se guardan solo en este equipo y van en las exportaciones.",
       "covers": [
         "dialogs:src/modules/runs/report/StatusReportDialog.tsx"
       ],
@@ -2915,7 +3493,7 @@
       "focus": {
         "x": 296,
         "y": 784,
-        "w": 1081,
+        "w": 1090,
         "h": 90
       }
     },
@@ -2966,8 +3544,8 @@
       "status": "passed",
       "focus": {
         "x": 279,
-        "y": 233,
-        "w": 1115,
+        "y": 207,
+        "w": 1124,
         "h": 60
       }
     },
@@ -2990,13 +3568,29 @@
     {
       "chapter": "defectos",
       "n": 9,
+      "id": "eliminar-desde-editor",
+      "title": "Eliminar desde el editor",
+      "caption": "El editor de un defecto guardado también tiene «Eliminar defecto», así que se puede borrar desde cualquier vista, también desde el tablero y el móvil, que abren el editor. Pide la misma confirmación crítica que la papelera de la tabla y, al confirmar, vuelve a la lista (en este ejemplo, Liomar cancela).",
+      "covers": [
+        "dialogs:src/modules/defects/ui/DefectEditor.tsx"
+      ],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "defectos",
+      "n": 10,
       "id": "lista",
       "title": "La lista de defectos",
       "caption": "La lista muestra ID, título, severidad, prioridad, estado, casos vinculados y fecha. Cambia entre abiertos, todos o cerrados, filtra por severidad o busca por texto (en este ejemplo, «prefijo» deja solo el del menú lateral). Un clic en el título abre el defecto.",
       "covers": [
         "action:defects-filter"
       ],
-      "image": "defectos/09-lista.png",
+      "image": "defectos/10-lista.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3011,16 +3605,16 @@
     },
     {
       "chapter": "defectos",
-      "n": 10,
+      "n": 11,
       "id": "tablero",
       "title": "El tablero de defectos",
-      "caption": "«Tablero» agrupa los defectos por estado, una columna por cada etapa de su ciclo de vida: nuevo, abierto, en curso, corregido, en re-test, cerrado y «Otros» (rechazado o aplazado). Para avanzar un defecto, arrastra su tarjeta o, con el teclado, lleva el foco a su asa y usa Espacio y las flechas. Pharos solo permite los cambios de estado válidos, así que una columna que no admite el defecto no lo acepta. En este ejemplo, Liomar confirma el del menú lateral y lo pasa a «Abierto».",
+      "caption": "«Tablero» agrupa los defectos por estado, una columna por cada etapa de su ciclo de vida: nuevo, abierto, en curso, corregido, por confirmar, cerrado y «Otros» (rechazado o aplazado). Para avanzar un defecto, arrastra su tarjeta o, con el teclado, lleva el foco a su asa y usa Espacio y las flechas. Pharos solo permite los cambios de estado válidos, así que una columna que no admite el defecto no lo acepta. En este ejemplo, Liomar confirma el del menú lateral y lo pasa a «Abierto».",
       "covers": [
         "screen:defect-board",
         "action:defect-move",
         "views:src/modules/defects/ui/DefectsPage.tsx"
       ],
-      "image": "defectos/10-tablero.png",
+      "image": "defectos/11-tablero.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3035,30 +3629,14 @@
     },
     {
       "chapter": "defectos",
-      "n": 11,
+      "n": 12,
       "id": "otros",
       "title": "Rechazar o aplazar un defecto",
       "caption": "Al soltar un defecto en «Otros», Pharos pregunta a qué estado pasa: «Rechazado» pide la resolución (duplicado, no reproducible, no se corregirá, funciona según el diseño…) y «Aplazado» lo deja abierto para más adelante. Al soltarlo en «Cerrado», pide la resolución y, si quieres, la build en la que se corrigió, para saber desde qué versión volver a probar. En este ejemplo, Liomar aplaza el del menú lateral a la 0.4.0: es molesto, pero no bloquea la entrega.",
       "covers": [
         "dialogs:src/modules/defects/ui/TransitionDialog.tsx"
       ],
-      "image": "defectos/11-otros.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed"
-    },
-    {
-      "chapter": "defectos",
-      "n": 12,
-      "id": "eliminar",
-      "title": "Eliminar un defecto",
-      "caption": "Normalmente un defecto se cierra o se rechaza, no se borra. Si se creó por error (en este ejemplo, Liomar registró dos veces el fallo de acceso), la papelera de su fila (o «Eliminar defecto» en su editor, también desde el tablero y el móvil) lo borra tras una confirmación crítica: solo responden «Cancelar» y «Sí, eliminar». Su clave no se vuelve a usar.",
-      "covers": [
-        "dialogs:src/modules/defects/ui/DefectsPage.tsx"
-      ],
-      "image": "defectos/12-eliminar.png",
+      "image": "defectos/12-otros.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3068,6 +3646,22 @@
     {
       "chapter": "defectos",
       "n": 13,
+      "id": "eliminar",
+      "title": "Eliminar un defecto",
+      "caption": "Normalmente un defecto se cierra o se rechaza, no se borra. Si se creó por error (en este ejemplo, Liomar registró dos veces el fallo de acceso), la papelera de su fila (o «Eliminar defecto» en su editor, también desde el tablero y el móvil) lo borra tras una confirmación crítica: solo responden «Cancelar» y «Sí, eliminar». Su clave no se vuelve a usar.",
+      "covers": [
+        "dialogs:src/modules/defects/ui/DefectsPage.tsx"
+      ],
+      "image": "defectos/13-eliminar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "defectos",
+      "n": 14,
       "id": "eliminado",
       "title": "Defecto eliminado",
       "caption": "Al confirmar, el defecto desaparece de la lista. Si no se pudiera eliminar, un aviso lo dice y el defecto sigue ahí.",
@@ -3078,6 +3672,46 @@
         "width": 1440
       },
       "status": "passed"
+    },
+    {
+      "chapter": "defectos",
+      "n": 15,
+      "id": "escape",
+      "title": "Un defecto que se escapó de las pruebas",
+      "caption": "Si el defecto se encontró fuera de las pruebas, por ejemplo en producción o en una demostración, marca «Encontrado fuera de las pruebas (escape)» en «Detalles». Cuenta como escape del último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo dejó pasar, y la recogen la tendencia de ciclos del Inicio (capítulo 3) y el informe de go/no-go (capítulo 9). En este ejemplo, un usuario de la beta avisa de que el enlace del correo de bienvenida abre la versión anterior, y Liomar lo registra como escape.",
+      "covers": [],
+      "image": "defectos/15-escape.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 296,
+        "y": 442,
+        "w": 1090,
+        "h": 39
+      }
+    },
+    {
+      "chapter": "defectos",
+      "n": 16,
+      "id": "reabrir",
+      "title": "Corregir, confirmar y reabrir",
+      "caption": "El camino de un defecto corregido, en el tablero o con el campo «Estado» del editor (que solo ofrece los estados siguientes): «En curso» mientras se arregla, «Corregido» cuando el equipo de desarrollo lo da por resuelto y «Por confirmar» mientras QA vuelve a probarlo. Si la prueba pasa, va a «Cerrado»; si no, se reabre: vuelve a «Abierto» desde «Por confirmar» (o desde «Cerrado»). Pharos apunta la primera vez que llega a «Corregido» y cuántas veces se reabre, y con eso calcula el tiempo de corrección y la reapertura de cada ciclo (capítulos 3 y 9). En este ejemplo, Liomar comprueba el arreglo del enlace, sigue abriendo la versión anterior y lo reabre.",
+      "covers": [],
+      "image": "defectos/16-reabrir.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 442,
+        "y": 233,
+        "w": 155,
+        "h": 228
+      }
     },
     {
       "chapter": "trazabilidad",
@@ -3101,7 +3735,7 @@
       "n": 2,
       "id": "resultados",
       "title": "El último resultado de cada caso",
-      "caption": "«Estado de prueba» es el último resultado final de cada caso, venga de un run manual o de un informe importado: el estado, la clave del run y la fecha. Los avisos lo matizan: «Flaky» (pasó tras fallar), «Desactualizado» (se ejecutó una revisión anterior del caso) y «Re-test» (falló y su defecto ya está corregido). «Defectos» enseña los de cada caso, con su severidad; los cerrados, atenuados. En este ejemplo, el caso de acceso PH-001 falla en el último run y lleva su defecto crítico.",
+      "caption": "«Estado de prueba» es el último resultado final de cada caso, venga de un run manual o de un informe importado: el estado, la clave del run y la fecha. Los avisos lo matizan: «Flaky» (pasó tras fallar), «Desactualizado» (se ejecutó una revisión anterior del caso) y «Por confirmar» (falló y su defecto ya está corregido). «Defectos» enseña los de cada caso, con su severidad; los cerrados, atenuados. En este ejemplo, el caso de acceso PH-001 falla en el último run y lleva su defecto crítico.",
       "covers": [],
       "image": "trazabilidad/02-resultados.png",
       "viewport": {
@@ -3110,10 +3744,10 @@
       },
       "status": "passed",
       "focus": {
-        "x": 887,
+        "x": 930,
         "y": 415,
         "w": 150,
-        "h": 158
+        "h": 167
       }
     },
     {
@@ -3132,9 +3766,9 @@
       },
       "status": "passed",
       "focus": {
-        "x": 680,
+        "x": 683,
         "y": 268,
-        "w": 181,
+        "w": 183,
         "h": 36
       }
     },
@@ -3170,38 +3804,44 @@
       },
       "status": "passed",
       "focus": {
-        "x": 1172,
+        "x": 1179,
         "y": 268,
-        "w": 207,
+        "w": 209,
         "h": 36
       }
     },
     {
       "chapter": "trazabilidad",
       "n": 6,
+      "id": "ponderada",
+      "title": "Cobertura ponderada por riesgo",
+      "caption": "«Cobertura ponderada» pesa cada requisito por su nivel de riesgo (probabilidad × impacto): cubrir uno de nivel 20 cuenta cinco veces más que uno de nivel 4, así un hueco en lo más arriesgado se nota más que en lo trivial. Debajo pone la «aprobada» (los requisitos con todos sus casos ejecutados y en Pasa) y cuántos requisitos sin evaluar quedan fuera; el ⓘ enseña la cuenta y las bandas del proyecto (capítulo 14). Bajo las cifras, una barra por banda —alto, medio, bajo y sin evaluar— dice cuántos requisitos de cada una tienen caso. Sigue los filtros de ciclo, configuración, build y entorno, como el informe de estado.",
+      "covers": [
+        "action:matrix-weighted"
+      ],
+      "image": "trazabilidad/06-ponderada.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 279,
+        "y": 359,
+        "w": 1124,
+        "h": 141
+      }
+    },
+    {
+      "chapter": "trazabilidad",
+      "n": 7,
       "id": "huecos",
       "title": "Solo los huecos",
       "caption": "«Mostrar solo huecos» deja los requisitos sin ningún caso, lo primero que conviene resolver antes de cerrar un ciclo. Debajo, «Huecos de trazabilidad» reúne lo que rompe la cadena requisito ↔ caso ↔ defecto: casos sin requisito, casos que enlazan un requisito inexistente y defectos sin caso vinculado.",
       "covers": [
         "action:matrix-gaps"
       ],
-      "image": "trazabilidad/06-huecos.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed"
-    },
-    {
-      "chapter": "trazabilidad",
-      "n": 7,
-      "id": "migrar",
-      "title": "Migrar referencias escritas a mano",
-      "caption": "Si un caso menciona un ID de requisito en su texto libre («Otras referencias (texto libre)»), la matriz no lo cuenta. «Migrar trazabilidad» propone convertirlo en un vínculo real: marca los que quieras y pulsa «Aplicar». En este ejemplo, la checklist de humo (PH-004) citaba REQ-006 en el capítulo 8.",
-      "covers": [
-        "dialogs:src/modules/traceability/ui/MigrateTraceabilityModal.tsx"
-      ],
-      "image": "trazabilidad/07-migrar.png",
+      "image": "trazabilidad/07-huecos.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3211,6 +3851,22 @@
     {
       "chapter": "trazabilidad",
       "n": 8,
+      "id": "migrar",
+      "title": "Migrar referencias escritas a mano",
+      "caption": "Si un caso menciona un ID de requisito en su texto libre («Otras referencias (texto libre)»), la matriz no lo cuenta. «Migrar trazabilidad» propone convertirlo en un vínculo real: marca los que quieras y pulsa «Aplicar». En este ejemplo, la checklist de humo (PH-004) citaba REQ-006 en el capítulo 8.",
+      "covers": [
+        "dialogs:src/modules/traceability/ui/MigrateTraceabilityModal.tsx"
+      ],
+      "image": "trazabilidad/08-migrar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "trazabilidad",
+      "n": 9,
       "id": "exportar-matriz",
       "title": "Exportar la matriz",
       "caption": "«Exportar matriz (.xlsx)», en la cabecera, guarda la matriz en un libro de Excel: requisitos, casos, estados y defectos, más la hoja «Resultados» con el run, la fecha y los defectos de cada caso, y anotados los filtros que estaban activos. Sirve para compartirla con quien no usa Pharos o adjuntarla a una auditoría. El archivo va a tu carpeta de descarga y un aviso dice su nombre.",
@@ -3284,7 +3940,7 @@
       "status": "passed",
       "focus": {
         "x": 304,
-        "y": 514,
+        "y": 513,
         "w": 830,
         "h": 99
       }
@@ -3292,29 +3948,35 @@
     {
       "chapter": "ajustes",
       "n": 4,
-      "id": "campo-nuevo",
-      "title": "Nuevo campo personalizado",
-      "caption": "Los campos personalizados añaden a los casos lo que tu equipo necesite clasificar y que Pharos no trae de serie. En «Campos personalizados», «Nuevo campo» abre el diálogo: nombre, clave, tipo (texto, número, fecha, sí/no, selección…), opciones y si es obligatorio. El botón [?] junto a «Clave» explica su formato (minúsculas, números y guion bajo) al pasar el ratón, con el tabulador o al tocarlo; debajo se recuerda que no se puede cambiar después. En este ejemplo, una selección «Navegador» con tres opciones.",
+      "id": "bandas-riesgo",
+      "title": "Las bandas de riesgo",
+      "caption": "«Bandas de riesgo» decide cómo se lee el riesgo de los requisitos de este proyecto (probabilidad × impacto, de 1 a 25, capítulo 7): hasta qué nivel es bajo y hasta cuál es medio; el resto es alto. Por defecto, 4 y 12. El mapa de 5 × 5 se repinta al escribir y cuenta cuántas combinaciones caen en cada banda. Si el bajo no queda por debajo del medio, el campo lo explica y «Guardar bandas» no se activa. Cambiarlas no toca ningún dato: cambia cómo se leen la matriz y su orden por riesgo (capítulo 13) y el informe de estado. «Restablecer (4 y 12)» vuelve a los valores por defecto. En este ejemplo, Liomar prueba 6 y 14, mira el mapa y se queda con los de siempre.",
       "covers": [
-        "dialogs:src/modules/custom-fields/ui/CustomFieldDialog.tsx"
+        "action:risk-bands"
       ],
-      "image": "ajustes/04-campo-nuevo.png",
+      "image": "ajustes/04-bandas-riesgo.png",
       "viewport": {
         "height": 900,
         "width": 1440
       },
-      "status": "passed"
+      "status": "passed",
+      "focus": {
+        "x": 279,
+        "y": 212,
+        "w": 880,
+        "h": 476
+      }
     },
     {
       "chapter": "ajustes",
       "n": 5,
-      "id": "campo-creado",
-      "title": "El campo, en la lista",
-      "caption": "«Crear campo» lo guarda y aparece en la lista; desde ese momento, los casos del proyecto pueden usarlo (capítulo 8). Se reordena arrastrando o con el menú de cada campo: ese es el orden en que se ve en el editor.",
+      "id": "campo-nuevo",
+      "title": "Nuevo campo personalizado",
+      "caption": "Los campos personalizados añaden a los casos lo que tu equipo necesite clasificar y que Pharos no trae de serie. En «Campos personalizados», «Nuevo campo» abre el diálogo: nombre, clave, tipo (texto, número, fecha, sí/no, selección…), opciones y si es obligatorio. Un campo de tipo fecha se rellena en el caso con el selector de fechas de Pharos (capítulo 5). El botón [?] junto a «Clave» explica su formato (minúsculas, números y guion bajo) al pasar el ratón, con el tabulador o al tocarlo; debajo se recuerda que no se puede cambiar después. En este ejemplo, una selección «Navegador» con tres opciones.",
       "covers": [
-        "action:custom-field-create"
+        "dialogs:src/modules/custom-fields/ui/CustomFieldDialog.tsx"
       ],
-      "image": "ajustes/05-campo-creado.png",
+      "image": "ajustes/05-campo-nuevo.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3324,13 +3986,13 @@
     {
       "chapter": "ajustes",
       "n": 6,
-      "id": "campo-archivar",
-      "title": "Archivar un campo",
-      "caption": "Un campo no se borra, para no perder lo que ya se escribió en él: se archiva desde su menú («Archivar») y sus valores se conservan. «Mostrar archivados» lo enseña y «Desarchivar» lo recupera.",
+      "id": "campo-creado",
+      "title": "El campo, en la lista",
+      "caption": "«Crear campo» lo guarda y aparece en la lista; desde ese momento, los casos del proyecto pueden usarlo (capítulo 8). Se reordena arrastrando o con el menú de cada campo: ese es el orden en que se ve en el editor.",
       "covers": [
-        "action:custom-field-archive"
+        "action:custom-field-create"
       ],
-      "image": "ajustes/06-campo-archivar.png",
+      "image": "ajustes/06-campo-creado.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3340,6 +4002,22 @@
     {
       "chapter": "ajustes",
       "n": 7,
+      "id": "campo-archivar",
+      "title": "Archivar un campo",
+      "caption": "Un campo no se borra, para no perder lo que ya se escribió en él: se archiva desde su menú («Archivar») y sus valores se conservan. «Mostrar archivados» lo enseña y «Desarchivar» lo recupera.",
+      "covers": [
+        "action:custom-field-archive"
+      ],
+      "image": "ajustes/07-campo-archivar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ajustes",
+      "n": 8,
       "id": "campo-descartar",
       "title": "Cerrar sin guardar",
       "caption": "Si cierras el diálogo de un campo con cambios sin guardar, Pharos pregunta antes de descartarlos, para que no los pierdas por un clic.",
@@ -3355,31 +4033,14 @@
     },
     {
       "chapter": "ajustes",
-      "n": 8,
+      "n": 9,
       "id": "campo-defecto",
       "title": "Campos de los defectos",
       "caption": "El selector «Casos / Defectos» de la tarjeta elige de qué entidad son los campos. Con «Defectos», «Nuevo campo» crea un campo que aparece en el editor de cada defecto (en este ejemplo, «Sistema operativo»). Los campos de casos y de defectos son independientes, y «Copiar de otro proyecto» copia los de la entidad elegida.",
       "covers": [
         "action:custom-field-defect"
       ],
-      "image": "ajustes/08-campo-defecto.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed"
-    },
-    {
-      "chapter": "ajustes",
-      "n": 9,
-      "id": "configuracion-nueva",
-      "title": "Nueva configuración",
-      "caption": "Una configuración describe dónde se ejecuta una prueba, para saber en qué entorno pasó o falló. En «Configuraciones», «Nueva configuración» pide navegador, sistema, dispositivo e idioma (en este ejemplo, «Chrome · Windows 11»). Las etiquetas de importación (Intro o coma para añadir cada una) son los nombres con los que un informe importado reconoce la configuración.",
-      "covers": [
-        "dialogs:src/modules/cycles/ui/ConfigurationDialog.tsx",
-        "keyboard:config-labels"
-      ],
-      "image": "ajustes/09-configuracion-nueva.png",
+      "image": "ajustes/09-campo-defecto.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3389,14 +4050,14 @@
     {
       "chapter": "ajustes",
       "n": 10,
-      "id": "configuracion-creada",
-      "title": "Configuraciones del proyecto",
-      "caption": "«Guardar» la añade a la lista. En este ejemplo hay dos activas (Chrome y Edge); una tercera se archivó desde su menú y solo se ve con «Mostrar archivadas»: así deja de ofrecerse en ciclos nuevos sin perder su historia.",
+      "id": "configuracion-nueva",
+      "title": "Nueva configuración",
+      "caption": "Una configuración describe dónde se ejecuta una prueba, para saber en qué entorno pasó o falló. En «Configuraciones», «Nueva configuración» pide navegador, sistema, dispositivo e idioma (en este ejemplo, «Chrome · Windows 11»). Las etiquetas de importación (Intro o coma para añadir cada una) son los nombres con los que un informe importado reconoce la configuración.",
       "covers": [
-        "action:configuration-create",
-        "action:configuration-archive"
+        "dialogs:src/modules/cycles/ui/ConfigurationDialog.tsx",
+        "keyboard:config-labels"
       ],
-      "image": "ajustes/10-configuracion-creada.png",
+      "image": "ajustes/10-configuracion-nueva.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3406,13 +4067,30 @@
     {
       "chapter": "ajustes",
       "n": 11,
+      "id": "configuracion-creada",
+      "title": "Configuraciones del proyecto",
+      "caption": "«Guardar» la añade a la lista. En este ejemplo hay dos activas (Chrome y Edge); una tercera se archivó desde su menú y solo se ve con «Mostrar archivadas»: así deja de ofrecerse en ciclos nuevos sin perder su historia.",
+      "covers": [
+        "action:configuration-create",
+        "action:configuration-archive"
+      ],
+      "image": "ajustes/11-configuracion-creada.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ajustes",
+      "n": 12,
       "id": "copiar-campos",
       "title": "Copiar los campos a otro proyecto",
       "caption": "Un segundo proyecto (en este ejemplo, «API de sincronización», con el prefijo «API-») no tiene que definir sus campos desde cero: en sus ajustes, «Copiar de otro proyecto» trae los campos personalizados de otro, con sus opciones. Solo se copian los que aún no tiene; los demás no se tocan.",
       "covers": [
         "dialogs:src/modules/custom-fields/ui/CopyFieldsDialog.tsx"
       ],
-      "image": "ajustes/11-copiar-campos.png",
+      "image": "ajustes/12-copiar-campos.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3440,7 +4118,7 @@
       "focus": {
         "x": 275,
         "y": 137,
-        "w": 1123,
+        "w": 1132,
         "h": 60
       }
     },
@@ -3680,6 +4358,55 @@
     {
       "chapter": "administracion",
       "n": 16,
+      "id": "auditoria",
+      "title": "Auditoría",
+      "caption": "«Auditoría» lista cada cambio de tu cuenta, el más reciente arriba: quién lo hizo (tú, un agente en tu nombre o el sistema), qué acción, sobre qué elemento y desde dónde (este equipo, la web u otro equipo). Por defecto ves los últimos 30 días; filtra por periodo, quién, elemento, acción o proyecto, o busca una clave. Arriba, Pharos comprueba que el registro está íntegro: ningún cambio se ha borrado, reordenado ni modificado.",
+      "covers": [
+        "admin:audit",
+        "action:audit-verify"
+      ],
+      "image": "administracion/16-auditoria.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 17,
+      "id": "auditoria-detalle",
+      "title": "El antes y el después de un cambio",
+      "caption": "Pulsa un elemento de la lista para ver el cambio campo a campo: lo que había, tachado en rojo, y lo que hay ahora, en verde. Una importación o un borrado en cascada muestra sus recuentos. «Ver todo su historial» lista todos los cambios de ese elemento; «Copiar como JSON» copia el evento tal como se guardó.",
+      "covers": [
+        "dialogs:src/modules/admin/ui/audit/AuditDetail.tsx"
+      ],
+      "image": "administracion/17-auditoria-detalle.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 18,
+      "id": "auditoria-exportar",
+      "title": "Exportar la auditoría",
+      "caption": "«Exportar» guarda lo que muestran los filtros, todas las páginas, en Excel (.xlsx) o CSV: una fila por campo cambiado, con quién, cuándo, el antes y el después. El Excel lleva una hoja «Integridad» con el resultado de la comprobación.",
+      "covers": [
+        "action:audit-export"
+      ],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 19,
       "id": "ia-reemplazar-clave",
       "title": "Reemplazar una clave de IA guardada",
       "caption": "Si ya hay una clave guardada y guardas otra sin probarla, Pharos pide confirmación, porque la anterior no se puede recuperar. «Probar conexión» comprueba la nueva sin reemplazar nada; si responde, se guarda sin preguntar.",
@@ -4022,7 +4749,7 @@
       "status": "passed",
       "focus": {
         "x": 644,
-        "y": 435,
+        "y": 477,
         "w": 300,
         "h": 36
       }
@@ -4175,7 +4902,7 @@
       "n": 5,
       "id": "movil-pasos-plan",
       "title": "Los pasos del plan en el móvil",
-      "caption": "En el plan de pruebas, «Ver pasos» abre la lista de los 19 pasos en una hoja inferior.",
+      "caption": "En el plan de pruebas, «Ver pasos» abre la lista de los 22 pasos en una hoja inferior.",
       "covers": [
         "dialogs:src/modules/test-plan/ui/wizard/StepNav.tsx"
       ],

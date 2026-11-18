@@ -202,9 +202,12 @@ describe("cycles through the web's domain API", () => {
     const projectId = (await call("POST", "/api/projects", { name: "Checkout" })).body.id as string;
     const chrome = (await call("POST", "/api/configurations", { projectId, name: "Chrome", matchLabels: ["chromium"] })).body;
     const firefox = (await call("POST", "/api/configurations", { projectId, name: "Firefox", matchLabels: ["firefox"] })).body;
-    const smoke = (
-      await call("POST", "/api/test-cases", { projectId, title: "Pay", status: "approved", priority: "high", data: { tags: ["smoke"], steps: ["open"] } })
+    const created = (
+      await call("POST", "/api/test-cases", { projectId, title: "Pay", priority: "high", data: { tags: ["smoke"], steps: ["open"] } })
     ).body;
+    // Only the review flow approves a case (CAS-02).
+    await call("POST", `/api/test-cases/${created.id}/review`, { action: "send" });
+    const smoke = (await call("POST", `/api/test-cases/${created.id}/review`, { action: "approve" })).body;
     const draft = (await call("POST", "/api/test-cases", { projectId, title: "Refund", priority: "low", data: { steps: ["open"] } })).body;
     return { projectId, chrome, firefox, smoke, draft };
   }

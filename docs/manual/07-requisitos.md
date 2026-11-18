@@ -11,8 +11,9 @@ por tanto, lo que hay que comprobar. Cada requisito tiene:
 - un título, una descripción y una prioridad;
 - un **riesgo** opcional: la probabilidad y el impacto, de 1 (muy baja) a 5 (muy
   alta) cada uno. Junto a «Riesgo» ves el resultado al momento, por ejemplo
-  «Riesgo 12 · Medio»; el icono ⓘ explica las bandas (bajo 1–4, medio 5–12,
-  alto 13–25), por las que la matriz ordena los requisitos.
+  «Riesgo 12 · Medio»; el icono ⓘ explica las bandas del proyecto (por
+  defecto, bajo 1–4, medio 5–12, alto 13–25; se cambian en «Ajustes del
+  proyecto», capítulo 14), por las que la matriz ordena los requisitos.
 
 Los casos de prueba enlazan los requisitos (capítulo 8) y el ID viaja como tag
 (`@REQ-001`) en el Gherkin y en la automatización. Con esos vínculos, la
@@ -70,7 +71,7 @@ Al editar, el ID queda fijo («El ID es estable y no se puede cambiar.») y lo d
 
 ### 7.6. El riesgo de un requisito
 
-En el mismo diálogo, «Riesgo» pide la probabilidad de que falle y su impacto, de 1 a 5 cada uno («Sin evaluar» si aún no lo sabes). Su producto es el nivel de riesgo: hasta 4, bajo; hasta 12, medio; por encima, alto. La matriz de trazabilidad ordena por riesgo (capítulo 13) y «Añadir por filtro» de los ciclos puede elegir los casos de los requisitos más arriesgados (capítulo 9).
+En el mismo diálogo, «Riesgo» pide la probabilidad de que falle y su impacto, de 1 a 5 cada uno («Sin evaluar» si aún no lo sabes). Su producto es el nivel de riesgo, que cae en una banda: por defecto, hasta 4, bajo; hasta 12, medio; por encima, alto. Cada proyecto puede tener las suyas en «Ajustes del proyecto» (capítulo 14), y el ⓘ dice las que usa. La matriz de trazabilidad ordena por riesgo (capítulo 13) y «Añadir por filtro» de los ciclos puede elegir los casos de los requisitos más arriesgados (capítulo 9).
 
 ![El riesgo de un requisito](img/requisitos/06-riesgo-requisito.png)
 

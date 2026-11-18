@@ -266,7 +266,7 @@ fn every_site_that_gives_a_case_a_new_revision_is_known() {
     // the list) or a call in the wrong place escapes it; the test above, which
     // runs every path, is the real check.
     let known: &[(&str, usize, &str)] = &[
-        ("test_case.rs", 2, "insert_case, update_case"),
+        ("test_case.rs", 3, "insert_case, update_case, write_review"),
         (
             "key_sync.rs",
             2,

@@ -2091,7 +2091,7 @@
     },
     "statusLabel": {
       "draft": "Draft",
-      "reviewed": "Reviewed",
+      "reviewed": "In review",
       "approved": "Approved",
       "obsolete": "Obsolete"
     },
@@ -2146,7 +2146,7 @@
     },
     "statusHelp": {
       "draft": "Being written, not reviewed yet",
-      "reviewed": "Reviewed by someone else",
+      "reviewed": "Sent to review; waiting for approval",
       "approved": "Ready to run",
       "obsolete": "No longer applies; kept in the history"
     },
@@ -2214,7 +2214,19 @@
         "not_run": "No results"
       },
       "noResult": "No results yet",
-      "resultAt": "Latest result: {{date}}"
+      "resultAt": "Latest result: {{date}}",
+      "toReview": "To review",
+      "returned": "Returned",
+      "sentHint": "Sent by {{name}} · {{date}}",
+      "approvedHint": "Approved by {{name}} · {{date}}",
+      "approvedSelfHint": "Approved by {{name}} (self-approval) · {{date}}",
+      "returnedHint": "Returned by {{name}}: “{{comment}}”",
+      "sendSelected": "Send to review",
+      "baselineSelected": "Freeze in a baseline",
+      "sentToast_one": "{{count}} case sent to review",
+      "sentToast_other": "{{count}} cases sent to review",
+      "sendFailed_one": "{{count}} case could not be sent.",
+      "sendFailed_other": "{{count}} cases could not be sent."
     },
     "nav": {
       "allCases": "All cases",
@@ -2281,7 +2293,162 @@
     "restoreAction": "Restore",
     "restoredToast": "Revision {{revision}} loaded in the editor. Save to keep it.",
     "restoreFailed": "That revision could not be read. Try again.",
-    "currentRevision": "Current"
+    "currentRevision": "Current",
+    "review": {
+      "send": "Send to review",
+      "sendTitle": "Send {{key}} to review",
+      "sendMessage": "Version {{version}} waits for approval. If someone edits its content first, it goes back to Draft.",
+      "noteLabel": "Note for the reviewer (optional)",
+      "approve": "Approve version {{version}}",
+      "approveTitle": "Approve version {{version}}",
+      "approveMessage": "It will be recorded as approved by {{name}} on {{date}}.",
+      "approveAction": "Approve",
+      "selfApprovalNote": "You wrote this case. Nobody else is in this workspace, so you can approve it, and it is recorded as a self-approval.",
+      "return": "Return…",
+      "returnTitle": "Return {{key}} to Draft",
+      "returnMessage": "Its author sees your comment on the case until they send it again.",
+      "returnAction": "Return",
+      "commentLabel": "What has to change (required)",
+      "obsolete": "Mark obsolete",
+      "obsoleteTitle": "Mark {{key}} as obsolete",
+      "obsoleteMessage": "The case stays in the history but is no longer used. You can reactivate it later as a draft.",
+      "obsoleteApproved": "The case loses its approval and is no longer used. You can reactivate it later as a draft.",
+      "reactivate": "Reactivate",
+      "reactivateTitle": "Reactivate {{key}}",
+      "reactivateMessage": "The case goes back to Draft. To approve it again, send it to review.",
+      "saveFirst": "Save your changes before going on with the review.",
+      "notAllowed": {
+        "author": "Someone else has to approve it.",
+        "role": "Your role cannot approve cases.",
+        "notMember": "You are not a member of this workspace."
+      },
+      "banner": {
+        "sent": "Sent to review by {{name}} · {{date}}",
+        "returned": "Returned by {{name}} · {{date}}",
+        "approved": "Approved by {{name}} · {{date}} · version {{version}}",
+        "selfApproved": "self-approval",
+        "legacy": "Approved (no record of who approved it: it was approved before 0.5)."
+      },
+      "editingReviewed": "This case is in review. If you save changes to its content, it goes back to Draft and has to be sent again.",
+      "editingApproved": "This case is approved. If you save changes to its content, it goes back to Draft, loses its approval and gets a new version.",
+      "changesSince": "Changes since revision {{revision}} ({{status}})",
+      "toast": {
+        "send": "{{key}} sent to review",
+        "approve": "Version {{version}} of {{key}} approved",
+        "return": "{{key}} returned to Draft",
+        "obsolete": "{{key}} marked as obsolete",
+        "reactivate": "{{key}} reactivated as a draft"
+      },
+      "errors": {
+        "notAllowed": "You cannot approve this case: someone else has to.",
+        "comment": "Say what has to change.",
+        "transition": "The case changed in the meantime. Open it again and repeat the action.",
+        "generic": "The action could not be completed. Try again."
+      },
+      "approvedBy": "Approved by"
+    },
+    "diff": {
+      "none": "No content changes.",
+      "at": "{{field}} {{n}}",
+      "kind": {
+        "added": "added",
+        "removed": "removed",
+        "changed": "changed",
+        "moved": "moved"
+      },
+      "field": {
+        "title": "Title",
+        "description": "Description",
+        "mappedUseCase": "Use case",
+        "expectedResult": "Expected result",
+        "testData": "Test data",
+        "dataRequirements": "Data requirements",
+        "environmentRequirements": "Environment requirements",
+        "notes": "Notes",
+        "traceability": "Other references",
+        "featureSource": "Gherkin",
+        "background": "Shared precondition",
+        "preconditions": "Precondition",
+        "steps": "Step",
+        "postconditions": "Postcondition",
+        "acceptanceCriteria": "Acceptance criterion",
+        "requirementKeys": "Requirement",
+        "examples": "Examples",
+        "flows": "Flow"
+      }
+    },
+    "baselines": {
+      "open": "Baselines",
+      "title": "Suite baselines",
+      "back": "Cases",
+      "lead": "A baseline freezes a set of cases at their exact revision. It is never edited or deleted: to change it, create another one.",
+      "new": "New baseline",
+      "newTitle": "New baseline",
+      "newHint": "Each case is kept as it is now, with its revision and its status.",
+      "name": "Name",
+      "namePlaceholder": "Release 2.4 regression",
+      "description": "Description (optional)",
+      "casesLegend": "Cases",
+      "scope": {
+        "all_one": "Every case of the project ({{count}}, obsolete ones left out)",
+        "all_other": "Every case of the project ({{count}}, obsolete ones left out)",
+        "filtered_one": "The case of the current filter",
+        "filtered_other": "The {{count}} cases of the current filter",
+        "selected_one": "The selected case",
+        "selected_other": "The {{count}} selected cases"
+      },
+      "scopeLabel": {
+        "all_one": "Every case",
+        "all_other": "Every case",
+        "filtered_one": "List filter",
+        "filtered_other": "List filter",
+        "selected_one": "Selection of {{count}} case",
+        "selected_other": "Selection of {{count}} cases"
+      },
+      "approvedOnlyLabel": "Only approved cases",
+      "approvedOnly": "Approved only",
+      "leftOut_one": "{{kept}} cases go in. {{count}} case that is not approved stays out: {{keys}}.",
+      "leftOut_other": "{{kept}} cases go in. {{count}} cases that are not approved stay out: {{keys}}.",
+      "nothing": "No case goes into the baseline. Untick «Only approved cases» or choose other cases.",
+      "freeze_one": "Freeze {{count}} case",
+      "freeze_other": "Freeze {{count}} cases",
+      "createdToast": "Baseline “{{name}}” created with {{count}} cases",
+      "createFailed": "The baseline could not be created.",
+      "loadFailed": "The baselines could not be loaded.",
+      "loading": "Loading…",
+      "empty": "This project has no baselines yet.",
+      "compare": "Compare",
+      "compareTitle": "Compare",
+      "from": "Source baseline",
+      "to": "Compare with",
+      "versus": "against",
+      "current": "Current state",
+      "onlyChanged": "Only cases with changes ({{count}})",
+      "noChanges": "No differences.",
+      "col": {
+        "name": "Name",
+        "cases": "Cases",
+        "created": "Created",
+        "actions": "Actions",
+        "change": "Change",
+        "revision": "Revision",
+        "status": "Status"
+      },
+      "count": {
+        "added": "Added",
+        "removed": "Removed",
+        "content": "Content changed",
+        "status": "Only status changed",
+        "same": "Unchanged"
+      },
+      "change": {
+        "added": "Added",
+        "removed": "Removed",
+        "content": "Content",
+        "status": "Status",
+        "same": "Unchanged"
+      }
+    }
   },
   "dashboard": {
     "loadFailed": "Your projects could not be loaded.",
@@ -4314,7 +4481,7 @@
     },
     "verdictHelp": {
       "goWithRisks": "The cycle closes and the release may ship; the justified risks go into the report.",
-      "noGo": "The cycle closes, but the release does not ship. Open another cycle for the re-test."
+      "noGo": "The cycle closes, but the release does not ship. Open another cycle to test it again."
     },
     "signs": "Signed by: {{name}} · {{at}} · recorded in Audit",
     "close": "Close cycle",

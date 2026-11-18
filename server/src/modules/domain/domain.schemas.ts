@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AUTOMATION_STATUSES, CASE_TYPES, FIELD_ENTITIES } from "./custom-fields";
+import { REVIEW_ACTIONS } from "./case-review";
 import {
   DEFECT_PRIORITIES,
   DEFECT_RESOLUTIONS,
@@ -55,6 +56,26 @@ export const testCaseInputSchema = z.object({
   automationStatus: z.enum(AUTOMATION_STATUSES).optional(),
   author: text(200).default(""),
   data,
+});
+
+/** A review transition of a case (CAS-02, ADR-0047). The account is the
+ *  session's; `userName` is recorded with it. `revision`: the case the
+ *  client read (FIX-04). */
+export const caseReviewSchema = z.object({
+  action: z.enum(REVIEW_ACTIONS),
+  comment: text(2000).optional(),
+  userName: text(200).default(""),
+  revision: z.number().int().positive().optional(),
+});
+
+/** A new suite baseline (CAS-02, `case_baseline.rs::BaselineInput`). */
+export const caseBaselineInputSchema = z.object({
+  projectId: text(200).min(1),
+  name: text(200),
+  description: text(2000).default(""),
+  scopeLabel: text(500).default(""),
+  approvedOnly: z.boolean().default(false),
+  caseIds: z.array(text(200)).max(5000),
 });
 
 const fieldOption = z.object({
@@ -199,6 +220,8 @@ export const projectQuerySchema = z.object({ projectId: text(200).min(1) });
 export type ProjectInput = z.infer<typeof projectInputSchema>;
 export type TestPlanInput = z.infer<typeof testPlanInputSchema>;
 export type TestCaseInput = z.infer<typeof testCaseInputSchema>;
+export type CaseBaselineInput = z.infer<typeof caseBaselineInputSchema>;
+export type CaseReviewInput = Omit<z.infer<typeof caseReviewSchema>, "revision">;
 export type RequirementInput = z.infer<typeof requirementInputSchema>;
 export type RequirementImportRow = z.infer<typeof requirementImportSchema>["rows"][number];
 export type PlannerCardInput = z.infer<typeof plannerCardInputSchema>;

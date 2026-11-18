@@ -52,9 +52,9 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0044](0044-informe-de-cierre-29119-3.md) | Informe de cierre de pruebas 29119-3 de un ciclo cerrado, con textos y aprobación en el ciclo (DOC-01) | Aceptado | 2026-11-12 |
 | [0045](0045-recuperacion-de-la-cuenta.md) | Recuperación de la cuenta: cambiar la contraseña, códigos de recuperación y restablecer por correo con SMTP opcional (SEC-08, SEC-09) | Aceptado | 2026-11-17 |
 | [0046](0046-despliegue-tls-y-servidor-configurable.md) | Despliegue: TLS con proxy inverso (Caddy) y servidor elegido al iniciar sesión, con las peticiones del escritorio por Rust (SEC-07, SEC-10) | Aceptado | 2026-11-17 |
-| 0047 | Revisión y aprobación de casos por otra persona y baselines de suite (CAS-02) | Reservado: lo aporta la pista K de 0.5.0 | 2026-11-17 |
+| [0047](0047-revision-de-casos-y-baselines.md) | Revisión de casos (borrador → revisión → aprobado) con autor, fecha y comprobación de quién aprueba, y baselines de suite congeladas (CAS-02) | Aceptado | 2026-11-17 |
 | [0048](0048-notificaciones.md) | Notificaciones que viajan por el servidor, una API `notify`/`emitNotification` para las pistas y copia cifrada en el escritorio (RED-W2) | Aceptado | 2026-11-17 |
-| [0049](0049-estados-del-plan-y-aprobacion-independiente.md) | Estados del plan por acciones, como los casos, y política «Aprobación independiente» por workspace para planes y casos (PLN-08); cambia la decisión 4 del ADR-0040 | Propuesto | 2026-11-17 |
+| [0049](0049-estados-del-plan-y-aprobacion-independiente.md) | Estados del plan por acciones, como los casos, y política «Aprobación independiente» por workspace para planes y casos (PLN-08); cambia la decisión 4 del ADR-0040 y la regla de edición de casos del ADR-0047 | Aceptado | 2026-11-17 |
 
 Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en

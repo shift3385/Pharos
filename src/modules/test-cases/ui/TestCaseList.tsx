@@ -3,6 +3,8 @@ import { useTranslation, Trans } from "react-i18next";
 import { Link } from "react-router";
 import {
   ArrowLeftRight,
+  Camera,
+  Send,
   Bot,
   Hand,
   Hourglass,
@@ -32,6 +34,7 @@ import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
 import { caseLink } from "../model/caseLink";
+import { approvalOf, isReturned, reviewOf } from "../model/review";
 import {
   CASE_PAGE_SIZES,
   CASE_PRIORITIES,
@@ -126,6 +129,9 @@ export function TestCaseList({
   onImport,
   onExportFeatures,
   onDelete,
+  onSendToReview,
+  onBaselines,
+  onBaselineFromSelection,
 }: {
   projectId: string;
   /** Every case of the project (for the chip counts). */
@@ -154,6 +160,12 @@ export function TestCaseList({
   /** Exports the given cases (all when omitted) as tagged .feature files. */
   onExportFeatures: (ids?: ReadonlySet<string>) => void;
   onDelete: (ids: ReadonlySet<string>) => Promise<void>;
+  /** Sends the selected drafts to review (CAS-02). */
+  onSendToReview?: (ids: ReadonlySet<string>) => Promise<void>;
+  /** Opens the project's suite baselines (CAS-02). */
+  onBaselines?: () => void;
+  /** Opens «Nueva baseline» with the selected cases (CAS-02). */
+  onBaselineFromSelection?: (ids: ReadonlySet<string>) => void;
 }) {
   const { t, i18n } = useTranslation();
   const view = useBreakpoint();
@@ -181,6 +193,10 @@ export function TestCaseList({
   const set = (patch: Partial<CaseFilters>) => onFiltersChange({ ...filters, ...patch });
   const statusOptions = [
     { value: "all", label: t("testCase.list.all"), count: counts.all },
+    // «Por revisar» (CAS-02): what this account can approve.
+    ...(counts.toReview > 0 || filters.status === "toReview"
+      ? [{ value: "toReview", label: t("testCase.list.toReview"), count: counts.toReview }]
+      : []),
     ...CASE_STATUSES.filter((s) => s !== "obsolete" || counts.obsolete > 0).map((s) => ({
       value: s,
       label: t(`testCase.statusLabel.${s}`),
@@ -265,16 +281,41 @@ export function TestCaseList({
         <span className="sr-only">{` ${t("testCase.list.aiPending")}`}</span>
       </span>
     );
+  // Who sent or approved the case, in the pill's tooltip (CAS-02).
+  const reviewHint = (c: ListedCase): string | undefined => {
+    const review = reviewOf(c.review);
+    const approval = approvalOf(c.approval);
+    if (c.status === "approved" && approval)
+      return t(approval.selfApproved ? "testCase.list.approvedSelfHint" : "testCase.list.approvedHint", {
+        name: approval.byName,
+        date: stampLabel(approval.at, lang),
+      });
+    if (c.status === "reviewed" && review)
+      return t("testCase.list.sentHint", { name: review.sentByName, date: stampLabel(review.sentAt, lang) });
+    if (isReturned(c.status, review) && review)
+      return t("testCase.list.returnedHint", { name: review.returnedByName ?? "", comment: review.comment ?? "" });
+    return undefined;
+  };
   const statusPill = (c: ListedCase) => (
-    <StatusPill
-      tone={statusTone(c.status)}
-      strike={c.status === "obsolete"}
-      className={c.aiPending ? "cl-status--ai" : undefined}
-      title={c.aiPending ? t("testCase.list.aiPendingHint") : undefined}
-      after={aiMark(c)}
-    >
-      {t(`testCase.statusLabel.${c.status}`)}
-    </StatusPill>
+    <>
+      <StatusPill
+        tone={statusTone(c.status)}
+        strike={c.status === "obsolete"}
+        className={c.aiPending ? "cl-status--ai" : undefined}
+        title={c.aiPending ? t("testCase.list.aiPendingHint") : reviewHint(c)}
+        after={aiMark(c)}
+      >
+        {t(`testCase.statusLabel.${c.status}`)}
+      </StatusPill>
+      {isReturned(c.status, reviewOf(c.review)) && (
+        <>
+          {" "}
+          <StatusPill tone="warning" title={reviewHint(c)}>
+            {t("testCase.list.returned")}
+          </StatusPill>
+        </>
+      )}
+    </>
   );
   // «Ejecución» (NC-019): the case's latest final result, as the matrix
   // shows it; «—» while it has none.
@@ -402,6 +443,12 @@ export function TestCaseList({
   const actions = (
     <>
           <ImportExportMenu onImport={onImport} onExportFeatures={() => onExportFeatures()} hasCases={cases.length > 0} />
+          {onBaselines && (
+            <button type="button" className="ui-btn" onClick={onBaselines} data-testid="cases-baselines">
+              <Camera size={16} aria-hidden="true" />
+              <span className="ui-btn__text">{t("testCase.baselines.open")}</span>
+            </button>
+          )}
           <button
             type="button"
             className="ui-btn"
@@ -535,6 +582,34 @@ export function TestCaseList({
               <Download size={15} aria-hidden="true" />
               {t("testCase.list.exportSelected")}
             </button>
+            {onSendToReview && (
+              <button
+                type="button"
+                className="ui-btn ui-btn--small"
+                onClick={() => {
+                  const drafts = new Set(
+                    matching.filter((c) => selected.has(c.id) && c.status === "draft").map((c) => c.id),
+                  );
+                  void onSendToReview(drafts);
+                }}
+                disabled={!matching.some((c) => selected.has(c.id) && c.status === "draft")}
+                data-testid="cases-send-review"
+              >
+                <Send size={15} aria-hidden="true" />
+                {t("testCase.list.sendSelected")}
+              </button>
+            )}
+            {onBaselineFromSelection && (
+              <button
+                type="button"
+                className="ui-btn ui-btn--small"
+                onClick={() => onBaselineFromSelection(selected)}
+                data-testid="cases-baseline-selected"
+              >
+                <Camera size={15} aria-hidden="true" />
+                {t("testCase.list.baselineSelected")}
+              </button>
+            )}
             <button
               type="button"
               className="ui-btn ui-btn--small ui-btn--danger"

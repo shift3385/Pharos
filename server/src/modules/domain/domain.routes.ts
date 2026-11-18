@@ -4,6 +4,8 @@ import { makeRequireAuth } from "../auth/middleware";
 import { requireSupportedVersion } from "../sync/sync.version";
 import type { DomainService } from "./domain.service";
 import {
+  caseBaselineInputSchema,
+  caseReviewSchema,
   deleteQuerySchema,
   defectInputSchema,
   defectLinkSchema,
@@ -77,6 +79,27 @@ export function domainRoutes(app: FastifyInstance, deps: { domain: DomainService
     const { input, revision } = updateOf(testCaseInputSchema).parse(req.body);
     return domain.testCases.update(user(req), id(req), input, revision);
   });
+  // The review flow (CAS-02, ADR-0047): only these move a case's status.
+  app.post("/api/test-cases/:id/review", { preHandler }, (req) => {
+    const { revision, ...input } = caseReviewSchema.parse(req.body);
+    return domain.testCases.review(user(req), id(req), input, revision);
+  });
+  app.get("/api/test-cases/:id/review-base", { preHandler }, (req) =>
+    domain.testCases.reviewBase(user(req), id(req)),
+  );
+
+  // Suite baselines (CAS-02, ADR-0047): created, listed and read; never
+  // changed or deleted. `current` is the project's cases now, to compare.
+  app.get("/api/case-baselines", { preHandler }, (req) =>
+    domain.caseBaselines.list(user(req), projectQuerySchema.parse(req.query).projectId),
+  );
+  app.get("/api/case-baselines/current", { preHandler }, (req) =>
+    domain.caseBaselines.current(user(req), projectQuerySchema.parse(req.query).projectId),
+  );
+  app.get("/api/case-baselines/:id", { preHandler }, (req) => domain.caseBaselines.get(user(req), id(req)));
+  app.post("/api/case-baselines", { preHandler }, (req) =>
+    domain.caseBaselines.create(user(req), caseBaselineInputSchema.parse(req.body)),
+  );
   app.delete("/api/test-cases/:id", { preHandler }, async (req, reply) => {
     await domain.testCases.remove(user(req), id(req), revisionOf(req));
     return reply.code(204).send();

@@ -87,6 +87,10 @@ export interface TestCaseData {
   // AI provenance (IA-01): `description` when drafted with AI, `case` when the
   // whole case came from "Suggest tests". Shown until a person reviews it.
   aiProvenance?: ProvenanceMap;
+  // The review flow (CAS-02, ADR-0047), written only by the review command:
+  // a save or an import never sets them (`model/review.ts`).
+  review?: unknown;
+  approval?: unknown;
   // Values of the project's custom fields, by field key (FLD-01, ADR-0018).
   // Keys without a definition here (another device's, an archived field's)
   // are kept as they are.
@@ -128,6 +132,9 @@ export interface TestCase {
   automationStatus: AutomationStatus | null;
   author: string;
   data: TestCaseData;
+  /** The account that created the case: its author in the review flow
+   *  (CAS-02). `author` is only the name printed on documents. */
+  createdBy: string;
   createdAt: string;
   updatedAt: string;
   revision: number;
@@ -150,6 +157,12 @@ export interface TestCaseSummary {
   requirementKeys: string[];
   /** `data.traceability`: free-text links, not yet requirements. */
   traceability: string;
+  /** `data.review` and `data.approval` (CAS-02): read with `reviewOf` and
+   *  `approvalOf`. */
+  review: unknown;
+  approval: unknown;
+  /** The account that created the case. */
+  createdBy: string;
   updatedAt: string;
   revision: number;
 }
@@ -190,4 +203,13 @@ export type _RustContract = [
   Assert<Covers<Contract.TestCase, TestCase>>,
   Assert<Covers<Contract.TestCaseRevisionSummary, RevisionSummary>>,
   Assert<Covers<TestCaseInput, Contract.TestCaseInput>>,
+  Assert<Covers<CaseReviewInput, Contract.CaseReviewInput>>,
 ];
+
+/** A review transition (CAS-02, `case_review.rs::ReviewInput`). */
+export interface CaseReviewInput {
+  action: "send" | "approve" | "return" | "obsolete" | "reactivate";
+  comment?: string;
+  userId: string;
+  userName: string;
+}

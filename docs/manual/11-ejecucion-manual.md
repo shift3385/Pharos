@@ -115,7 +115,7 @@ En pantallas estrechas, el ejecutor ocupa toda la pantalla en lugar de la lista:
 
 ### 11.15. Informe de estado
 
-En «Ejecuciones» (o en la cabecera de un ciclo), «Informe de estado» genera el informe de estado de pruebas (ISO/IEC/IEEE 29119-3) del proyecto, de un ciclo o del plan, entre las fechas que elijas: identificación, progreso, resultados por estado, defectos por severidad (a fecha de hoy), cobertura y riesgos, los criterios de salida del plan (cumple / no cumple / sin datos), bloqueos, resumen y recomendaciones. El resumen se rellena solo con las cifras y se puede cambiar; en este ejemplo, Liomar escribe sus recomendaciones. Los dos se guardan solo en este equipo y van en las exportaciones.
+En «Ejecuciones» (o en la cabecera de un ciclo), «Informe de estado» genera el informe de estado de pruebas (ISO/IEC/IEEE 29119-3) del proyecto, de un ciclo o del plan, entre las fechas que elijas en «Desde» y «Hasta» (con el selector de fechas de Pharos del capítulo 5: «Hasta» abre en el mes de «Desde» y no deja elegir un día anterior): identificación, progreso, resultados por estado, defectos por severidad (a fecha de hoy), cobertura y riesgos, los criterios de salida del plan (cumple / no cumple / sin datos), bloqueos, resumen y recomendaciones. El resumen se rellena solo con las cifras y se puede cambiar; en este ejemplo, Liomar escribe sus recomendaciones. Los dos se guardan solo en este equipo y van en las exportaciones.
 
 ![Informe de estado](img/ejecucion-manual/15-informe-estado.png)
 
@@ -206,6 +206,9 @@ funcionan «?» y Ctrl+Mayús+N.
 - En la matriz de trazabilidad gana siempre el último resultado final, sea de
   un run manual o de un informe importado: repetir la prueba a mano después de
   un informe de Playwright cambia lo que muestra la matriz.
+- En el informe de estado, «Desde» y «Hasta» usan el selector de fechas de
+  Pharos (capítulo 5): el calendario de «Hasta» abre en el mes de «Desde» y no
+  deja elegir un día anterior, y el de «Desde» no deja pasar de «Hasta».
 - En el informe de estado, los defectos se cuentan «a fecha de hoy», no por el
   periodo elegido. El resumen y las recomendaciones se guardan solo en este
   equipo, pero van en el Excel y en el PDF.

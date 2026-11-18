@@ -37,6 +37,9 @@ export interface ExportableCase {
   /** The cycles the case belongs to (EXP-03): a sheet of its own after the
    *  others, and a section at the end of the PDF. */
   extraTables?: ExportTable[];
+  /** Who approved the case, when and which version (CAS-02): a line of the
+   *  PDF. The .xlsx template has no cell for it. */
+  approvalLine?: string;
 }
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";

@@ -12,6 +12,7 @@ import { chapter, step } from "./tour";
 import {
   PROJECT_A,
   acceptConfirm,
+  byTestId,
   chooseFile,
   clearInput,
   clickButton,
@@ -35,6 +36,7 @@ const F = es.defects;
 const PREFIX_BUG = "El menú lateral sigue mostrando el prefijo anterior";
 const LOGIN_BUG = "Entrar con credenciales válidas muestra «Correo o contraseña incorrectos»";
 const DUPLICATE = "Entrar falla con credenciales válidas (duplicado)";
+const ESCAPE = "El enlace del correo de bienvenida abre la versión anterior";
 const D = '[role="dialog"]';
 const ASK = '[role="alertdialog"]';
 
@@ -292,6 +294,49 @@ chapter("defectos", () => {
       await browser.waitUntil(async () => !(await $(`button.df-open*=${DUPLICATE}`).isExisting()), {
         timeoutMsg: "the duplicate was not deleted",
       });
+    },
+  });
+
+  step("escape", {
+    title: "Un defecto que se escapó de las pruebas",
+    caption:
+      "Si el defecto se encontró fuera de las pruebas, por ejemplo en producción o en una demostración, marca «Encontrado fuera de las pruebas (escape)» en «Detalles». Cuenta como escape del último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo dejó pasar, y la recogen la tendencia de ciclos del Inicio (capítulo 3) y el informe de go/no-go (capítulo 9). En este ejemplo, un usuario de la beta avisa de que el enlace del correo de bienvenida abre la versión anterior, y Liomar lo registra como escape.",
+    focus: ".df-escaped",
+    run: async () => {
+      await clickButton(F.newDefect);
+      await (await field(F.field.title)).setValue(ESCAPE);
+      await selectOption(F.field.severity, F.severity.minor);
+      const escaped = byTestId("defect-escaped");
+      await escaped.scrollIntoView({ block: "center" });
+      await escaped.click();
+      await expect(escaped).toBeSelected();
+    },
+    after: async () => {
+      await save();
+      await back();
+    },
+  });
+
+  step("reabrir", {
+    title: "Corregir, confirmar y reabrir",
+    caption:
+      "El camino de un defecto corregido, en el tablero o con el campo «Estado» del editor (que solo ofrece los estados siguientes): «En curso» mientras se arregla, «Corregido» cuando el equipo de desarrollo lo da por resuelto y «Por confirmar» mientras QA vuelve a probarlo. Si la prueba pasa, va a «Cerrado»; si no, se reabre: vuelve a «Abierto» desde «Por confirmar» (o desde «Cerrado»). Pharos apunta la primera vez que llega a «Corregido» y cuántas veces se reabre, y con eso calcula el tiempo de corrección y la reapertura de cada ciclo (capítulos 3 y 9). En este ejemplo, Liomar comprueba el arreglo del enlace, sigue abriendo la versión anterior y lo reabre.",
+    focus: 'section.df-col[data-column="open"]',
+    run: async () => {
+      // Through the editor's «Estado», which offers only the next states: the
+      // same lifecycle as the board, one save per change.
+      for (const status of [F.status.open, F.status.in_progress, F.status.fixed, F.status.retest, F.status.open]) {
+        await openDefect(ESCAPE);
+        await selectOption(F.field.status, status);
+        await save();
+        if (await $(".tp-editor__back").isExisting()) await back();
+      }
+      await view("board");
+      await expect($(".df-board")).toBeDisplayed();
+      await expect($('section.df-col[data-column="open"]').$(`article.df-card*=${ESCAPE}`)).toBeExisting();
+    },
+    after: async () => {
+      await view("list");
     },
   });
 });

@@ -3,6 +3,9 @@
 - **Estado:** Aceptado (el usuario aprobó el plan y los bocetos de PLN-06/07 el
   2026-11-11: «Sí, apruebo todo»). El contrato de las métricas se acordó con la
   pista de DOC-02/DOC-06, que escribe el ADR-0041.
+  La decisión 4 (editar un plan aprobado lo devuelve a «Revisado») la
+  cambia el [ADR-0049](0049-estados-del-plan-y-aprobacion-independiente.md)
+  (PLN-08): lo lleva a «En revisión», con acciones en lugar del desplegable.
 - **Contexto:**
   - El plan no tenía los apartados de ISO/IEC/IEEE 29119-3 y CTFL v4 §5.1.1
     que pide NC-023: criterios de entrada, suspensión y reanudación, supuestos

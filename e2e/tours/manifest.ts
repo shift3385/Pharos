@@ -318,7 +318,7 @@ export const INVENTORY: Item[] = [
   I("casos", "action", "action:case-gherkin-copy", "Copiar el Gherkin"),
   I("casos", "action", "action:case-custom-fields", "Rellenar campos personalizados en un caso"),
   I("casos", "action", "action:case-requirement-link", "Vincular un requisito a un caso"),
-  I("casos", "action", "action:case-meta", "Prioridad, estado y automatización del caso"),
+  I("casos", "action", "action:case-meta", "Prioridad, tipo y automatización del caso"),
   I("casos", "action", "action:case-edit", "Editar un caso existente"),
   I("casos", "action", "action:case-walk", "Recorrer los casos (anterior/siguiente)"),
   I("casos", "dialog", "dialogs:src/modules/test-cases/ui/GoToCaseDialog.tsx", "«Ir a un caso…»"),
@@ -337,6 +337,15 @@ export const INVENTORY: Item[] = [
   I("casos", "keyboard", "keyboard:steps-reorder", "Reordenar pasos con el teclado (asa de arrastre)"),
   I("casos", "platform", "platform:mobile-gherkin", "El Gherkin en el móvil (lectura, «Editar» a pantalla completa con barra de teclas)"),
   I("casos", "dialog", "dialogs:src/modules/test-cases/ui/TestCaseEditor.tsx", "Restaurar una revisión de un caso (confirmación)"),
+  // CAS-02 (ADR-0047): the review flow and suite baselines.
+  I("casos", "dialog", "dialogs:src/modules/test-cases/ui/CaseReviewPanel.tsx", "Enviar a revisión, aprobar, devolver, marcar obsoleto y reactivar (confirmaciones)"),
+  I("casos", "action", "action:case-review-send", "Enviar un caso a revisión con una nota"),
+  I("casos", "action", "action:case-review-approve", "Aprobar un caso: quién, cuándo y autoaprobación"),
+  I("casos", "action", "action:case-review-return", "Devolver un caso a Borrador con un comentario"),
+  I("casos", "action", "action:case-obsolete", "Marcar un caso como obsoleto y reactivarlo"),
+  I("casos", "dialog", "dialogs:src/modules/test-cases/ui/BaselinesView.tsx", "Nueva baseline de suite"),
+  I("casos", "action", "action:case-baseline-create", "Congelar una baseline (todos, filtro o selección; solo aprobados)"),
+  I("casos", "action", "action:case-baseline-compare", "Comparar una baseline con el estado actual o con otra"),
 
   // ---- 5 · Requisitos y trazabilidad (UX-21: two sections) -----------------------------
   I("requisitos", "section", "section:requirements", "Requisitos"),

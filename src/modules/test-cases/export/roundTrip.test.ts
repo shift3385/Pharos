@@ -35,6 +35,7 @@ const asCase = (scenarioId: string, data: TestCaseData): TestCase => ({
   automationStatus: null,
   author: "QA",
   data,
+  createdBy: "u1",
   createdAt: "",
   updatedAt: "",
   revision: 1,
