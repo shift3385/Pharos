@@ -1,16 +1,16 @@
-# Borrador · ADR-0053 · Hallazgos y métricas importados: un paquete de formatos, sus tablas y sus vínculos (ING-06, ING-07)
+# ADR-0053 · Hallazgos y métricas importados: un paquete de formatos, sus tablas y sus vínculos (ING-06, ING-07)
 
-> Número asignado por el coordinador (N=0050, S=0051, A=0052). Este ADR **completa ADR-0012**: fija lo que ese ADR dejó «para ING-06» (las reglas de vínculo, la severidad y la huella) y crea las tablas que aplazó. No cambia ninguna de sus decisiones.
+> Completa [ADR-0012](0012-tipos-de-resultado-genericos.md): fija lo que ese ADR dejó «para ING-06» (las reglas de vínculo, la severidad y la huella) y crea las tablas que aplazó. No cambia ninguna de sus decisiones.
 
-- **Estado:** Propuesto (pista F, 0.6.0, 2026-11-18).
+- **Estado:** Aceptado (decisión del usuario, 2026-11-18: la opción A y las seis respuestas recomendadas; ver «Decisiones del usuario»).
 - **Relacionados:**
-  - [ADR-0005](../adr/0005-alcance-hasta-1-0.md) (pocos formatos, tipos genéricos);
-  - [ADR-0012](../adr/0012-tipos-de-resultado-genericos.md) (Finding y Metric);
-  - [ADR-0013](../adr/0013-campos-del-run.md) (ids deterministas, vínculo derivado, estado de la matriz);
-  - [ADR-0014](../adr/0014-evidencias-cifradas-por-hash.md) (`raw_report`);
-  - [ADR-0041](../adr/0041-quality-gate-y-tendencia-entre-ciclos.md) (gates);
+  - [ADR-0005](0005-alcance-hasta-1-0.md) (pocos formatos, tipos genéricos);
+  - [ADR-0012](0012-tipos-de-resultado-genericos.md) (Finding y Metric);
+  - [ADR-0013](0013-campos-del-run.md) (ids deterministas, vínculo derivado, estado de la matriz);
+  - [ADR-0014](0014-evidencias-cifradas-por-hash.md) (`raw_report`);
+  - [ADR-0041](0041-quality-gate-y-tendencia-entre-ciclos.md) (gates);
   - VERSIONING §6.6.
-- **Plan:** [`f-formatos-plan.md`](f-formatos-plan.md).
+- **Plan:** [`docs/design/f-formatos-plan.md`](../design/f-formatos-plan.md); bocetos en [`f-formatos-bocetos.html`](../design/f-formatos-bocetos.html).
 
 ## Contexto
 
@@ -23,15 +23,16 @@
   - el CLI (INT-01, Rust, ola 2).
 
   El criterio de salida es que un PR de GitHub reporte JUnit, SARIF, k6 y axe, y ese camino pasa por el CLI y la API.
+
 - **`.xcresult` solo se lee en macOS.** Es un paquete propio de macOS, y solo `xcrun xcresulttool` lo lee.
 
 ## Opciones (dónde viven los parsers)
 
-| Opción | A favor | En contra |
-| --- | --- | --- |
-| **A. Paquete TS `packages/formats`, sin DOM** (XML inyectado: `DOMParser` en el navegador, `@xmldom/xmldom` en Node) | Una implementación. Los parsers que ya existen solo se mueven. El servidor los reutiliza. El CLI remoto sube el archivo y no parsea | El modo local del CLI necesita un port o delegar en otro |
-| B. Crate Rust `pharos-formats`, nativo y en WASM | Una implementación en todas partes, el CLI incluido | Port de unas 1.100 líneas que funcionan, toolchain wasm en Vite y en el servidor, y choque con CORE-01 en marcha |
-| C. Espejo en `server/` | Sin cambiar el build | Unas 2.000 líneas duplicadas |
+| Opción                                                                                                               | A favor                                                                                                                             | En contra                                                                                                        |
+| -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **A. Paquete TS `packages/formats`, sin DOM** (XML inyectado: `DOMParser` en el navegador, `@xmldom/xmldom` en Node) | Una implementación. Los parsers que ya existen solo se mueven. El servidor los reutiliza. El CLI remoto sube el archivo y no parsea | El modo local del CLI necesita un port o delegar en otro                                                         |
+| B. Crate Rust `pharos-formats`, nativo y en WASM                                                                     | Una implementación en todas partes, el CLI incluido                                                                                 | Port de unas 1.100 líneas que funcionan, toolchain wasm en Vite y en el servidor, y choque con CORE-01 en marcha |
+| C. Espejo en `server/`                                                                                               | Sin cambiar el build                                                                                                                | Unas 2.000 líneas duplicadas                                                                                     |
 
 ## Decisión
 
@@ -50,9 +51,10 @@
 5. **Vínculos (derivados al leer, como Result).** Un hallazgo o una métrica se vincula a un caso por:
    - `caseKey` en el documento;
    - «Vincular a un caso» al importar (`--case` en el CLI);
-   - la etiqueta `@<prefijo>n`: en `properties.tags` de SARIF, en el nombre de un *check* de k6 o en el tag de submétrica `case`.
+   - la etiqueta `@<prefijo>n`: en `properties.tags` de SARIF, en el nombre de un _check_ de k6 o en el tag de submétrica `case`.
 
-   El vínculo a requisitos por `standardRefs` queda fuera de 0.6.0 (pendiente de la respuesta del usuario).
+   El vínculo a requisitos por `standardRefs` queda fuera de 0.6.0 (decisión 3).
+
 6. **Matriz (sin cambios respecto de ADR-0012 y ADR-0013).**
    - Una Metric vinculada **con umbral incumplido** cuenta como `failed`.
    - Los Finding son un recuento por severidad de los hallazgos **abiertos**. Abierto quiere decir sin triaje o en `open`; un `incomplete` de axe no cuenta.
@@ -61,7 +63,7 @@
    - ING-06 no cambia Pharos Run JSON.
    - ING-07 añade `allure`, `trx` y `xcresult` a `sourceFormat`, así que el formato pasa a **1.1.0**.
    - Cada parser nuevo o modificado sube `NORMALIZER_VERSION`.
-8. **`.xcresult`.** Se importa el JSON de `xcresulttool get test-results tests` (Xcode 16+), generado en el Mac de CI. El paquete se rechaza con instrucciones. Si no hay muestra real con licencia compatible, se aplaza a RUN-04.
+8. **`.xcresult`.** Se importa el JSON de `xcresulttool get test-results tests` (Xcode 16+), generado en el Mac de CI. El paquete se rechaza con instrucciones. Solo entra en 0.6.0 si hay una muestra real con licencia compatible; si no, se aplaza a RUN-04 (decisión 5).
 
 ## Consecuencias
 
@@ -78,3 +80,12 @@
 - **Local:** la migración 0048 (reservada en `scripts/migration-registry.json`). Tiene prueba de actualización desde 0.5.0.
 - **Servidor:** sin migración. Son documentos de tres entidades nuevas en `sync.schemas.ts`, salvo que INT-02 decida tablas.
 - **Sin datos previos que migrar.**
+
+## Decisiones del usuario (2026-11-18)
+
+1. Los parsers viven en el paquete TS `@pharos/formats` (opción A).
+2. Un umbral de k6 incumplido marca como fallido el caso vinculado en la matriz.
+3. En 0.6.0 los hallazgos no se vinculan a requisitos por `standardRefs`: queda para un ítem posterior.
+4. El `incomplete` de axe se importa como hallazgo «A revisar» (`info`, `attributes.needsReview`) y no cuenta como abierto.
+5. `.xcresult` entra en 0.6.0 solo con una muestra real; si no, se aplaza a RUN-04.
+6. Las quality gates (ADR-0041) suman «hallazgos críticos o altos abiertos» y «umbrales de rendimiento cumplidos (%)» en un PR opcional (F8).
