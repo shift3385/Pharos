@@ -56,7 +56,10 @@ export function isK6Summary(v: unknown): v is K6Summary {
   );
 }
 
-const LEGACY_FAILED_MEANS = true; // see the README of fixtures/k6: checked on a real export
+/** `--summary-export` writes `true` for a threshold that was crossed (it
+ *  failed), the opposite of `handleSummary`'s `ok`: checked on a real k6
+ *  v2.4.0 export (fixtures/k6/summary-export.json). */
+const crossed = (raw: boolean) => raw;
 
 /** k6's built-in metrics measured in time or bytes, for the legacy shape,
  *  which does not say what a metric contains. */
@@ -73,6 +76,21 @@ const thresholdKey = (expr: string) =>
   /^\s*(avg|min|max|med|count|rate|value|p\(\d+(?:\.\d+)?\))\s*(?:[<>=!]=?=?)/.exec(
     expr,
   )?.[1];
+
+/** Trend stats in one order whatever the JSON key order: avg, min, med, max,
+ *  then the percentiles ascending, then anything else by name. */
+const TREND_ORDER = ["avg", "min", "med", "max"];
+function byTrendStat(a: string, b: string): number {
+  const rank = (k: string) => {
+    const i = TREND_ORDER.indexOf(k);
+    if (i >= 0) return [0, i] as const;
+    const p = /^p\((\d+(?:\.\d+)?)\)$/.exec(k);
+    return p ? ([1, Number(p[1])] as const) : ([2, 0] as const);
+  };
+  const [ga, va] = rank(a);
+  const [gb, vb] = rank(b);
+  return ga - gb || va - vb || a.localeCompare(b);
+}
 
 const asList = <T>(v: T[] | Record<string, T> | undefined): T[] =>
   Array.isArray(v) ? v : v ? Object.values(v) : [];
@@ -129,7 +147,9 @@ export function parseK6(summary: K6Summary): ParsedReport {
     // The aggregations each type reports, in a stable order.
     let keys: string[];
     if (type === "trend")
-      keys = Object.keys(values).filter((k) => typeof values[k] === "number");
+      keys = Object.keys(values)
+        .filter((k) => typeof values[k] === "number")
+        .sort(byTrendStat);
     else if (type === "counter")
       keys = ["count", "rate"].filter((k) => k in values);
     else if (type === "rate")
@@ -150,11 +170,7 @@ export function parseK6(summary: K6Summary): ParsedReport {
       if (type === "rate" && (key === "rate" || key === "value")) key = keys[0];
       if (!key) continue;
       const passed =
-        typeof raw === "boolean"
-          ? LEGACY_FAILED_MEANS
-            ? !raw
-            : raw
-          : raw?.ok !== false;
+        typeof raw === "boolean" ? !crossed(raw) : raw?.ok !== false;
       const list = thresholds.get(key) ?? [];
       list.push({ expr, passed });
       thresholds.set(key, list);
@@ -177,7 +193,9 @@ export function parseK6(summary: K6Summary): ParsedReport {
       const fails = type === "rate" ? values.fails : undefined;
       metrics.push({
         name,
-        aggregation: aggregationOf(key),
+        // A rate is `rate` in handleSummary and `value` in the legacy
+        // export: one name, so both shapes give the same metric and id.
+        aggregation: type === "rate" ? "rate" : aggregationOf(key),
         ...(scope ? { scope } : {}),
         value,
         ...(unitOf(key) ? { unit: unitOf(key) } : {}),

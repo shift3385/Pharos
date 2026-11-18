@@ -89,3 +89,29 @@
 4. El `incomplete` de axe se importa como hallazgo «A revisar» (`info`, `attributes.needsReview`) y no cuenta como abierto.
 5. `.xcresult` entra en 0.6.0 solo con una muestra real; si no, se aplaza a RUN-04.
 6. Las quality gates (ADR-0041) suman «hallazgos críticos o altos abiertos» y «umbrales de rendimiento cumplidos (%)» en un PR opcional (F8).
+
+## Implementación
+
+- **F1 (#105, 2026-11-18).** `@pharos/formats` en `packages/formats/`, sin DOM
+  y compilable como NodeNext. El servidor lo reutiliza con `@xmldom/xmldom`
+  (`configureXml`). La imagen se construye desde la raíz.
+- **F3 (2026-11-18).** Parsers de SARIF, axe y k6, con muestras reales y
+  snapshots (tablas en [`docs/formats/importers.md`](../formats/importers.md)).
+  Lo que cambió respecto de la decisión, al implementar:
+  - **Huella derivada:** `pharos:` + UUIDv5 (`derivedFingerprint`), no
+    sha256. Los parsers son síncronos y en el navegador sha256 solo existe
+    asíncrono. UUIDv5 ya es la función de los ids (`ids.ts`) y basta para
+    deduplicar.
+  - **Huella de SARIF:** la de la herramienta va precedida de la herramienta y
+    la regla (`sarif:<herramienta>:<regla>:<clave>=<valor>`), porque
+    `primaryLocationLineHash` identifica una línea, no una regla. Sin eso, dos
+    reglas en la misma línea compartirían el triaje.
+  - **Rechazo de DTD:** todo XML con `<!DOCTYPE` en el prólogo se rechaza
+    (`invalid-xml: doctype`) antes de llegar a cualquier DOMParser. Así la app
+    y el servidor no pueden sufrir XXE ni bombas de entidades.
+  - **k6:** el `--summary-export` marca con `true` el umbral superado (falló),
+    al revés que el `ok` de `handleSummary`; se comprobó con una exportación
+    real de k6 v2.4.0. Las dos formas dan las mismas métricas, y una rate se
+    llama siempre `rate`.
+  - **Etiquetas de caso:** los parsers no vinculan. Las dejan en
+    `attributes.tags` y el persistente las resuelve con el prefijo del proyecto.
