@@ -19,7 +19,7 @@ import {
   rowOfTitle,
   testKey,
   uniqueTags,
-} from "./common";
+} from "./common.js";
 
 interface PwAttachment {
   name: string;

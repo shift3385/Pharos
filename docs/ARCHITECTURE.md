@@ -675,7 +675,10 @@ ADR-0013; built in E4, step 9).** The section «Ejecuciones»
   `vitest.config.ts`): Cucumber Messages (NDJSON, read line by line), CTRF,
   JUnit XML (an injected parser using only the DOM Level 2 subset: the native
   `DOMParser` in the webview, `@xmldom/xmldom` in Node via `configureXml`;
-  `server/tests/formats.test.ts` checks Node gives the same snapshots),
+  `server/tests/formats.test.ts` checks Node gives the same snapshots; the
+  package's relative imports end in `.js` and `tsc -p packages/formats`, in
+  `npm run typecheck`, compiles it as NodeNext ESM; the server image builds
+  from the repo root, `server/Dockerfile` with `server/Dockerfile.dockerignore`),
   Playwright JSON and Pharos Run JSON itself.
   The format is detected by content (Cucumber JSON is refused). Each produces a
   Pharos Run JSON document checked by `parsePharosRun`, with a `testKey` per

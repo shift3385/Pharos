@@ -7,7 +7,7 @@
 // CLI) must reproduce.
 
 import type * as M from "@cucumber/messages";
-import { parsePharosRun } from "../schema";
+import { parsePharosRun } from "../schema.js";
 import {
   type ImportDoc,
   type ParsedReport,
@@ -20,17 +20,17 @@ import {
   relativizer,
   slashes,
   testKey,
-} from "./common";
-import { parseCtrf } from "./ctrf";
-import { parseJunit } from "./junit";
-import { MessagesCollector, parseMessages } from "./messages";
-import { parsePlaywright } from "./playwright";
+} from "./common.js";
+import { parseCtrf } from "./ctrf.js";
+import { parseJunit } from "./junit.js";
+import { MessagesCollector, parseMessages } from "./messages.js";
+import { parsePlaywright } from "./playwright.js";
 
-export * from "./common";
-export { MessagesCollector, parseMessages } from "./messages";
-export { parseCtrf } from "./ctrf";
-export { parseJunit } from "./junit";
-export { parsePlaywright } from "./playwright";
+export * from "./common.js";
+export { MessagesCollector, parseMessages } from "./messages.js";
+export { parseCtrf } from "./ctrf.js";
+export { parseJunit } from "./junit.js";
+export { parsePlaywright } from "./playwright.js";
 
 const ENVELOPE_KEYS = new Set([
   "meta",

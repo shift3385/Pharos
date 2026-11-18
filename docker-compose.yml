@@ -28,7 +28,10 @@ services:
   # JWT_ACCESS_SECRET (32+ chars) and an explicit CORS_ORIGIN (README,
   # "Production configuration"). `docker compose up -d db` alone is unaffected.
   api:
-    build: ./server
+    # Root context: the server imports packages/formats (ADR-0053).
+    build:
+      context: .
+      dockerfile: server/Dockerfile
     container_name: pharos-api
     restart: unless-stopped
     depends_on:

@@ -8,7 +8,7 @@ import { Blob as NodeBlob } from "node:buffer";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { parsePharosRun } from "../schema";
+import { parsePharosRun } from "../schema.js";
 import {
   type ParsedReport,
   ReportError,
@@ -18,12 +18,9 @@ import {
   rowOfTitle,
   shardOf,
   testKey,
-} from "./index";
+} from "./index.js";
 
-const DIR = resolve(
-  process.cwd(),
-  "packages/formats/src/fixtures/ing01",
-);
+const DIR = resolve(process.cwd(), "packages/formats/src/fixtures/ing01");
 const read = (p: string) => readFileSync(join(DIR, p), "utf8");
 const parse = (p: string) => parseReportText(read(p));
 

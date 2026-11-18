@@ -4,7 +4,7 @@
 // The parsers never link to cases: they keep every tag, and the persister
 // applies the project's case prefix (ING-01 §5).
 
-import type { PharosRun, PharosRunResult } from "../schema";
+import type { PharosRun, PharosRunResult } from "../schema.js";
 
 export type SourceFormat =
   | "cucumber_messages"

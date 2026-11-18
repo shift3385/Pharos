@@ -23,8 +23,13 @@ import {
   slashes,
   testKey,
   uniqueTags,
-} from "./common";
-import { type XmlDocument, type XmlElement, elements, xmlParser } from "../xml";
+} from "./common.js";
+import {
+  type XmlDocument,
+  type XmlElement,
+  elements,
+  xmlParser,
+} from "../xml.js";
 
 const RETRIES = ["flakyFailure", "flakyError", "rerunFailure", "rerunError"];
 const ATTACHMENT = /\[\[ATTACHMENT\|([^\]]+)\]\]/g;

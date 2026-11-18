@@ -10,7 +10,7 @@ import {
   manualTestKey,
   shardId,
   unlinkedMappingId,
-} from "./ids";
+} from "./ids.js";
 
 describe("execution ids (twin of runs/ids.rs)", () => {
   it("use the namespaces of the desktop", () => {

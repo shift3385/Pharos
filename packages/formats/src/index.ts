@@ -3,7 +3,7 @@
 // result importers (ING-02..05; ING-06/07 next). The one implementation for
 // the desktop, the web and the server; the snapshots in
 // `fixtures/*/normalized/` are the contract of any port (the CLI, INT-01).
-export * from "./schema";
-export * from "./ids";
-export * from "./importers";
-export { configureXml, type DomParserLike } from "./xml";
+export * from "./schema.js";
+export * from "./ids.js";
+export * from "./importers/index.js";
+export { configureXml, type DomParserLike } from "./xml.js";
