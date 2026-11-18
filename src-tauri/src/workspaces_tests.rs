@@ -1,7 +1,9 @@
 // Workspaces on the desktop (SYNC-07, ADR-0042 §6).
 
 use super::*;
-use crate::case_review::{ApprovalRequest, ApprovalVerdict, ApproverCheck, DenyReason};
+use crate::case_review::{
+    ApprovalRequest, ApprovalVerdict, ApproverCheck, DenyReason, SUBJECT_CASE, SUBJECT_PLAN,
+};
 use crate::db::run_migrations;
 use serde_json::json;
 
@@ -353,6 +355,15 @@ fn refusals_relocate_wait_or_mark_the_project_without_access() {
     assert!(err.starts_with("access_lost"), "{err}");
 }
 
+/// A shared workspace as the server sends it, with its «Aprobación
+/// independiente» (PLN-08).
+fn shared(role: &str, independent_approval: bool) -> WorkspaceDto {
+    WorkspaceDto {
+        independent_approval,
+        ..ws(SHARED, "shared", role)
+    }
+}
+
 #[test]
 fn approvals_follow_the_role_in_shared_workspaces() {
     let c = conn();
@@ -361,16 +372,16 @@ fn approvals_follow_the_role_in_shared_workspaces() {
         ANA,
         &[
             ws(PERSONAL, "personal", "test_manager"),
-            ws(SHARED, "shared", "viewer"),
+            shared("viewer", true),
         ],
     )
     .unwrap();
-    let ask = |ws_id: &str, approver: &str, author: &str| {
+    let ask = |subject: &'static str, ws_id: &str, approver: &str, author: &str| {
         WorkspaceApprover
             .can_approve(
                 &c,
                 &ApprovalRequest {
-                    subject: crate::case_review::SUBJECT_CASE,
+                    subject,
                     workspace_id: ws_id,
                     project_id: "p",
                     case_id: "c",
@@ -380,38 +391,84 @@ fn approvals_follow_the_role_in_shared_workspaces() {
             )
             .unwrap()
     };
+    let case =
+        |ws_id: &str, approver: &str, author: &str| ask(SUBJECT_CASE, ws_id, approver, author);
+    let plan =
+        |ws_id: &str, approver: &str, author: &str| ask(SUBJECT_PLAN, ws_id, approver, author);
     assert_eq!(
-        ask(PERSONAL, ANA, ANA),
+        case(PERSONAL, ANA, ANA),
         ApprovalVerdict::Allowed {
             self_approval: true
         }
     );
     assert_eq!(
-        ask(SHARED, ANA, LUIS),
+        case(SHARED, ANA, LUIS),
         ApprovalVerdict::Denied(DenyReason::Role)
     );
     assert_eq!(
-        ask(SHARED, LUIS, ANA),
+        case(SHARED, LUIS, ANA),
         ApprovalVerdict::Denied(DenyReason::NotMember)
     );
+    // «Aprobación independiente» on: the role, never the author.
     apply(
         &c,
         ANA,
         &[
             ws(PERSONAL, "personal", "test_manager"),
-            ws(SHARED, "shared", "test_analyst"),
+            shared("test_analyst", true),
         ],
     )
     .unwrap();
     assert_eq!(
-        ask(SHARED, ANA, ANA),
+        case(SHARED, ANA, ANA),
         ApprovalVerdict::Denied(DenyReason::Author)
     );
     assert_eq!(
-        ask(SHARED, ANA, LUIS),
+        case(SHARED, ANA, LUIS),
         ApprovalVerdict::Allowed {
             self_approval: false
         }
+    );
+    // A Test Analyst approves cases, not plans.
+    assert_eq!(
+        plan(SHARED, ANA, LUIS),
+        ApprovalVerdict::Denied(DenyReason::Role)
+    );
+    // Off: whoever may edit approves, the author too (a self-approval).
+    apply(
+        &c,
+        ANA,
+        &[
+            ws(PERSONAL, "personal", "test_manager"),
+            shared("test_analyst", false),
+        ],
+    )
+    .unwrap();
+    assert_eq!(
+        case(SHARED, ANA, ANA),
+        ApprovalVerdict::Allowed {
+            self_approval: true
+        }
+    );
+    assert_eq!(
+        plan(SHARED, ANA, LUIS),
+        ApprovalVerdict::Allowed {
+            self_approval: false
+        }
+    );
+    // A viewer never approves, whatever the policy.
+    apply(
+        &c,
+        ANA,
+        &[
+            ws(PERSONAL, "personal", "test_manager"),
+            shared("viewer", false),
+        ],
+    )
+    .unwrap();
+    assert_eq!(
+        plan(SHARED, ANA, ANA),
+        ApprovalVerdict::Denied(DenyReason::Role)
     );
 }
 
