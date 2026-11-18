@@ -15,7 +15,10 @@
     "noEmit": true,
     "types": ["node", "vitest/globals"],
     "paths": {
-      "@pharos/formats": ["../packages/formats/src/index.ts"]
+      "@pharos/formats": ["../packages/formats/src/index.ts"],
+      "zod": ["./node_modules/zod"],
+      "uuid": ["./node_modules/uuid"],
+      "@cucumber/messages": ["./node_modules/@cucumber/messages"]
     }
   },
   "include": ["src", "tests"]
