@@ -12,6 +12,25 @@ backend; data-compatibility rules for migrations and sync): `docs/VERSIONING.md`
 - **Client:** Tauri 2 + React 18 + TypeScript + Vite. Target: Windows 11.
   Tauri 2 is deliberate — its mobile support lets the 0.4.0 mobile build reuse this codebase.
   The Rust side builds with the **MSVC** toolchain (`src-tauri/rust-toolchain.toml`).
+- **Rust crates (CORE-01, [ADR-0050](adr/0050-pharos-core-y-sqlite-en-disco-cifrado.md)):**
+  `src-tauri/` is a Cargo workspace of two packages over the same sources in
+  `src-tauri/src`:
+  - **`pharos-core`** (`src-tauri/core/Cargo.toml`, rooted at `src/lib.rs`):
+    the whole library: local DB, migrations, repositories, oplog, journal,
+    audit, sync, evidence, AI and server client. Tauri is its optional
+    feature `tauri`: every `#[tauri::command]` and `use tauri::…` carries
+    `#[cfg(feature = "tauri")]`, and `diag` is Tauri only. Without the
+    feature it builds with no Tauri (CI: `cargo check -p pharos-core`); the
+    CLI (INT-01) uses it that way.
+  - **`pharos`** (`src-tauri/Cargo.toml`): the desktop shell, `src/app.rs`
+    (`run()`, setup, the cached-session commands and the
+    `generate_handler!` list, which imports `pharos_core::*`) and
+    `src/main.rs`. It enables the core's `tauri` feature.
+
+  `cargo test`, `clippy` and `fmt` in `src-tauri/` cover both
+  (`default-members`). A new command is written in its module behind
+  `#[cfg(feature = "tauri")]` and registered in `src/app.rs`; a new module
+  is a `pub mod` in `lib.rs`.
 - **Local DB (Phase 2+):** SQLite (encrypted) as the offline source of truth.
 - **Backend (Phase 1+):** Node.js + TypeScript (Fastify) + PostgreSQL — a
   native PostgreSQL service or the `docker-compose.yml` container.
@@ -2134,8 +2153,9 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   and manual v2 (MAN-03/04). Part of it is in `main`; most of it still lives on
   the integration branch `local/app-completa` — see `docs/ROADMAP.md` §2.1 for
   where each piece is and §2.2 for the approved course (ADR-0039): autonomous execution as the axis up to 1.0.
-- **Known gaps (2026-11-11):** no Rust `pharos-core` crate yet (CORE-01), so no
-  CLI and no other process can write while the app is open (SEC-05); no shared
+- **Known gaps (2026-11-18):** `pharos-core` exists (CORE-01a, ADR-0050) but
+  no CLI uses it yet (INT-01), and no other process can write while the app is
+  open (SEC-05); no shared
   workspaces or roles (SYNC-07); exit criteria are recognised from free text and
   never gate closing a cycle; no SARIF/k6/axe/Allure ingest, CLI, public API or
   mobile app yet.

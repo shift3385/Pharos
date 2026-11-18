@@ -31,6 +31,7 @@ use std::collections::{HashMap, HashSet};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -2629,6 +2630,7 @@ pub(crate) fn held_back(conn: &Connection) -> Result<i64, String> {
 
 // ---- commands ------------------------------------------------------------------
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn configuration_list(
     db: State<Db>,
@@ -2646,6 +2648,7 @@ pub fn configuration_list(
     })
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn configuration_create(
     db: State<Db>,
@@ -2656,6 +2659,7 @@ pub fn configuration_create(
     db.with_conn(|conn| get_configuration(conn, &id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn configuration_update(
     db: State<Db>,
@@ -2667,6 +2671,7 @@ pub fn configuration_update(
     db.with_conn(|conn| get_configuration(conn, &id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn configuration_archive(
     db: State<Db>,
@@ -2679,6 +2684,7 @@ pub fn configuration_archive(
     db.with_conn(|conn| get_configuration(conn, &id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn configuration_reorder(
     db: State<Db>,
@@ -2691,6 +2697,7 @@ pub fn configuration_reorder(
     db.with_conn(|conn| list_configurations(conn, &project_id, &user_id, true))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_list(
     db: State<Db>,
@@ -2700,11 +2707,13 @@ pub fn cycle_list(
     db.with_conn(|conn| list_cycles(conn, &project_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_get(db: State<Db>, id: String, user_id: String) -> Result<Option<TestCycle>, String> {
     db.with_conn(|conn| get_cycle(conn, &id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_create(db: State<Db>, input: TestCycleInput) -> Result<Option<TestCycle>, String> {
     let id = db.with_tx(|conn| insert_cycle(conn, &input))?;
@@ -2712,6 +2721,7 @@ pub fn cycle_create(db: State<Db>, input: TestCycleInput) -> Result<Option<TestC
     db.with_conn(|conn| get_cycle(conn, &id, &input.user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_update(
     db: State<Db>,
@@ -2723,6 +2733,7 @@ pub fn cycle_update(
     db.with_conn(|conn| get_cycle(conn, &id, &input.user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_clone(
     db: State<Db>,
@@ -2735,12 +2746,14 @@ pub fn cycle_clone(
     db.with_conn(|conn| get_cycle(conn, &new_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_cycle(conn, &id, &user_id))?;
     db.persist()
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_items_list(
     db: State<Db>,
@@ -2750,6 +2763,7 @@ pub fn cycle_items_list(
     db.with_conn(|conn| list_items(conn, &cycle_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_items_add(
     db: State<Db>,
@@ -2762,6 +2776,7 @@ pub fn cycle_items_add(
     Ok(out)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_items_add_by_filter(
     db: State<Db>,
@@ -2777,6 +2792,7 @@ pub fn cycle_items_add_by_filter(
 }
 
 /// How many cases of the project match a filter now (the dialog's preview).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_filter_preview(
     db: State<Db>,
@@ -2792,12 +2808,14 @@ pub fn cycle_filter_preview(
     })
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_item_update(db: State<Db>, id: String, input: CycleItemUpdate) -> Result<(), String> {
     db.with_tx(|conn| update_item(conn, &id, &input))?;
     db.persist()
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_items_remove(
     db: State<Db>,
@@ -2810,6 +2828,7 @@ pub fn cycle_items_remove(
     Ok(n)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_items_reorder(
     db: State<Db>,
@@ -2822,6 +2841,7 @@ pub fn cycle_items_reorder(
     db.with_conn(|conn| list_items(conn, &cycle_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_execute(
     db: State<Db>,
@@ -2844,6 +2864,7 @@ pub fn cycle_execute(
     })
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_runs(
     db: State<Db>,
@@ -2853,6 +2874,7 @@ pub fn cycle_runs(
     db.with_conn(|conn| cycle_runs_of(conn, &cycle_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_progress_get(
     db: State<Db>,

@@ -15,6 +15,7 @@ use std::collections::HashMap;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -573,6 +574,7 @@ pub(crate) fn assume_server_features(conn: &Connection, features: &str) {
 }
 
 /// Records the features the account's server listed in a pull answer.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn sync_server_features_set(
     db: State<Db>,
@@ -586,6 +588,7 @@ pub fn sync_server_features_set(
 
 /// True if the account's server listed `feature` in its last answer (the
 /// client asks for workspaces only from a server that has them, SYNC-07).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn sync_server_lists(db: State<Db>, user_id: String, feature: String) -> Result<bool, String> {
     require_user(&user_id)?;
@@ -795,6 +798,7 @@ pub(crate) fn build_pending_append(conn: &Connection, user: &str) -> Result<Pend
 
 /// Pending deltas of one account. `class`: "lww" (default: what every client
 /// before AUD-01 asked for) or "append_only".
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn oplog_pending(
     db: State<Db>,
@@ -857,6 +861,7 @@ pub(crate) fn mark_rejected(
     Ok(())
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn oplog_mark_rejected(
     db: State<Db>,
@@ -871,6 +876,7 @@ pub fn oplog_mark_rejected(
     db.persist()
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn oplog_mark_synced(
     db: State<Db>,
@@ -1461,6 +1467,7 @@ fn cursor_scope(user: &str, workspace_id: Option<&str>) -> String {
     }
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn sync_cursor_get(
     db: State<Db>,
@@ -1471,6 +1478,7 @@ pub fn sync_cursor_get(
     db.with_conn(|conn| cursor_get(conn, &cursor_scope(&user_id, workspace_id.as_deref())))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn sync_cursor_set(
     db: State<Db>,
@@ -1491,6 +1499,7 @@ pub fn sync_cursor_set(
 
 /// Applies one page of remote documents (pulled from the backend), of one
 /// workspace when the server has `workspaces` (SYNC-07).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn apply_remote(
     db: State<Db>,
@@ -1605,6 +1614,7 @@ fn list_conflicts(conn: &Connection, user: &str) -> Result<Vec<Conflict>, String
         .map_err(|e| e.to_string())
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn sync_conflicts_list(db: State<Db>, user_id: String) -> Result<Vec<Conflict>, String> {
     require_user(&user_id)?;
@@ -1790,6 +1800,7 @@ fn restore_project_children(conn: &Connection, project_id: &str) -> Result<(), S
     Ok(())
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn sync_conflict_resolve(
     db: State<Db>,

@@ -16,6 +16,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -484,6 +485,7 @@ fn server_err(e: crate::server::ServerError) -> String {
 /// contents only the server has (`download`, after the pull). Nothing
 /// happens until the server lists `blobs`. A content that fails is counted
 /// and tried again next time; the sync goes on.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub async fn blobs_transfer(
     db: State<'_, Db>,

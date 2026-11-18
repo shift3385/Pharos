@@ -4,6 +4,7 @@
 
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -334,16 +335,19 @@ pub(crate) fn delete_project(conn: &Connection, id: &str, author: &str) -> Resul
     Ok(())
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn project_list(db: State<Db>, owner_id: String) -> Result<Vec<ProjectSummary>, String> {
     db.with_conn(|conn| list_projects(conn, &owner_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn project_get(db: State<Db>, id: String, owner_id: String) -> Result<Option<Project>, String> {
     db.with_conn(|conn| get_project(conn, &id, &owner_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn project_create(db: State<Db>, input: ProjectInput) -> Result<Option<Project>, String> {
     let owner = input.owner_id.clone().unwrap_or_default();
@@ -352,6 +356,7 @@ pub fn project_create(db: State<Db>, input: ProjectInput) -> Result<Option<Proje
     db.with_conn(|conn| get_project(conn, &id, &owner))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn project_update(
     db: State<Db>,
@@ -369,6 +374,7 @@ pub fn project_update(
     db.with_conn(|conn| get_project(conn, &id, &owner))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn project_delete(db: State<Db>, id: String, owner_id: String) -> Result<(), String> {
     db.with_tx(|conn| {
