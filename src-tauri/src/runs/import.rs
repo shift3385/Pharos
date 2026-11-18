@@ -1640,6 +1640,72 @@ pub(crate) fn run_counts(
     Ok(out)
 }
 
+// ---- shared by the commands and the Tauri-free API (api.rs, CORE-01) ----------
+
+/// A preview in a transaction rolled back on purpose: freezing a case's
+/// current revision may write its row, and a preview must leave nothing.
+pub(crate) fn preview_rolled_back(
+    db: &Db,
+    request: &ReportImportRequest,
+) -> Result<ReportImportPreview, String> {
+    db.with_conn(|conn| {
+        conn.execute_batch("SAVEPOINT import_preview")
+            .map_err(err)?;
+        let out = preview(conn, request);
+        conn.execute_batch("ROLLBACK TO import_preview; RELEASE import_preview")
+            .map_err(err)?;
+        out
+    })
+}
+
+/// Commits an import whose raw report was written to `upload` (its sha256
+/// must be the one that was read), then saves.
+pub(crate) fn import_upload(
+    db: &Db,
+    request: &ReportImportRequest,
+    upload: evidence::BlobWriter,
+) -> Result<ReportImportOutcome, String> {
+    let out = db.with_conn(|conn| {
+        commit_upload(conn, db.evidence(), upload, |c, stored| {
+            crate::db::in_tx(c, |tx| commit(tx, request, stored))
+        })
+    })?;
+    db.persist()?;
+    Ok(out)
+}
+
+/// Attaches one uploaded attachment of an imported report, then saves.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn attach_upload(
+    db: &Db,
+    upload: evidence::BlobWriter,
+    owner_entity: &str,
+    owner_id: &str,
+    name: &str,
+    mime: Option<&str>,
+    kind: Option<&str>,
+    user_id: &str,
+) -> Result<String, String> {
+    let id = db.with_conn(|conn| {
+        commit_upload(conn, db.evidence(), upload, |c, stored| {
+            crate::db::in_tx(c, |tx| {
+                attach(
+                    tx,
+                    owner_entity,
+                    owner_id,
+                    stored,
+                    name,
+                    mime,
+                    kind.unwrap_or("evidence"),
+                    user_id,
+                )
+            })
+        })
+    })?;
+    db.persist()?;
+    Ok(id)
+}
+
 // ---- commands ------------------------------------------------------------------
 
 #[cfg(feature = "tauri")]
@@ -1658,16 +1724,7 @@ pub fn run_import_preview(
     db: State<Db>,
     request: ReportImportRequest,
 ) -> Result<ReportImportPreview, String> {
-    // In a transaction rolled back on purpose: freezing a case's current
-    // revision may write its row, and a preview must leave nothing.
-    db.with_conn(|conn| {
-        conn.execute_batch("SAVEPOINT import_preview")
-            .map_err(err)?;
-        let out = preview(conn, &request);
-        conn.execute_batch("ROLLBACK TO import_preview; RELEASE import_preview")
-            .map_err(err)?;
-        out
-    })
+    preview_rolled_back(&db, &request)
 }
 
 /// Commits an import: `rawUploadId` is the report file sent through
@@ -1680,14 +1737,7 @@ pub fn run_import(
     request: ReportImportRequest,
     raw_upload_id: String,
 ) -> Result<ReportImportOutcome, String> {
-    let upload = uploads.take(&raw_upload_id)?;
-    let out = db.with_conn(|conn| {
-        commit_upload(conn, db.evidence(), upload, |c, stored| {
-            crate::db::in_tx(c, |tx| commit(tx, &request, stored))
-        })
-    })?;
-    db.persist()?;
-    Ok(out)
+    import_upload(&db, &request, uploads.take(&raw_upload_id)?)
 }
 
 /// Attaches one uploaded attachment of an imported report (after `run_import`).
@@ -1705,25 +1755,16 @@ pub fn run_import_attach(
     kind: Option<String>,
     user_id: String,
 ) -> Result<String, String> {
-    let upload = uploads.take(&upload_id)?;
-    let id = db.with_conn(|conn| {
-        commit_upload(conn, db.evidence(), upload, |c, stored| {
-            crate::db::in_tx(c, |tx| {
-                attach(
-                    tx,
-                    &owner_entity,
-                    &owner_id,
-                    stored,
-                    &name,
-                    mime.as_deref(),
-                    kind.as_deref().unwrap_or("evidence"),
-                    &user_id,
-                )
-            })
-        })
-    })?;
-    db.persist()?;
-    Ok(id)
+    attach_upload(
+        &db,
+        uploads.take(&upload_id)?,
+        &owner_entity,
+        &owner_id,
+        &name,
+        mime.as_deref(),
+        kind.as_deref(),
+        &user_id,
+    )
 }
 
 #[cfg(feature = "tauri")]

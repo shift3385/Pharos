@@ -16,6 +16,10 @@ modifica tus datos.
   - **«Estos datos son de una versión más nueva de Pharos»:** los guardó una
     versión más reciente. Instala esa versión o una posterior; esta no los
     abre para no estropearlos.
+  - **«Otro Pharos está usando tus datos»:** otra ventana de Pharos, o el CLI
+    de Pharos, tiene abierta la base de datos de este equipo. Ciérrala y
+    vuelve a abrir Pharos. Hasta ahora, la segunda ventana pisaba en silencio
+    lo que guardaba la primera.
   - **«Falta la clave de la base de datos local»** o **«La clave guardada no
     abre la base de datos local»:** pasa en un equipo nuevo o tras reinstalar
     Windows. Escribe la clave de recuperación (56 caracteres en grupos de 4;
@@ -63,6 +67,10 @@ Si una vista falla, Pharos no se cierra: muestra «Algo salió mal» con «Reint
 - **«La clave es válida, pero no abre esta base de datos…».** Es la clave de
   otro equipo, o el archivo está dañado. Comprueba que sea la de este equipo;
   si lo es, prueba con una copia `pharos.db.enc.bak-…`.
+- **«Otro Pharos está usando tus datos» y no ves otra ventana.** Puede que
+  el CLI de Pharos esté importando resultados, o que haya un proceso
+  `pharos.exe` sin ventana. Espera a que termine o ciérralo en el
+  Administrador de tareas.
 - **«Algo salió mal» vuelve a salir tras «Reintentar».** Pulsa «Recargar»; si
   se repite, exporta el diagnóstico e informa del fallo.
 

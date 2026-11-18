@@ -8,6 +8,8 @@
 #![cfg_attr(not(feature = "tauri"), allow(unused_imports, dead_code))]
 
 pub mod ai;
+// Entry points without Tauri for the CLI (INT-01, ADR-0050).
+pub mod api;
 pub mod audit;
 pub mod audit_read;
 #[cfg(test)]
@@ -36,6 +38,8 @@ pub mod keychain;
 pub mod keys;
 pub mod notifications;
 pub mod oplog;
+// The data folder of the app, found without Tauri (ADR-0050).
+pub mod paths;
 pub mod planner;
 pub mod profile;
 pub mod project;

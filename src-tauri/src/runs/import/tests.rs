@@ -1747,3 +1747,70 @@ fn an_import_into_a_cycle_with_configurations_fills_one_cell_per_configuration()
         .unwrap_err()
         .starts_with("cycle-not-found"));
 }
+
+// ---- the API without Tauri (CORE-01, ADR-0050) -------------------------------------
+
+/// What the CLI does (INT-01): open the encrypted database in a folder, preview
+/// and import a report file through `api`, attach a file, and find it all after
+/// reopening, as the desktop commands would leave it.
+#[test]
+fn the_api_imports_a_report_file_as_the_desktop_does() {
+    use crate::db::Db;
+    let dir = std::env::temp_dir().join(format!("pharos-api-test-{}", uuid::Uuid::new_v4()));
+    let key = [5u8; 32];
+    let raw = snapshot!("single__ctrf.json").as_bytes();
+    let sha = crate::audit::sha256_hex(raw);
+    let (p, run_id) = {
+        let db = Db::open_with_key(&dir, key).unwrap();
+        let p = db
+            .with_conn(|c| {
+                sync::assume_stable_steps_server(c);
+                let p = new_project(c);
+                ing01_cases(c, &p);
+                Ok(p)
+            })
+            .unwrap();
+        let req: ReportImportRequest = serde_json::from_value(json!({
+            "projectId": p, "userId": U, "doc": doc_of(snapshot!("single__ctrf.json")),
+            "sha256": sha, "fileName": "ctrf.json", "newRun": {"title": "CI #7"}
+        }))
+        .unwrap();
+        let pv = crate::api::import_preview(&db, &req).unwrap();
+        assert_eq!((pv.results, pv.linked), (6, 6));
+        // A file other than the one that was read is refused.
+        let err = crate::api::import_report(&db, &req, &b"other"[..]).unwrap_err();
+        assert!(err.starts_with("report-changed"), "{err}");
+        let out = crate::api::import_report(&db, &req, raw).unwrap();
+        assert_eq!((out.results, out.linked), (6, 6));
+        let result = db
+            .with_conn(|c| Ok(list_results(c, &out.run_id, U)?[0].id.clone()))
+            .unwrap();
+        crate::api::import_attach(
+            &db,
+            "result",
+            &result,
+            &b"trace"[..],
+            "trace.zip",
+            Some("application/zip"),
+            Some("trace"),
+            U,
+        )
+        .unwrap();
+        (p, out.run_id)
+    };
+    let db = Db::open_with_key(&dir, key).unwrap();
+    let run = db.with_conn(|c| get_run(c, &run_id, U)).unwrap().unwrap();
+    assert_eq!(run.project_id, p);
+    assert!(db.evidence().exists(&sha));
+    let attachments = db
+        .with_conn(|c| {
+            Ok(count(
+                c,
+                "SELECT count(*) FROM attachments WHERE kind = 'trace'",
+            ))
+        })
+        .unwrap();
+    assert_eq!(attachments, 1);
+    drop(db);
+    std::fs::remove_dir_all(&dir).unwrap();
+}

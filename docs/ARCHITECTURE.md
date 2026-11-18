@@ -27,6 +27,13 @@ backend; data-compatibility rules for migrations and sync): `docs/VERSIONING.md`
     `generate_handler!` list, which imports `pharos_core::*`) and
     `src/main.rs`. It enables the core's `tauri` feature.
 
+  Other processes (the CLI) use `pharos_core::api` (`open`, `import_preview`,
+  `import_report`, `import_attach`: the same code as the desktop import
+  commands) and `pharos_core::paths::default_data_dir()` (the app's data
+  folder without Tauri). Until SEC-05b a `Db` holds `pharos.lock` open
+  sharing nothing but deletion: a second process (another app, the CLI) gets `db-in-use`
+  and reads or writes nothing (ADR-0050 §7).
+
   `cargo test`, `clippy` and `fmt` in `src-tauri/` cover both
   (`default-members`). A new command is written in its module behind
   `#[cfg(feature = "tauri")]` and registered in `src/app.rs`; a new module
@@ -2153,9 +2160,9 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   and manual v2 (MAN-03/04). Part of it is in `main`; most of it still lives on
   the integration branch `local/app-completa` — see `docs/ROADMAP.md` §2.1 for
   where each piece is and §2.2 for the approved course (ADR-0039): autonomous execution as the axis up to 1.0.
-- **Known gaps (2026-11-18):** `pharos-core` exists (CORE-01a, ADR-0050) but
-  no CLI uses it yet (INT-01), and no other process can write while the app is
-  open (SEC-05); no shared
+- **Known gaps (2026-11-18):** `pharos-core` and its CLI API exist (CORE-01,
+  ADR-0050) but no CLI uses them yet (INT-01), and no other process can write
+  while the app is open (SEC-05); no shared
   workspaces or roles (SYNC-07); exit criteria are recognised from free text and
   never gate closing a cycle; no SARIF/k6/axe/Allure ingest, CLI, public API or
   mobile app yet.
