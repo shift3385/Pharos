@@ -79,17 +79,19 @@
        el servidor.
   7. **Sobre la comprobación de W** (`workspaceApproverCheck(pool, { policies })`,
      #93), sin un `ApproverCheck` paralelo:
-     - `ApprovalRequest` lleva `subject: "case" | "plan"`.
-     - En #93 los pasos «rol» y «el autor no aprueba» son fijos, y las
-       `policies` solo pueden añadir rechazos. La decisión 6 necesita que la
-       política desactivada quite los dos, así que esos dos pasos pasan a
-       una regla sustituible, `opts.rule`.
-       - Por defecto, `roleAndNotAuthor`, que se comporta igual que #93
-         hoy.
-       - PLN-08 instala `independentApproval(pool)`, que aplica la
-         decisión 6 según la política del workspace.
-     - Las `policies` siguen siendo rechazos extra, después de la regla.
-     - El veredicto final lleva `selfApproval: approverId === authorId`.
+     - `ApprovalRequest.subject?: "case" | "plan"`, por defecto `"case"`.
+       Quien llama pasa el autor: en un plan, `test_plans.created_by`.
+     - La comprobación de W solo exige ser miembro activo (si no,
+       `notMember`). En un workspace personal no aplica políticas.
+     - Por defecto, las políticas son
+       `DEFAULT_APPROVAL_POLICIES = [requiresApproverRole, authorNeverApproves]`.
+     - PLN-08 instala `{ policies: [independentApproval(pool)] }`:
+       - **Política activada:** aplica `requiresApproverRole` y
+         `authorNeverApproves`, y responde con el primer rechazo.
+       - **Política desactivada:** rechaza con `role` a quien no puede
+         editar ese plan o caso (`plan.edit` o `case.edit`); a los demás les
+         devuelve `null`.
+     - Un veredicto aprobado lleva `selfApproval: approverId === authorId`.
   8. **Los casos siguen la misma regla** (opción A, decisión del usuario).
      Cambia la regla de edición y la acción «Devolver» del
      [ADR-0047](0047-revision-de-casos-y-baselines.md):
@@ -118,8 +120,8 @@
   - La pista P toca `src/modules/test-plan/**`, `src-tauri/src/test_plan*.rs`,
     las rutas de planes de `server/src/modules/domain/**` y
     `server/src/modules/workspaces/approval.ts`. Con la opción A de la
-    decisión 8, también toca el flujo de casos de CAS-02. El cambio de
-    `opts.rule` se acuerda con W.
+    decisión 8, también toca el flujo de casos de CAS-02. Usa las
+    `policies` de la comprobación de W (#93).
   - Espera a que W2 (workspaces en el escritorio y la UI) y #93 estén en
     `main`.
   - La app 0.4 sigue leyendo los planes. Lo que puede escribir un cliente
