@@ -429,8 +429,16 @@ Precisiones sobre lo decidido, sin cambiar la decisión:
   - `memberRemoved` no se dispara cuando alguien sale por su cuenta.
   - Las rutas de los botones (`WORKSPACE_PATHS`) son las de las pantallas
     de W2.
-  - `workspaceApproverCheck(pool)` implementa la interfaz de K y se
-    registra con `setApproverCheck` cuando K esté en `main`.
+  - `workspaceApproverCheck(pool)` implementa la interfaz de K. `app.ts`
+    lo instala con `setApproverCheck` al arrancar.
+    - Acepta `policies`: reglas extra, que se comprueban después de la de
+      roles, y la primera que rechaza decide. Por ahí entrará la política
+      «Aprobación independiente» de PLN-08.
+    - El autor de un caso lo da el `createdBy` de su primera revisión
+      (`test_case_revision`), que escriben el escritorio y la web. La web
+      lo muestra así a todos los miembros. Antes era quien leía el caso.
+    - En el escritorio, la comprobación entra con W2, que trae la copia
+      local de los miembros.
 - **Migraciones antiguas.** Los tests de las migraciones 0004 y 0006 las
   vuelven a aplicar en un esquema aparte, migrado hasta la anterior
   (`tests/schema-at.ts`). El test de actualización de 0.4 usa el mismo

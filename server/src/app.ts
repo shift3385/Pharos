@@ -30,6 +30,8 @@ import {
   workspaceMembership,
 } from "./modules/notifications";
 import { isMember, listMembers } from "./modules/workspaces/members";
+import { workspaceApproverCheck } from "./modules/workspaces/approval";
+import { setApproverCheck } from "./modules/domain/case-review";
 import { httpsOnly } from "./modules/security/httpsOnly";
 import { SERVER_VERSION, acceptedMinors } from "./modules/sync/sync.version";
 import { AppError } from "./modules/auth/errors";
@@ -133,6 +135,9 @@ export function buildApp(deps: { pool: Pool; env: Env; mailer?: Mailer | null })
   // notifications inside their transaction (ADR-0042 §8, ADR-0048).
   const membership = workspaceMembership(pool, { isMember, listMembers });
   const workspaces = createWorkspaceService(pool, clock, notificationWorkspaceHooks(membership));
+  // Who approves a case (CAS-02): Test Manager or Test Analyst of the
+  // workspace, never the author (ADR-0042 §8, decision of 2026-11-17).
+  setApproverCheck(workspaceApproverCheck(pool));
   const domain = createDomainService(domainStore);
   const cycles = createCycleService(domainStore);
   const runs = createRunService(domainStore);

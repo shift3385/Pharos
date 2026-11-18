@@ -389,6 +389,54 @@ describe("hooks for notifications (track R)", () => {
   });
 });
 
+describe("another person approves a case (exit criterion, CAS-02 wired)", () => {
+  it("on the web: a Test Analyst approves; the author and an Automation Engineer cannot", async () => {
+    const ana = await register("ana@pharos.dev"); // Test Manager, author
+    const luis = await register("luis@pharos.dev"); // Test Analyst
+    const jorge = await register("jorge@pharos.dev"); // Automation Engineer
+    const ws = await createShared(ana);
+    await join(ana, ws, luis, "test_analyst");
+    await join(ana, ws, jorge, "automation_engineer");
+    const p = (await call(ana, "POST", "/api/projects", { name: "Pagos" })).json();
+    expect((await call(ana, "POST", `/workspaces/${ws}/move-project`, { projectId: p.id })).statusCode).toBe(200);
+    const c = (await call(ana, "POST", "/api/test-cases", { projectId: p.id, title: "Pago", author: "Ana", data: { steps: ["abrir"] } })).json();
+    const review = (a: Account, action: string) =>
+      call(a, "POST", `/api/test-cases/${c.id}/review`, { action, userName: a === ana ? "Ana" : "Otro" });
+    // Everyone sees Ana as the author (from the case's first revision).
+    expect((await call(luis, "GET", `/api/test-cases/${c.id}`)).json().createdBy).toBe(ana.userId);
+    expect((await call(luis, "GET", `/api/test-cases?projectId=${p.id}`)).json()[0].createdBy).toBe(ana.userId);
+    expect((await review(ana, "send")).statusCode).toBe(200);
+    for (const [who, reason] of [
+      [ana, "author"],
+      [jorge, "role"],
+    ] as const) {
+      const res = await review(who, "approve");
+      expect([res.statusCode, res.json().code, res.json().message]).toEqual([
+        403,
+        "review_not_allowed",
+        `This account cannot approve the case (${reason}).`,
+      ]);
+    }
+    const ok = await review(luis, "approve");
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json()).toMatchObject({ status: "approved", data: { approval: { selfApproved: false } } });
+  });
+
+  it("a workspace policy (PLN-08) can refuse on top of the roles", async () => {
+    const ana = await register("ana@pharos.dev");
+    const luis = await register("luis@pharos.dev");
+    const ws = await createShared(ana);
+    await join(ana, ws, luis, "test_analyst");
+    const check = workspaceApproverCheck(pool, {
+      policies: [async (_req, m) => (m.role === "test_manager" ? null : { ok: false, reason: "role" })],
+    });
+    const req = (approverId: string) =>
+      check.canApprove({ workspaceId: ws, projectId: "p1", caseId: "c1", authorId: "someone-else", approverId });
+    expect(await req(luis.userId)).toEqual({ ok: false, reason: "role" });
+    expect(await req(ana.userId)).toEqual({ ok: true, selfApproval: false });
+  });
+});
+
 describe("approver check (CAS-02, for track K)", () => {
   it("Test Manager or Test Analyst, never the author; alone in a personal workspace", async () => {
     const ana = await register("ana@pharos.dev");
