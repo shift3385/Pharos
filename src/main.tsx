@@ -19,9 +19,14 @@ import { ToastProvider } from "@shared/ui/Toast";
 import { ViewportProvider } from "@shared/ui/ViewportProvider";
 import { AuthProvider } from "@modules/auth";
 import { App } from "@app/App";
+import { installDesktopKeyGuard } from "@app/desktopKeyGuard";
 
 // Uncaught errors and rejections go to the desktop log (BASE-08).
 installGlobalErrorHandlers();
+
+// Desktop only: the WebView's browser shortcuts (print, find, reload…) do
+// nothing in Pharos (NC-058).
+installDesktopKeyGuard();
 
 // A data router (RED-V3k) so screens can hold a navigation that would drop
 // unsaved changes (`useBlocker`, `useUnsavedChangesGuard`). One splat route

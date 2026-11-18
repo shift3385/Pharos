@@ -27,9 +27,19 @@ Estos atajos funcionan en cualquier pantalla. Cada capítulo explica los suyos.
 | ↑ ↓ | Recorren las opciones de un menú (también el selector de proyecto) |
 | Inicio / Fin | Saltan a la primera o a la última opción de un menú |
 | ← → | Cambian de pestaña en las pestañas y en los controles segmentados (por ejemplo, Lista / Tablero) |
+| Alt+← / Alt+→ | Vuelven a la pantalla anterior o pasan a la siguiente. Si hay cambios sin guardar, Pharos pregunta antes |
 
 Dentro de un diálogo, Tab no sale de él: recorre solo sus controles hasta que
 lo cierras.
+
+En la app de escritorio no hacen nada los atajos de navegador que sacarían algo
+de Pharos: imprimir (Ctrl+P), abrir un archivo (Ctrl+O), guardar la página
+(Ctrl+S), ver el código (Ctrl+U), abrir otra ventana (Ctrl+N), descargas
+(Ctrl+J), historial (Ctrl+H), favoritos (Ctrl+D) y las herramientas de
+desarrollo (F12). Recargar (F5), el zoom (Ctrl con +, − o 0, o con la rueda) y
+buscar en la página (Ctrl+F) sí funcionan. Los atajos de Pharos van primero:
+Ctrl+P en el editor de casos abre «Ir a un caso…». En la versión web, esos
+atajos siguen siendo los de tu navegador.
 
 ### 3. Inicio
 

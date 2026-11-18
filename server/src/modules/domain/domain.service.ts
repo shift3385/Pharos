@@ -427,11 +427,28 @@ export function createDomainService(store: DomainStore) {
     return id;
   }
 
+  /** Who created each case of a project (CAS-02 with workspaces, TEN-01):
+   *  the `createdBy` of its first revision, which the desktop and the web
+   *  both write; the case document itself does not say. */
+  async function authorsOf(tx: DomainTx, projectId: string, caseId?: string): Promise<Map<string, string>> {
+    const revisions = await tx.list("test_case_revision", projectId, caseId ? { where: { testCaseId: caseId } } : {});
+    const first = new Map<string, { revision: number; by: string }>();
+    for (const r of revisions) {
+      const id = str(r.payload, "testCaseId");
+      const revision = num(r.payload, "revision");
+      const by = str(r.payload, "createdBy");
+      const seen = first.get(id);
+      if (id && by && (!seen || revision < seen.revision)) first.set(id, { revision, by });
+    }
+    return new Map([...first].map(([id, v]) => [id, v.by]));
+  }
+
   const testCases = {
     list: (userId: string, projectId: string) =>
       run(userId, async (tx) => {
         const project = await tx.get("project", projectId);
         if (!project || project.deleted) return [];
+        const authors = await authorsOf(tx, projectId);
         return (await tx.list("test_case", projectId))
           .map((d) => withStableSteps(d.payload))
           .sort(byText("scenarioId"))
@@ -451,7 +468,7 @@ export function createDomainService(store: DomainStore) {
             // The review flow (CAS-02): who sent or approved it, and its author.
             review: (c.data as Payload | undefined)?.review ?? null,
             approval: (c.data as Payload | undefined)?.approval ?? null,
-            createdBy: userId,
+            createdBy: authors.get(str(c, "id")) ?? userId,
             updatedAt: c.updatedAt,
             revision: c.revision,
           }));
@@ -461,11 +478,11 @@ export function createDomainService(store: DomainStore) {
         const doc = await tx.get("test_case", id);
         if (!doc || doc.deleted) return null;
         const project = await tx.get("project", str(doc.payload, "projectId"));
-        // `createdBy`: the case's author in the review flow (CAS-02); until
-        // workspaces share projects (TEN-01) it is the owner.
-        return project && !project.deleted
-          ? { createdBy: userId, ...withStableSteps(doc.payload) }
-          : null;
+        // `createdBy`: the case's author in the review flow (CAS-02): who
+        // wrote its first revision; the reader when that is unknown.
+        if (!project || project.deleted) return null;
+        const author = (await authorsOf(tx, str(doc.payload, "projectId"), id)).get(id);
+        return { createdBy: author ?? userId, ...withStableSteps(doc.payload) };
       }),
     create: (userId: string, input: TestCaseInput) =>
       run(userId, async (tx) => {
@@ -518,8 +535,12 @@ export function createDomainService(store: DomainStore) {
             workspaceId: str(doc.payload, "workspaceId") || str(project, "workspaceId") || WORKSPACE,
             projectId: str(doc.payload, "projectId"),
             caseId: id,
-            // Until workspaces share projects (TEN-01), a case is its owner's.
-            authorId: str(doc.payload, "createdBy") || userId,
+            // Who wrote its first revision (TEN-01: a shared case has
+            // other readers); the reader when that is unknown.
+            authorId:
+              str(doc.payload, "createdBy") ||
+              (await authorsOf(tx, str(doc.payload, "projectId"), id)).get(id) ||
+              userId,
           },
         );
         const stored = await tx.put(

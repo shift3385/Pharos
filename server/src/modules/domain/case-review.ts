@@ -25,6 +25,9 @@ const NOT_CONTENT = new Set(["review", "approval", "aiProvenance", "custom"]);
 // ---------------------------------------------------------------- approver
 
 export interface ApprovalRequest {
+  /** What is approved: a test case (CAS-02, the default) or a test plan
+   *  (PLN-08). The role policy picks the capability from it. */
+  subject?: "case" | "plan";
   workspaceId: string;
   projectId: string;
   caseId: string;

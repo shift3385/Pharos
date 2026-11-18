@@ -429,8 +429,28 @@ Precisiones sobre lo decidido, sin cambiar la decisión:
   - `memberRemoved` no se dispara cuando alguien sale por su cuenta.
   - Las rutas de los botones (`WORKSPACE_PATHS`) son las de las pantallas
     de W2.
-  - `workspaceApproverCheck(pool)` implementa la interfaz de K y se
-    registra con `setApproverCheck` cuando K esté en `main`.
+  - `workspaceApproverCheck(pool)` implementa la interfaz de K. `app.ts`
+    lo instala con `setApproverCheck` al arrancar.
+    - La comprobación en sí solo exige pertenecer al workspace. El resto lo
+      decide su `rule`, que se puede sustituir, más las `policies` extra.
+      Se evalúan en orden, y la primera que rechaza decide.
+    - La regla por defecto, `roleAndNotAuthor`, es la del usuario:
+      - `requiresApproverRole`: `case.approve` o `plan.approve`, según
+        el `subject` de la petición (`"case"` por defecto, o `"plan"`);
+      - después, `authorNeverApproves`.
+    - El veredicto aprobado lleva `selfApproval` cuando quien aprueba es
+      el autor.
+    - PLN-08 instalará `independentApproval(pool)` como regla. Con la
+      «Aprobación independiente» desactivada, cualquier miembro aprueba y
+      el autor queda como autoaprobación.
+    - `ApprovalRequest` gana `subject?: "case" | "plan"` (en
+      `case-review.ts` y en su gemelo del cliente). El autor de un plan es
+      su `created_by`.
+    - El autor de un caso lo da el `createdBy` de su primera revisión
+      (`test_case_revision`), que escriben el escritorio y la web. La web
+      lo muestra así a todos los miembros. Antes era quien leía el caso.
+    - En el escritorio, la comprobación entra con W2, que trae la copia
+      local de los miembros.
 - **Migraciones antiguas.** Los tests de las migraciones 0004 y 0006 las
   vuelven a aplicar en un esquema aparte, migrado hasta la anterior
   (`tests/schema-at.ts`). El test de actualización de 0.4 usa el mismo
