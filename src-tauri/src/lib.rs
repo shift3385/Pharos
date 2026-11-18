@@ -53,6 +53,8 @@ pub mod server;
 pub mod steps;
 pub mod sync;
 pub mod sync_class;
+// SYNC-02 (ADR-0051): the field-level merge; wired into the conflict path in S4.
+pub mod sync_merge;
 pub mod template;
 pub mod test_case;
 pub mod test_plan;

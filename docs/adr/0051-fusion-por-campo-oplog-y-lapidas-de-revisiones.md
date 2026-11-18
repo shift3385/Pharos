@@ -123,3 +123,45 @@
   excepción. Un traslado (`movedTo`) no es un borrado.
 - **Escritorio y clientes 0.5.** Sin cambios: una lápida append-only no borra
   nada en un equipo, y la purga local ya borra las revisiones con su caso.
+
+## Contrato y motores de la fusión (PR S3, 2026-11-18)
+
+Precisiones sobre la decisión 2, sin cambiarla. Aún no está conectado al
+sync: lo conecta S4.
+
+- **Contrato:** `src/shared/contracts/merge-fields.json`.
+  - **Tipos:** `scalar`, `text`, `set`, `idList`, `object` y `map`. Un campo
+    que no aparece es `scalar`.
+  - **Rutas:** las claves de la carga, y `data.<clave>` un nivel por debajo.
+  - **Contabilidad:**
+    - `id`, `workspaceId`, `ownerId`, `createdAt` y `revision` se toman del
+      servidor;
+    - `updatedAt` es el máximo de los dos.
+  - **Grupos:** el riesgo del requisito y el contenido de un adjunto o una
+    plantilla (`sha256`, `size`, `mime`).
+- **Guardas.**
+  - **Revisión del caso y del plan** (`status`, `version`, `data.review`,
+    `data.approval`). Hay conflicto de la entidad entera cuando un lado solo
+    tocó esos campos (aprobar, pedir cambios) y el otro cambió el contenido.
+    Dos ediciones de contenido que reabren la misma revisión la dejan igual
+    en los dos lados, porque la reapertura es determinista (`case_review`).
+    Por eso se fusionan.
+  - **Ciclo cerrado** (`when: "closed"`): cerrar un ciclo frente a cualquier
+    otro cambio es un conflicto de entidad.
+- **Motores:** `src/modules/sync-offline/domain/merge.ts` y
+  `src-tauri/src/sync_merge.rs`. Siguen el mismo algoritmo y pasan los mismos
+  vectores (`src/shared/contracts/fixtures/sync/merge-vectors.json`).
+  - **Resolver** es volver a llamar con `choices` (`{ clave: "local" | "remote" }`).
+  - **Claves de conflicto:**
+    - un campo (`title`);
+    - un grupo (`group:risk`);
+    - un elemento por id (`data.steps#S1`) o una de sus claves
+      (`data.steps#S1.text`);
+    - el orden de una lista (`data.steps@order`).
+  - `origins` dice de qué lado viene cada campo de primer nivel, y es lo que
+    escribe la auditoría.
+- **Listas.**
+  - Una lista con elementos sin `id`, o con un `id` repetido, se trata como
+    un escalar.
+  - Si solo un lado reordena, su orden gana. Lo añadido por el otro lado
+    entra detrás del elemento que tenía delante.
