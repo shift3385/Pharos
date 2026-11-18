@@ -186,6 +186,10 @@ app dice «Tu servidor no tiene activada la IA en la web».
   hasta que caduque su token (`ACCESS_TOKEN_TTL`, 15 minutos por defecto).
   Para cortarlo antes, borra la copia: la persona puede hacerlo desde la web o
   el escritorio, y tú con `DELETE FROM ai_vault WHERE user_id = '…';`.
+- **Recuperar una cuenta borra su copia.** Con un código de recuperación, un
+  enlace por correo o un enlace que des tú, la clave guardada se borra, porque
+  quien recupera la cuenta puede no ser su dueño. El dueño la vuelve a subir
+  desde su escritorio. Cambiar la contraseña desde «Mi perfil» no la borra.
 
 ## Si algo no sale
 

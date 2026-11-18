@@ -113,6 +113,9 @@
       - `method` puede ser `profile`, `recovery_code`, `email_link` o, en la
         ola 2, `admin`.
       - Con `sessionsClosed` y `codesRemaining` cuando aplican.
+      - Con `aiWebKeyRemoved: true` cuando la recuperación (código, enlace o
+        administrador) borró la clave de IA guardada para la web (IA-12,
+        [ADR-0034](0034-boveda-de-claves-ia-para-la-web.md)).
     - Los escritorios lo reciben y lo verifican como cualquier evento web, y
       «Administración › Auditoría» lo muestra en palabras («Contraseña
       cambiada · Con un código de recuperación»).

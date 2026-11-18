@@ -86,6 +86,9 @@ En este manual, Liomar trabaja con **Claude** (Anthropic).
 - **Para dejar de usarla**, desactiva el interruptor en el escritorio o pulsa
   «Dejar de usarla en la web» en la web: la copia se borra del servidor. Si
   quitas la clave del escritorio, la copia también se borra.
+- Si recuperas tu cuenta con un código de recuperación o un enlace para
+  restablecer la contraseña, la copia se borra. Vuelve a activarla desde el
+  escritorio. Cambiar la contraseña desde «Mi perfil» no la borra.
 - No está disponible con «Compatible», ni si tu servidor no tiene activada la
   IA en la web (lo configura quien lo administra).
 

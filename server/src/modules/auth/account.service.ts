@@ -17,6 +17,7 @@ import { appendWebEvent } from "../audit/audit.store";
 import type { ServerClock } from "../sync/sync.hlc";
 import { lockWorkspaces } from "../sync/sync.repository";
 import { personalOf } from "../workspaces/members";
+import { wipeAiVault } from "../ai/ai.wipe";
 
 // Changing and recovering the account password (SEC-08, SEC-09 by email;
 // ADR-0045). Every change runs in one transaction under the write lock of
@@ -26,6 +27,9 @@ import { personalOf } from "../workspaces/members";
 // current one (code or link) closes every session; a change from the profile
 // keeps the session it was made from. Access tokens already issued stay
 // valid until they expire (ACCESS_TOKEN_TTL, 15 minutes): ADR-0045.
+// Recovering the account (code, link or admin link) also deletes the AI key
+// stored for the web (IA-12, ADR-0034), since whoever recovers it may not be
+// its owner; a change from the profile keeps it.
 
 /** Wrong codes per account before recovery by code locks, and for how long
  *  the count and the lock last. */
@@ -47,6 +51,8 @@ type AccountEvent =
       method: "profile" | "recovery_code" | "email_link" | "admin";
       sessionsClosed: number;
       codesRemaining?: number;
+      /** Set when recovery deleted the AI key stored for the web (IA-12). */
+      aiWebKeyRemoved?: true;
     }
   | { event: "recovery_codes_generated"; codes: number }
   | { event: "password_reset_requested"; method: "email_link" };
@@ -319,11 +325,13 @@ export function createAccountService(deps: {
           input.newPassword,
         );
         const codesRemaining = codes.length - 1;
+        const aiWebKeyRemoved = await wipeAiVault(client, user.id);
         await audit(client, user.id, {
           event: "password_changed",
           method: "recovery_code",
           sessionsClosed,
           codesRemaining,
+          ...(aiWebKeyRemoved && { aiWebKeyRemoved }),
         });
         return { codesRemaining };
       });
@@ -418,10 +426,12 @@ export function createAccountService(deps: {
           spent.user_id,
           newPassword,
         );
+        const aiWebKeyRemoved = await wipeAiVault(client, spent.user_id);
         await audit(client, spent.user_id, {
           event: "password_changed",
           method: spent.issued_by ? "admin" : "email_link",
           sessionsClosed,
+          ...(aiWebKeyRemoved && { aiWebKeyRemoved }),
         });
       });
     },

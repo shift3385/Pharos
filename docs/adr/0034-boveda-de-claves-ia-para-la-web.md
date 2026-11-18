@@ -78,6 +78,14 @@ No cambia la decisión. Concreta lo siguiente:
   - 10 subidas o borrados por hora;
   - 3 peticiones de IA esperando al proveedor a la vez;
   - un cuerpo de hasta 20 MiB solo en `/ai/chat`, por las imágenes (IA-18).
+- **Recuperar la cuenta borra la copia** (SEC-08/SEC-09,
+  [ADR-0045](0045-recuperacion-de-la-cuenta.md)). Quien recupera una cuenta con
+  un código, un enlace por correo o un enlace de un administrador puede no ser
+  su dueño, así que la fila de `ai_vault` se borra en la misma transacción
+  que cambia la contraseña. El evento de auditoría `password_changed` lleva
+  entonces `aiWebKeyRemoved: true`, sin la clave ni otro secreto. Cambiar la
+  contraseña desde «Mi perfil» exige la actual y conserva la copia. Para
+  volver a usar la IA en la web, el dueño la sube otra vez desde su escritorio.
 
 ### Revisión de seguridad independiente
 
@@ -111,8 +119,8 @@ Hallazgos y lo que se hizo con cada uno:
    ruta para borrar cuentas.
    - Si se añade una baja que no borre la fila de `users`, debe borrar la de
      `ai_vault`.
-   - Si se añade un restablecimiento de contraseña (SEC-08/09), debe valorar
-     borrarla.
+   - Recuperar la cuenta (SEC-08/09) la borra: ver arriba. Llegó con #85,
+     después de la revisión.
    - Los tokens de acceso no se comprueban contra la base de datos: una sesión
      cerrada puede usar `/ai/chat` hasta que caduque su token, 15 minutos por
      defecto. Está documentado en `docs/despliegue.md`.

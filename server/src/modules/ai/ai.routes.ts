@@ -22,6 +22,7 @@ import type { TokenService } from "../auth/tokens";
 import { requireSupportedVersion } from "../sync/sync.version";
 import { WEB_PROVIDERS, ProviderError, chat, messagesSchema, validModel, type Fetch, type WebProvider } from "./providers";
 import { createVault, type Vault } from "./vault";
+import { wipeAiVault } from "./ai.wipe";
 
 /** What the account has on this server. */
 export interface WebAccess {
@@ -65,7 +66,7 @@ export function createAiVaultStore(pool: Pool) {
       );
     },
     async remove(userId: string): Promise<void> {
-      await pool.query("DELETE FROM ai_vault WHERE user_id = $1", [userId]);
+      await wipeAiVault(pool, userId);
     },
   };
 }
