@@ -22,8 +22,8 @@
   "server": {
     "dir": "server/migrations",
     "reserved": {
-      "0027": "0.6.0 track A (INT-02): api_tokens (project tokens and personal access tokens, hashed, scoped)",
-      "0028": "0.6.0 track A (INT-03): webhooks and webhook_deliveries (outbox, signed deliveries)"
+      "0029": "0.6.0 track A (INT-02): api_tokens (project tokens and personal access tokens, hashed, scoped)",
+      "0030": "0.6.0 track A (INT-03): webhooks and webhook_deliveries (outbox, signed deliveries)"
     },
     "retired": {
       "0011": "E4 step 9 spare, never used: imports are documents of the step 4 entities",
