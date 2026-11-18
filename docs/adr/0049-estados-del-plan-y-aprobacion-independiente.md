@@ -56,16 +56,26 @@
        en los compartidos.
      - La cambia un Test Manager (`members.manage`), con confirmación y
        registro en la auditoría. Las aprobaciones que ya existen no cambian.
-  6. **Quién aprueba**, una sola comprobación para planes y casos. Se
-     generaliza el `ApproverCheck` de K: `ApprovalRequest` lleva
+  6. **Quién aprueba**, una sola comprobación para planes y casos: la
+     `workspaceApproverCheck(pool, { policies })` de W (#93), sin un
+     `ApproverCheck` paralelo. `ApprovalRequest` lleva
      `subject: "case" | "plan"`.
      1. Quien no es miembro: `notMember`.
-     2. Sin la capacidad (`plan.approve` para planes; `case.approve` para
-        casos): `role`.
-     3. El autor (quien creó el plan o el caso): con la política activada,
-        `author`. Con la política desactivada, puede aprobar y queda como
-        **aprobación propia** (`selfApproval: true`).
-     4. Cualquier otra persona: puede aprobar.
+     2. Sin la capacidad del `subject` (`plan.approve` para planes;
+        `case.approve` para casos): `role`.
+     3. El autor: lo decide la regla `independentApproval`, una entrada de
+        `policies`. Con la política activada, `author`. Con la política
+        desactivada, `null`, y el autor aprueba como **aprobación propia**.
+     4. Cualquier otra persona: puede aprobar. El veredicto final lleva
+        `selfApproval: approverId === authorId`.
+     - Para eso, la regla fija «el autor no aprueba» de #93 (su paso 4)
+       pasa a ser la política por defecto (`authorNeverApproves`), y la
+       capacidad sale del `subject`. Son dos cambios pequeños en el código
+       de W que se acuerdan con W.
+     - **El autor** es quien creó el plan o el caso. En un caso, el
+       `createdBy` de su primera revisión, como hace #93. En un plan,
+       `test_plans.created_by` en el escritorio y la misma regla en el
+       servidor.
      - La aprobación propia se marca en la pantalla, en el historial y en los
        exportes («Aprobado por: … (aprobación propia)»).
 - **Alternativas:**
