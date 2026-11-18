@@ -54,6 +54,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0046](0046-despliegue-tls-y-servidor-configurable.md) | Despliegue: TLS con proxy inverso (Caddy) y servidor elegido al iniciar sesión, con las peticiones del escritorio por Rust (SEC-07, SEC-10) | Aceptado | 2026-11-17 |
 | 0047 | Revisión y aprobación de casos por otra persona y baselines de suite (CAS-02) | Reservado: lo aporta la pista K de 0.5.0 | 2026-11-17 |
 | [0048](0048-notificaciones.md) | Notificaciones que viajan por el servidor, una API `notify`/`emitNotification` para las pistas y copia cifrada en el escritorio (RED-W2) | Aceptado | 2026-11-17 |
+| [0049](0049-estados-del-plan-y-aprobacion-independiente.md) | Estados del plan por acciones, como los casos, y política «Aprobación independiente» por workspace para planes y casos (PLN-08); cambia la decisión 4 del ADR-0040 | Propuesto | 2026-11-17 |
 
 Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en
