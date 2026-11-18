@@ -35,7 +35,10 @@ import {
   withLinks,
 } from "./defects";
 import { linkId, stampLifecycle } from "../sync/defects";
+import { afterSave, approverCheck, reviewTransition, statusOnCreate, stripReview } from "./case-review";
 import type {
+  CaseBaselineInput,
+  CaseReviewInput,
   CustomFieldInput,
   DefectInput,
   DefectTransition,
@@ -351,16 +354,37 @@ export function createDomainService(store: DomainStore) {
     if (!("custom" in data) && prevData.custom !== undefined) data.custom = prevData.custom;
     const checked = validateValues(await fieldRules(tx, str(prev, "projectId")), caseType ?? "standard", data, prevData);
     if ("error" in checked) throw new AppError(400, "invalid_custom_value", checked.error);
+    // The review flow (CAS-02, ADR-0047): a new case starts as draft (or
+    // obsolete) without review records; a save keeps the stored status and
+    // records, and a content change of a case in review or approved sends it
+    // back to draft.
+    const review = isNew
+      ? {
+          status: statusOnCreate(input.status),
+          version: input.version ?? "1.0",
+          data: stripReview(checked.data as Payload),
+        }
+      : afterSave(
+          {
+            status: str(prev, "status") || "draft",
+            title: str(prev, "title"),
+            version: str(prev, "version") || "1.0",
+            data: prev.data,
+          },
+          input.title,
+          input.version,
+          checked.data as Payload,
+        );
     return {
       ...prev,
       title: input.title,
-      version: input.version ?? "1.0",
-      status: input.status ?? "draft",
+      version: review.version,
+      status: review.status,
       priority: input.priority ?? "medium",
       caseType,
       automationStatus,
       author: input.author,
-      data: checked.data,
+      data: review.data,
       updatedAt: now(),
     };
   }
@@ -400,6 +424,7 @@ export function createDomainService(store: DomainStore) {
       createdBy: userId,
       hlc: doc.hlc,
     });
+    return id;
   }
 
   const testCases = {
@@ -423,6 +448,10 @@ export function createDomainService(store: DomainStore) {
             aiPending: aiPending(c.data),
             requirementKeys: requirementKeys(c.data),
             traceability: str((c.data ?? {}) as Payload, "traceability"),
+            // The review flow (CAS-02): who sent or approved it, and its author.
+            review: (c.data as Payload | undefined)?.review ?? null,
+            approval: (c.data as Payload | undefined)?.approval ?? null,
+            createdBy: userId,
             updatedAt: c.updatedAt,
             revision: c.revision,
           }));
@@ -432,8 +461,10 @@ export function createDomainService(store: DomainStore) {
         const doc = await tx.get("test_case", id);
         if (!doc || doc.deleted) return null;
         const project = await tx.get("project", str(doc.payload, "projectId"));
+        // `createdBy`: the case's author in the review flow (CAS-02); until
+        // workspaces share projects (TEN-01) it is the owner.
         return project && !project.deleted
-          ? withStableSteps(doc.payload)
+          ? { createdBy: userId, ...withStableSteps(doc.payload) }
           : null;
       }),
     create: (userId: string, input: TestCaseInput) =>
@@ -458,7 +489,7 @@ export function createDomainService(store: DomainStore) {
         };
         const doc = await tx.put("test_case", id, await casePayload(tx, base, input), null);
         await storeRevision(tx, userId, doc);
-        return doc.payload;
+        return { createdBy: userId, ...doc.payload };
       }),
     /** The scenario id is immutable: an update never changes it. */
     update: (userId: string, id: string, input: TestCaseInput, revision?: number) =>
@@ -470,9 +501,178 @@ export function createDomainService(store: DomainStore) {
         );
         const next = await tx.put("test_case", id, await casePayload(tx, doc.payload, input), doc);
         await storeRevision(tx, userId, next);
-        return next.payload;
+        return { createdBy: userId, ...next.payload };
       }),
     remove: remove("test_case", "Test case"),
+    /** A review transition (CAS-02, ADR-0047): the account is the session's;
+     *  the name is recorded as the client sends it. */
+    review: (userId: string, id: string, input: CaseReviewInput, revision?: number) =>
+      run(userId, async (tx) => {
+        const doc = current(await tx.get("test_case", id), "Test case", revision);
+        const project = await liveProject(tx, str(doc.payload, "projectId"));
+        const next = await reviewTransition(
+          doc.payload,
+          { ...input, userId, at: new Date().toISOString(), revision: doc.revision + 1 },
+          approverCheck(),
+          {
+            workspaceId: str(doc.payload, "workspaceId") || str(project, "workspaceId") || WORKSPACE,
+            projectId: str(doc.payload, "projectId"),
+            caseId: id,
+            // Until workspaces share projects (TEN-01), a case is its owner's.
+            authorId: str(doc.payload, "createdBy") || userId,
+          },
+        );
+        const stored = await tx.put(
+          "test_case",
+          id,
+          { ...doc.payload, status: next.status, data: next.data, updatedAt: now() },
+          doc,
+        );
+        await storeRevision(tx, userId, stored);
+        return { createdBy: userId, ...withStableSteps(stored.payload) };
+      }),
+    /** The earlier state a reviewer compares the case with: the latest
+     *  revision that was approved or sent to review (CAS-02). */
+    reviewBase: (userId: string, id: string) =>
+      run(userId, async (tx) => {
+        const doc = await tx.get("test_case", id);
+        if (!doc || doc.deleted) return null;
+        const revisions = await tx.list("test_case_revision", undefined, { where: { testCaseId: id } });
+        const base = revisions
+          .map((d) => d.payload)
+          .filter((p) => (p.status === "approved" || p.status === "reviewed") && num(p, "revision") < doc.revision)
+          .sort((a, b) => num(b, "revision") - num(a, "revision"))[0];
+        return base
+          ? {
+              id: base.id,
+              revision: base.revision,
+              title: base.title,
+              version: base.version,
+              status: base.status,
+              priority: base.priority,
+              caseType: base.caseType ?? null,
+              automationStatus: base.automationStatus ?? null,
+              data: normalizeCaseData(id, base.data).data,
+              createdAt: base.createdAt,
+            }
+          : null;
+      }),
+  };
+
+  // Suite baselines (CAS-02, ADR-0047): append-only documents, as the
+  // desktop's `case_baselines` rows. Each item names the immutable revision
+  // document of its case; reading a baseline resolves their content.
+  type BaselineItem = { caseId: string; revisionId: string; revision: number; scenarioId: string; title: string; status: string };
+  const summaryOf = (p: Payload) => ({
+    id: str(p, "id"),
+    projectId: str(p, "projectId"),
+    name: str(p, "name"),
+    description: str(p, "description"),
+    scopeLabel: str(p, "scopeLabel"),
+    approvedOnly: p.approvedOnly === true,
+    createdBy: str(p, "createdBy"),
+    createdAt: str(p, "createdAt"),
+    itemCount: Array.isArray(p.items) ? p.items.length : 0,
+  });
+  const caseBaselines = {
+    list: (userId: string, projectId: string) =>
+      run(userId, async (tx) => {
+        const project = await tx.get("project", projectId);
+        if (!project || project.deleted) return [];
+        return (await tx.list("case_baseline", projectId))
+          .map((d) => summaryOf(d.payload))
+          .sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
+      }),
+    get: (userId: string, id: string) =>
+      run(userId, async (tx) => {
+        const doc = await tx.get("case_baseline", id);
+        if (!doc || doc.deleted) return null;
+        const items = (Array.isArray(doc.payload.items) ? doc.payload.items : []) as BaselineItem[];
+        const resolved = [];
+        for (const item of items) {
+          const rev = (await tx.get("test_case_revision", item.revisionId))?.payload ?? {};
+          resolved.push({
+            ...item,
+            version: str(rev, "version"),
+            priority: str(rev, "priority"),
+            data: normalizeCaseData(item.caseId, rev.data ?? {}).data,
+          });
+        }
+        return { ...summaryOf(doc.payload), items: resolved };
+      }),
+    /** The project's live cases now, in the shape of a baseline. */
+    current: (userId: string, projectId: string) =>
+      run(userId, async (tx) => {
+        const project = await tx.get("project", projectId);
+        if (!project || project.deleted) return null;
+        const items = (await tx.list("test_case", projectId))
+          .map((d) => ({ doc: d, p: withStableSteps(d.payload) }))
+          .sort((a, b) => byText("scenarioId")(a.p, b.p))
+          .map(({ doc, p }) => ({
+            caseId: doc.entityId,
+            revisionId: "",
+            revision: doc.revision,
+            scenarioId: str(p, "scenarioId"),
+            title: str(p, "title"),
+            status: str(p, "status"),
+            version: str(p, "version"),
+            priority: str(p, "priority"),
+            data: p.data ?? {},
+          }));
+        return {
+          id: "",
+          projectId,
+          name: "",
+          description: "",
+          scopeLabel: "",
+          approvedOnly: false,
+          createdBy: userId,
+          createdAt: "",
+          itemCount: items.length,
+          items,
+        };
+      }),
+    create: (userId: string, input: CaseBaselineInput) =>
+      run(userId, async (tx) => {
+        const project = await liveProject(tx, input.projectId);
+        const name = input.name.trim();
+        if (!name) throw new AppError(400, "baseline_name_required", "A baseline needs a name.");
+        const items: BaselineItem[] = [];
+        for (const caseId of new Set(input.caseIds)) {
+          const doc = await tx.get("test_case", caseId);
+          if (!doc || doc.deleted || str(doc.payload, "projectId") !== input.projectId) continue;
+          const status = str(doc.payload, "status") || "draft";
+          if (input.approvedOnly && status !== "approved") continue;
+          const revisionId = await storeRevision(tx, userId, doc);
+          items.push({
+            caseId,
+            revisionId,
+            revision: doc.revision,
+            scenarioId: str(doc.payload, "scenarioId"),
+            title: str(doc.payload, "title"),
+            status,
+          });
+        }
+        if (items.length === 0) throw new AppError(400, "baseline_empty", "No case to freeze.");
+        items.sort((a, b) => (a.scenarioId < b.scenarioId ? -1 : a.scenarioId > b.scenarioId ? 1 : 0));
+        const id = randomUUID();
+        const payload = {
+          id,
+          projectId: input.projectId,
+          workspaceId: str(project, "workspaceId") || WORKSPACE,
+          name,
+          description: input.description.trim(),
+          scopeLabel: input.scopeLabel.trim(),
+          approvedOnly: input.approvedOnly,
+          createdBy: userId,
+          createdAt: new Date().toISOString(),
+          hlc: tx.stamp(),
+          items,
+        };
+        await tx.append("case_baseline", id, payload);
+        await tx.audit("create", "case_baseline", id, { name, cases: items.length });
+        return { ...summaryOf(payload) };
+      }),
   };
 
   const priorityOf = (p?: string) => (p && PRIORITIES.includes(p) ? p : "medium");
@@ -930,7 +1130,7 @@ export function createDomainService(store: DomainStore) {
       }),
   };
 
-  return { projects, testPlans, testCases, requirements, plannerCards, customFields, defects };
+  return { projects, testPlans, testCases, caseBaselines, requirements, plannerCards, customFields, defects };
 }
 
 export type DomainService = ReturnType<typeof createDomainService>;

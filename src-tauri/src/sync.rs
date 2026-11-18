@@ -423,6 +423,16 @@ pub(crate) fn server_takes_defects(conn: &Connection, user: &str) -> Result<bool
     server_lists(conn, user, DEFECTS)
 }
 
+/// The server feature that stores suite baselines (CAS-02, ADR-0047). A
+/// server without it refuses the whole push for an entity it does not know.
+pub(crate) const CASE_BASELINES: &str = "case-baselines";
+
+/// True once the account's server has listed `case-baselines`. Until then
+/// this build keeps its baselines pending.
+pub(crate) fn server_takes_case_baselines(conn: &Connection, user: &str) -> Result<bool, String> {
+    server_lists(conn, user, CASE_BASELINES)
+}
+
 /// True if the account's server listed `feature` in its last answer.
 fn server_lists(conn: &Connection, user: &str, feature: &str) -> Result<bool, String> {
     let features = state_value(conn, &server_features_key(user))?;
@@ -656,6 +666,8 @@ pub(crate) fn build_pending_append(conn: &Connection, user: &str) -> Result<Pend
     let revisions_too = server_takes_stable_steps(conn, user)?;
     // Shards and results wait for a server with `runs`, like their runs.
     let runs_too = server_takes_runs(conn, user)?;
+    // Baselines wait for a server with `case-baselines` (CAS-02).
+    let baselines_too = server_takes_case_baselines(conn, user)?;
     let rows: Vec<(String, String, String, String, String)> = {
         let mut stmt = conn
             .prepare(&format!(
@@ -664,14 +676,16 @@ pub(crate) fn build_pending_append(conn: &Connection, user: &str) -> Result<Pend
                     AND payload NOT LIKE '%\"appendRejected\"%'
                     AND (entity <> '{}' OR ?2)
                     AND (entity NOT IN ({}) OR ?3)
+                    AND (entity <> '{}' OR ?4)
                   ORDER BY rowid",
                 sync_class::append_only_sql_list(),
                 revisions::ENTITY,
-                crate::runs::entities_sql_list()
+                crate::runs::entities_sql_list(),
+                crate::case_baseline::ENTITY
             ))
             .map_err(|e| e.to_string())?;
         let rows = stmt
-            .query_map(params![user, revisions_too, runs_too], |r| {
+            .query_map(params![user, revisions_too, runs_too, baselines_too], |r| {
                 Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?))
             })
             .map_err(|e| e.to_string())?;

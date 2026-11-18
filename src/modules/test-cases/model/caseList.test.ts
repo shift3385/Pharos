@@ -24,6 +24,9 @@ const c = (scenarioId: string, over: Partial<ListedCase> = {}): ListedCase => ({
   revision: 1,
   requirementKeys: [],
   traceability: "",
+  review: null,
+  approval: null,
+  createdBy: "u1",
   ...over,
 });
 
@@ -65,7 +68,7 @@ describe("case list model", () => {
 
   it("counts each state with the other filters on, ignoring the chosen state", () => {
     const counts = statusCounts(CASES, { ...EMPTY_FILTERS, status: "draft", priorities: new Set(["high", "low", "medium"]) });
-    expect(counts).toEqual({ all: 3, draft: 0, reviewed: 0, approved: 2, obsolete: 1 });
+    expect(counts).toEqual({ all: 3, toReview: 0, draft: 0, reviewed: 0, approved: 2, obsolete: 1 });
   });
 
   it("sorts by ID in natural order and by priority keeping ID ties", () => {

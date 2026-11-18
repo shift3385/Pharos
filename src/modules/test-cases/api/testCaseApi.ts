@@ -7,7 +7,13 @@ import type {
   TestCaseSummary,
 } from "../model/types";
 import type { TestCaseRevisionDetail } from "@shared/contracts/contract";
-import { announceCasesChanged, type BatchOptions } from "../model/events";
+import {
+  announceCasesChanged,
+  emitCaseReview,
+  type BatchOptions,
+  type CaseReviewEvent,
+} from "../model/events";
+import { approvalOf, reviewOf, type ReviewAction } from "../model/review";
 
 /** Announces a created or deleted case once the store has it (FIX-13),
  *  unless it is one call of a batch that announces once at the end. */
@@ -54,4 +60,60 @@ export const testCaseApi = {
   /** One revision's content, to restore it in the editor (NC-018). */
   revisionDetail: (id: string, userId: string): Promise<TestCaseRevisionDetail | null> =>
     isTauri() ? invoke("test_case_revision_get", { id, userId }) : Promise.resolve(null),
+  /** A review transition (CAS-02, ADR-0047). Once the store accepted it,
+   *  «sent», «approved» and «returned» are announced (`onCaseReview`). */
+  review: async (
+    testCase: Pick<TestCase, "id" | "revision">,
+    input: { action: ReviewAction; comment?: string; userId: string; userName: string },
+  ): Promise<TestCase | null> => {
+    const saved: TestCase | null = isTauri()
+      ? await invoke("test_case_review", { id: testCase.id, input })
+      : await serverApi.post(`${path(testCase.id)}/review`, {
+          action: input.action,
+          comment: input.comment,
+          userName: input.userName,
+          revision: testCase.revision,
+        });
+    if (saved) announceReview(saved, input);
+    return saved;
+  },
+  /** The earlier state a reviewer compares the case with: the latest one
+   *  approved or sent to review (CAS-02). */
+  reviewBase: (id: string, userId: string): Promise<TestCaseRevisionDetail | null> =>
+    isTauri()
+      ? invoke("test_case_review_base", { id, userId })
+      : serverApi.get(`${path(id)}/review-base`),
 };
+
+const EVENT_KIND: Partial<Record<ReviewAction, CaseReviewEvent["kind"]>> = {
+  send: "sent",
+  approve: "approved",
+  return: "returned",
+};
+
+/** The notifications contract (`CASE_REVIEW_EVENT`), from the stored case. */
+function announceReview(saved: TestCase, input: { action: ReviewAction; comment?: string; userId: string; userName: string }) {
+  const kind = EVENT_KIND[input.action];
+  if (!kind) return;
+  const data = (saved.data ?? {}) as Record<string, unknown>;
+  const review = reviewOf(data.review);
+  const approval = approvalOf(data.approval);
+  const at = (kind === "approved" ? approval?.at : kind === "returned" ? review?.returnedAt : review?.sentAt) ?? new Date().toISOString();
+  const comment = kind === "sent" ? review?.note : kind === "returned" ? review?.comment : undefined;
+  emitCaseReview({
+    kind,
+    caseId: saved.id,
+    scenarioId: saved.scenarioId,
+    title: saved.title,
+    projectId: saved.projectId ?? "",
+    workspaceId: saved.workspaceId,
+    authorId: saved.createdBy,
+    actorId: input.userId,
+    actorName: input.userName,
+    at,
+    version: saved.version,
+    revision: saved.revision,
+    ...(comment ? { comment } : {}),
+    ...(kind === "approved" ? { selfApproval: approval?.selfApproved ?? false } : {}),
+  });
+}

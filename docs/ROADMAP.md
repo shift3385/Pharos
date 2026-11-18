@@ -375,7 +375,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | ID     | Ítem                                                                        | P   | Versión | Criterio de aceptación                                                              |
 | ------ | --------------------------------------------------------------------------- | --- | ------- | ----------------------------------------------------------------------------------- |
 | CAS-01 | Pasos compartidos, parámetros y datasets                                    | P1  | 0.6.0   | Cambiar un paso compartido actualiza N casos; un dataset de 3 filas da 3 resultados |
-| CAS-02 | Flujo borrador → revisión → aprobado y baselines de suite                   | P1  | 0.5.0 · pista K (ADR-0047); la regla de roles, en la ola 2 tras SYNC-07 | Editar un caso aprobado lo devuelve a borrador; una baseline queda congelada; aprueba un Test Manager o Test Analyst que no es el autor |
+| CAS-02 | Flujo borrador → revisión → aprobado y baselines de suite                   | P1  | 0.5.0 · pista K · Hecho en local y web (ADR-0047): «Enviar a revisión», «Aprobar versión N», «Devolver» con comentario, autoaprobación registrada con un solo miembro y baselines congeladas con comparación; la regla de roles (otra persona, Test Manager o Test Analyst), en la ola 2 tras SYNC-07 | Editar un caso aprobado lo devuelve a borrador; una baseline queda congelada; aprueba un Test Manager o Test Analyst que no es el autor |
 | EXP-01 | Sesiones exploratorias (charter, timebox, notas, evidencias desde el móvil) | P2  | 0.10.0  | Una sesión genera un Run con notas y un defecto vinculado                           |
 | FLD-02 | Selector de columnas en la lista de casos (campos personalizados como columnas; ADR-0018, Q4 de E3) | P2  | Sin versión | Mostrar u ocultar columnas, también de campos personalizados, y que se recuerde por proyecto |
 | FLD-03 | Campos personalizados de defectos definidos en los Ajustes del proyecto (seguimiento de E4, ADR-0016/0018) | P2  | 0.2.0 · Hecho (E6p): selector «Casos / Defectos» en la tarjeta, copia por entidad | Un campo de defecto creado en Ajustes aparece en el editor de defectos y se sincroniza |
@@ -728,7 +728,7 @@ prueba de los diálogos con teclado se reescribió el 2026-11-16 y está pendien
       Migraciones: local 0043; servidor 0023, porque las notificaciones viajan por el servidor
       (aprobado con el plan de R el 2026-11-17). La local 0044 se retiró: AUD-01c usa un contador en `sync_state` y un
       fichero lateral.
-    - **K** · CAS-02 en local (ADR-0047). Migraciones:
+    - **K** · CAS-02 en local y en la web (ADR-0047, hecho). Migraciones:
       local 0042. La 0024 del servidor se retiró: las baselines son documentos append-only.
   - **Ola 2:**
     - **I** · IA-12 ([ADR-0034](adr/0034-boveda-de-claves-ia-para-la-web.md)), migración del

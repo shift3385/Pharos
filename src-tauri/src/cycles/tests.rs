@@ -250,7 +250,14 @@ fn cycles_get_keys_and_check_their_header() {
 fn items_are_static_skip_repeats_and_warn_about_cases_not_approved() {
     let c = device();
     let (p, case, _, _, cycle) = setup(&c);
-    let approved = new_case(&c, &p, json!({"status": "approved"}));
+    // Only the review flow approves a case (CAS-02).
+    let approved = new_case(&c, &p, json!({}));
+    for action in ["send", "approve"] {
+        let input: crate::case_review::ReviewInput =
+            serde_json::from_value(json!({"action": action, "userId": U, "userName": "Ada"}))
+                .unwrap();
+        crate::case_review::review_case(&c, &approved, &input).unwrap();
+    }
     let out = add_items(&c, &cycle, U, &[item(&case), item(&approved), item(&case)]).unwrap();
     assert_eq!(out.added.len(), 1);
     assert_eq!(out.skipped, 2);

@@ -42,7 +42,16 @@ export const APPEND_ONLY_ENTITIES = [
   "test_case_revision",
   "run_shard",
   "result",
+  // Suite baselines (CAS-02, ADR-0047): frozen sets of case revisions.
+  "case_baseline",
 ] as const;
+
+/** Suite baselines (CAS-02, ADR-0047). Only clients that send the
+ *  `case-baselines` feature pull or push them (VERSIONING §6.5). */
+export const BASELINE_ENTITIES = ["case_baseline"] as const;
+
+export const isBaselineEntity = (entity: string): boolean =>
+  (BASELINE_ENTITIES as readonly string[]).includes(entity);
 
 /** The execution entities (EJE-01, ADR-0013), of both classes. Only clients
  *  that send the `runs` feature pull them; the others never knew them and
@@ -106,6 +115,8 @@ export const NON_CONTENT_KEYS: Partial<
   // (deterministic ids, ADR-0013) at different times and clocks.
   run_shard: ["importedAt", "importedBy", "hlc"],
   result: ["createdAt", "createdBy", "hlc"],
+  // The same baseline written by two devices is still the same document.
+  case_baseline: ["createdAt", "createdBy", "hlc"],
 };
 
 /** Every payload key of `entity` outside its immutable content. */
@@ -134,6 +145,7 @@ export const PROJECT_CHILDREN = [
   "test_cycle_item",
   "defect",
   "defect_link",
+  "case_baseline",
 ] as const;
 
 const RESULT_STATUSES = ["passed", "failed", "blocked", "skipped", "other"] as const;

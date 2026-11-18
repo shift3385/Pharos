@@ -6,6 +6,8 @@ mod audit;
 mod audit_read;
 #[cfg(test)]
 mod audit_tests;
+mod case_baseline;
+mod case_review;
 mod custom_fields;
 #[cfg(test)]
 mod custom_fields_tests;
@@ -207,6 +209,12 @@ pub fn run() {
             test_case::test_case_delete,
             test_case::test_case_revisions,
             test_case::test_case_revision_get,
+            test_case::test_case_review,
+            test_case::test_case_review_base,
+            case_baseline::case_baseline_create,
+            case_baseline::case_baseline_list,
+            case_baseline::case_baseline_get,
+            case_baseline::case_baseline_current,
             custom_fields::custom_field_list,
             custom_fields::custom_field_create,
             custom_fields::custom_field_update,

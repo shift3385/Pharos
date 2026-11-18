@@ -134,6 +134,7 @@ export function caseDocDefinition(c: ExportableCase, t: Translate): TDocumentDef
       columns: [meta(t("testCase.status"), c.status), meta(t("testCase.author"), c.author), meta(t("testCase.caseDate"), d.caseDate)],
       margin: [0, 2, 0, 0],
     },
+    ...(c.approvalLine ? [meta(t("testCase.review.approvedBy"), c.approvalLine)] : []),
     meta(t("testCase.mappedUseCase"), d.mappedUseCase),
     meta(t("testCase.traceability"), traceabilityText(d)),
     sectionHeader(t("testCase.description")),

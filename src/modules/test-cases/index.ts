@@ -1,7 +1,12 @@
 // Public API of the test-cases module (spec §5.3).
 export { TestCasesPage } from "./ui/TestCasesPage";
 export { caseLink } from "./model/caseLink";
-export { CASES_CHANGED_EVENT } from "./model/events";
+export { CASES_CHANGED_EVENT, CASE_REVIEW_EVENT, onCaseReview } from "./model/events";
+export type { CaseReviewEvent } from "./model/events";
+// The review flow (CAS-02, ADR-0047): the workspaces track installs its role
+// check here; the notifications track listens to `onCaseReview`.
+export { approverCheck, otherThanAuthor, setApproverCheck } from "./review/approver";
+export type { ApprovalRequest, ApprovalVerdict, ApproverCheck } from "./review/approver";
 export {
   FILES_PER_CASE,
   projectCaseFiles,

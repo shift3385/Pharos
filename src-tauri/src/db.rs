@@ -186,6 +186,10 @@ pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
         include_str!("../migrations/0039_risk_bands.sql"),
     ),
     (
+        "0042_case_baselines.sql",
+        include_str!("../migrations/0042_case_baselines.sql"),
+    ),
+    (
         "0043_notifications.sql",
         include_str!("../migrations/0043_notifications.sql"),
     ),
