@@ -124,8 +124,10 @@ describe("plan revision history on the web (PLN-02)", () => {
       input: planInput(p.id, "1.1", { summary: "s" }),
       revision: plan.revision,
     });
-    await call(token, "PUT", `/api/test-plans/${plan.id}`, {
-      input: planInput(p.id, "1.2", { summary: "s" }, "approved"),
+    // The status moves only through the review flow (PLN-08).
+    await call(token, "POST", `/api/test-plans/${plan.id}/review`, {
+      action: "send",
+      userName: "Ana",
       revision: v2.body.revision,
     });
 
@@ -149,7 +151,7 @@ describe("plan revision history on the web (PLN-02)", () => {
     ]);
     expect(h.events.every((e) => e.actor === `user:${userId}`)).toBe(true);
     expect(h.events[1].changes["data.summary"]).toEqual([null, "s"]);
-    expect(h.events[2].changes.status).toEqual(["draft", "approved"]);
+    expect(h.events[2].changes.status).toEqual(["draft", "reviewed"]);
 
     const other = await register("other@pharos.dev");
     expect(

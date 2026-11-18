@@ -496,7 +496,7 @@ chapter("casos", () => {
   step("aprobar-caso", {
     title: "Aprobar un caso",
     caption:
-      "Quien revisa ve quién envió el caso y su nota, y, si había una versión anterior aprobada o enviada, qué cambió desde entonces. «Devolver…» lo vuelve a Borrador con un comentario obligatorio. «Aprobar versión N» pide confirmación y deja quién aprobó, cuándo y qué versión. En este ejemplo Liomar está solo en el espacio de trabajo, así que puede aprobar su propio caso y queda como «autoaprobación»; con los roles de la 0.5.0, aprobará otra persona.",
+      "Quien revisa ve quién envió el caso y su nota, y, si había una versión anterior aprobada o enviada, qué cambió desde entonces. «Pedir cambios…» deja un comentario obligatorio y el caso sigue en revisión. «Aprobar versión N» pide confirmación y deja quién aprobó, cuándo y qué versión. Liomar trabaja en su espacio personal, que no pide aprobación independiente, así que aprueba su propio caso y queda como «aprobación propia»; en un espacio compartido con la regla activada, lo aprobaría un Test Manager o un Test Analyst que no sea el autor.",
     covers: ["action:case-review-approve", "dialogs:src/modules/test-cases/ui/CaseReviewPanel.tsx"],
     focus: ".tc-review",
     run: async () => {
@@ -511,9 +511,9 @@ chapter("casos", () => {
   });
 
   step("devolver-caso", {
-    title: "Devolver un caso con un comentario",
+    title: "Pedir cambios en un caso",
     caption:
-      "Si el caso no está listo, «Devolver…» lo vuelve a Borrador. El comentario es obligatorio: sin él, el diálogo dice «Escribe qué hay que cambiar.». Quien escribió el caso lo verá en un aviso «Devuelto por…» hasta que lo vuelva a enviar, y en la lista el caso lleva la marca «Devuelto».",
+      "Si el caso no está listo, «Pedir cambios…» deja un comentario y el caso sigue en revisión: Borrador es solo el principio. El comentario es obligatorio: sin él, el diálogo dice «Escribe qué hay que cambiar.». Quien escribió el caso lo verá en un aviso «Cambios pedidos por…», y en la lista el caso lleva la marca «Cambios pedidos». Cuando guarde los cambios, el aviso pasa a «Cambios guardados tras la petición de…» y el caso se puede aprobar.",
     covers: ["action:case-review-return", "dialogs:src/modules/test-cases/ui/CaseReviewPanel.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {

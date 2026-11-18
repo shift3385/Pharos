@@ -1,12 +1,14 @@
-//! Review flow of a test case (CAS-02, ADR-0047): draft → reviewed («En
-//! revisión») → approved, with «return» back to draft, «obsolete» and
-//! «reactivate». The stored status values are the ones the app already had,
-//! so an older app still reads them.
+//! Review flow of a test case (CAS-02, ADR-0047, changed by PLN-08,
+//! ADR-0049): draft → reviewed («En revisión») → approved, with «return»
+//! («Pedir cambios», which stays in review), «obsolete» and «reactivate».
+//! The stored status values are the ones the app already had, so an older
+//! app still reads them. The plan's flow (`test_plan_review.rs`) is this one.
 //!
-//! - A plain save never moves the status (`after_save`): it keeps the stored
-//!   one, and a save that changes the content of a case in review or
-//!   approved sends it back to draft and drops its approval. Once approved,
-//!   the version goes up too (as the plan's, ADR-0040).
+//! - Borrador is only the stage before the first «Enviar a revisión».
+//! - A plain save never moves the status by itself (`after_save`): it keeps
+//!   the stored one; a save that changes the content of an approved case
+//!   sends it back to review with its next version and without the approval,
+//!   and one of a case in review keeps it there.
 //! - Only `review_case` moves the status. Who sent the case and who approved
 //!   it live in `data.review` and `data.approval`; a save or an import never
 //!   writes them.
@@ -30,6 +32,12 @@ pub const REVIEWED: &str = "reviewed";
 pub const APPROVED: &str = "approved";
 pub const OBSOLETE: &str = "obsolete";
 
+/// `data.review.state` while a reviewer asked for changes (PLN-08).
+pub const CHANGES_REQUESTED: &str = "changesRequested";
+/// What the approver check is asked about (`ApprovalRequest::subject`).
+pub const SUBJECT_CASE: &str = "case";
+pub const SUBJECT_PLAN: &str = "plan";
+
 /// Error prefixes the UI translates.
 pub const ERR_TRANSITION: &str = "review-invalid-transition";
 pub const ERR_COMMENT: &str = "review-comment-required";
@@ -46,10 +54,14 @@ const NOT_CONTENT: [&str; 4] = ["review", "approval", "aiProvenance", "custom"];
 /// What the approver check is asked.
 #[allow(dead_code)] // `project_id` and `case_id` are for the role check of TEN-01
 pub struct ApprovalRequest<'a> {
+    /// What is approved: `SUBJECT_CASE` or `SUBJECT_PLAN` (PLN-08); the
+    /// role check takes the capability from it.
+    pub subject: &'a str,
     pub workspace_id: &'a str,
     pub project_id: &'a str,
+    /// The id of the case or the plan (the field keeps K's name).
     pub case_id: &'a str,
-    /// The account that created the case.
+    /// The account that created it.
     pub author_id: &'a str,
     /// The account approving it.
     pub approver_id: &'a str,
@@ -138,7 +150,7 @@ pub fn set_approver_check(check: Box<dyn ApproverCheck>) -> bool {
     APPROVER.set(check).is_ok()
 }
 
-fn approver() -> &'static dyn ApproverCheck {
+pub(crate) fn approver() -> &'static dyn ApproverCheck {
     APPROVER
         .get()
         .map(|b| b.as_ref())
@@ -164,7 +176,7 @@ pub fn strip_review(data: &mut Value) {
     }
 }
 
-/// The stored case a save starts from.
+/// The stored case (or plan) a save starts from.
 pub struct Saved<'a> {
     pub status: &'a str,
     pub title: &'a str,
@@ -180,11 +192,11 @@ pub struct AfterSave {
 
 /// `data` without what is not content, and without empty values, so an
 /// empty field the editor sends and one it never sent compare equal.
-fn content(data: Option<&Value>) -> Map<String, Value> {
+fn content(data: Option<&Value>, not_content: &[&str]) -> Map<String, Value> {
     let mut out = Map::new();
     if let Some(map) = data.and_then(Value::as_object) {
         for (k, v) in map {
-            if NOT_CONTENT.contains(&k.as_str()) || is_empty(v) {
+            if not_content.contains(&k.as_str()) || is_empty(v) {
                 continue;
             }
             out.insert(k.clone(), v.clone());
@@ -205,8 +217,21 @@ fn is_empty(v: &Value) -> bool {
 
 /// True when the title or the content differ (ADR-0047: priority, the case
 /// type and automation, custom fields and AI review marks are not content).
+#[cfg(test)]
 pub fn content_changed(old_title: &str, old: Option<&Value>, new_title: &str, new: &Value) -> bool {
-    old_title.trim() != new_title.trim() || content(old) != content(Some(new))
+    content_changed_with(old_title, old, new_title, new, &NOT_CONTENT)
+}
+
+/// `content_changed` with the keys that are not content (a plan's differ).
+pub fn content_changed_with(
+    old_title: &str,
+    old: Option<&Value>,
+    new_title: &str,
+    new: &Value,
+    not_content: &[&str],
+) -> bool {
+    old_title.trim() != new_title.trim()
+        || content(old, not_content) != content(Some(new), not_content)
 }
 
 /// Bumps the last dotted segment of a version (`1.0` → `1.1`), as the plan
@@ -224,24 +249,66 @@ pub fn next_version(v: &str) -> String {
     }
 }
 
-/// What a plain save writes (`update_case`). `data` is the prepared input:
-/// it gets the stored review records back, minus what the save drops.
+/// What a plain save of a case writes (`update_case`).
 pub fn after_save(saved: Saved, title: &str, version: Option<&str>, data: &mut Value) -> AfterSave {
-    let changed = content_changed(saved.title, saved.data, title, data);
+    after_save_with(saved, title, version, data, &NOT_CONTENT)
+}
+
+/// A review record without the last «Pedir cambios».
+fn without_request(review: &Value) -> Value {
+    let mut out = review.clone();
+    if let Some(map) = out.as_object_mut() {
+        for key in [
+            "returnedBy",
+            "returnedByName",
+            "returnedAt",
+            "comment",
+            "reopenedFrom",
+        ] {
+            map.remove(key);
+        }
+    }
+    out
+}
+
+/// What a plain save writes over a case or a plan (PLN-08, ADR-0049).
+/// `data` is the prepared input: it gets the stored review records back.
+/// - No content change, or a draft: the stored status and records.
+/// - Approved and the content changes: back to review with the next version
+///   (unless the save raised it already) and without the approval, which
+///   the history keeps.
+/// - In review and the content changes: still in review; a «Pedir cambios»
+///   counts as answered (`state` back to `pending`, the comment kept).
+pub fn after_save_with(
+    saved: Saved,
+    title: &str,
+    version: Option<&str>,
+    data: &mut Value,
+    not_content: &[&str],
+) -> AfterSave {
+    let changed = content_changed_with(saved.title, saved.data, title, data, not_content);
     let requested = version.unwrap_or(saved.version).to_string();
     strip_review(data);
     let kept = |key: &str| saved.data.and_then(|d| d.get(key)).cloned();
-    let in_flow = saved.status == REVIEWED || saved.status == APPROVED;
-    if changed && in_flow {
-        // Back to draft: the submission and the approval no longer describe
-        // this content. An approved case also gets its next version.
-        let version = if saved.status == APPROVED && requested == saved.version {
+    let review = kept("review").filter(Value::is_object);
+    if changed && saved.status == APPROVED {
+        let version = if requested == saved.version {
             next_version(saved.version)
         } else {
             requested
         };
+        let mut reopened = review
+            .as_ref()
+            .map(without_request)
+            .unwrap_or_else(|| json!({}));
+        reopened["state"] = json!("pending");
+        reopened["version"] = json!(version);
+        reopened["reopenedFrom"] = json!(saved.version);
+        if let Some(map) = data.as_object_mut() {
+            map.insert("review".into(), reopened);
+        }
         return AfterSave {
-            status: DRAFT.to_string(),
+            status: REVIEWED.to_string(),
             version,
         };
     }
@@ -249,6 +316,13 @@ pub fn after_save(saved: Saved, title: &str, version: Option<&str>, data: &mut V
         for key in REVIEW_KEYS {
             if let Some(v) = kept(key) {
                 map.insert(key.to_string(), v);
+            }
+        }
+        if changed && saved.status == REVIEWED {
+            if let Some(r) = map.get_mut("review").and_then(Value::as_object_mut) {
+                if r.get("state").and_then(Value::as_str) == Some(CHANGES_REQUESTED) {
+                    r.insert("state".into(), json!("pending"));
+                }
             }
         }
     }
@@ -266,6 +340,7 @@ pub fn after_save(saved: Saved, title: &str, version: Option<&str>, data: &mut V
 pub enum ReviewAction {
     Send,
     Approve,
+    /// «Pedir cambios» (PLN-08): the case stays in review, with a comment.
     Return,
     Obsolete,
     Reactivate,
@@ -280,7 +355,7 @@ pub enum ReviewAction {
 #[serde(rename_all = "camelCase")]
 pub struct ReviewInput {
     pub action: ReviewAction,
-    /// The note to the reviewer (send) or why the case goes back (return).
+    /// The note to the reviewer (send) or what has to change (return).
     pub comment: Option<String>,
     /// Signed-in user making the change.
     pub user_id: String,
@@ -299,15 +374,15 @@ pub struct CaseState {
     pub created_by: String,
 }
 
-fn now(conn: &Connection) -> Result<String, String> {
+pub(crate) fn now(conn: &Connection) -> Result<String, String> {
     conn.query_row("SELECT strftime('%Y-%m-%dT%H:%M:%fZ', 'now')", [], |r| {
         r.get(0)
     })
     .map_err(|e| e.to_string())
 }
 
-fn transition_error(from: &str, action: ReviewAction) -> String {
-    format!("{ERR_TRANSITION}: cannot {action:?} a case that is {from}")
+fn transition_error(from: &str, action: ReviewAction, subject: &str) -> String {
+    format!("{ERR_TRANSITION}: cannot {action:?} a {subject} that is {from}")
 }
 
 /// Applies a transition with the installed approver check.
@@ -325,6 +400,26 @@ pub fn review_with(
     let Some(case) = test_case::review_state(conn, id, &input.user_id)? else {
         return Err("test case not found".to_string());
     };
+    let (status, data) = transition(conn, SUBJECT_CASE, id, &case, input, check)?;
+    test_case::write_review(conn, id, status, &data, &input.user_id)?;
+    Ok(())
+}
+
+/// The status and `data` after a transition of a case or a plan (`subject`);
+/// an error when it is not allowed (PLN-08, ADR-0049):
+/// - send: Borrador → En revisión, with an optional note;
+/// - approve: En revisión → Aprobado, if the approver check allows it;
+/// - return («Pedir cambios»): stays in review, with a comment;
+/// - obsolete: from any other status, dropping the approval;
+/// - reactivate: back to review, or to draft when it was never sent.
+pub fn transition(
+    conn: &Connection,
+    subject: &str,
+    id: &str,
+    state: &CaseState,
+    input: &ReviewInput,
+    check: &dyn ApproverCheck,
+) -> Result<(&'static str, Value), String> {
     let user = input.user_id.as_str();
     let name = input.user_name.trim();
     let comment = input
@@ -333,17 +428,18 @@ pub fn review_with(
         .map(str::trim)
         .filter(|c| !c.is_empty());
     let at = now(conn)?;
-    // The transition is one more revision of the case.
-    let revision = case.revision + 1;
-    let mut data = case.data.clone();
+    // The transition is one more revision.
+    let revision = state.revision + 1;
+    let mut data = state.data.clone();
     if !data.is_object() {
         data = json!({});
     }
     let map = data.as_object_mut().expect("an object");
+    let refuse = || Err(transition_error(&state.status, input.action, subject));
     let status = match input.action {
         ReviewAction::Send => {
-            if case.status != DRAFT {
-                return Err(transition_error(&case.status, input.action));
+            if state.status != DRAFT {
+                return refuse();
             }
             let mut review = json!({
                 "state": "pending",
@@ -351,7 +447,7 @@ pub fn review_with(
                 "sentByName": name,
                 "sentAt": at,
                 "revision": revision,
-                "version": case.version,
+                "version": state.version,
             });
             if let Some(note) = comment {
                 review["note"] = json!(note);
@@ -361,16 +457,17 @@ pub fn review_with(
             REVIEWED
         }
         ReviewAction::Approve => {
-            if case.status != REVIEWED {
-                return Err(transition_error(&case.status, input.action));
+            if state.status != REVIEWED {
+                return refuse();
             }
             let verdict = check.can_approve(
                 conn,
                 &ApprovalRequest {
-                    workspace_id: &case.workspace_id,
-                    project_id: &case.project_id,
+                    subject,
+                    workspace_id: &state.workspace_id,
+                    project_id: &state.project_id,
                     case_id: id,
-                    author_id: &case.created_by,
+                    author_id: &state.created_by,
                     approver_id: user,
                 },
             )?;
@@ -386,19 +483,21 @@ pub fn review_with(
                     "by": user,
                     "byName": name,
                     "at": at,
-                    "version": case.version,
+                    "version": state.version,
                     "revision": revision,
                     "selfApproved": self_approval,
                 }),
             );
-            if let Some(review) = map.get_mut("review").and_then(Value::as_object_mut) {
-                review.insert("state".into(), json!("approved"));
+            if let Some(review) = map.get("review").filter(|r| r.is_object()) {
+                let mut review = without_request(review);
+                review["state"] = json!("approved");
+                map.insert("review".into(), review);
             }
             APPROVED
         }
         ReviewAction::Return => {
-            if case.status != REVIEWED {
-                return Err(transition_error(&case.status, input.action));
+            if state.status != REVIEWED {
+                return refuse();
             }
             let Some(comment) = comment else {
                 return Err(format!("{ERR_COMMENT}: say what has to change"));
@@ -408,29 +507,39 @@ pub fn review_with(
                 .or_insert_with(|| json!({}))
                 .as_object_mut()
                 .ok_or_else(|| "data.review is not an object".to_string())?;
-            review.insert("state".into(), json!("returned"));
+            review.insert("state".into(), json!(CHANGES_REQUESTED));
             review.insert("returnedBy".into(), json!(user));
             review.insert("returnedByName".into(), json!(name));
             review.insert("returnedAt".into(), json!(at));
             review.insert("comment".into(), json!(comment));
-            DRAFT
+            REVIEWED
         }
         ReviewAction::Obsolete => {
-            if case.status == OBSOLETE {
-                return Err(transition_error(&case.status, input.action));
+            if state.status == OBSOLETE {
+                return refuse();
             }
             map.remove("approval");
             OBSOLETE
         }
         ReviewAction::Reactivate => {
-            if case.status != OBSOLETE {
-                return Err(transition_error(&case.status, input.action));
+            if state.status != OBSOLETE {
+                return refuse();
             }
-            DRAFT
+            // Back to review when it was ever sent: Borrador is only the
+            // first stage (PLN-08).
+            match map.get("review").filter(|r| r.is_object()) {
+                Some(review) => {
+                    let mut review = without_request(review);
+                    review["state"] = json!("pending");
+                    review["version"] = json!(state.version);
+                    map.insert("review".into(), review);
+                    REVIEWED
+                }
+                None => DRAFT,
+            }
         }
     };
-    test_case::write_review(conn, id, status, &data, user)?;
-    Ok(())
+    Ok((status, data))
 }
 
 #[cfg(test)]
@@ -553,7 +662,7 @@ mod tests {
     }
 
     #[test]
-    fn returning_needs_a_comment_and_leaves_it_on_the_draft() {
+    fn asking_for_changes_needs_a_comment_and_keeps_the_case_in_review() {
         let c = conn();
         let p = project(&c);
         let id = new_case(&c, &p);
@@ -562,13 +671,21 @@ mod tests {
         assert!(err.starts_with(ERR_COMMENT), "{err}");
         review_case(&c, &id, &act(ReviewAction::Return, Some("Step 3?"), USER)).unwrap();
         let (status, _, data) = state(&c, &id);
-        assert_eq!(status, DRAFT);
-        assert_eq!(data["review"]["state"], "returned");
+        assert_eq!(status, REVIEWED);
+        assert_eq!(data["review"]["state"], CHANGES_REQUESTED);
         assert_eq!(data["review"]["comment"], "Step 3?");
-        // A save of the returned draft keeps the comment until the next send.
+        // Sending again is not a step: the case is still in review (PLN-08).
+        assert!(review_case(&c, &id, &act(ReviewAction::Send, None, USER)).is_err());
+        // An edit answers it: still in review, the comment kept.
         test_case::update_case(&c, &id, &case_input(&p, "Pay now", json!({"steps": ["a"]})))
             .unwrap();
-        assert_eq!(state(&c, &id).2["review"]["comment"], "Step 3?");
+        let (status, _, data) = state(&c, &id);
+        assert_eq!(status, REVIEWED);
+        assert_eq!(data["review"]["state"], "pending");
+        assert_eq!(data["review"]["comment"], "Step 3?");
+        // Approving drops the request.
+        review_case(&c, &id, &act(ReviewAction::Approve, None, USER)).unwrap();
+        assert!(state(&c, &id).2["review"].get("comment").is_none());
     }
 
     #[test]
@@ -587,8 +704,15 @@ mod tests {
         review_case(&c, &id, &act(ReviewAction::Obsolete, None, USER)).unwrap();
         assert_eq!(state(&c, &id).0, OBSOLETE);
         assert!(review_case(&c, &id, &act(ReviewAction::Send, None, USER)).is_err());
+        // Never sent: reactivated as a draft.
         review_case(&c, &id, &act(ReviewAction::Reactivate, None, USER)).unwrap();
         assert_eq!(state(&c, &id).0, DRAFT);
+        // Once sent, reactivating goes back to review: Borrador is only the
+        // first stage (PLN-08).
+        review_case(&c, &id, &act(ReviewAction::Send, None, USER)).unwrap();
+        review_case(&c, &id, &act(ReviewAction::Obsolete, None, USER)).unwrap();
+        review_case(&c, &id, &act(ReviewAction::Reactivate, None, USER)).unwrap();
+        assert_eq!(state(&c, &id).0, REVIEWED);
     }
 
     #[test]
@@ -608,7 +732,7 @@ mod tests {
     }
 
     #[test]
-    fn editing_the_content_of_an_approved_case_sends_it_back_to_draft() {
+    fn editing_the_content_of_an_approved_case_sends_it_back_to_review() {
         let c = conn();
         let p = project(&c);
         let id = approved_case(&c, &p);
@@ -619,9 +743,11 @@ mod tests {
         )
         .unwrap();
         let (status, version, data) = state(&c, &id);
-        assert_eq!((status.as_str(), version.as_str()), (DRAFT, "1.1"));
+        assert_eq!((status.as_str(), version.as_str()), (REVIEWED, "1.1"));
         assert!(data.get("approval").is_none());
-        assert!(data.get("review").is_none());
+        assert_eq!(data["review"]["state"], "pending");
+        assert_eq!(data["review"]["version"], "1.1");
+        assert_eq!(data["review"]["reopenedFrom"], "1.0");
     }
 
     #[test]
@@ -646,7 +772,7 @@ mod tests {
     }
 
     #[test]
-    fn editing_a_case_in_review_sends_it_back_to_draft() {
+    fn editing_a_case_in_review_keeps_it_in_review() {
         let c = conn();
         let p = project(&c);
         let id = new_case(&c, &p);
@@ -658,8 +784,8 @@ mod tests {
         )
         .unwrap();
         let (status, version, data) = state(&c, &id);
-        assert_eq!((status.as_str(), version.as_str()), (DRAFT, "1.0"));
-        assert!(data.get("review").is_none());
+        assert_eq!((status.as_str(), version.as_str()), (REVIEWED, "1.0"));
+        assert_eq!(data["review"]["state"], "pending");
     }
 
     #[test]

@@ -30,6 +30,19 @@ export const authorNeverApproves: ApprovalPolicy = async (req) =>
 export const roleAndNotAuthor: ApprovalPolicy = async (req, m) =>
   (await requiresApproverRole(req, m)) ?? (await authorNeverApproves(req, m));
 
+/** Whoever may edit what is approved: `case.edit` for a case, `plan.edit`
+ *  for a plan. A Viewer or a Product Owner never approves. */
+export const requiresEditor: ApprovalPolicy = async (req, m) =>
+  can(m.role, req.subject === "plan" ? "plan.edit" : "case.edit") ? null : { ok: false, reason: "role" };
+
+/** PLN-08 (ADR-0049), the rule `app.ts` installs: the workspace's
+ *  «Aprobación independiente». On, the default rule (the approval role, and
+ *  never the author). Off, whoever may edit approves, the author included
+ *  (recorded as a self-approval by the check). The policy travels with the
+ *  membership (`Membership.independentApproval`), so it costs no query. */
+export const independentApproval: ApprovalPolicy = async (req, m) =>
+  m.independentApproval ? roleAndNotAuthor(req, m) : requiresEditor(req, m);
+
 /** The workspace check:
  *  1. not an active member of the workspace: `notMember`;
  *  2. a personal workspace has one member, who may approve their own work

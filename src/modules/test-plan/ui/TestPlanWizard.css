@@ -1791,14 +1791,43 @@
   }
 }
 
-/* ---- Approval (PLN-07) ---- */
+/* ---- Review flow (PLN-08, ADR-0049): actions in «Estado del plan» ---- */
 
-.tpw-approve {
-  width: 100%;
-  justify-content: center;
+.tpw-review {
+  display: grid;
+  gap: var(--space-2);
 }
-
-.tpw-approve-why {
+.tpw-review__banner strong {
+  font-weight: var(--fw-semibold);
+}
+.tpw-review__quote {
+  display: block;
+  color: var(--color-text-secondary);
+}
+.tpw-review__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.tpw-review__why {
+  margin: 0;
+  flex-basis: 100%;
+  font-size: var(--fs-caption);
+  color: var(--color-text-muted);
+}
+.tpw-review__field {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--fs-ui);
+  color: var(--color-text-secondary);
+}
+.tpw-review__error {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--color-error-text);
+}
+.tpw-status-hint {
   margin: 0;
   font-size: var(--fs-caption);
   color: var(--color-text-muted);

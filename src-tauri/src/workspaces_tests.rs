@@ -370,6 +370,7 @@ fn approvals_follow_the_role_in_shared_workspaces() {
             .can_approve(
                 &c,
                 &ApprovalRequest {
+                    subject: crate::case_review::SUBJECT_CASE,
                     workspace_id: ws_id,
                     project_id: "p",
                     case_id: "c",

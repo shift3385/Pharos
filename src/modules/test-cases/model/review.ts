@@ -1,5 +1,7 @@
-// The review flow of a case (CAS-02, ADR-0047): draft → reviewed («En
-// revisión») → approved. The desktop core (`case_review.rs`) and the server
+// The review flow of a case (CAS-02, ADR-0047, changed by PLN-08,
+// ADR-0049): draft → reviewed («En revisión») → approved. Borrador is only
+// the stage before the first send; «Pedir cambios» (`return`) and an edit
+// keep the case in review, and an edit of an approved case sends it back. The desktop core (`case_review.rs`) and the server
 // (`case-review.ts`) enforce it; this module only reads what they stored and
 // says, for the screen, what each person may do.
 
@@ -9,7 +11,8 @@ export type ReviewAction = (typeof REVIEW_ACTIONS)[number];
 
 /** `data.review`: the last submission and how it ended. */
 export interface CaseReview {
-  state: "pending" | "returned" | "approved";
+  /** `returned`: a draft sent back before PLN-08 (0.5.0 betas). */
+  state: "pending" | "changesRequested" | "returned" | "approved";
   sentBy: string;
   sentByName: string;
   sentAt: string;
@@ -21,8 +24,10 @@ export interface CaseReview {
   returnedBy?: string;
   returnedByName?: string;
   returnedAt?: string;
-  /** Why the case came back. */
+  /** What has to change («Pedir cambios»). */
   comment?: string;
+  /** The approved version an edit sent back to review (PLN-08). */
+  reopenedFrom?: string;
 }
 
 /** `data.approval`: who approved which version, and when. */
@@ -44,7 +49,7 @@ const isObject = (v: unknown): v is Record<string, unknown> =>
 export function reviewOf(value: unknown): CaseReview | null {
   if (!isObject(value)) return null;
   const state = value.state;
-  if (state !== "pending" && state !== "returned" && state !== "approved") return null;
+  if (state !== "pending" && state !== "changesRequested" && state !== "returned" && state !== "approved") return null;
   return value as unknown as CaseReview;
 }
 
@@ -54,9 +59,15 @@ export function approvalOf(value: unknown): CaseApproval | null {
   return { selfApproved: false, byName: "", version: "", revision: 0, ...value } as CaseApproval;
 }
 
-/** The draft came back from review with a comment. */
+/** A reviewer asked for changes, still unanswered (PLN-08); or, from a
+ *  0.5.0 beta, the draft came back from review. */
 export const isReturned = (status: string, review: CaseReview | null): boolean =>
-  status === "draft" && review?.state === "returned";
+  (status === "reviewed" && review?.state === "changesRequested") ||
+  (status === "draft" && review?.state === "returned");
+
+/** Changes were saved after a «Pedir cambios»: ready to approve again. */
+export const changesMade = (status: string, review: CaseReview | null): boolean =>
+  status === "reviewed" && review?.state === "pending" && !!review.comment;
 
 /** The transitions a case's status allows. Approving also needs the
  *  approver check (`approver.ts`). */
@@ -110,7 +121,8 @@ export function contentKey(title: string, data: unknown): string {
 }
 
 /** True when saving `next` over `prev` changes the content: a case in review
- *  or approved would go back to draft (the cores apply the same rule). */
+ *  or approved would stay in or go back to review (the cores apply the same
+ *  rule, PLN-08). */
 export const contentChanged = (
   prev: { title: string; data: unknown },
   next: { title: string; data: unknown },

@@ -201,6 +201,7 @@ pub fn run() {
             test_plan::test_plan_by_project,
             test_plan::test_plan_create,
             test_plan::test_plan_update,
+            test_plan::test_plan_review,
             test_plan::test_plan_delete,
             test_plan::test_plan_revisions,
             test_plan::test_plan_revision_get,

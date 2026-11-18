@@ -695,7 +695,14 @@ impl crate::case_review::ApproverCheck for WorkspaceApprover {
         let Some(role) = role_of(conn, req.approver_id, req.workspace_id)? else {
             return Ok(ApprovalVerdict::Denied(DenyReason::NotMember));
         };
-        if !can(&role, "case.approve") {
+        // The capability of what is approved (PLN-08): a plan needs
+        // `plan.approve`, a case `case.approve`.
+        let capability = if req.subject == crate::case_review::SUBJECT_PLAN {
+            "plan.approve"
+        } else {
+            "case.approve"
+        };
+        if !can(&role, capability) {
             return Ok(ApprovalVerdict::Denied(DenyReason::Role));
         }
         if self_approval {

@@ -36,6 +36,7 @@ import {
 } from "./defects";
 import { linkId, stampLifecycle } from "../sync/defects";
 import { afterSave, approverCheck, reviewTransition, statusOnCreate, stripReview } from "./case-review";
+import { planAfterSave, planOnCreate } from "./plan-review";
 import type {
   CaseBaselineInput,
   CaseReviewInput,
@@ -249,17 +250,37 @@ export function createDomainService(store: DomainStore) {
       .map((d) => d.payload);
   }
 
-  function planPayload(prev: Payload, input: TestPlanInput): Payload {
+  /** A plan as a save stores it. The status and the review records come
+   *  from the review flow (PLN-08, ADR-0049), never from the input: a new
+   *  plan starts as draft, and a save keeps or moves them (`plan-review.ts`). */
+  function planPayload(prev: Payload | null, input: TestPlanInput): Payload {
+    const flow = prev
+      ? planAfterSave(prev, input.title, input.version ?? undefined, input.data)
+      : { ...planOnCreate(input.status ?? undefined, input.data), version: input.version ?? "1.0" };
     return {
-      ...prev,
+      ...(prev ?? {}),
       title: input.title,
-      version: input.version ?? "1.0",
+      version: flow.version,
       planDate: input.planDate ?? null,
       author: input.author,
-      status: input.status ?? "draft",
-      data: input.data,
+      status: flow.status,
+      data: flow.data,
       updatedAt: now(),
     };
+  }
+
+  /** Who created a plan: the actor of its «create» audit event, the web's
+   *  or the desktop's (the plan document does not carry it, as the
+   *  desktop's does not). */
+  async function planAuthor(tx: DomainTx, plan: Payload): Promise<string | null> {
+    const created = (
+      await tx.list("audit_event", undefined, { where: { entity: "test_plan", entityId: str(plan, "id") } })
+    )
+      .map((d) => d.payload)
+      .filter((e) => e.action === "create")
+      .sort((a, b) => (str(a, "at") < str(b, "at") ? -1 : 1))[0];
+    const actor = created ? str(created, "actor") : "";
+    return actor ? actor.replace(/^user:/, "") : null;
   }
 
   const testPlans = {
@@ -284,12 +305,36 @@ export function createDomainService(store: DomainStore) {
         const id = randomUUID();
         const at = now();
         const base = { id, workspaceId: WORKSPACE, projectId: input.projectId, createdAt: at };
-        return (await tx.put("test_plan", id, planPayload(base, input), null)).payload;
+        return (await tx.put("test_plan", id, { ...base, ...planPayload(null, input) }, null))
+          .payload;
       }),
     update: (userId: string, id: string, input: TestPlanInput, revision?: number) =>
       run(userId, async (tx) => {
         const doc = current(await tx.get("test_plan", id), "Test plan", revision);
         return (await tx.put("test_plan", id, planPayload(doc.payload, input), doc)).payload;
+      }),
+    /** A review transition of the plan (PLN-08, ADR-0049), as a case's:
+     *  the account is the session's; the name is recorded as sent. */
+    review: (userId: string, id: string, input: CaseReviewInput, revision?: number) =>
+      run(userId, async (tx) => {
+        const doc = current(await tx.get("test_plan", id), "Test plan", revision);
+        const project = await liveProject(tx, str(doc.payload, "projectId"));
+        const next = await reviewTransition(
+          doc.payload,
+          { ...input, userId, at: new Date().toISOString(), revision: doc.revision + 1 },
+          approverCheck(),
+          {
+            subject: "plan",
+            // Where the plan is stored, not what its payload says.
+            workspaceId: (await tx.workspaceOf("test_plan", id)) ?? (str(project, "workspaceId") || WORKSPACE),
+            projectId: str(doc.payload, "projectId"),
+            caseId: id,
+            authorId: (await planAuthor(tx, doc.payload)) ?? userId,
+          },
+        );
+        return (
+          await tx.put("test_plan", id, { ...doc.payload, status: next.status, data: next.data, updatedAt: now() }, doc)
+        ).payload;
       }),
     /** What the exported plan's «Historial de revisiones» is built from
      *  (PLN-02), read-only: the create and update audit events of one live
@@ -532,7 +577,8 @@ export function createDomainService(store: DomainStore) {
           { ...input, userId, at: new Date().toISOString(), revision: doc.revision + 1 },
           approverCheck(),
           {
-            workspaceId: str(doc.payload, "workspaceId") || str(project, "workspaceId") || WORKSPACE,
+            // Where the case is stored, not what its payload says.
+            workspaceId: (await tx.workspaceOf("test_case", id)) ?? (str(project, "workspaceId") || WORKSPACE),
             projectId: str(doc.payload, "projectId"),
             caseId: id,
             // Who wrote its first revision (TEN-01: a shared case has

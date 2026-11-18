@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { ListField, PairListField } from "@shared/ui/fields";
 import { DatePicker } from "@shared/ui/DatePicker";
 import { FormField } from "@shared/ui/FormField";
-import { Select } from "@shared/ui/Select";
+import { StatusPill } from "@shared/ui/StatusPill";
 import { required } from "@shared/validation";
 import {
   AiSuggestList,
@@ -24,6 +24,7 @@ import { ScheduleStep } from "./ScheduleStep";
 import { FinishStep } from "./FinishStep";
 import { AssumptionsStep, EntryStep, EstimationStep, StaffingFields, TechniquesStep } from "./StrategySteps";
 import { MetricsStep } from "./MetricsStep";
+import { PLAN_STATUS_TONE } from "../../model/review";
 import { ClosureStep } from "./ClosureStep";
 
 /** The fields of one wizard step (spec §5.1, ScrPlan). */
@@ -47,25 +48,17 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
             >
               {(p) => <input {...p} value={form.title} onChange={(e) => set("title", e.target.value)} />}
             </FormField>
-            <FormField id="tp-status" label={t("testPlan.status")}>
-              {(p) => (
-                <Select
-                  {...p}
-                  value={form.status}
-                  onChange={(v) => set("status", v)}
-                  data-testid="plan-status"
-                  // «Aprobado» comes only from «Aprobar» in «Estado del plan»,
-                  // which records who and when (PLN-07).
-                  options={["draft", "reviewed", "approved", "obsolete"].map((s) => ({
-                    value: s,
-                    label: t(`testPlan.statusLabel.${s}`),
-                    ...(s === "approved" && form.status !== "approved"
-                      ? { disabled: true, reason: t("testPlan.approval.optionReason") }
-                      : {}),
-                  }))}
-                />
-              )}
-            </FormField>
+            {/* The status is not edited here: it moves with the actions of
+                «Estado del plan», as a case's (PLN-08, ADR-0049). */}
+            <div className="tp-field tpw-ident__status">
+              <FieldLabel text={t("testPlan.status")} />
+              <span data-testid="plan-status" data-status={form.status}>
+                <StatusPill tone={PLAN_STATUS_TONE[form.status] ?? "neutral"} dot strike={form.status === "obsolete"}>
+                  {t(`testPlan.statusLabel.${form.status}`)}
+                </StatusPill>
+              </span>
+              <p className="tpw-status-hint">{t("testPlan.identificationHint")}</p>
+            </div>
           </div>
           <div className="tpw-grid tpw-grid--3">
             <TextField

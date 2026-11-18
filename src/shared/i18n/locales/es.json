@@ -1664,7 +1664,7 @@
     },
     "statusLabel": {
       "draft": "Borrador",
-      "reviewed": "Revisado",
+      "reviewed": "En revisión",
       "approved": "Aprobado",
       "obsolete": "Obsoleto"
     },
@@ -2003,18 +2003,12 @@
       "hint": "Los criterios medidos por una métrica se evalúan solos al cerrar un ciclo. El texto se escribe desde la métrica."
     },
     "approval": {
-      "approve": "Aprobar versión {{version}}",
-      "title": "¿Aprobar el plan?",
-      "confirm": "Aprobarás la versión {{version}} como {{name}}, hoy {{date}}. Si después se edita el contenido, el plan vuelve a «Revisado» y habrá que aprobarlo de nuevo.",
-      "action": "Aprobar",
-      "toast": "Plan aprobado (v{{version}}).",
-      "saveFirst": "Guarda antes de aprobar",
-      "needsReviewed": "Solo se aprueba un plan guardado en «Revisado».",
       "by": "Aprobado por",
       "at": "Aprobado el",
-      "editing": "Este plan está aprobado (v{{version}}). Al guardar estos cambios vuelve a «Revisado».",
-      "optionReason": "Se aprueba con el botón «Aprobar» de «Estado del plan».",
-      "byLine": "{{name}} · {{date}}"
+      "editing": "Este plan está aprobado (v{{version}}). Al guardar estos cambios vuelve a «En revisión» con una versión nueva y hay que aprobarlo de nuevo.",
+      "byLine": "{{name}} · {{date}}",
+      "editingReviewed": "Este plan está en revisión. Tus cambios se guardan y sigue en revisión.",
+      "byLineSelf": "{{name}} (aprobación propia) · {{date}}"
     },
     "noChangesToast": "Sin cambios: no hay nada que guardar.",
     "documentId": "ID de documento",
@@ -2033,7 +2027,57 @@
     "contentCol": "Contenido",
     "keyCol": "Clave",
     "typeCol": "Tipo",
-    "linkedCol": "Medido por"
+    "linkedCol": "Medido por",
+    "identificationHint": "El estado cambia con las acciones de «Estado del plan».",
+    "review": {
+      "send": "Enviar a revisión",
+      "sendTitle": "Enviar el plan a revisión",
+      "sendMessage": "La versión {{version}} queda pendiente de aprobación. Si alguien edita el contenido, sigue en revisión.",
+      "noteLabel": "Nota para quien revise (opcional)",
+      "approve": "Aprobar versión {{version}}",
+      "approveTitle": "Aprobar la versión {{version}}",
+      "approveMessage": "Quedará como aprobada por {{name}} el {{date}}. Si después se edita el contenido, el plan vuelve a «En revisión» y habrá que aprobarlo de nuevo.",
+      "approveAction": "Aprobar",
+      "selfApprovalNote": "Eres quien creó este plan. Este espacio de trabajo no pide aprobación independiente, así que puedes aprobarlo y quedará como aprobación propia en el plan, el historial y los exportes.",
+      "return": "Pedir cambios…",
+      "returnTitle": "Pedir cambios en el plan",
+      "returnMessage": "El plan sigue en revisión. Quien lo creó verá tu comentario en «Estado del plan» y en el historial.",
+      "returnAction": "Pedir cambios",
+      "commentLabel": "Qué hay que cambiar (obligatorio)",
+      "obsolete": "Marcar obsoleto",
+      "obsoleteTitle": "Marcar el plan como obsoleto",
+      "obsoleteMessage": "El plan se conserva, pero deja de usarse. Si lo reactivas, vuelve a revisión.",
+      "obsoleteApproved": "El plan pierde la aprobación y deja de usarse. Si lo reactivas, vuelve a revisión y hay que aprobarlo de nuevo.",
+      "reactivate": "Reactivar",
+      "reactivateTitle": "Reactivar el plan",
+      "reactivateMessage": "El plan vuelve a «En revisión» (o a Borrador si nunca se envió). No recupera la aprobación anterior.",
+      "saveFirst": "Guarda los cambios antes de seguir con la revisión.",
+      "notAllowed": {
+        "author": "Este espacio de trabajo pide aprobación independiente: aprueba un Test Manager que no sea el autor del plan.",
+        "role": "Solo un Test Manager aprueba planes en este espacio de trabajo.",
+        "notMember": "No eres miembro de este espacio de trabajo."
+      },
+      "banner": {
+        "sent": "Enviado a revisión por {{name}} · {{date}}",
+        "changesRequested": "Cambios pedidos por {{name}} · {{date}}",
+        "changesMade": "Cambios guardados tras la petición de {{name}}: «{{comment}}»",
+        "reopened": "De vuelta en revisión: se editó la versión {{version}}, que estaba aprobada",
+        "selfApproved": "aprobación propia"
+      },
+      "toast": {
+        "send": "Plan enviado a revisión",
+        "approve": "Plan aprobado (v{{version}})",
+        "return": "Cambios pedidos en el plan",
+        "obsolete": "Plan marcado como obsoleto",
+        "reactivate": "Plan reactivado"
+      },
+      "errors": {
+        "notAllowed": "No puedes aprobar este plan.",
+        "comment": "Escribe qué hay que cambiar.",
+        "transition": "El plan cambió mientras tanto. Vuelve a abrirlo y repite la acción.",
+        "generic": "No se pudo completar la acción. Inténtalo de nuevo."
+      }
+    }
   },
   "testCase": {
     "loadFailed": "No se pudieron cargar los casos de prueba.",
@@ -2307,11 +2351,11 @@
       "noResult": "Sin resultados todavía",
       "resultAt": "Último resultado: {{date}}",
       "toReview": "Por revisar",
-      "returned": "Devuelto",
+      "returned": "Cambios pedidos",
       "sentHint": "Enviado por {{name}} · {{date}}",
       "approvedHint": "Aprobado por {{name}} · {{date}}",
       "approvedSelfHint": "Aprobado por {{name}} (autoaprobación) · {{date}}",
-      "returnedHint": "Devuelto por {{name}}: «{{comment}}»",
+      "returnedHint": "Cambios pedidos por {{name}}: «{{comment}}»",
       "sendSelected": "Enviar a revisión",
       "baselineSelected": "Congelar en baseline",
       "sentToast_one": "{{count}} caso enviado a revisión",
@@ -2388,28 +2432,28 @@
     "review": {
       "send": "Enviar a revisión",
       "sendTitle": "Enviar {{key}} a revisión",
-      "sendMessage": "La versión {{version}} queda pendiente de aprobación. Si alguien edita el contenido antes, vuelve a Borrador.",
+      "sendMessage": "La versión {{version}} queda pendiente de aprobación. Si alguien edita el contenido, sigue en revisión.",
       "noteLabel": "Nota para quien revise (opcional)",
       "approve": "Aprobar versión {{version}}",
       "approveTitle": "Aprobar la versión {{version}}",
       "approveMessage": "Quedará como aprobada por {{name}} el {{date}}.",
       "approveAction": "Aprobar",
-      "selfApprovalNote": "Eres quien escribió este caso. Como en este espacio de trabajo no hay nadie más, puedes aprobarlo, y quedará registrado como autoaprobación.",
-      "return": "Devolver…",
-      "returnTitle": "Devolver {{key}} a Borrador",
-      "returnMessage": "Quien lo escribió verá tu comentario en el caso hasta que lo vuelva a enviar.",
-      "returnAction": "Devolver",
+      "selfApprovalNote": "Eres quien escribió este caso. Este espacio de trabajo no pide aprobación independiente, así que puedes aprobarlo y quedará como aprobación propia.",
+      "return": "Pedir cambios…",
+      "returnTitle": "Pedir cambios en {{key}}",
+      "returnMessage": "El caso sigue en revisión. Quien lo escribió verá tu comentario hasta que guarde los cambios.",
+      "returnAction": "Pedir cambios",
       "commentLabel": "Qué hay que cambiar (obligatorio)",
       "obsolete": "Marcar obsoleto",
       "obsoleteTitle": "Marcar {{key}} como obsoleto",
-      "obsoleteMessage": "El caso se conserva en el histórico, pero deja de usarse. Puedes reactivarlo más tarde como borrador.",
-      "obsoleteApproved": "El caso pierde la aprobación y deja de usarse. Puedes reactivarlo más tarde como borrador.",
+      "obsoleteMessage": "El caso se conserva en el histórico, pero deja de usarse. Si lo reactivas, vuelve a revisión.",
+      "obsoleteApproved": "El caso pierde la aprobación y deja de usarse. Si lo reactivas, vuelve a revisión y hay que aprobarlo de nuevo.",
       "reactivate": "Reactivar",
       "reactivateTitle": "Reactivar {{key}}",
-      "reactivateMessage": "El caso vuelve a Borrador. Para aprobarlo otra vez hay que enviarlo a revisión.",
+      "reactivateMessage": "El caso vuelve a «En revisión» (o a Borrador si nunca se envió). Hay que aprobarlo de nuevo.",
       "saveFirst": "Guarda los cambios antes de seguir con la revisión.",
       "notAllowed": {
-        "author": "Lo tiene que aprobar otra persona.",
+        "author": "Este espacio de trabajo pide aprobación independiente: lo tiene que aprobar otra persona.",
         "role": "Tu rol no puede aprobar casos.",
         "notMember": "No eres miembro de este espacio de trabajo."
       },
@@ -2417,21 +2461,24 @@
         "sent": "Enviado a revisión por {{name}} · {{date}}",
         "returned": "Devuelto por {{name}} · {{date}}",
         "approved": "Aprobado por {{name}} · {{date}} · versión {{version}}",
-        "selfApproved": "autoaprobación",
-        "legacy": "Aprobado (sin registro de quién lo aprobó: se aprobó antes de la 0.5)."
+        "selfApproved": "aprobación propia",
+        "legacy": "Aprobado (sin registro de quién lo aprobó: se aprobó antes de la 0.5).",
+        "changesRequested": "Cambios pedidos por {{name}} · {{date}}",
+        "changesMade": "Cambios guardados tras la petición de {{name}}: «{{comment}}»",
+        "reopened": "De vuelta en revisión: se editó la versión {{version}}, que estaba aprobada"
       },
-      "editingReviewed": "Este caso está en revisión. Si guardas cambios en el contenido, vuelve a Borrador y hay que enviarlo otra vez.",
-      "editingApproved": "Este caso está aprobado. Si guardas cambios en el contenido, vuelve a Borrador, pierde la aprobación y sube de versión.",
+      "editingReviewed": "Este caso está en revisión. Si guardas cambios en el contenido, sigue en revisión.",
+      "editingApproved": "Este caso está aprobado. Si guardas cambios en el contenido, vuelve a revisión con una versión nueva y hay que aprobarlo de nuevo.",
       "changesSince": "Cambios desde la revisión {{revision}} ({{status}})",
       "toast": {
         "send": "{{key}} enviado a revisión",
         "approve": "Versión {{version}} de {{key}} aprobada",
-        "return": "{{key}} devuelto a Borrador",
+        "return": "Cambios pedidos en {{key}}",
         "obsolete": "{{key}} marcado como obsoleto",
-        "reactivate": "{{key}} reactivado como borrador"
+        "reactivate": "{{key}} reactivado"
       },
       "errors": {
-        "notAllowed": "No puedes aprobar este caso: lo tiene que aprobar otra persona.",
+        "notAllowed": "No puedes aprobar este caso.",
         "comment": "Escribe qué hay que cambiar.",
         "transition": "El caso cambió mientras tanto. Vuelve a abrirlo y repite la acción.",
         "generic": "No se pudo completar la acción. Inténtalo de nuevo."

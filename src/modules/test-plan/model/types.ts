@@ -95,6 +95,11 @@ export interface PlanApproval {
   /** ISO instant. */
   at: string;
   version: string;
+  /** The plan's revision once approved (PLN-08). */
+  revision?: number;
+  /** The author approved it: the workspace does not ask for independent
+   *  approval (PLN-08, ADR-0049). */
+  selfApproved?: boolean;
 }
 
 /** The plan wizard content: spec §5.1 plus ISO/IEC/IEEE 29119-3 (PLN-06) in 22 steps. All optional — filled progressively. */
@@ -143,6 +148,9 @@ export interface TestPlanData {
    *  team writes its own. */
   documentId?: string;
   approval?: PlanApproval | null;
+  /** The review flow's record (PLN-08): who sent it, who asked for changes.
+   *  The core writes it; a save never does (`model/review.ts`). */
+  review?: unknown;
   /** AI provenance per assisted field (IA-01); the ai module owns the shape. */
   aiProvenance?: ProvenanceMap;
 }

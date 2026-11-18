@@ -4,6 +4,12 @@
 //! into `test_plan_revisions` (a status change or an approval does not,
 //! PLN-03/PLN-07).
 //!
+//! The status moves only through the review flow (PLN-08, ADR-0049), the
+//! same as a case's (`case_review.rs`): a new plan starts as draft, a save
+//! keeps the stored status (or sends an approved plan back to review), and
+//! `test_plan_review` sends, approves, asks for changes, marks obsolete or
+//! reactivates.
+//!
 //! A plan belongs to its project's owner: every function takes the signed-in
 //! `user_id` and only touches plans of projects that user owns (FIX-08). Audit
 //! fields record that user, never the plan itself (FIX-06).
@@ -16,6 +22,7 @@ use tauri::State;
 use ts_rs::TS;
 use uuid::Uuid;
 
+use crate::case_review::{self, ReviewInput};
 use crate::db::{ensure_workspace, Db};
 use crate::journal::{self, Action, Actor, Change};
 use crate::project;
@@ -193,7 +200,12 @@ pub(crate) fn insert_plan(conn: &Connection, input: &TestPlanInput) -> Result<St
     }
     let id = Uuid::new_v4().to_string();
     let workspace_id = ensure_workspace(conn)?;
-    let data_str = serde_json::to_string(&input.data).map_err(|e| e.to_string())?;
+    // A new plan starts as draft (or obsolete), without review records: an
+    // import or a forged input never brings an approval (PLN-08).
+    let mut data = input.data.clone();
+    case_review::strip_review(&mut data);
+    let status = case_review::status_on_create(input.status.as_deref());
+    let data_str = serde_json::to_string(&data).map_err(|e| e.to_string())?;
     conn.execute(
         "INSERT INTO test_plans (id, workspace_id, project_id, title, version, plan_date, \
          author, status, data, created_by, updated_by, created_at, updated_at, \
@@ -207,7 +219,7 @@ pub(crate) fn insert_plan(conn: &Connection, input: &TestPlanInput) -> Result<St
             input.version.clone().unwrap_or_else(|| "1.0".to_string()),
             input.plan_date,
             input.author,
-            input.status.clone().unwrap_or_else(|| "draft".to_string()),
+            status,
             data_str,
             input.user_id,
         ],
@@ -237,26 +249,50 @@ pub(crate) fn update_plan(
     if !owns(conn, id, &input.user_id)? {
         return Err("test plan not found".to_string());
     }
-    let (revision, prev_title, prev_data) = conn
+    let (revision, prev_title, prev_data, prev_status, prev_version) = conn
         .query_row(
-            "SELECT revision, title, data FROM test_plans WHERE id = ?1",
+            "SELECT revision, title, data, status, version FROM test_plans WHERE id = ?1",
             params![id],
             |r| {
                 Ok((
                     r.get::<_, i64>(0)?,
                     r.get::<_, String>(1)?,
                     r.get::<_, String>(2)?,
+                    r.get::<_, String>(3)?,
+                    r.get::<_, String>(4)?,
                 ))
             },
         )
         .map_err(|e| e.to_string())?;
+    // The review flow (PLN-08): the save keeps the stored status and review
+    // records; a content change of an approved plan sends it back to review
+    // with its next version, and one of a plan in review keeps it there.
+    let previous = serde_json::from_str::<Value>(&prev_data).ok();
+    let mut data = input.data.clone();
+    let after = case_review::after_save_with(
+        case_review::Saved {
+            status: &prev_status,
+            title: &prev_title,
+            version: &prev_version,
+            data: previous.as_ref(),
+        },
+        &input.title,
+        input.version.as_deref(),
+        &mut data,
+        &PLAN_NOT_CONTENT,
+    );
+    let saved = Written {
+        status: &after.status,
+        version: &after.version,
+        data: &data,
+    };
 
     let before = journal::snapshot(conn, "test_plan", id)?;
     // Snapshot the current state before overwriting it, only when the save
     // changes the title or the content (PLN-03): a status change or an
     // approval (PLN-07) is not a revision of its own.
     if same_content(&prev_title, &prev_data, input) {
-        return write_plan(conn, id, input, revision, before);
+        return write_plan(conn, id, input, &saved, revision, before);
     }
     conn.execute(
         "INSERT INTO test_plan_revisions (id, test_plan_id, revision, title, data, \
@@ -271,7 +307,18 @@ pub(crate) fn update_plan(
         ],
     )
     .map_err(|e| e.to_string())?;
-    write_plan(conn, id, input, revision, before)
+    write_plan(conn, id, input, &saved, revision, before)
+}
+
+/// Keys of a plan's `data` that are not its content (PLN-03, PLN-08): the
+/// review records, the review marks of AI drafts and the document ID.
+pub(crate) const PLAN_NOT_CONTENT: [&str; 4] = ["review", "approval", "aiProvenance", "documentId"];
+
+/// What a save writes besides the input's own fields.
+struct Written<'a> {
+    status: &'a str,
+    version: &'a str,
+    data: &'a Value,
 }
 
 /// Whether a save keeps the plan's title and content: the data is compared
@@ -281,6 +328,7 @@ fn same_content(prev_title: &str, prev_data: &str, input: &TestPlanInput) -> boo
         let mut v = v.clone();
         if let Some(map) = v.as_object_mut() {
             map.remove("approval");
+            map.remove("review");
         }
         v
     }
@@ -295,10 +343,11 @@ fn write_plan(
     conn: &Connection,
     id: &str,
     input: &TestPlanInput,
+    saved: &Written,
     revision: i64,
     before: Option<Value>,
 ) -> Result<(), String> {
-    let data_str = serde_json::to_string(&input.data).map_err(|e| e.to_string())?;
+    let data_str = serde_json::to_string(saved.data).map_err(|e| e.to_string())?;
     conn.execute(
         "UPDATE test_plans SET title = ?2, version = ?3, plan_date = ?4, author = ?5, \
          status = ?6, data = ?7, updated_at = datetime('now'), updated_by = ?9, \
@@ -306,10 +355,10 @@ fn write_plan(
         params![
             id,
             input.title,
-            input.version.clone().unwrap_or_else(|| "1.0".to_string()),
+            saved.version,
             input.plan_date,
             input.author,
-            input.status.clone().unwrap_or_else(|| "draft".to_string()),
+            saved.status,
             data_str,
             revision + 1,
             input.user_id,
@@ -326,6 +375,66 @@ fn write_plan(
             Actor::user(user),
             "upsert",
             revision + 1,
+            user,
+        )
+        .before(before),
+    )?;
+    Ok(())
+}
+
+/// A review transition of a plan the user owns (PLN-08, ADR-0049), as a
+/// case's: the installed approver check decides who approves (`subject`
+/// "plan"). It changes the status and the review records only, so it leaves
+/// no revision copy; the journal records it as an update.
+pub(crate) fn review_plan(conn: &Connection, id: &str, input: &ReviewInput) -> Result<(), String> {
+    review_plan_with(conn, id, input, case_review::approver())
+}
+
+pub(crate) fn review_plan_with(
+    conn: &Connection,
+    id: &str,
+    input: &ReviewInput,
+    check: &dyn case_review::ApproverCheck,
+) -> Result<(), String> {
+    if !owns(conn, id, &input.user_id)? {
+        return Err("test plan not found".to_string());
+    }
+    let state = conn
+        .query_row(
+            "SELECT workspace_id, project_id, status, version, revision, data, created_by              FROM test_plans WHERE id = ?1",
+            params![id],
+            |r| {
+                Ok(case_review::CaseState {
+                    workspace_id: r.get(0)?,
+                    project_id: r.get::<_, Option<String>>(1)?.unwrap_or_default(),
+                    status: r.get(2)?,
+                    version: r.get(3)?,
+                    revision: r.get(4)?,
+                    data: serde_json::from_str(&r.get::<_, String>(5)?).unwrap_or_default(),
+                    created_by: r.get(6)?,
+                })
+            },
+        )
+        .map_err(|e| e.to_string())?;
+    let (status, data) =
+        case_review::transition(conn, case_review::SUBJECT_PLAN, id, &state, input, check)?;
+    let before = journal::snapshot(conn, "test_plan", id)?;
+    let data_str = serde_json::to_string(&data).map_err(|e| e.to_string())?;
+    let user = &input.user_id;
+    conn.execute(
+        "UPDATE test_plans SET status = ?2, data = ?3, revision = ?4,          updated_at = datetime('now'), updated_by = ?5 WHERE id = ?1",
+        params![id, status, data_str, state.revision + 1, user],
+    )
+    .map_err(|e| e.to_string())?;
+    journal::record(
+        conn,
+        Change::new(
+            "test_plan",
+            id,
+            Action::Update,
+            Actor::user(user),
+            "upsert",
+            state.revision + 1,
             user,
         )
         .before(before),
@@ -571,6 +680,19 @@ pub fn test_plan_update(
     db.with_conn(|conn| get_plan(conn, &id, &input.user_id))
 }
 
+/// Sends a plan to review, approves it, asks for changes, marks it obsolete
+/// or reactivates it (PLN-08). The plan as it stands after it.
+#[tauri::command]
+pub fn test_plan_review(
+    db: State<Db>,
+    id: String,
+    input: ReviewInput,
+) -> Result<Option<TestPlan>, String> {
+    db.with_tx(|conn| review_plan(conn, &id, &input))?;
+    db.persist()?;
+    db.with_conn(|conn| get_plan(conn, &id, &input.user_id))
+}
+
 #[tauri::command]
 pub fn test_plan_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_plan(conn, &id, &user_id))?;
@@ -598,6 +720,7 @@ pub fn test_plan_revision_get(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::case_review::ReviewAction;
 
     const USER: &str = "user-1";
     const OTHER: &str = "user-2";
@@ -685,40 +808,144 @@ mod tests {
         assert_eq!(detail.data, serde_json::json!({}));
     }
 
-    /// PLN-03 / PLN-07: a save that only changes the status or records the
-    /// approval leaves no revision copy; one that changes the content does.
+    fn act(action: ReviewAction, comment: Option<&str>) -> ReviewInput {
+        serde_json::from_value(serde_json::json!({
+            "action": action_name(action), "comment": comment, "userId": USER, "userName": "Ada"
+        }))
+        .unwrap()
+    }
+
+    fn action_name(action: ReviewAction) -> &'static str {
+        match action {
+            ReviewAction::Send => "send",
+            ReviewAction::Approve => "approve",
+            ReviewAction::Return => "return",
+            ReviewAction::Obsolete => "obsolete",
+            ReviewAction::Reactivate => "reactivate",
+        }
+    }
+
+    /// PLN-03 / PLN-07 / PLN-08: a review transition leaves no revision copy;
+    /// a save that changes the content does, and the copy keeps the approval.
     #[test]
-    fn status_or_approval_only_saves_leave_no_revision_copy() {
+    fn review_transitions_leave_no_revision_copy() {
         let c = conn();
         let p = project(&c, USER);
         let data = serde_json::json!({"summary": "hi"});
         let id = insert_plan(&c, &input(&p, "Plan A", data.clone())).unwrap();
 
-        let mut reviewed = input(&p, "Plan A", data.clone());
-        reviewed.status = Some("reviewed".to_string());
-        update_plan(&c, &id, &reviewed).unwrap();
-
-        let mut approved = input(
-            &p,
-            "Plan A",
-            serde_json::json!({"summary": "hi", "approval": {"by": USER, "byName": "Ada", "at": "2026-11-11T10:00:00Z", "version": "1.0"}}),
-        );
-        approved.status = Some("approved".to_string());
-        update_plan(&c, &id, &approved).unwrap();
+        review_plan(&c, &id, &act(ReviewAction::Send, None)).unwrap();
+        review_plan(&c, &id, &act(ReviewAction::Approve, None)).unwrap();
 
         assert!(list_revisions(&c, &id, USER).unwrap().is_empty());
         let plan = get_plan(&c, &id, USER).unwrap().unwrap();
         assert_eq!(plan.status, "approved");
         assert_eq!(plan.revision, 3);
         assert_eq!(plan.data["approval"]["byName"], "Ada");
+        // Alone in the workspace: a self-approval.
+        assert_eq!(plan.data["approval"]["selfApproved"], true);
 
         let mut edited = input(&p, "Plan A", serde_json::json!({"summary": "changed"}));
-        edited.status = Some("reviewed".to_string());
+        edited.status = Some("approved".to_string());
         update_plan(&c, &id, &edited).unwrap();
         let revisions = list_revisions(&c, &id, USER).unwrap();
         assert_eq!(revisions.len(), 1);
         let copy = get_revision(&c, &revisions[0].id, USER).unwrap().unwrap();
         assert_eq!(copy.data["approval"]["byName"], "Ada");
+    }
+
+    /// PLN-08: the status moves only through the review flow. A save keeps
+    /// it; an edit of an approved plan goes back to review with the next
+    /// version; an edit in review stays there and answers «Pedir cambios».
+    #[test]
+    fn the_status_follows_the_review_flow() {
+        let c = conn();
+        let p = project(&c, USER);
+        // A forged status and approval never reach the store.
+        let mut forged = input(
+            &p,
+            "Plan",
+            serde_json::json!({"summary": "a", "approval": {"by": "x"}}),
+        );
+        forged.status = Some("approved".to_string());
+        let id = insert_plan(&c, &forged).unwrap();
+        let plan = get_plan(&c, &id, USER).unwrap().unwrap();
+        assert_eq!(plan.status, "draft");
+        assert!(plan.data.get("approval").is_none());
+        update_plan(&c, &id, &forged).unwrap();
+        assert_eq!(get_plan(&c, &id, USER).unwrap().unwrap().status, "draft");
+
+        assert!(review_plan(&c, &id, &act(ReviewAction::Approve, None)).is_err());
+        review_plan(&c, &id, &act(ReviewAction::Send, Some("v1"))).unwrap();
+        let err = review_plan(&c, &id, &act(ReviewAction::Return, None)).unwrap_err();
+        assert!(err.starts_with(case_review::ERR_COMMENT), "{err}");
+        review_plan(&c, &id, &act(ReviewAction::Return, Some("Falta el p95"))).unwrap();
+        let plan = get_plan(&c, &id, USER).unwrap().unwrap();
+        assert_eq!(plan.status, "reviewed");
+        assert_eq!(plan.data["review"]["state"], "changesRequested");
+
+        let mut fixed = input(&p, "Plan", serde_json::json!({"summary": "b"}));
+        fixed.version = Some("1.1".to_string());
+        update_plan(&c, &id, &fixed).unwrap();
+        let plan = get_plan(&c, &id, USER).unwrap().unwrap();
+        assert_eq!(
+            (plan.status.as_str(), plan.version.as_str()),
+            ("reviewed", "1.1")
+        );
+        assert_eq!(plan.data["review"]["state"], "pending");
+
+        review_plan(&c, &id, &act(ReviewAction::Approve, None)).unwrap();
+        // The document ID is not content: the approval stays.
+        let mut doc_id = input(
+            &p,
+            "Plan",
+            serde_json::json!({"summary": "b", "documentId": "TP-1"}),
+        );
+        doc_id.version = Some("1.1".to_string());
+        update_plan(&c, &id, &doc_id).unwrap();
+        assert_eq!(get_plan(&c, &id, USER).unwrap().unwrap().status, "approved");
+
+        let mut edited = input(&p, "Plan", serde_json::json!({"summary": "c"}));
+        edited.version = Some("1.1".to_string());
+        update_plan(&c, &id, &edited).unwrap();
+        let plan = get_plan(&c, &id, USER).unwrap().unwrap();
+        assert_eq!(
+            (plan.status.as_str(), plan.version.as_str()),
+            ("reviewed", "1.2")
+        );
+        assert!(plan.data.get("approval").is_none());
+        assert_eq!(plan.data["review"]["reopenedFrom"], "1.1");
+
+        review_plan(&c, &id, &act(ReviewAction::Obsolete, None)).unwrap();
+        review_plan(&c, &id, &act(ReviewAction::Reactivate, None)).unwrap();
+        assert_eq!(get_plan(&c, &id, USER).unwrap().unwrap().status, "reviewed");
+    }
+
+    /// The approver check is asked about a plan, with its creator as author.
+    #[test]
+    fn the_approver_check_is_asked_about_a_plan() {
+        struct Refuse;
+        impl case_review::ApproverCheck for Refuse {
+            fn can_approve(
+                &self,
+                _conn: &Connection,
+                req: &case_review::ApprovalRequest,
+            ) -> Result<case_review::ApprovalVerdict, String> {
+                assert_eq!(req.subject, case_review::SUBJECT_PLAN);
+                assert_eq!(req.author_id, USER);
+                Ok(case_review::ApprovalVerdict::Denied(
+                    case_review::DenyReason::Author,
+                ))
+            }
+        }
+        let c = conn();
+        let p = project(&c, USER);
+        let id = insert_plan(&c, &input(&p, "Plan", serde_json::json!({}))).unwrap();
+        review_plan(&c, &id, &act(ReviewAction::Send, None)).unwrap();
+        let err =
+            review_plan_with(&c, &id, &act(ReviewAction::Approve, None), &Refuse).unwrap_err();
+        assert!(err.starts_with("review-not-allowed: author"), "{err}");
+        assert_eq!(get_plan(&c, &id, USER).unwrap().unwrap().status, "reviewed");
     }
 
     /// RED-W5: sprint and milestone ids live inside `data`, which this core
