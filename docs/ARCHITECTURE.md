@@ -1970,6 +1970,36 @@ fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,
     Sync conflicts, oplog and cursor are per account since FIX-07.
   - The user id comes from the UI. This separates the accounts of one
     installation; it does not defend against a tampered frontend.
+- **Workspaces on the desktop (SYNC-07, ADR-0042 §6, «Implementación del
+  escritorio»):** `src-tauri/src/workspaces.rs` and local migration 0040.
+  - `workspaces.kind` is `local` (the device's own, `ensure_workspace`),
+    `personal` or `shared`. `workspace_members` mirrors `GET /workspaces`
+    per account of the device (`workspaces_apply`).
+  - `owner_id` keeps meaning the account of the device that holds a row: a
+    pulled row of a synced workspace belongs to the member that pulled it.
+    The server's `ownerId` (the creator) lives in `creator_id` and goes
+    back unchanged.
+  - Every change of a person passes `check_write` in `journal::record`:
+    the role in the entity's workspace must have `capability_for(entity)`
+    (the shared matrix `workspace-roles.json`), or the write fails with
+    `forbidden:<capability>` and is rolled back. A project marked
+    «Sin acceso» (`projects.access_lost_at`) refuses writes with
+    `access_lost`.
+  - A row under a project takes its project's workspace on insert (0040
+    triggers). Each oplog row is stamped with its workspace, and a pending
+    delta carries it (`Delta.workspaceId`).
+  - `workspaces_apply` moves the account's rows from the local workspace
+    to the personal one (backup `pharos.db.enc.bak-<version>-workspaces`
+    first), on every sync.
+  - Pulls are per workspace, with one cursor each
+    (`cursor:<user>:<workspace>`). A move tombstone deletes nothing, and a
+    project that arrives in another workspace takes its rows along
+    (`follow_project`).
+  - Refusals (`sync_refused_record`): `moved` relocates the row;
+    `forbidden` and `not_found` wait in `sync_rejections` until discarded.
+  - A lost workspace is announced (`pharos:workspaces-revoked`) and its
+    copy is deleted only on confirmation (`workspace_drop`).
+  - `WorkspaceApprover` is the case approver check (CAS-02).
 - **Human-readable keys (DAT-01, ADR-0010):** case, requirement, defect and run keys
   come from `key_counters` (`src-tauri/src/keys.rs`):
   - the counter only moves forward, so a key is never reused;
