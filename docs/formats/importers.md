@@ -14,8 +14,7 @@ los parsers (el CLI de INT-01) tiene que reproducirla.
 SARIF, axe y k6 (hallazgos y métricas), Allure y TRX (resultados) y `.xcresult`
 están aprobados en [ADR-0053](../adr/0053-hallazgos-metricas-y-paquete-de-formatos.md).
 Sus tablas de mapeo están en el [plan de la pista F](../design/f-formatos-plan.md) §7
-y pasan aquí cuando cada parser se implementa. Los parsers se mudan al paquete
-`packages/formats` (`@pharos/formats`), que comparten la app, la web y el servidor.
+y pasan aquí cuando cada parser se implementa.
 
 ## Detección
 
