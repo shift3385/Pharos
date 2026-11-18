@@ -13,4 +13,9 @@ baseRevision: number | null, baseHlc: string | null,
 /**
  * Oplog row ids covered, marked synced only if the server accepts the delta.
  */
-opIds: Array<string>, };
+opIds: Array<string>, 
+/**
+ * The workspace the change belongs to (SYNC-07): the push goes there.
+ * From the row's `workspaceId`, else the one stamped on its oplog row.
+ */
+workspaceId: string | null, };

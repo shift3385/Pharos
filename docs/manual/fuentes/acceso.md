@@ -134,6 +134,9 @@ los tuyos.
 
 - La sesión se recuerda en el equipo: no hace falta entrar cada vez. Cierra la
   sesión si compartes el equipo.
+- Si dos personas usan el mismo equipo y las dos son miembros de un mismo
+  workspace compartido, sus proyectos se ven en este equipo desde la cuenta
+  que los sincronizó primero. La otra los ve en sus otros equipos y en la web.
 - Escribe bien tu nombre y tus apellidos antes de exportar documentos: son los
   que firman el plan de pruebas.
 - El idioma también se puede cambiar después, desde el menú de usuario o desde

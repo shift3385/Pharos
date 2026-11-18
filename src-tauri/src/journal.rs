@@ -336,6 +336,19 @@ fn write_event(
 /// audit event, in the caller's transaction. An update that changed no field
 /// leaves the oplog row (the sync behaviour does not change) but no event.
 pub fn record(conn: &Connection, change: Change) -> Result<(), String> {
+    // A person's change must be one their role in the entity's workspace
+    // allows (SYNC-07, ADR-0042 §6); the server would refuse it anyway. The
+    // whole write is rolled back. Components (sync, keys, migrations) are not
+    // checked: they apply what the server or the person already decided.
+    if let Actor::User(user) = &change.actor {
+        crate::workspaces::check_write(
+            conn,
+            user,
+            change.entity,
+            change.id,
+            change.action == Action::Create,
+        )?;
+    }
     oplog::record(
         conn,
         change.entity,
