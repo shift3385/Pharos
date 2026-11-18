@@ -13,7 +13,7 @@ asistente de **22 pasos** que sigue la norma ISO/IEC/IEEE 29119-3 y el apartado
 
 | Pasos | Qué decides |
 | --- | --- |
-| 1–2 | Identificación del plan (título, estado, ID de documento, versión y fecha; el autor es tu nombre del perfil y lo ves en «Estado del plan») y resumen |
+| 1–2 | Identificación del plan (título, ID de documento, versión y fecha; el estado se ve aquí pero cambia con las acciones de «Estado del plan», y el autor es tu nombre del perfil) y resumen |
 | 3–8 | Alcance, supuestos y restricciones, niveles y tipos de prueba, técnicas de prueba, metodología y entregables |
 | 9–12 | Entorno, herramientas y automatización, datos de prueba y gestión de defectos |
 | 13–16 | Roles, independencia y formación; estimación y presupuesto; cronograma (sprints e hitos) y riesgos con su mitigación |
@@ -110,14 +110,36 @@ estado no sube la versión. El plan se exporta en PDF (listo para firmar) o en
 Excel, con su **ID de documento** (por defecto `TP-<prefijo del proyecto>-<6
 caracteres>`, editable en el paso 1).
 
-**Aprobar el plan.** «Aprobado» no se elige en el estado: con el plan guardado y
-en «Revisado», pulsa **«Aprobar versión N»** en «Estado del plan» y confirma.
-Queda quién lo aprobó y cuándo, en el panel y en la cabecera del PDF y del
-Excel; aprobar no sube la versión. Si después cambias el contenido, un aviso lo
-dice antes de guardar y el plan vuelve a «Revisado» con una versión nueva. El
-panel **«Historial»** muestra los últimos cambios de estado y versión, quién
-los hizo y qué pasos tocó, con «pierde la aprobación» cuando toca; «Revisiones»
-abre la lista para restaurar una.
+**Revisar y aprobar el plan.** El estado no se elige en un menú: cambia con
+las acciones de **«Estado del plan»**, igual que en los casos (capítulo 8).
+
+| Estado | Acción | Qué pasa |
+| --- | --- | --- |
+| Borrador | «Enviar a revisión» | Pide una nota opcional para quien revise. El plan pasa a «En revisión». |
+| En revisión | «Aprobar versión N» | Pide confirmación. Queda quién aprobó, cuándo y qué versión. Aprobar no sube la versión. |
+| En revisión | «Pedir cambios…» | Pide un comentario obligatorio. El plan sigue en revisión, con el aviso «Cambios pedidos por…». |
+| Cualquiera | «Marcar obsoleto» | El plan se conserva, pero deja de usarse y pierde la aprobación. |
+| Obsoleto | «Reactivar» | El plan vuelve a «En revisión» (a Borrador si nunca se envió). Hay que aprobarlo de nuevo. |
+
+- **Borrador es solo el principio.** Un plan se revisa las veces que haga
+  falta hasta que se aprueba, y nunca vuelve a Borrador.
+- Si cambias el contenido de un plan **aprobado**, un aviso lo dice antes de
+  guardar. Al guardar vuelve a «En revisión» con una versión nueva y hay que
+  aprobarlo otra vez. La aprobación anterior queda en el historial.
+- Si cambias el contenido de un plan **en revisión**, sigue en revisión. Si
+  alguien había pedido cambios, el aviso pasa a «Cambios guardados tras la
+  petición de…».
+- Primero se guarda: con cambios sin guardar, las acciones esperan.
+- **Quién aprueba** lo decide la regla «Aprobación independiente» del espacio
+  de trabajo, que solo cambia un Test Manager. En tu espacio personal trabajas
+  solo: apruebas tus planes y quedan como **«aprobación propia»** en el panel,
+  el historial y la cabecera del PDF y del Excel. En un espacio compartido con
+  la regla activada, aprueba un Test Manager que no sea el autor del plan.
+
+Queda quién aprobó y cuándo, en el panel y en la cabecera del PDF y del
+Excel. El panel **«Historial»** muestra los últimos cambios de estado y
+versión, quién los hizo y qué pasos tocó, con «pierde la aprobación» cuando
+toca; «Revisiones» abre la lista para restaurar una.
 
 En este manual, Liomar escribe el «Plan de pruebas de Pharos 0.3.0»: qué se
 prueba de la propia aplicación en esta versión.
@@ -147,8 +169,11 @@ prueba de la propia aplicación en esta versión.
 
 ## Si algo no sale
 
-- **«Aprobar versión N» está en gris.** Debajo dice por qué: guarda antes de
-  aprobar, o pon el plan en «Revisado» y guárdalo.
+- **Las acciones de «Estado del plan» están en gris.** Debajo dice por qué:
+  guarda los cambios antes de seguir con la revisión.
+- **«No puedes aprobar este plan».** El espacio de trabajo pide aprobación
+  independiente: lo aprueba un Test Manager que no sea quien creó el plan. Si
+  trabajas solo, el plan va en tu espacio personal, donde puedes aprobarlo tú.
 - **«Sin cambios: no hay nada que guardar».** El plan no ha cambiado desde el
   último guardado; no se crea versión ni revisión.
 - **Un criterio de cierre no se deja editar.** Lo mide una métrica: su texto
@@ -200,8 +225,8 @@ prueba de la propia aplicación en esta versión.
   y «Antes de terminar» (paso 22) enlaza a los que faltan.
 - Marca como «Orientativo» un criterio que quieres ver en el cierre sin que lo
   frene, por ejemplo una métrica propia que todavía se mide a mano.
-- Un .xlsx importado nunca llega aprobado: entra como «Revisado», para que
-  alguien lo apruebe aquí.
+- Un plan creado desde un .xlsx empieza en Borrador y nunca llega aprobado:
+  hay que enviarlo a revisión y aprobarlo aquí.
 - La duración del sprint (paso 7) se usa en el cronograma: si un sprint dura
   otra cosa, Pharos lo avisa en su fila.
 - Para empezar un plan desde Excel, descarga una plantilla en «Administración ›

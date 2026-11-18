@@ -16,6 +16,7 @@ vi.mock("../api/testPlanApi", () => ({
     get: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    review: vi.fn(),
     revisions: vi.fn(async () => []),
     revisionDetail: vi.fn(),
     history: vi.fn(async () => ({
@@ -293,7 +294,7 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
     expect(within(header).getByRole("button", { name: "Importar / Exportar" })).toBeInTheDocument();
     expect(within(header).getByRole("button", { name: "Guardar" })).toBeInTheDocument();
     const panel = screen.getByRole("complementary", { name: "Estado del plan" });
-    expect(within(panel).getByText("Revisado")).toBeInTheDocument();
+    expect(within(panel).getByText("En revisión")).toBeInTheDocument();
     expect(within(panel).getByText("v1.3")).toBeInTheDocument();
   });
 });
@@ -450,7 +451,10 @@ describe("plan wizard · 22 steps (UX-31, PLN-06)", () => {
     await screen.findByText("Paso 1 de 22");
     expect(heading()).toHaveTextContent("Identificación del plan");
     expect(screen.getByRole("textbox", { name: /Título/ })).toHaveValue(PLAN.title);
-    expect(screen.getByRole("combobox", { name: "Estado" })).toHaveTextContent("Revisado");
+    // The status is not edited here: it changes with «Estado del plan» (PLN-08).
+    expect(screen.queryByRole("combobox", { name: "Estado" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("plan-status")).toHaveTextContent("En revisión");
+    expect(screen.getByText("El estado cambia con las acciones de «Estado del plan».")).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Versión" })).toHaveValue("1.3");
     // The date is Pharos' DatePicker (UX-36): dd/mm/aaaa, still ISO in the form.
     const date = screen.getByRole("textbox", { name: "Fecha" });
@@ -469,12 +473,6 @@ describe("plan wizard · 22 steps (UX-31, PLN-06)", () => {
     expect(within(nav).getAllByRole("button")).toHaveLength(22);
     expect(within(nav).getByText("4 de 22 pasos")).toBeInTheDocument();
     expect(within(nav).getByText("18 %")).toBeInTheDocument();
-    // The status is a Pharos select: choosing keeps the value in the form.
-    // «Aprobado» is not chosen here: «Aprobar» records who and when (PLN-07).
-    await userEvent.click(screen.getByRole("combobox", { name: "Estado" }));
-    expect(screen.getByRole("option", { name: /Aprobado/ })).toHaveAttribute("aria-disabled", "true");
-    await userEvent.click(screen.getByRole("option", { name: "Revisado" }));
-    expect(screen.getByRole("combobox", { name: "Estado" })).toHaveTextContent("Revisado");
 
     await userEvent.click(screen.getByRole("button", { name: "Siguiente: Resumen" }));
     expect(screen.getByText("Paso 2 de 22")).toBeInTheDocument();
@@ -606,45 +604,80 @@ describe("plan wizard · a new plan's title (UX-34)", () => {
   });
 });
 
-describe("plan wizard · approval (PLN-07)", () => {
-  it("«Aprobar versión» asks first, then records who, when and which version", async () => {
+describe("plan wizard · review flow (PLN-07, PLN-08)", () => {
+  const approval = { by: "test-user", byName: "Laura Méndez", at: "2026-11-17T12:05:00Z", version: "1.3", selfApproved: true };
+
+  it("«Aprobar versión» asks first and goes through the review flow; a self-approval says so", async () => {
     setViewportWidth(1440);
     vi.mocked(testPlanApi.update).mockClear();
+    vi.mocked(testPlanApi.review).mockReset();
+    vi.mocked(testPlanApi.review).mockResolvedValue({
+      ...structuredClone(PLAN),
+      status: "approved",
+      revision: PLAN.revision + 1,
+      data: { ...structuredClone(PLAN.data), approval },
+    });
     renderWizard();
     const panel = await screen.findByRole("complementary", { name: "Estado del plan" });
     await userEvent.click(within(panel).getByRole("button", { name: "Aprobar versión 1.3" }));
-    const dialog = await screen.findByRole("alertdialog", { name: "¿Aprobar el plan?" });
-    expect(dialog).toHaveTextContent("Aprobarás la versión 1.3 como");
+    const dialog = await screen.findByRole("alertdialog", { name: "Aprobar la versión 1.3" });
+    expect(dialog).toHaveTextContent("Quedará como aprobada por");
     await userEvent.click(within(dialog).getByRole("button", { name: "Aprobar" }));
-    await vi.waitFor(() => expect(testPlanApi.update).toHaveBeenCalled());
-    const input = vi.mocked(testPlanApi.update).mock.calls[0][1];
-    expect(input.status).toBe("approved");
-    // Approving is not an edit: same version (PLN-03).
-    expect(input.version).toBe("1.3");
-    expect(input.data.approval).toMatchObject({ by: "test-user", version: "1.3" });
-    expect(await within(panel).findByTestId("plan-approved-by")).toHaveTextContent(input.data.approval!.byName);
+    await vi.waitFor(() => expect(testPlanApi.review).toHaveBeenCalled());
+    expect(vi.mocked(testPlanApi.review).mock.calls[0][1]).toMatchObject({ action: "approve", userId: "test-user" });
+    // A transition is not a save.
+    expect(testPlanApi.update).not.toHaveBeenCalled();
+    expect(await within(panel).findByTestId("plan-approved-by")).toHaveTextContent("Laura Méndez · aprobación propia");
     expect(within(panel).queryByRole("button", { name: /Aprobar versión/ })).not.toBeInTheDocument();
+    expect(within(panel).getByRole("button", { name: "Marcar obsoleto" })).toBeInTheDocument();
   });
 
-  it("cannot approve with unsaved changes or outside «Revisado», and says why", async () => {
+  it("a draft is sent to review; with unsaved changes the actions wait and say why", async () => {
     setViewportWidth(1440);
     vi.mocked(testPlanApi.get).mockResolvedValue({ ...structuredClone(PLAN), status: "draft" });
     renderWizard();
     const panel = await screen.findByRole("complementary", { name: "Estado del plan" });
-    const button = within(panel).getByRole("button", { name: "Aprobar versión 1.3" });
-    expect(button).toBeDisabled();
-    expect(button).toHaveAccessibleDescription("Solo se aprueba un plan guardado en «Revisado».");
+    expect(within(panel).queryByRole("button", { name: /Aprobar versión/ })).not.toBeInTheDocument();
+    const send = within(panel).getByRole("button", { name: "Enviar a revisión" });
+    expect(send).toBeEnabled();
     await userEvent.type(screen.getByRole("textbox", { name: /Título/ }), " 2");
-    expect(button).toHaveAccessibleDescription("Guarda antes de aprobar");
+    expect(send).toBeDisabled();
+    expect(send).toHaveAccessibleDescription("Guarda los cambios antes de seguir con la revisión.");
   });
 
-  it("editing an approved plan warns, and saving sends it back to «Revisado»", async () => {
+  it("«Pedir cambios» needs a comment and keeps the plan in review", async () => {
     setViewportWidth(1440);
-    const approval = { by: "someone", byName: "Ana Ruiz", at: "2026-11-11T10:05:00Z", version: "1.3" };
+    vi.mocked(testPlanApi.review).mockReset();
+    vi.mocked(testPlanApi.review).mockResolvedValue({
+      ...structuredClone(PLAN),
+      revision: PLAN.revision + 1,
+      data: {
+        ...structuredClone(PLAN.data),
+        review: { state: "changesRequested", returnedByName: "Luis Pérez", returnedAt: "2026-11-17T11:02:00Z", comment: "Falta el p95" },
+      },
+    });
+    renderWizard();
+    const panel = await screen.findByRole("complementary", { name: "Estado del plan" });
+    await userEvent.click(within(panel).getByRole("button", { name: "Pedir cambios…" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "Pedir cambios en el plan" });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Pedir cambios" }));
+    expect(within(dialog).getByRole("alert")).toHaveTextContent("Escribe qué hay que cambiar.");
+    expect(testPlanApi.review).not.toHaveBeenCalled();
+    await userEvent.type(within(dialog).getByRole("textbox"), "Falta el p95");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Pedir cambios" }));
+    await vi.waitFor(() =>
+      expect(vi.mocked(testPlanApi.review).mock.calls[0][1]).toMatchObject({ action: "return", comment: "Falta el p95" }),
+    );
+    expect(await within(panel).findByText("Cambios pedidos por Luis Pérez", { exact: false })).toBeInTheDocument();
+    expect(within(panel).getByText("En revisión")).toBeInTheDocument();
+  });
+
+  it("editing an approved plan warns that it goes back to review; the save keeps the stored status", async () => {
+    setViewportWidth(1440);
     vi.mocked(testPlanApi.get).mockResolvedValue({
       ...structuredClone(PLAN),
       status: "approved",
-      data: { ...structuredClone(PLAN.data), approval },
+      data: { ...structuredClone(PLAN.data), approval: { ...approval, selfApproved: false, byName: "Ana Ruiz" } },
     });
     vi.mocked(testPlanApi.update).mockClear();
     renderWizard();
@@ -653,13 +686,14 @@ describe("plan wizard · approval (PLN-07)", () => {
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
     await userEvent.type(screen.getByRole("textbox", { name: /Título/ }), " 2");
     expect(screen.getByRole("note")).toHaveTextContent(
-      "Este plan está aprobado (v1.3). Al guardar estos cambios vuelve a «Revisado».",
+      "Este plan está aprobado (v1.3). Al guardar estos cambios vuelve a «En revisión» con una versión nueva",
     );
     await userEvent.click(within(screen.getByTestId("header-actions")).getByRole("button", { name: "Guardar" }));
     const input = vi.mocked(testPlanApi.update).mock.calls[0][1];
-    expect(input.status).toBe("reviewed");
+    // The core decides: it keeps the status, or sends the plan back to review.
+    expect(input.status).toBe("approved");
     expect(input.version).toBe("1.4");
-    expect(input.data.approval).toBeNull();
+    expect(input.data.approval).toBeUndefined();
   });
 });
 

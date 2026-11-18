@@ -8,6 +8,7 @@ import type {
   TestPlanInput,
   TestPlanSummary,
 } from "../model/types";
+import type { PlanReviewAction } from "../model/review";
 
 const path = (id: string) => `/api/test-plans/${encodeURIComponent(id)}`;
 
@@ -29,6 +30,21 @@ export const testPlanApi = {
     isTauri() ? invoke("test_plan_create", { input }) : serverApi.post("/api/test-plans", input),
   update: (id: string, input: TestPlanInput): Promise<TestPlan | null> =>
     isTauri() ? invoke("test_plan_update", { id, input }) : serverApi.put(path(id), id, input),
+  /** A review transition (PLN-08, ADR-0049): send, approve, «Pedir
+   *  cambios» (`return`), obsolete, reactivate. The core decides who
+   *  approves; the plan as it stands after it. */
+  review: (
+    plan: Pick<TestPlan, "id" | "revision">,
+    input: { action: PlanReviewAction; comment?: string; userId: string; userName: string },
+  ): Promise<TestPlan | null> =>
+    isTauri()
+      ? invoke("test_plan_review", { id: plan.id, input })
+      : serverApi.post(`${path(plan.id)}/review`, {
+          action: input.action,
+          comment: input.comment,
+          userName: input.userName,
+          revision: plan.revision,
+        }),
   remove: (id: string, userId: string): Promise<void> =>
     isTauri() ? invoke("test_plan_delete", { id, userId }) : serverApi.remove(path(id), id),
   revisions: (id: string, userId: string): Promise<RevisionSummary[]> =>

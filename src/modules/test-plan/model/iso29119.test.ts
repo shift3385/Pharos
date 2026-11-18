@@ -12,6 +12,7 @@ import {
 } from "./metrics";
 import type { PlanMetric, TestPlan } from "./types";
 import {
+  approvalLine,
   changesContent,
   defaults,
   documentIdFor,
@@ -177,30 +178,30 @@ describe("saving without changes (PLN-03)", () => {
 describe("approval (PLN-07)", () => {
   const approval = { by: "u1", byName: "Liomar Rodríguez", at: "2026-11-11T10:05:00Z", version: "1.3" };
 
-  it("is kept while «Aprobado», without a new version", () => {
-    const plan = saved();
-    const form = { ...fromPlan(plan, t), status: "approved", approval };
+  // PLN-08 (ADR-0049): the status and the review records are the core's. A
+  // save sends the stored status and no approval; the core keeps them, or
+  // sends an approved plan back to «En revisión» when its content changes.
+  it("a save sends the stored status and never an approval", () => {
+    const plan = saved({ status: "approved" }, { approval });
+    const form = { ...fromPlan(plan, t), status: "draft" };
     const input = toInput(form, opts(plan));
     expect(input.status).toBe("approved");
     expect(input.version).toBe("1.3");
-    expect(input.data.approval).toEqual(approval);
+    expect(input.data.approval).toBeUndefined();
   });
 
-  it("editing an approved plan sends it back to «Revisado» and drops the approval", () => {
+  it("a content change still raises the version; the core decides the status", () => {
     const plan = saved({ status: "approved" }, { approval });
     const form = fromPlan(plan, t);
     expect(form.approval).toEqual(approval);
     const input = toInput({ ...form, summary: "Cambio" }, opts(plan));
-    expect(input.status).toBe("reviewed");
+    expect(input.status).toBe("approved");
     expect(input.version).toBe("1.4");
-    expect(input.data.approval).toBeNull();
   });
 
-  it("another status drops it; a status alone is not an edit", () => {
-    const plan = saved({ status: "approved" }, { approval });
-    const form = fromPlan(plan, t);
-    expect(toInput({ ...form, status: "obsolete" }, opts(plan)).data.approval).toBeNull();
-    expect(toInput(form, opts(plan)).status).toBe("approved");
+  it("a self-approval says so on the document", () => {
+    expect(approvalLine({ ...approval, selfApproved: true }, t, "es")).toContain("aprobación propia");
+    expect(approvalLine(approval, t, "es")).not.toContain("aprobación propia");
   });
 
   it("an approval is read only with «Aprobado», and a file never brings one", () => {

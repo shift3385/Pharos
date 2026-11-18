@@ -1,25 +1,21 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowDownUp, BadgeCheck, ChevronDown, FileSpreadsheet, FileText, FileUp, X } from "lucide-react";
+import { ArrowDownUp, ChevronDown, FileSpreadsheet, FileText, FileUp, X } from "lucide-react";
 import { Dialog } from "@shared/ui/Dialog";
 import { MenuItem, MenuLabel, MenuSeparator, ResponsiveMenu } from "@shared/ui/Menu";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { usePopover } from "@shared/ui/usePopover";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
+import { PLAN_STATUS_TONE } from "../../model/review";
 import type { PlanApproval, TestPlan } from "../../model/types";
 import { RevisionHistory } from "../RevisionHistory";
+import { PlanReviewControls } from "./PlanReviewControls";
 import { PlanTimeline } from "./PlanTimeline";
 
-const STATUS_TONE: Record<string, "neutral" | "info" | "success"> = {
-  draft: "neutral",
-  reviewed: "info",
-  approved: "success",
-  obsolete: "neutral",
-};
 
 /** «Estado del plan» and the latest revisions, next to the form (or below it
- *  when they do not fit). While not approved, «Aprobar versión N» (PLN-07):
- *  disabled with its reason until the plan is saved and «Revisado». */
+ *  when they do not fit). Who approved and when (PLN-07), marked when it was
+ *  a self-approval; the review actions of a saved plan (PLN-08). */
 export function PlanStatusPanel({
   plan,
   status,
@@ -28,8 +24,8 @@ export function PlanStatusPanel({
   updated,
   onShowRevisions,
   approval,
-  approveBlocked,
-  onApprove,
+  dirty,
+  onReviewed,
 }: {
   plan: TestPlan | null;
   status: string;
@@ -40,9 +36,10 @@ export function PlanStatusPanel({
   onShowRevisions: () => void;
   /** Who approved and when, while «Aprobado». */
   approval: PlanApproval | null;
-  /** Why the plan cannot be approved now; null when it can. */
-  approveBlocked: string | null;
-  onApprove: () => void;
+  /** Unsaved changes: the review actions wait for the save. */
+  dirty: boolean;
+  /** The plan after a review transition. */
+  onReviewed: (saved: TestPlan) => void;
 }) {
   const { t, i18n } = useTranslation();
   const approvedAt = approval
@@ -62,7 +59,7 @@ export function PlanStatusPanel({
         <dl className="tpw-facts">
           <dt>{t("testPlan.panel.status")}</dt>
           <dd>
-            <StatusPill tone={STATUS_TONE[status] ?? "neutral"} dot strike={status === "obsolete"}>
+            <StatusPill tone={PLAN_STATUS_TONE[status] ?? "neutral"} dot strike={status === "obsolete"}>
               {t(`testPlan.statusLabel.${status}`)}
             </StatusPill>
           </dd>
@@ -73,6 +70,7 @@ export function PlanStatusPanel({
               <dt>{t("testPlan.approval.by")}</dt>
               <dd className="u-truncate" title={approval.byName} data-testid="plan-approved-by">
                 {approval.byName}
+                {approval.selfApproved && ` · ${t("testPlan.review.banner.selfApproved")}`}
               </dd>
               <dt>{t("testPlan.approval.at")}</dt>
               <dd>{approvedAt}</dd>
@@ -85,27 +83,7 @@ export function PlanStatusPanel({
           <dt>{t("testPlan.panel.updated")}</dt>
           <dd>{updated ?? "—"}</dd>
         </dl>
-        {plan && status !== "approved" && status !== "obsolete" && (
-          <>
-            <button
-              type="button"
-              className="header-action tpw-approve"
-              data-primary={approveBlocked ? undefined : ""}
-              disabled={approveBlocked !== null}
-              aria-describedby={approveBlocked ? "tpw-approve-why" : undefined}
-              onClick={onApprove}
-              data-testid="plan-approve"
-            >
-              <BadgeCheck size={16} aria-hidden="true" />
-              <span className="header-action__label">{t("testPlan.approval.approve", { version })}</span>
-            </button>
-            {approveBlocked && (
-              <p id="tpw-approve-why" className="tpw-approve-why">
-                {approveBlocked}
-              </p>
-            )}
-          </>
-        )}
+        {plan && <PlanReviewControls plan={plan} dirty={dirty} onChanged={onReviewed} />}
       </section>
       {plan && (
         <section className="tpw-card" aria-labelledby="tpw-revs-title">

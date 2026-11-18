@@ -246,37 +246,6 @@ export function TestPlanWizard({
     guard(() => void save());
   };
 
-  // «Aprobar versión N» (PLN-07): a saved plan in «Revisado», approved by
-  // the signed-in account (another person once there are roles, 0.5.0).
-  const userName = user ? `${user.firstName} ${user.lastName}`.trim() : author;
-  const approveBlocked = !plan
-    ? t("testPlan.approval.needsReviewed")
-    : dirty
-      ? t("testPlan.approval.saveFirst")
-      : plan.status !== "reviewed"
-        ? t("testPlan.approval.needsReviewed")
-        : null;
-  async function approve() {
-    if (!form || approveBlocked) return;
-    const lang = i18n.resolvedLanguage ?? "es";
-    const ok = await confirm({
-      title: t("testPlan.approval.title"),
-      message: t("testPlan.approval.confirm", {
-        version: form.version,
-        name: userName,
-        date: new Intl.DateTimeFormat(lang, { dateStyle: "medium" }).format(new Date()),
-      }),
-      confirmLabel: t("testPlan.approval.action"),
-    });
-    if (!ok) return;
-    await save(
-      {
-        status: "approved",
-        approval: { by: userId, byName: userName, at: new Date().toISOString(), version: form.version },
-      },
-      t("testPlan.approval.toast", { version: form.version }),
-    );
-  }
 
   // The form as exported, with its milestones and the project's cycles
   // (EXP-03) after the template's content.
@@ -434,10 +403,13 @@ export function TestPlanWizard({
                 </InfoTip>
               </div>
             </div>
-            {/* Editing an approved plan sends it back to «Revisado» (PLN-07). */}
-            {plan?.status === "approved" && dirty && changesContent(form, plan) && (
+            {/* Editing an approved plan sends it back to «En revisión» with its
+                next version; one in review stays there (PLN-08). */}
+            {(plan?.status === "approved" || plan?.status === "reviewed") && dirty && changesContent(form, plan) && (
               <Alert kind="warning" role="note" className="tpw-approved-edit">
-                {t("testPlan.approval.editing", { version: plan.version })}
+                {plan.status === "approved"
+                  ? t("testPlan.approval.editing", { version: plan.version })
+                  : t("testPlan.approval.editingReviewed")}
               </Alert>
             )}
             {showSummary && titleIssue && (
@@ -482,8 +454,11 @@ export function TestPlanWizard({
             updated={updated}
             onShowRevisions={() => setShowRev(true)}
             approval={form.approval}
-            approveBlocked={approveBlocked}
-            onApprove={() => void approve()}
+            dirty={dirty}
+            onReviewed={(saved) => {
+              load(saved);
+              window.dispatchEvent(new Event(PLAN_SAVED_EVENT));
+            }}
           />
         </div>
       </div>

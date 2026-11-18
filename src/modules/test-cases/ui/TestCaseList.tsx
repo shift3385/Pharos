@@ -290,10 +290,11 @@ export function TestCaseList({
         name: approval.byName,
         date: stampLabel(approval.at, lang),
       });
-    if (c.status === "reviewed" && review)
-      return t("testCase.list.sentHint", { name: review.sentByName, date: stampLabel(review.sentAt, lang) });
+    // «Pedir cambios» keeps the case in review (PLN-08): its mark comes first.
     if (isReturned(c.status, review) && review)
       return t("testCase.list.returnedHint", { name: review.returnedByName ?? "", comment: review.comment ?? "" });
+    if (c.status === "reviewed" && review)
+      return t("testCase.list.sentHint", { name: review.sentByName, date: stampLabel(review.sentAt, lang) });
     return undefined;
   };
   const statusPill = (c: ListedCase) => (

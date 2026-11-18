@@ -543,10 +543,11 @@ export function changesContent(form: FormState, plan: TestPlan | null): boolean 
   return !plan || contentKey(form) !== contentKey(fromPlan(plan, keepT));
 }
 
-/** What is saved (A2, PLN-03, PLN-07): blank rows are dropped; the version
+/** What is saved (A2, PLN-03, PLN-08): blank rows are dropped; the version
  *  goes up only when the title or content changes (and the user did not set
- *  it by hand); changing the content of an approved plan sends it back to
- *  «Revisado» and drops its approval, which only an «Aprobado» plan keeps. */
+ *  it by hand). The status and the review records are not the form's: the
+ *  core keeps them, and sends an approved plan back to «En revisión» when
+ *  its content changes (ADR-0049). */
 export function toInput(
   form: FormState,
   opts: { plan: TestPlan | null; projectId: string | null; author: string; userId: string },
@@ -555,19 +556,16 @@ export function toInput(
   const changed = changesContent(form, plan);
   const version =
     plan && changed && form.version === plan.version ? nextVersion(form.version) : form.version;
-  const status =
-    plan?.status === "approved" && form.status === "approved" && changed ? "reviewed" : form.status;
   return {
     projectId: plan?.projectId ?? opts.projectId ?? null,
     title: form.title.trim(),
     version,
     planDate: form.planDate || null,
-    status,
+    status: plan?.status ?? "draft",
     author: opts.author,
     data: {
       ...toData(form),
       documentId: form.documentId.trim(),
-      approval: status === "approved" ? form.approval : null,
     },
     userId: opts.userId,
   };
@@ -619,5 +617,6 @@ export function approvalLine(a: PlanApproval, t: Translate, lang: string): strin
   const date = Number.isNaN(at.getTime())
     ? a.at
     : new Intl.DateTimeFormat(lang, { dateStyle: "medium" }).format(at);
-  return t("testPlan.approval.byLine", { name: a.byName, date });
+  // A self-approval says so on the document (PLN-08, ADR-0049).
+  return t(a.selfApproved ? "testPlan.approval.byLineSelf" : "testPlan.approval.byLine", { name: a.byName, date });
 }
