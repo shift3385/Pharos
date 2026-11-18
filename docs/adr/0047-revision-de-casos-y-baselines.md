@@ -7,6 +7,9 @@
   defecto; las baselines se sincronizan ya, en un commit aparte acordado con
   la pista de workspaces. Antes ya había decidido que aprueba cualquier Test
   Manager o Test Analyst que no sea el autor, y que basta con un revisor.
+  La regla de edición (un caso editado vuelve a Borrador) y «Devolver» los
+  cambia el [ADR-0049](0049-estados-del-plan-y-aprobacion-independiente.md)
+  (PLN-08): editar lleva a En revisión y «Devolver» pasa a «Pedir cambios».
 - **Contexto:**
   - El criterio de salida de 0.5.0 «Equipo» (ROADMAP §3) dice «otra persona
     aprueba un caso». Hoy el estado de un caso es un desplegable: cualquiera
