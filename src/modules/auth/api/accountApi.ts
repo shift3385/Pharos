@@ -25,6 +25,26 @@ export interface AdminUser {
   createdAt: string;
   recoveryCodes: { total: number; remaining: number };
   workspaces: number;
+  /** SEC-12: when, by whom and why it was disabled; null when active. */
+  disabled: { at: string; byName: string | null; reason: string | null } | null;
+}
+
+/** Which accounts «Usuarios» lists (SEC-12). */
+export type AdminUserStatus = "active" | "disabled" | "all";
+
+/** A shared workspace the account is the only active Test Manager of: a
+ *  successor is chosen among `candidates` before disabling it (SEC-12). */
+export interface ManagedAlone {
+  workspaceId: string;
+  name: string;
+  members: number;
+  candidates: { userId: string; displayName: string; role: string }[];
+}
+
+export interface DisableImpact {
+  managedAlone: ManagedAlone[];
+  /** The account is the last active administrator: it cannot be disabled. */
+  lastAdmin: boolean;
 }
 
 /** A reset link made by an administrator (SEC-09): emailed (no token here)
@@ -129,10 +149,10 @@ export const accountApi = {
 
   // ---- Server administrator (SEC-11, SEC-09; ADR-0045) ----
 
-  adminUsers: (search = "", offset = 0, limit = 50) => {
-    const q = new URLSearchParams({ offset: String(offset), limit: String(limit) });
+  adminUsers: (search = "", offset = 0, limit = 50, status: AdminUserStatus = "all") => {
+    const q = new URLSearchParams({ offset: String(offset), limit: String(limit), status });
     if (search.trim()) q.set("q", search.trim());
-    return authed<{ users: AdminUser[]; total: number; admins: number }>(
+    return authed<{ users: AdminUser[]; total: number; admins: number; disabled?: number }>(
       `/admin/users?${q.toString()}`,
     );
   },
@@ -147,6 +167,24 @@ export const accountApi = {
     authed<{ isAdmin: boolean; changed: boolean }>(
       `/admin/users/${encodeURIComponent(userId)}/admin`,
       () => ({ method: "PUT", body: JSON.stringify({ isAdmin }) }),
+    ),
+
+  // ---- Disabling an account (SEC-12; ADR-0045 amendment B) ----
+
+  disableImpact: (userId: string) =>
+    authed<DisableImpact>(`/admin/users/${encodeURIComponent(userId)}/disable-impact`),
+
+  setDisabled: (
+    userId: string,
+    input: {
+      disabled: boolean;
+      reason?: string | null;
+      successors?: { workspaceId: string; userId: string }[];
+    },
+  ) =>
+    authed<{ disabled: boolean; changed: boolean }>(
+      `/admin/users/${encodeURIComponent(userId)}/disabled`,
+      () => ({ method: "PUT", body: JSON.stringify(input) }),
     ),
 
   confirmReset: (token: string, newPassword: string) =>

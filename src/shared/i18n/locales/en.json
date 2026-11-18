@@ -512,7 +512,8 @@
         "noBlock": "Sync first to get new numbers, or type a key.",
         "failed": "That key could not be used: {{reason}}"
       }
-    }
+    },
+    "accountDisabled": "Your account is disabled on the server. Sync is stopped; your data and pending changes stay on this device and are sent if an administrator enables it again."
   },
   "admin": {
     "title": "Administration",
@@ -936,7 +937,11 @@
         "target": "Account",
         "by": "Done by",
         "delivery": "Delivery",
-        "issuedBy": "Link by"
+        "issuedBy": "Link by",
+        "reason": "Reason",
+        "from": "Before",
+        "to": "Now",
+        "previousRole": "Previous role"
       },
       "device": {
         "this": "This device",
@@ -1063,7 +1068,10 @@
         "admin_granted": "Administrator role granted",
         "admin_revoked": "Administrator role removed",
         "email": "By email",
-        "link": "Handed over"
+        "link": "Handed over",
+        "account_disabled": "Account disabled",
+        "account_enabled": "Account enabled",
+        "test_manager_succession": "New Test Manager (account disabled)"
       }
     },
     "users": {
@@ -1126,8 +1134,47 @@
         "user_not_found": "That account no longer exists.",
         "email_reset_disabled": "This server does not send email. Hand the link over yourself.",
         "rate_limited": "Too many attempts. Wait a moment.",
-        "generic": "Something went wrong. Please try again."
-      }
+        "generic": "Something went wrong. Please try again.",
+        "disable_self": "You cannot disable your own account.",
+        "account_disabled_target": "That account is disabled. Enable it first.",
+        "successor_required": "Choose a new Test Manager for each workspace.",
+        "invalid_successor": "The new Test Manager must be another active member of that workspace."
+      },
+      "statusLabel": "Show",
+      "status": {
+        "active": "Active",
+        "disabled": "Disabled",
+        "all": "All"
+      },
+      "state": "State",
+      "active": "Active",
+      "disabledOn": "Disabled · {{date}}",
+      "disabledBy": "By {{name}}",
+      "disabledReason": "Reason: {{reason}}",
+      "disable": "Disable account…",
+      "disableBlocked": "This is the last active administrator: name another one first.",
+      "enable": "Enable account",
+      "disableTitle": "Disable {{name}}'s account",
+      "disablePoint1": "All their sessions are closed at once, on the web and the API too.",
+      "disablePoint2": "They cannot sign in or sync. What is on their device stays there.",
+      "disablePoint3": "Their data, authorship and audit trail are kept. You can enable the account again at any time.",
+      "disableLastAdmin": "This is the server's last active administrator: name another one before disabling it.",
+      "disableReason": "Reason (optional, seen by administrators)",
+      "disableReasonPh": "E.g. left the team",
+      "disableManaged_one": "They are the only active Test Manager of {{count}} workspace. Choose who takes over:",
+      "disableManaged_other": "They are the only active Test Manager of {{count}} workspaces. Choose who takes over in each:",
+      "disableMembers_one": "· {{count}} member",
+      "disableMembers_other": "· {{count}} members",
+      "disableNoCandidates": "No other active members: the workspace will have no active Test Manager until you enable the account again.",
+      "disableSuccessor": "New Test Manager",
+      "disableSuccessorPh": "Choose a member…",
+      "disableConfirmLabel": "Type {{email}} to confirm",
+      "disableConfirm": "Disable account",
+      "disabled": "{{name}}'s account is disabled.",
+      "enableTitle": "Enable {{name}}'s account?",
+      "enableBody": "{{name}} can sign in again with their password and keeps their roles. Their previous sessions do not come back.",
+      "enableConfirm": "Enable",
+      "enabled": "{{name}}'s account is active again."
     }
   },
   "importReport": {
@@ -1180,7 +1227,8 @@
       "rate_limited": "Too many attempts. Wait a moment and try again.",
       "network": "Can't connect to {{host}}. Check your connection; if you had signed in on this computer before, the app opens with your local data.",
       "generic": "Something went wrong. Please try again.",
-      "account_other_server": "This account already has data on this computer from another server ({{host}}). To keep them apart, sign in to that server or use another account."
+      "account_other_server": "This account already has data on this computer from another server ({{host}}). To keep them apart, sign in to that server or use another account.",
+      "account_disabled": "This account is disabled. Ask the server administrator to enable it."
     },
     "forgot": "Forgot your password?",
     "recover": {
@@ -4939,12 +4987,14 @@
       },
       "member": {
         "joined": "{{actor}} joined {{title}}",
-        "removed": "You are no longer a member of {{title}}"
+        "removed": "You are no longer a member of {{title}}",
+        "disabled": "{{actor}} disabled {{title}}'s account: they no longer have access to {{workspaceName}}"
       },
       "account": {
         "reset_issued": "{{actor}} (server administrator) made a link to reset your password. If you did not ask for it, tell them.",
         "admin_granted": "{{actor}} made you a server administrator",
-        "admin_revoked": "{{actor}} removed your server administrator role"
+        "admin_revoked": "{{actor}} removed your server administrator role",
+        "enabled": "{{actor}} enabled your account again"
       }
     },
     "action": {
@@ -5022,7 +5072,9 @@
       "revoke": "Revoke",
       "noInvitations": "No invitations.",
       "roles": "What can each role do?",
-      "none": "No shared workspaces yet. Create one or join with a code from the workspace switcher."
+      "none": "No shared workspaces yet. Create one or join with a code from the workspace switcher.",
+      "disabled": "Disabled",
+      "disabledHint": "A server administrator disabled this account: it cannot sign in or sync, and does not count as an active member."
     },
     "invite": {
       "title": "Invite to {{name}}",

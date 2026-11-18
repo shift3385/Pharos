@@ -28,10 +28,13 @@ export const NOTIFICATION_KINDS = [
   // W (workspaces): someone joined (to the Test Managers), you were removed.
   "member.joined",
   "member.removed",
+  // SEC-12: a member of your workspace was disabled (to its Test Managers).
+  "member.disabled",
   // Account security (SEC-09, SEC-11; ADR-0045): told to the person affected.
   "account.reset_issued",
   "account.admin_granted",
   "account.admin_revoked",
+  "account.enabled",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -162,7 +165,16 @@ export async function emitNotification(
 ): Promise<string[]> {
   const subject = subjectSchema.parse(input.subject);
   const data = dataSchema.parse(input.data ?? {});
-  const recipients = await resolveRecipients(input, membership);
+  const wanted = await resolveRecipients(input, membership);
+  if (wanted.length === 0) return [];
+  // A disabled account is told nothing (SEC-12): it cannot read it, and its
+  // notifications would be stale when it comes back.
+  const { rows: active } = await db.query<{ id: string }>(
+    `SELECT id FROM users WHERE id = ANY($1::uuid[]) AND disabled_at IS NULL`,
+    [wanted],
+  );
+  const live = new Set(active.map((r) => r.id));
+  const recipients = wanted.filter((id) => live.has(id));
   if (recipients.length === 0) return [];
   await db.query(
     `INSERT INTO notifications

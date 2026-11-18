@@ -120,3 +120,58 @@
   font-size: 13.5px;
   color: var(--color-text-secondary);
 }
+
+/* Disabled accounts (SEC-12). */
+.usr-pill--on {
+  color: var(--color-success-text);
+  background: color-mix(in srgb, var(--color-success) 16%, transparent);
+}
+
+.usr-pill--off {
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  white-space: nowrap;
+}
+
+.usr-row--off td {
+  color: var(--color-text-muted);
+}
+
+.usr-danger {
+  color: var(--color-error-text);
+}
+
+.usr-field {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  font-weight: var(--fw-medium);
+}
+
+.usr-input {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-input);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-weight: var(--fw-regular, 400);
+}
+
+.usr-input:focus {
+  outline: none;
+  border-color: var(--color-navy-500);
+  box-shadow: 0 0 0 2px var(--color-focus);
+}
+
+.usr-ws {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 13.5px;
+}

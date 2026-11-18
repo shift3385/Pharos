@@ -16,6 +16,9 @@ export interface Member {
   lastName: string;
   role: WorkspaceRole;
   addedAt: string | null;
+  /** SEC-12: disabled by a server administrator (an older server leaves it
+   *  out). It keeps its membership and role, but is not an active member. */
+  disabled?: boolean;
 }
 
 export interface Workspace {

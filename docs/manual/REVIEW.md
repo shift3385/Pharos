@@ -96,6 +96,14 @@ se publica:
       en el tour:* necesita una segunda cuenta en la lista, y el manual solo
       muestra a su persona (NC-052). Los tours recorren la pestaña. Lo cubren
       además `server/tests/admin.test.ts` y `UsersTab.test.tsx`.
+- [ ] **Desactivar una cuenta (SEC-12)** (Administración → Usuarios): con una
+      segunda cuenta que sea el único Test Manager de un workspace
+      compartido, «Desactivar cuenta…» pide el sucesor y el correo; la otra
+      cuenta deja de sincronizar al momento y, al entrar, ve «Esta cuenta está
+      desactivada…»; en «Miembros» aparece «Desactivada»; «Reactivar cuenta»
+      la devuelve. *Por qué no en el tour:* necesita una segunda cuenta
+      (NC-052). Lo cubren `server/tests/account-disable.test.ts` y
+      `UsersTab.test.tsx`.
 - [ ] **Ollama** (Administración → Motor de IA): con Ollama instalado y en
       marcha, la tarjeta pasa a «Conectado», «Descargar «modelo»» descarga el
       modelo y «Solo local» responde sin internet. *Por qué no en el tour:*

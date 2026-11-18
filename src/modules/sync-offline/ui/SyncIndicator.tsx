@@ -74,6 +74,9 @@ export function SyncStatusProvider({ children }: { children: ReactNode }) {
   function failure(e: unknown): string {
     if (e instanceof SyncHttpError && e.code === "unsupported_client_version")
       return t("sync.unsupportedVersion");
+    // SEC-12: an administrator disabled the account; nothing local is lost.
+    if (e instanceof SyncHttpError && e.code === "account_disabled")
+      return t("sync.accountDisabled");
     const msg = e instanceof Error ? e.message : String(e);
     return msg === "not-authenticated"
       ? t("sync.needsAuth")

@@ -10,6 +10,8 @@ export interface UserRow {
   role: string;
   /** Server administrator (SEC-11, migration 0026). */
   is_admin: boolean;
+  /** Disabled by a server administrator (SEC-12, migration 0027). */
+  disabled_at: Date | null;
   created_at: Date;
   updated_at: Date;
 }
