@@ -10,7 +10,7 @@ import userEvent from "@testing-library/user-event";
 import { optionLabels, selectValue } from "@test/select";
 import { renderWithProviders, i18n } from "@test/utils";
 import { expectNoAxeViolations } from "@test/axe";
-import { parseReportText } from "@shared/contracts/pharos-run/importers";
+import { parseReportText } from "@pharos/formats";
 import type {
   ReportImportPreview,
   Run,
@@ -47,7 +47,7 @@ vi.mock("../model/importFlow", async (orig) => {
         readFileSync(
           resolve(
             process.cwd(),
-            "src/shared/contracts/pharos-run/fixtures/ing01/shard2/ctrf.json",
+            "packages/formats/src/fixtures/ing01/shard2/ctrf.json",
           ),
           "utf8",
         ),

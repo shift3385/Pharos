@@ -46,6 +46,7 @@ use std::time::{Duration, SystemTime};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 use serde_json::{json, Map};
+#[cfg(feature = "tauri")]
 use tauri::{Manager, State};
 #[cfg(test)]
 use ts_rs::TS;
@@ -1073,6 +1074,7 @@ pub(crate) fn usage(conn: &Connection) -> Result<EvidenceUsage, String> {
 // ---- commands -------------------------------------------------------------
 
 /// Usage of the evidence store, and the last check of this session.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn evidence_usage(db: State<Db>, check: State<EvidenceCheck>) -> Result<EvidenceUsage, String> {
     let mut usage = db.with_conn(usage)?;
@@ -1081,6 +1083,7 @@ pub fn evidence_usage(db: State<Db>, check: State<EvidenceCheck>) -> Result<Evid
 }
 
 /// Progress of the check in course.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn evidence_check_progress(check: State<EvidenceCheck>) -> EvidenceProgress {
     check.progress()
@@ -1089,6 +1092,7 @@ pub fn evidence_check_progress(check: State<EvidenceCheck>) -> EvidenceProgress 
 /// «Verificar evidencias»: reads every content back and marks what is missing
 /// or damaged. Long: it runs on a blocking thread (`spawn_blocking`) and
 /// without the database lock while it decrypts.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub async fn evidence_check(
     app: tauri::AppHandle,
@@ -1105,6 +1109,7 @@ pub async fn evidence_check(
 
 /// Stops the check in course before its next file; what it read so far is
 /// still judged and reported (`cancelled: true`).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn evidence_check_cancel(check: State<EvidenceCheck>) {
     check.request_cancel();
@@ -1155,6 +1160,7 @@ pub(crate) fn delete_confirmed(
     Ok(out)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command(async)]
 pub fn evidence_orphans_delete(
     db: State<'_, Db>,

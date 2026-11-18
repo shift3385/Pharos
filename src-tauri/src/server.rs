@@ -27,6 +27,7 @@ use std::time::Duration;
 use reqwest::redirect::Policy;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+#[cfg(feature = "tauri")]
 use tauri::{AppHandle, Manager, State};
 use url::Url;
 
@@ -345,6 +346,7 @@ fn recent_servers(accounts: &[KnownAccount]) -> Vec<RecentServer> {
     out
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn server_get(state: State<ServerState>) -> ServerInfo {
     let origin = state.origin();
@@ -367,6 +369,7 @@ pub struct CheckResult {
 
 /// Checks an address before it is saved: valid, https unless local, and
 /// answering `/health` like a Pharos server. Saves nothing.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub async fn server_check(
     state: State<'_, ServerState>,
@@ -403,6 +406,7 @@ pub async fn server_check(
 
 /// Picks the server. Only while signed out: a cached session belongs to the
 /// server it was created on.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn server_set(state: State<ServerState>, url: String) -> Result<String, ServerError> {
     let origin = normalize_origin(&url)?;
@@ -419,6 +423,7 @@ pub fn server_set(state: State<ServerState>, url: String) -> Result<String, Serv
 
 /// Records that `user_id` signed in to the current server, or refuses when
 /// its local data belongs to another one.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn server_bind_account(
     state: State<ServerState>,
@@ -440,6 +445,7 @@ pub struct PendingChanges {
     pub count: u32,
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn server_pending(app: AppHandle, state: State<ServerState>) -> Vec<PendingChanges> {
     let origin = state.origin();
@@ -493,6 +499,7 @@ pub struct ServerResponse {
     pub body: String,
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub async fn server_request(
     state: State<'_, ServerState>,

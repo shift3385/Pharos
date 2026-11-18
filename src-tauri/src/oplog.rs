@@ -7,6 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -307,6 +308,7 @@ pub fn sync_state(conn: &Connection, user_id: &str) -> Result<SyncState, String>
 
 /// Pending changes and open conflicts of the signed-in account — drives the
 /// status indicator.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn oplog_pending_count(db: State<Db>, user_id: String) -> Result<SyncState, String> {
     db.with_conn(|conn| sync_state(conn, &user_id))

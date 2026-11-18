@@ -14,6 +14,7 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 use serde_json::json;
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -353,6 +354,7 @@ const CASCADE_WINDOW_MS: u64 = 10_000;
 // ---- commands -------------------------------------------------------------
 
 /// What deleting a run hides (read; no event).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn run_delete_preview(
     db: State<Db>,
@@ -363,6 +365,7 @@ pub fn run_delete_preview(
 }
 
 /// Deletes a run (see `delete_run`); the files of its drafts are released.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn run_delete(db: State<Db>, run_id: String, user_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_run(conn, &run_id, &user_id))?;

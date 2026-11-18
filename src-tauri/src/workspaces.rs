@@ -21,6 +21,7 @@ use std::sync::OnceLock;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -758,6 +759,7 @@ fn require_user(user_id: &str) -> Result<(), String> {
 /// Refreshes the mirror from `GET /workspaces` and moves the account's local
 /// rows into its personal workspace. The first time it moves anything, the
 /// database is backed up before (SEC-06 style: `pharos.db.enc.bak-…-workspaces`).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn workspaces_apply(
     db: State<Db>,
@@ -784,6 +786,7 @@ pub fn workspaces_apply(
 
 /// The workspace of each of the account's projects: key block leases go to
 /// the project's workspace (SYNC-07).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn project_workspaces(
     db: State<Db>,
@@ -802,12 +805,14 @@ pub fn project_workspaces(
     })
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn workspaces_list(db: State<Db>, user_id: String) -> Result<Vec<WorkspaceDto>, String> {
     require_user(&user_id)?;
     db.with_conn(|conn| list(conn, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn workspace_drop(db: State<Db>, user_id: String, workspace_id: String) -> Result<i64, String> {
     require_user(&user_id)?;
@@ -816,6 +821,7 @@ pub fn workspace_drop(db: State<Db>, user_id: String, workspace_id: String) -> R
     Ok(n)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn sync_refused_record(
     db: State<Db>,
@@ -840,6 +846,7 @@ pub struct Rejection {
     pub detected_at: String,
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn sync_rejections_list(db: State<Db>, user_id: String) -> Result<Vec<Rejection>, String> {
     require_user(&user_id)?;
@@ -869,6 +876,7 @@ pub fn sync_rejections_list(db: State<Db>, user_id: String) -> Result<Vec<Reject
 /// «Descartar»: the refused change never reaches the server. Its pending
 /// rows are dropped and its sync base forgotten, so the next pull brings the
 /// server's version back.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn sync_rejection_discard(db: State<Db>, user_id: String, id: String) -> Result<(), String> {
     require_user(&user_id)?;

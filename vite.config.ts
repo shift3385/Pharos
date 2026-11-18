@@ -67,6 +67,7 @@ export default defineConfig({
       "@modules": fileURLToPath(new URL("./src/modules", import.meta.url)),
       "@shared": fileURLToPath(new URL("./src/shared", import.meta.url)),
       "@test": fileURLToPath(new URL("./src/test", import.meta.url)),
+      "@pharos/formats": fileURLToPath(new URL("./packages/formats/src/index.ts", import.meta.url)),
     },
   },
   // Prevent Vite from obscuring Rust errors and align dev server with Tauri.
@@ -94,7 +95,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/setupTests.ts"],
     css: false,
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    include: ["src/**/*.{test,spec}.{ts,tsx}", "packages/*/src/**/*.test.ts"],
     restoreMocks: true,
   },
 });

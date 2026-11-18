@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import vectors from "../../../../src-tauri/tests/fixtures/run-id-vectors.json";
+import vectors from "../../../src-tauri/tests/fixtures/run-id-vectors.json";
 import {
   NS_RESULT,
   NS_RUN_SHARD,
@@ -10,7 +10,7 @@ import {
   manualTestKey,
   shardId,
   unlinkedMappingId,
-} from "./ids";
+} from "./ids.js";
 
 describe("execution ids (twin of runs/ids.rs)", () => {
   it("use the namespaces of the desktop", () => {

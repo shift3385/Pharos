@@ -5,6 +5,7 @@
 //! buckets, exit criteria, re-test, queues, deleted runs).
 
 use rusqlite::Connection;
+#[cfg(feature = "tauri")]
 use tauri::State;
 
 use crate::db::Db;
@@ -71,6 +72,7 @@ pub fn home_metrics_of(
 }
 
 /// Read only (AUDIT-EXEMPT in `audit_tests.rs`).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn home_metrics(
     db: State<Db>,

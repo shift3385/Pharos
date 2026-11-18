@@ -25,11 +25,12 @@
       "@app/*": ["src/app/*"],
       "@modules/*": ["src/modules/*"],
       "@shared/*": ["src/shared/*"],
-      "@test/*": ["src/test/*"]
+      "@test/*": ["src/test/*"],
+      "@pharos/formats": ["packages/formats/src/index.ts"]
     },
 
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["src"],
+  "include": ["src", "packages/formats/src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -9,6 +9,7 @@
 
 use rusqlite::{params_from_iter, types::Value as Sql, Connection};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "tauri")]
 use tauri::State;
 
 use crate::audit::{self, ChainBreak};
@@ -371,16 +372,19 @@ pub fn verify(conn: &Connection, user: &str) -> Result<AuditVerify, String> {
     })
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn audit_list(db: State<Db>, user_id: String, query: AuditQuery) -> Result<AuditPage, String> {
     db.with_conn(|conn| list(conn, &user_id, &query))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn audit_facets(db: State<Db>, user_id: String) -> Result<AuditFacets, String> {
     db.with_conn(|conn| facets(conn, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn audit_verify(db: State<Db>, user_id: String) -> Result<AuditVerify, String> {
     db.with_conn(|conn| verify(conn, &user_id))

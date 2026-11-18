@@ -21,6 +21,7 @@
 
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -565,6 +566,7 @@ pub(crate) fn purge_evidence(conn: &Connection, user: &str, days: i64) -> Result
 /// Runs the purge for the signed-in account in one transaction; saves the
 /// database only when something was removed, then removes the evidence files
 /// nothing needs any more.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn purge_deleted(
     db: State<Db>,

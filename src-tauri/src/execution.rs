@@ -13,6 +13,7 @@ mod tests;
 
 use rusqlite::{params, Connection, OptionalExtension};
 use serde_json::Value;
+#[cfg(feature = "tauri")]
 use tauri::State;
 
 use crate::db::Db;
@@ -545,6 +546,7 @@ pub(crate) fn home_metrics(
     Ok(derive::home(&projects, request))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn execution_summary(
     db: State<Db>,
@@ -603,6 +605,7 @@ pub(crate) fn close_cycle(
     Ok(Some(record))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn cycle_close(
     db: State<Db>,

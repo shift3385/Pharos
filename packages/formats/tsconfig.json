@@ -1,0 +1,20 @@
+{
+  // Proves the package compiles as plain Node ESM (module NodeNext, no DOM
+  // lib, no path aliases), as the server's tsc build needs (ADR-0053, DEU-01).
+  // The app and the server's tsx/vitest load the same sources through their
+  // own aliases. Tests are checked by the root tsconfig.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts", "src/fixtures"]
+}
