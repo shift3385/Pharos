@@ -4830,5 +4830,136 @@
       "open": "Abrir",
       "members": "Ver miembros"
     }
+  },
+  "workspaces": {
+    "switcher": {
+      "label": "Workspace",
+      "menu": "Cambiar de workspace",
+      "create": "Crear workspace",
+      "join": "Unirse con un código…",
+      "members": "Miembros y roles"
+    },
+    "roles": {
+      "test_manager": "Test Manager",
+      "test_analyst": "Test Analyst",
+      "automation_engineer": "Automation Engineer",
+      "product_owner": "Product Owner",
+      "viewer": "Viewer (solo lectura)"
+    },
+    "roleHints": {
+      "test_manager": "Gestiona miembros e invitaciones, mueve proyectos y ve la auditoría.",
+      "test_analyst": "Escribe requisitos, casos y ciclos, edita el plan, ejecuta y aprueba casos.",
+      "automation_engineer": "Puede escribir casos y configuraciones, ejecutar, importar resultados y crear defectos.",
+      "product_owner": "Escribe requisitos y crea defectos; ve todo lo demás.",
+      "viewer": "Ve y exporta todo, pero no cambia nada."
+    },
+    "create": {
+      "title": "Crear workspace",
+      "name": "Nombre",
+      "hint": "Serás su Test Manager. Después podrás invitar a otras personas.",
+      "submit": "Crear",
+      "created": "Workspace «{{name}}» creado"
+    },
+    "members": {
+      "title": "Miembros · {{name}}",
+      "invite": "Invitar",
+      "person": "Persona",
+      "email": "Correo",
+      "role": "Rol",
+      "since": "Desde",
+      "actions": "Acciones",
+      "you": "tú",
+      "remove": "Quitar",
+      "leave": "Salir",
+      "lastManager": "Hace falta otro Test Manager antes",
+      "removeTitle": "Quitar a {{name}}",
+      "removeConfirm": "{{name}} dejará de ver «{{workspace}}». Su copia en sus equipos se borrará en su próximo sync. Lo que no haya sincronizado se pierde.",
+      "leaveTitle": "Salir de «{{workspace}}»",
+      "leaveConfirm": "Dejarás de ver sus proyectos. La copia de este equipo se borrará en tu próximo sync, cuando lo confirmes.",
+      "roleChanged": "Rol de {{name}}: {{role}}",
+      "removed": "{{name}} ya no es miembro",
+      "personal": "Tu workspace personal no admite otros miembros. Crea uno compartido para trabajar en equipo.",
+      "readOnly": "Solo un Test Manager cambia miembros e invitaciones.",
+      "invitations": "Invitaciones pendientes",
+      "invFor": "Para",
+      "noNote": "sin nota",
+      "expires": "Caduca",
+      "status": "Estado",
+      "statuses": {
+        "pending": "Pendiente",
+        "accepted": "Aceptada",
+        "revoked": "Revocada",
+        "expired": "Caducada"
+      },
+      "revoke": "Revocar",
+      "noInvitations": "No hay invitaciones.",
+      "roles": "¿Qué puede hacer cada rol?",
+      "none": "Sin workspaces compartidos todavía. Crea uno o únete con un código desde el selector de workspace."
+    },
+    "invite": {
+      "title": "Invitar a {{name}}",
+      "role": "Rol",
+      "note": "Para quién (nota opcional, no se envía)",
+      "expires": "Caduca en",
+      "days": {
+        "1": "1 día",
+        "7": "7 días",
+        "30": "30 días"
+      },
+      "submit": "Crear invitación",
+      "createdTitle": "Invitación creada",
+      "createdHint": "Envía este texto por el canal que uséis. Sirve una vez y caduca el {{date}}.",
+      "codeLabel": "Código de invitación",
+      "server": "Servidor: {{url}}",
+      "copy": "Copiar texto de invitación",
+      "copied": "Texto de invitación copiado",
+      "text": "Te invito a «{{name}}» en Pharos.\nServidor: {{url}}\nCódigo: {{code}}",
+      "once": "El código solo se muestra ahora. Si se pierde, revócalo y crea otro."
+    },
+    "join": {
+      "title": "Unirse a un workspace",
+      "code": "Código de invitación",
+      "check": "Comprobar",
+      "preview": "Te unes a «{{name}}» como {{role}}, invitado por {{by}}.",
+      "note": "Sus proyectos se descargarán a este equipo en el próximo sync. Tu workspace Personal no cambia.",
+      "submit": "Unirme",
+      "joined": "Te has unido a «{{name}}»",
+      "invalid": "Este código ya se usó o caducó. Pide otro a quien te invitó.",
+      "already": "Ya eres miembro de este workspace."
+    },
+    "share": {
+      "action": "Compartir con un workspace…",
+      "title": "Compartir «{{name}}»",
+      "destination": "Mover a",
+      "noDestination": "No eres Test Manager de ningún workspace compartido. Crea uno desde el selector de workspace.",
+      "what": "Se mueve entero: plan, casos, requisitos, ciclos, ejecuciones, defectos, adjuntos y su auditoría.",
+      "who": "Sus miembros lo verán con su rol allí. Las claves no cambian.",
+      "online": "Hace falta conexión con el servidor. Lo que tengas sin enviar llega después al nuevo workspace.",
+      "submit": "Mover y compartir",
+      "done": "«{{name}}» está ahora en «{{workspace}}»",
+      "notManager": "eres {{role}}"
+    },
+    "readOnly": "Solo lectura. Tu rol en «{{name}}» es {{role}}: puedes ver y exportar, pero no cambiar nada.",
+    "revoked": {
+      "title": "Ya no eres miembro de «{{name}}».",
+      "body": "Su copia en este equipo se eliminará. Lo que no hayas sincronizado allí no puede llegar al servidor.",
+      "drop": "Entendido, eliminar copia",
+      "later": "Más tarde",
+      "dropped": "Copia de «{{name}}» eliminada de este equipo"
+    },
+    "rejected": {
+      "title": "Rechazado por permisos",
+      "forbidden": "Tu rol no permite este cambio; el servidor no lo guardó.",
+      "not_found": "Este elemento ya no está en ninguno de tus workspaces.",
+      "discard": "Descartar",
+      "discarded": "Cambio descartado; vuelve la versión del servidor"
+    },
+    "errors": {
+      "forbidden": "Tu rol en este workspace no lo permite.",
+      "lastManager": "El workspace necesita otro Test Manager antes.",
+      "personal": "Un workspace personal no tiene otros miembros.",
+      "offline": "Necesitas conexión con el servidor para esto.",
+      "generic": "No se pudo completar. Inténtalo de nuevo."
+    }
   }
 }

@@ -10,6 +10,7 @@ import { DashboardPage } from "./dashboard/DashboardPage";
 import { ProjectDetailPage, ProjectsPage } from "@modules/projects";
 import { AdminPage, adminPath } from "@modules/admin";
 import { ProfilePage } from "@modules/profile";
+import { JoinWorkspacePage, WorkspaceMembersPage } from "@modules/workspaces";
 
 export function App() {
   const { status } = useAuth();
@@ -48,6 +49,9 @@ export function App() {
           <Route path="/ai" element={<Navigate to={adminPath("ai")} replace />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          {/* Workspaces with roles (SYNC-07, ADR-0042). */}
+          <Route path="/workspaces/members" element={<WorkspaceMembersPage />} />
+          <Route path="/workspaces/join" element={<JoinWorkspacePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ErrorBoundary>

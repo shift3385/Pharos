@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { applyAppearance } from "@modules/admin";
 import { LegacyUnsentNotice, SyncStatusProvider } from "@modules/sync-offline";
 import { NotificationsProvider } from "@modules/notifications";
+import { WorkspaceNotices, WorkspaceProvider } from "@modules/workspaces";
 import { usePreferenceSync } from "./usePreferenceSync";
 import { isTauri } from "@shared/platform";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
@@ -69,6 +70,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           ) : (
             <Topbar active={active} />
           )}
+          {/* «Solo lectura» and lost workspaces (SYNC-07). */}
+          <div className="shell-notice workspace">
+            <WorkspaceNotices />
+          </div>
           {/* Web only: data an older web version left unsent (BASE-10). */}
           {!isTauri() && (
             <div className="shell-notice sync">
@@ -96,9 +101,11 @@ function ShellProviders({ children }: { children: ReactNode }) {
   usePreferenceSync();
   return (
     <SyncStatusProvider>
-      <NotificationsProvider>
-        <ShellChromeProvider>{children}</ShellChromeProvider>
-      </NotificationsProvider>
+      <WorkspaceProvider>
+        <NotificationsProvider>
+          <ShellChromeProvider>{children}</ShellChromeProvider>
+        </NotificationsProvider>
+      </WorkspaceProvider>
     </SyncStatusProvider>
   );
 }

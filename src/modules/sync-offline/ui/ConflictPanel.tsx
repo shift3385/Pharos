@@ -5,8 +5,10 @@ import { useToast } from "@shared/ui/Toast";
 import {
   listConflicts,
   listKeyConflicts,
+  listRejections,
   resolveConflict,
   type KeyConflict,
+  type Rejection,
 } from "../api/syncApi";
 import { logSyncFailure } from "../api/syncFailure";
 import {
@@ -16,6 +18,7 @@ import {
   type SyncConflict,
 } from "../domain/conflict";
 import { KeyConflictList } from "./KeyConflictList";
+import { RejectedList } from "./RejectedList";
 import "./ConflictPanel.css";
 
 function show(v: unknown): string {
@@ -37,6 +40,7 @@ export function ConflictPanel({
   const toast = useToast();
   const [conflicts, setConflicts] = useState<SyncConflict[] | null>(null);
   const [keyConflicts, setKeyConflicts] = useState<KeyConflict[]>([]);
+  const [rejections, setRejections] = useState<Rejection[]>([]);
   const [onlyChanged, setOnlyChanged] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -50,6 +54,12 @@ export function ConflictPanel({
     setKeyConflicts(
       await listKeyConflicts().catch((e: unknown) => {
         logSyncFailure(e, "key-conflicts-list");
+        return [];
+      }),
+    );
+    setRejections(
+      await listRejections().catch((e: unknown) => {
+        logSyncFailure(e, "rejections-list");
         return [];
       }),
     );
@@ -109,7 +119,15 @@ export function ConflictPanel({
         }}
       />
 
-      {conflicts !== null && conflicts.length === 0 && keyConflicts.length === 0 && (
+      <RejectedList
+        items={rejections}
+        onResolved={() => {
+          void load();
+          onResolved();
+        }}
+      />
+
+      {conflicts !== null && conflicts.length === 0 && keyConflicts.length === 0 && rejections.length === 0 && (
         <p className="cp__empty" role="status">{t("sync.conflict.empty")}</p>
       )}
 

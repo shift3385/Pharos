@@ -16,8 +16,10 @@ import {
   Plus,
   Search,
   Settings,
+  Share2,
 } from "lucide-react";
 import { useAuth } from "@modules/auth";
+import { ShareProjectDialog, can, useWorkspace } from "@modules/workspaces";
 import { logClientError } from "@shared/diagnostics";
 import { LoadError } from "@shared/ui/LoadError";
 import { ReportedError } from "@shared/ui/notify";
@@ -83,7 +85,25 @@ function ProjectList() {
   const mobile = useBreakpoint() === "mobile";
   // Home links here with ?new=1 to start one.
   const [params, setParams] = useSearchParams();
-  const [rows, setRows] = useState<ProjectRow[] | null>(null);
+  const [allRows, setRows] = useState<ProjectRow[] | null>(null);
+  // Only the projects of the workspace in use (SYNC-07). A project still in
+  // this device's own workspace shows with the personal one until the next
+  // sync moves it there.
+  const { available, current, workspaces } = useWorkspace();
+  const rows = useMemo(
+    () =>
+      allRows && available && current
+        ? allRows.filter(
+            (r) =>
+              r.workspaceId === current.id ||
+              (current.kind === "personal" && !workspaces.some((w) => w.id === r.workspaceId)),
+          )
+        : allRows,
+    [allRows, available, current, workspaces],
+  );
+  const [sharing, setSharing] = useState<ProjectRow | null>(null);
+  const canShare =
+    available && current?.kind === "personal" && workspaces.some((w) => w.kind === "shared" && can(w.role, "members.manage"));
   const [loadFailed, setLoadFailed] = useState(false);
   // The last row export that failed, to say so and repeat it.
   const [actionFailed, setActionFailed] = useState<{ exporting: ProjectRow } | null>(null);
@@ -265,6 +285,7 @@ function ProjectList() {
           onOpen={() => navigate(projectPath(row.id))}
           onSettings={() => navigate(projectPath(row.id, "settings"))}
           onExport={() => void exportRow(row)}
+          onShare={canShare ? () => setSharing(row) : undefined}
           disabled={busy}
         />
       ),
@@ -317,6 +338,17 @@ function ProjectList() {
         </div>
       </header>
 
+      {sharing && (
+        <ShareProjectDialog
+          projectId={sharing.id}
+          projectName={sharing.name}
+          onCancel={() => setSharing(null)}
+          onDone={() => {
+            setSharing(null);
+            void refresh();
+          }}
+        />
+      )}
       {creating && rows !== null && (
         <NewProjectWizard
           projects={rows}
@@ -520,12 +552,15 @@ function RowMenu({
   onOpen,
   onSettings,
   onExport,
+  onShare,
   disabled,
 }: {
   row: ProjectRow;
   onOpen: () => void;
   onSettings: () => void;
   onExport: () => void;
+  /** «Compartir con un workspace…» (SYNC-07), when the person can. */
+  onShare?: () => void;
   disabled: boolean;
 }) {
   const { t } = useTranslation();
@@ -561,6 +596,11 @@ function RowMenu({
         <MenuItem icon={Download} onSelect={onExport} disabled={disabled}>
           {t("projects.exportProject")}
         </MenuItem>
+        {onShare && (
+          <MenuItem icon={Share2} onSelect={onShare} testId={`share-${row.id}`}>
+            {t("workspaces.share.action")}
+          </MenuItem>
+        )}
       </ResponsiveMenu>
     </>
   );
