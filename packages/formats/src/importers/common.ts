@@ -4,14 +4,17 @@
 // The parsers never link to cases: they keep every tag, and the persister
 // applies the project's case prefix (ING-01 §5).
 
-import type { PharosRun, PharosRunResult } from "../schema.js";
+import type { PharosFinding, PharosMetric, PharosRun, PharosRunResult } from "../schema.js";
 
 export type SourceFormat =
   | "cucumber_messages"
   | "ctrf"
   | "junit"
   | "playwright_json"
-  | "pharos_run_json";
+  | "pharos_run_json"
+  | "sarif"
+  | "k6"
+  | "axe";
 
 export type ResultStatus = PharosRunResult["status"];
 /** The document a parser builds: Pharos Run JSON without the parts the four
@@ -22,6 +25,10 @@ export interface ImportDoc {
   shards: PharosRun["shards"];
   results: PharosRunResult[];
   attachments: PharosRun["attachments"];
+  /** Only the finding and metric formats set these (ING-06): the four result
+   *  formats leave them out, so their snapshots do not change. */
+  findings?: PharosFinding[];
+  metrics?: PharosMetric[];
 }
 export type ImportResult = PharosRunResult;
 export type ImportAttachment = PharosRun["attachments"][number];
@@ -44,7 +51,16 @@ export interface InlineBody {
 
 /** A warning for the preview; the persister adds the linking ones. */
 export interface ImportWarning {
-  code: "merged-without-shard" | "no-results" | "attachment-url";
+  code:
+    | "merged-without-shard"
+    | "no-results"
+    | "attachment-url"
+    // ING-06 (ADR-0053): SARIF results that are not findings (kind pass,
+    // baselineState absent), a tool run that failed, a k6 threshold on an
+    // aggregation the summary does not carry.
+    | "sarif-skipped"
+    | "tool-failed"
+    | "threshold-without-value";
   detail?: string;
 }
 
@@ -77,6 +93,9 @@ export const MAX_REPORT_BYTES = 200 * 1024 * 1024;
 export const MAX_WHOLE_REPORT_BYTES = 50 * 1024 * 1024;
 /** Results per import: one transaction and one call to the desktop. */
 export const MAX_IMPORT_RESULTS = 20_000;
+/** Findings and metrics per import (ADR-0053). */
+export const MAX_IMPORT_FINDINGS = 20_000;
+export const MAX_IMPORT_METRICS = 5_000;
 
 /** Separates the path from the title path in a `test_key`. */
 export const KEY_SEPARATOR = "::";

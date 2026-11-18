@@ -1,0 +1,137 @@
+{
+  "format": "axe",
+  "warnings": [],
+  "inline": {},
+  "doc": {
+    "schemaVersion": "1.0.0",
+    "run": {
+      "trigger": "import",
+      "sourceTool": "axe-core",
+      "sourceToolVersion": "4.14.0",
+      "startedAt": "2026-11-18T22:35:30.218Z",
+      "finishedAt": "2026-11-18T22:35:30.218Z",
+      "context": {
+        "pages": [
+          "http://localhost:3000/"
+        ],
+        "testRunner": "axe",
+        "testEnvironment": {
+          "userAgent": "Mozilla/5.0 (win32) AppleWebKit/537.36 (KHTML, like Gecko) jsdom/25.0.1",
+          "windowWidth": 1024,
+          "windowHeight": 768
+        }
+      }
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "axe",
+        "normalizerVersion": 1,
+        "formatVersion": "4.14.0"
+      }
+    ],
+    "results": [],
+    "attachments": [],
+    "findings": [
+      {
+        "ruleId": "document-title",
+        "ruleName": "Documents must have <title> element to aid in navigation",
+        "severity": "high",
+        "rawSeverity": "serious",
+        "message": "Fix any of the following:\n  Document does not have a non-empty <title> element",
+        "location": {
+          "url": "http://localhost:3000/",
+          "selector": "html",
+          "html": "<html lang=\"es\" data-viewport=\"tablet\" data-theme=\"light\">"
+        },
+        "fingerprint": "pharos:e8d5bc15-c89f-5bd2-8864-9b8ed082a9e0",
+        "standardRefs": [
+          "WCAG2:2.4.2",
+          "EN301549:9.2.4.2"
+        ],
+        "helpUri": "https://dequeuniversity.com/rules/axe/4.14/document-title?application=axeAPI",
+        "attributes": {
+          "tool": "axe-core",
+          "axeResult": "violation",
+          "tags": [
+            "cat.text-alternatives",
+            "wcag2a",
+            "wcag242",
+            "TTv5",
+            "TT12.a",
+            "EN-301-549",
+            "EN-9.2.4.2",
+            "ACT",
+            "RGAAv4",
+            "RGAA-8.5.1"
+          ],
+          "wcagLevel": "A"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "color-contrast",
+        "ruleName": "Elements must meet minimum color contrast ratio thresholds",
+        "severity": "info",
+        "rawSeverity": "serious",
+        "message": "Fix all of the following:\n  Axe encountered an error; test the page for this type of problem manually",
+        "location": {
+          "url": "http://localhost:3000/",
+          "selector": "#\\:r0\\:-title",
+          "html": "<h3 id=\":r0:-title\" class=\"cd__title\">Nuevo requisito</h3>"
+        },
+        "fingerprint": "pharos:25cdbd33-83b5-5034-b8ff-fb1e94591a8c",
+        "standardRefs": [
+          "WCAG2:1.4.3",
+          "EN301549:9.1.4.3"
+        ],
+        "helpUri": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=axeAPI",
+        "attributes": {
+          "tool": "axe-core",
+          "axeResult": "incomplete",
+          "tags": [
+            "cat.color",
+            "wcag2aa",
+            "wcag143",
+            "TTv5",
+            "TT13.c",
+            "EN-301-549",
+            "EN-9.1.4.3",
+            "ACT",
+            "RGAAv4",
+            "RGAA-3.2.1"
+          ],
+          "wcagLevel": "AA",
+          "needsReview": true
+        },
+        "shardRef": "s1"
+      }
+    ],
+    "metrics": [
+      {
+        "name": "axe.rules_violated",
+        "aggregation": "count",
+        "scope": "http://localhost:3000/",
+        "value": 1,
+        "unit": "count",
+        "shardRef": "s1"
+      },
+      {
+        "name": "axe.rules_incomplete",
+        "aggregation": "count",
+        "scope": "http://localhost:3000/",
+        "value": 1,
+        "unit": "count",
+        "shardRef": "s1"
+      },
+      {
+        "name": "axe.rules_passed",
+        "aggregation": "count",
+        "scope": "http://localhost:3000/",
+        "value": 27,
+        "unit": "count",
+        "shardRef": "s1"
+      }
+    ]
+  }
+}
