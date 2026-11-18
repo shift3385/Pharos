@@ -396,7 +396,7 @@ describe("reset by email", () => {
       url: "/auth/reset/check",
       payload: { token },
     });
-    expect(check.json()).toEqual({ email: "qa@pharos.dev" });
+    expect(check.json()).toEqual({ email: "qa@pharos.dev", issuedBy: null });
 
     const done = await mailApp.inject({
       method: "POST",

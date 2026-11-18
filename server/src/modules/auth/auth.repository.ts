@@ -8,6 +8,8 @@ export interface UserRow {
   first_name: string;
   last_name: string;
   role: string;
+  /** Server administrator (SEC-11, migration 0026). */
+  is_admin: boolean;
   created_at: Date;
   updated_at: Date;
 }

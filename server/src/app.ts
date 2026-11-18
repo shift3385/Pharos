@@ -9,6 +9,8 @@ import { createTokenService } from "./modules/auth/tokens";
 import { createAuthRepository } from "./modules/auth/auth.repository";
 import { createAuthService } from "./modules/auth/auth.service";
 import { createAccountService } from "./modules/auth/account.service";
+import { createAdminService } from "./modules/admin/admin.service";
+import { adminRoutes } from "./modules/admin/admin.routes";
 import { mailerFromEnv, type Mailer } from "./modules/auth/mailer";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { createSyncRepository } from "./modules/sync/sync.repository";
@@ -48,6 +50,7 @@ import { diskBlobStore } from "./modules/blobs/blobStore";
 const RATE_LIMITED_ROUTES = [
   "/auth/login",
   "/auth/register",
+  "/admin/users/:id/password-reset",
   "/auth/password",
   "/auth/recovery-codes",
   "/auth/recover",
@@ -137,7 +140,15 @@ export function buildApp(deps: {
     mailer: deps.mailer === undefined ? mailerFromEnv(env) : deps.mailer,
     publicUrl: env.APP_PUBLIC_URL,
     resetTtlMs: env.RESET_TOKEN_TTL,
+    adminResetTtlMs: env.ADMIN_RESET_TTL,
     log: app.log,
+  });
+  // The server administrator (SEC-11): PHAROS_ADMINS is applied once the
+  // database is reachable, before the first request.
+  const admin = createAdminService({ pool, clock, envAdmins: env.PHAROS_ADMINS });
+  app.addHook("onReady", async () => {
+    const named = await admin.applyEnvAdmins();
+    if (named.length > 0) app.log.info({ users: named }, "PHAROS_ADMINS named server administrators");
   });
 
   const syncRepo = createSyncRepository(pool);
@@ -165,7 +176,10 @@ export function buildApp(deps: {
     accepted: acceptedMinors(),
   }));
   void app.register(async (instance) => {
-    authRoutes(instance, { service, tokens, account });
+    authRoutes(instance, { service, tokens, account, admin });
+  });
+  void app.register(async (instance) => {
+    adminRoutes(instance, { tokens, admin, account });
   });
   void app.register(async (instance) => {
     syncRoutes(instance, { repo: syncRepo, tokens, pool });

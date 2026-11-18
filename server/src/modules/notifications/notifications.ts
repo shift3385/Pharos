@@ -28,6 +28,10 @@ export const NOTIFICATION_KINDS = [
   // W (workspaces): someone joined (to the Test Managers), you were removed.
   "member.joined",
   "member.removed",
+  // Account security (SEC-09, SEC-11; ADR-0045): told to the person affected.
+  "account.reset_issued",
+  "account.admin_granted",
+  "account.admin_revoked",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
