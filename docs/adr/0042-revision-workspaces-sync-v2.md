@@ -431,9 +431,21 @@ Precisiones sobre lo decidido, sin cambiar la decisión:
     de W2.
   - `workspaceApproverCheck(pool)` implementa la interfaz de K. `app.ts`
     lo instala con `setApproverCheck` al arrancar.
-    - Acepta `policies`: reglas extra, que se comprueban después de la de
-      roles, y la primera que rechaza decide. Por ahí entrará la política
-      «Aprobación independiente» de PLN-08.
+    - La comprobación en sí solo exige pertenecer al workspace. El resto lo
+      deciden las `policies`, en orden, y la primera que rechaza decide.
+      Las de por defecto (`DEFAULT_APPROVAL_POLICIES`) son la regla del
+      usuario:
+      - `requiresApproverRole`: `case.approve` o `plan.approve`, según
+        el `subject` de la petición (`"case"` por defecto, o `"plan"`);
+      - `authorNeverApproves`.
+    - El veredicto aprobado lleva `selfApproval` cuando quien aprueba es
+      el autor.
+    - PLN-08 sustituirá las de por defecto por su «Aprobación
+      independiente». Desactivada, sin políticas, cualquier miembro aprueba
+      y el autor queda como autoaprobación.
+    - `ApprovalRequest` gana `subject?: "case" | "plan"` (en
+      `case-review.ts` y en su gemelo del cliente). El autor de un plan es
+      su `created_by`.
     - El autor de un caso lo da el `createdBy` de su primera revisión
       (`test_case_revision`), que escriben el escritorio y la web. La web
       lo muestra así a todos los miembros. Antes era quien leía el caso.

@@ -8,7 +8,12 @@ import type { Pool } from "pg";
 import { setupTestApp, truncateAll } from "./helpers";
 import { FEATURES_HEADER, SERVER_FEATURES, SERVER_VERSION, VERSION_HEADER } from "../src/modules/sync/sync.version";
 import { CAPABILITIES, WORKSPACE_ROLES, can } from "../src/modules/workspaces/roles";
-import { workspaceApproverCheck } from "../src/modules/workspaces/approval";
+import {
+  authorNeverApproves,
+  DEFAULT_APPROVAL_POLICIES,
+  requiresApproverRole,
+  workspaceApproverCheck,
+} from "../src/modules/workspaces/approval";
 import { isMember, listMembers, managedMembers } from "../src/modules/workspaces/members";
 import { hashCode, newInvitationCode, normalizeCode } from "../src/modules/workspaces/invitations";
 import { createWorkspaceService, WORKSPACE_PATHS } from "../src/modules/workspaces/workspaces.service";
@@ -422,18 +427,32 @@ describe("another person approves a case (exit criterion, CAS-02 wired)", () => 
     expect(ok.json()).toMatchObject({ status: "approved", data: { approval: { selfApproved: false } } });
   });
 
-  it("a workspace policy (PLN-08) can refuse on top of the roles", async () => {
+  it("policies decide what is required (PLN-08 swaps the defaults)", async () => {
     const ana = await register("ana@pharos.dev");
     const luis = await register("luis@pharos.dev");
+    const marta = await register("marta@pharos.dev");
     const ws = await createShared(ana);
     await join(ana, ws, luis, "test_analyst");
-    const check = workspaceApproverCheck(pool, {
-      policies: [async (_req, m) => (m.role === "test_manager" ? null : { ok: false, reason: "role" })],
-    });
-    const req = (approverId: string) =>
-      check.canApprove({ workspaceId: ws, projectId: "p1", caseId: "c1", authorId: "someone-else", approverId });
-    expect(await req(luis.userId)).toEqual({ ok: false, reason: "role" });
-    expect(await req(ana.userId)).toEqual({ ok: true, selfApproval: false });
+    await join(ana, ws, marta, "viewer");
+    const ask = (check: ReturnType<typeof workspaceApproverCheck>, approverId: string, authorId: string, subject?: "case" | "plan") =>
+      check.canApprove({ workspaceId: ws, projectId: "p1", caseId: "c1", authorId, approverId, ...(subject ? { subject } : {}) });
+    // The defaults: role (by subject), then never the author.
+    const defaults = workspaceApproverCheck(pool);
+    expect(await ask(defaults, luis.userId, ana.userId)).toEqual({ ok: true, selfApproval: false });
+    expect(await ask(defaults, luis.userId, ana.userId, "plan")).toEqual({ ok: false, reason: "role" });
+    expect(await ask(defaults, ana.userId, luis.userId, "plan")).toEqual({ ok: true, selfApproval: false });
+    expect(await ask(defaults, ana.userId, ana.userId)).toEqual({ ok: false, reason: "author" });
+    expect(await ask(defaults, marta.userId, ana.userId)).toEqual({ ok: false, reason: "role" });
+    // «Aprobación independiente» off: no policy; anyone in the workspace,
+    // the author too, as a self-approval.
+    const off = workspaceApproverCheck(pool, { policies: [] });
+    expect(await ask(off, ana.userId, ana.userId)).toEqual({ ok: true, selfApproval: true });
+    expect(await ask(off, marta.userId, ana.userId, "plan")).toEqual({ ok: true, selfApproval: false });
+    // The parts compose: the author rule alone.
+    const authorOnly = workspaceApproverCheck(pool, { policies: [authorNeverApproves] });
+    expect(await ask(authorOnly, marta.userId, ana.userId)).toEqual({ ok: true, selfApproval: false });
+    expect(await ask(authorOnly, ana.userId, ana.userId)).toEqual({ ok: false, reason: "author" });
+    expect(DEFAULT_APPROVAL_POLICIES).toEqual([requiresApproverRole, authorNeverApproves]);
   });
 });
 
