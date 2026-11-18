@@ -86,6 +86,16 @@ Lo único que las pruebas guiadas no pueden recorrer en su entorno aislado
 (`skip` en `e2e/tours/manifest.ts`). Compruébalo a mano en cada versión que
 se publica:
 
+- [ ] **Usuarios del servidor (SEC-11, SEC-09)** (Administración → Usuarios):
+      con una segunda cuenta en el mismo servidor, «Restablecer contraseña…»
+      explica qué pasa y muestra el enlace una sola vez (o lo envía por correo
+      con SMTP, y entonces el administrador no lo ve); el enlace abre
+      «Elige una contraseña nueva» con «Enlace generado por …»; la otra cuenta
+      recibe el aviso. «Hacer administrador» y «Quitar administrador» piden
+      confirmación, y el último administrador no se puede quitar. *Por qué no
+      en el tour:* necesita una segunda cuenta en la lista, y el manual solo
+      muestra a su persona (NC-052). Los tours recorren la pestaña. Lo cubren
+      además `server/tests/admin.test.ts` y `UsersTab.test.tsx`.
 - [ ] **Ollama** (Administración → Motor de IA): con Ollama instalado y en
       marcha, la tarjeta pasa a «Conectado», «Descargar «modelo»» descarga el
       modelo y «Solo local» responde sin internet. *Por qué no en el tour:*

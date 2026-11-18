@@ -9,14 +9,16 @@ import {
   Shield,
   SlidersHorizontal,
   Sparkles,
+  Users,
   type LucideIcon,
 } from "lucide-react";
-import { ADMIN_PANEL_ID, ADMIN_TAB_GROUPS, ADMIN_TABS, adminTabId, type AdminTab } from "../model/tabs";
+import { ADMIN_PANEL_ID, ADMIN_TAB_GROUPS, adminTabId, type AdminTab } from "../model/tabs";
 
 const ICONS: Record<AdminTab, LucideIcon> = {
   ai: Sparkles,
   templates: LayoutTemplate,
   general: SlidersHorizontal,
+  users: Users,
   sync: RefreshCw,
   security: Shield,
   evidence: HardDrive,
@@ -35,8 +37,11 @@ export function AdminTabs({
   current,
   counts,
   onSelect,
+  groups = ADMIN_TAB_GROUPS,
 }: {
   current: AdminTab;
+  /** The groups this user sees (`adminTabGroups`): all by default. */
+  groups?: typeof ADMIN_TAB_GROUPS;
   counts?: Partial<Record<AdminTab, number>>;
   onSelect: (tab: AdminTab) => void;
 }) {
@@ -69,18 +74,20 @@ export function AdminTabs({
     el?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
   }, [current]);
 
+  const tabsShown = groups.flatMap((g) => g.tabs);
+
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    const at = ADMIN_TABS.indexOf(current);
+    const at = tabsShown.indexOf(current);
     const go = (i: number) => {
       e.preventDefault();
-      const next = ADMIN_TABS[(i + ADMIN_TABS.length) % ADMIN_TABS.length];
+      const next = tabsShown[(i + tabsShown.length) % tabsShown.length];
       onSelect(next);
       listRef.current?.querySelector<HTMLElement>(`#${adminTabId(next)}`)?.focus();
     };
     if (e.key === "ArrowRight") go(at + 1);
     else if (e.key === "ArrowLeft") go(at - 1);
     else if (e.key === "Home") go(0);
-    else if (e.key === "End") go(ADMIN_TABS.length - 1);
+    else if (e.key === "End") go(tabsShown.length - 1);
   }
 
   return (
@@ -94,7 +101,7 @@ export function AdminTabs({
       data-fade-start={edges.start || undefined}
       data-fade-end={edges.end || undefined}
     >
-      {ADMIN_TAB_GROUPS.map(({ group, tabs }, gi) => (
+      {groups.map(({ group, tabs }, gi) => (
         <div key={group} className="adm-tabs__group" role="none">
           {gi > 0 && <span className="adm-tabs__sep" role="none" />}
           <span id={`admin-group-${group}`} className="adm-tabs__label t-group-label" aria-hidden="true">

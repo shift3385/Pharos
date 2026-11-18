@@ -72,6 +72,12 @@ export function targetOf(n: AppNotification): Target | null {
     case "cycle.closed":
       path = projectPath(n, "cycles", "cycle");
       break;
+    // Account security (SEC-09, SEC-11): the profile, where the account is.
+    case "account.reset_issued":
+    case "account.admin_granted":
+    case "account.admin_revoked":
+      path = "/profile";
+      break;
     // W's events go where W says (`data.path`), handled above; without it,
     // there is nothing to open.
   }
@@ -96,6 +102,10 @@ export function labelOf(kind: string): string {
       return "notifications.action.resolve";
     case "member.joined":
       return "notifications.action.members";
+    case "account.reset_issued":
+    case "account.admin_granted":
+    case "account.admin_revoked":
+      return "notifications.action.profile";
     default:
       return "notifications.action.open";
   }

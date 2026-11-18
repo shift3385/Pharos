@@ -545,6 +545,15 @@ is **off by default**. To turn it on, set `SMTP_HOST`. The API then also needs
 
 The link is built from `APP_PUBLIC_URL`, never from the request's `Host`.
 
+### Server administrators (SEC-11)
+
+The first account registered on a server is its administrator; on an existing
+server, the oldest account is. Administrators see «Administración › Usuarios»:
+every account, password reset with a single-use link (`ADMIN_RESET_TTL`,
+`24 hours` by default) and naming or removing administrators; the last one
+stays. `PHAROS_ADMINS` (comma-separated emails) names those accounts at
+start-up and at sign-up and never removes anyone: use it to recover access.
+
 **Only https in production (SEC-07).** With `NODE_ENV=production` the API
 answers `403 https_required` to any plain http request that does not come
 straight from its own machine. TLS is ended by a reverse proxy that sends

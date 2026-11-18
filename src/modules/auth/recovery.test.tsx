@@ -341,6 +341,14 @@ describe("the reset page", () => {
     ).toBeInTheDocument();
   });
 
+  it("names the server administrator who made the link (SEC-11)", async () => {
+    vi.mocked(accountApi.checkReset).mockResolvedValue({ email: "qa@pharos.dev", issuedBy: "Luis Gómez" });
+    renderScreen("/restablecer?token=tok_abcdefghijklmnopqrstuvwxyz");
+    expect(
+      await screen.findByText("Enlace generado por Luis Gómez (administrador del servidor)"),
+    ).toBeInTheDocument();
+  });
+
   it("tells an expired or used link and offers another", async () => {
     const user = userEvent.setup();
     vi.mocked(accountApi.checkReset).mockRejectedValue(

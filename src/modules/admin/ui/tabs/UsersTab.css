@@ -1,0 +1,122 @@
+/* Administración › Usuarios (SEC-11). */
+.usr-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.usr-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: var(--fw-semibold);
+}
+
+.usr-muted {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--color-text-muted);
+}
+
+.usr-pill {
+  display: inline-block;
+  padding: 1px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+}
+
+.usr-pill--admin {
+  color: var(--color-warning-text);
+  background: color-mix(in srgb, var(--color-warning) 18%, transparent);
+}
+
+.usr-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 360px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-input);
+  border-radius: 8px;
+  color: var(--color-text-muted);
+}
+
+.usr-search input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.usr-search:focus-within {
+  border-color: var(--color-navy-500);
+  box-shadow: 0 0 0 2px var(--color-focus);
+}
+
+.usr-search input:focus {
+  outline: none;
+}
+
+.usr-table-wrap {
+  overflow-x: auto;
+}
+
+.usr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.usr-table th,
+.usr-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.usr-table th {
+  font-size: 12px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-muted);
+}
+
+.usr-name {
+  font-weight: var(--fw-medium);
+}
+
+.usr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.usr-actions .ui-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.usr-code {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.usr-list {
+  margin: 0 0 8px;
+  padding-left: 1.2em;
+  font-size: 13.5px;
+  color: var(--color-text-secondary);
+}

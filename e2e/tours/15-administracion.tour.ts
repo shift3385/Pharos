@@ -165,6 +165,19 @@ chapter("administracion", () => {
     },
   });
 
+  step("usuarios", {
+    title: "Usuarios del servidor",
+    caption:
+      "«Usuarios», en el grupo «Aplicación», solo la ve un administrador del servidor: la primera cuenta que se registró en él (aquí, la de Liomar), las que nombre otro administrador y las que configure quien gestiona el servidor (PHAROS_ADMINS). Lista todas las cuentas del servidor, con su correo, su alta y si tienen códigos de recuperación, y en cada fila «Restablecer contraseña…» (un enlace de un solo uso que dura 24 horas; el administrador nunca ve ni pone la contraseña) y «Hacer administrador» o «Quitar administrador». No da acceso a los proyectos de nadie: es un rol de todo el servidor, distinto del Test Manager de un workspace. En tu propia fila no hay «Restablecer contraseña» (la tuya se cambia en «Mi perfil»), y como Liomar es el único administrador, su «Quitar administrador» está deshabilitado.",
+    covers: ["admin:users"],
+    focus: ".usr-table",
+    run: async () => {
+      await openAdminTab("users");
+      await expect(byTestId("admins-count")).toBeDisplayed();
+      await expect($(".usr-table")).toBeDisplayed();
+    },
+  });
+
   step("sincronizacion", {
     title: "Sincronización",
     caption:

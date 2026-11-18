@@ -163,6 +163,21 @@ const schema = z
     SMTP_FROM: optionalText,
     APP_PUBLIC_URL: optionalText,
     RESET_TOKEN_TTL: duration.prefault("30 minutes"),
+    // How long a reset link made by a server administrator works (SEC-09,
+    // ADR-0045): it is handed over by hand, so it lasts longer; still once.
+    ADMIN_RESET_TTL: duration.prefault("24 hours"),
+    // Emails of accounts that are server administrators (SEC-11), comma
+    // separated: named at start-up and when they sign up, never removed. The
+    // way to recover the role if every administrator is lost.
+    PHAROS_ADMINS: z
+      .string()
+      .optional()
+      .transform((v) =>
+        (v ?? "")
+          .split(",")
+          .map((e) => e.trim().toLowerCase())
+          .filter(Boolean),
+      ),
     // Attachment and template contents (SYNC-04b, ADR-0042 §7): files on
     // disk, one per sha256, under this folder. Encryption at rest is the
     // volume's (ADR-0014 decision 2). Relative paths are from the server's

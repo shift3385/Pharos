@@ -21,6 +21,8 @@ agrupadas:
 - **Aplicación**
   - **General:** tema, idioma, fondo, sombra de las tarjetas, carpeta de
     descarga, retención de lo borrado y la papelera.
+  - **Usuarios** (solo si eres administrador del servidor): las cuentas del
+    servidor, restablecer contraseñas y nombrar o quitar administradores.
 - **Cuenta y datos**
   - **Sincronización:** estado, cuenta, conflictos, «Sincronizar ahora» y la
     sincronización automática.
@@ -107,6 +109,31 @@ workspace en el que trabajas y, debajo, tu rol en él. La lista
 - **Si te quitan de un workspace,** un aviso lo dice y ofrece eliminar su
   copia de este equipo. No se borra nada hasta que lo confirmas.
 
+## Usuarios del servidor
+
+El **administrador del servidor** es un rol de todo el servidor, no de un
+workspace: un Test Manager no lo es por serlo, y ser administrador no da
+acceso a los proyectos de nadie.
+
+- **Quién lo es.** La primera cuenta que se registró en el servidor (en un
+  servidor que ya existía, la más antigua), las que nombre otro administrador
+  y las que configure quien gestiona el servidor con `PHAROS_ADMINS`. «Mi
+  perfil» lo indica con «Administrador del servidor».
+- **La lista.** Todas las cuentas del servidor, con su correo, su alta y si
+  tienen códigos de recuperación. «Sin códigos» quiere decir que, si esa
+  persona olvida la contraseña, solo un administrador puede ayudarla.
+- **Restablecer contraseña…** Genera un enlace de un solo uso que dura 24
+  horas. Tú nunca ves ni pones la contraseña de la otra persona.
+  - Si el servidor envía correo, «Enviar por correo» se lo manda y tú no lo
+    ves. Si no, o si eliges «Prefiero entregarlo yo», el enlace se muestra
+    una sola vez: cópialo y dáselo por un canal privado.
+  - Al usarlo se cierran todas sus sesiones y se borra su clave de IA de la
+    web. Recibe un aviso, y el cambio queda en tu auditoría y en la suya.
+  - Tu propia contraseña no se cambia aquí, sino en «Mi perfil».
+- **Hacer administrador / Quitar administrador.** Piden confirmación y
+  avisan a la persona. Siempre tiene que quedar un administrador: el del
+  último sale deshabilitado.
+
 ## Lo que viaja con tu cuenta
 
 - El idioma, el tema, la sombra de las tarjetas, la opacidad del fondo y el
@@ -126,6 +153,16 @@ workspace en el que trabajas y, debajo, tu rol en él. La lista
 | Esc | Detalle de un evento de auditoría | Lo cierra |
 
 ## Si algo no sale
+
+- **No veo «Usuarios».** Solo la ve un administrador del servidor. Pide a uno
+  que te nombre, o a quien gestiona el servidor que añada tu correo a
+  `PHAROS_ADMINS`.
+- **«Ya no eres administrador de este servidor.»** Otro administrador te
+  quitó el rol mientras tenías la pestaña abierta.
+- **«Tiene que haber al menos un administrador.»** No se puede quitar el rol
+  al último. Nombra antes a otra persona.
+- **«Este servidor no envía correos. Entrega tú el enlace.»** Elige
+  «Prefiero entregarlo yo».
 
 - **«No detectado (¿está en ejecución?)» en Ollama.** Ollama no está
   instalado o no está abierto en este equipo. Ábrelo y pulsa «Reintentar», o

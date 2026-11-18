@@ -558,7 +558,8 @@
       "security": "Seguridad",
       "evidence": "Evidencias",
       "audit": "Auditoría",
-      "diagnostics": "Diagnóstico"
+      "diagnostics": "Diagnóstico",
+      "users": "Usuarios"
     },
     "groups": {
       "resources": "Recursos",
@@ -931,7 +932,11 @@
         "method": "Cómo",
         "sessionsClosed": "Sesiones cerradas",
         "codes": "Códigos",
-        "codesRemaining": "Códigos restantes"
+        "codesRemaining": "Códigos restantes",
+        "target": "Cuenta afectada",
+        "by": "Hecho por",
+        "delivery": "Entrega",
+        "issuedBy": "Enlace de"
       },
       "device": {
         "this": "Este equipo",
@@ -1053,7 +1058,75 @@
         "profile": "Desde Mi perfil",
         "recovery_code": "Con un código de recuperación",
         "email_link": "Con un enlace por correo",
-        "admin": "Por un administrador"
+        "admin": "Por un administrador",
+        "password_reset_issued": "Enlace de restablecimiento generado",
+        "admin_granted": "Rol de administrador concedido",
+        "admin_revoked": "Rol de administrador quitado",
+        "email": "Por correo",
+        "link": "Entregado a mano"
+      }
+    },
+    "users": {
+      "title": "Usuarios del servidor",
+      "intro": "Todas las cuentas de este servidor. Como administrador puedes restablecer su contraseña con un enlace de un solo uso y nombrar o quitar administradores. No ves sus proyectos ni sus contraseñas.",
+      "adminsCount_one": "{{count}} administrador",
+      "adminsCount_other": "{{count}} administradores",
+      "total_one": "{{count}} cuenta",
+      "total_other": "{{count}} cuentas",
+      "search": "Buscar por nombre o correo",
+      "person": "Persona",
+      "email": "Correo",
+      "since": "Alta",
+      "codes": "Códigos",
+      "actions": "Acciones",
+      "you": "Tú",
+      "admin": "Administrador",
+      "noCodes": "Sin códigos",
+      "codesLeft": "{{remaining}} de {{total}}",
+      "reset": "Restablecer contraseña…",
+      "grant": "Hacer administrador",
+      "revoke": "Quitar administrador",
+      "lastAdmin": "Tiene que haber al menos un administrador.",
+      "more": "Se muestran {{shown}} de {{total}}. Busca por nombre o correo para encontrar el resto.",
+      "recoverHint": "Si se pierden todos los administradores, quien gestiona el servidor puede recuperar el acceso con la variable PHAROS_ADMINS.",
+      "offline": "Para gestionar los usuarios del servidor hace falta conexión.",
+      "grantTitle": "¿Hacer administrador a {{name}}?",
+      "grantBody": "Podrá ver todas las cuentas de este servidor, restablecer sus contraseñas y nombrar o quitar administradores. No le da acceso a los proyectos de ningún workspace.",
+      "grantConfirm": "Hacer administrador",
+      "revokeTitle": "¿Quitar el rol de administrador a {{name}}?",
+      "revokeBody": "{{name}} dejará de ver «Usuarios». Sus proyectos y workspaces no cambian.",
+      "revokeSelfTitle": "¿Quitarte el rol de administrador?",
+      "revokeSelfBody": "Dejarás de ver «Usuarios». Solo otro administrador puede devolvértelo.",
+      "revokeConfirm": "Quitar el rol",
+      "granted": "{{name}} ya es administrador.",
+      "revoked": "{{name}} ya no es administrador.",
+      "resetTitle": "¿Restablecer la contraseña de {{name}}?",
+      "resetBody": "Pharos genera un enlace de un solo uso para que {{name}} elija una contraseña nueva. Tú no verás ni pondrás su contraseña.",
+      "resetPoint1": "El enlace dura 24 horas y sirve una vez. Anula cualquier otro enlace que tuviera abierto.",
+      "resetPoint2": "Al usarlo se cierra la sesión de {{name}} en todos sus equipos y se borra su clave de IA guardada en la web.",
+      "resetPoint3": "{{name}} recibe un aviso, y el cambio queda en tu auditoría y en la suya.",
+      "resetConfirm": "Generar enlace",
+      "deliverTitle": "Enviar el enlace a {{name}}",
+      "deliverBody": "Pharos se lo manda a {{email}}. Tú no lo verás.",
+      "deliverEmail": "Enviar por correo",
+      "deliverMyself": "Prefiero entregarlo yo",
+      "resetSentTitle": "Enlace enviado",
+      "resetSent": "Enlace enviado a {{email}}. Caduca el {{date}}.",
+      "resetLinkTitle": "Enlace para {{name}}",
+      "resetTokenHint": "Este servidor no tiene dirección web configurada: en la app, la persona pega este código en «¿Olvidaste tu contraseña?» › «Por correo» › «¿Ya tienes el enlace?».",
+      "resetOnce": "Solo se muestra ahora. Dáselo a {{name}} por un canal privado: quien lo tenga puede cambiar su contraseña hasta que caduque, el {{date}}.",
+      "resetCopy": "Copiar",
+      "resetCopied": "Enlace copiado.",
+      "done": "Listo",
+      "error": {
+        "network": "No se pudo conectar con el servidor.",
+        "admin_required": "Ya no eres administrador de este servidor.",
+        "last_admin": "Tiene que haber al menos un administrador.",
+        "admin_reset_self": "Tu propia contraseña se cambia en «Mi perfil».",
+        "user_not_found": "Esa cuenta ya no existe.",
+        "email_reset_disabled": "Este servidor no envía correos. Entrega tú el enlace.",
+        "rate_limited": "Demasiados intentos. Espera un momento.",
+        "generic": "Algo salió mal. Inténtalo de nuevo."
       }
     }
   },
@@ -1149,7 +1222,8 @@
       "checking": "Comprobando el enlace…",
       "save": "Guardar la contraseña",
       "done": "Contraseña cambiada. Se cerró la sesión en todos tus dispositivos.",
-      "askAgain": "Pedir otro enlace"
+      "askAgain": "Pedir otro enlace",
+      "issuedBy": "Enlace generado por {{name}} (administrador del servidor)"
     }
   },
   "language": {
@@ -1436,7 +1510,8 @@
     "themeHelp": "Faro Nocturno, en claro u oscuro. «Según el sistema» sigue el ajuste de tu equipo.",
     "themeLight": "Claro",
     "themeDark": "Oscuro",
-    "synced": "Se aplica en todos tus equipos"
+    "synced": "Se aplica en todos tus equipos",
+    "serverAdmin": "Administrador del servidor"
   },
   "account": {
     "title": "Seguridad de la cuenta",
@@ -4865,6 +4940,11 @@
       "member": {
         "joined": "{{actor}} se unió a {{title}}",
         "removed": "Ya no eres miembro de {{title}}"
+      },
+      "account": {
+        "reset_issued": "{{actor}} (administrador del servidor) generó un enlace para restablecer tu contraseña. Si no lo pediste, avísale.",
+        "admin_granted": "{{actor}} te nombró administrador del servidor",
+        "admin_revoked": "{{actor}} te quitó el rol de administrador del servidor"
       }
     },
     "action": {
@@ -4875,7 +4955,8 @@
       "report": "Ver informe",
       "resolve": "Resolver",
       "open": "Abrir",
-      "members": "Ver miembros"
+      "members": "Ver miembros",
+      "profile": "Ver mi perfil"
     }
   },
   "workspaces": {

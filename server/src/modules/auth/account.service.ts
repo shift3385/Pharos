@@ -18,6 +18,12 @@ import type { ServerClock } from "../sync/sync.hlc";
 import { lockWorkspaces } from "../sync/sync.repository";
 import { personalOf } from "../workspaces/members";
 import { wipeAiVault } from "../ai/ai.wipe";
+import {
+  AdminErrors,
+  auditAccountEvent,
+  lockPersonal,
+} from "../admin/admin.service";
+import { emitNotification } from "../notifications/notifications";
 
 // Changing and recovering the account password (SEC-08, SEC-09 by email;
 // ADR-0045). Every change runs in one transaction under the write lock of
@@ -51,6 +57,8 @@ type AccountEvent =
       method: "profile" | "recovery_code" | "email_link" | "admin";
       sessionsClosed: number;
       codesRemaining?: number;
+      /** The administrator who made the link (method "admin"). */
+      issuedBy?: string;
       /** Set when recovery deleted the AI key stored for the web (IA-12). */
       aiWebKeyRemoved?: true;
     }
@@ -67,6 +75,8 @@ export function createAccountService(deps: {
   mailer: Mailer | null;
   publicUrl: string | undefined;
   resetTtlMs: number;
+  /** How long a link made by a server administrator works (24 h). */
+  adminResetTtlMs: number;
   log?: { error: (obj: unknown, msg: string) => void };
 }) {
   const { pool, repo, clock, mailer, publicUrl } = deps;
@@ -394,15 +404,105 @@ export function createAccountService(deps: {
       });
     },
 
-    /** The account a reset link is for, while it can still be used. */
-    async checkReset(token: string): Promise<{ email: string }> {
-      const { rows } = await pool.query<{ email: string }>(
-        `SELECT u.email FROM password_reset_tokens t JOIN users u ON u.id = t.user_id
+    /** The account a reset link is for, while it can still be used, and
+     *  the administrator who made it, if one did (SEC-11). */
+    async checkReset(
+      token: string,
+    ): Promise<{ email: string; issuedBy: string | null }> {
+      const { rows } = await pool.query<{
+        email: string;
+        issued_by_name: string | null;
+      }>(
+        `SELECT u.email, ib.display_name AS issued_by_name
+           FROM password_reset_tokens t JOIN users u ON u.id = t.user_id
+           LEFT JOIN users ib ON ib.id = t.issued_by
           WHERE t.token_hash = $1 AND t.used_at IS NULL AND t.expires_at > now()`,
         [sha256(token)],
       );
       if (!rows[0]) throw AuthErrors.invalidResetToken();
-      return { email: rows[0].email };
+      return { email: rows[0].email, issuedBy: rows[0].issued_by_name };
+    },
+
+    /** A single-use reset link made by a server administrator for another
+     *  account (SEC-09, ADR-0045): emailed to the person (the administrator
+     *  never sees it), or returned once for the administrator to hand over.
+     *  The caller has checked that `actorId` is an administrator. */
+    async issueAdminReset(
+      actorId: string,
+      targetId: string,
+      delivery: "email" | "link",
+      locale?: "es" | "en",
+    ): Promise<{
+      delivery: "email" | "link";
+      expiresAt: Date;
+      token?: string;
+      link?: string;
+    }> {
+      if (actorId === targetId) throw AdminErrors.self();
+      const [actor, target] = await Promise.all([
+        repo.findById(actorId),
+        repo.findById(targetId),
+      ]);
+      if (!actor) throw AuthErrors.unauthorized();
+      if (!target) throw AdminErrors.notFound();
+      if (delivery === "email" && (!mailer || !publicUrl))
+        throw AuthErrors.emailResetDisabled();
+      const raw = randomBytes(32).toString("base64url");
+      const expiresAt = await tx(async (client) => {
+        await lockPersonal(client, [actorId, targetId]);
+        // A new link spends every open one of the person, by email too.
+        await client.query(
+          `UPDATE password_reset_tokens SET used_at = now() WHERE user_id = $1 AND used_at IS NULL`,
+          [targetId],
+        );
+        const { rows } = await client.query<{ expires_at: Date }>(
+          `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, issued_by)
+           VALUES ($1, $2, now() + make_interval(secs => $3::double precision / 1000), $4)
+           RETURNING expires_at`,
+          [targetId, sha256(raw), deps.adminResetTtlMs, actorId],
+        );
+        await auditAccountEvent(client, clock, actorId, targetId, {
+          event: "password_reset_issued",
+          target: targetId,
+          delivery,
+        });
+        await auditAccountEvent(client, clock, targetId, targetId, {
+          event: "password_reset_issued",
+          by: actorId,
+          delivery,
+        });
+        await emitNotification(client, {
+          kind: "account.reset_issued",
+          actorId,
+          recipientIds: [targetId],
+          trusted: true,
+          subject: {
+            entity: "account",
+            id: targetId,
+            title: target.display_name,
+          },
+        });
+        return rows[0].expires_at;
+      });
+      if (delivery === "email" && mailer && publicUrl) {
+        await mailer.send(
+          resetEmail({
+            to: target.email,
+            link: resetLink(publicUrl, raw),
+            publicUrl,
+            ttlMs: deps.adminResetTtlMs,
+            locale,
+            issuedBy: actor.display_name,
+          }),
+        );
+        return { delivery, expiresAt };
+      }
+      return {
+        delivery,
+        expiresAt,
+        token: raw,
+        ...(publicUrl && { link: resetLink(publicUrl, raw) }),
+      };
     },
 
     /** Sets a new password with a reset link; the link is spent by the same
@@ -430,6 +530,7 @@ export function createAccountService(deps: {
         await audit(client, spent.user_id, {
           event: "password_changed",
           method: spent.issued_by ? "admin" : "email_link",
+          ...(spent.issued_by && { issuedBy: spent.issued_by }),
           sessionsClosed,
           ...(aiWebKeyRemoved && { aiWebKeyRemoved }),
         });

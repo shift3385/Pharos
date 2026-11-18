@@ -14,6 +14,29 @@ export interface RecoveryStatus {
   lastUsedAt: string | null;
 }
 
+/** An account as a server administrator sees it (SEC-11). */
+export interface AdminUser {
+  id: string;
+  email: string;
+  displayName: string;
+  firstName: string;
+  lastName: string;
+  isAdmin: boolean;
+  createdAt: string;
+  recoveryCodes: { total: number; remaining: number };
+  workspaces: number;
+}
+
+/** A reset link made by an administrator (SEC-09): emailed (no token here)
+ *  or handed over (the token, and the link when the server has a web
+ *  address). Shown once. */
+export interface AdminReset {
+  delivery: "email" | "link";
+  expiresAt: string;
+  token?: string;
+  link?: string;
+}
+
 export interface RecoverInput {
   email: string;
   code: string;
@@ -96,9 +119,35 @@ export const accountApi = {
   requestReset: (email: string, locale: "es" | "en") =>
     request<{ status: string }>("/auth/reset/request", post({ email, locale })),
 
-  /** The account a reset link is for, while it still works. */
+  /** The account a reset link is for, while it still works, and the
+   *  administrator who made it, if one did. */
   checkReset: (token: string) =>
-    request<{ email: string }>("/auth/reset/check", post({ token })),
+    request<{ email: string; issuedBy?: string | null }>(
+      "/auth/reset/check",
+      post({ token }),
+    ),
+
+  // ---- Server administrator (SEC-11, SEC-09; ADR-0045) ----
+
+  adminUsers: (search = "", offset = 0, limit = 50) => {
+    const q = new URLSearchParams({ offset: String(offset), limit: String(limit) });
+    if (search.trim()) q.set("q", search.trim());
+    return authed<{ users: AdminUser[]; total: number; admins: number }>(
+      `/admin/users?${q.toString()}`,
+    );
+  },
+
+  adminReset: (userId: string, delivery: "email" | "link", locale: "es" | "en") =>
+    authed<AdminReset>(
+      `/admin/users/${encodeURIComponent(userId)}/password-reset`,
+      () => post({ delivery, locale }),
+    ),
+
+  setAdmin: (userId: string, isAdmin: boolean) =>
+    authed<{ isAdmin: boolean; changed: boolean }>(
+      `/admin/users/${encodeURIComponent(userId)}/admin`,
+      () => ({ method: "PUT", body: JSON.stringify({ isAdmin }) }),
+    ),
 
   confirmReset: (token: string, newPassword: string) =>
     request<null>("/auth/reset/confirm", post({ token, newPassword })),

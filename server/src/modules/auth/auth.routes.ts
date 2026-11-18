@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { AuthService } from "./auth.service";
 import type { TokenService } from "./tokens";
 import type { AccountService } from "./account.service";
+import type { AdminService } from "../admin/admin.service";
 import {
   changePasswordSchema,
   loginSchema,
@@ -25,9 +26,14 @@ declare module "fastify" {
 
 export function authRoutes(
   app: FastifyInstance,
-  deps: { service: AuthService; tokens: TokenService; account: AccountService },
+  deps: {
+    service: AuthService;
+    tokens: TokenService;
+    account: AccountService;
+    admin: AdminService;
+  },
 ) {
-  const { service, tokens, account } = deps;
+  const { service, tokens, account, admin } = deps;
 
   async function requireAuth(req: FastifyRequest): Promise<void> {
     const header = req.headers.authorization;
@@ -45,7 +51,12 @@ export function authRoutes(
     const session = await service.register(registerSchema.parse(req.body));
     // The recovery codes travel once, in this answer (SEC-08, ADR-0045).
     const recoveryCodes = await account.issueInitialCodes(session.user.id);
-    return reply.code(201).send({ ...session, recoveryCodes });
+    // The first account of a server, or one in PHAROS_ADMINS, is a server
+    // administrator (SEC-11).
+    const isAdmin = await admin.nameOnSignUp(session.user.id, session.user.email);
+    return reply
+      .code(201)
+      .send({ ...session, user: { ...session.user, isAdmin }, recoveryCodes });
   });
 
   app.post("/auth/login", async (req, reply) => {

@@ -296,3 +296,14 @@
     transition: none;
   }
 }
+
+/* Server administrator (SEC-11): a role of the whole server, not of a workspace. */
+.profile__admin {
+  align-self: flex-start;
+  padding: 1px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-warning-text);
+  background: color-mix(in srgb, var(--color-warning) 18%, transparent);
+}

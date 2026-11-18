@@ -112,6 +112,21 @@ Si falta `SMTP_FROM` o `APP_PUBLIC_URL`, o si la dirección no es https, el
 servidor no arranca y dice por qué. El enlace se construye siempre con
 `APP_PUBLIC_URL`, nunca con la dirección que llega en la petición.
 
+## Administradores del servidor
+
+La primera cuenta que se registra en el servidor es su administradora; en un
+servidor que ya tenía cuentas, lo es la más antigua
+([ADR-0045](adr/0045-recuperacion-de-la-cuenta.md), SEC-11). Un administrador
+ve «Administración › Usuarios»: todas las cuentas, restablecer contraseñas con
+un enlace de un solo uso y nombrar o quitar administradores. Siempre queda uno.
+
+- `PHAROS_ADMINS`: correos separados por comas. Esas cuentas pasan a ser
+  administradoras al arrancar el servidor y al registrarse. Nunca quita a
+  nadie. Es la forma de recuperar el acceso si se pierden todos los
+  administradores: añade el correo, reinicia la API y entra con esa cuenta.
+- `ADMIN_RESET_TTL`: cuánto dura un enlace generado por un administrador
+  (24 horas por defecto; un solo uso).
+
 ## Certificado interno
 
 Para un nombre interno o una IP, Caddy crea su propia autoridad (CA). La app

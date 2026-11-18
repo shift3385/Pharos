@@ -321,6 +321,7 @@ export function ResetView({
     "checking",
   );
   const [email, setEmail] = useState("");
+  const [issuedBy, setIssuedBy] = useState<string | null>(null);
   const [form, setForm] = useState({ password: "", repeat: "" });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -332,6 +333,7 @@ export function ResetView({
       .then((r) => {
         if (!live) return;
         setEmail(r.email);
+        setIssuedBy(r.issuedBy ?? null);
         setState("ready");
       })
       .catch((err: unknown) => {
@@ -377,6 +379,11 @@ export function ResetView({
         {email && state !== "done" && (
           <p className="auth-form__switch">
             {t("auth.reset.account", { email })}
+          </p>
+        )}
+        {issuedBy && state !== "done" && (
+          <p className="auth-form__switch">
+            {t("auth.reset.issuedBy", { name: issuedBy })}
           </p>
         )}
       </div>

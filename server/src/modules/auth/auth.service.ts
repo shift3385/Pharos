@@ -11,6 +11,8 @@ export interface PublicUser {
   firstName: string;
   lastName: string;
   role: string;
+  /** Server administrator (SEC-11); for the UI only, routes check the DB. */
+  isAdmin: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,6 +39,7 @@ export function createAuthService(deps: {
       firstName: user.first_name,
       lastName: user.last_name,
       role: user.role,
+      isAdmin: user.is_admin === true,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };

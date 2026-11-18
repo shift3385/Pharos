@@ -192,7 +192,7 @@ export function AuthProvider({
   }, [clearSession]);
 
   const updateUser = useCallback(
-    async (patch: Partial<Pick<Session["user"], "displayName" | "firstName" | "lastName">>) => {
+    async (patch: Partial<Pick<Session["user"], "displayName" | "firstName" | "lastName" | "isAdmin">>) => {
       const current = session.current;
       if (!current) return;
       const next = { ...current, user: { ...current.user, ...patch } };

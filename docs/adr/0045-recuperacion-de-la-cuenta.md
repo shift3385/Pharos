@@ -139,20 +139,63 @@
     - Fastify no registra cuerpos, y el log de un correo que falla solo
       guarda el id de la cuenta y el error.
     - La app no los guarda: los códigos salen de la memoria al continuar.
-- **Diseño para la ola 2 (restablecer por un administrador):**
-  - **Quién puede hacerlo (regla aprobada por el usuario el 2026-11-17):** un
-    Test Manager puede restablecer solo a personas con las que comparte un
-    workspace y que no sean Test Manager en ningún otro workspace. Así un Test
-    Manager no puede tomar la cuenta de otro.
-  - La comprobación usa lo que expone la pista W (ADR-0042) en
-    `server/src/modules/workspaces/`: `managedMembers(q, managerId)` para la
-    lista de personas que puede restablecer y `requireCapability(cap, { from })`
-    en la ruta.
-  - El Test Manager genera para la persona un **enlace de un solo uso** en
-    `password_reset_tokens`, con `issued_by` igual a su id (migración 0022),
-    y se lo hace llegar por su canal. Nunca ve ni fija la contraseña.
-  - Al usarlo, el evento de auditoría lleva `method: "admin"`. Generar el
-    enlace deja además un evento en la cadena del Test Manager.
+- **Enmienda 2026-11-18 · Administrador del servidor y restablecer por un
+  administrador (SEC-11, SEC-09; ola 2).** Sustituye el diseño anterior de la
+  ola 2, que daba el restablecimiento al Test Manager de un workspace. El
+  usuario lo rechazó: «el administrador no puede ser el Test Manager»; aprobó
+  esta versión ese mismo día («Sí, las 5»).
+  - **A1 · Un rol de instancia.** El administrador del servidor es una
+    columna `users.is_admin` (migración del servidor 0026), separada de los
+    roles de workspace y de la matriz `workspace-roles.json`. La columna
+    antigua `users.role` siempre vale `test_manager` y no autoriza nada; no se
+    reutiliza. Ninguna migración local: el escritorio lo sabe por `/auth/me`.
+  - **A2 · Quién lo es.**
+    - La **primera cuenta** que se registra en un servidor sin
+      administradores, en la misma transacción y con un bloqueo, así que dos
+      registros a la vez no dan dos «primeros».
+    - Las cuentas de `PHAROS_ADMINS` (correos separados por comas), al
+      arrancar y al registrarse. Nunca quita el rol: es la vía para recuperar
+      el acceso si se pierden todos los administradores.
+    - Las que nombre otro administrador. **No se puede quitar al último**, ni
+      otro administrador ni él mismo.
+    - En un servidor que ya tenía cuentas, la migración nombra **la más
+      antigua**: en un servidor de equipo suele ser la de quien lo instaló, y
+      `PHAROS_ADMINS` corrige el caso que no encaje.
+  - **A3 · Se comprueba en cada petición.** Las rutas `/admin/*` leen
+    `is_admin` de la base de datos; el rol no va en el JWT, así que quitarlo
+    tiene efecto al momento, aunque el token siga vivo. `/auth/me` y la sesión
+    exponen `isAdmin` solo para que la app muestre u oculte la pestaña.
+  - **A4 · Administración › Usuarios.** Pestaña del grupo «Aplicación» que
+    solo ve un administrador. Lista **todas las cuentas** del servidor
+    (nombre, correo, alta, códigos de recuperación; aprobado), con búsqueda.
+    No da acceso a sus proyectos.
+  - **A5 · Restablecer por un administrador (SEC-09).**
+    - `POST /admin/users/:id/password-reset` genera un **enlace de un solo
+      uso** en `password_reset_tokens` con `issued_by` = el administrador.
+    - Dura **24 horas** (`ADMIN_RESET_TTL`), porque se entrega a mano, y
+      anula los enlaces abiertos de la persona, también los del correo.
+    - Con SMTP, la opción principal es **enviarlo por correo**: el
+      administrador no ve el enlace. Sin SMTP, o si elige «Prefiero entregarlo
+      yo», se muestra **una sola vez** para copiarlo. Sin `APP_PUBLIC_URL`,
+      se muestra el código, que la persona pega en «¿Ya tienes el enlace?».
+    - **No se restablece uno mismo** (eso va por «Mi perfil»). **Sí se puede
+      restablecer a otro administrador**, con auditoría y aviso: podría
+      quitarle el rol y restablecerlo igualmente, así que prohibirlo solo
+      añadiría un paso.
+    - Al usar el enlace pasa lo de siempre: se cierran todas las sesiones y
+      se borra la clave de IA de la web (#88). La página de restablecer dice
+      qué administrador lo generó, y el correo también.
+  - **A6 · Rastro.** No hay un «workspace del servidor», así que cada acción
+    deja un evento en la cadena web personal de **quien actúa** y en la de
+    **la persona afectada**: `password_reset_issued` (con `delivery`),
+    `admin_granted` y `admin_revoked`; al usar el enlace,
+    `password_changed` con `method: "admin"` e `issuedBy`. Nunca guarda el
+    enlace ni su hash. La persona recibe una notificación (RED-W2):
+    `account.reset_issued`, `account.admin_granted` o
+    `account.admin_revoked`.
+  - **A7 · Fuera de esta enmienda.** Desactivar una cuenta es otro ítem,
+    SEC-12: hay que decidir qué pasa con sus sesiones, con sus workspaces
+    (sobre todo si es el último Test Manager de uno) y con su auditoría.
 - **Alternativas descartadas:**
   - **Preguntas de seguridad.** Son adivinables y no las recomienda ningún
     estándar actual (NIST SP 800-63B).
@@ -179,6 +222,10 @@
     se usa con SMTP configurado.
   - «Mi perfil» muestra en la web y en el escritorio una tarjeta que necesita
     conexión.
+  - (Enmienda 2026-11-18) Migración del servidor 0026 (`users.is_admin`) y
+    las variables `PHAROS_ADMINS` y `ADMIN_RESET_TTL`. Tres tipos de
+    notificación nuevos. La lista de cuentas solo la ve un administrador, y
+    sus rutas responden `403 admin_required` a cualquier otra persona.
   - La guía de despliegue ([`docs/despliegue.md`](../despliegue.md),
     apartado «Correo para restablecer contraseñas»;
     [ADR-0046](0046-despliegue-tls-y-servidor-configurable.md)) explica las
