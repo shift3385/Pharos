@@ -172,6 +172,12 @@ async function cascadeProjectDelete(client: PoolClient, scope: Scope, d: Delta):
       RETURNING entity`,
     [scope.workspaceId, d.entityId, d.hlc, d.author, [...PROJECT_CHILDREN], scope.userId],
   );
+  // Its case revisions too (SYNC-11), marked `deletedWith` so they come back
+  // if the project does. Not counted: on the desktop they go with their
+  // cases. Runs after the children, so the results and run items of the
+  // project are already tombstones and only another project's live ones can
+  // keep a revision.
+  await client.query(REVISION_TOMBSTONE_SQL, [scope.workspaceId, d.entityId, d.hlc, d.author, scope.userId]);
   const counted = PROJECT_CHILDREN.filter((e) => CASCADE_KEY[e]);
   const counts: Record<string, number> = Object.fromEntries(counted.map((e) => [CASCADE_KEY[e], 0]));
   for (const r of rows) {
@@ -179,6 +185,40 @@ async function cascadeProjectDelete(client: PoolClient, scope: Scope, d: Delta):
     if (key) counts[key]++;
   }
   return counts;
+}
+
+/** Tombstones the case revisions of a deleted project (SYNC-11, ADR-0051):
+ *  `$1` workspace, `$2` project, `$3` the delete's HLC, `$4` author, `$5` user.
+ *  Append-only, so the only change allowed is the tombstone itself; the
+ *  content stays until `compactTombstones` clears it, and `deletedWith`
+ *  says which project took it. A revision a live result or run item of
+ *  another project still points to is left alone, so that result keeps its
+ *  link. */
+export const REVISION_TOMBSTONE_SQL = `
+  UPDATE documents r
+     SET deleted = true, payload = r.payload || jsonb_build_object('deletedWith', $2::text),
+         revision = r.revision + 1, hlc = GREATEST(r.hlc, $3), author = $4, author_user_id = $5,
+         updated_at = now(), seq = nextval('documents_seq')
+   WHERE r.workspace_id = $1 AND r.entity = 'test_case_revision' AND NOT r.deleted
+     AND r.payload->>'projectId' = $2
+     AND NOT EXISTS (
+       SELECT 1 FROM documents o
+        WHERE o.workspace_id = r.workspace_id AND o.entity IN ('result', 'run_item') AND NOT o.deleted
+          AND o.payload->>'testCaseRevisionId' = r.entity_id
+          AND o.payload->>'projectId' IS DISTINCT FROM $2)`;
+
+/** Brings back the case revisions a project's delete tombstoned, when the
+ *  project is stored live again (SYNC-11): the only way an append-only
+ *  tombstone comes back, and only while it still has its content. */
+async function reviveProjectRevisions(client: PoolClient, scope: Scope, projectId: string): Promise<void> {
+  await client.query(
+    `UPDATE documents
+        SET deleted = false, payload = payload - 'deletedWith', revision = revision + 1,
+            updated_at = now(), seq = nextval('documents_seq')
+      WHERE workspace_id = $1 AND entity = 'test_case_revision' AND deleted
+        AND payload->>'projectId' = $2 AND payload->>'deletedWith' = $2`,
+    [scope.workspaceId, projectId],
+  );
 }
 
 /** How a cascade counts each child: the desktop's table names
@@ -341,6 +381,9 @@ export async function storeDoc(
     params,
   );
   const cascade = d.entity === "project" && d.op === "delete" ? await cascadeProjectDelete(client, scope, d) : null;
+  // A project that comes back (its delete lost a conflict elsewhere) brings
+  // back the case revisions its delete took (SYNC-11).
+  if (d.entity === "project" && d.op !== "delete") await reviveProjectRevisions(client, scope, d.entityId);
   return { payload: rows[0].payload, cascade };
 }
 
@@ -378,9 +421,11 @@ export async function storeAppend(client: PoolClient, scope: Scope, delta: Delta
   if (!current) {
     // A shard or result of a project already deleted here arrives as a
     // tombstone, as the cascade would have left it (a device that pushes
-    // after the delete). Revisions and audit events stay out (SYNC-11).
+    // after the delete). A case revision too, marked `deletedWith` as the
+    // cascade marks it (SYNC-11). Audit events stay out.
+    const revision = d.entity === "test_case_revision";
     const orphan =
-      (PROJECT_CHILDREN as readonly string[]).includes(d.entity) &&
+      ((PROJECT_CHILDREN as readonly string[]).includes(d.entity) || revision) &&
       typeof d.payload.projectId === "string" &&
       ((
         await client.query(
@@ -392,7 +437,16 @@ export async function storeAppend(client: PoolClient, scope: Scope, delta: Delta
       `INSERT INTO documents
          (workspace_id, entity, entity_id, payload, revision, author, deleted, hlc, author_user_id, updated_at, seq)
        VALUES ($1, $2, $3, $4, 1, $5, $7, $6, $8, now(), nextval('documents_seq'))`,
-      [ws, d.entity, d.entityId, d.payload, d.author, d.hlc, orphan, scope.userId],
+      [
+        ws,
+        d.entity,
+        d.entityId,
+        orphan && revision ? { ...d.payload, deletedWith: d.payload.projectId } : d.payload,
+        d.author,
+        d.hlc,
+        orphan,
+        scope.userId,
+      ],
     );
     return { accepted: true };
   }

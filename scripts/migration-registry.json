@@ -25,7 +25,6 @@
   "server": {
     "dir": "server/migrations",
     "reserved": {
-      "0028": "0.6.0 track S (SYNC-11, ADR-0051): tombstones for the case revisions of projects already deleted",
       "0030": "0.6.0 track A (INT-03): webhooks and webhook_deliveries (outbox, signed deliveries)"
     },
     "retired": {

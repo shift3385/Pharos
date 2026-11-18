@@ -1,0 +1,143 @@
+{
+  "$comment": "Field-level merge rules (SYNC-02, ADR-0051). One source for the desktop (Rust, include_str!) and the web (TS); both pass merge-vectors.json. A field not listed is a scalar: taken from the side that changed it, a conflict when both changed it differently. Paths: a payload key, or `data.<key>` one level down. Types: scalar | text (a scalar the conflict panel diffs by words) | set (a list without order, of values or of objects with an `id`) | idList (a list of objects with a unique string `id`, merged by id and by key, its order kept) | object (merged key by key with `fields`) | map (merged key by key; an array value is a set, anything else a scalar). groups: fields merged as one. guards: when one side changed only guard fields (an approval, a review step) and the other changed anything else, the conflict is of the whole entity: an approval never covers content it did not see. A content edit that reopens a review changes the guard fields the same way on both sides, so two edits still merge. `when` limits a guard to a value one side set (closing a cycle).",
+  "version": 1,
+  "bookkeeping": {
+    "remote": ["id", "workspaceId", "ownerId", "createdAt", "revision"],
+    "max": ["updatedAt"]
+  },
+  "entities": {
+    "test_case": {
+      "fields": {
+        "data.summary": {
+          "type": "text"
+        },
+        "data.steps": {
+          "type": "idList"
+        },
+        "data.preconditions": {
+          "type": "idList"
+        },
+        "data.background": {
+          "type": "idList"
+        },
+        "data.examples": {
+          "type": "object",
+          "fields": {
+            "rows": {
+              "type": "idList"
+            }
+          }
+        },
+        "data.flows": {
+          "type": "idList"
+        },
+        "data.requirementKeys": {
+          "type": "set"
+        },
+        "data.custom": {
+          "type": "map"
+        }
+      },
+      "groups": [],
+      "guards": [
+        {
+          "name": "review",
+          "fields": ["status", "version", "data.review", "data.approval"]
+        }
+      ]
+    },
+    "test_plan": {
+      "fields": {
+        "data.sprints": {
+          "type": "idList"
+        },
+        "data.milestones": {
+          "type": "idList"
+        }
+      },
+      "groups": [],
+      "guards": [
+        {
+          "name": "review",
+          "fields": ["status", "version", "data.review", "data.approval"]
+        }
+      ]
+    },
+    "requirement": {
+      "fields": {
+        "description": {
+          "type": "text"
+        },
+        "data.custom": {
+          "type": "map"
+        }
+      },
+      "groups": [
+        {
+          "name": "risk",
+          "fields": ["riskLikelihood", "riskImpact"]
+        }
+      ],
+      "guards": []
+    },
+    "planner_card": {
+      "fields": {
+        "data.description": {
+          "type": "text"
+        },
+        "data.labels": {
+          "type": "set"
+        }
+      },
+      "groups": [],
+      "guards": []
+    },
+    "defect": {
+      "fields": {
+        "description": {
+          "type": "text"
+        },
+        "data.labels": {
+          "type": "set"
+        }
+      },
+      "groups": [],
+      "guards": []
+    },
+    "test_cycle": {
+      "fields": {
+        "description": {
+          "type": "text"
+        }
+      },
+      "groups": [],
+      "guards": [
+        {
+          "name": "closed",
+          "fields": ["status"],
+          "when": "closed"
+        }
+      ]
+    },
+    "attachment": {
+      "fields": {},
+      "groups": [
+        {
+          "name": "content",
+          "fields": ["sha256", "size", "mime"]
+        }
+      ],
+      "guards": []
+    },
+    "template": {
+      "fields": {},
+      "groups": [
+        {
+          "name": "content",
+          "fields": ["sha256", "size", "mime"]
+        }
+      ],
+      "guards": []
+    }
+  }
+}

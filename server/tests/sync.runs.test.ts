@@ -184,7 +184,7 @@ describe("execution entities (runs feature)", () => {
     expect((await push(h, [lww("run", "r9", {}, { op: "delete" })])).statusCode).toBe(200);
   });
 
-  it("a project delete tombstones its runs, items, mappings, shards and results, not revisions or audit", async () => {
+  it("a project delete tombstones its runs, items, mappings, shards and results, and its case revisions (SYNC-11), not audit", async () => {
     const h = current(await tokenFor());
     await push(h, [project(), run(), item(), mapping()]);
     await push(h, [
@@ -206,7 +206,7 @@ describe("execution entities (runs feature)", () => {
       run: true,
       run_item: true,
       run_shard: true,
-      test_case_revision: false,
+      test_case_revision: true,
       unlinked_mapping: true,
     });
     // A tombstoned result stays a tombstone.
@@ -214,7 +214,8 @@ describe("execution entities (runs feature)", () => {
     expect(late.json().appendRejected).toEqual([]);
     expect((await pool.query("SELECT deleted FROM documents WHERE entity = 'result'")).rows[0].deleted).toBe(true);
     // A result or shard first pushed after the delete is stored as a
-    // tombstone, as the cascade would have left it; a revision is not.
+    // tombstone, as the cascade would have left it; a case revision too
+    // (SYNC-11).
     const after = await push(h, [
       result("res-late"),
       shard("s-late"),
@@ -226,7 +227,7 @@ describe("execution entities (runs feature)", () => {
     );
     expect(lateRows.rows).toEqual([
       { entity_id: "res-late", deleted: true },
-      { entity_id: "rev-late", deleted: false },
+      { entity_id: "rev-late", deleted: true },
       { entity_id: "s-late", deleted: true },
     ]);
     // Nobody pulls them as live documents.
