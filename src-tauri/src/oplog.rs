@@ -92,8 +92,9 @@ pub fn observe_hlc(conn: &Connection, remote: &str) -> Result<(), String> {
 /// to the oplog and wait for SYNC-04b. The execution entities (EJE-01) join
 /// with `runs.rs`; custom field definitions (FLD-01) with `custom_fields.rs`;
 /// configurations, test cycles and their items (CYC-01) with `cycles.rs`;
-/// defects and their links (DEF-01) with `defects.rs`.
-pub const SYNCED: [&str; 14] = [
+/// defects and their links (DEF-01) with `defects.rs`; attachments and
+/// templates (SYNC-04b) with `blob_sync.rs`.
+pub const SYNCED: [&str; 16] = [
     "project",
     "test_plan",
     "test_case",
@@ -108,6 +109,8 @@ pub const SYNCED: [&str; 14] = [
     "test_cycle_item",
     "defect",
     "defect_link",
+    "attachment",
+    "template",
 ];
 
 /// `SYNCED` as an SQL list literal, for `entity IN (...)`.
@@ -143,6 +146,7 @@ pub fn owner_of(
             crate::cycles::owner_sql(entity).unwrap_or_default()
         }
         "defect" | "defect_link" => crate::defects::owner_sql(entity).unwrap_or_default(),
+        "attachment" => crate::blob_sync::owner_sql(entity).unwrap_or_default(),
         // Append-only entities say it themselves (sync_class registry).
         _ => {
             return match crate::sync_class::append_only(entity) {
@@ -475,7 +479,7 @@ mod tests {
         .unwrap();
         c.execute(
             "INSERT INTO oplog (id, entity, entity_id, op, created_at, user_id) \
-             VALUES ('t', 'template', 't1', 'upsert', 'now', ?1)",
+             VALUES ('t', 'profile', 't1', 'upsert', 'now', ?1)",
             [A],
         )
         .unwrap();

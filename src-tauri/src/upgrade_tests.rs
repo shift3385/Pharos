@@ -349,7 +349,12 @@ fn rows_kept(old: &Connection, new: &Connection, repairs: bool) -> usize {
         if table == "planner_attachments" {
             continue; // moved to the evidence store (DAT-03): checked apart
         }
-        let cols = columns(old, &table);
+        // A template's file moved to the evidence store (SYNC-04b, 0046):
+        // checked apart.
+        let cols: Vec<String> = columns(old, &table)
+            .into_iter()
+            .filter(|c| !(table == "templates" && c == "file"))
+            .collect();
         let before = rows(old, &table, &cols);
         let after = rows(new, &table, &cols);
         if GROWS.contains(&table.as_str()) {
@@ -1098,13 +1103,27 @@ fn assert_attachments_moved(old: &Connection, db: &Db) {
         assert_eq!(
             count(
                 c,
-                "SELECT count(*) FROM blobs WHERE local_state = 'present'"
+                "SELECT count(*) FROM blobs WHERE local_state = 'present'
+                    AND sha256 IN (SELECT sha256 FROM attachments)"
             ),
             distinct.len() as i64
         );
         Ok(())
     })
     .unwrap();
+}
+
+/// Template files 0046 moved to the evidence store (SYNC-04b) that no
+/// attachment shares: they are `.pev` files too.
+fn template_files(db: &Db) -> usize {
+    db.with_conn(|c| {
+        Ok(count(
+            c,
+            "SELECT count(DISTINCT sha256) FROM templates
+              WHERE sha256 NOT IN (SELECT sha256 FROM attachments)",
+        ))
+    })
+    .unwrap() as usize
 }
 
 /// `.pev` files under `<dir>/evidence` (not `tmp/`), and files left in `tmp/`.
@@ -1217,11 +1236,12 @@ fn both_fixtures_move_big_duplicate_and_deleted_card_attachments_and_shrink() {
             Ok(())
         })
         .unwrap();
+        let templates = template_files(&db);
         drop(db);
         assert_eq!(
             evidence_files(&dir),
-            (3, 0),
-            "original, big, png; nothing left in tmp"
+            (3 + templates, 0),
+            "original, big, png, the templates; nothing left in tmp"
         );
         // The image no longer carries the bytes (12 MB of them).
         let after = saved_image_len(&dir);
@@ -1233,7 +1253,7 @@ fn both_fixtures_move_big_duplicate_and_deleted_card_attachments_and_shrink() {
         let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
         assert_attachments_moved(&old, &db);
         drop(db);
-        assert_eq!(evidence_files(&dir), (3, 0));
+        assert_eq!(evidence_files(&dir), (3 + templates, 0));
         fs::remove_dir_all(&dir).unwrap();
     }
 }
@@ -1264,8 +1284,13 @@ fn a_migration_cut_midway_or_before_0023_resumes_without_duplicates() {
 
         let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
         assert_attachments_moved(&old, &db);
+        let templates = template_files(&db);
         drop(db);
-        assert_eq!(evidence_files(&dir), (3, 0), "fail_after {fail_after}");
+        assert_eq!(
+            evidence_files(&dir),
+            (3 + templates, 0),
+            "fail_after {fail_after}"
+        );
         fs::remove_dir_all(&dir).unwrap();
     }
 }
@@ -1319,8 +1344,9 @@ fn a_database_saved_between_the_rust_step_and_0023_finishes_cleanly() {
             .unwrap(),
         copied
     );
+    let templates = template_files(&db);
     drop(db);
-    assert_eq!(evidence_files(&dir), (3, 0));
+    assert_eq!(evidence_files(&dir), (3 + templates, 0));
     fs::remove_dir_all(&dir).unwrap();
 }
 
@@ -1482,7 +1508,8 @@ fn every_gherkin_level_written_by_0_1_migrates_to_stable_ids_without_loss() {
     load_image(&mut new, &image).unwrap();
     // Cases only: the attachments need an evidence store (DAT-03, tested apart).
     new.execute("DELETE FROM planner_attachments", []).unwrap();
-    run_migrations(&new).unwrap();
+    // Its templates move to the evidence store (SYNC-04b, 0046).
+    crate::db::run_migrations_with(&new, Some(crate::template::test_store())).unwrap();
 
     assert_rows_kept(&old, &new, true);
 

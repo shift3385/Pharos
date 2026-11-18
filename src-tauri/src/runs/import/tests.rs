@@ -824,10 +824,10 @@ fn attachments_go_to_their_owner_once() {
         U
     ))
     .is_err());
-    // Attachments never reach the oplog (ADR-0014).
+    // Each attachment is queued once (SYNC-04b): its content goes by hash.
     assert_eq!(
         count(&c, "SELECT count(*) FROM oplog WHERE entity = 'attachment'"),
-        0
+        count(&c, "SELECT count(*) FROM attachments")
     );
 }
 
@@ -1045,9 +1045,20 @@ fn a_device_that_pulled_the_shard_keeps_the_upload_as_its_raw_report() {
         1
     );
     assert_eq!(count(&b, "SELECT count(*) FROM blobs"), 1);
+    // Only its raw report waits for the push (SYNC-04b).
     assert_eq!(
         count(&b, "SELECT count(*) FROM oplog WHERE synced_at IS NULL"),
-        0
+        count(
+            &b,
+            "SELECT count(*) FROM oplog WHERE synced_at IS NULL AND entity = 'attachment'"
+        )
+    );
+    assert_eq!(
+        count(
+            &b,
+            "SELECT count(*) FROM oplog WHERE synced_at IS NULL AND entity = 'attachment'"
+        ),
+        1
     );
 }
 

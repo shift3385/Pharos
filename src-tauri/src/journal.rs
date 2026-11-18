@@ -155,11 +155,10 @@ pub fn snapshot(conn: &Connection, entity: &str, id: &str) -> Result<Option<Valu
     if entity == "template" {
         return conn
             .query_row(
-                "SELECT kind, language, name, description, usage_prompt, version, file, owner_id,
+                "SELECT kind, language, name, description, usage_prompt, version, sha256, owner_id,
                         deleted_at FROM templates WHERE id = ?1",
                 params![id],
                 |r| {
-                    let file: Vec<u8> = r.get(6)?;
                     Ok(json!({
                         "kind": r.get::<_, String>(0)?,
                         "language": r.get::<_, String>(1)?,
@@ -167,7 +166,7 @@ pub fn snapshot(conn: &Connection, entity: &str, id: &str) -> Result<Option<Valu
                         "description": r.get::<_, String>(3)?,
                         "usagePrompt": r.get::<_, String>(4)?,
                         "version": r.get::<_, String>(5)?,
-                        "fileSha256": audit::sha256_hex(&file),
+                        "fileSha256": r.get::<_, Option<String>>(6)?,
                         "ownerId": r.get::<_, Option<String>>(7)?,
                         "deleted": r.get::<_, Option<String>>(8)?.is_some(),
                     }))

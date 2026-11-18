@@ -53,7 +53,8 @@ pub(crate) fn table_for(entity: &str) -> Option<&'static str> {
         "custom_field" => Some("custom_fields"),
         other => crate::runs::table_for(other)
             .or_else(|| crate::cycles::table_for(other))
-            .or_else(|| crate::defects::table_for(other)),
+            .or_else(|| crate::defects::table_for(other))
+            .or_else(|| crate::blob_sync::table_for(other)),
     }
 }
 
@@ -155,6 +156,9 @@ pub(crate) fn read_payload(
     }
     if crate::defects::table_for(entity).is_some() {
         return crate::defects::read_payload(conn, entity, id);
+    }
+    if crate::blob_sync::table_for(entity).is_some() {
+        return crate::blob_sync::read_payload(conn, entity, id);
     }
     let (sql, build): (&str, fn(&rusqlite::Row) -> rusqlite::Result<PayloadRow>) = match entity {
         "project" => (
@@ -467,6 +471,12 @@ pub(crate) fn server_takes_case_baselines(conn: &Connection, user: &str) -> Resu
     server_lists(conn, user, CASE_BASELINES)
 }
 
+/// The server feature that stores attachments and templates by hash
+/// (SYNC-04b). Until the account's server lists it, they stay pending.
+pub(crate) fn server_takes_blobs(conn: &Connection, user: &str) -> Result<bool, String> {
+    server_lists(conn, user, crate::blob_sync::BLOBS)
+}
+
 /// True if the account's server listed `feature` in its last answer.
 fn server_lists(conn: &Connection, user: &str, feature: &str) -> Result<bool, String> {
     let features = state_value(conn, &server_features_key(user))?;
@@ -599,6 +609,8 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
     let cycles_too = server_takes_cycles(conn, user)?;
     // Defects and their links wait for a server with `defects` (DEF-01).
     let defects_too = server_takes_defects(conn, user)?;
+    // Attachments and templates wait for a server with `blobs` (SYNC-04b).
+    let blobs_too = server_takes_blobs(conn, user)?;
     // (entity, entity_id) → (op ids, max hlc, author of the latest change), in
     // first-change order.
     let mut order: Vec<(String, String)> = Vec::new();
@@ -621,12 +633,14 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
                    AND (o.entity <> 'custom_field' OR ?4)
                    AND (o.entity NOT IN ({}) OR ?5)
                    AND (o.entity NOT IN ({}) OR ?6)
+                   AND (o.entity NOT IN ({}) OR ?7)
                  ORDER BY o.rowid",
                 oplog::synced_sql_list(),
                 crate::workspaces::refused_sql(),
                 crate::runs::entities_sql_list(),
                 crate::cycles::entities_sql_list(),
-                crate::defects::entities_sql_list()
+                crate::defects::entities_sql_list(),
+                crate::blob_sync::entities_sql_list()
             ))
             .map_err(|e| e.to_string())?;
         let rows = stmt
@@ -637,7 +651,8 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
                     runs_too,
                     fields_too,
                     cycles_too,
-                    defects_too
+                    defects_too,
+                    blobs_too
                 ],
                 |r| {
                     Ok((
@@ -1094,6 +1109,7 @@ fn write_doc(
         )
         .map_err(|e| e.to_string())?;
         key_sync::holder_deleted(conn, &doc.entity, &doc.entity_id)?;
+        crate::blob_sync::after_pulled_delete(conn, &doc.entity, &doc.entity_id)?;
         return Ok(());
     }
 
@@ -1333,6 +1349,15 @@ fn write_doc(
             .map_err(|e| e.to_string())?;
         }
         entity if crate::cycles::table_for(entity).is_some() => crate::cycles::write_doc(
+            conn,
+            workspace_id,
+            user,
+            entity,
+            &doc.entity_id,
+            p,
+            doc.revision,
+        )?,
+        entity if crate::blob_sync::table_for(entity).is_some() => crate::blob_sync::write_doc(
             conn,
             workspace_id,
             user,

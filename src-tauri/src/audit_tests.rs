@@ -391,7 +391,7 @@ fn a_template_file_is_recorded_by_its_hash_never_its_bytes() {
         "kind": "case", "language": "es", "name": "Mine", "dataBase64": "U0VDUkVULUZJTEU="
     }))
     .unwrap();
-    template::insert_template(&c, &input, U).unwrap();
+    template::insert_template(&c, template::test_store(), &input, U).unwrap();
     let changes = last_changes(&c);
     assert_eq!(changes["fileSha256"][1], audit::sha256_hex(b"SECRET-FILE"));
     let text: String = c
@@ -1290,6 +1290,10 @@ const EXEMPT: &[(&str, &str)] = &[
         "template::template_seed",
         "built-in templates ship with the app",
     ),
+    (
+        "blob_sync::blobs_transfer",
+        "moves contents the synced documents already name (SYNC-04b); the documents carry the audit",
+    ),
     ("ai::ai_key_set", "a setting in the keychain"),
     ("ai::ai_key_status", "read"),
     ("ai::ai_key_clear", "a setting in the keychain"),
@@ -1949,9 +1953,12 @@ fn every_audited_command_leaves_an_event() {
     step("planner::planner_delete", &mut |tx| {
         planner::delete_card(tx, &card, U)
     });
-    let t = in_tx(&c, |tx| template::insert_template(tx, &tpl, U)).unwrap();
+    let t = in_tx(&c, |tx| {
+        template::insert_template(tx, template::test_store(), &tpl, U)
+    })
+    .unwrap();
     step("template::template_create", &mut |tx| {
-        template::insert_template(tx, &tpl, U).map(drop)
+        template::insert_template(tx, template::test_store(), &tpl, U).map(drop)
     });
     step("template::template_update", &mut |tx| {
         template::update_template(tx, &t, &meta, U)

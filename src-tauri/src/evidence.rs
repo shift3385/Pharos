@@ -608,11 +608,14 @@ pub(crate) fn record_blob(
     .map_err(|e| e.to_string())
 }
 
-/// Attachments that still need this content: live and not expired.
+/// Rows that still need this content: live attachments not expired, and
+/// templates (SYNC-04b) until they are purged (a deleted one may come back
+/// from the trash).
 fn live_refs(conn: &Connection, sha256: &str) -> Result<i64, String> {
     conn.query_row(
-        "SELECT count(*) FROM attachments \
-         WHERE sha256 = ?1 AND deleted_at IS NULL AND blob_purged_at IS NULL",
+        "SELECT (SELECT count(*) FROM attachments \
+                  WHERE sha256 = ?1 AND deleted_at IS NULL AND blob_purged_at IS NULL) \
+              + (SELECT count(*) FROM templates WHERE sha256 = ?1)",
         params![sha256],
         |r| r.get(0),
     )
@@ -647,7 +650,8 @@ pub(crate) fn release_unreferenced(conn: &Connection) -> Result<(), String> {
     conn.execute(
         "UPDATE blobs SET local_state = 'deleting' WHERE local_state <> 'deleting' \
          AND sha256 NOT IN (SELECT sha256 FROM attachments \
-                            WHERE deleted_at IS NULL AND blob_purged_at IS NULL)",
+                            WHERE deleted_at IS NULL AND blob_purged_at IS NULL) \
+         AND sha256 NOT IN (SELECT sha256 FROM templates WHERE sha256 IS NOT NULL)",
         [],
     )
     .map(drop)
@@ -712,9 +716,10 @@ pub(crate) struct AttachmentRow<'a> {
     pub user: &'a str,
 }
 
-/// Inserts an attachment row. The caller records the content (`record_blob`)
-/// when it stored it; a new use of content already here (a defect created
-/// from a result) does not touch its `blobs` state.
+/// Inserts an attachment row and queues it for the sync (SYNC-04b; not a
+/// draft's). The caller records the content (`record_blob`) when it stored
+/// it; a new use of content already here (a defect created from a result)
+/// does not touch its `blobs` state.
 pub(crate) fn insert_attachment(conn: &Connection, a: &AttachmentRow) -> Result<(), String> {
     conn.execute(
         "INSERT INTO attachments (id, workspace_id, project_id, sha256, size, mime, name, \
@@ -735,8 +740,8 @@ pub(crate) fn insert_attachment(conn: &Connection, a: &AttachmentRow) -> Result<
             a.user
         ],
     )
-    .map(drop)
-    .map_err(|e| e.to_string())
+    .map_err(|e| e.to_string())?;
+    crate::blob_sync::queue_attachment(conn, a.user, a.id, "upsert", true)
 }
 
 /// What the audit keeps of an attachment: never its bytes.

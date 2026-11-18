@@ -704,3 +704,70 @@ describe("syncNow with workspaces (SYNC-07)", () => {
     expect(calls.some((c) => c.cmd === "workspaces_apply")).toBe(false);
   });
 });
+
+describe("syncNow with attachments and templates (SYNC-04b)", () => {
+  const PERSONAL = "11111111-1111-4111-8111-111111111111";
+
+  it("uploads their contents before pushing them, and downloads after the pull", async () => {
+    const order: string[] = [];
+    invoke.mockImplementation(async (cmd: string, args: Record<string, unknown>) => {
+      if (cmd === "blobs_transfer") order.push(`blobs:${args.phase}:${args.workspaceId}`);
+      if (cmd === "sync_server_lists") return args.feature === "workspaces";
+      if (cmd === "oplog_pending")
+        return { deltas: args.class === "append_only" ? [] : [{ ...delta(1), entity: "attachment", workspaceId: PERSONAL }] };
+      if (cmd === "sync_cursor_get") return "0";
+      if (cmd === "workspaces_apply") return { revoked: [], remapped: 0 };
+      if (cmd === "project_workspaces") return {};
+      if (cmd === "key_lease_requests") return [];
+      if (cmd === "blobs_transfer") return { uploaded: 1, downloaded: 0, failed: 0 };
+      return undefined;
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string, init: RequestInit) => {
+        const path = new URL(url).pathname;
+        order.push(path);
+        if (path === "/workspaces")
+          return json({ workspaces: [{ id: PERSONAL, name: "Personal", kind: "personal", role: "test_manager", members: [] }] });
+        if (path === "/sync/push") {
+          const n = (JSON.parse(init.body as string) as { deltas: unknown[] }).deltas.length;
+          return json({ accepted: n, conflicts: [], features: ["blobs"] });
+        }
+        return json({ docs: [], cursor: 0, hasMore: false, features: ["blobs", "workspaces"] });
+      }),
+    );
+    await syncNow();
+    const at = (s: string) => order.indexOf(s);
+    expect(at(`blobs:upload:${PERSONAL}`)).toBeGreaterThan(-1);
+    expect(at(`blobs:upload:${PERSONAL}`)).toBeLessThan(at("/sync/push"));
+    expect(at(`blobs:download:${PERSONAL}`)).toBeGreaterThan(at("/sync/pull"));
+  });
+
+  it("a failed transfer leaves the sync good", async () => {
+    invoke.mockImplementation(async (cmd: string, args: Record<string, unknown>) => {
+      if (cmd === "blobs_transfer") throw new Error("server:unreachable");
+      if (cmd === "sync_server_lists") return args.feature === "workspaces";
+      if (cmd === "oplog_pending")
+        return { deltas: args.class === "append_only" ? [] : [{ ...delta(1), entity: "template", workspaceId: PERSONAL }] };
+      if (cmd === "sync_cursor_get") return "0";
+      if (cmd === "workspaces_apply") return { revoked: [], remapped: 0 };
+      if (cmd === "project_workspaces") return {};
+      if (cmd === "key_lease_requests") return [];
+      return undefined;
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string, init: RequestInit) => {
+        const path = new URL(url).pathname;
+        if (path === "/workspaces")
+          return json({ workspaces: [{ id: PERSONAL, name: "Personal", kind: "personal", role: "test_manager", members: [] }] });
+        if (path === "/sync/push") {
+          const n = (JSON.parse(init.body as string) as { deltas: unknown[] }).deltas.length;
+          return json({ accepted: n, conflicts: [] });
+        }
+        return json({ docs: [], cursor: 0, hasMore: false, features: ["blobs", "workspaces"] });
+      }),
+    );
+    await expect(syncNow()).resolves.toMatchObject({ pushed: 1 });
+  });
+});

@@ -42,6 +42,8 @@ pub const BUILD_DEFAULT: &str = match option_env!("VITE_API_URL") {
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 const CHECK_TIMEOUT: Duration = Duration::from_secs(10);
+/// A blob transfer (SYNC-04b) carries up to 200 MiB: longer than a JSON call.
+const BLOB_TIMEOUT: Duration = Duration::from_secs(600);
 /// Accounts remembered for «Usados en este equipo».
 const MAX_ACCOUNTS: usize = 20;
 
@@ -538,6 +540,40 @@ pub(crate) async fn send(
         content_type,
         body,
     })
+}
+
+/// The answer to a binary request (`send_bytes`).
+pub(crate) struct BytesResponse {
+    pub status: u16,
+    pub body: Vec<u8>,
+}
+
+/// A binary request to the chosen server (SYNC-04b: attachment and template
+/// contents, `blob_sync.rs`), with the rules of `send` and a longer timeout.
+/// Only Rust calls it: the webview never handles the bytes.
+pub(crate) async fn send_bytes(
+    state: &ServerState,
+    method: reqwest::Method,
+    path: &str,
+    headers: &BTreeMap<String, String>,
+    body: Option<Vec<u8>>,
+) -> Result<BytesResponse, ServerError> {
+    check_path(path)?;
+    let origin = state.origin();
+    let mut req = state
+        .client
+        .request(method, format!("{origin}{path}"))
+        .timeout(BLOB_TIMEOUT);
+    for (name, value) in headers.iter().filter(|(n, _)| allowed_header(n)) {
+        req = req.header(name.as_str(), value.as_str());
+    }
+    if let Some(body) = body {
+        req = req.body(body);
+    }
+    let resp = req.send().await.map_err(|e| classify(&e))?;
+    let status = resp.status().as_u16();
+    let body = resp.bytes().await.map_err(|e| classify(&e))?.to_vec();
+    Ok(BytesResponse { status, body })
 }
 
 /// The cached session as stored in the keychain: the session JSON the
