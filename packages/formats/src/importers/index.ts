@@ -25,6 +25,8 @@ import {
 } from "./common.js";
 import { isAxeResults, parseAxe } from "./axe.js";
 import { parseCtrf } from "./ctrf.js";
+import { isK6Summary, parseK6 } from "./k6.js";
+import { isSarif, parseSarif } from "./sarif.js";
 import { parseJunit } from "./junit.js";
 import { MessagesCollector, parseMessages } from "./messages.js";
 import { parsePlaywright } from "./playwright.js";
@@ -33,6 +35,8 @@ export * from "./common.js";
 export { MessagesCollector, parseMessages } from "./messages.js";
 export { type AxeResults, isAxeResults, parseAxe } from "./axe.js";
 export * from "./findings.js";
+export { type K6Summary, isK6Summary, parseK6 } from "./k6.js";
+export { type SarifLog, isSarif, parseSarif } from "./sarif.js";
 export { parseCtrf } from "./ctrf.js";
 export { parseJunit } from "./junit.js";
 export { parsePlaywright } from "./playwright.js";
@@ -136,6 +140,8 @@ function parseJson(json: unknown): ParsedReport {
   if (o.reportFormat === "CTRF" && o.results)
     return parseCtrf(o as unknown as Parameters<typeof parseCtrf>[0]);
   if (isAxeResults(o)) return parseAxe(o);
+  if (isSarif(o)) return parseSarif(o);
+  if (isK6Summary(o)) return parseK6(o);
   if (typeof o.schemaVersion === "string") return parsePharosRunFile(o);
   if (o.config && Array.isArray(o.suites))
     return parsePlaywright(
