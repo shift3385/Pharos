@@ -163,7 +163,9 @@ pub(crate) fn create_baseline(conn: &Connection, input: &BaselineInput) -> Resul
     if items.is_empty() {
         return Err("baseline-empty: no case to freeze".to_string());
     }
-    let workspace = ensure_workspace(conn)?;
+    // The project's workspace: a baseline of a shared project is shared (SYNC-07).
+    let workspace = crate::workspaces::workspace_of(conn, "project", &input.project_id)?
+        .map_or_else(|| ensure_workspace(conn), Ok)?;
     conn.execute(
         "INSERT INTO case_baselines (id, workspace_id, project_id, name, description, scope_label, \
          approved_only, created_by, created_at) \

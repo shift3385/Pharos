@@ -48,6 +48,7 @@ mod template;
 mod test_case;
 mod test_plan;
 mod trash;
+mod workspaces;
 
 use db::{Db, DbStatus};
 use tauri::Manager;
@@ -104,6 +105,8 @@ fn session_clear() -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
+            // Who approves a case: the workspace roles (CAS-02, SYNC-07).
+            case_review::set_approver_check(Box::new(workspaces::WorkspaceApprover));
             // The main window is built here from its tauri.conf.json entry
             // (`create: false` there), first, as Tauri would build it, so an
             // E2E profile of a debug build can add WebView2 arguments
@@ -340,6 +343,14 @@ pub fn run() {
             sync::oplog_mark_synced,
             sync::oplog_mark_rejected,
             sync::apply_remote,
+            sync::sync_server_lists,
+            workspaces::workspaces_apply,
+            workspaces::workspaces_list,
+            workspaces::project_workspaces,
+            workspaces::workspace_drop,
+            workspaces::sync_refused_record,
+            workspaces::sync_rejections_list,
+            workspaces::sync_rejection_discard,
             sync::sync_cursor_get,
             sync::sync_cursor_set,
             sync::sync_server_features_set,

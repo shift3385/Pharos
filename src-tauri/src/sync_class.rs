@@ -64,8 +64,10 @@ pub const APPEND_ONLY: &[AppendOnly] = &[
 /// `normalizerVersion` and imported results whose link is derived when read
 /// (ING-02..05); the restart re-pulls the case revisions, so each takes the
 /// server's `createdAt` and leaves `local_only` (`runs/link.rs`).
-/// 8: case_baseline, suite baselines (CAS-02, ADR-0047).
-pub const APPLIED_SET_VERSION: i64 = 8;
+/// 8: case_baseline, suite baselines (CAS-02, ADR-0047). 9: workspaces
+/// (SYNC-07, ADR-0042): one cursor per workspace, so every workspace is pulled
+/// from the start once.
+pub const APPLIED_SET_VERSION: i64 = 9;
 
 pub fn append_only(entity: &str) -> Option<&'static AppendOnly> {
     APPEND_ONLY.iter().find(|a| a.entity == entity)

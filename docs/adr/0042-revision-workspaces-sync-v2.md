@@ -456,3 +456,71 @@ Precisiones sobre lo decidido, sin cambiar la decisión:
   (`tests/schema-at.ts`). El test de actualización de 0.4 usa el mismo
   mecanismo.
 
+
+## Implementación del escritorio (W2a, 2026-11-18)
+
+Precisiones sobre §6, sin cambiar la decisión.
+
+- **`owner_id` sigue siendo «la cuenta del equipo que tiene la fila» (FIX-07).**
+  - Una fila de un workspace sincronizado la tiene el miembro que la bajó.
+    Así las ~80 lecturas y guardas por cuenta del escritorio siguen valiendo
+    para cada miembro sin reescribirlas.
+  - El `ownerId` del servidor (quién creó el proyecto o la tarjeta) se
+    guarda en `creator_id` y vuelve sin cambios en el push.
+  - **Límite conocido:** si dos cuentas del mismo equipo son miembros del
+    mismo workspace compartido, cada fila la tiene la primera cuenta que la
+    bajó. El pull de la otra cuenta no toca esa fila, así que esa cuenta no
+    la ve en este equipo. No se pierde nada: la que la tiene conserva sus
+    cambios y sus pendientes, y la otra cuenta la ve en sus otros equipos y
+    en la web.
+  - Lo fija un test, y la reescritura completa por pertenencia queda en el
+    ROADMAP como SYNC-07b (decisión del coordinador, 2026-11-18).
+- **Visibilidad y permisos.**
+  - La visibilidad no cambia: un miembro ve lo que bajó.
+  - El rol se comprueba en un solo sitio, `journal::record`, por donde pasa
+    todo cambio. Una persona que escribe algo que su rol no permite recibe
+    `forbidden:<capacidad>`, y la transacción se deshace.
+  - No se comprueba el rol de los componentes (sync, claves, migraciones).
+- **El workspace de cada fila.**
+  - Las filas nuevas siguen sellándose con el workspace `local` del equipo.
+  - Un trigger de la 0040 les da el workspace de su proyecto en el mismo
+    insert.
+  - Las baselines de suite (0042, que es posterior) se sellan en
+    `case_baseline.rs`.
+  - El `audit_log` admite ahora cambiar solo su ubicación, como en el
+    servidor.
+- **El espejo.**
+  - `workspaces.kind` e `independent_approval` (este último acordado con
+    PLN-08).
+  - `workspace_members`, por cuenta del equipo, en lugar de `my_role` y
+    `revoked_at`.
+  - `oplog.workspace_id`, sellado al escribir.
+  - `projects.access_lost_at` para «Sin acceso».
+  - `sync_rejections` para «Rechazado por permisos».
+- **Remap.**
+  - `workspaces_apply` mueve las filas de la cuenta del workspace `local`
+    al personal. Antes de mover nada por primera vez guarda una copia
+    `pharos.db.enc.bak-<versión>-workspaces`.
+  - Es idempotente y se repite en cada sync, así que un proyecto creado sin
+    conexión pasa al personal en la siguiente.
+- **El ciclo de sync.**
+  - El cliente pide `/workspaces` solo a un servidor que ya anunció
+    `workspaces`. La primera sincronización con él es la de antes.
+  - Después sigue este orden, por workspace:
+    1. bloques de claves en el workspace del proyecto;
+    2. push agrupado por el workspace del delta;
+    3. pull con su propio cursor (`cursor:<cuenta>:<workspace>`).
+  - `APPLIED_SET_VERSION` pasa a 9, así que todo se vuelve a bajar una vez.
+- **Rechazos.**
+  - `moved` mueve la fila, y su cambio va al nuevo workspace en el
+    siguiente ciclo.
+  - `forbidden` y `not_found` esperan en `sync_rejections` hasta que la
+    persona los descarta, y el push los retiene mientras tanto.
+  - `not_found` además marca el proyecto «Sin acceso».
+- **Lápidas de traslado.** No borran nada. El proyecto que llega con otro
+  workspace se lleva consigo las filas que cuelgan de él.
+- **Baja.** Se anuncia con `pharos:workspaces-revoked` y la copia se queda
+  hasta que la persona confirma (`workspace_drop`). Los eventos de auditoría
+  no se borran, porque son append-only.
+- **Aprobación.** `WorkspaceApprover` instala en el escritorio la misma
+  regla que el servidor, y `lib.rs` la registra al arrancar.

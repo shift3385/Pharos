@@ -186,6 +186,10 @@ pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
         include_str!("../migrations/0039_risk_bands.sql"),
     ),
     (
+        "0040_workspaces.sql",
+        include_str!("../migrations/0040_workspaces.sql"),
+    ),
+    (
         "0042_case_baselines.sql",
         include_str!("../migrations/0042_case_baselines.sql"),
     ),
@@ -477,6 +481,19 @@ impl Db {
         Ok(())
     }
 
+    /// Saves, then keeps a copy of the encrypted database as
+    /// `pharos.db.enc.bak-<app version>-<label>` before a change of many rows
+    /// that is not a migration (the first sync with workspaces moving the
+    /// device's rows, SYNC-07). The newest 3 backups are kept.
+    pub(crate) fn backup_now(&self, label: &str) -> Result<(), String> {
+        self.persist()?;
+        let blob = fs::read(&self.enc_path).map_err(|e| format!("backup before {label}: {e}"))?;
+        let path = backup_path(&self.enc_path, Some(label));
+        write_atomic_io(&path, &blob).map_err(|e| format!("backup before {label}: {e}"))?;
+        prune_backups(&self.enc_path);
+        Ok(())
+    }
+
     /// Serializes the in-memory database and writes it encrypted to disk.
     pub fn persist(&self) -> Result<(), String> {
         let mut conn = self
@@ -733,12 +750,29 @@ pub(crate) fn in_tx<T>(
     Ok(out)
 }
 
-/// Returns the single workspace id, creating a default workspace on first use.
+/// Returns the device's own (`local`) workspace id, creating it on first use.
+/// New rows are stamped with it; a row under a project then takes its
+/// project's workspace (triggers of migration 0040), and the account's
+/// projects move to its personal workspace on the next sync (SYNC-07).
 pub(crate) fn ensure_workspace(conn: &Connection) -> Result<String, String> {
+    // Before migration 0040 (a data step of an older migration, or an old
+    // image in the tests) there is no `kind`: the only workspace is the local one.
+    let has_kind = conn
+        .query_row(
+            "SELECT 1 FROM pragma_table_info('workspaces') WHERE name = 'kind'",
+            [],
+            |_| Ok(()),
+        )
+        .optional()
+        .map_err(|e| e.to_string())?
+        .is_some();
+    let sql = if has_kind {
+        "SELECT id FROM workspaces WHERE kind = 'local' ORDER BY created_at LIMIT 1"
+    } else {
+        "SELECT id FROM workspaces LIMIT 1"
+    };
     if let Some(id) = conn
-        .query_row("SELECT id FROM workspaces LIMIT 1", [], |r| {
-            r.get::<_, String>(0)
-        })
+        .query_row(sql, [], |r| r.get::<_, String>(0))
         .optional()
         .map_err(|e| e.to_string())?
     {

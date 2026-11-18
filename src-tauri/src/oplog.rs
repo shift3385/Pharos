@@ -189,23 +189,29 @@ pub(crate) fn record(
 ) -> Result<(), String> {
     let hlc = next_hlc(conn)?;
     let user_id = owner_of(conn, entity, entity_id)?.unwrap_or_default();
-    conn.execute(
-        "INSERT INTO oplog (id, entity, entity_id, op, payload, revision, author, created_at, hlc, user_id)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, datetime('now'), ?8, ?9)",
-        params![
-            Uuid::new_v4().to_string(),
-            entity,
-            entity_id,
-            op,
-            payload,
-            revision,
-            author,
-            hlc,
-            user_id,
-        ],
-    )
-    .map_err(|e| e.to_string())?;
-    Ok(())
+    // The workspace the change belongs to (SYNC-07): a delete leaves no row
+    // to read it from at push time.
+    let workspace_id = crate::workspaces::workspace_of(conn, entity, entity_id)?;
+    let id = Uuid::new_v4().to_string();
+    let stamped = conn.execute(
+        "INSERT INTO oplog (id, entity, entity_id, op, payload, revision, author, created_at, hlc, user_id, workspace_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, datetime('now'), ?8, ?9, ?10)",
+        params![id, entity, entity_id, op, payload, revision, author, hlc, user_id, workspace_id],
+    );
+    match stamped {
+        Ok(_) => Ok(()),
+        // A data step of a migration before 0040 (the column does not exist
+        // yet): the row as it was written then.
+        Err(e) if e.to_string().contains("no column named workspace_id") => conn
+            .execute(
+                "INSERT INTO oplog (id, entity, entity_id, op, payload, revision, author, created_at, hlc, user_id)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, datetime('now'), ?8, ?9)",
+                params![id, entity, entity_id, op, payload, revision, author, hlc, user_id],
+            )
+            .map(|_| ())
+            .map_err(|e| e.to_string()),
+        Err(e) => Err(e.to_string()),
+    }
 }
 
 #[cfg_attr(test, derive(TS), ts(export))]

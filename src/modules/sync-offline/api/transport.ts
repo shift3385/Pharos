@@ -28,11 +28,14 @@ export const VERSION_HEADER = "x-pharos-version";
  *  cards. `requirement-data` (IA-17): it sends the `data` of requirements
  *  (AI provenance and sources); the server keeps it for a client without it.
  *  `case-baselines` (CAS-02): it syncs suite baselines (`case_baseline`).
+ *  `workspaces` (SYNC-07, ADR-0042): it names the workspace of every push,
+ *  pull and key lease, and reads `rejected`; a client of an earlier minor
+ *  without it may only read.
  *  Inside one minor the version string does not change
  *  between builds, so this header is what tells them apart. */
 export const FEATURES_HEADER = "x-pharos-sync-features";
 export const SYNC_FEATURES =
-  "key-conflicts,append-only,complete-payload,stable-steps,runs,custom-fields,cycles,defects,requirement-data,case-baselines";
+  "key-conflicts,append-only,complete-payload,stable-steps,runs,custom-fields,cycles,defects,requirement-data,workspaces,case-baselines";
 
 /** The app version, from its single source (`@shared/version`, UX-07). */
 export { APP_VERSION };
@@ -165,12 +168,13 @@ export async function pullPages(
   request: SyncCaller,
   cursor: string,
   apply: (page: PullPage) => Promise<void> | void,
+  workspace?: string,
 ): Promise<number> {
   let since = cursor;
   let pulled = 0;
   for (let i = 0; i < MAX_PULL_PAGES; i++) {
     const page = await withRetry(() =>
-      request<PullPage>(`/sync/pull?since=${since}`),
+      request<PullPage>(`/sync/pull?since=${since}${workspace ? `&workspace=${workspace}` : ""}`),
     );
     await apply(page);
     pulled += page.docs.length;
