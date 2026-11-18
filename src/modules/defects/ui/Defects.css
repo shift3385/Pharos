@@ -424,6 +424,19 @@
   font-size: var(--fs-ui);
 }
 
+/* The grid's `input { width: 100% }` (tc-form__grid) stretched the checkbox
+   across the row and pushed its text to the far edge (NC-055). */
+.df-escaped input[type="checkbox"] {
+  flex: none;
+  width: auto;
+  margin-top: 2px;
+}
+
+.df-escaped > span {
+  flex: 1;
+  min-width: 0;
+}
+
 .df-escaped small {
   display: block;
   font-size: var(--fs-metadata);

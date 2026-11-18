@@ -4481,7 +4481,7 @@
     },
     "verdictHelp": {
       "goWithRisks": "El ciclo se cierra y la versión puede salir; los riesgos justificados constan en el informe.",
-      "noGo": "El ciclo se cierra, pero la versión no sale. Abre otro ciclo para el re-test."
+      "noGo": "El ciclo se cierra, pero la versión no sale. Abre otro ciclo para repetir la prueba."
     },
     "signs": "Firmará: {{name}} · {{at}} · queda en Auditoría",
     "close": "Cerrar ciclo",
