@@ -434,7 +434,7 @@ pub fn oplog_compact(db: State<Db>, user_id: String) -> Result<usize, String> {
     if user_id.trim().is_empty() {
         return Err("not-authenticated".into());
     }
-    let gone = db.with_conn(|conn| compact_if_due(conn))?;
+    let gone = db.with_conn(compact_if_due)?;
     if gone.is_some_and(|n| n > 0) {
         db.persist()?;
     }
