@@ -5007,6 +5007,19 @@
       "personal": "A personal workspace has no other members.",
       "offline": "You need a connection to the server for this.",
       "generic": "It could not be completed. Try again."
+    },
+    "rules": {
+      "title": "Rules",
+      "independent": "Independent approval",
+      "independentHint": "On: whoever approves a plan or a case needs the role (Test Manager for plans; Test Manager or Test Analyst for cases) and cannot be its author. Off: anyone who can edit it approves, the author too, recorded as a self-approval.",
+      "personalHint": "You work alone: you approve your own plans and cases, recorded as self-approvals. For someone else to approve, move the project to a shared workspace.",
+      "personalLocked": "It cannot be turned on in your personal workspace.",
+      "onlyManager": "Only a Test Manager changes the workspace's rules.",
+      "disableTitle": "Turn independent approval off?",
+      "disableConfirm": "In «{{workspace}}», anyone who can edit a plan or a case will be able to approve it, the author too, recorded as a self-approval. Approvals already given do not change.",
+      "disable": "Turn off",
+      "enabled": "Independent approval turned on",
+      "disabled": "Independent approval turned off"
     }
   }
 }

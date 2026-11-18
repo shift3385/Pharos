@@ -132,3 +132,15 @@
 .ws-notice {
   margin: 0;
 }
+
+/* «Reglas» (PLN-08): «Aprobación independiente». */
+.ws-rule {
+  display: grid;
+  gap: var(--space-1);
+}
+.ws-rule__hint {
+  margin: 0;
+  max-width: 70ch;
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+}

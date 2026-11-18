@@ -91,6 +91,15 @@ workspace en el que trabajas y, debajo, tu rol en él. La lista
   recuerda con un aviso de solo lectura, y el servidor rechaza cualquier
   cambio suyo. «¿Qué puede hacer cada rol?», al pie de «Miembros y roles»,
   resume los permisos.
+- **Reglas: «Aprobación independiente».** En «Miembros y roles», la sección
+  «Reglas» dice quién aprueba planes y casos (capítulos 5 y 8). Activada, que
+  es lo normal en un workspace compartido, aprueba quien tiene el rol (Test
+  Manager para planes; Test Manager o Test Analyst para casos) y no es el
+  autor. Desactivada, aprueba cualquiera que pueda editar, también el autor,
+  y queda como «aprobación propia». Solo un Test Manager la cambia; apagarla
+  pide confirmación y queda en la auditoría. En tu workspace Personal está
+  siempre desactivada, porque trabajas solo. Las aprobaciones que ya existen
+  no cambian.
 - **Rechazado por permisos.** Si cambias algo que tu rol ya no permite (por
   ejemplo, te cambiaron el rol mientras no tenías conexión), el servidor no
   lo guarda. El cambio espera en el panel de conflictos hasta que lo

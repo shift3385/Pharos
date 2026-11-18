@@ -91,6 +91,10 @@ export const workspacesApi = {
   setRole: (id: string, userId: string, role: WorkspaceRole) =>
     serverApi.patch<{ members: Member[] }>(`/workspaces/${id}/members/${userId}`, { role }),
   removeMember: (id: string, userId: string) => serverApi.remove(`/workspaces/${id}/members/${userId}`, userId),
+  /** «Aprobación independiente» on or off (PLN-08): a Test Manager of a
+   *  shared workspace; the server audits it. */
+  setIndependentApproval: (id: string, enabled: boolean) =>
+    serverApi.patch<Workspace>(`/workspaces/${id}/policy`, { independentApproval: enabled }),
   moveProject: (destination: string, projectId: string) =>
     serverApi.post<{ moved: number; from: string; to: string }>(`/workspaces/${destination}/move-project`, {
       projectId,

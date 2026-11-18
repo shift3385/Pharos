@@ -10,3 +10,5 @@ export { JoinWorkspacePage } from "./ui/JoinWorkspacePage";
 export { ShareProjectDialog } from "./ui/ShareProjectDialog";
 export { can, type Capability, type WorkspaceRole } from "./model/roles";
 export { projectWorkspaces, type Workspace } from "./api/workspacesApi";
+// Who may approve (CAS-02, PLN-08): the shell installs it in test-cases.
+export { approvalVerdict, workspaceApprover } from "./model/approval";

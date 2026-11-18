@@ -130,11 +130,18 @@
     carga sin la clave o todavía sin guardar dice "local".
   - El autor de un plan en el servidor es el actor de su evento «create» de
     auditoría: el documento del plan no lo lleva, como el del escritorio.
-  - Quedan para el PR 2, tras W2: la copia de la política en el escritorio
-    (columna de la 0040 de W), la regla con roles en el escritorio, el motivo
-    de «Aprobar» desactivado antes de pulsarlo, y el interruptor «Reglas» de la
-    ficha del workspace. Hasta entonces el núcleo responde por qué no se
-    puede aprobar y la app lo muestra.
+- **Implementación (PR 2, tras W2):**
+  - El `WorkspaceApprover` del escritorio lee la copia de la política
+    (`workspaces.independent_approval` de la 0040 de W; desactivada si el
+    servidor no la envía) y aplica la misma regla que el servidor.
+  - La app instala una comprobación de quién aprueba sobre los workspaces que
+    ve (`approvalVerdict` del módulo workspaces, con `setApproverCheck`):
+    «Aprobar» de un plan o un caso se desactiva y dice por qué antes de
+    pulsarlo.
+  - El plan lleva `createdBy`: la columna `created_by` en el escritorio y,
+    en el servidor, el actor de su evento «create».
+  - «Miembros y roles › Reglas» tiene el interruptor; apagarlo pide
+    confirmación. En el escritorio, el cambio se copia con una sincronización.
 - **Alternativas:**
   - Volver a Borrador al editar un plan aprobado, como CAS-02: el usuario lo
     descartó, porque Borrador es solo la etapa inicial.

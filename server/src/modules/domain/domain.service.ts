@@ -269,6 +269,12 @@ export function createDomainService(store: DomainStore) {
     };
   }
 
+  /** A plan with its author (`createdBy`, PLN-08), or null. */
+  async function withAuthor(tx: DomainTx, plan: Payload | undefined): Promise<Payload | null> {
+    if (!plan) return null;
+    return { ...plan, createdBy: (await planAuthor(tx, plan)) ?? "" };
+  }
+
   /** Who created a plan: the actor of its «create» audit event, the web's
    *  or the desktop's (the plan document does not carry it, as the
    *  desktop's does not). */
@@ -295,23 +301,25 @@ export function createDomainService(store: DomainStore) {
           revision: p.revision,
         })),
       ),
+    // With `createdBy`, its author in the review flow (PLN-08), as the
+    // desktop's plan: the screen says who may approve it.
     get: (userId: string, id: string) =>
-      run(userId, async (tx) => (await livePlans(tx)).find((p) => p.id === id) ?? null),
+      run(userId, async (tx) => withAuthor(tx, (await livePlans(tx)).find((p) => p.id === id))),
     byProject: (userId: string, projectId: string) =>
-      run(userId, async (tx) => (await livePlans(tx)).find((p) => p.projectId === projectId) ?? null),
+      run(userId, async (tx) => withAuthor(tx, (await livePlans(tx)).find((p) => p.projectId === projectId))),
     create: (userId: string, input: TestPlanInput) =>
       run(userId, async (tx) => {
         await liveProject(tx, input.projectId);
         const id = randomUUID();
         const at = now();
         const base = { id, workspaceId: WORKSPACE, projectId: input.projectId, createdAt: at };
-        return (await tx.put("test_plan", id, { ...base, ...planPayload(null, input) }, null))
-          .payload;
+        const created = await tx.put("test_plan", id, { ...base, ...planPayload(null, input) }, null);
+        return { ...created.payload, createdBy: userId };
       }),
     update: (userId: string, id: string, input: TestPlanInput, revision?: number) =>
       run(userId, async (tx) => {
         const doc = current(await tx.get("test_plan", id), "Test plan", revision);
-        return (await tx.put("test_plan", id, planPayload(doc.payload, input), doc)).payload;
+        return withAuthor(tx, (await tx.put("test_plan", id, planPayload(doc.payload, input), doc)).payload);
       }),
     /** A review transition of the plan (PLN-08, ADR-0049), as a case's:
      *  the account is the session's; the name is recorded as sent. */
@@ -332,9 +340,13 @@ export function createDomainService(store: DomainStore) {
             authorId: (await planAuthor(tx, doc.payload)) ?? userId,
           },
         );
-        return (
-          await tx.put("test_plan", id, { ...doc.payload, status: next.status, data: next.data, updatedAt: now() }, doc)
-        ).payload;
+        const stored = await tx.put(
+          "test_plan",
+          id,
+          { ...doc.payload, status: next.status, data: next.data, updatedAt: now() },
+          doc,
+        );
+        return withAuthor(tx, stored.payload);
       }),
     /** What the exported plan's «Historial de revisiones» is built from
      *  (PLN-02), read-only: the create and update audit events of one live

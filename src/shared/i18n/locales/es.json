@@ -5007,6 +5007,19 @@
       "personal": "Un workspace personal no tiene otros miembros.",
       "offline": "Necesitas conexión con el servidor para esto.",
       "generic": "No se pudo completar. Inténtalo de nuevo."
+    },
+    "rules": {
+      "title": "Reglas",
+      "independent": "Aprobación independiente",
+      "independentHint": "Activada, quien aprueba un plan o un caso necesita el rol (Test Manager para planes; Test Manager o Test Analyst para casos) y no puede ser su autor. Desactivada, aprueba cualquiera que pueda editarlo, también el autor, y queda como aprobación propia.",
+      "personalHint": "Trabajas solo: apruebas tus propios planes y casos, y quedan como aprobación propia. Para que apruebe otra persona, mueve el proyecto a un espacio compartido.",
+      "personalLocked": "No se puede activar en tu espacio personal.",
+      "onlyManager": "Solo un Test Manager cambia las reglas del espacio de trabajo.",
+      "disableTitle": "¿Desactivar la aprobación independiente?",
+      "disableConfirm": "En «{{workspace}}», cualquiera que pueda editar un plan o un caso podrá aprobarlo, también su autor, y quedará como aprobación propia. Las aprobaciones que ya existen no cambian.",
+      "disable": "Desactivar",
+      "enabled": "Aprobación independiente activada",
+      "disabled": "Aprobación independiente desactivada"
     }
   }
 }
