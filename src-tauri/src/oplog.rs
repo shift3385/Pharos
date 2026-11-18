@@ -281,7 +281,8 @@ pub fn sync_state(conn: &Connection, user_id: &str) -> Result<SyncState, String>
     let conflicts: i64 = conn
         .query_row(
             "SELECT (SELECT count(*) FROM sync_conflicts WHERE resolved_at IS NULL AND user_id = ?1)
-                  + (SELECT count(*) FROM key_conflicts WHERE resolved_at IS NULL AND user_id = ?1)",
+                  + (SELECT count(*) FROM key_conflicts WHERE resolved_at IS NULL AND user_id = ?1)
+                  + (SELECT count(*) FROM sync_rejections WHERE resolved_at IS NULL AND user_id = ?1)",
             params![user_id],
             |r| r.get(0),
         )

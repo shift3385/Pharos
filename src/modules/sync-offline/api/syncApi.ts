@@ -570,6 +570,34 @@ export interface KeyConflict {
   currentKey: string;
 }
 
+/** A change the server refused without storing it (SYNC-07, ADR-0042 §2):
+ *  the role does not allow it, or the item is in a workspace the account
+ *  left. Desktop only; it waits until the person discards it. */
+export interface Rejection {
+  id: string;
+  entity: string;
+  entityId: string;
+  reason: "forbidden" | "not_found";
+  workspaceId: string | null;
+  detectedAt: string;
+}
+
+/** Open refusals of the signed-in account (none on the web). */
+export async function listRejections(): Promise<Rejection[]> {
+  const session = await getSession();
+  if (!session || !isTauri()) return [];
+  return platformInvoke<Rejection[]>("sync_rejections_list", { userId: session.userId });
+}
+
+/** Drops the refused change for good: the server's version comes back on
+ *  the next sync. */
+export async function discardRejection(id: string): Promise<void> {
+  const session = await getSession();
+  if (!session) throw new Error("not-authenticated");
+  await platformInvoke("sync_rejection_discard", { userId: session.userId, id });
+  window.dispatchEvent(new CustomEvent("pharos:synced"));
+}
+
 /** Open key conflicts of the signed-in account (none on the web). */
 export async function listKeyConflicts(): Promise<KeyConflict[]> {
   const session = await getSession();
@@ -599,4 +627,5 @@ export type _RustContract = [
   Assert<Covers<Contract.SyncState, LocalSyncState>>,
   Assert<Covers<KeyConflictDoc, Contract.RejectedKey>>,
   Assert<Covers<Contract.KeyConflict, KeyConflict>>,
+  Assert<Covers<Contract.Rejection, Rejection>>,
 ];

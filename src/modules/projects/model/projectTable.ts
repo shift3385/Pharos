@@ -18,6 +18,8 @@ export interface ProjectRow {
   updatedAt: string;
   /** Last time this user opened it on this device (null = never). */
   lastAccess: string | null;
+  /** The workspace it is in (SYNC-07); null when unknown (no workspaces). */
+  workspaceId?: string | null;
   /** Plan status key, or null without a plan. */
   planStatus: string | null;
   cases: number;

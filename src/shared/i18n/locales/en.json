@@ -4877,5 +4877,136 @@
       "open": "Open",
       "members": "View members"
     }
+  },
+  "workspaces": {
+    "switcher": {
+      "label": "Workspace",
+      "menu": "Switch workspace",
+      "create": "Create workspace",
+      "join": "Join with a code…",
+      "members": "Members and roles"
+    },
+    "roles": {
+      "test_manager": "Test Manager",
+      "test_analyst": "Test Analyst",
+      "automation_engineer": "Automation Engineer",
+      "product_owner": "Product Owner",
+      "viewer": "Viewer (read only)"
+    },
+    "roleHints": {
+      "test_manager": "Manages members and invitations, moves projects and sees the audit log.",
+      "test_analyst": "Writes requirements, cases and cycles, edits the plan, runs and approves cases.",
+      "automation_engineer": "Can write cases and configurations, run, import results and create defects.",
+      "product_owner": "Writes requirements and creates defects; sees everything else.",
+      "viewer": "Sees and exports everything, but changes nothing."
+    },
+    "create": {
+      "title": "Create workspace",
+      "name": "Name",
+      "hint": "You will be its Test Manager. Then you can invite other people.",
+      "submit": "Create",
+      "created": "Workspace “{{name}}” created"
+    },
+    "members": {
+      "title": "Members · {{name}}",
+      "invite": "Invite",
+      "person": "Person",
+      "email": "Email",
+      "role": "Role",
+      "since": "Since",
+      "actions": "Actions",
+      "you": "you",
+      "remove": "Remove",
+      "leave": "Leave",
+      "lastManager": "Another Test Manager is needed first",
+      "removeTitle": "Remove {{name}}",
+      "removeConfirm": "{{name}} will no longer see “{{workspace}}”. Their copy on their devices is deleted on their next sync. Anything they did not sync is lost.",
+      "leaveTitle": "Leave “{{workspace}}”",
+      "leaveConfirm": "You will no longer see its projects. This device's copy is deleted on your next sync, once you confirm.",
+      "roleChanged": "{{name}}'s role: {{role}}",
+      "removed": "{{name}} is no longer a member",
+      "personal": "Your personal workspace has no other members. Create a shared one to work as a team.",
+      "readOnly": "Only a Test Manager changes members and invitations.",
+      "invitations": "Pending invitations",
+      "invFor": "For",
+      "noNote": "no note",
+      "expires": "Expires",
+      "status": "Status",
+      "statuses": {
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "revoked": "Revoked",
+        "expired": "Expired"
+      },
+      "revoke": "Revoke",
+      "noInvitations": "No invitations.",
+      "roles": "What can each role do?",
+      "none": "No shared workspaces yet. Create one or join with a code from the workspace switcher."
+    },
+    "invite": {
+      "title": "Invite to {{name}}",
+      "role": "Role",
+      "note": "Who it is for (optional note, not sent)",
+      "expires": "Expires in",
+      "days": {
+        "1": "1 day",
+        "7": "7 days",
+        "30": "30 days"
+      },
+      "submit": "Create invitation",
+      "createdTitle": "Invitation created",
+      "createdHint": "Send this text through the channel you use. It works once and expires on {{date}}.",
+      "codeLabel": "Invitation code",
+      "server": "Server: {{url}}",
+      "copy": "Copy invitation text",
+      "copied": "Invitation text copied",
+      "text": "I invite you to “{{name}}” in Pharos.\nServer: {{url}}\nCode: {{code}}",
+      "once": "The code is only shown now. If it is lost, revoke it and create another."
+    },
+    "join": {
+      "title": "Join a workspace",
+      "code": "Invitation code",
+      "check": "Check",
+      "preview": "You join “{{name}}” as {{role}}, invited by {{by}}.",
+      "note": "Its projects download to this device on the next sync. Your Personal workspace does not change.",
+      "submit": "Join",
+      "joined": "You joined “{{name}}”",
+      "invalid": "This code was already used or expired. Ask whoever invited you for a new one.",
+      "already": "You are already a member of this workspace."
+    },
+    "share": {
+      "action": "Share with a workspace…",
+      "title": "Share “{{name}}”",
+      "destination": "Move to",
+      "noDestination": "You are not a Test Manager of any shared workspace. Create one from the workspace switcher.",
+      "what": "It moves whole: plan, cases, requirements, cycles, runs, defects, attachments and its audit log.",
+      "who": "Its members will see it with their role there. Keys do not change.",
+      "online": "A connection to the server is needed. Anything not sent yet follows to the new workspace afterwards.",
+      "submit": "Move and share",
+      "done": "“{{name}}” is now in “{{workspace}}”",
+      "notManager": "you are {{role}}"
+    },
+    "readOnly": "Read only. Your role in “{{name}}” is {{role}}: you can view and export, but not change anything.",
+    "revoked": {
+      "title": "You are no longer a member of “{{name}}”.",
+      "body": "Its copy on this device will be deleted. Anything you did not sync there cannot reach the server.",
+      "drop": "Got it, delete the copy",
+      "later": "Later",
+      "dropped": "Copy of “{{name}}” deleted from this device"
+    },
+    "rejected": {
+      "title": "Refused by permissions",
+      "forbidden": "Your role does not allow this change; the server did not store it.",
+      "not_found": "This item is no longer in any of your workspaces.",
+      "discard": "Discard",
+      "discarded": "Change discarded; the server's version comes back"
+    },
+    "errors": {
+      "forbidden": "Your role in this workspace does not allow it.",
+      "lastManager": "The workspace needs another Test Manager first.",
+      "personal": "A personal workspace has no other members.",
+      "offline": "You need a connection to the server for this.",
+      "generic": "It could not be completed. Try again."
+    }
   }
 }

@@ -2018,6 +2018,14 @@ fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,
   - A lost workspace is announced (`pharos:workspaces-revoked`) and its
     copy is deleted only on confirmation (`workspace_drop`).
   - `WorkspaceApprover` is the case approver check (CAS-02).
+  - UI (`src/modules/workspaces`, W2b): `WorkspaceProvider` (the
+    workspace in use, remembered per account and device; `useWorkspace`,
+    `useWorkspaceRole` with the shared matrix), the sidebar
+    `WorkspaceSwitcher`, `/workspaces/members` and `/workspaces/join`,
+    the create, invite and share-project dialogs, and the shell notices
+    («Solo lectura» for a Viewer, the lost-workspace card). «Proyectos»
+    filters by the workspace in use. The conflict panel lists the open
+    refusals (`RejectedList`).
 - **Attachments and templates in sync (SYNC-04b, ADR-0042 §7, «Implementación
   de SYNC-04b»):** `src-tauri/src/blob_sync.rs` and local migration 0046.
   - `attachment` and `template` are LWW (`oplog::SYNCED`), held back until

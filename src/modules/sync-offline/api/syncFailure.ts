@@ -15,6 +15,8 @@ export type SyncAction =
   | "purge"
   | "push-refused"
   | "audit-push"
+  | "rejections-list"
+  | "rejection-discard"
   | "blobs";
 
 /**

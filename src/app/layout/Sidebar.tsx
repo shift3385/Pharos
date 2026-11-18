@@ -5,6 +5,7 @@ import { ArrowRight, ChevronLeft, ChevronRight, ChevronsUpDown } from "lucide-re
 import { ADMIN, MAIN_NAV, PROJECT_NAV, PROJECTS, isCurrent, type NavItem } from "@app/navConfig";
 import { projectPath } from "@modules/projects";
 import { SyncIndicator } from "@modules/sync-offline";
+import { WorkspaceSwitcher } from "@modules/workspaces";
 import { Logo } from "@shared/ui/Logo";
 import { MenuItem } from "@shared/ui/Menu";
 import { ProjectMenu } from "@shared/ui/ProjectPicker";
@@ -155,6 +156,10 @@ export function Sidebar({
         </button>
 
         <nav className="sidebar__nav" aria-label={t("a11y.mainNav")}>
+          {/* The workspace that filters the projects (SYNC-07). */}
+          <div className="sidebar__group sidebar__group--workspace">
+            <WorkspaceSwitcher compact={rail} />
+          </div>
           <div className="sidebar__group">{MAIN_NAV.map(link)}</div>
 
           {active && (

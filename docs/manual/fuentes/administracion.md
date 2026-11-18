@@ -59,6 +59,45 @@ hoy.
   tiene cambios sin sincronizar o un conflicto se conserva hasta que se envíe
   («Pendiente de sincronizar»). Las claves eliminadas no se reutilizan.
 
+## Workspaces y miembros
+
+Con un servidor que tiene workspaces compartidos (desde 0.5.0), el
+**selector de workspace** aparece arriba del menú lateral. Muestra el
+workspace en el que trabajas y, debajo, tu rol en él. La lista
+«Proyectos» solo enseña los proyectos de ese workspace.
+
+- **Personal.** Es tu workspace. Todos tus proyectos empiezan aquí, y en la
+  primera sincronización con un servidor que tiene workspaces, los proyectos
+  de este equipo pasan a él. Antes, Pharos guarda una copia de seguridad de
+  tus datos (`pharos.db.enc.bak-…-workspaces`).
+- **Crear workspace.** Abre el selector y elige «Crear workspace». Tú serás
+  su Test Manager.
+- **Invitar.** En «Miembros y roles», «Invitar» crea un código de un solo
+  uso con el rol de la persona: Test Manager, Test Analyst, Automation
+  Engineer, Product Owner o Viewer (solo lectura). Copia el texto de la
+  invitación, que lleva también la dirección del servidor, y envíaselo por
+  el canal que uséis. El código solo se muestra una vez y caduca en 1, 7
+  o 30 días.
+- **Unirse.** Quien recibe la invitación elige «Unirse con un código…»,
+  pega el código, comprueba a qué workspace entra y con qué rol, y pulsa
+  «Unirme». Los proyectos llegan con la siguiente sincronización.
+- **Compartir un proyecto.** En «Proyectos», el menú «⋯» de un proyecto de
+  tu workspace Personal tiene «Compartir con un workspace…». Lo mueve
+  entero, con su plan, casos, requisitos, ciclos, ejecuciones, defectos,
+  adjuntos y auditoría, a un workspace compartido del que eres Test Manager.
+- **Roles.** Solo el Test Manager cambia roles, quita a personas, gestiona
+  invitaciones y ve la auditoría. El workspace nunca se queda sin Test
+  Manager. Un Viewer ve y exporta todo, pero no cambia nada: Pharos se lo
+  recuerda con un aviso de solo lectura, y el servidor rechaza cualquier
+  cambio suyo. «¿Qué puede hacer cada rol?», al pie de «Miembros y roles»,
+  resume los permisos.
+- **Rechazado por permisos.** Si cambias algo que tu rol ya no permite (por
+  ejemplo, te cambiaron el rol mientras no tenías conexión), el servidor no
+  lo guarda. El cambio espera en el panel de conflictos hasta que lo
+  descartas, y entonces vuelve la versión del servidor.
+- **Si te quitan de un workspace,** un aviso lo dice y ofrece eliminar su
+  copia de este equipo. No se borra nada hasta que lo confirmas.
+
 ## Lo que viaja con tu cuenta
 
 - El idioma, el tema, la sombra de las tarjetas, la opacidad del fondo y el

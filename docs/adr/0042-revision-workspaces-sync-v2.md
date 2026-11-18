@@ -524,3 +524,34 @@ Precisiones sobre §6, sin cambiar la decisión.
   no se borran, porque son append-only.
 - **Aprobación.** `WorkspaceApprover` instala en el escritorio la misma
   regla que el servidor, y `lib.rs` la registra al arrancar.
+
+## Implementación de la UI (W2b, 2026-11-18)
+
+- **Módulo `src/modules/workspaces`.**
+  - `WorkspaceProvider` guarda el workspace activo, recordado por cuenta y
+    por equipo.
+  - `useWorkspace` y `useWorkspaceRole(id)` dan `{ role, can(cap) }` con
+    la matriz compartida.
+  - El selector va en el menú lateral, oculto mientras el servidor no tiene
+    workspaces.
+  - Rutas `/workspaces/members` y `/workspaces/join`: los `path` de las
+    notificaciones de R.
+  - Diálogos de crear, invitar y compartir proyecto.
+  - Avisos del shell: «Solo lectura» para el Viewer y la tarjeta de baja,
+    que borra la copia solo al confirmar.
+- **Proyectos.**
+  - «Proyectos» filtra por el workspace activo. Un proyecto que aún está en
+    el workspace local del equipo se ve con el personal.
+  - «Compartir con un workspace…» aparece en el menú de un proyecto
+    personal, si la persona es Test Manager de algún workspace compartido.
+- **Panel de conflictos.**
+  - Gana «Rechazado por permisos» (`sync_rejections`), con «Descartar».
+  - El contador de conflictos del escritorio las incluye.
+- **Pendiente.** Los botones de cada pantalla no se desactivan uno a uno
+  por rol. Lo impiden el aviso de solo lectura, el escritorio
+  (`journal::record`) y el servidor, y desactivarlos pantalla por pantalla
+  queda para cuando haga falta.
+- **Manual.** Las pantallas nuevas están en el inventario como pendientes de
+  tour (`WORKSPACES_PENDING`), porque necesitan una segunda cuenta. Las
+  cubre la validación de 0.5.0 con dos personas.
+
