@@ -2000,6 +2000,14 @@ fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,
   - A lost workspace is announced (`pharos:workspaces-revoked`) and its
     copy is deleted only on confirmation (`workspace_drop`).
   - `WorkspaceApprover` is the case approver check (CAS-02).
+  - UI (`src/modules/workspaces`, W2b): `WorkspaceProvider` (the
+    workspace in use, remembered per account and device; `useWorkspace`,
+    `useWorkspaceRole` with the shared matrix), the sidebar
+    `WorkspaceSwitcher`, `/workspaces/members` and `/workspaces/join`,
+    the create, invite and share-project dialogs, and the shell notices
+    («Solo lectura» for a Viewer, the lost-workspace card). «Proyectos»
+    filters by the workspace in use. The conflict panel lists the open
+    refusals (`RejectedList`).
 - **Human-readable keys (DAT-01, ADR-0010):** case, requirement, defect and run keys
   come from `key_counters` (`src-tauri/src/keys.rs`):
   - the counter only moves forward, so a key is never reused;
