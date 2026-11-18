@@ -131,10 +131,12 @@ las acciones de **«Estado del plan»**, igual que en los casos (capítulo 8).
   petición de…».
 - Primero se guarda: con cambios sin guardar, las acciones esperan.
 - **Quién aprueba** lo decide la regla «Aprobación independiente» del espacio
-  de trabajo, que solo cambia un Test Manager. En tu espacio personal trabajas
-  solo: apruebas tus planes y quedan como **«aprobación propia»** en el panel,
-  el historial y la cabecera del PDF y del Excel. En un espacio compartido con
-  la regla activada, aprueba un Test Manager que no sea el autor del plan.
+  de trabajo, que solo cambia un Test Manager (capítulo 15, «Reglas»). Si no
+  puedes aprobar, «Aprobar versión N» está en gris y dice por qué. En tu
+  espacio personal trabajas solo: apruebas tus planes y quedan como
+  **«aprobación propia»** en el panel, el historial y la cabecera del PDF y
+  del Excel. En un espacio compartido con la regla activada, aprueba un Test
+  Manager que no sea el autor del plan.
 
 Queda quién aprobó y cuándo, en el panel y en la cabecera del PDF y del
 Excel. El panel **«Historial»** muestra los últimos cambios de estado y

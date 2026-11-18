@@ -4,6 +4,9 @@ import { useSearchParams } from "react-router";
 import { useAuth } from "@modules/auth";
 import { Alert } from "@shared/ui/Alert";
 import { Select } from "@shared/ui/Select";
+import { Switch } from "@shared/ui/Switch";
+import { useSyncStatus } from "@modules/sync-offline";
+import { isTauri } from "@shared/platform";
 import { useToast } from "@shared/ui/Toast";
 import { useConfirm } from "@shared/ui/useConfirm";
 import { workspacesApi, type Invitation, type Member } from "../api/workspacesApi";
@@ -25,6 +28,7 @@ export function WorkspaceMembersPage() {
   const { confirm, dialog } = useConfirm();
   const [params] = useSearchParams();
   const { workspaces, current, reload } = useWorkspace();
+  const sync = useSyncStatus();
   const workspace = workspaces.find((w) => w.id === params.get("id")) ?? current;
   const manager = workspace?.kind === "shared" && can(workspace.role, "members.manage");
   const [members, setMembers] = useState<Member[] | null>(null);
@@ -91,6 +95,26 @@ export function WorkspaceMembersPage() {
     await run(
       () => workspacesApi.removeMember(workspace!.id, m.userId),
       self ? undefined : t("workspaces.members.removed", { name: nameOf(m) }),
+    );
+  }
+
+  /** «Aprobación independiente» (PLN-08, ADR-0049): turning it off asks
+   *  first. The desktop's copy follows with a sync. */
+  async function setIndependent(enabled: boolean) {
+    if (!enabled) {
+      const ok = await confirm({
+        title: t("workspaces.rules.disableTitle"),
+        message: t("workspaces.rules.disableConfirm", { workspace: workspace!.name }),
+        confirmLabel: t("workspaces.rules.disable"),
+      });
+      if (!ok) return;
+    }
+    await run(
+      async () => {
+        await workspacesApi.setIndependentApproval(workspace!.id, enabled);
+        if (isTauri()) sync?.runSync();
+      },
+      t(enabled ? "workspaces.rules.enabled" : "workspaces.rules.disabled"),
     );
   }
 
@@ -174,6 +198,32 @@ export function WorkspaceMembersPage() {
           </tbody>
         </table>
       </div>
+
+      <section className="ws-section" aria-labelledby="ws-rules" data-testid="workspace-rules">
+        <h2 id="ws-rules" className="ws-section__title">
+          {t("workspaces.rules.title")}
+        </h2>
+        <div className="ws-rule">
+          <Switch
+            label={t("workspaces.rules.independent")}
+            checked={workspace.kind === "shared" && workspace.independentApproval === true}
+            disabled={busy || !manager}
+            title={
+              workspace.kind === "personal"
+                ? t("workspaces.rules.personalLocked")
+                : !manager
+                  ? t("workspaces.rules.onlyManager")
+                  : undefined
+            }
+            describedBy="ws-rule-hint"
+            testId="workspace-independent-approval"
+            onChange={(on) => void setIndependent(on)}
+          />
+          <p id="ws-rule-hint" className="ws-rule__hint">
+            {t(workspace.kind === "personal" ? "workspaces.rules.personalHint" : "workspaces.rules.independentHint")}
+          </p>
+        </div>
+      </section>
 
       {manager && (
         <section className="ws-section" aria-labelledby="ws-invitations">

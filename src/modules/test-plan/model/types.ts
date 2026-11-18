@@ -168,6 +168,9 @@ export interface TestPlan {
   data: TestPlanData;
   projectId?: string | null;
   createdAt: string;
+  /** The account that created it: its author in the review flow (PLN-08).
+   *  Empty when the server does not know it. */
+  createdBy?: string;
   updatedAt: string;
   revision: number;
 }

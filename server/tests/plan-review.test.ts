@@ -80,6 +80,9 @@ describe("plan review flow (PLN-08)", () => {
     const { projectId, plan } = await newPlan(ana);
     expect(plan.status).toBe("draft");
     expect(plan.data.approval).toBeUndefined();
+    // Its author, for the screen (PLN-08 PR 2): on create, get and after a review.
+    expect(plan.createdBy).toBe(ana.userId);
+    expect((await call(ana, "GET", `/api/test-plans/${plan.id}`)).body.createdBy).toBe(ana.userId);
 
     // A save cannot set the status.
     const forged = await save(ana, plan.id, planInput(projectId, { status: "approved" }));
@@ -87,7 +90,7 @@ describe("plan review flow (PLN-08)", () => {
 
     expect((await review(ana, plan.id, { action: "approve" })).status).toBe(409);
     const sent = await review(ana, plan.id, { action: "send", comment: "Primera versión" });
-    expect(sent.body).toMatchObject({ status: "reviewed", data: { review: { state: "pending", note: "Primera versión" } } });
+    expect(sent.body).toMatchObject({ status: "reviewed", createdBy: ana.userId, data: { review: { state: "pending", note: "Primera versión" } } });
     expect((await review(ana, plan.id, { action: "send" })).status).toBe(409);
 
     // «Pedir cambios»: a comment, and the plan stays in review.

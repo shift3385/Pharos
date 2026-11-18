@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Archive, Check, MessageSquareWarning, RotateCcw, Send } from "lucide-react";
 import { useAuth } from "@modules/auth";
@@ -29,9 +29,12 @@ function stamp(iso: string | undefined, lang: string): string {
  * The review flow of a saved plan in «Estado del plan» (PLN-08, ADR-0049):
  * who sent it, who asked for changes and why; the next step (send, approve
  * or «Pedir cambios», mark obsolete, reactivate), each confirmed. The cores
- * decide who approves («Aprobación independiente» of the workspace) and
- * answer why not; this only asks and shows.
+ * decide who approves («Aprobación independiente» of the workspace); the
+ * installed approver check (the workspaces this account sees) lets the
+ * screen say why not before anyone presses «Aprobar».
  */
+
+type Verdict = { ok: true; selfApproval: boolean } | { ok: false; reason: "author" | "role" | "notMember" };
 export function PlanReviewControls({
   plan,
   dirty,
@@ -58,6 +61,30 @@ export function PlanReviewControls({
   const [comment, setComment] = useState("");
   const [commentError, setCommentError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [verdict, setVerdict] = useState<Verdict | null>(null);
+
+  // May this account approve it? The check lives in test-cases (K's
+  // interface), which imports this module: loaded when needed.
+  useEffect(() => {
+    if (status !== "reviewed") return setVerdict(null);
+    let live = true;
+    void import("@modules/test-cases")
+      .then(({ approverCheck }) =>
+        approverCheck().canApprove({
+          subject: "plan",
+          workspaceId: plan.workspaceId,
+          projectId: plan.projectId ?? "",
+          caseId: plan.id,
+          authorId: plan.createdBy || userId,
+          approverId: userId,
+        }),
+      )
+      .then((v) => live && setVerdict(v))
+      .catch(() => live && setVerdict(null));
+    return () => {
+      live = false;
+    };
+  }, [status, plan.id, plan.revision, plan.workspaceId, plan.projectId, plan.createdBy, userId]);
 
   function start(action: PlanReviewAction) {
     setComment("");
@@ -87,6 +114,8 @@ export function PlanReviewControls({
 
   const saveFirst = dirty ? t("testPlan.review.saveFirst") : null;
   const blocked = busy || saveFirst !== null;
+  const approveWhy = saveFirst ?? (verdict && !verdict.ok ? t(`testPlan.review.notAllowed.${verdict.reason}`) : null);
+  const selfApproval = verdict?.ok === true && verdict.selfApproval;
 
   return (
     <div className="tpw-review" data-testid="plan-review">
@@ -136,8 +165,8 @@ export function PlanReviewControls({
           <button
             type="button"
             className="ui-btn ui-btn--primary ui-btn--small"
-            disabled={blocked}
-            aria-describedby={saveFirst ? whyId : undefined}
+            disabled={blocked || approveWhy !== null}
+            aria-describedby={approveWhy ? whyId : undefined}
             onClick={() => start("approve")}
             data-testid="plan-approve"
           >
@@ -181,9 +210,9 @@ export function PlanReviewControls({
             {t("testPlan.review.reactivate")}
           </button>
         )}
-        {saveFirst && status !== "obsolete" && (
+        {(status === "reviewed" ? approveWhy : saveFirst) && status !== "obsolete" && (
           <p id={whyId} className="tpw-review__why">
-            {saveFirst}
+            {status === "reviewed" ? approveWhy : saveFirst}
           </p>
         )}
       </div>
@@ -245,7 +274,13 @@ export function PlanReviewControls({
           confirmTestId="plan-approve-confirm"
           onConfirm={() => void run("approve")}
           onCancel={() => setOpen(null)}
-        />
+        >
+          {selfApproval && (
+            <Alert kind="warning" role="note">
+              {t("testPlan.review.selfApprovalNote")}
+            </Alert>
+          )}
+        </ConfirmDialog>
       )}
       {open === "obsolete" && (
         <ConfirmDialog

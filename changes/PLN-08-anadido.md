@@ -12,6 +12,6 @@ section: Añadido
   para planes; Test Manager o Test Analyst para casos) y no es el autor.
   Desactivada (siempre en tu espacio personal), aprueba quien puede editar,
   también el autor, y queda como «aprobación propia» en el plan, el caso, el
-  historial y los exportes. La cambia un Test Manager y queda en la auditoría.
-  En esta versión se cambia desde el servidor; la ficha del espacio de trabajo
-  llega con la gestión de espacios en la app.
+  historial y los exportes. La cambia un Test Manager en «Miembros y roles ›
+  Reglas», y queda en la auditoría. «Aprobar versión N» está en gris si no
+  puedes aprobar, y dice por qué.

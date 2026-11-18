@@ -91,6 +91,20 @@ fn kind_of(conn: &Connection, workspace_id: &str) -> Result<Option<String>, Stri
     .map_err(|e| e.to_string())
 }
 
+/// The workspace's «Aprobación independiente» as the last sync mirrored it
+/// (PLN-08). Off when unknown: a server older than PLN-08 does not send it.
+fn independent_approval(conn: &Connection, workspace_id: &str) -> Result<bool, String> {
+    Ok(conn
+        .query_row(
+            "SELECT independent_approval FROM workspaces WHERE id = ?1",
+            [workspace_id],
+            |r| r.get::<_, bool>(0),
+        )
+        .optional()
+        .map_err(|e| e.to_string())?
+        .unwrap_or(false))
+}
+
 /// The account's role in a workspace: in the device's own (`local`) workspace,
 /// or one this device never heard of, the account owns its rows (Test
 /// Manager); in a synced one, the mirrored role, or None if not a member.
@@ -674,10 +688,12 @@ pub(crate) fn refused_sql() -> &'static str {
 
 // ------------------------------------------------------------ approvals
 
-/// Who may approve a case on this device (CAS-02): the same rule as the
-/// server (`approval.ts`): an active member; in a personal or local
-/// workspace anyone (alone there), else the role of what is approved and
-/// never the author. PLN-08 replaces the rule.
+/// Who may approve a case or a plan on this device (CAS-02, PLN-08): the
+/// same rule as the server (`approval.ts`, `independentApproval`). In a
+/// personal or local workspace anyone (alone there). In a shared one, an
+/// active member, then the workspace's «Aprobación independiente» (ADR-0049):
+/// on, the role of what is approved and never the author; off, whoever may
+/// edit it, the author included (a self-approval).
 pub struct WorkspaceApprover;
 
 impl crate::case_review::ApproverCheck for WorkspaceApprover {
@@ -695,13 +711,18 @@ impl crate::case_review::ApproverCheck for WorkspaceApprover {
         let Some(role) = role_of(conn, req.approver_id, req.workspace_id)? else {
             return Ok(ApprovalVerdict::Denied(DenyReason::NotMember));
         };
-        // The capability of what is approved (PLN-08): a plan needs
-        // `plan.approve`, a case `case.approve`.
-        let capability = if req.subject == crate::case_review::SUBJECT_PLAN {
-            "plan.approve"
-        } else {
-            "case.approve"
-        };
+        let plan = req.subject == crate::case_review::SUBJECT_PLAN;
+        if !independent_approval(conn, req.workspace_id)? {
+            // Off: whoever may edit it approves, the author included.
+            let edit = if plan { "plan.edit" } else { "case.edit" };
+            return Ok(if can(&role, edit) {
+                ApprovalVerdict::Allowed { self_approval }
+            } else {
+                ApprovalVerdict::Denied(DenyReason::Role)
+            });
+        }
+        // On: the capability of what is approved, and never the author.
+        let capability = if plan { "plan.approve" } else { "case.approve" };
         if !can(&role, capability) {
             return Ok(ApprovalVerdict::Denied(DenyReason::Role));
         }

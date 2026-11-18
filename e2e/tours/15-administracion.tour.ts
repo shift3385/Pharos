@@ -475,4 +475,19 @@ chapter("administracion", () => {
       });
     },
   });
+
+  step("reglas-workspace", {
+    title: "Reglas: aprobación independiente",
+    caption:
+      "«Miembros y roles», en el selector de workspace, tiene la sección «Reglas». «Aprobación independiente» decide quién aprueba planes y casos: activada, quien tiene el rol (Test Manager para planes; Test Manager o Test Analyst para casos) y no es el autor; desactivada, cualquiera que pueda editar, también el autor, y queda como aprobación propia. Solo un Test Manager la cambia, y apagarla pide confirmación. En el workspace Personal está siempre desactivada, porque trabajas solo: el interruptor se ve, pero no se puede activar. En un workspace compartido, lo normal es tenerla activada.",
+    covers: ["action:workspace-rules"],
+    focus: '[data-testid="workspace-rules"]',
+    run: async () => {
+      await byTestId("workspace-switcher").waitForDisplayed({ timeout: 30_000 });
+      await byTestId("workspace-switcher").click();
+      await byTestId("workspace-members").click();
+      await expect(byTestId("workspace-rules")).toBeDisplayed();
+      await expect(byTestId("workspace-independent-approval")).toBeDisabled();
+    },
+  });
 });

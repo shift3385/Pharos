@@ -632,6 +632,31 @@ describe("plan wizard · review flow (PLN-07, PLN-08)", () => {
     expect(within(panel).getByRole("button", { name: "Marcar obsoleto" })).toBeInTheDocument();
   });
 
+  it("«Aprobar» says why before anyone presses it, as the workspace's approver check answers", async () => {
+    setViewportWidth(1440);
+    const { setApproverCheck, otherThanAuthor } = await import("@modules/test-cases");
+    const asked: unknown[] = [];
+    setApproverCheck({
+      canApprove: async (req) => {
+        asked.push(req);
+        return { ok: false, reason: "author" };
+      },
+    });
+    try {
+      vi.mocked(testPlanApi.get).mockResolvedValue({ ...structuredClone(PLAN), createdBy: "test-user" });
+      renderWizard();
+      const panel = await screen.findByRole("complementary", { name: "Estado del plan" });
+      const approve = within(panel).getByRole("button", { name: "Aprobar versión 1.3" });
+      await vi.waitFor(() => expect(approve).toBeDisabled());
+      expect(approve).toHaveAccessibleDescription(
+        "Este espacio de trabajo pide aprobación independiente: aprueba un Test Manager que no sea el autor del plan.",
+      );
+      expect(asked[0]).toMatchObject({ subject: "plan", caseId: PLAN.id, authorId: "test-user", approverId: "test-user" });
+    } finally {
+      setApproverCheck(otherThanAuthor(async () => 1));
+    }
+  });
+
   it("a draft is sent to review; with unsaved changes the actions wait and say why", async () => {
     setViewportWidth(1440);
     vi.mocked(testPlanApi.get).mockResolvedValue({ ...structuredClone(PLAN), status: "draft" });

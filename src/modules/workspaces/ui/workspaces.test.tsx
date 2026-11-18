@@ -166,6 +166,49 @@ describe("members and roles", () => {
   });
 });
 
+describe("«Reglas»: Aprobación independiente (PLN-08)", () => {
+  it("a Test Manager turns it off after confirming; the server gets the change", async () => {
+    let on = true;
+    serve({
+      "GET /workspaces": () => ({ body: { workspaces: [PERSONAL, { ...team("test_manager"), independentApproval: on }] } }),
+      "GET /workspaces/ws-t/invitations": { body: { invitations: [] } },
+      "PATCH /workspaces/ws-t/policy": (body) => {
+        on = (body as { independentApproval: boolean }).independentApproval;
+        return { body: { ...team("test_manager"), independentApproval: on } };
+      },
+    });
+    withWorkspaces(<WorkspaceMembersPage />, "/workspaces/members?id=ws-t");
+    const rules = await screen.findByTestId("workspace-rules");
+    const toggle = within(rules).getByRole("switch", { name: "Aprobación independiente" });
+    await waitFor(() => expect(toggle).toHaveAttribute("aria-checked", "true"));
+    expect(toggle).toBeEnabled();
+    await userEvent.click(toggle);
+    const confirm = await screen.findByRole("alertdialog", { name: "¿Desactivar la aprobación independiente?" });
+    await userEvent.click(within(confirm).getByRole("button", { name: "Desactivar" }));
+    await waitFor(() =>
+      expect(requests.find((r) => r.method === "PATCH" && r.path === "/workspaces/ws-t/policy")?.body).toEqual({
+        independentApproval: false,
+      }),
+    );
+    await waitFor(() => expect(toggle).toHaveAttribute("aria-checked", "false"));
+  });
+
+  it("only a Test Manager changes it, and never in the personal workspace", async () => {
+    serve({ "GET /workspaces": { body: { workspaces: [PERSONAL, { ...team("test_analyst"), independentApproval: true }] } } });
+    const { unmount } = withWorkspaces(<WorkspaceMembersPage />, "/workspaces/members?id=ws-t");
+    const shared = within(await screen.findByTestId("workspace-rules")).getByRole("switch");
+    await waitFor(() => expect(shared).toHaveAttribute("aria-checked", "true"));
+    expect(shared).toBeDisabled();
+    unmount();
+    serve({ "GET /workspaces": { body: { workspaces: [PERSONAL] } } });
+    withWorkspaces(<WorkspaceMembersPage />, "/workspaces/members?id=ws-p");
+    const personal = within(await screen.findByTestId("workspace-rules")).getByRole("switch");
+    expect(personal).toHaveAttribute("aria-checked", "false");
+    expect(personal).toBeDisabled();
+    expect(screen.getByText(/Trabajas solo: apruebas tus propios planes y casos/)).toBeInTheDocument();
+  });
+});
+
 describe("join with a code", () => {
   it("shows what the code joins before using it", async () => {
     serve({

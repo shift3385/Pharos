@@ -54,6 +54,9 @@ pub struct TestPlan {
     #[cfg_attr(test, ts(type = "unknown"))]
     data: Value,
     created_at: String,
+    /// The account that created the plan: its author in the review flow
+    /// (PLN-08), so the screen can say who may approve it.
+    created_by: String,
     updated_at: String,
     revision: i64,
 }
@@ -104,7 +107,7 @@ fn empty_object() -> Value {
 
 /// Live plans of live projects owned by `?2` (`?1` filters by plan id).
 const SELECT_PLAN: &str = "SELECT t.id, t.workspace_id, t.project_id, t.title, t.version, \
-    t.plan_date, t.author, t.status, t.data, t.created_at, t.updated_at, t.revision \
+    t.plan_date, t.author, t.status, t.data, t.created_at, t.created_by, t.updated_at, t.revision \
     FROM test_plans t JOIN projects p ON p.id = t.project_id \
     WHERE t.id = ?1 AND p.owner_id = ?2 AND t.deleted_at IS NULL AND p.deleted_at IS NULL";
 
@@ -121,6 +124,7 @@ fn map_plan(row: &rusqlite::Row) -> rusqlite::Result<TestPlan> {
         status: row.get("status")?,
         data: serde_json::from_str(&data_str).unwrap_or_else(|_| empty_object()),
         created_at: row.get("created_at")?,
+        created_by: row.get("created_by")?,
         updated_at: row.get("updated_at")?,
         revision: row.get("revision")?,
     })
@@ -182,7 +186,7 @@ pub(crate) fn get_plan_by_project(
     }
     conn.query_row(
         "SELECT id, workspace_id, project_id, title, version, plan_date, author, \
-         status, data, created_at, updated_at, revision FROM test_plans \
+         status, data, created_at, created_by, updated_at, revision FROM test_plans \
          WHERE project_id = ?1 AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 1",
         params![project_id],
         map_plan,

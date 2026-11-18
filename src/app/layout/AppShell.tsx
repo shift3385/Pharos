@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { applyAppearance } from "@modules/admin";
 import { LegacyUnsentNotice, SyncStatusProvider } from "@modules/sync-offline";
 import { NotificationsProvider } from "@modules/notifications";
-import { WorkspaceNotices, WorkspaceProvider } from "@modules/workspaces";
+import { WorkspaceNotices, WorkspaceProvider, useWorkspace, workspaceApprover } from "@modules/workspaces";
+import { setApproverCheck } from "@modules/test-cases";
 import { usePreferenceSync } from "./usePreferenceSync";
 import { isTauri } from "@shared/platform";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
@@ -96,12 +97,24 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
+/** Who may approve a case or a plan, as the screens ask it (CAS-02, PLN-08):
+ *  the cores' rule over the workspaces this account sees, installed again
+ *  whenever they change (a role, «Aprobación independiente»). */
+function WorkspaceApproverCheck() {
+  const { workspaces } = useWorkspace();
+  useEffect(() => {
+    setApproverCheck(workspaceApprover(workspaces));
+  }, [workspaces]);
+  return null;
+}
+
 /** The shell's sync state and what screens may ask of it (ShellChrome). */
 function ShellProviders({ children }: { children: ReactNode }) {
   usePreferenceSync();
   return (
     <SyncStatusProvider>
       <WorkspaceProvider>
+        <WorkspaceApproverCheck />
         <NotificationsProvider>
           <ShellChromeProvider>{children}</ShellChromeProvider>
         </NotificationsProvider>
