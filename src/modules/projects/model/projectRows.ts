@@ -3,6 +3,7 @@
 import { projectPlanOverview } from "@modules/test-plan";
 import { projectTraceFacts } from "@modules/traceability";
 import { executionApi } from "@modules/runs";
+import { projectWorkspaces } from "@modules/workspaces";
 import { parseStamp } from "@shared/time/stamp";
 import { projectApi } from "../api/projectApi";
 import { lastAccessMap } from "./lastAccess";
@@ -10,7 +11,7 @@ import type { ProjectRow } from "./projectTable";
 
 export async function projectRows(ownerId: string): Promise<ProjectRow[]> {
   const access = lastAccessMap(ownerId);
-  const projects = await projectApi.list(ownerId);
+  const [projects, workspaceOf] = await Promise.all([projectApi.list(ownerId), projectWorkspaces()]);
   return Promise.all(
     projects.map(async (p): Promise<ProjectRow> => {
       // Its plan, its cases and requirements (FIX-20) and its execution
@@ -30,6 +31,8 @@ export async function projectRows(ownerId: string): Promise<ProjectRow[]> {
         riskBandMedium: p.riskBandMedium,
         updatedAt: isoStamp(p.updatedAt),
         lastAccess: access[p.id] ?? null,
+        // The desktop's rows (SYNC-07); on the web, the server's summary.
+        workspaceId: workspaceOf[p.id] ?? (p as { workspaceId?: string | null }).workspaceId ?? null,
         planStatus: plan?.status ?? null,
         cases,
         coverage,

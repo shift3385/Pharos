@@ -153,6 +153,8 @@ const I = (chapter: ChapterId, kind: ItemKind, id: string, label: string, extra:
 });
 
 const WEB_ONLY = "Solo existe en la versión web; los tours recorren la app de escritorio.";
+const WORKSPACES_PENDING =
+  "necesita una segunda cuenta y un servidor con workspaces: lo cubre la validación de 0.5.0 con dos personas (SYNC-07); el flujo lo prueban los tests de la UI y del servidor";
 
 export const INVENTORY: Item[] = [
   // ---- 1 · Acceso y cuenta ------------------------------------------------------
@@ -441,6 +443,16 @@ export const INVENTORY: Item[] = [
 
   // ---- 10 · Administración --------------------------------------------------------------
   I("administracion", "route", "route:/admin", "Administración"),
+  // Workspaces with roles (SYNC-07, ADR-0042). The tours run one account
+  // against a server they start themselves; members, invitations and a
+  // shared project need a second account, which the 0.5.0 validation with
+  // two people and two computers covers (ROADMAP §6).
+  I("administracion", "route", "route:/workspaces/members", "Miembros y roles de un workspace", { pending: WORKSPACES_PENDING }),
+  I("administracion", "route", "route:/workspaces/join", "Unirse a un workspace con un código", { pending: WORKSPACES_PENDING }),
+  I("administracion", "dialog", "dialogs:src/modules/workspaces/ui/CreateWorkspaceDialog.tsx", "Crear workspace", { pending: WORKSPACES_PENDING }),
+  I("administracion", "dialog", "dialogs:src/modules/workspaces/ui/InviteDialog.tsx", "Invitar a un workspace (código de un solo uso)", { pending: WORKSPACES_PENDING }),
+  I("administracion", "dialog", "dialogs:src/modules/workspaces/ui/ShareProjectDialog.tsx", "Compartir un proyecto con un workspace", { pending: WORKSPACES_PENDING }),
+  I("administracion", "dialog", "dialogs:src/modules/workspaces/ui/WorkspaceMembersPage.tsx", "Quitar a un miembro o salir de un workspace", { pending: WORKSPACES_PENDING }),
   I("administracion", "tab", "admin:ai", "Motor de IA"),
   I("administracion", "tab", "tabs:src/modules/admin/ui/AdminTabs.tsx", "Pestañas de Administración"),
   I("administracion", "dialog", "dialogs:src/modules/ai/ui/AiEngineTab.tsx", "Descartar o reemplazar la clave de IA (confirmaciones)"),

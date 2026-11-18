@@ -1,0 +1,134 @@
+/* Workspaces (SYNC-07): selector, members page, invitation code, notices. */
+.ws-switcher {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0 var(--space-2, 8px);
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.16));
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ws-switcher:focus-visible {
+  outline: 2px solid var(--focus-ring, #6a9cf0);
+  outline-offset: 2px;
+}
+.ws-switcher__label {
+  grid-column: 1 / -1;
+}
+.ws-switcher__name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ws-switcher__role {
+  grid-column: 1;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+.ws-switcher svg {
+  grid-column: 2;
+  grid-row: 2 / span 2;
+}
+.ws-switcher[data-compact] {
+  grid-template-columns: 1fr;
+  padding: 6px;
+  font-size: 0.75rem;
+}
+.ws-switcher[data-compact] svg {
+  display: none;
+}
+
+.ws-page {
+  display: grid;
+  gap: 16px;
+  max-width: 1040px;
+}
+.ws-page--narrow {
+  max-width: 560px;
+}
+.ws-page__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ws-page__title {
+  margin: 0;
+  font-size: 1.4rem;
+}
+.ws-section {
+  display: grid;
+  gap: 8px;
+}
+.ws-section__title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.ws-table-wrap {
+  overflow-x: auto;
+}
+.ws-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ws-table th,
+.ws-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border, #d7dde8);
+  text-align: left;
+  vertical-align: middle;
+}
+.ws-table th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #5a6680);
+}
+.ws-roles {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+}
+.ws-roles dt {
+  font-weight: 600;
+}
+.ws-roles dd {
+  margin: 0 0 4px;
+}
+.ws-code {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--border, #d7dde8);
+  border-radius: 8px;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
+  text-align: center;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.ws-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.ws-error {
+  color: var(--danger, #b42318);
+  margin: 4px 0 0;
+}
+.ws-notices {
+  display: grid;
+  gap: 8px;
+}
+.ws-notice {
+  margin: 0;
+}
