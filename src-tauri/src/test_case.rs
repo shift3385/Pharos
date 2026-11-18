@@ -17,6 +17,7 @@ use tauri::State;
 use ts_rs::TS;
 use uuid::Uuid;
 
+use crate::case_review;
 use crate::custom_fields;
 use crate::db::{ensure_workspace, Db};
 use crate::journal::{self, Action, Actor, Change};
@@ -49,6 +50,14 @@ pub struct TestCaseSummary {
     requirement_keys: Vec<String>,
     /// `data.traceability`: free-text links, for the migration to requirements.
     traceability: String,
+    /// `data.review` (who sent it, or why it came back) or null (CAS-02).
+    #[cfg_attr(test, ts(type = "unknown"))]
+    review: Value,
+    /// `data.approval` (who approved it, and when) or null (CAS-02).
+    #[cfg_attr(test, ts(type = "unknown"))]
+    approval: Value,
+    /// The account that created the case: its author in the review flow.
+    created_by: String,
     updated_at: String,
     revision: i64,
 }
@@ -94,6 +103,9 @@ pub struct TestCase {
     author: String,
     #[cfg_attr(test, ts(type = "unknown"))]
     data: Value,
+    /// The account that created the case: its author in the review flow
+    /// (CAS-02, ADR-0047). `author` is only the name printed on documents.
+    created_by: String,
     created_at: String,
     updated_at: String,
     revision: i64,
@@ -160,8 +172,8 @@ fn empty_object() -> Value {
 /// Live case `?1` of a live project owned by `?2`.
 const SELECT_CASE: &str =
     "SELECT c.id, c.workspace_id, c.project_id, c.scenario_id, c.title, c.version, \
-    c.status, c.priority, c.case_type, c.automation_status, c.author, c.data, c.created_at, \
-    c.updated_at, c.revision \
+    c.status, c.priority, c.case_type, c.automation_status, c.author, c.data, c.created_by, \
+    c.created_at, c.updated_at, c.revision \
     FROM test_cases c JOIN projects p ON p.id = c.project_id \
     WHERE c.id = ?1 AND p.owner_id = ?2 AND c.deleted_at IS NULL AND p.deleted_at IS NULL";
 
@@ -180,6 +192,7 @@ fn map_case(row: &rusqlite::Row) -> rusqlite::Result<TestCase> {
         automation_status: row.get("automation_status")?,
         author: row.get("author")?,
         data: serde_json::from_str(&data_str).unwrap_or_else(|_| empty_object()),
+        created_by: row.get("created_by")?,
         created_at: row.get("created_at")?,
         updated_at: row.get("updated_at")?,
         revision: row.get("revision")?,
@@ -232,7 +245,7 @@ pub(crate) fn list_cases(
     let mut stmt = conn
         .prepare(
             "SELECT id, scenario_id, title, status, priority, case_type, automation_status, data, \
-             updated_at, revision \
+             created_by, updated_at, revision \
              FROM test_cases WHERE project_id = ?1 AND deleted_at IS NULL ORDER BY scenario_id",
         )
         .map_err(|e| e.to_string())?;
@@ -266,6 +279,9 @@ pub(crate) fn list_cases(
                     .and_then(Value::as_str)
                     .unwrap_or_default()
                     .to_string(),
+                review: data.get("review").cloned().unwrap_or(Value::Null),
+                approval: data.get("approval").cloned().unwrap_or(Value::Null),
+                created_by: r.get("created_by")?,
                 updated_at: r.get("updated_at")?,
                 revision: r.get("revision")?,
             })
@@ -318,7 +334,11 @@ pub(crate) fn insert_case(conn: &Connection, input: &TestCaseInput) -> Result<St
     // defaults).
     let case_type = input.case_type.as_deref().unwrap_or("standard");
     let automation = input.automation_status.as_deref().unwrap_or("manual");
-    let data = prepare_data(conn, &input.project_id, case_type, &input.data, None)?;
+    let mut data = prepare_data(conn, &input.project_id, case_type, &input.data, None)?;
+    // A new case never starts in review or approved, and never brings who
+    // sent or approved it (an import, CAS-02): the review flow gives both.
+    case_review::strip_review(&mut data);
+    let status = case_review::status_on_create(input.status.as_deref());
     let data_str = serde_json::to_string(&data).map_err(|e| e.to_string())?;
     conn.execute(
         "INSERT INTO test_cases (id, workspace_id, project_id, scenario_id, title, \
@@ -332,7 +352,7 @@ pub(crate) fn insert_case(conn: &Connection, input: &TestCaseInput) -> Result<St
             scenario_id,
             input.title,
             input.version.clone().unwrap_or_else(|| "1.0".to_string()),
-            input.status.clone().unwrap_or_else(|| "draft".to_string()),
+            status,
             input
                 .priority
                 .clone()
@@ -375,27 +395,53 @@ pub(crate) fn update_case(
         input.case_type.as_deref(),
         input.automation_status.as_deref(),
     )?;
-    type Stored = (i64, String, Option<String>, Option<String>, String);
-    let (revision, project_id, stored_type, stored_automation, stored_data): Stored = conn
+    let stored = conn
         .query_row(
-            "SELECT revision, project_id, case_type, automation_status, data \
-             FROM test_cases WHERE id = ?1",
+            "SELECT revision, project_id, case_type, automation_status, data, status, title, \
+             version FROM test_cases WHERE id = ?1",
             params![id],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
+            |r| {
+                Ok(StoredCase {
+                    revision: r.get(0)?,
+                    project_id: r.get(1)?,
+                    case_type: r.get(2)?,
+                    automation_status: r.get(3)?,
+                    data: r.get(4)?,
+                    status: r.get(5)?,
+                    title: r.get(6)?,
+                    version: r.get(7)?,
+                })
+            },
         )
         .map_err(|e| e.to_string())?;
+    let revision = stored.revision;
     // A caller that does not send the case fields keeps them (FLD-01): the
     // editor sends them, an older caller (import, AI) does not know them.
-    let case_type = input.case_type.clone().or(stored_type);
-    let automation = input.automation_status.clone().or(stored_automation);
-    let previous = serde_json::from_str::<Value>(&stored_data).ok();
-    let data = prepare_data(
+    let case_type = input.case_type.clone().or(stored.case_type);
+    let automation = input.automation_status.clone().or(stored.automation_status);
+    let previous = serde_json::from_str::<Value>(&stored.data).ok();
+    let mut data = prepare_data(
         conn,
-        &project_id,
+        &stored.project_id,
         case_type.as_deref().unwrap_or("standard"),
         &input.data,
         previous.as_ref(),
     )?;
+    // The review flow (CAS-02, ADR-0047): a save keeps the stored status and
+    // who sent or approved it; only `test_case_review` moves the status. A
+    // save that changes the content of a case in review or approved sends it
+    // back to draft, drops its approval and, once approved, bumps its version.
+    let after = case_review::after_save(
+        case_review::Saved {
+            status: &stored.status,
+            title: &stored.title,
+            version: &stored.version,
+            data: previous.as_ref(),
+        },
+        &input.title,
+        input.version.as_deref(),
+        &mut data,
+    );
 
     let before = journal::snapshot(conn, "test_case", id)?;
     let data_str = serde_json::to_string(&data).map_err(|e| e.to_string())?;
@@ -406,8 +452,8 @@ pub(crate) fn update_case(
         params![
             id,
             input.title,
-            input.version.clone().unwrap_or_else(|| "1.0".to_string()),
-            input.status.clone().unwrap_or_else(|| "draft".to_string()),
+            after.version,
+            after.status,
             input
                 .priority
                 .clone()
@@ -437,6 +483,118 @@ pub(crate) fn update_case(
     )?;
     revisions::ensure_current(conn, id, user, true)?;
     Ok(())
+}
+
+/// The stored columns `update_case` reads before a save.
+struct StoredCase {
+    revision: i64,
+    project_id: String,
+    case_type: Option<String>,
+    automation_status: Option<String>,
+    data: String,
+    status: String,
+    title: String,
+    version: String,
+}
+
+/// The stored case the review flow starts from (CAS-02): None for a case
+/// the user does not own.
+pub(crate) fn review_state(
+    conn: &Connection,
+    id: &str,
+    user_id: &str,
+) -> Result<Option<case_review::CaseState>, String> {
+    if !owns(conn, id, user_id)? {
+        return Ok(None);
+    }
+    conn.query_row(
+        "SELECT workspace_id, project_id, status, version, revision, data, created_by \
+         FROM test_cases WHERE id = ?1",
+        params![id],
+        |r| {
+            let data: String = r.get(5)?;
+            Ok(case_review::CaseState {
+                workspace_id: r.get(0)?,
+                project_id: r.get(1)?,
+                status: r.get(2)?,
+                version: r.get(3)?,
+                revision: r.get(4)?,
+                data: serde_json::from_str(&data).unwrap_or_else(|_| empty_object()),
+                created_by: r.get(6)?,
+            })
+        },
+    )
+    .optional()
+    .map_err(|e| e.to_string())
+}
+
+/// Writes a review transition (CAS-02): the new status and `data`, one more
+/// revision, journaled like any save and with its revision row (DAT-02).
+pub(crate) fn write_review(
+    conn: &Connection,
+    id: &str,
+    status: &str,
+    data: &Value,
+    user_id: &str,
+) -> Result<i64, String> {
+    let revision: i64 = conn
+        .query_row(
+            "SELECT revision FROM test_cases WHERE id = ?1",
+            params![id],
+            |r| r.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+    let before = journal::snapshot(conn, "test_case", id)?;
+    let data_str = serde_json::to_string(data).map_err(|e| e.to_string())?;
+    conn.execute(
+        "UPDATE test_cases SET status = ?2, data = ?3, revision = ?4, \
+         updated_at = datetime('now'), updated_by = ?5 WHERE id = ?1",
+        params![id, status, data_str, revision + 1, user_id],
+    )
+    .map_err(|e| e.to_string())?;
+    journal::record(
+        conn,
+        Change::new(
+            "test_case",
+            id,
+            Action::Update,
+            Actor::user(user_id),
+            "upsert",
+            revision + 1,
+            user_id,
+        )
+        .before(before),
+    )?;
+    revisions::ensure_current(conn, id, user_id, true)?;
+    Ok(revision + 1)
+}
+
+/// The revision a reviewer compares the case with (CAS-02): the latest
+/// earlier state that was approved or sent to review. None when there is
+/// none (a first submission) or the user does not own the case.
+fn review_base(
+    conn: &Connection,
+    id: &str,
+    user_id: &str,
+) -> Result<Option<RevisionDetail>, String> {
+    if !owns(conn, id, user_id)? {
+        return Ok(None);
+    }
+    let base: Option<String> = conn
+        .query_row(
+            "SELECT r.id FROM test_case_revisions r JOIN test_cases c ON c.id = r.test_case_id \
+             WHERE r.test_case_id = ?1 AND r.revision < c.revision \
+             AND r.status IN ('approved', 'reviewed') AND r.content_sha256 IS NOT NULL \
+             ORDER BY r.revision DESC, r.created_at DESC LIMIT 1",
+            params![id],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(|e| e.to_string())?;
+    match base {
+        Some(rev) => get_revision(conn, &rev, user_id),
+        None => Ok(None),
+    }
 }
 
 /// What a save stores in `data`: stable step ids (DAT-02), the server's stash
@@ -605,6 +763,29 @@ pub fn test_case_revisions(
     user_id: String,
 ) -> Result<Vec<RevisionSummary>, String> {
     db.with_conn(|conn| list_revisions(conn, &id, &user_id))
+}
+
+/// A review transition (CAS-02, ADR-0047): send, approve, return, mark
+/// obsolete or reactivate. The case as it stands after it.
+#[tauri::command]
+pub fn test_case_review(
+    db: State<Db>,
+    id: String,
+    input: case_review::ReviewInput,
+) -> Result<Option<TestCase>, String> {
+    db.with_tx(|conn| case_review::review_case(conn, &id, &input))?;
+    db.persist()?;
+    db.with_conn(|conn| get_case(conn, &id, &input.user_id))
+}
+
+/// The earlier state a reviewer compares the case with (CAS-02).
+#[tauri::command]
+pub fn test_case_review_base(
+    db: State<Db>,
+    id: String,
+    user_id: String,
+) -> Result<Option<RevisionDetail>, String> {
+    db.with_conn(|conn| review_base(conn, &id, &user_id))
 }
 
 #[tauri::command]

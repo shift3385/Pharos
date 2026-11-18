@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router";
 import { ErrorBoundary } from "@shared/ui/ErrorBoundary";
-import { useAuth, AuthScreen } from "@modules/auth";
+import { useAuth, AuthScreen, RESET_PATH } from "@modules/auth";
 import { AppShell } from "./layout/AppShell";
 import { AppSplash } from "./AppSplash";
 import { DbErrorScreen } from "./DbErrorScreen";
@@ -29,7 +29,8 @@ export function App() {
   if (dbError)
     return <DbErrorScreen error={dbError} onRecovered={markDbOpened} />;
   if (status === "loading" || dbError === undefined) return <AppSplash />;
-  if (status === "unauthenticated") return <AuthScreen />;
+  // The reset link opens its page even in a signed-in browser (ADR-0045).
+  if (status === "unauthenticated" || pathname === RESET_PATH) return <AuthScreen />;
 
   return (
     <AppShell>

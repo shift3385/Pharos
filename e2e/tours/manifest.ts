@@ -171,6 +171,24 @@ export const INVENTORY: Item[] = [
   I("acceso", "action", "action:profile-preferences", "Preferencias de idioma y tema en el perfil"),
   I("acceso", "state", "action:login-google", "«Continuar con Google» deshabilitado («Próximamente»)"),
   I("acceso", "platform", "platform:mobile-login", "La entrada en una pantalla estrecha (hoja inferior)"),
+  // Account recovery (SEC-08, SEC-09 by email; ADR-0045).
+  I("acceso", "screen", "screen:signup-recovery-codes", "Códigos de recuperación al crear la cuenta"),
+  I("acceso", "screen", "screen:recover", "«¿Olvidaste tu contraseña?»: «Recupera el acceso»"),
+  I("acceso", "tab", "tabs:src/modules/auth/ui/AccountRecovery.tsx", "Pestañas de «Recupera el acceso» (Con un código / Por correo)"),
+  I("acceso", "state", "state:email-reset-off", "Servidor sin correo: el enlace por correo no está disponible"),
+  I("acceso", "screen", "screen:reset-link", "Pegar el enlace del correo en la app de escritorio"),
+  I("acceso", "action", "action:recover-with-code", "Cambiar la contraseña con un código de recuperación", {
+    skip: "Cambiaría la contraseña y cerraría la sesión de la cuenta que usan todos los capítulos siguientes. Lo cubren server/tests/account.test.ts (el código se gasta, se cierran las sesiones, queda en auditoría) y src/modules/auth/recovery.test.tsx.",
+  }),
+  I("acceso", "screen", "screen:reset-page", "Página «Elige una contraseña nueva» del enlace del correo", {
+    skip: "Necesita un servidor con SMTP y abrir el enlace de un correo real; el tour usa una API sin correo (el valor por defecto). Lo cubren server/tests/account.test.ts con un buzón en memoria, src/modules/auth/recovery.test.tsx y la revisión manual de la versión web (docs/manual/REVIEW.md).",
+  }),
+  I("acceso", "screen", "screen:account-security", "«Mi perfil» › Seguridad de la cuenta"),
+  I("acceso", "action", "action:change-password", "Cambiar la contraseña desde el perfil", {
+    skip: "Cerraría las demás sesiones y cambiaría la contraseña que usan los capítulos siguientes. Lo cubren server/tests/account.test.ts y src/modules/profile/accountSecurity.test.tsx.",
+  }),
+  I("acceso", "action", "action:regenerate-recovery-codes", "Generar códigos de recuperación nuevos"),
+  I("acceso", "dialog", "dialogs:src/modules/profile/ui/AccountSecuritySection.tsx", "Generar códigos nuevos: contraseña y códigos mostrados una vez"),
   I("acceso", "state", "state:session-expired", "Sesión caducada («Tu sesión ha caducado…»)", {
     skip: "Necesita que el servidor rechace la renovación de la sesión de la app, algo que el tour no provoca sin trucar la app. Lo cubren AuthProvider.test.tsx y sessionRenewal.test.ts; el capítulo lo explica en «Si algo no sale».",
   }),
@@ -300,7 +318,7 @@ export const INVENTORY: Item[] = [
   I("casos", "action", "action:case-gherkin-copy", "Copiar el Gherkin"),
   I("casos", "action", "action:case-custom-fields", "Rellenar campos personalizados en un caso"),
   I("casos", "action", "action:case-requirement-link", "Vincular un requisito a un caso"),
-  I("casos", "action", "action:case-meta", "Prioridad, estado y automatización del caso"),
+  I("casos", "action", "action:case-meta", "Prioridad, tipo y automatización del caso"),
   I("casos", "action", "action:case-edit", "Editar un caso existente"),
   I("casos", "action", "action:case-walk", "Recorrer los casos (anterior/siguiente)"),
   I("casos", "dialog", "dialogs:src/modules/test-cases/ui/GoToCaseDialog.tsx", "«Ir a un caso…»"),
@@ -319,6 +337,15 @@ export const INVENTORY: Item[] = [
   I("casos", "keyboard", "keyboard:steps-reorder", "Reordenar pasos con el teclado (asa de arrastre)"),
   I("casos", "platform", "platform:mobile-gherkin", "El Gherkin en el móvil (lectura, «Editar» a pantalla completa con barra de teclas)"),
   I("casos", "dialog", "dialogs:src/modules/test-cases/ui/TestCaseEditor.tsx", "Restaurar una revisión de un caso (confirmación)"),
+  // CAS-02 (ADR-0047): the review flow and suite baselines.
+  I("casos", "dialog", "dialogs:src/modules/test-cases/ui/CaseReviewPanel.tsx", "Enviar a revisión, aprobar, devolver, marcar obsoleto y reactivar (confirmaciones)"),
+  I("casos", "action", "action:case-review-send", "Enviar un caso a revisión con una nota"),
+  I("casos", "action", "action:case-review-approve", "Aprobar un caso: quién, cuándo y autoaprobación"),
+  I("casos", "action", "action:case-review-return", "Devolver un caso a Borrador con un comentario"),
+  I("casos", "action", "action:case-obsolete", "Marcar un caso como obsoleto y reactivarlo"),
+  I("casos", "dialog", "dialogs:src/modules/test-cases/ui/BaselinesView.tsx", "Nueva baseline de suite"),
+  I("casos", "action", "action:case-baseline-create", "Congelar una baseline (todos, filtro o selección; solo aprobados)"),
+  I("casos", "action", "action:case-baseline-compare", "Comparar una baseline con el estado actual o con otra"),
 
   // ---- 5 · Requisitos y trazabilidad (UX-21: two sections) -----------------------------
   I("requisitos", "section", "section:requirements", "Requisitos"),

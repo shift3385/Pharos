@@ -28,11 +28,17 @@ import { TestCaseList } from "./TestCaseList";
 import { customFieldApi, type CustomField } from "@modules/custom-fields";
 import { TestCaseEditor, type CaseNav } from "./TestCaseEditor";
 import { SuggestTestsModal } from "./SuggestTestsModal";
+import { BaselinesView } from "./BaselinesView";
+import { approverCheck } from "../review/approver";
+import { reviewErrorKey } from "../model/review";
+import { hasMenuFilters } from "../model/caseList";
 import type { CaseImportResult, DetectionRow } from "../import/caseImport";
 import type { RequirementOption } from "../model/types";
 
 /** `?case=new` opens a new case; `?case=<id>` opens that case. */
 const NEW_CASE = "new";
+/** `?baselines` shows the suite baselines (CAS-02). */
+const BASELINES_PARAM = "baselines";
 
 /** Test cases of a project (spec §5.3, RED-V3). Numbering uses the project's
  *  configured prefix/width; the list and editor are scoped to `projectId`. The
@@ -66,10 +72,38 @@ export function TestCasesPage({
   const [suggesting, setSuggesting] = useState(false);
   const [summaries, setSummaries] = useState<ListedCase[]>([]);
   const [results, setResults] = useState<Map<string, CaseLastResult>>(new Map());
+  // The cases in review this account may approve («Por revisar», CAS-02).
+  const [reviewable, setReviewable] = useState<ReadonlySet<string>>(new Set());
   const cases = useMemo(
-    (): ListedCase[] => summaries.map((c) => ({ ...c, lastResult: results.get(c.id) ?? null })),
-    [summaries, results],
+    (): ListedCase[] =>
+      summaries.map((c) => ({ ...c, lastResult: results.get(c.id) ?? null, canReview: reviewable.has(c.id) })),
+    [summaries, results, reviewable],
   );
+  useEffect(() => {
+    let live = true;
+    const inReview = summaries.filter((c) => c.status === "reviewed");
+    void Promise.all(
+      inReview.map((c) =>
+        approverCheck()
+          .canApprove({ workspaceId: "", projectId, caseId: c.id, authorId: c.createdBy, approverId: userId })
+          .then((v) => (v.ok ? c.id : null))
+          .catch(() => null),
+      ),
+    ).then((ids) => live && setReviewable(new Set(ids.filter((id): id is string => id !== null))));
+    return () => {
+      live = false;
+    };
+  }, [summaries, projectId, userId]);
+  // `?baselines` opens the project's suite baselines (CAS-02).
+  const showBaselines = params.has(BASELINES_PARAM);
+  const [baselineSelection, setBaselineSelection] = useState<ReadonlySet<string> | null>(null);
+  const toggleBaselines = (on: boolean) =>
+    setParams((p) => {
+      const next = new URLSearchParams(p);
+      if (on) next.set(BASELINES_PARAM, "");
+      else next.delete(BASELINES_PARAM);
+      return next;
+    });
   // True until the list has loaded once, also after a failure.
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -274,6 +308,29 @@ export function TestCasesPage({
     await refresh();
   }
 
+  /** Sends the given drafts to review one by one (CAS-02); a failure does
+   *  not stop the rest and is reported. */
+  async function sendToReview(ids: ReadonlySet<string>) {
+    const userName = user ? `${user.firstName} ${user.lastName}`.trim() : "";
+    let sent = 0;
+    let lastError: unknown = null;
+    for (const c of summaries.filter((s) => ids.has(s.id))) {
+      try {
+        await testCaseApi.review(c, { action: "send", userId, userName });
+        sent++;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    const failed = ids.size - sent;
+    const parts = [
+      sent ? t("testCase.list.sentToast", { count: sent }) : "",
+      failed ? `${t("testCase.list.sendFailed", { count: failed })} ${lastError ? t(reviewErrorKey(lastError)) : ""}` : "",
+    ].filter(Boolean);
+    toast(parts.join(". "), failed ? "error" : "success");
+    await refresh();
+  }
+
   async function applyImport() {
     if (!importState?.result) return;
     const { withCustomSheet } = await import("../import/caseImport");
@@ -335,6 +392,26 @@ export function TestCasesPage({
     );
   }
 
+  if (showBaselines) {
+    const filtered = filters.query !== "" || filters.status !== "all" || hasMenuFilters(filters);
+    return (
+      <BaselinesView
+        projectId={projectId}
+        userId={userId}
+        scopes={{
+          all: cases,
+          filtered: filtered ? ordered : null,
+          selected: baselineSelection ? cases.filter((c) => baselineSelection.has(c.id)) : null,
+        }}
+        startCreating={baselineSelection !== null}
+        onClose={() => {
+          setBaselineSelection(null);
+          toggleBaselines(false);
+        }}
+      />
+    );
+  }
+
   const loadError = loadFailed && <LoadError message={t("testCase.loadFailed")} onRetry={retryLoad} />;
   // Never loaded: an empty table would look like a project without cases.
   if (loadFailed && loading) return loadError;
@@ -373,6 +450,15 @@ export function TestCasesPage({
         onImport={() => fileInputRef.current?.click()}
         onExportFeatures={(ids) => void exportFeatures(ids)}
         onDelete={removeCases}
+        onSendToReview={sendToReview}
+        onBaselines={() => {
+          setBaselineSelection(null);
+          toggleBaselines(true);
+        }}
+        onBaselineFromSelection={(ids) => {
+          setBaselineSelection(new Set(ids));
+          toggleBaselines(true);
+        }}
       />
       <input
         ref={fileInputRef}

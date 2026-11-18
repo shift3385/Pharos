@@ -11,8 +11,9 @@ type Config = typeof import("../src/config/env");
 let loadEnv: Config["loadEnv"];
 let parseDurationMs: Config["parseDurationMs"];
 let startupWarnings: Config["startupWarnings"];
+let publicUrlProblem: Config["publicUrlProblem"];
 beforeAll(async () => {
-  ({ loadEnv, parseDurationMs, startupWarnings } =
+  ({ loadEnv, parseDurationMs, startupWarnings, publicUrlProblem } =
     await import("../src/config/env"));
 });
 
@@ -161,5 +162,31 @@ describe("environment (BASE-06)", () => {
     expect(startupWarnings(dev("127.0.0.1"))).toEqual([]);
     expect(startupWarnings(dev("localhost"))).toEqual([]);
     expect(startupWarnings(loadEnv(production))).toEqual([]);
+  });
+
+  it("requires SMTP_FROM and an https APP_PUBLIC_URL when SMTP is on (SEC-09)", () => {
+    expect(publicUrlProblem("https://qa.example.com")).toBeNull();
+    expect(publicUrlProblem("http://localhost:5173")).toBeNull();
+    expect(publicUrlProblem("http://[::1]:5173")).toBeNull();
+    expect(publicUrlProblem("http://qa.example.com")).toMatch(/https/);
+    expect(publicUrlProblem("qa.example.com")).toMatch(/absolute/);
+    expect(publicUrlProblem(undefined)).toMatch(/required/);
+    expect(() =>
+      loadEnv({
+        SMTP_HOST: "smtp.example.com",
+        APP_PUBLIC_URL: "http://qa.example.com",
+      }),
+    ).toThrow(/SMTP_FROM: is required[\s\S]*APP_PUBLIC_URL: .*must use https/);
+    const on = loadEnv({
+      SMTP_HOST: "smtp.example.com",
+      SMTP_FROM: "Pharos <no-reply@example.com>",
+      APP_PUBLIC_URL: "https://qa.example.com",
+    });
+    expect(on.SMTP_PORT).toBe(587);
+    expect(on.RESET_TOKEN_TTL).toBe(1_800_000);
+    // An empty value in a .env means "not set": email stays off.
+    expect(
+      loadEnv({ SMTP_HOST: "", APP_PUBLIC_URL: "" }).SMTP_HOST,
+    ).toBeUndefined();
   });
 });

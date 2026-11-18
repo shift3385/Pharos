@@ -789,7 +789,8 @@
         "configuration": "Configuración",
         "template": "Plantilla",
         "profile": "Perfil",
-        "unlinked_mapping": "Correspondencia sin vincular"
+        "unlinked_mapping": "Correspondencia sin vincular",
+        "account": "Cuenta"
       },
       "fields": {
         "title": "Título",
@@ -834,7 +835,12 @@
         "cycles": "Ciclos",
         "runs": "Ejecuciones",
         "defects": "Defectos",
-        "requirements": "Requisitos"
+        "requirements": "Requisitos",
+        "event": "Evento",
+        "method": "Cómo",
+        "sessionsClosed": "Sesiones cerradas",
+        "codes": "Códigos",
+        "codesRemaining": "Códigos restantes"
       },
       "device": {
         "this": "Este equipo",
@@ -948,6 +954,15 @@
         },
         "capped": "La exportación se detuvo en {{count}} eventos. Acota el periodo para exportar el resto.",
         "failed": "No se pudo exportar: {{reason}}"
+      },
+      "summaryValue": {
+        "password_changed": "Contraseña cambiada",
+        "recovery_codes_generated": "Códigos de recuperación generados",
+        "password_reset_requested": "Enlace de restablecimiento pedido",
+        "profile": "Desde Mi perfil",
+        "recovery_code": "Con un código de recuperación",
+        "email_link": "Con un enlace por correo",
+        "admin": "Por un administrador"
       }
     }
   },
@@ -1002,6 +1017,48 @@
       "network": "No se puede conectar con {{host}}. Revisa tu conexión; si ya habías iniciado sesión en este equipo, la app abre con tus datos locales.",
       "generic": "Algo salió mal. Inténtalo de nuevo.",
       "account_other_server": "Esta cuenta ya tiene datos en este equipo de otro servidor ({{host}}). Para no mezclarlos, entra en ese servidor o usa otra cuenta."
+    },
+    "forgot": "¿Olvidaste tu contraseña?",
+    "recover": {
+      "title": "Recupera el acceso",
+      "subtitle": "Con uno de tus códigos de recuperación o con un enlace por correo.",
+      "tab": {
+        "code": "Con un código",
+        "email": "Por correo"
+      },
+      "back": "Volver a iniciar sesión",
+      "code": "Código de recuperación",
+      "codeHelp": "Uno de los 10 códigos que guardaste al crear la cuenta.",
+      "newPassword": "Contraseña nueva",
+      "repeat": "Repite la contraseña nueva",
+      "passwordHelp": "Mínimo 8 caracteres. Una frase larga es más segura que una palabra rara.",
+      "mismatch": "No coincide con la contraseña nueva.",
+      "submitCode": "Cambiar la contraseña y entrar",
+      "changed": "Contraseña cambiada. Se cerró la sesión en tus otros dispositivos.",
+      "fewCodes_one": "Contraseña cambiada. Te queda {{count}} código de recuperación: genera códigos nuevos en Mi perfil.",
+      "fewCodes_other": "Contraseña cambiada. Te quedan {{count}} códigos de recuperación: genera códigos nuevos en Mi perfil.",
+      "emailOff": "Este servidor no envía correos. Usa un código de recuperación o pide ayuda a quien administra Pharos.",
+      "sendLink": "Enviar enlace",
+      "sent": "Si hay una cuenta con ese correo, te hemos enviado un enlace. Caduca en 30 minutos y sirve una vez.",
+      "haveLink": "¿Ya tienes el enlace?",
+      "haveLinkHelp": "En la app de escritorio, pega aquí el enlace del correo.",
+      "badLink": "Eso no parece el enlace del correo. Cópialo entero.",
+      "continue": "Continuar",
+      "error": {
+        "invalid_recovery": "El correo o el código no son válidos.",
+        "invalid_reset_token": "Este enlace no es válido o ha caducado. Los enlaces duran 30 minutos y sirven una vez.",
+        "rate_limited": "Demasiados intentos. Espera 15 minutos y vuelve a intentarlo.",
+        "validation_error": "Revisa los datos: la contraseña necesita al menos 8 caracteres.",
+        "email_reset_disabled": "Este servidor no envía correos. Usa un código de recuperación."
+      }
+    },
+    "reset": {
+      "title": "Elige una contraseña nueva",
+      "account": "Cuenta: {{email}}",
+      "checking": "Comprobando el enlace…",
+      "save": "Guardar la contraseña",
+      "done": "Contraseña cambiada. Se cerró la sesión en todos tus dispositivos.",
+      "askAgain": "Pedir otro enlace"
     }
   },
   "language": {
@@ -1289,6 +1346,58 @@
     "themeLight": "Claro",
     "themeDark": "Oscuro",
     "synced": "Se aplica en todos tus equipos"
+  },
+  "account": {
+    "title": "Seguridad de la cuenta",
+    "offline": "Para cambiar la contraseña o los códigos hace falta conexión con el servidor. Tus datos locales siguen disponibles.",
+    "changeTitle": "Cambiar la contraseña",
+    "changeIntro": "Al guardarla se cierra la sesión en tus otros dispositivos. Este sigue abierto.",
+    "current": "Contraseña actual",
+    "new": "Contraseña nueva",
+    "repeat": "Repite la contraseña nueva",
+    "show": "Mostrar",
+    "hide": "Ocultar",
+    "change": "Cambiar la contraseña",
+    "changing": "Cambiando…",
+    "changed_one": "Contraseña cambiada. Se cerró la sesión en {{count}} dispositivo.",
+    "changed_other": "Contraseña cambiada. Se cerró la sesión en {{count}} dispositivos.",
+    "codesTitle": "Códigos de recuperación de la cuenta",
+    "codesIntro": "Sirven para entrar si olvidas la contraseña. Cada código vale una vez.",
+    "codesLoadFailed": "No se pudo consultar el estado de los códigos.",
+    "codesNone": "Aún no tienes códigos de recuperación. Si olvidas la contraseña no podrás entrar sin ellos.",
+    "codesState": "Estado",
+    "codesRemaining": "Te quedan {{remaining}} de {{total}}",
+    "codesGenerated": "Generados",
+    "codesLastUsed": "Último uso",
+    "codesReplace": "Generar códigos nuevos anula los que tienes.",
+    "codesGenerate": "Generar códigos nuevos",
+    "codesGenerateFirst": "Generar códigos",
+    "codesConfirmTitle": "Generar códigos de recuperación",
+    "codesConfirmBody": "Los códigos que tienes dejarán de funcionar. Escribe tu contraseña actual para continuar.",
+    "codesConfirmFirst": "Escribe tu contraseña actual para generar tus 10 códigos.",
+    "error": {
+      "wrong_password": "La contraseña actual no es correcta.",
+      "same_password": "La nueva no puede ser igual a la actual.",
+      "rate_limited": "Demasiados intentos. Prueba de nuevo en 1 minuto.",
+      "validation_error": "La contraseña nueva necesita al menos 8 caracteres."
+    }
+  },
+  "recoveryCodes": {
+    "title": "Guarda tus códigos de recuperación",
+    "intro": "Si olvidas la contraseña, entra con tu correo y uno de estos códigos. Cada código vale una vez. No volveremos a mostrarlos.",
+    "listLabel": "Códigos de recuperación",
+    "copy": "Copiar",
+    "copied": "Códigos copiados.",
+    "copyFailed": "No se pudieron copiar. Descarga el .txt o anótalos.",
+    "download": "Descargar .txt",
+    "keepSafe": "Guárdalos en un gestor de contraseñas o en papel, nunca junto a la contraseña.",
+    "saved": "He guardado los códigos en un lugar seguro",
+    "continue": "Continuar",
+    "close": "Listo",
+    "fileTitle": "Pharos · códigos de recuperación de la cuenta",
+    "fileAccount": "Cuenta: {{email}}",
+    "fileDate": "Generados: {{date}}",
+    "fileNote": "Cada código sirve una vez. Generar códigos nuevos en Mi perfil anula estos."
   },
   "testPlan": {
     "loadFailed": "No se pudo cargar el plan de pruebas.",
@@ -1982,7 +2091,7 @@
     },
     "statusLabel": {
       "draft": "Borrador",
-      "reviewed": "Revisado",
+      "reviewed": "En revisión",
       "approved": "Aprobado",
       "obsolete": "Obsoleto"
     },
@@ -2037,7 +2146,7 @@
     },
     "statusHelp": {
       "draft": "En redacción, aún no revisado",
-      "reviewed": "Revisado por otra persona",
+      "reviewed": "Enviado a revisión; pendiente de aprobación",
       "approved": "Listo para ejecutar",
       "obsolete": "Ya no aplica; se conserva en el histórico"
     },
@@ -2105,7 +2214,19 @@
         "not_run": "Sin resultados"
       },
       "noResult": "Sin resultados todavía",
-      "resultAt": "Último resultado: {{date}}"
+      "resultAt": "Último resultado: {{date}}",
+      "toReview": "Por revisar",
+      "returned": "Devuelto",
+      "sentHint": "Enviado por {{name}} · {{date}}",
+      "approvedHint": "Aprobado por {{name}} · {{date}}",
+      "approvedSelfHint": "Aprobado por {{name}} (autoaprobación) · {{date}}",
+      "returnedHint": "Devuelto por {{name}}: «{{comment}}»",
+      "sendSelected": "Enviar a revisión",
+      "baselineSelected": "Congelar en baseline",
+      "sentToast_one": "{{count}} caso enviado a revisión",
+      "sentToast_other": "{{count}} casos enviados a revisión",
+      "sendFailed_one": "{{count}} caso no se pudo enviar.",
+      "sendFailed_other": "{{count}} casos no se pudieron enviar."
     },
     "nav": {
       "allCases": "Todos los casos",
@@ -2172,7 +2293,162 @@
     "restoreAction": "Restaurar",
     "restoredToast": "Revisión {{revision}} cargada en el editor. Guarda para conservarla.",
     "restoreFailed": "No se pudo leer esa revisión. Inténtalo de nuevo.",
-    "currentRevision": "Actual"
+    "currentRevision": "Actual",
+    "review": {
+      "send": "Enviar a revisión",
+      "sendTitle": "Enviar {{key}} a revisión",
+      "sendMessage": "La versión {{version}} queda pendiente de aprobación. Si alguien edita el contenido antes, vuelve a Borrador.",
+      "noteLabel": "Nota para quien revise (opcional)",
+      "approve": "Aprobar versión {{version}}",
+      "approveTitle": "Aprobar la versión {{version}}",
+      "approveMessage": "Quedará como aprobada por {{name}} el {{date}}.",
+      "approveAction": "Aprobar",
+      "selfApprovalNote": "Eres quien escribió este caso. Como en este espacio de trabajo no hay nadie más, puedes aprobarlo, y quedará registrado como autoaprobación.",
+      "return": "Devolver…",
+      "returnTitle": "Devolver {{key}} a Borrador",
+      "returnMessage": "Quien lo escribió verá tu comentario en el caso hasta que lo vuelva a enviar.",
+      "returnAction": "Devolver",
+      "commentLabel": "Qué hay que cambiar (obligatorio)",
+      "obsolete": "Marcar obsoleto",
+      "obsoleteTitle": "Marcar {{key}} como obsoleto",
+      "obsoleteMessage": "El caso se conserva en el histórico, pero deja de usarse. Puedes reactivarlo más tarde como borrador.",
+      "obsoleteApproved": "El caso pierde la aprobación y deja de usarse. Puedes reactivarlo más tarde como borrador.",
+      "reactivate": "Reactivar",
+      "reactivateTitle": "Reactivar {{key}}",
+      "reactivateMessage": "El caso vuelve a Borrador. Para aprobarlo otra vez hay que enviarlo a revisión.",
+      "saveFirst": "Guarda los cambios antes de seguir con la revisión.",
+      "notAllowed": {
+        "author": "Lo tiene que aprobar otra persona.",
+        "role": "Tu rol no puede aprobar casos.",
+        "notMember": "No eres miembro de este espacio de trabajo."
+      },
+      "banner": {
+        "sent": "Enviado a revisión por {{name}} · {{date}}",
+        "returned": "Devuelto por {{name}} · {{date}}",
+        "approved": "Aprobado por {{name}} · {{date}} · versión {{version}}",
+        "selfApproved": "autoaprobación",
+        "legacy": "Aprobado (sin registro de quién lo aprobó: se aprobó antes de la 0.5)."
+      },
+      "editingReviewed": "Este caso está en revisión. Si guardas cambios en el contenido, vuelve a Borrador y hay que enviarlo otra vez.",
+      "editingApproved": "Este caso está aprobado. Si guardas cambios en el contenido, vuelve a Borrador, pierde la aprobación y sube de versión.",
+      "changesSince": "Cambios desde la revisión {{revision}} ({{status}})",
+      "toast": {
+        "send": "{{key}} enviado a revisión",
+        "approve": "Versión {{version}} de {{key}} aprobada",
+        "return": "{{key}} devuelto a Borrador",
+        "obsolete": "{{key}} marcado como obsoleto",
+        "reactivate": "{{key}} reactivado como borrador"
+      },
+      "errors": {
+        "notAllowed": "No puedes aprobar este caso: lo tiene que aprobar otra persona.",
+        "comment": "Escribe qué hay que cambiar.",
+        "transition": "El caso cambió mientras tanto. Vuelve a abrirlo y repite la acción.",
+        "generic": "No se pudo completar la acción. Inténtalo de nuevo."
+      },
+      "approvedBy": "Aprobado por"
+    },
+    "diff": {
+      "none": "Sin cambios de contenido.",
+      "at": "{{field}} {{n}}",
+      "kind": {
+        "added": "añadido",
+        "removed": "quitado",
+        "changed": "cambiado",
+        "moved": "movido"
+      },
+      "field": {
+        "title": "Título",
+        "description": "Descripción",
+        "mappedUseCase": "Caso de uso",
+        "expectedResult": "Resultado esperado",
+        "testData": "Datos de prueba",
+        "dataRequirements": "Requisitos de datos",
+        "environmentRequirements": "Requisitos de entorno",
+        "notes": "Notas",
+        "traceability": "Otras referencias",
+        "featureSource": "Gherkin",
+        "background": "Precondición compartida",
+        "preconditions": "Precondición",
+        "steps": "Paso",
+        "postconditions": "Postcondición",
+        "acceptanceCriteria": "Criterio de aceptación",
+        "requirementKeys": "Requisito",
+        "examples": "Examples",
+        "flows": "Flujo"
+      }
+    },
+    "baselines": {
+      "open": "Baselines",
+      "title": "Baselines de suite",
+      "back": "Casos",
+      "lead": "Una baseline congela un conjunto de casos en su revisión exacta. No se edita ni se borra: para cambiarla, crea otra.",
+      "new": "Nueva baseline",
+      "newTitle": "Nueva baseline",
+      "newHint": "Guarda cada caso tal como está ahora, con su revisión y su estado.",
+      "name": "Nombre",
+      "namePlaceholder": "Regresión release 2.4",
+      "description": "Descripción (opcional)",
+      "casesLegend": "Casos",
+      "scope": {
+        "all_one": "Todos los casos del proyecto ({{count}}, sin contar los obsoletos)",
+        "all_other": "Todos los casos del proyecto ({{count}}, sin contar los obsoletos)",
+        "filtered_one": "El caso del filtro actual",
+        "filtered_other": "Los {{count}} casos del filtro actual",
+        "selected_one": "El caso seleccionado",
+        "selected_other": "Los {{count}} casos seleccionados"
+      },
+      "scopeLabel": {
+        "all_one": "Todos los casos",
+        "all_other": "Todos los casos",
+        "filtered_one": "Filtro de la lista",
+        "filtered_other": "Filtro de la lista",
+        "selected_one": "Selección de {{count}} caso",
+        "selected_other": "Selección de {{count}} casos"
+      },
+      "approvedOnlyLabel": "Solo los casos aprobados",
+      "approvedOnly": "Solo aprobados",
+      "leftOut_one": "Entran {{kept}} casos. Se queda fuera {{count}} que no está aprobado: {{keys}}.",
+      "leftOut_other": "Entran {{kept}} casos. Se quedan fuera {{count}} que no están aprobados: {{keys}}.",
+      "nothing": "Ningún caso entra en la baseline. Desmarca «Solo los casos aprobados» o elige otros casos.",
+      "freeze_one": "Congelar {{count}} caso",
+      "freeze_other": "Congelar {{count}} casos",
+      "createdToast": "Baseline «{{name}}» creada con {{count}} casos",
+      "createFailed": "No se pudo crear la baseline.",
+      "loadFailed": "No se pudieron cargar las baselines.",
+      "loading": "Cargando…",
+      "empty": "Aún no hay baselines en este proyecto.",
+      "compare": "Comparar",
+      "compareTitle": "Comparar",
+      "from": "Baseline de origen",
+      "to": "Comparar con",
+      "versus": "frente a",
+      "current": "Estado actual",
+      "onlyChanged": "Solo los casos con cambios ({{count}})",
+      "noChanges": "No hay diferencias.",
+      "col": {
+        "name": "Nombre",
+        "cases": "Casos",
+        "created": "Creada",
+        "actions": "Acciones",
+        "change": "Cambio",
+        "revision": "Revisión",
+        "status": "Estado"
+      },
+      "count": {
+        "added": "Añadidos",
+        "removed": "Quitados",
+        "content": "Contenido cambiado",
+        "status": "Solo estado cambiado",
+        "same": "Sin cambios"
+      },
+      "change": {
+        "added": "Añadido",
+        "removed": "Quitado",
+        "content": "Contenido",
+        "status": "Estado",
+        "same": "Sin cambios"
+      }
+    }
   },
   "dashboard": {
     "loadFailed": "No se pudieron cargar tus proyectos.",
@@ -4205,7 +4481,7 @@
     },
     "verdictHelp": {
       "goWithRisks": "El ciclo se cierra y la versión puede salir; los riesgos justificados constan en el informe.",
-      "noGo": "El ciclo se cierra, pero la versión no sale. Abre otro ciclo para el re-test."
+      "noGo": "El ciclo se cierra, pero la versión no sale. Abre otro ciclo para repetir la prueba."
     },
     "signs": "Firmará: {{name}} · {{at}} · queda en Auditoría",
     "close": "Cerrar ciclo",

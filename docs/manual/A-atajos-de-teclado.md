@@ -48,15 +48,23 @@ atajos siguen siendo los de tu navegador.
 | Tab | Inicio | Recorre las tarjetas (son enlaces) y los paneles en orden |
 | Intro | Una tarjeta o una fila de «Próximas pruebas» | La abre |
 | ↑ ↓ e Intro | Selector de periodo y selector de proyecto de «Criterios de salida» | Recorren y eligen una opción |
-| ← → | Pestañas de «Próximas pruebas» (y las del Inicio en el móvil) | Cambian de pestaña |
+| ← → | Pestañas del Inicio en el móvil | Cambian de pestaña |
+| ↑ ↓ e Intro | Selector de «Próximas pruebas» | Eligen la lista |
+| ← → , Inicio, Fin | La gráfica de «Ejecuciones diarias» (con Tab) | Recorren los días y muestran sus valores |
 | Esc | Un selector abierto | Lo cierra |
+| Tab | Modo configurar | Pasa de un gadget a otro |
+| ← → ↑ ↓ | Un gadget, en el modo configurar | Lo mueve; dos gadgets iguales y contiguos se intercambian |
+| Mayús + ← → ↑ ↓ | Un gadget, en el modo configurar | Cambia su tamaño, nunca por debajo del mínimo |
+| Esc | Modo configurar | Sale sin guardar (pregunta si cambiaste algo) |
 
 ### 4. Proyectos
 
 | Tecla | Dónde | Qué hace |
 | --- | --- | --- |
-| Intro | Campo «Nombre del proyecto» | Crea el proyecto |
-| Esc | Fila de crear proyecto | No la cierra: usa «Cancelar» |
+| ← → (o ↑ ↓) | «Cómo empezar», en «Nuevo proyecto» | Cambian entre «Proyecto en blanco» y «A partir de uno existente» |
+| Intro | «Cómo empezar» | Pasa al paso siguiente, como «Siguiente» |
+| Intro | «Nombre del proyecto» o «Prefijo de ID de caso», en «Datos generales» | Crea el proyecto, como «Crear proyecto» |
+| Esc | El asistente «Nuevo proyecto» | Lo cierra sin crear nada; si ya habías escrito o elegido algo, antes pregunta |
 | Tab | Lista | Recorre las tarjetas de «Recientes», el buscador, el orden y las filas de la tabla |
 | Intro | El nombre de un proyecto | Lo abre |
 | ↑ ↓ e Intro | Menú «⋯» de una fila y menú de orden | Recorren y eligen una opción |
@@ -67,8 +75,17 @@ atajos siguen siendo los de tu navegador.
 | Tecla | Dónde | Qué hace |
 | --- | --- | --- |
 | Tab / Mayús+Tab | Cualquier paso | Recorre los campos; al cambiar de paso, el foco va a su título |
-| Intro | «Especifica otro…» (tipos), «Otro entregable», «¿No está en la lista?» (herramientas) | Añade lo escrito |
+| Intro | «Otro tipo de prueba…», «Otro entregable…», «¿No está en la lista?» (herramientas) | Añade lo escrito |
+| ↑ ↓ / Inicio / Fin | Una lista desplegable abierta (estado, metodología, frecuencia…) | Recorre las opciones; una letra salta a la que empieza por ella |
+| Intro o Espacio | Una lista desplegable | La abre; abierta, elige la opción marcada |
+| Esc | Una lista desplegable abierta | La cierra sin cambiar nada; el foco vuelve al campo |
 | Intro | Fecha de un sprint o un hito (dd/mm/aaaa) | Aplica la fecha; salir del campo también la aplica |
+| Alt+↓ | Un campo de fecha (la del plan, un ciclo, el informe…) | Abre el calendario |
+| ← → / ↑ ↓ | Calendario de un campo de fecha | Día anterior o siguiente / semana anterior o siguiente |
+| Inicio / Fin | Calendario de un campo de fecha | Primer o último día de la semana |
+| RePág / AvPág | Calendario de un campo de fecha | Mes anterior o siguiente |
+| Intro o Espacio | Calendario de un campo de fecha | Elige el día enfocado y cierra |
+| Esc | Calendario de un campo de fecha | Lo cierra sin cambiar nada; el foco vuelve al botón del calendario |
 | ← → | Calendario del cronograma | Día anterior o siguiente |
 | ↑ ↓ | Calendario del cronograma | Semana anterior o siguiente |
 | Inicio / Fin | Calendario del cronograma | Primer o último día de la semana |
@@ -120,6 +137,7 @@ atajos siguen siendo los de tu navegador.
 | ← → | Filtro de estado (Todos · Planificados · Activos · Cerrados) | Cambia de filtro |
 | ← → | Pestañas «Elementos» y «Runs» | Cambian de pestaña |
 | Intro | Diálogo «Nuevo ciclo» / «Editar» | Guarda el ciclo |
+| Alt+↓ | «Empieza» o «Termina» | Abre el calendario (flechas, RePág/AvPág, Inicio/Fin, Intro elige, Esc cierra; capítulo 5) |
 | Intro | Campo «Asignado» de un elemento | Guarda el asignado (salir del campo también) |
 | ↑ ↓ e Intro | Menú de un elemento («Subir», «Bajar», «Quitar del ciclo») y menú «⋯» del ciclo | Recorren y eligen |
 | Esc | Confirmación de eliminar | No la cierra: usa «Cancelar» |
@@ -191,6 +209,7 @@ funcionan «?» y Ctrl+Mayús+N.
 | Inicio, Fin | Pestañas de Administración | Van a la primera o a la última |
 | Esc | Diálogos de plantilla y de conflictos | Los cierran; con cambios, preguntan antes |
 | Esc | Clave de recuperación mostrada | No la cierra: marca «Ya la he guardado» |
+| Esc | Detalle de un evento de auditoría | Lo cierra |
 
 ### 16. Evidencias
 

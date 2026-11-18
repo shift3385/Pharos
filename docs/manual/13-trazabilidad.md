@@ -25,10 +25,18 @@ Playwright cambia lo que muestra la matriz. Lo matizan tres avisos:
 
 - **Flaky:** el test pasó después de fallar.
 - **Desactualizado:** se ejecutó una revisión anterior del caso.
-- **Re-test:** el caso falló y su defecto ya está corregido; toca repetirlo.
+- **Por confirmar:** el caso falló y su defecto ya está corregido; toca repetirlo.
 
 El **riesgo** del requisito (probabilidad × impacto) ordena la matriz: lo más
-arriesgado, primero.
+arriesgado, primero. Las **bandas** (bajo, medio, alto) son las del proyecto
+(capítulo 14).
+
+La **cobertura ponderada por riesgo** pesa cada requisito evaluado por su
+nivel de riesgo: cubrir un requisito de nivel 20 cuenta cinco veces más que
+uno de nivel 4. Es la suma del nivel de los requisitos cubiertos entre la del
+nivel de todos los evaluados; los requisitos sin riesgo evaluado quedan fuera
+y se cuentan aparte. La **aprobada** hace la misma cuenta con los requisitos
+que tienen todos sus casos ejecutados y en Pasa.
 
 En este manual, Liomar revisa qué está probado de Pharos 0.3.0 cuando ya
 tiene la importación de JUnit, la ejecución manual y los dos defectos.
@@ -43,7 +51,7 @@ tiene la importación de JUnit, la ejecución manual y los dos defectos.
 
 ### 13.2. El último resultado de cada caso
 
-«Estado de prueba» es el último resultado final de cada caso, venga de un run manual o de un informe importado: el estado, la clave del run y la fecha. Los avisos lo matizan: «Flaky» (pasó tras fallar), «Desactualizado» (se ejecutó una revisión anterior del caso) y «Re-test» (falló y su defecto ya está corregido). «Defectos» enseña los de cada caso, con su severidad; los cerrados, atenuados. En este ejemplo, el caso de acceso PH-001 falla en el último run y lleva su defecto crítico.
+«Estado de prueba» es el último resultado final de cada caso, venga de un run manual o de un informe importado: el estado, la clave del run y la fecha. Los avisos lo matizan: «Flaky» (pasó tras fallar), «Desactualizado» (se ejecutó una revisión anterior del caso) y «Por confirmar» (falló y su defecto ya está corregido). «Defectos» enseña los de cada caso, con su severidad; los cerrados, atenuados. En este ejemplo, el caso de acceso PH-001 falla en el último run y lleva su defecto crítico.
 
 ![El último resultado de cada caso](img/trazabilidad/02-resultados.png)
 
@@ -63,19 +71,25 @@ La clave del run (RUN-…) de un resultado abre la pantalla de ese run, con todo
 
 ![Ordenar por riesgo](img/trazabilidad/05-orden.png)
 
-### 13.6. Solo los huecos
+### 13.6. Cobertura ponderada por riesgo
+
+«Cobertura ponderada» pesa cada requisito por su nivel de riesgo (probabilidad × impacto): cubrir uno de nivel 20 cuenta cinco veces más que uno de nivel 4, así un hueco en lo más arriesgado se nota más que en lo trivial. Debajo pone la «aprobada» (los requisitos con todos sus casos ejecutados y en Pasa) y cuántos requisitos sin evaluar quedan fuera; el ⓘ enseña la cuenta y las bandas del proyecto (capítulo 14). Bajo las cifras, una barra por banda —alto, medio, bajo y sin evaluar— dice cuántos requisitos de cada una tienen caso. Sigue los filtros de ciclo, configuración, build y entorno, como el informe de estado.
+
+![Cobertura ponderada por riesgo](img/trazabilidad/06-ponderada.png)
+
+### 13.7. Solo los huecos
 
 «Mostrar solo huecos» deja los requisitos sin ningún caso, lo primero que conviene resolver antes de cerrar un ciclo. Debajo, «Huecos de trazabilidad» reúne lo que rompe la cadena requisito ↔ caso ↔ defecto: casos sin requisito, casos que enlazan un requisito inexistente y defectos sin caso vinculado.
 
-![Solo los huecos](img/trazabilidad/06-huecos.png)
+![Solo los huecos](img/trazabilidad/07-huecos.png)
 
-### 13.7. Migrar referencias escritas a mano
+### 13.8. Migrar referencias escritas a mano
 
 Si un caso menciona un ID de requisito en su texto libre («Otras referencias (texto libre)»), la matriz no lo cuenta. «Migrar trazabilidad» propone convertirlo en un vínculo real: marca los que quieras y pulsa «Aplicar». En este ejemplo, la checklist de humo (PH-004) citaba REQ-006 en el capítulo 8.
 
-![Migrar referencias escritas a mano](img/trazabilidad/07-migrar.png)
+![Migrar referencias escritas a mano](img/trazabilidad/08-migrar.png)
 
-### 13.8. Exportar la matriz
+### 13.9. Exportar la matriz
 
 «Exportar matriz (.xlsx)», en la cabecera, guarda la matriz en un libro de Excel: requisitos, casos, estados y defectos, más la hoja «Resultados» con el run, la fecha y los defectos de cada caso, y anotados los filtros que estaban activos. Sirve para compartirla con quien no usa Pharos o adjuntarla a una auditoría. El archivo va a tu carpeta de descarga y un aviso dice su nombre.
 
@@ -128,7 +142,7 @@ Si un caso menciona un ID de requisito en su texto libre («Otras referencias (t
 - Capítulo 11, «Ejecución manual»: el informe de estado, que resume la misma
   información por ronda.
 - [Glosario](../GLOSARIO.md): «Último resultado», «Desactualizado»,
-  «Re-test», «Banda de riesgo».
+  «Por confirmar», «Banda de riesgo».
 
 ---
 

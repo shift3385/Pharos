@@ -25,4 +25,16 @@ requirementKeys: Array<string>,
 /**
  * `data.traceability`: free-text links, for the migration to requirements.
  */
-traceability: string, updatedAt: string, revision: number, };
+traceability: string, 
+/**
+ * `data.review` (who sent it, or why it came back) or null (CAS-02).
+ */
+review: unknown, 
+/**
+ * `data.approval` (who approved it, and when) or null (CAS-02).
+ */
+approval: unknown, 
+/**
+ * The account that created the case: its author in the review flow.
+ */
+createdBy: string, updatedAt: string, revision: number, };

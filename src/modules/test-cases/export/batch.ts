@@ -1,3 +1,4 @@
+import { approvalLine } from "./approvalLine";
 import {
   customFieldApi,
   effectiveCaseType,
@@ -151,6 +152,7 @@ export async function projectCaseFiles(
     const exportable = {
       ...caseToExportable(full, t, fields),
       extraTables: [caseCyclesTable(full.id, cycles, t, lang)],
+      approvalLine: approvalLine(full.status, full.data?.approval, t, lang),
     };
     const { filename, buffer } = await buildCaseXlsx(exportable, lang);
     out.push({ name: filename, buffer });

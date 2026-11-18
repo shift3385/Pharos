@@ -26,15 +26,21 @@ pruebas:
 
 ### 2.1. La pantalla de Pharos
 
-Todas las pantallas comparten la misma estructura. A la izquierda, el menú lateral: «Inicio» y «Proyectos» arriba; dentro de un proyecto, el bloque «Proyecto activo» con sus secciones; «Administración» en «Configuración» y, al pie, la sincronización, la versión instalada y tu menú de usuario. Arriba, la barra con la ruta (migas de pan), el buscador, las notificaciones y el cambio de tema. El resto es el contenido de la sección abierta: en este ejemplo, el «Tablero» del proyecto «Pharos».
+Todas las pantallas comparten la misma estructura. A la izquierda, el menú lateral: «Inicio» y «Proyectos» arriba; dentro de un proyecto, el bloque «Proyecto activo» con sus secciones; «Administración» en «Configuración» y, al pie, la sincronización y tu menú de usuario. Arriba del todo, el logotipo y el nombre «Pharos», que abren «Acerca de Pharos»; en el borde derecho del menú, a media altura, la pestaña que lo contrae. Arriba, la barra con la ruta (migas de pan), el buscador, las notificaciones y el cambio de tema. El resto es el contenido de la sección abierta: en este ejemplo, el «Tablero» del proyecto «Pharos».
 
 ![La pantalla de Pharos](img/navegacion/01-estructura.png)
 
-### 2.2. Las secciones y el proceso de prueba
+### 2.2. Acerca de Pharos
+
+Un clic en el logotipo o en el nombre «Pharos», arriba del menú lateral, abre «Acerca de Pharos»: la versión instalada y su compilación, la plataforma (escritorio o web), las tecnologías con que está hecha, la licencia, el responsable del proyecto y el asistente de IA que ayuda en su desarrollo. Con el teclado, llega a él con Tab y pulsa Intro o Espacio. Si informas de un fallo, di siempre la versión y la compilación. «Cerrar» o Esc lo cierran. En la tira de iconos también se abre desde el logotipo.
+
+![Acerca de Pharos](img/navegacion/02-acerca-de.png)
+
+### 2.3. Las secciones y el proceso de prueba
 
 El bloque «Proyecto activo» va en el orden del proceso de prueba: cada sección sirve a una de sus actividades, como resume la tabla de debajo. La sección abierta queda resaltada. Al abrir un proyecto existente, Pharos entra en su «Tablero»; uno recién creado se abre en su «Plan de pruebas».
 
-![Las secciones y el proceso de prueba](img/navegacion/02-menu-proyecto.png)
+![Las secciones y el proceso de prueba](img/navegacion/03-menu-proyecto.png)
 
 Cada sección del proyecto sirve a una actividad del proceso de prueba
 (ISTQB CTFL v4, «Proceso de prueba»):
@@ -52,53 +58,53 @@ Cada sección del proyecto sirve a una actividad del proceso de prueba
 «Ajustes del proyecto» no es una actividad: es la configuración del proyecto
 (numeración, campos personalizados y configuraciones) que usan las demás.
 
-### 2.3. Cambiar de proyecto
+### 2.4. Cambiar de proyecto
 
 El selector de la parte superior del bloque, con el prefijo y el nombre del proyecto, salta a otro proyecto sin volver a la lista. Escribe para filtrar (útil con muchos proyectos), muévete con ↑ ↓ y elige con Intro o con un clic. Pharos abre la misma sección en el otro proyecto: si estabas en su «Tablero», llegas al «Tablero» del nuevo. «Ver todos los proyectos», al pie, abre la lista.
 
-![Cambiar de proyecto](img/navegacion/03-cambiar-proyecto.png)
+![Cambiar de proyecto](img/navegacion/04-cambiar-proyecto.png)
 
-### 2.4. Dónde estás: las migas de pan
+### 2.5. Dónde estás: las migas de pan
 
 Tras elegir «API de sincronización», la barra superior muestra la ruta: «Proyectos › API de sincronización › Tablero». Cada tramo, menos el último, es un enlace: «Proyectos» vuelve a la lista. Si un nombre es muy largo, se recorta con «…» y se lee entero al pasar el ratón.
 
-![Dónde estás: las migas de pan](img/navegacion/04-migas.png)
+![Dónde estás: las migas de pan](img/navegacion/05-migas.png)
 
-### 2.5. Buscar (Ctrl+K)
+### 2.6. Buscar (Ctrl+K)
 
 El buscador de la barra superior, o Ctrl+K desde cualquier pantalla (⌘K en Mac), será la búsqueda global de casos, requisitos y proyectos. En esta versión todavía no busca: el panel avisa de que llega en una próxima versión. Mientras tanto, cada lista tiene su propio buscador y, en los casos, Ctrl+P salta a uno concreto (capítulo 8). Esc cierra el panel.
 
-![Buscar (Ctrl+K)](img/navegacion/05-busqueda.png)
+![Buscar (Ctrl+K)](img/navegacion/06-busqueda.png)
 
-### 2.6. Notificaciones
+### 2.7. Notificaciones
 
 La campana, junto al buscador, abrirá tus notificaciones. Como la búsqueda, todavía es un adelanto: el panel avisa de que llegan en una próxima versión. Los avisos de lo que haces (guardado, exportado, sincronizado) aparecen por ahora un momento abajo a la derecha.
 
-![Notificaciones](img/navegacion/06-notificaciones.png)
+![Notificaciones](img/navegacion/07-notificaciones.png)
 
-### 2.7. Tema claro u oscuro
+### 2.8. Tema claro u oscuro
 
 El botón de la luna, a la derecha de la barra superior, pasa Pharos al tema oscuro («Faro Nocturno»); en el tema oscuro es un sol y vuelve al claro. Se aplica al momento y se recuerda en este equipo. En «Administración › General» (capítulo 15) hay además la opción «Según el sistema», que sigue el ajuste de Windows.
 
-![Tema claro u oscuro](img/navegacion/07-tema.png)
+![Tema claro u oscuro](img/navegacion/08-tema.png)
 
-### 2.8. La sincronización, al pie del menú
+### 2.9. La sincronización, al pie del menú
 
-Al pie del menú lateral, un punto de color y una palabra dicen cómo está la sincronización con el servidor: «Sincronizado», «Cambios pendientes (N)», «Sin conexión» o «Conflictos (N)». Pharos sincroniza solo al entrar y cuando vuelve la conexión (y, si activas «Sincronización automática» en Administración › Sincronización, capítulo 15, cada pocos minutos); «Sincronizar ahora» lo hace al momento y avisa de cuántos cambios envió (↑) y recibió (↓). Con conflictos aparece «Revisar conflictos» (capítulo 15).
+Al pie del menú lateral, un punto de color y una palabra dicen cómo está la sincronización con el servidor: «Sincronizado», «Cambios pendientes (N)», «Sin conexión» o «Conflictos (N)». Pharos sincroniza solo al entrar y cuando vuelve la conexión (y, si activas «Sincronización automática» en Administración › Sincronización, capítulo 15, cada pocos minutos); «Sincronizar ahora» lo hace al momento y avisa de cuántos cambios envió (↑) y recibió (↓). Mientras sincroniza, también cuando lo hace solo, las flechas del botón giran y el punto se vuelve un anillo; si tu sistema pide reducir el movimiento, las flechas no giran y basta el anillo. Con conflictos aparece «Revisar conflictos» (capítulo 15).
 
-![La sincronización, al pie del menú](img/navegacion/08-sincronizar.png)
+![La sincronización, al pie del menú](img/navegacion/09-sincronizar.png)
 
-### 2.9. Contraer el menú lateral
+### 2.10. Contraer el menú lateral
 
-El botón junto al logotipo contrae el menú lateral a una tira de iconos con su nombre corto, para dar más espacio a tablas y editores; al pasar el ratón, cada icono dice su nombre completo. Vuelve a pulsarlo para expandirlo. Pharos recuerda tu elección en este equipo. En la tira, la sincronización es solo el punto: púlsalo para sincronizar.
+La pestaña con la flecha ‹, en el borde derecho del menú lateral y a media altura, lo contrae a una tira de iconos con su nombre corto, para dar más espacio a tablas y editores; al pasar el ratón, cada icono dice su nombre completo. En la tira la flecha es ›: púlsala para expandirlo. Pharos recuerda tu elección en este equipo. Al pie de la tira, el icono de las flechas con el punto de estado sincroniza al pulsarlo; al pasar el ratón dice cómo está la sincronización, y sus flechas giran mientras sincroniza.
 
-![Contraer el menú lateral](img/navegacion/09-menu-contraido.png)
+![Contraer el menú lateral](img/navegacion/10-menu-contraido.png)
 
-### 2.10. Pantallas medianas: la tira de iconos
+### 2.11. Pantallas medianas: la tira de iconos
 
 Pharos se adapta al ancho de la ventana. Por debajo de 1280 px (una tableta, o la ventana a media pantalla), el menú lateral es siempre la tira de iconos, el buscador se reduce a la lupa (Ctrl+K sigue funcionando), las tablas ocultan sus columnas menos importantes y lo que no cabe, como las columnas del Tablero, se desplaza de lado. Si la ventana es baja, desplaza la tira para llegar a tu avatar. Por debajo de 600 px pasa al diseño del móvil, con una barra inferior (capítulo 18).
 
-![Pantallas medianas: la tira de iconos](img/navegacion/10-tableta.png)
+![Pantallas medianas: la tira de iconos](img/navegacion/11-tableta.png)
 
 ## Las preguntas de Pharos
 
@@ -109,6 +115,17 @@ propio, nunca con una ventana del navegador. Hay dos clases:
 | --- | --- | --- |
 | Normal | Lo que se puede rehacer o solo pierde lo que no guardaste: descartar cambios, restaurar una revisión, cerrar un run, cambiar de proveedor de IA o reemplazar su clave, quitar un caso del ciclo, desvincular | Con sus botones, o con Esc o un clic fuera, que equivalen a «Cancelar» |
 | Crítica | El botón borra algo guardado y no hay vuelta atrás: eliminar un proyecto, caso, requisito, defecto, tarjeta, ciclo, run o plantilla, acortar la retención, descartar un borrador de ejecución con sus adjuntos, quitar una evidencia | Solo con sus botones: Esc y el clic fuera no hacen nada, para que no se acepte ni se descarte por accidente. El botón de confirmar es rojo |
+
+## Los cuadros de texto
+
+- Los cuadros de varias líneas (resumen del plan, descripciones, pasos para
+  reproducir, notas…) empiezan con unas pocas líneas y crecen solos mientras
+  escribes: no hace falta estirarlos. Solo un texto muy largo llega a su tope
+  (en los textos del plan, la mitad de la ventana) y entonces se desplaza
+  dentro del cuadro.
+- Las palabras no se cortan con guion: pasan enteras a la línea siguiente.
+- Donde algo se desplaza, Pharos muestra una barra fina sin flechas que se
+  marca al pasar el ratón. En el móvil, la del sistema.
 
 ## Atajos de teclado
 
@@ -142,13 +159,18 @@ atajos siguen siendo los de tu navegador.
 - **No veo «Proyecto activo» en el menú.** Solo aparece dentro de un proyecto.
   Abre uno desde «Proyectos» o desde el Inicio.
 - **El menú lateral es una tira de iconos y no puedo expandirlo.** La ventana
-  mide menos de 1280 px de ancho. Agrándala o maximízala: el botón de contraer
-  solo existe en pantallas anchas.
+  mide menos de 1280 px de ancho. Agrándala o maximízala: la pestaña de
+  contraer y expandir, en el borde derecho del menú, solo existe en pantallas
+  anchas.
 - **La búsqueda y la campana solo dicen «próximamente».** Es lo esperado en
   esta versión. Usa el buscador de cada lista y, en los casos, Ctrl+P.
 - **Ctrl+K no hace nada.** Hay un diálogo abierto: ciérralo antes con Esc.
 - **«Sincronizar ahora» no aparece.** Estás sin conexión. Pharos sincroniza
-  solo cuando vuelve la conexión.
+  solo cuando vuelve la conexión. En la tira de iconos, el botón de las
+  flechas sigue ahí, pero no hace nada hasta entonces: su tooltip lo dice.
+- **Las flechas de sincronizar giran y no he pulsado nada.** Pharos está
+  sincronizando solo: al entrar, al volver la conexión o con la
+  sincronización automática. Paran al terminar.
 - **Mis cambios tardan en llegar al otro equipo.** Sin la sincronización
   automática, Pharos solo sincroniza al entrar, al volver la conexión y con
   «Sincronizar ahora». Púlsalo, o activa «Sincronización automática» en
@@ -177,8 +199,9 @@ atajos siguen siendo los de tu navegador.
   trazabilidad o el editor de casos en vista dividida.
 - El selector de proyecto conserva la sección: compara rápidamente el Tablero
   o los Defectos de dos proyectos.
-- Si informas de un fallo, di la versión que aparece al pie del menú lateral
-  (en este manual, la 0.2.0).
+- Si informas de un fallo, di la versión y la compilación de «Acerca de
+  Pharos»: un clic en el logotipo o en el nombre, arriba del menú lateral (en
+  este manual, la 0.2.0).
 
 ## Véase también
 

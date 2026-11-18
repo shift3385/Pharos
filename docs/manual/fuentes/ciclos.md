@@ -44,7 +44,7 @@ falte:
 - **El veredicto.** Si todo lo obligatorio se cumple, es **Go**. Si algo
   falla, eliges **Go con riesgos** (el ciclo se cierra y la versión puede
   salir, con los riesgos justificados) o **No-go** (el ciclo se cierra, pero la
-  versión no sale: abre otro ciclo para el re-test).
+  versión no sale: abre otro ciclo para repetir la prueba).
 
 Al cerrar, Pharos guarda la decisión con las cifras de ese momento,
 congeladas, y quién la tomó y cuándo (queda en Auditoría). El ciclo muestra su

@@ -866,3 +866,95 @@
   font-size: var(--fs-metadata);
   color: var(--color-text-secondary);
 }
+
+/* Review flow (CAS-02, ADR-0047): the case's status panel under the header. */
+.tc-review {
+  display: grid;
+  gap: var(--space-2);
+  margin-block: var(--space-2) var(--space-3);
+}
+.tc-review__banner strong {
+  font-weight: var(--fw-semibold);
+}
+.tc-review__quote {
+  display: block;
+  color: var(--color-text-secondary);
+}
+.tc-review__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.tc-review__why {
+  margin: 0;
+  flex-basis: 100%;
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+}
+.tc-review__cap {
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.tc-review__field {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--fs-ui);
+  color: var(--color-text-secondary);
+}
+.tc-review__error {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--color-error-text);
+}
+
+/* Field-by-field changes (review and baseline comparison). */
+.tc-diff {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.tc-diff__item {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-1);
+  min-width: 0;
+}
+.tc-diff__label {
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+}
+.tc-diff__kind {
+  font-weight: var(--fw-semibold);
+}
+.tc-diff__text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.tc-diff del,
+del.tc-diff__text {
+  background: color-mix(in srgb, var(--color-error) 14%, transparent);
+  color: var(--color-error-text);
+  border-radius: var(--radius-sm);
+}
+.tc-diff ins,
+ins.tc-diff__text {
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  color: var(--color-success-text);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+.tc-diff__none {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-caption);
+}

@@ -89,3 +89,34 @@ describe("testCaseApi", () => {
     }
   });
 });
+
+describe("review transitions (CAS-02)", () => {
+  it("desktop: announces the stored transition with its workspace for the notifications", async () => {
+    onDesktop();
+    const stored = {
+      id: "c1",
+      workspaceId: "ws1",
+      projectId: "p1",
+      scenarioId: "ATS_001",
+      title: "Login",
+      version: "1.0",
+      status: "reviewed",
+      createdBy: "u1",
+      revision: 2,
+      data: { review: { state: "pending", sentBy: "u1", sentByName: "Ana", sentAt: "2026-11-17T10:00:00Z", note: "ok" } },
+    };
+    invoke.mockImplementation(async (cmd: string) => (cmd === "test_case_review" ? stored : desktopAnswer(cmd)));
+    const { onCaseReview } = await import("../model/events");
+    const heard = vi.fn();
+    const off = onCaseReview(heard);
+    await testCaseApi.review({ id: "c1", revision: 1 }, { action: "send", comment: "ok", userId: "u1", userName: "Ana" });
+    off();
+    expect(invoke).toHaveBeenCalledWith(
+      "test_case_review",
+      expect.objectContaining({ id: "c1", input: expect.objectContaining({ action: "send" }) }),
+    );
+    expect(heard).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "sent", caseId: "c1", workspaceId: "ws1", projectId: "p1", revision: 2, comment: "ok" }),
+    );
+  });
+});

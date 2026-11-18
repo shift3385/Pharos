@@ -22,7 +22,9 @@ export interface CaseLastResult {
 
 /** A case row: its summary, which also carries the requirements it links,
  *  and its latest result when there is one. */
-export type ListedCase = TestCaseSummary & { lastResult?: CaseLastResult | null };
+/** `canReview`: in review and this account may approve it (CAS-02,
+ *  `approverCheck`), for the «Por revisar» chip. */
+export type ListedCase = TestCaseSummary & { lastResult?: CaseLastResult | null; canReview?: boolean };
 
 /** The «Ejecución» filter's values: a result status, or `not_run` for a case
  *  with no result yet. */
@@ -33,7 +35,9 @@ export type ResultFilter = (typeof RESULT_FILTERS)[number];
 export const resultOf = (c: ListedCase): string =>
   c.lastResult && c.lastResult.status !== "not_run" ? c.lastResult.status : "not_run";
 
-export type StatusFilter = "all" | TestCaseStatus;
+/** `toReview` («Por revisar», CAS-02): in review, and this account may
+ *  approve it. */
+export type StatusFilter = "all" | "toReview" | TestCaseStatus;
 
 export interface CaseFilters {
   /** Matches the ID, the title or a linked requirement key. */
@@ -141,15 +145,23 @@ function matchesOthers(c: ListedCase, f: CaseFilters): boolean {
 }
 
 export function filterCases(cases: ListedCase[], f: CaseFilters): ListedCase[] {
-  return cases.filter((c) => matchesOthers(c, f) && (f.status === "all" || c.status === f.status));
+  return cases.filter((c) => matchesOthers(c, f) && matchesStatus(c, f.status));
+}
+
+/** Whether a case shows under a state chip. */
+function matchesStatus(c: ListedCase, status: StatusFilter): boolean {
+  if (status === "all") return true;
+  if (status === "toReview") return c.status === "reviewed" && c.canReview === true;
+  return c.status === status;
 }
 
 /** How many cases each state chip would show with the other filters on. */
 export function statusCounts(cases: ListedCase[], f: CaseFilters): Record<StatusFilter, number> {
-  const counts: Record<StatusFilter, number> = { all: 0, draft: 0, reviewed: 0, approved: 0, obsolete: 0 };
+  const counts: Record<StatusFilter, number> = { all: 0, toReview: 0, draft: 0, reviewed: 0, approved: 0, obsolete: 0 };
   for (const c of cases) {
     if (!matchesOthers(c, f)) continue;
     counts.all++;
+    if (matchesStatus(c, "toReview")) counts.toReview++;
     if (c.status in counts) counts[c.status as TestCaseStatus]++;
   }
   return counts;

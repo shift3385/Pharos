@@ -44,6 +44,12 @@ pub const APPEND_ONLY: &[AppendOnly] = &[
         insert_if_absent: crate::runs::result_insert_if_absent,
         owner: crate::runs::result_owner,
     },
+    AppendOnly {
+        entity: crate::case_baseline::ENTITY,
+        read: crate::case_baseline::payload,
+        insert_if_absent: crate::case_baseline::insert_if_absent,
+        owner: crate::case_baseline::owner,
+    },
 ];
 
 /// Version of the set of entities this build applies on pull. A pull cursor
@@ -58,7 +64,8 @@ pub const APPEND_ONLY: &[AppendOnly] = &[
 /// `normalizerVersion` and imported results whose link is derived when read
 /// (ING-02..05); the restart re-pulls the case revisions, so each takes the
 /// server's `createdAt` and leaves `local_only` (`runs/link.rs`).
-pub const APPLIED_SET_VERSION: i64 = 7;
+/// 8: case_baseline, suite baselines (CAS-02, ADR-0047).
+pub const APPLIED_SET_VERSION: i64 = 8;
 
 pub fn append_only(entity: &str) -> Option<&'static AppendOnly> {
     APPEND_ONLY.iter().find(|a| a.entity == entity)

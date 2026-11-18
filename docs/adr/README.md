@@ -50,9 +50,9 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0042](0042-revision-workspaces-sync-v2.md) | Revisión de los workspaces compartidos frente al sync de 0.4: funcionalidad `workspaces`, `documents` por workspace, la 0.4 en solo lectura, mover proyectos, API de roles (TEN-01, SYNC-07, SYNC-04b) | Aceptado | 2026-11-17 |
 | [0043](0043-bandas-de-riesgo-cobertura-ponderada-y-periodo-anterior.md) | Bandas de riesgo por proyecto, cobertura ponderada por riesgo y «Comparar con el periodo anterior» en Inicio (TRZ-04, RED-W4) | Aceptado | 2026-11-12 |
 | [0044](0044-informe-de-cierre-29119-3.md) | Informe de cierre de pruebas 29119-3 de un ciclo cerrado, con textos y aprobación en el ciclo (DOC-01) | Aceptado | 2026-11-12 |
-| 0045 | Contraseña de la cuenta: cambiarla, códigos de recuperación, restablecer por correo (SMTP opcional) y por un administrador (SEC-08, SEC-09) | Reservado: lo aporta la pista C de 0.5.0 | 2026-11-17 |
+| [0045](0045-recuperacion-de-la-cuenta.md) | Recuperación de la cuenta: cambiar la contraseña, códigos de recuperación y restablecer por correo con SMTP opcional (SEC-08, SEC-09) | Aceptado | 2026-11-17 |
 | [0046](0046-despliegue-tls-y-servidor-configurable.md) | Despliegue: TLS con proxy inverso (Caddy) y servidor elegido al iniciar sesión, con las peticiones del escritorio por Rust (SEC-07, SEC-10) | Aceptado | 2026-11-17 |
-| 0047 | Revisión y aprobación de casos por otra persona y baselines de suite (CAS-02) | Reservado: lo aporta la pista K de 0.5.0 | 2026-11-17 |
+| [0047](0047-revision-de-casos-y-baselines.md) | Revisión de casos (borrador → revisión → aprobado) con autor, fecha y comprobación de quién aprueba, y baselines de suite congeladas (CAS-02) | Aceptado | 2026-11-17 |
 | [0048](0048-notificaciones.md) | Notificaciones que viajan por el servidor, una API `notify`/`emitNotification` para las pistas y copia cifrada en el escritorio (RED-W2) | Aceptado | 2026-11-17 |
 
 Los ADR 0011 a 0019 son la compuerta C
