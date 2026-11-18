@@ -7,7 +7,11 @@
 //   - a retired number has a file;
 //   - (local) the files and the MIGRATIONS list in src-tauri/src/db.rs differ,
 //     are listed out of order, or an entry's name differs from the file it
-//     includes: an unregistered file would never run.
+//     includes: an unregistered file would never run;
+//   - (local, `inOrder`) a reserved number is below the highest migration
+//     file: an install that already applied the higher one would apply it out
+//     of order (local 0040 after 0043, SYNC-07). Retire it and reserve a
+//     number above the highest one.
 // It warns (without failing) about reserved numbers that already have a file,
 // so that the reservation is removed from the registry.
 import { readdirSync, readFileSync } from "node:fs";
@@ -41,6 +45,7 @@ export function checkMigrations({
   registered = null,
   reserved = {},
   retired = {},
+  inOrder = false,
 }) {
   const errors = [];
   const byNumber = new Map();
@@ -69,6 +74,15 @@ export function checkMigrations({
       errors.push(
         `${label}: number ${num} is missing (gap); reserve or retire it in scripts/migration-registry.json`,
       );
+    }
+  }
+  if (inOrder) {
+    const highest = String(max).padStart(4, "0");
+    for (const num of Object.keys(reserved).sort()) {
+      if (Number(num) < max && !byNumber.has(num))
+        errors.push(
+          `${label}: reserved number ${num} is below ${highest}, the highest migration: an install that already applied ${highest} would apply ${num} out of order. Retire it and reserve a number above ${highest}`,
+        );
     }
   }
   if (registered) {
@@ -118,6 +132,7 @@ function main() {
         registered,
         reserved: cfg.reserved,
         retired: cfg.retired,
+        inOrder: cfg.inOrder === true,
       }),
     );
     console.log(
