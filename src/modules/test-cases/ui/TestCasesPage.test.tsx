@@ -674,17 +674,18 @@ describe("Casos · revisión (CAS-02)", () => {
     expect(await screen.findByTestId("case-approve")).toBeInTheDocument();
   });
 
-  it("returning a case needs a comment", async () => {
+  it("«Pedir cambios» needs a comment", async () => {
     setViewportWidth(1440);
     review.mockReset();
     renderPage("/projects/p1/cases?case=c3");
     await userEvent.click(await screen.findByTestId("case-return"));
-    const dialog = screen.getByRole("alertdialog", { name: "Devolver PCL-3 a Borrador" });
+    // «Pedir cambios» keeps the case in review (PLN-08).
+    const dialog = screen.getByRole("alertdialog", { name: "Pedir cambios en PCL-3" });
     await userEvent.click(within(dialog).getByTestId("case-return-confirm"));
     expect(within(dialog).getByRole("alert")).toHaveTextContent("Escribe qué hay que cambiar.");
     expect(review).not.toHaveBeenCalled();
     await userEvent.type(within(dialog).getByLabelText(/Qué hay que cambiar/), "Falta el paso 3");
-    review.mockImplementation(async (c: TestCase) => ({ ...c, status: "draft", revision: 2 }));
+    review.mockImplementation(async (c: TestCase) => ({ ...c, status: "reviewed", revision: 2 }));
     await userEvent.click(within(dialog).getByTestId("case-return-confirm"));
     expect(review).toHaveBeenCalledWith(
       expect.objectContaining({ id: "c3" }),
@@ -704,7 +705,7 @@ describe("Casos · revisión (CAS-02)", () => {
     await waitFor(() => expect(approve).toBeEnabled());
     await userEvent.click(approve);
     const dialog = screen.getByRole("alertdialog", { name: "Aprobar la versión 1.0" });
-    expect(dialog).toHaveTextContent("autoaprobación");
+    expect(dialog).toHaveTextContent("aprobación propia");
     await userEvent.click(within(dialog).getByTestId("case-approve-confirm"));
     expect(review).toHaveBeenCalledWith(expect.objectContaining({ id: "c3" }), expect.objectContaining({ action: "approve" }));
   });

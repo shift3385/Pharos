@@ -1171,6 +1171,7 @@ const AUDITED: &[&str] = &[
     "project::project_delete",
     "test_plan::test_plan_create",
     "test_plan::test_plan_update",
+    "test_plan::test_plan_review",
     "test_plan::test_plan_delete",
     "test_case::test_case_create",
     "test_case::test_case_update",
@@ -1598,6 +1599,12 @@ fn every_audited_command_leaves_an_event() {
     });
     step("test_plan::test_plan_update", &mut |tx| {
         crate::test_plan::update_plan(tx, &plan, &plan_input("P2"))
+    });
+    step("test_plan::test_plan_review", &mut |tx| {
+        let send: crate::case_review::ReviewInput =
+            serde_json::from_value(json!({"action": "send", "userId": U, "userName": "Ada"}))
+                .unwrap();
+        crate::test_plan::review_plan(tx, &plan, &send)
     });
     step("test_plan::test_plan_delete", &mut |tx| {
         crate::test_plan::delete_plan(tx, &plan, U)

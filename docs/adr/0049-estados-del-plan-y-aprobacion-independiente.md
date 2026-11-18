@@ -57,7 +57,12 @@
        `{ by, byName, at, version }`.
   5. **Política «Aprobación independiente» por workspace**
      (`workspaces.independent_approval`):
-     - Migración del servidor 0025.
+     - Migración del servidor 0025. La columna admite NULL, que es el valor
+       por defecto de su tipo (`COALESCE(independent_approval, kind =
+       'shared')`): un valor por defecto de columna no puede depender del
+       tipo, y el personal lo crea un disparador de la 0019. Un CHECK impide
+       activarla en un personal. `GET /workspaces` la devuelve
+       (`independentApproval`) y `PATCH /workspaces/:id/policy` la cambia.
      - En el escritorio, una copia en la columna `workspaces.independent_approval`
        de la migración local 0040 de W (acordado con W el 2026-11-17). El
        escritorio la toma de `independentApproval` en `GET /workspaces`
@@ -109,6 +114,27 @@
        baselines no cambian.
      - Se descartó la opción B, mantener la diferencia y explicarla en el
        manual: deja dos reglas para lo mismo.
+- **Implementación (PR 1, 2026-11-17):** servidor, web y núcleo del
+  escritorio.
+  - La acción de «Pedir cambios» conserva el identificador `return` de
+    CAS-02 y deja `data.review.state = "changesRequested"`. Un caso devuelto
+    con la regla anterior (`state: "returned"`, en Borrador) se sigue leyendo
+    y se envía de nuevo como antes.
+  - Un guardado que cambia el contenido de un plan o caso aprobado deja
+    `data.review.reopenedFrom` con la versión aprobada; el que responde a un
+    «Pedir cambios» vuelve `state` a `pending` y conserva el comentario.
+  - El comprobador recibe el workspace donde está guardado el plan o el caso
+    (`DomainTx.workspaceOf`, la fila del documento entre los workspaces del
+    usuario, sin las lápidas de un traslado), no el `workspaceId` de la carga.
+    Lo guardado ya lo lleva bien (desde #82 el almacén lo reescribe), pero una
+    carga sin la clave o todavía sin guardar dice "local".
+  - El autor de un plan en el servidor es el actor de su evento «create» de
+    auditoría: el documento del plan no lo lleva, como el del escritorio.
+  - Quedan para el PR 2, tras W2: la copia de la política en el escritorio
+    (columna de la 0040 de W), la regla con roles en el escritorio, el motivo
+    de «Aprobar» desactivado antes de pulsarlo, y el interruptor «Reglas» de la
+    ficha del workspace. Hasta entonces el núcleo responde por qué no se
+    puede aprobar y la app lo muestra.
 - **Alternativas:**
   - Volver a Borrador al editar un plan aprobado, como CAS-02: el usuario lo
     descartó, porque Borrador es solo la etapa inicial.

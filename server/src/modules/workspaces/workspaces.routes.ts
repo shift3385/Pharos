@@ -16,6 +16,7 @@ const inviteSchema = z.object({
 const codeSchema = z.object({ code: z.string().trim().min(8).max(80) });
 const memberRoleSchema = z.object({ role: roleSchema });
 const moveSchema = z.object({ projectId: z.string().min(1).max(200) });
+const policySchema = z.object({ independentApproval: z.boolean() });
 
 /** Workspaces, members and invitations (SYNC-07, ADR-0042 §2). Everything
  *  needs a session and a supported app version; who may do what is checked
@@ -32,6 +33,10 @@ export function workspaceRoutes(app: FastifyInstance, deps: { service: Workspace
   );
   app.patch("/workspaces/:id", { preHandler }, (req) =>
     service.rename(user(req), param(req, "id"), nameSchema.parse(req.body).name),
+  );
+  // «Aprobación independiente» (PLN-08, ADR-0049).
+  app.patch("/workspaces/:id/policy", { preHandler }, (req) =>
+    service.setIndependentApproval(user(req), param(req, "id"), policySchema.parse(req.body).independentApproval),
   );
   app.delete("/workspaces/:id", { preHandler }, async (req, reply) => {
     await service.remove(user(req), param(req, "id"));

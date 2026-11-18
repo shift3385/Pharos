@@ -45,23 +45,28 @@ revisión, con estas acciones bajo la cabecera del caso.
 | --- | --- | --- |
 | Borrador | «Enviar a revisión» | Pide una nota opcional para quien revise. El caso pasa a «En revisión». |
 | En revisión | «Aprobar versión N» | Pide confirmación. Queda quién aprobó, cuándo y qué versión. |
-| En revisión | «Devolver…» | Pide un comentario obligatorio. El caso vuelve a «Borrador» con el aviso «Devuelto por…». |
+| En revisión | «Pedir cambios…» | Pide un comentario obligatorio. El caso sigue en revisión, con el aviso «Cambios pedidos por…». |
 | Cualquiera | «Marcar obsoleto» | El caso se conserva, pero deja de usarse y pierde la aprobación. |
-| Obsoleto | «Reactivar» | El caso vuelve a «Borrador». |
+| Obsoleto | «Reactivar» | El caso vuelve a «En revisión» (a Borrador si nunca se envió). Hay que aprobarlo de nuevo. |
 
 - Primero se guarda: con cambios sin guardar, las acciones esperan.
 - Quien revisa ve «Cambios desde la revisión N», con lo que cambió campo a
   campo desde la última versión aprobada o enviada. Lo quitado aparece
   tachado y lo añadido, resaltado.
-- Si se edita el título o el contenido de un caso en revisión o aprobado, un
-  aviso lo dice antes de guardar. Al guardar, el caso vuelve a «Borrador»; si
-  estaba aprobado, pierde la aprobación y su versión sube. Cambiar la
-  prioridad, la automatización o los campos personalizados no cuenta.
-- **Quién aprueba.** Lo aprueba alguien que no es quien escribió el caso. Si
-  en el espacio de trabajo no hay nadie más, puede aprobarlo el autor, y
-  queda como «autoaprobación» en el caso, en la lista y en el historial. Con
-  los roles de la 0.5.0 aprobará otra persona: un Test Manager o un Test
-  Analyst.
+- **Borrador es solo el principio**, como en el plan (capítulo 5): un caso
+  se revisa las veces que haga falta hasta que se aprueba.
+- Si se edita el título o el contenido de un caso aprobado, un aviso lo dice
+  antes de guardar. Al guardar, el caso vuelve a «En revisión», pierde la
+  aprobación y su versión sube. Un caso en revisión sigue en revisión; si
+  alguien había pedido cambios, el aviso pasa a «Cambios guardados tras la
+  petición de…». Cambiar la prioridad, la automatización o los campos
+  personalizados no cuenta.
+- **Quién aprueba** lo decide la regla «Aprobación independiente» del espacio
+  de trabajo. Activada (lo normal en un espacio compartido): un Test Manager o
+  un Test Analyst que no sea quien escribió el caso. Desactivada (siempre en
+  tu espacio personal): cualquiera que pueda editar el caso, también el
+  autor, y entonces queda como «aprobación propia» en el caso, en la lista y
+  en el historial.
 - En la lista, el filtro «Por revisar» reúne los casos en revisión que
   puedes aprobar. La ayuda emergente del estado dice quién lo envió o lo
   aprobó. Con varios casos seleccionados, «Enviar a revisión» envía los

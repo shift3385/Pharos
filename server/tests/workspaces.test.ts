@@ -458,8 +458,8 @@ describe("another person approves a case (exit criterion, CAS-02 wired)", () => 
     });
     expect(await ask(tmOnly, luis.userId, ana.userId)).toEqual({ ok: false, reason: "role" });
     expect(await ask(tmOnly, ana.userId, luis.userId)).toEqual({ ok: true, selfApproval: false });
-    expect(await roleAndNotAuthor({ workspaceId: ws, projectId: "p", caseId: "c", authorId: "x", approverId: "y" }, { workspaceId: ws, role: "viewer", kind: "shared", name: "W" })).toEqual({ ok: false, reason: "role" });
-    expect(await requiresApproverRole({ workspaceId: ws, projectId: "p", caseId: "c", authorId: "x", approverId: "y", subject: "plan" }, { workspaceId: ws, role: "test_manager", kind: "shared", name: "W" })).toBeNull();
+    expect(await roleAndNotAuthor({ workspaceId: ws, projectId: "p", caseId: "c", authorId: "x", approverId: "y" }, { workspaceId: ws, role: "viewer", kind: "shared", name: "W", independentApproval: true })).toEqual({ ok: false, reason: "role" });
+    expect(await requiresApproverRole({ workspaceId: ws, projectId: "p", caseId: "c", authorId: "x", approverId: "y", subject: "plan" }, { workspaceId: ws, role: "test_manager", kind: "shared", name: "W", independentApproval: true })).toBeNull();
   });
 });
 

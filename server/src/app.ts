@@ -30,7 +30,7 @@ import {
   workspaceMembership,
 } from "./modules/notifications";
 import { isMember, listMembers } from "./modules/workspaces/members";
-import { workspaceApproverCheck } from "./modules/workspaces/approval";
+import { independentApproval, workspaceApproverCheck } from "./modules/workspaces/approval";
 import { setApproverCheck } from "./modules/domain/case-review";
 import { httpsOnly } from "./modules/security/httpsOnly";
 import { SERVER_VERSION, acceptedMinors } from "./modules/sync/sync.version";
@@ -145,9 +145,10 @@ export function buildApp(deps: {
   // notifications inside their transaction (ADR-0042 §8, ADR-0048).
   const membership = workspaceMembership(pool, { isMember, listMembers });
   const workspaces = createWorkspaceService(pool, clock, notificationWorkspaceHooks(membership));
-  // Who approves a case (CAS-02): Test Manager or Test Analyst of the
-  // workspace, never the author (ADR-0042 §8, decision of 2026-11-17).
-  setApproverCheck(workspaceApproverCheck(pool));
+  // Who approves a case or a plan (CAS-02, PLN-08): the workspace's
+  // «Aprobación independiente» decides (ADR-0049). On, the approval role
+  // and never the author; off, whoever may edit it, the author included.
+  setApproverCheck(workspaceApproverCheck(pool, { rule: independentApproval }));
   const domain = createDomainService(domainStore);
   const cycles = createCycleService(domainStore);
   const runs = createRunService(domainStore);

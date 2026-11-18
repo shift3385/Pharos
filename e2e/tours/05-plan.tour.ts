@@ -107,17 +107,14 @@ chapter("plan", () => {
   step("identificacion", {
     title: "Paso 1 · Identificación del plan",
     caption:
-      "El paso 1 es el bloque de identificación del documento de ISO/IEC/IEEE 29119-3: el título (en este ejemplo, «Plan de pruebas de Pharos 0.3.0»), el estado (Borrador, Revisado u Obsoleto; «Aprobado» se da con el botón «Aprobar» de «Estado del plan», que deja constancia de quién y cuándo), el ID de documento (por defecto «TP-», el prefijo del proyecto y seis caracteres; se puede cambiar), la versión («0.3») y la fecha. El autor no se escribe: es tu nombre oficial del perfil (en este ejemplo, Liomar Rodríguez, capítulo 1); lo ves en el panel «Estado del plan» y firma el plan cuando lo exportas. El estado se elige en una lista desplegable de Pharos, como todas las de la aplicación: la opción elegida lleva una ✓, y con el teclado ↑ ↓ recorren las opciones, una letra salta a la que empieza por ella, Intro elige y Esc cierra; en el móvil se abre como una hoja desde abajo.",
-    covers: ["wizard:identification", "action:pharos-select"],
-    focus: ".popover .pselect__option[data-selected]",
+      "El paso 1 es el bloque de identificación del documento de ISO/IEC/IEEE 29119-3: el título (en este ejemplo, «Plan de pruebas de Pharos 0.3.0»), el estado (no se elige aquí: cambia con las acciones de «Estado del plan», como en los casos), el ID de documento (por defecto «TP-», el prefijo del proyecto y seis caracteres; se puede cambiar), la versión («0.3») y la fecha. El autor no se escribe: es tu nombre oficial del perfil (en este ejemplo, Liomar Rodríguez, capítulo 1); lo ves en el panel «Estado del plan» y firma el plan cuando lo exportas.",
+    covers: ["wizard:identification"],
+    focus: ".tpw-ident",
     run: async () => {
       await $("#tp-title").setValue("Plan de pruebas de Pharos 0.3.0");
       await (await field(P.version)).setValue("0.3");
       await typeDate(await field(P.date), "2026-11-02");
-      await selectOption(P.status, P.statusLabel.draft);
-      // The capture shows the list open, with the ✓ on «Borrador».
-      await $("#tp-status").click();
-      await expect($('[role="listbox"]')).toBeDisplayed();
+      await expect(byTestId("plan-status")).toBeDisplayed();
     },
   });
 
@@ -128,8 +125,6 @@ chapter("plan", () => {
     covers: ["action:date-picker"],
     focus: ".pdate__pop",
     run: async () => {
-      // Closes the status list of the step before.
-      await browser.keys("Escape");
       const date = await field(P.date);
       await date.$("..").$("button.pdate__btn").click();
       await expect($(".pdate-cal")).toBeDisplayed();
@@ -237,6 +232,21 @@ chapter("plan", () => {
       // FIX-14: nothing left to ask, and the step is marked done.
       await expect(byTestId("methodology-gaps")).toHaveText("");
       await expect($("nav.tpw-rail").$(`button*=${P.step.methodology}`)).toHaveAttribute("data-done", "true");
+    },
+  });
+
+  step("lista-desplegable", {
+    title: "Las listas desplegables de Pharos",
+    caption:
+      "La metodología se elige en una lista desplegable de Pharos, como todas las de la aplicación: la opción elegida lleva una ✓, y con el teclado ↑ ↓ recorren las opciones, una letra salta a la que empieza por ella, Intro elige y Esc cierra; en el móvil se abre como una hoja desde abajo.",
+    covers: ["action:pharos-select"],
+    focus: ".popover .pselect__option[data-selected]",
+    run: async () => {
+      await (await field(P.methodology)).click();
+      await expect($('[role="listbox"]')).toBeDisplayed();
+    },
+    after: async () => {
+      await browser.keys("Escape");
     },
   });
 
@@ -574,17 +584,47 @@ chapter("plan", () => {
     },
   });
 
+  step("enviar-plan", {
+    title: "Enviar el plan a revisión",
+    caption:
+      "El estado del plan cambia con las acciones de «Estado del plan», como el de un caso. Un borrador se envía con «Enviar a revisión», con una nota opcional para quien revise, y pasa a «En revisión». Borrador es solo el principio: desde ahí el plan se revisa las veces que haga falta hasta que se aprueba. Con cambios sin guardar, las acciones esperan y dicen por qué.",
+    covers: ["dialogs:src/modules/test-plan/ui/wizard/PlanReviewControls.tsx"],
+    shot: { element: '[role="alertdialog"]' },
+    run: async () => {
+      await byTestId("plan-send-review").click();
+      await $('[role="alertdialog"] textarea').setValue("Primera versión del plan de la 0.3.0.");
+    },
+    after: async () => {
+      await byTestId("plan-send-review-confirm").click();
+      await waitForToast(P.review.toast.send);
+    },
+  });
+
+  step("pedir-cambios-plan", {
+    title: "Pedir cambios en el plan",
+    caption:
+      "Si el plan no está listo, «Pedir cambios…» deja un comentario obligatorio y el plan sigue en revisión, con el aviso «Cambios pedidos por…». Cuando quien lo creó guarda los cambios, el aviso pasa a «Cambios guardados tras la petición de…» y el plan se puede aprobar.",
+    covers: ["dialogs:src/modules/test-plan/ui/wizard/PlanReviewControls.tsx"],
+    shot: { element: '[role="alertdialog"]' },
+    run: async () => {
+      await byTestId("plan-request-changes").waitForEnabled();
+      await byTestId("plan-request-changes").click();
+      await $('[role="alertdialog"] textarea').setValue("Falta el criterio de salida de rendimiento.");
+    },
+    after: async () => {
+      await byTestId("plan-request-changes-confirm").click();
+      await expect($(".plan-review-changes")).toBeDisplayed();
+    },
+  });
+
   step("aprobar", {
     title: "Aprobar el plan",
     caption:
-      "Un plan revisado se aprueba en «Estado del plan». Primero pon el estado en «Revisado» (paso 1) y guarda: «Aprobar versión N» solo se activa con el plan guardado y en «Revisado», y si no, dice por qué debajo. Al pulsarlo, Pharos pide confirmación y recuerda que, si después se edita el contenido, el plan volverá a «Revisado» y habrá que aprobarlo de nuevo.",
-    covers: ["dialogs:src/modules/test-plan/ui/TestPlanWizard.tsx", "action:plan-approve"],
+      "En revisión, el plan se aprueba con «Aprobar versión N». Pharos pide confirmación y recuerda que, si después se edita el contenido, el plan volverá a «En revisión» y habrá que aprobarlo de nuevo.",
+    covers: ["dialogs:src/modules/test-plan/ui/wizard/PlanReviewControls.tsx", "action:plan-approve"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
-      await goToStep("identification");
-      await selectOption(P.status, P.statusLabel.reviewed);
-      await button(P.save).click();
-      await waitForToast(P.savedToast);
+      await byTestId("plan-approve").waitForEnabled();
       await byTestId("plan-approve").click();
       await expect($('[role="alertdialog"]')).toBeDisplayed();
     },
@@ -593,12 +633,49 @@ chapter("plan", () => {
   step("aprobado", {
     title: "Plan aprobado",
     caption:
-      "Al confirmar, el plan pasa a «Aprobado» sin cambiar de versión, y «Estado del plan» muestra quién lo aprobó y cuándo; el PDF y el Excel lo llevan en la cabecera. El «Historial» lo apunta. Si luego cambias el contenido, un aviso lo dice antes de guardar, el plan vuelve a «Revisado» con una versión nueva y el historial indica que perdió la aprobación.",
+      "Al confirmar, el plan pasa a «Aprobado» sin cambiar de versión, y «Estado del plan» muestra quién lo aprobó y cuándo; el PDF y el Excel lo llevan en la cabecera. Liomar trabaja en su espacio personal, que no pide aprobación independiente, así que aprueba su propio plan y queda como «aprobación propia»; en un espacio compartido con la regla activada lo aprobaría un Test Manager que no sea el autor. El «Historial» lo apunta. Si luego cambias el contenido, un aviso lo dice antes de guardar, el plan vuelve a «En revisión» con una versión nueva y el historial indica que perdió la aprobación.",
     covers: ["action:plan-approved"],
     focus: "aside.tpw-side",
     run: async () => {
-      await $('[role="alertdialog"]').$(`button=${P.approval.action}`).click();
-      await waitForToast(P.approval.toast.replace("{{version}}", "").split("(")[0].trim());
+      await byTestId("plan-approve-confirm").click();
+      await waitForToast(P.review.toast.approve.replace("{{version}}", "").split("(")[0].trim());
+      await expect(byTestId("plan-approved-by")).toBeDisplayed();
+    },
+  });
+
+  step("obsoleto-plan", {
+    title: "Marcar el plan como obsoleto",
+    caption:
+      "«Marcar obsoleto» pide confirmación: el plan se conserva, pero deja de usarse y, si estaba aprobado, pierde la aprobación.",
+    covers: ["dialogs:src/modules/test-plan/ui/wizard/PlanReviewControls.tsx"],
+    shot: { element: '[role="alertdialog"]' },
+    run: async () => {
+      await byTestId("plan-obsolete").click();
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
+    },
+    after: async () => {
+      await $('[role="alertdialog"]').$(`button=${P.review.obsolete}`).click();
+      await waitForToast(P.review.toast.obsolete);
+    },
+  });
+
+  step("reactivar-plan", {
+    title: "Reactivar el plan",
+    caption:
+      "«Reactivar» devuelve el plan a «En revisión» (a Borrador si nunca se envió). No recupera la aprobación anterior: hay que aprobarlo de nuevo, como hace aquí Liomar.",
+    covers: ["dialogs:src/modules/test-plan/ui/wizard/PlanReviewControls.tsx"],
+    shot: { element: '[role="alertdialog"]' },
+    run: async () => {
+      await byTestId("plan-reactivate").click();
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
+    },
+    after: async () => {
+      await $('[role="alertdialog"]').$(`button=${P.review.reactivate}`).click();
+      await waitForToast(P.review.toast.reactivate);
+      // Approved again: the next chapters start from an approved plan.
+      await byTestId("plan-approve").waitForEnabled();
+      await byTestId("plan-approve").click();
+      await byTestId("plan-approve-confirm").click();
       await expect(byTestId("plan-approved-by")).toBeDisplayed();
     },
   });

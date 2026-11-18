@@ -3,7 +3,7 @@ import type { CaseReviewAction } from "./CaseReviewAction";
 
 export type CaseReviewInput = { action: CaseReviewAction, 
 /**
- * The note to the reviewer (send) or why the case goes back (return).
+ * The note to the reviewer (send) or what has to change (return).
  */
 comment?: string, 
 /**

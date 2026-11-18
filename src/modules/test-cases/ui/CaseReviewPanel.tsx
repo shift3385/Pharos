@@ -8,16 +8,25 @@ import { TextArea } from "@shared/ui/TextArea";
 import { useToast } from "@shared/ui/Toast";
 import { testCaseApi } from "../api/testCaseApi";
 import { diffCase } from "../model/caseDiff";
-import { allowedActions, approvalOf, isReturned, reviewErrorKey, reviewOf, type ReviewAction } from "../model/review";
+import {
+  allowedActions,
+  approvalOf,
+  changesMade,
+  isReturned,
+  reviewErrorKey,
+  reviewOf,
+  type ReviewAction,
+} from "../model/review";
 import type { TestCase } from "../model/types";
 import { approverCheck, type ApprovalVerdict } from "../review/approver";
 import { CaseChanges } from "./CaseChanges";
 import { stampLabel } from "./caseTones";
 
 /**
- * «Estado del caso» of a saved case (CAS-02, ADR-0047): who sent it, who
- * returned it and why, who approved it; the next step of the flow (send,
- * approve or return, mark obsolete, reactivate), each confirmed; and, while
+ * «Estado del caso» of a saved case (CAS-02, ADR-0047; PLN-08, ADR-0049):
+ * who sent it, who asked for changes and why, who approved it; the next
+ * step of the flow (send, approve or «Pedir cambios», mark obsolete,
+ * reactivate), each confirmed; and, while
  * in review, what changed since the last approved or sent state. The cores
  * enforce every rule; this only asks and shows.
  */
@@ -134,15 +143,28 @@ export function CaseReviewPanel({
       {isReturned(status, review) && review && (
         <Alert kind="warning" role="note" className="tc-review__banner case-review-returned">
           <strong>
-            {t("testCase.review.banner.returned", { name: review.returnedByName || "—", date: date(review.returnedAt) })}
+            {t(status === "reviewed" ? "testCase.review.banner.changesRequested" : "testCase.review.banner.returned", {
+              name: review.returnedByName || "—",
+              date: date(review.returnedAt),
+            })}
           </strong>
           {review.comment && <span className="tc-review__quote">«{review.comment}»</span>}
         </Alert>
       )}
-      {status === "reviewed" && review && (
+      {status === "reviewed" && review && !isReturned(status, review) && (
         <Alert kind="info" role="note" className="tc-review__banner case-review-sent">
-          <strong>{t("testCase.review.banner.sent", { name: review.sentByName || "—", date: date(review.sentAt) })}</strong>
-          {review.note && <span className="tc-review__quote">«{review.note}»</span>}
+          <strong>
+            {review.reopenedFrom
+              ? t("testCase.review.banner.reopened", { version: review.reopenedFrom })
+              : t("testCase.review.banner.sent", { name: review.sentByName || "—", date: date(review.sentAt) })}
+          </strong>
+          {changesMade(status, review) ? (
+            <span className="tc-review__quote case-review-changes-made">
+              {t("testCase.review.banner.changesMade", { name: review.returnedByName || "—", comment: review.comment })}
+            </span>
+          ) : (
+            review.note && <span className="tc-review__quote">«{review.note}»</span>
+          )}
         </Alert>
       )}
       {status === "approved" && (

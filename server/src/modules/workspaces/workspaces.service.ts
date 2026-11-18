@@ -24,6 +24,9 @@ export interface WorkspaceView {
   name: string;
   kind: "personal" | "shared";
   role: WorkspaceRole;
+  /** «Aprobación independiente» (PLN-08, ADR-0049); the desktop mirrors it
+   *  (and reads it as false when an older server leaves it out). */
+  independentApproval: boolean;
   members: MemberView[];
 }
 
@@ -123,6 +126,7 @@ export function createWorkspaceService(pool: Pool, clock: ServerClock, hooks: Wo
     name: m.name,
     kind: m.kind,
     role: m.role,
+    independentApproval: m.independentApproval,
     members: await members(pool, m.workspaceId),
   });
 
@@ -169,6 +173,29 @@ export function createWorkspaceService(pool: Pool, clock: ServerClock, hooks: Wo
       await inTx(async (c) => {
         await managed(c, userId, workspaceId);
         await c.query(`UPDATE workspaces SET name = $2 WHERE id = $1`, [workspaceId, name.trim()]);
+      });
+      return view(await requireMembership(pool, userId, workspaceId));
+    },
+
+    /** Turns «Aprobación independiente» on or off (PLN-08, ADR-0049): a Test
+     *  Manager of a shared workspace (a personal one is always off). The
+     *  approvals already given stay; the change is audited. */
+    async setIndependentApproval(userId: string, workspaceId: string, enabled: boolean): Promise<WorkspaceView> {
+      await inTx(async (c) => {
+        const ws = await managed(c, userId, workspaceId);
+        if (ws.independentApproval === enabled) return;
+        await c.query(`UPDATE workspaces SET independent_approval = $2 WHERE id = $1`, [workspaceId, enabled]);
+        await appendWebEvent(c, clock, {
+          userId,
+          workspaceId,
+          action: "update",
+          entity: "workspace",
+          entityId: workspaceId,
+          projectId: null,
+          entityKey: ws.name,
+          changes: { independentApproval: [ws.independentApproval, enabled] },
+          summary: { independentApproval: enabled },
+        });
       });
       return view(await requireMembership(pool, userId, workspaceId));
     },
