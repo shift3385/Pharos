@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import vectors from "../../../../src-tauri/tests/fixtures/run-id-vectors.json";
+import vectors from "../../../src-tauri/tests/fixtures/run-id-vectors.json";
 import {
   NS_RESULT,
   NS_RUN_SHARD,

@@ -22,7 +22,7 @@ import {
 
 const DIR = resolve(
   process.cwd(),
-  "src/shared/contracts/pharos-run/fixtures/ing01",
+  "packages/formats/src/fixtures/ing01",
 );
 const read = (p: string) => readFileSync(join(DIR, p), "utf8");
 const parse = (p: string) => parseReportText(read(p));

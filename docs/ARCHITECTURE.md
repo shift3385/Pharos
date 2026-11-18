@@ -451,7 +451,7 @@ Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
   `risk_level = likelihood × impact` and its band (defaults ≤ 4 / ≤ 12 / > 12;
   per-project bands come with TRZ-04).
 - **Deterministic ids** (`runs/ids.rs`, TS twin in
-  `src/shared/contracts/pharos-run/ids.ts`, shared vectors
+  `packages/formats/src/ids.ts`, shared vectors
   `src-tauri/tests/fixtures/run-id-vectors.json`): UUIDv5 over the JCS of
   `[run, sha256]` (shard), `[shard, test_key, label, attempt]` (imported
   result) and `[project, test_key]` (mapping). Manual attempts use random ids:
@@ -462,7 +462,8 @@ Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
   server that lists `runs` (`sync::server_takes_runs`; the diagnostics count
   them in `heldBackRuns`). A project delete soft-deletes runs, items and
   mappings here and tombstones all five on the server.
-- **Pharos Run JSON 1.0.0** (`src/shared/contracts/pharos-run/`): zod schema,
+- **Pharos Run JSON 1.0.0** (`packages/formats/src/`, the `@pharos/formats`
+  package; ADR-0053): zod schema,
   `parsePharosRun` and the generated JSON Schema
   `docs/formats/pharos-run-1.schema.json`. `results[]` is a superset of CTRF
   `results.tests[]`; `findings[]`, `metrics[]` and `exploratorySession` are
@@ -668,9 +669,14 @@ ADR-0013; built in E4, step 9).** The section «Ejecuciones»
 (`/projects/:id/runs`, `src/modules/runs/`) lists the runs and the tray, and
 «Importar informe» runs the pipeline:
 
-- **Parsers in TypeScript** (`src/shared/contracts/pharos-run/importers/`):
-  Cucumber Messages (NDJSON, read line by line), CTRF, JUnit XML (the webview's
-  `DOMParser`, no XML dependency), Playwright JSON and Pharos Run JSON itself.
+- **Parsers in TypeScript** (`packages/formats/src/importers/`, the
+  `@pharos/formats` package shared with the server, ADR-0053; aliased in
+  `vite.config.ts`, `tsconfig.json` and the server's `tsconfig.json` and
+  `vitest.config.ts`): Cucumber Messages (NDJSON, read line by line), CTRF,
+  JUnit XML (an injected parser using only the DOM Level 2 subset: the native
+  `DOMParser` in the webview, `@xmldom/xmldom` in Node via `configureXml`;
+  `server/tests/formats.test.ts` checks Node gives the same snapshots),
+  Playwright JSON and Pharos Run JSON itself.
   The format is detected by content (Cucumber JSON is refused). Each produces a
   Pharos Run JSON document checked by `parsePharosRun`, with a `testKey` per
   result (relative path + title path, `[n]` for a Cucumber Outline row; the

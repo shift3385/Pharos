@@ -8,7 +8,7 @@ import {
   type ParsedReport,
   parseReportFile,
   slashes,
-} from "@shared/contracts/pharos-run/importers";
+} from "@pharos/formats";
 import type {
   ImportNewRun,
   ReportImportOutcome,

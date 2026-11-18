@@ -168,7 +168,7 @@ fn tc1_data() -> Value {
 /// (or older) than the manual attempt.
 fn playwright_doc(day: &str) -> Value {
     let raw = include_str!(
-        "../../../src/shared/contracts/pharos-run/fixtures/ing01/normalized/single__pw.json.json"
+        "../../../packages/formats/src/fixtures/ing01/normalized/single__pw.json.json"
     );
     let mut doc = serde_json::from_str::<Value>(raw).unwrap()["doc"].clone();
     doc["run"]["startedAt"] = json!(format!("{day}T09:00:00Z"));

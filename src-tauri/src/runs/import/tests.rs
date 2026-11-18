@@ -1,5 +1,5 @@
 //! Import (ING-02..05): the normalized ING-01 snapshots the TS parsers commit
-//! (`src/shared/contracts/pharos-run/fixtures/ing01/normalized/`) stored end
+//! (`packages/formats/src/fixtures/ing01/normalized/`) stored end
 //! to end: linking by tag, the revision at the run's start, run items, flows,
 //! rows and step ids, the tray, re-import as a no-op, two devices converging,
 //! the limits, and attachments.
@@ -18,7 +18,7 @@ const SHA: &str = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00
 macro_rules! snapshot {
     ($name:literal) => {
         include_str!(concat!(
-            "../../../../src/shared/contracts/pharos-run/fixtures/ing01/normalized/",
+            "../../../../packages/formats/src/fixtures/ing01/normalized/",
             $name,
             ".json"
         ))

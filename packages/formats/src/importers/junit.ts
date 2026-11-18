@@ -4,7 +4,8 @@
 // TestRail convention); everything else goes to the tray. Flaky and rerun
 // elements (`flakyFailure`/`flakyError`, `rerunFailure`/`rerunError`: Surefire
 // and Playwright `includeRetries`) become earlier failed attempts.
-// Parsed with the webview's DOMParser: no XML dependency.
+// Parsed with the injected XML parser (`../xml`): the native DOMParser in the
+// webview, `@xmldom/xmldom` in Node.
 
 import {
   type ImportAttachment,
@@ -23,22 +24,25 @@ import {
   testKey,
   uniqueTags,
 } from "./common";
+import { type XmlDocument, type XmlElement, elements, xmlParser } from "../xml";
 
 const RETRIES = ["flakyFailure", "flakyError", "rerunFailure", "rerunError"];
 const ATTACHMENT = /\[\[ATTACHMENT\|([^\]]+)\]\]/g;
 
-const children = (el: Element, name?: string) =>
-  Array.from(el.children).filter(
-    (c) => name === undefined || c.localName === name,
-  );
+const children = (el: XmlElement, name?: string) => elements(el, name);
 const seconds = (v: string | null) => {
   const n = v === null ? NaN : Number(v.replace(",", "."));
   return Number.isFinite(n) && n >= 0 ? Math.round(n * 1000) : undefined;
 };
 
 export function parseJunit(text: string): ParsedReport {
-  const xml = new DOMParser().parseFromString(text, "application/xml");
-  if (xml.getElementsByTagName("parsererror").length)
+  let xml: XmlDocument;
+  try {
+    xml = xmlParser()(text);
+  } catch {
+    throw new ReportError("invalid-xml");
+  }
+  if (!xml.documentElement || xml.getElementsByTagName("parsererror").length)
     throw new ReportError("invalid-xml");
   const root = xml.documentElement;
   if (root.localName !== "testsuites" && root.localName !== "testsuite")
@@ -47,8 +51,8 @@ export function parseJunit(text: string): ParsedReport {
   const nextRef = refMaker();
 
   // Every testcase with the suite chain around it.
-  const cases: { el: Element; suites: Element[] }[] = [];
-  const walk = (el: Element, suites: Element[]) => {
+  const cases: { el: XmlElement; suites: XmlElement[] }[] = [];
+  const walk = (el: XmlElement, suites: XmlElement[]) => {
     for (const c of children(el)) {
       if (c.localName === "testsuite") walk(c, [...suites, c]);
       else if (c.localName === "testcase") cases.push({ el: c, suites });
@@ -67,7 +71,7 @@ export function parseJunit(text: string): ParsedReport {
     startedAt: iso(stamps[0]),
     context: {},
   };
-  const pathOf = (c: { el: Element; suites: Element[] }) =>
+  const pathOf = (c: { el: XmlElement; suites: XmlElement[] }) =>
     c.el.getAttribute("classname") ||
     c.el.getAttribute("file") ||
     c.suites[c.suites.length - 1]?.getAttribute("name") ||
@@ -82,7 +86,9 @@ export function parseJunit(text: string): ParsedReport {
     // (`com.acme.LoginTest`, `Autenticacion`) is kept as it is.
     const path = /[\\/]/.test(rawPath) ? rel(slashes(rawPath)) : rawPath;
     const props = new Map<string, string[]>();
-    for (const p of el.querySelectorAll(":scope > properties > property")) {
+    for (const p of children(el, "properties").flatMap((ps) =>
+      children(ps, "property"),
+    )) {
       const k = p.getAttribute("name") ?? "";
       const v = p.getAttribute("value") ?? p.textContent ?? "";
       props.set(k, [...(props.get(k) ?? []), v]);
@@ -127,8 +133,9 @@ export function parseJunit(text: string): ParsedReport {
       ...(row !== undefined ? { exampleRow: row } : {}),
       shardRef: "s1",
     };
-    const messageOf = (x: Element) => x.getAttribute("message") || undefined;
-    const traceOf = (x: Element) => (x.textContent ?? "").trim() || undefined;
+    const messageOf = (x: XmlElement) => x.getAttribute("message") || undefined;
+    const traceOf = (x: XmlElement) =>
+      (x.textContent ?? "").trim() || undefined;
     // A test that failed after reruns: in Surefire the <failure> is the
     // first run and each <rerunFailure>/<rerunError> a later one, so the
     // last rerun is the final attempt. Flaky elements precede a pass.
