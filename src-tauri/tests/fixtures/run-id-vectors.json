@@ -1,5 +1,5 @@
 {
-  "$comment": "Deterministic execution ids (ADR-0013, design 0.2.0 §3.3). UUIDv5 over the JCS of the parts as a JSON array. Generated with Node's uuid; checked by src-tauri/src/runs/ids.rs and src/shared/contracts/pharos-run/ids.test.ts. Shard: [run, sha256, normalizerVersion].",
+  "$comment": "Deterministic execution ids (ADR-0013, design 0.2.0 §3.3). UUIDv5 over the JCS of the parts as a JSON array. Generated with Node's uuid; checked by src-tauri/src/runs/ids.rs and packages/formats/src/ids.test.ts. Shard: [run, sha256, normalizerVersion].",
   "namespaces": {
     "runShard": "3b6d1f0a-8c2e-5d47-a913-6e0f2b8c4d71",
     "result": "9a4e7c21-0b5f-5e83-b6d2-1c9a3f70e845",

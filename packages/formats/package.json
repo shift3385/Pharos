@@ -1,0 +1,10 @@
+{
+  "name": "@pharos/formats",
+  "private": true,
+  "type": "module",
+  "description": "Pharos Run JSON and the result importers, shared by the app, the web and the server (ADR-0053).",
+  "license": "UNLICENSED",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

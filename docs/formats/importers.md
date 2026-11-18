@@ -1,11 +1,12 @@
 # Importadores de resultados → Pharos Run JSON
 
 ING-02..05, paso 9 del [diseño 0.2.0](../design/0.2.0-modelo-ejecucion.md).
-Código: `src/shared/contracts/pharos-run/importers/` (parsers) y
+Código: `packages/formats/src/importers/` (parsers, paquete `@pharos/formats`
+que comparten la app, la web y el servidor) y
 `src-tauri/src/runs/import.rs` (persistente). Se basa en el spike
 [ING-01](../spikes/ING-01-formatos-resultados.md) §3. Las muestras reales del
 spike, saneadas, son tests de contrato. Su salida normalizada está en
-`src/shared/contracts/pharos-run/fixtures/ing01/normalized/`, y un port de
+`packages/formats/src/fixtures/ing01/normalized/`, y un port de
 los parsers (el CLI de INT-01) tiene que reproducirla.
 
 ## Formatos de 0.6.0 (ING-06, ING-07)
@@ -13,8 +14,7 @@ los parsers (el CLI de INT-01) tiene que reproducirla.
 SARIF, axe y k6 (hallazgos y métricas), Allure y TRX (resultados) y `.xcresult`
 están aprobados en [ADR-0053](../adr/0053-hallazgos-metricas-y-paquete-de-formatos.md).
 Sus tablas de mapeo están en el [plan de la pista F](../design/f-formatos-plan.md) §7
-y pasan aquí cuando cada parser se implementa. Los parsers se mudan al paquete
-`packages/formats` (`@pharos/formats`), que comparten la app, la web y el servidor.
+y pasan aquí cuando cada parser se implementa.
 
 ## Detección
 
