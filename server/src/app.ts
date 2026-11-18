@@ -35,6 +35,7 @@ import { SERVER_VERSION, acceptedMinors } from "./modules/sync/sync.version";
 import { AppError } from "./modules/auth/errors";
 import { createWorkspaceService } from "./modules/workspaces/workspaces.service";
 import { workspaceRoutes } from "./modules/workspaces/workspaces.routes";
+import { aiRoutes, createAiVaultStore, type Fetch } from "./modules/ai";
 
 /** Routes limited per client IP: guessing passwords on login, and burning
  *  Argon2 CPU on register; guessing passwords, recovery codes or reset links,
@@ -62,10 +63,19 @@ const CLIENT_ERROR_CODES: Record<number, string> = {
 };
 
 /** Builds the Fastify application wired to the given pool + config. */
-export function buildApp(deps: { pool: Pool; env: Env; mailer?: Mailer | null }) {
+export function buildApp(deps: {
+  pool: Pool;
+  env: Env;
+  mailer?: Mailer | null;
+  /** The AI providers' fetch (IA-12); tests pass a fake one. */
+  aiFetch?: Fetch;
+  /** Where logs go instead of stdout (tests read it). */
+  logStream?: { write(line: string): void };
+}) {
   const { pool, env } = deps;
   const app = Fastify({
-    logger: env.NODE_ENV !== "test",
+    // Tests may pass a stream to read what would be logged (IA-12: no key in logs).
+    logger: deps.logStream ? { level: "trace", stream: deps.logStream } : env.NODE_ENV !== "test",
     bodyLimit: env.BODY_LIMIT_BYTES,
     trustProxy: env.TRUST_PROXY,
   });
@@ -177,6 +187,10 @@ export function buildApp(deps: { pool: Pool; env: Env; mailer?: Mailer | null })
   });
   void app.register(async (instance) => {
     auditRoutes(instance, { tokens, reader: createAuditReader(pool) });
+  });
+  void app.register(async (instance) => {
+    // IA-12 (ADR-0034): its own error handler, in this scope only.
+    aiRoutes(instance, { tokens, env, store: createAiVaultStore(pool), fetch: deps.aiFetch });
   });
 
   app.setErrorHandler((error, req, reply) => {

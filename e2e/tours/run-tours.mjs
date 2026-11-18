@@ -278,7 +278,7 @@ async function secretScan() {
 
 // ---- Run --------------------------------------------------------------------------
 
-/** Environment of the API, the migrations and the seed: no AI variables. */
+/** Environment of the API, the migrations and the seed: no AI provider key. */
 // JWT_ACCESS_SECRET: a checkout may have no `.env`, and the tour API signs only
 // tokens for this run's throwaway database, so a random one is enough.
 const childEnv = {
@@ -288,6 +288,9 @@ const childEnv = {
   DATABASE_URL: dbUrl.toString(),
   NODE_ENV: "development",
   JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || readDotenv(join(repoDir, ".env")).JWT_ACCESS_SECRET || randomBytes(32).toString("hex"),
+  // IA-12: a throwaway vault key for this run only, never a real one, so the
+  // tour can turn on «Usar esta clave también en la web».
+  AI_VAULT_KEY: randomBytes(32).toString("base64"),
 };
 let exitCode = 1;
 

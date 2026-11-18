@@ -117,6 +117,16 @@ se publica:
       no:* los tours no pegan del portapapeles ni prueban Ollama. Lo cubren
       además `RequirementsFromDesignModal.test.tsx`, los tests de
       `fromDesign/` y los de Rust de `ai.rs`.
+- [ ] **IA en la web con la clave del escritorio (IA-12)**: el capítulo 15
+      recorre en el escritorio el interruptor, el consentimiento, el cambio de
+      modelo, desactivar y quitar la clave, con una clave de ejemplo. Queda la
+      parte web, con una clave real y la API con `AI_VAULT_KEY`: «Motor de
+      IA» dice «IA disponible»; «Asistir con IA» responde y su aviso dice «a
+      través de tu servidor Pharos»; «Dejar de usarla en la web» borra la
+      copia. *Por qué no en el tour:* los tours recorren la app de escritorio y
+      no llaman a un proveedor real. Lo cubren además
+      `WebAccessPanel.test.tsx`, `webAccess.test.ts` y
+      `server/tests/ai.vault.test.ts`.
 - [ ] **Versión web** (`npm run dev`, navegador): el aviso de cambios
       antiguos sin enviar («Descargar» / «Descartar»), la ejecución sin archivos
       («Los adjuntos solo están disponibles en el escritorio», borrador en el navegador) y los

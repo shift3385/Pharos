@@ -22,7 +22,6 @@
   "server": {
     "dir": "server/migrations",
     "reserved": {
-      "0016": "IA-12 (ADR-0034): AI key vault for the web",
       "0020": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-04b): blobs by (workspace_id, sha256)"
     },
     "retired": {

@@ -364,4 +364,115 @@ chapter("administracion", () => {
       await keyCommand("ai_key_clear", { provider: "gemini" });
     },
   });
+
+  // IA-12 (ADR-0034). The tour API runs with a throwaway AI_VAULT_KEY
+  // (run-tours.mjs) and the key is an obviously fake placeholder in the
+  // tour's isolated keychain: uploading it never reaches a provider.
+  const W = es.ai.web;
+  const webSwitch = () => byTestId("ai-web-switch");
+  const keyCommand = (cmd: string, args: object) =>
+    browser.execute(
+      async (c: string, a: object) => {
+        const w = window as unknown as { __TAURI_INTERNALS__: { invoke: (c: string, a: object) => Promise<unknown> } };
+        await w.__TAURI_INTERNALS__.invoke(c, a);
+      },
+      cmd,
+      args,
+    );
+  /** Opens Motor de IA afresh, so the switch reads the key and the server again. */
+  const reopenAi = async () => {
+    await openAdminTab("general");
+    await openAdminTab("ai");
+    await expect(webSwitch()).toBeDisplayed();
+  };
+
+  step("ia-web-consentimiento", {
+    title: "Usar la clave de IA también en la web",
+    caption:
+      "«Usar esta clave también en la web» viene apagado. Al activarlo, Pharos explica qué implica antes de que la clave salga del equipo: el servidor guarda una copia cifrada y nunca la muestra, quien administre el servidor y tenga su base de datos y su clave maestra podría leerla, y lo que pidas desde la web se cobra a tu clave. «Subir la clave» solo se activa al marcar la casilla. Lo sube el núcleo de la app, directamente desde el almacén de credenciales de Windows.",
+    covers: ["dialogs:src/modules/ai/ui/WebAccessPanel.tsx"],
+    focus: '[role="dialog"]',
+    run: async () => {
+      await keyCommand("ai_key_set", { provider: "gemini", key: "clave-de-ejemplo" });
+      await reopenAi();
+      await browser.waitUntil(async () => webSwitch().isEnabled(), { timeoutMsg: "the web switch stays disabled" });
+      await expect(webSwitch()).toHaveAttribute("aria-checked", "false");
+      await webSwitch().click();
+      await expect(byTestId("ai-web-consent-upload")).toBeDisabled();
+      await byTestId("ai-web-consent-check").click();
+      await expect(byTestId("ai-web-consent-upload")).toBeEnabled();
+    },
+  });
+
+  step("ia-web-activada", {
+    title: "La clave, disponible en la web",
+    caption:
+      "Con el interruptor activado, Motor de IA dice qué usa la web (proveedor y modelo), desde cuándo y en qué servidor. Al iniciar sesión en la web con tu cuenta, «Asistir con IA» funciona con esa clave. Si guardas aquí una clave nueva del mismo proveedor, la copia se actualiza sola.",
+    covers: ["admin:ai"],
+    focus: '[data-testid="ai-web-access"]',
+    run: async () => {
+      await byTestId("ai-web-consent-upload").click();
+      await waitForToast(W.toast.on.split("{{")[0]);
+      await expect(webSwitch()).toHaveAttribute("aria-checked", "true");
+      await waitForText(W.facts.inWeb);
+    },
+  });
+
+  step("ia-web-modelo", {
+    title: "Cambiar el modelo que usa la web",
+    caption:
+      "Si cambias el modelo en el escritorio, la web sigue con el anterior hasta que lo confirmas: Motor de IA lo avisa y «Usar el nuevo modelo en la web» pregunta antes. Cambiar de proveedor sube otra clave, así que vuelve a pedir el consentimiento.",
+    covers: ["dialogs:src/modules/ai/ui/WebAccessPanel.tsx"],
+    shot: false,
+    run: async () => {
+      // The saved config, as «Guardar» would leave it, with another model.
+      await browser.execute(() => {
+        const raw = JSON.parse(localStorage.getItem("pharos.ai.config") ?? "{}") as { onlineModels?: Record<string, string> };
+        raw.onlineModels = { ...(raw.onlineModels ?? {}), gemini: "gemini-2.5-flash" };
+        localStorage.setItem("pharos.ai.config", JSON.stringify(raw));
+      });
+      await reopenAi();
+      await clickButton(W.differs.useModel);
+      await acceptConfirm(W.model.title.slice(0, 20));
+      await waitForToast(W.toast.on.split("{{")[0]);
+      await waitForText("gemini-2.5-flash");
+    },
+  });
+
+  step("ia-web-desactivar", {
+    title: "Dejar de usar la clave en la web",
+    caption:
+      "Al desactivar el interruptor, Pharos pregunta y borra la copia del servidor: la web se queda sin IA en línea. En la web también puedes pulsar «Dejar de usarla en la web».",
+    covers: ["dialogs:src/modules/ai/ui/WebAccessPanel.tsx"],
+    shot: false,
+    run: async () => {
+      await webSwitch().click();
+      await acceptConfirm(W.off.message.slice(0, 20));
+      await waitForToast(W.toast.off);
+      await expect(webSwitch()).toHaveAttribute("aria-checked", "false");
+    },
+  });
+
+  step("ia-web-quitar-clave", {
+    title: "Quitar una clave que la web también usa",
+    caption:
+      "Si quitas del escritorio una clave que la web también usa, Pharos avisa de que la copia del servidor se borra con ella.",
+    covers: ["dialogs:src/modules/ai/ui/clearWebCopy.ts"],
+    shot: false,
+    run: async () => {
+      await webSwitch().click();
+      await byTestId("ai-web-consent-check").click();
+      await byTestId("ai-web-consent-upload").click();
+      await waitForToast(W.toast.on.split("{{")[0]);
+      await clickButton(es.ai.clearKey);
+      await acceptConfirm(W.clearKey.title.slice(0, 20));
+      await waitForToast(W.toast.keyClearedBoth);
+      // Back to how the chapter found it: no key, the default model.
+      await browser.execute(() => {
+        const raw = JSON.parse(localStorage.getItem("pharos.ai.config") ?? "{}") as { onlineModels?: Record<string, string> };
+        raw.onlineModels = { ...(raw.onlineModels ?? {}), gemini: "gemini-2.0-flash" };
+        localStorage.setItem("pharos.ai.config", JSON.stringify(raw));
+      });
+    },
+  });
 });

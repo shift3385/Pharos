@@ -299,6 +299,96 @@
       "temperature": "temperature",
       "ollama": "Ollama settings"
     },
+    "web": {
+      "switch": {
+        "label": "Also use this key on the web",
+        "hint": "When you sign in on the web with your account you get «Assist with AI» with this key and this model. The server keeps an encrypted copy.",
+        "compatible": "Not available with «Compatible»: the server cannot reach an AI server on your network. Choose Gemini, OpenAI, Claude or OpenRouter.",
+        "disabled": "Your server does not have AI on the web turned on. Its administrator must set AI_VAULT_KEY (deployment guide).",
+        "noKey": "Save the {{provider}} key first.",
+        "noModel": "Choose a model and save first.",
+        "offline": "No connection to the server: try again when it is back."
+      },
+      "consent": {
+        "title": "Use your {{provider}} key on the web?",
+        "lead": "Pharos will send a copy of the key to the server {{server}} over an encrypted connection.",
+        "leadLocal": "Pharos will send a copy of the key to the server {{server}}, which is on this computer.",
+        "encrypted": "The server keeps it encrypted and never shows it, not even to you.",
+        "admin": "Whoever runs the server and has both its database and its master key could read it.",
+        "billing": "What you ask the AI from the web is charged to this key.",
+        "follows": "If you change or remove the key on this computer, the copy is updated or deleted.",
+        "revoke": "You can turn it off at any time, here or on the web: the copy is deleted.",
+        "check": "I understand the server keeps an encrypted copy of my key.",
+        "upload": "Upload the key",
+        "uploading": "Uploading…"
+      },
+      "off": {
+        "title": "Stop using the key on the web?",
+        "message": "The copy is deleted from the server and the web has no online AI.",
+        "confirm": "Delete the copy"
+      },
+      "model": {
+        "title": "Use the new model on the web?",
+        "message": "The web will use {{model}} with the same key.",
+        "confirm": "Use on the web"
+      },
+      "differs": {
+        "model": "You changed the model to {{model}}. The web still uses {{web}}.",
+        "provider": "You now use {{provider}}. The web still uses the {{web}} key.",
+        "useModel": "Use the new model on the web",
+        "useProvider": "Use {{provider}} on the web"
+      },
+      "reupload": {
+        "message": "The server changed its master key and can no longer read the copy. Upload it again.",
+        "action": "Upload again"
+      },
+      "facts": {
+        "inWeb": "On the web",
+        "uploaded": "Uploaded",
+        "server": "Server",
+        "provider": "Provider",
+        "model": "Model"
+      },
+      "clearKey": {
+        "title": "Remove the key from the web too?",
+        "message": "The server keeps a copy of the {{provider}} key for the web. Removing it from this computer deletes the copy as well.",
+        "confirm": "Remove the key"
+      },
+      "toast": {
+        "on": "The web can now use your {{provider}} key.",
+        "off": "Copy deleted: the web no longer uses your key.",
+        "keyFollowed": "The web's copy was updated too.",
+        "keyNotFollowed": "The web's copy could not be updated: do it in AI engine when you are online.",
+        "keyClearedBoth": "Key removed from this computer and from the web."
+      },
+      "summary": {
+        "on": "You use your desktop's key.",
+        "off": "To use your AI key on the web, open Pharos on the desktop and turn on Settings › AI engine › «Also use this key on the web».",
+        "disabled": "This server does not have AI on the web turned on. Its administrator must set AI_VAULT_KEY.",
+        "reupload": "The server can no longer read the copy of your key. Upload it again from the desktop.",
+        "changeOnDesktop": "To change the key or the model, do it in Pharos on the desktop, in AI engine.",
+        "remove": "Stop using it on the web",
+        "removeTitle": "Stop using the key on the web?",
+        "removeMessage": "The copy is deleted from the server. To use it again, turn it on from the desktop.",
+        "pill": {
+          "on": "AI available",
+          "off": "Online AI not turned on",
+          "disabled": "Not available on this server",
+          "reupload": "Must be uploaded again"
+        }
+      },
+      "error": {
+        "disabled": "This server does not have AI on the web turned on (AI_VAULT_KEY).",
+        "off": "There is no AI key for the web on your account.",
+        "reupload": "The server can no longer read the copy of your key: upload it again from the desktop.",
+        "rateLimited": "You made many requests in a row. Try again in a minute.",
+        "compatible": "«Compatible» cannot be used on the web.",
+        "noKey": "No key is saved for this provider.",
+        "signedOut": "Sign in to use AI on the web.",
+        "unreachable": "No connection to the server.",
+        "other": "The server did not accept the request."
+      }
+    },
     "keyWebHint": "“Save key” is only available in the desktop app.",
     "listModelsDesktopOnly": "“List models” is only available in the desktop app.",
     "modelsShow": "Show the models",
@@ -311,6 +401,7 @@
     "testNeedsModel": "Enter a model to test the key. To list them, save the key first.",
     "send": {
       "cloud": "The content leaves this device for {{provider}}.",
+      "cloudViaServer": "The content leaves this computer for {{provider}}, through your Pharos server.",
       "local": "The content stays on this device: {{provider}} processes it."
     }
   },

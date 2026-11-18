@@ -470,8 +470,9 @@ pub fn server_pending(app: AppHandle, state: State<ServerState>) -> Vec<PendingC
     .unwrap_or_default()
 }
 
-/// A request to the chosen server.
-#[derive(Debug, Deserialize)]
+/// A request to the chosen server. No `Debug`: its body may hold the AI key
+/// (`ai::ai_web_access_upload`), so it is never printed.
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ServerRequest {
     pub method: String,
@@ -493,6 +494,16 @@ pub struct ServerResponse {
 #[tauri::command]
 pub async fn server_request(
     state: State<'_, ServerState>,
+    request: ServerRequest,
+) -> Result<ServerResponse, ServerError> {
+    send(&state, request).await
+}
+
+/// One request to the chosen server, with the rules of `server_request`. Also
+/// used by Rust commands that send what the webview must not see (IA-12: the
+/// AI key, `ai::ai_web_access_upload`).
+pub(crate) async fn send(
+    state: &ServerState,
     request: ServerRequest,
 ) -> Result<ServerResponse, ServerError> {
     check_path(&request.path)?;

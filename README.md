@@ -255,7 +255,11 @@ only on `localhost`). "Listar modelos" lists the models your key offers.
 Offline: **Ollama** (`llama3.2:3b`, downloaded from the AI panel). The provider
 and model in use are marked in Administración → Motor de IA, and each AI result
 says which ones wrote it. On the web a typed key can only be tested: keys are
-saved in the desktop app. With AI you can:
+saved in the desktop app. To use AI on the web, turn on "Usar esta clave también
+en la web" in the desktop's AI panel: after you agree, the desktop uploads the
+key to your server, which keeps it encrypted and calls the provider for the web
+(IA-12, [ADR-0034](docs/adr/0034-boveda-de-claves-ia-para-la-web.md); the server
+needs `AI_VAULT_KEY`; not with "Compatible"). With AI you can:
 
 - draft plan and case fields ("Assist with AI"), including the plan's
   automation strategy;
@@ -517,6 +521,10 @@ Optional limits (defaults in brackets):
 | `SYNC_BODY_LIMIT_BYTES`   | Largest body on `/sync/*` (push batches) [8 MiB]                                                                              |
 | `SYNC_TOMBSTONE_DAYS`     | Days the server keeps the content of a deleted record before clearing it (the tombstone stays) [30]; `0` = never clear        |
 | `TRUST_PROXY`             | `true` behind a reverse proxy, so the limit counts real client IPs and the API sees https from `X-Forwarded-Proto` [false]   |
+| `AI_VAULT_KEY`            | 32 random bytes in base64 (`openssl rand -base64 32`) that encrypt the AI keys kept for the web (IA-12) [empty = AI on the web is off] |
+| `AI_CHAT_RATE_LIMIT_MAX` / `_WINDOW` | AI requests from the web per account [30 per `1 minute`]                                                         |
+| `AI_VAULT_RATE_LIMIT_MAX` / `_WINDOW` | Uploads and removals of the AI key per account [10 per `1 hour`]                                                |
+| `AI_CHAT_BODY_LIMIT_BYTES` | Largest body on `/ai/chat`, images included [20 MiB]                                                                         |
 
 ### Password reset by email (optional)
 
