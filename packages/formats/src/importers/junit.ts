@@ -27,6 +27,7 @@ import {
 import {
   type XmlDocument,
   type XmlElement,
+  XML_DOCTYPE,
   elements,
   xmlParser,
 } from "../xml.js";
@@ -44,8 +45,11 @@ export function parseJunit(text: string): ParsedReport {
   let xml: XmlDocument;
   try {
     xml = xmlParser()(text);
-  } catch {
-    throw new ReportError("invalid-xml");
+  } catch (e) {
+    throw new ReportError(
+      "invalid-xml",
+      e instanceof Error && e.message === XML_DOCTYPE ? XML_DOCTYPE : undefined,
+    );
   }
   if (!xml.documentElement || xml.getElementsByTagName("parsererror").length)
     throw new ReportError("invalid-xml");

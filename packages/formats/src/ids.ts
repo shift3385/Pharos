@@ -10,6 +10,11 @@ export const NS_RUN_SHARD = "3b6d1f0a-8c2e-5d47-a913-6e0f2b8c4d71";
 export const NS_RESULT = "9a4e7c21-0b5f-5e83-b6d2-1c9a3f70e845";
 export const NS_UNLINKED_MAPPING = "5c8f2d93-e1a4-5b06-8f37-d4b26a10c9e2";
 export const NS_STEP_RESULT = "e2b74c18-6d3a-5f91-b0c5-8a1d4e6f2b37";
+// Findings and metrics (ING-06, ADR-0053).
+export const NS_FINDING = "da798b6f-8ada-5d20-a2e3-05615f2bee74";
+export const NS_METRIC = "0d206a05-0b02-540b-822e-1f2592aa6a40";
+export const NS_FINDING_TRIAGE = "2bdee14c-b812-54bf-90a6-b8bb1cf767eb";
+export const NS_FINDING_FINGERPRINT = "65eb100e-b26d-5f57-9997-6ea9e5b42fcd";
 
 const name = (parts: (string | number)[]) => JSON.stringify(parts);
 
@@ -36,3 +41,27 @@ export const unlinkedMappingId = (projectId: string, testKey: string) =>
 /** `test_key` of a manual attempt: `manual:<case>/<flow|->/<row|->`. */
 export const manualTestKey = (caseId: string, flowId?: string | null, rowId?: string | null) =>
   `manual:${caseId}/${flowId || "-"}/${rowId || "-"}`;
+
+/** The n-th (0-based, document order) finding with this fingerprint in a
+ *  shard: the same file gives the same findings on every device (ADR-0053). */
+export const findingId = (shard: string, fingerprint: string, occurrence: number) =>
+  v5(name([shard, fingerprint, occurrence]), NS_FINDING);
+
+/** A metric of a shard: one per name, aggregation and scope (ADR-0053). */
+export const metricId = (
+  shard: string,
+  metricName: string,
+  aggregation: string | null | undefined,
+  scope: string | null | undefined,
+) => v5(name([shard, metricName, aggregation ?? "", scope ?? ""]), NS_METRIC);
+
+/** The triage of a fingerprint in a project: two devices that triage the same
+ *  finding write the same entity, last change wins (ADR-0012). */
+export const findingTriageId = (projectId: string, fingerprint: string) =>
+  v5(name([projectId, fingerprint]), NS_FINDING_TRIAGE);
+
+/** A fingerprint when the tool gives none: the tool, the rule and the
+ *  normalized location (never the message, which tools reword), as
+ *  `pharos:<uuid>`. SARIF's own fingerprints are kept as they come. */
+export const derivedFingerprint = (tool: string, ruleId: string, locationKey: string) =>
+  `pharos:${v5(name([tool.toLowerCase(), ruleId, locationKey]), NS_FINDING_FINGERPRINT)}`;

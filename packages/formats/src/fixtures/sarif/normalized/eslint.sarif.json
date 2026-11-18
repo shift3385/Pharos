@@ -1,0 +1,1046 @@
+{
+  "format": "sarif",
+  "warnings": [],
+  "inline": {},
+  "doc": {
+    "schemaVersion": "1.0.0",
+    "run": {
+      "trigger": "import",
+      "sourceTool": "ESLint",
+      "sourceToolVersion": "8.57.1",
+      "context": {
+        "tools": [
+          {
+            "name": "ESLint",
+            "version": "8.57.1"
+          }
+        ]
+      }
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "sarif",
+        "normalizerVersion": 1,
+        "formatVersion": "2.1.0"
+      }
+    ],
+    "results": [],
+    "attachments": [],
+    "findings": [
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/api/runsApi.web.test.ts",
+          "line": 158,
+          "column": 9,
+          "endLine": 162
+        },
+        "fingerprint": "pharos:43b7eb23-0c0e-599a-a8d5-44a735edd32a",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Function 'CloseCycleDialog' has a complexity of 20. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/gate/CloseCycleDialog.tsx",
+          "line": 45,
+          "column": 8,
+          "endLine": 277
+        },
+        "fingerprint": "pharos:99351ed4-94c8-577a-86f4-0dcaae19972f",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Arrow function has a complexity of 14. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/gate/CloseCycleDialog.tsx",
+          "line": 149,
+          "column": 28,
+          "endLine": 212
+        },
+        "fingerprint": "pharos:1a45ebf9-b0c2-5e4e-bc13-9295e0e92e20",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/model/execution.ts",
+          "line": 90,
+          "column": 5,
+          "endLine": 94
+        },
+        "fingerprint": "pharos:d2bfff8d-9e99-5f8d-9d8c-dfc3b149f287",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Function 'parseDraft' has a complexity of 18. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/model/execution.ts",
+          "line": 129,
+          "column": 8,
+          "endLine": 158
+        },
+        "fingerprint": "pharos:023d52a7-d711-5896-972c-423507fa53fd",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Function 'commandOf' has a complexity of 19. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/model/execution.ts",
+          "line": 276,
+          "column": 8,
+          "endLine": 292
+        },
+        "fingerprint": "pharos:3a2bd2c9-c7ac-5579-b039-614a17d356e3",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/model/exitCriteria.ts",
+          "line": 35,
+          "column": 7,
+          "endLine": 41
+        },
+        "fingerprint": "pharos:59ede968-3146-582d-9bcd-b5fdb680aea8",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/model/exitCriteria.ts",
+          "line": 37,
+          "column": 11,
+          "endLine": 41
+        },
+        "fingerprint": "pharos:2e4b9b1f-04a1-5d52-a30f-e7005250168f",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/model/gate.ts",
+          "line": 46,
+          "column": 10,
+          "endLine": 46
+        },
+        "fingerprint": "pharos:d91a6c12-0e18-5b93-b302-89d483c21869",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/model/gate.ts",
+          "line": 60,
+          "column": 7,
+          "endLine": 60
+        },
+        "fingerprint": "pharos:dbf1bce7-58ba-500d-8e47-042512616886",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/model/importFlow.ts",
+          "line": 122,
+          "column": 18,
+          "endLine": 126
+        },
+        "fingerprint": "pharos:ced3b8e8-93ae-56e1-a8cc-bc4d8eea1b2d",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/model/webDrafts.ts",
+          "line": 95,
+          "column": 15,
+          "endLine": 99
+        },
+        "fingerprint": "pharos:1baf71b0-bce5-5444-b8a7-76109e704697",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Method 'save' has a complexity of 13. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/model/webDrafts.ts",
+          "line": 125,
+          "column": 7,
+          "endLine": 146
+        },
+        "fingerprint": "pharos:455ab493-d35f-5d75-a309-8d978b0249b7",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/report/DecisionPreview.tsx",
+          "line": 51,
+          "column": 21,
+          "endLine": 51
+        },
+        "fingerprint": "pharos:b78569c8-d1bb-59db-99d3-e1eb764dcade",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Function 'StatusReportDialog' has a complexity of 24. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/report/StatusReportDialog.tsx",
+          "line": 72,
+          "column": 8,
+          "endLine": 467
+        },
+        "fingerprint": "pharos:bc87716e-9bf6-5dc7-a8de-e2fb52b96c0f",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/report/StatusReportDialog.tsx",
+          "line": 100,
+          "column": 5,
+          "endLine": 100
+        },
+        "fingerprint": "pharos:80319574-824b-531e-b771-d8f26d867a16",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/report/StatusReportDialog.tsx",
+          "line": 166,
+          "column": 5,
+          "endLine": 170
+        },
+        "fingerprint": "pharos:9aecab0d-98e1-5aca-82ba-49c64ede9981",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/report/StatusReportDialog.tsx",
+          "line": 349,
+          "column": 10,
+          "endLine": 437
+        },
+        "fingerprint": "pharos:f0d2526c-96bf-5f3d-8045-e740205f5612",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "react-hooks/exhaustive-deps",
+        "ruleName": "verifies the list of dependencies for Hooks like useEffect and similar",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "React Hook useEffect has a missing dependency: 'cycleId'. Either include it or remove the dependency array.",
+        "location": {
+          "uri": "src/modules/runs/report/StatusReportDialog.tsx",
+          "line": 118,
+          "column": 6,
+          "endLine": 118
+        },
+        "fingerprint": "pharos:31e40f73-cedc-5588-bb23-b9f80d9485c6",
+        "standardRefs": [],
+        "helpUri": "https://github.com/facebook/react/issues/14920",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail",
+          "suppressed": true
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Function 'CompletionReportDialog' has a complexity of 31. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/report/completion/CompletionReportDialog.tsx",
+          "line": 64,
+          "column": 8,
+          "endLine": 488
+        },
+        "fingerprint": "pharos:72f45e86-2914-527a-9a62-14c6bfc81791",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/report/completion/CompletionReportDialog.tsx",
+          "line": 301,
+          "column": 10,
+          "endLine": 431
+        },
+        "fingerprint": "pharos:20cc385f-051f-51d1-b0e9-cbf02356c636",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/report/completion/CompletionReportDialog.tsx",
+          "line": 408,
+          "column": 22,
+          "endLine": 412
+        },
+        "fingerprint": "pharos:3046d91d-a45b-52d1-8b07-10b2eafbd556",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Function 'readStored' has a complexity of 14. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/report/completion/completionReport.ts",
+          "line": 69,
+          "column": 8,
+          "endLine": 92
+        },
+        "fingerprint": "pharos:d8a54898-400f-5f91-a687-4f4d041797be",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Function 'buildCompletionReport' has a complexity of 35. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/report/completion/completionReport.ts",
+          "line": 254,
+          "column": 8,
+          "endLine": 522
+        },
+        "fingerprint": "pharos:414edc93-f02a-5f48-b1fb-b1d8dc381544",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Arrow function has a complexity of 13. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/report/completion/completionReport.ts",
+          "line": 350,
+          "column": 33,
+          "endLine": 373
+        },
+        "fingerprint": "pharos:cd091b9b-fa4a-510e-a432-84b433d570c4",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/report/decisionSection.ts",
+          "line": 111,
+          "column": 7,
+          "endLine": 111
+        },
+        "fingerprint": "pharos:f86b8aa8-e2fb-54ee-b998-32048d1ca638",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Function 'buildStatusReport' has a complexity of 14. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/report/statusReport.ts",
+          "line": 107,
+          "column": 8,
+          "endLine": 325
+        },
+        "fingerprint": "pharos:3aed71d9-60d2-5ca2-b35d-a7453c351ddb",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Function 'DeleteRunDialog' has a complexity of 15. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/ui/DeleteRunDialog.tsx",
+          "line": 14,
+          "column": 8,
+          "endLine": 136
+        },
+        "fingerprint": "pharos:6a935e02-7856-5428-b146-8ab7369e8db2",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/ui/DeleteRunDialog.tsx",
+          "line": 57,
+          "column": 9,
+          "endLine": 61
+        },
+        "fingerprint": "pharos:b32bbe95-d7cf-5a95-a084-45d1353c9557",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Function 'ExecutionPanel' has a complexity of 39. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/ui/ExecutionPanel.tsx",
+          "line": 90,
+          "column": 8,
+          "endLine": 1112
+        },
+        "fingerprint": "pharos:4983200a-58ae-5614-a694-e8e8904ab004",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Async function 'record' has a complexity of 16. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/ui/ExecutionPanel.tsx",
+          "line": 337,
+          "column": 3,
+          "endLine": 384
+        },
+        "fingerprint": "pharos:49180736-5496-5cac-aa97-8511faa2e4eb",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Function 'onKeyDown' has a complexity of 22. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/ui/ExecutionPanel.tsx",
+          "line": 511,
+          "column": 3,
+          "endLine": 563
+        },
+        "fingerprint": "pharos:500d4b3f-376f-54a1-8247-21fbac3d3651",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/ui/ExecutionPanel.tsx",
+          "line": 744,
+          "column": 24,
+          "endLine": 748
+        },
+        "fingerprint": "pharos:15fad7ae-42c6-5fc3-9189-ce864226040f",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Arrow function has a complexity of 19. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/ui/ExecutionPanel.tsx",
+          "line": 776,
+          "column": 24,
+          "endLine": 931
+        },
+        "fingerprint": "pharos:4da70b70-fb0a-5397-aa9b-2038e2b04ab3",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "react-hooks/exhaustive-deps",
+        "ruleName": "verifies the list of dependencies for Hooks like useEffect and similar",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "React Hook useMemo has missing dependencies: 'revision' and 'target'. Either include them or remove the dependency array.",
+        "location": {
+          "uri": "src/modules/runs/ui/ExecutionPanel.tsx",
+          "line": 225,
+          "column": 5,
+          "endLine": 225
+        },
+        "fingerprint": "pharos:ceddb83e-6d95-5bb4-83ec-4214632ba56e",
+        "standardRefs": [],
+        "helpUri": "https://github.com/facebook/react/issues/14920",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail",
+          "suppressed": true
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Function 'ImportReportDialog' has a complexity of 38. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/ui/ImportReportDialog.tsx",
+          "line": 36,
+          "column": 8,
+          "endLine": 532
+        },
+        "fingerprint": "pharos:dd32bae8-dc02-5f6e-b2fc-933d470bcb6f",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "react-hooks/exhaustive-deps",
+        "ruleName": "verifies the list of dependencies for Hooks like useEffect and similar",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "React Hook useEffect has a missing dependency: 'request'. Either include it or remove the dependency array.",
+        "location": {
+          "uri": "src/modules/runs/ui/ImportReportDialog.tsx",
+          "line": 154,
+          "column": 6,
+          "endLine": 154
+        },
+        "fingerprint": "pharos:f1814c05-d75a-5fbe-82dc-24cf94b06819",
+        "standardRefs": [],
+        "helpUri": "https://github.com/facebook/react/issues/14920",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail",
+          "suppressed": true
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "react-hooks/exhaustive-deps",
+        "ruleName": "verifies the list of dependencies for Hooks like useEffect and similar",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.",
+        "location": {
+          "uri": "src/modules/runs/ui/ImportReportDialog.tsx",
+          "line": 154,
+          "column": 28,
+          "endLine": 154
+        },
+        "fingerprint": "pharos:0a60e3a6-6ed7-5131-870e-e7fb1474825e",
+        "standardRefs": [],
+        "helpUri": "https://github.com/facebook/react/issues/14920",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail",
+          "suppressed": true
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Function 'RunDetail' has a complexity of 39. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/ui/RunDetail.tsx",
+          "line": 35,
+          "column": 8,
+          "endLine": 498
+        },
+        "fingerprint": "pharos:25650cf1-0fc8-5d1e-9d53-4d6118124333",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/ui/RunDetail.tsx",
+          "line": 109,
+          "column": 9,
+          "endLine": 113
+        },
+        "fingerprint": "pharos:f1c36d04-56aa-592b-a8b7-3ebfc81e38fc",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/ui/RunDetail.tsx",
+          "line": 355,
+          "column": 31,
+          "endLine": 355
+        },
+        "fingerprint": "pharos:c4106ea7-ced7-5127-910e-f9b48921ace2",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/ui/RunDetail.tsx",
+          "line": 409,
+          "column": 24,
+          "endLine": 409
+        },
+        "fingerprint": "pharos:59145007-5a67-508c-95da-284b68f1e48a",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "complexity",
+        "ruleName": "Enforce a maximum cyclomatic complexity allowed in a program",
+        "severity": "high",
+        "rawSeverity": "error",
+        "message": "Function 'RunsList' has a complexity of 14. Maximum allowed is 12.",
+        "location": {
+          "uri": "src/modules/runs/ui/RunsPage.tsx",
+          "line": 59,
+          "column": 1,
+          "endLine": 349
+        },
+        "fingerprint": "pharos:f36fd1bc-224b-5e7e-9b82-9d43b759be4f",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/ui/RunsPage.tsx",
+          "line": 251,
+          "column": 10,
+          "endLine": 323
+        },
+        "fingerprint": "pharos:1f7586bf-b67d-5de4-ae1e-ce0255e15d18",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/ui/RunsPage.tsx",
+          "line": 262,
+          "column": 13,
+          "endLine": 323
+        },
+        "fingerprint": "pharos:c5cab0a3-61f1-5d3d-b430-3f9f64ae7730",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/ui/RunsPage.tsx",
+          "line": 267,
+          "column": 13,
+          "endLine": 323
+        },
+        "fingerprint": "pharos:1513ac72-c41d-5c98-8c22-3e20aad969ff",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "react-hooks/exhaustive-deps",
+        "ruleName": "verifies the list of dependencies for Hooks like useEffect and similar",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "React Hook useEffect has a missing dependency: 'refresh'. Either include it or remove the dependency array.",
+        "location": {
+          "uri": "src/modules/runs/ui/RunsPage.tsx",
+          "line": 105,
+          "column": 6,
+          "endLine": 105
+        },
+        "fingerprint": "pharos:753f9ceb-b0ae-5460-8df7-c35b991f911b",
+        "standardRefs": [],
+        "helpUri": "https://github.com/facebook/react/issues/14920",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail",
+          "suppressed": true
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "no-nested-ternary",
+        "ruleName": "Disallow nested ternary expressions",
+        "severity": "medium",
+        "rawSeverity": "warning",
+        "message": "Do not nest ternary expressions.",
+        "location": {
+          "uri": "src/modules/runs/ui/UnlinkedTray.tsx",
+          "line": 54,
+          "column": 5,
+          "endLine": 54
+        },
+        "fingerprint": "pharos:a4fe22eb-2ef9-5d4d-9574-c4db223556ba",
+        "standardRefs": [],
+        "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+        "attributes": {
+          "tool": "ESLint",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      }
+    ]
+  }
+}

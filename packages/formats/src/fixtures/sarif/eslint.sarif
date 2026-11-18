@@ -1,0 +1,1476 @@
+{
+  "version": "2.1.0",
+  "$schema": "http://json.schemastore.org/sarif-2.1.0-rtm.5",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "ESLint",
+          "informationUri": "https://eslint.org",
+          "rules": [
+            {
+              "id": "no-nested-ternary",
+              "helpUri": "https://eslint.org/docs/latest/rules/no-nested-ternary",
+              "properties": {},
+              "shortDescription": {
+                "text": "Disallow nested ternary expressions"
+              }
+            },
+            {
+              "id": "complexity",
+              "helpUri": "https://eslint.org/docs/latest/rules/complexity",
+              "properties": {},
+              "shortDescription": {
+                "text": "Enforce a maximum cyclomatic complexity allowed in a program"
+              }
+            },
+            {
+              "id": "react-hooks/exhaustive-deps",
+              "helpUri": "https://github.com/facebook/react/issues/14920",
+              "properties": {},
+              "shortDescription": {
+                "text": "verifies the list of dependencies for Hooks like useEffect and similar"
+              }
+            }
+          ],
+          "version": "8.57.1"
+        }
+      },
+      "artifacts": [
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/api/executionApi.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/api/runsApi.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/api/runsApi.web.test.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/gate/CloseCycleButton.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/gate/CloseCycleDialog.test.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/gate/CloseCycleDialog.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/index.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/execution.test.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/execution.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/exitCriteria.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/gate.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/importErrors.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/importFlow.test.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/importFlow.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/sha256.test.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/sha256.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/types.test.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/types.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/webDrafts.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/DecisionPreview.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/StatusReportButton.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/StatusReportDialog.test.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/StatusReportDialog.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/__fixtures__/summary.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/completion/CompletionReportButton.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/completion/CompletionReportDialog.test.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/completion/CompletionReportDialog.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/completion/completionPdf.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/completion/completionReport.test.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/completion/completionReport.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/completion/completionXlsx.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/decisionSection.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/reportPdf.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/reportXlsx.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/statusReport.test.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/statusReport.ts"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/CasePickerDialog.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/DeleteRunDialog.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/ExecutionPanel.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/ImportReportDialog.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/LinkCaseDialog.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/NewRunDialog.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/RunDetail.test.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/RunDetail.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/RunsPage.test.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/RunsPage.tsx"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/UnlinkedTray.tsx"
+          }
+        }
+      ],
+      "results": [
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/api/runsApi.web.test.ts",
+                  "index": 2
+                },
+                "region": {
+                  "startLine": 158,
+                  "startColumn": 9,
+                  "endLine": 162,
+                  "endColumn": 64
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Function 'CloseCycleDialog' has a complexity of 20. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/gate/CloseCycleDialog.tsx",
+                  "index": 5
+                },
+                "region": {
+                  "startLine": 45,
+                  "startColumn": 8,
+                  "endLine": 277,
+                  "endColumn": 2
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Arrow function has a complexity of 14. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/gate/CloseCycleDialog.tsx",
+                  "index": 5
+                },
+                "region": {
+                  "startLine": 149,
+                  "startColumn": 28,
+                  "endLine": 212,
+                  "endColumn": 14
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/execution.ts",
+                  "index": 8
+                },
+                "region": {
+                  "startLine": 90,
+                  "startColumn": 5,
+                  "endLine": 94,
+                  "endColumn": 20
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Function 'parseDraft' has a complexity of 18. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/execution.ts",
+                  "index": 8
+                },
+                "region": {
+                  "startLine": 129,
+                  "startColumn": 8,
+                  "endLine": 158,
+                  "endColumn": 2
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Function 'commandOf' has a complexity of 19. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/execution.ts",
+                  "index": 8
+                },
+                "region": {
+                  "startLine": 276,
+                  "startColumn": 8,
+                  "endLine": 292,
+                  "endColumn": 2
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/exitCriteria.ts",
+                  "index": 9
+                },
+                "region": {
+                  "startLine": 35,
+                  "startColumn": 7,
+                  "endLine": 41,
+                  "endColumn": 23
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/exitCriteria.ts",
+                  "index": 9
+                },
+                "region": {
+                  "startLine": 37,
+                  "startColumn": 11,
+                  "endLine": 41,
+                  "endColumn": 23
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/gate.ts",
+                  "index": 10
+                },
+                "region": {
+                  "startLine": 46,
+                  "startColumn": 10,
+                  "endLine": 46,
+                  "endColumn": 62
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/gate.ts",
+                  "index": 10
+                },
+                "region": {
+                  "startLine": 60,
+                  "startColumn": 7,
+                  "endLine": 60,
+                  "endColumn": 80
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/importFlow.ts",
+                  "index": 13
+                },
+                "region": {
+                  "startLine": 122,
+                  "startColumn": 18,
+                  "endLine": 126,
+                  "endColumn": 20
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/webDrafts.ts",
+                  "index": 18
+                },
+                "region": {
+                  "startLine": 95,
+                  "startColumn": 15,
+                  "endLine": 99,
+                  "endColumn": 13
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Method 'save' has a complexity of 13. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/model/webDrafts.ts",
+                  "index": 18
+                },
+                "region": {
+                  "startLine": 125,
+                  "startColumn": 7,
+                  "endLine": 146,
+                  "endColumn": 4
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/DecisionPreview.tsx",
+                  "index": 19
+                },
+                "region": {
+                  "startLine": 51,
+                  "startColumn": 21,
+                  "endLine": 51,
+                  "endColumn": 97
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Function 'StatusReportDialog' has a complexity of 24. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/StatusReportDialog.tsx",
+                  "index": 22
+                },
+                "region": {
+                  "startLine": 72,
+                  "startColumn": 8,
+                  "endLine": 467,
+                  "endColumn": 2
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1,
+          "suppressions": []
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/StatusReportDialog.tsx",
+                  "index": 22
+                },
+                "region": {
+                  "startLine": 100,
+                  "startColumn": 5,
+                  "endLine": 100,
+                  "endColumn": 101
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0,
+          "suppressions": []
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/StatusReportDialog.tsx",
+                  "index": 22
+                },
+                "region": {
+                  "startLine": 166,
+                  "startColumn": 5,
+                  "endLine": 170,
+                  "endColumn": 41
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0,
+          "suppressions": []
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/StatusReportDialog.tsx",
+                  "index": 22
+                },
+                "region": {
+                  "startLine": 349,
+                  "startColumn": 10,
+                  "endLine": 437,
+                  "endColumn": 10
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0,
+          "suppressions": []
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "React Hook useEffect has a missing dependency: 'cycleId'. Either include it or remove the dependency array."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/StatusReportDialog.tsx",
+                  "index": 22
+                },
+                "region": {
+                  "startLine": 118,
+                  "startColumn": 6,
+                  "endLine": 118,
+                  "endColumn": 25
+                }
+              }
+            }
+          ],
+          "ruleId": "react-hooks/exhaustive-deps",
+          "ruleIndex": 2,
+          "suppressions": [
+            {
+              "kind": "inSource",
+              "justification": ""
+            }
+          ]
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Function 'CompletionReportDialog' has a complexity of 31. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/completion/CompletionReportDialog.tsx",
+                  "index": 26
+                },
+                "region": {
+                  "startLine": 64,
+                  "startColumn": 8,
+                  "endLine": 488,
+                  "endColumn": 2
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/completion/CompletionReportDialog.tsx",
+                  "index": 26
+                },
+                "region": {
+                  "startLine": 301,
+                  "startColumn": 10,
+                  "endLine": 431,
+                  "endColumn": 10
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/completion/CompletionReportDialog.tsx",
+                  "index": 26
+                },
+                "region": {
+                  "startLine": 408,
+                  "startColumn": 22,
+                  "endLine": 412,
+                  "endColumn": 46
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Function 'readStored' has a complexity of 14. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/completion/completionReport.ts",
+                  "index": 29
+                },
+                "region": {
+                  "startLine": 69,
+                  "startColumn": 8,
+                  "endLine": 92,
+                  "endColumn": 2
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Function 'buildCompletionReport' has a complexity of 35. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/completion/completionReport.ts",
+                  "index": 29
+                },
+                "region": {
+                  "startLine": 254,
+                  "startColumn": 8,
+                  "endLine": 522,
+                  "endColumn": 2
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Arrow function has a complexity of 13. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/completion/completionReport.ts",
+                  "index": 29
+                },
+                "region": {
+                  "startLine": 350,
+                  "startColumn": 33,
+                  "endLine": 373,
+                  "endColumn": 4
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/decisionSection.ts",
+                  "index": 31
+                },
+                "region": {
+                  "startLine": 111,
+                  "startColumn": 7,
+                  "endLine": 111,
+                  "endColumn": 72
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Function 'buildStatusReport' has a complexity of 14. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/report/statusReport.ts",
+                  "index": 35
+                },
+                "region": {
+                  "startLine": 107,
+                  "startColumn": 8,
+                  "endLine": 325,
+                  "endColumn": 2
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Function 'DeleteRunDialog' has a complexity of 15. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/DeleteRunDialog.tsx",
+                  "index": 37
+                },
+                "region": {
+                  "startLine": 14,
+                  "startColumn": 8,
+                  "endLine": 136,
+                  "endColumn": 2
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/DeleteRunDialog.tsx",
+                  "index": 37
+                },
+                "region": {
+                  "startLine": 57,
+                  "startColumn": 9,
+                  "endLine": 61,
+                  "endColumn": 43
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Function 'ExecutionPanel' has a complexity of 39. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/ExecutionPanel.tsx",
+                  "index": 38
+                },
+                "region": {
+                  "startLine": 90,
+                  "startColumn": 8,
+                  "endLine": 1112,
+                  "endColumn": 2
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1,
+          "suppressions": []
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Async function 'record' has a complexity of 16. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/ExecutionPanel.tsx",
+                  "index": 38
+                },
+                "region": {
+                  "startLine": 337,
+                  "startColumn": 3,
+                  "endLine": 384,
+                  "endColumn": 4
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1,
+          "suppressions": []
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Function 'onKeyDown' has a complexity of 22. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/ExecutionPanel.tsx",
+                  "index": 38
+                },
+                "region": {
+                  "startLine": 511,
+                  "startColumn": 3,
+                  "endLine": 563,
+                  "endColumn": 4
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1,
+          "suppressions": []
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/ExecutionPanel.tsx",
+                  "index": 38
+                },
+                "region": {
+                  "startLine": 744,
+                  "startColumn": 24,
+                  "endLine": 748,
+                  "endColumn": 50
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0,
+          "suppressions": []
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Arrow function has a complexity of 19. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/ExecutionPanel.tsx",
+                  "index": 38
+                },
+                "region": {
+                  "startLine": 776,
+                  "startColumn": 24,
+                  "endLine": 931,
+                  "endColumn": 14
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1,
+          "suppressions": []
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "React Hook useMemo has missing dependencies: 'revision' and 'target'. Either include them or remove the dependency array."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/ExecutionPanel.tsx",
+                  "index": 38
+                },
+                "region": {
+                  "startLine": 225,
+                  "startColumn": 5,
+                  "endLine": 225,
+                  "endColumn": 26
+                }
+              }
+            }
+          ],
+          "ruleId": "react-hooks/exhaustive-deps",
+          "ruleIndex": 2,
+          "suppressions": [
+            {
+              "kind": "inSource",
+              "justification": ""
+            }
+          ]
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Function 'ImportReportDialog' has a complexity of 38. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/ImportReportDialog.tsx",
+                  "index": 39
+                },
+                "region": {
+                  "startLine": 36,
+                  "startColumn": 8,
+                  "endLine": 532,
+                  "endColumn": 2
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1,
+          "suppressions": []
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "React Hook useEffect has a missing dependency: 'request'. Either include it or remove the dependency array."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/ImportReportDialog.tsx",
+                  "index": 39
+                },
+                "region": {
+                  "startLine": 154,
+                  "startColumn": 6,
+                  "endLine": 154,
+                  "endColumn": 58
+                }
+              }
+            }
+          ],
+          "ruleId": "react-hooks/exhaustive-deps",
+          "ruleIndex": 2,
+          "suppressions": [
+            {
+              "kind": "inSource",
+              "justification": ""
+            }
+          ]
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/ImportReportDialog.tsx",
+                  "index": 39
+                },
+                "region": {
+                  "startLine": 154,
+                  "startColumn": 28,
+                  "endLine": 154,
+                  "endColumn": 57
+                }
+              }
+            }
+          ],
+          "ruleId": "react-hooks/exhaustive-deps",
+          "ruleIndex": 2,
+          "suppressions": [
+            {
+              "kind": "inSource",
+              "justification": ""
+            }
+          ]
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Function 'RunDetail' has a complexity of 39. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/RunDetail.tsx",
+                  "index": 43
+                },
+                "region": {
+                  "startLine": 35,
+                  "startColumn": 8,
+                  "endLine": 498,
+                  "endColumn": 2
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/RunDetail.tsx",
+                  "index": 43
+                },
+                "region": {
+                  "startLine": 109,
+                  "startColumn": 9,
+                  "endLine": 113,
+                  "endColumn": 43
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/RunDetail.tsx",
+                  "index": 43
+                },
+                "region": {
+                  "startLine": 355,
+                  "startColumn": 31,
+                  "endLine": 355,
+                  "endColumn": 95
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/RunDetail.tsx",
+                  "index": 43
+                },
+                "region": {
+                  "startLine": 409,
+                  "startColumn": 24,
+                  "endLine": 409,
+                  "endColumn": 122
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        },
+        {
+          "level": "error",
+          "message": {
+            "text": "Function 'RunsList' has a complexity of 14. Maximum allowed is 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/RunsPage.tsx",
+                  "index": 45
+                },
+                "region": {
+                  "startLine": 59,
+                  "startColumn": 1,
+                  "endLine": 349,
+                  "endColumn": 2
+                }
+              }
+            }
+          ],
+          "ruleId": "complexity",
+          "ruleIndex": 1,
+          "suppressions": []
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/RunsPage.tsx",
+                  "index": 45
+                },
+                "region": {
+                  "startLine": 251,
+                  "startColumn": 10,
+                  "endLine": 323,
+                  "endColumn": 10
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0,
+          "suppressions": []
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/RunsPage.tsx",
+                  "index": 45
+                },
+                "region": {
+                  "startLine": 262,
+                  "startColumn": 13,
+                  "endLine": 323,
+                  "endColumn": 10
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0,
+          "suppressions": []
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/RunsPage.tsx",
+                  "index": 45
+                },
+                "region": {
+                  "startLine": 267,
+                  "startColumn": 13,
+                  "endLine": 323,
+                  "endColumn": 10
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0,
+          "suppressions": []
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "React Hook useEffect has a missing dependency: 'refresh'. Either include it or remove the dependency array."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/RunsPage.tsx",
+                  "index": 45
+                },
+                "region": {
+                  "startLine": 105,
+                  "startColumn": 6,
+                  "endLine": 105,
+                  "endColumn": 25
+                }
+              }
+            }
+          ],
+          "ruleId": "react-hooks/exhaustive-deps",
+          "ruleIndex": 2,
+          "suppressions": [
+            {
+              "kind": "inSource",
+              "justification": ""
+            }
+          ]
+        },
+        {
+          "level": "warning",
+          "message": {
+            "text": "Do not nest ternary expressions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///home/runner/work/Pharos/Pharos/src/modules/runs/ui/UnlinkedTray.tsx",
+                  "index": 46
+                },
+                "region": {
+                  "startLine": 54,
+                  "startColumn": 5,
+                  "endLine": 54,
+                  "endColumn": 76
+                }
+              }
+            }
+          ],
+          "ruleId": "no-nested-ternary",
+          "ruleIndex": 0
+        }
+      ]
+    }
+  ]
+}

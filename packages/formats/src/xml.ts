@@ -42,13 +42,44 @@ export function configureXml(Parser: new () => DomParserLike): void {
   injected = using(Parser);
 }
 
-/** The configured parser, else the native `DOMParser`. Throws, or returns a
- *  document with a `parsererror` element, on malformed input. */
+/** The message of the error `xmlParser()` throws for a DTD. */
+export const XML_DOCTYPE = "doctype";
+
+/** True when the prolog (before the root element) declares a DTD. A DTD is
+ *  how XXE and entity bombs reach a parser, and no result format needs one, so
+ *  it is refused whatever DOMParser is injected (ADR-0053). Only the prolog is
+ *  read: a `<!DOCTYPE html>` inside a test's captured output is content. */
+export function prologHasDoctype(text: string): boolean {
+  let i = 0;
+  const n = text.length;
+  for (;;) {
+    while (i < n && (text.charCodeAt(i) === 0xfeff || /\s/.test(text[i]))) i++;
+    if (text.startsWith("<?", i)) {
+      const end = text.indexOf("?>", i + 2);
+      if (end < 0) return false;
+      i = end + 2;
+    } else if (text.startsWith("<!--", i)) {
+      const end = text.indexOf("-->", i + 4);
+      if (end < 0) return false;
+      i = end + 3;
+    } else {
+      return text.slice(i, i + 9).toUpperCase() === "<!DOCTYPE";
+    }
+  }
+}
+
+/** The configured parser, else the native `DOMParser`. Throws on a DTD
+ *  (`XML_DOCTYPE`); throws, or returns a document with a `parsererror`
+ *  element, on malformed input. */
 export function xmlParser(): XmlParse {
-  if (injected) return injected;
   const native = (globalThis as { DOMParser?: new () => DomParserLike })
     .DOMParser;
-  if (native) return using(native);
+  const parse = injected ?? (native ? using(native) : undefined);
+  if (parse)
+    return (text) => {
+      if (prologHasDoctype(text)) throw new Error(XML_DOCTYPE);
+      return parse(text);
+    };
   throw new Error(
     "No XML parser: call configureXml() with @xmldom/xmldom's DOMParser in Node.",
   );

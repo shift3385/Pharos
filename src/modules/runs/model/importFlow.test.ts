@@ -158,6 +158,11 @@ describe("import flow", () => {
       key: "runs.import.error.already-imported",
       detail: "RUN-004",
     });
+    // ING-06: recognised by the parsers, not stored yet by the desktop (F2).
+    expect(importErrorKey("unknown-format: sarif")).toEqual({
+      key: "runs.import.error.format-not-stored",
+      detail: "SARIF",
+    });
     expect(importErrorKey(new Error("run-closed"))).toEqual({
       key: "runs.import.error.run-closed",
       detail: undefined,

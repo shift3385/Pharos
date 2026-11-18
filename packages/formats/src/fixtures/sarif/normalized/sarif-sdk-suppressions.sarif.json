@@ -1,0 +1,94 @@
+{
+  "format": "sarif",
+  "warnings": [],
+  "inline": {},
+  "doc": {
+    "schemaVersion": "1.0.0",
+    "run": {
+      "trigger": "import",
+      "sourceTool": "CodeScanner",
+      "context": {
+        "tools": [
+          {
+            "name": "CodeScanner"
+          }
+        ]
+      }
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "sarif",
+        "normalizerVersion": 1,
+        "formatVersion": "2.1.0"
+      }
+    ],
+    "results": [],
+    "attachments": [],
+    "findings": [
+      {
+        "ruleId": "TST0001",
+        "severity": "medium",
+        "message": "New suppressed result.",
+        "location": {
+          "uri": "code/file1.c"
+        },
+        "fingerprint": "pharos:fbbe1356-a611-5156-b50b-40d0be3f2dd4",
+        "standardRefs": [],
+        "attributes": {
+          "tool": "CodeScanner",
+          "kind": "fail",
+          "suppressed": true
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "TST0002",
+        "severity": "medium",
+        "message": "Existing, originally unsuppressed result.",
+        "location": {
+          "uri": "code/file2.c"
+        },
+        "fingerprint": "pharos:cf2d7c53-482d-5b9f-9f37-f99a9de0d00f",
+        "standardRefs": [],
+        "attributes": {
+          "tool": "CodeScanner",
+          "kind": "fail",
+          "suppressed": true
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "TST0003",
+        "severity": "medium",
+        "message": "Result suppressed in both runs.",
+        "location": {
+          "uri": "code/file3.c"
+        },
+        "fingerprint": "pharos:807e8d6b-be8f-57f9-a200-1f2b808e4700",
+        "standardRefs": [],
+        "attributes": {
+          "tool": "CodeScanner",
+          "kind": "fail",
+          "suppressed": true
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "TST0004",
+        "severity": "medium",
+        "message": "Existing, originally suppressed result.",
+        "location": {
+          "uri": "code/file4.c"
+        },
+        "fingerprint": "pharos:b28f436f-0081-5f64-bd46-f3d1a30cbe0b",
+        "standardRefs": [],
+        "attributes": {
+          "tool": "CodeScanner",
+          "kind": "fail"
+        },
+        "shardRef": "s1"
+      }
+    ]
+  }
+}
