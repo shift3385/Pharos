@@ -510,6 +510,10 @@ export const INVENTORY: Item[] = [
   I("administracion", "action", "action:sync-now", "Sincronizar ahora"),
   I("administracion", "action", "action:sync-auto", "Sincronización automática y su intervalo"),
   I("administracion", "dialog", "dialogs:src/modules/sync-offline/ui/ConflictPanel.tsx", "Conflictos de sincronización (con un segundo equipo simulado por la API del tour)"),
+  // SYNC-02 (ADR-0051): a web save that collides field by field.
+  I("administracion", "dialog", "dialogs:src/modules/sync-offline/ui/WebMergeDialog.tsx", "Web: elegir qué queda en cada campo cuando alguien cambió los mismos campos al guardar", {
+    skip: "Solo existe en la versión web; los tours recorren la app de escritorio. Lo cubren src/modules/sync-offline/web/serverApi.test.ts, src/modules/sync-offline/ui/FieldMerge.test.tsx y la revisión manual de la versión web (docs/manual/REVIEW.md).",
+  }),
   I("administracion", "dialog", "dialogs:src/modules/sync-offline/ui/LegacyUnsentNotice.tsx", "Aviso de cambios antiguos sin enviar", {
     skip: `${WEB_ONLY} Lo cubren sus pruebas unitarias (Vitest) y la revisión manual de la versión web (docs/manual/REVIEW.md).`,
   }),

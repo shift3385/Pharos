@@ -425,7 +425,7 @@
     "orphans_one": "{{count}} cambio sin proyecto conocido todavía; se enviará cuando llegue su proyecto",
     "orphans_other": "{{count}} cambios sin proyecto conocido todavía; se enviarán cuando llegue su proyecto",
     "web": {
-      "staleWrite": "Este elemento se cambió en otro sitio desde que lo abriste. Tu edición sigue en el formulario: guarda de nuevo para reemplazar esa versión, o cierra sin guardar para conservarla.",
+      "staleWrite": "Alguien cambió los mismos campos de este elemento desde que lo abriste. Tu edición sigue en el formulario: guarda de nuevo para reemplazar esa versión, o cierra sin guardar para conservarla.",
       "deletedElsewhere": "Este elemento se eliminó en otro sitio desde que lo abriste. Tu edición sigue en el formulario: copia lo que necesites antes de cerrarlo.",
       "keyTaken": "Ese ID ya lo usa otro elemento del proyecto. Elige otro o déjalo vacío para numerarlo automáticamente.",
       "keyRetired": "Ese ID era de un elemento eliminado y no se reutiliza nunca. Elige otro o déjalo vacío.",
@@ -442,12 +442,16 @@
       "legacyDiscardConfirm_one": "¿Descartar {{count}} elemento sin descargarlo? No se podrá recuperar.",
       "legacyDiscardConfirm_other": "¿Descartar los {{count}} elementos sin descargarlos? No se podrán recuperar.",
       "legacySavedConfirm_one": "¿Quitar {{count}} elemento de este navegador? Comprueba antes que el archivo descargado está en tus descargas.",
-      "legacySavedConfirm_other": "¿Quitar los {{count}} elementos de este navegador? Comprueba antes que el archivo descargado está en tus descargas."
+      "legacySavedConfirm_other": "¿Quitar los {{count}} elementos de este navegador? Comprueba antes que el archivo descargado está en tus descargas.",
+      "merged": "Alguien cambió este elemento mientras lo editabas. Se combinó con tus cambios, que tocaban otros campos, y se guardó.",
+      "mergeTitle": "Alguien cambió los mismos campos mientras editabas",
+      "mergeIntro": "Lo que no choca ya está combinado. Elige qué queda en cada campo y se guarda; o vuelve al formulario sin guardar.",
+      "mergeCancel": "Volver sin guardar"
     },
     "conflict": {
       "review": "Revisar conflictos",
       "title": "Conflictos de sincronización",
-      "intro": "Estos elementos se editaron en este equipo y en otro dispositivo desde la última sincronización. Elige qué versión conservar; la otra se descarta.",
+      "intro": "Estos elementos se editaron en este equipo y en otro dispositivo desde la última sincronización. Lo que no choca ya está combinado: elige qué queda en cada campo marcado, o conserva una versión entera.",
       "onlyChanged": "Mostrar solo los campos distintos",
       "empty": "No hay conflictos pendientes.",
       "close": "Cerrar",
@@ -498,7 +502,26 @@
         "required": "Obligatorio",
         "defaultValue": "Valor por defecto",
         "appliesToCaseTypes": "Aplica a",
-        "archivedAt": "Archivado"
+        "archivedAt": "Archivado",
+        "data": {
+          "steps": "Pasos",
+          "preconditions": "Precondiciones",
+          "background": "Antecedentes",
+          "examples": "Ejemplos",
+          "flows": "Flujos",
+          "requirementKeys": "Requisitos",
+          "custom": "Campos personalizados",
+          "summary": "Resumen",
+          "sprints": "Sprints",
+          "milestones": "Hitos",
+          "labels": "Etiquetas",
+          "description": "Descripción"
+        },
+        "text": "Texto",
+        "expected": "Resultado esperado",
+        "values": "Valores",
+        "riskLikelihood": "Probabilidad",
+        "riskImpact": "Impacto"
       },
       "key": {
         "title": "Claves repetidas",
@@ -511,9 +534,35 @@
         "assigned": "Clave asignada: {{key}}",
         "noBlock": "Sincroniza antes para obtener números nuevos, o escribe una clave.",
         "failed": "No se pudo usar esa clave: {{reason}}"
+      },
+      "mergedCount_one": "Se combinó {{count}} campo sin preguntar",
+      "mergedCount_other": "Se combinaron {{count}} campos sin preguntar",
+      "origin": {
+        "local": "de este equipo",
+        "remote": "del servidor",
+        "both": "los dos"
+      },
+      "order": "orden",
+      "element": "elemento",
+      "groups": {
+        "risk": "Riesgo",
+        "content": "Contenido del archivo"
+      },
+      "missing_one": "Falta {{count}} campo por elegir",
+      "missing_other": "Faltan {{count}} campos por elegir",
+      "allChosen": "Todo elegido",
+      "apply": "Aplicar",
+      "allLocal": "La mía en todo",
+      "allRemote": "La del servidor en todo",
+      "guard": {
+        "review": "Uno de los dos aprobó o revisó el elemento y el otro cambió su contenido: una aprobación no puede cubrir un contenido que no vio. Elige una versión entera.",
+        "closed": "Uno de los dos cerró el ciclo y el otro lo editó. Elige una versión entera.",
+        "other": "Estos cambios no se pueden combinar. Elige una versión entera."
       }
     },
-    "accountDisabled": "Tu cuenta está desactivada en el servidor. La sincronización está parada; tus datos y tus cambios pendientes se quedan en este equipo y se enviarán si un administrador la reactiva."
+    "accountDisabled": "Tu cuenta está desactivada en el servidor. La sincronización está parada; tus datos y tus cambios pendientes se quedan en este equipo y se enviarán si un administrador la reactiva.",
+    "autoMerged_one": "Se combinaron cambios de otra persona en {{count}} elemento. Nada se perdió; queda en la auditoría.",
+    "autoMerged_other": "Se combinaron cambios de otras personas en {{count}} elementos. Nada se perdió; queda en la auditoría."
   },
   "admin": {
     "title": "Administración",
@@ -941,7 +990,8 @@
         "reason": "Motivo",
         "from": "Antes",
         "to": "Ahora",
-        "previousRole": "Rol anterior"
+        "previousRole": "Rol anterior",
+        "auto": "Sin preguntar"
       },
       "device": {
         "this": "Este equipo",
@@ -1071,7 +1121,8 @@
         "link": "Entregado a mano",
         "account_disabled": "Cuenta desactivada",
         "account_enabled": "Cuenta reactivada",
-        "test_manager_succession": "Nuevo Test Manager (cuenta desactivada)"
+        "test_manager_succession": "Nuevo Test Manager (cuenta desactivada)",
+        "merged": "Combinado"
       }
     },
     "users": {

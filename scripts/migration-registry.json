@@ -5,7 +5,6 @@
     "registeredIn": "src-tauri/src/db.rs",
     "inOrder": true,
     "reserved": {
-      "0047": "0.6.0 track S (SYNC-02, ADR-0051): sync_base.base_payload and sync_conflicts.merge",
       "0048": "0.6.0 track F (ING-06): findings, finding_triage and metrics tables (ADR-0053)"
     },
     "retired": {

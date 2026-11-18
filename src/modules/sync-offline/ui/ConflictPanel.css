@@ -192,3 +192,60 @@
   background: var(--color-surface-1);
   color: inherit;
 }
+
+/* Field-level merge (SYNC-02, ADR-0051). */
+.cp__merge {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.cp__merged {
+  padding: var(--space-2) var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-ui);
+}
+
+.cp__merged summary {
+  cursor: pointer;
+  font-weight: var(--fw-medium);
+  color: var(--color-success-text);
+}
+
+.cp__merged ul {
+  margin: var(--space-2) 0 0;
+  padding-left: 1.2em;
+}
+
+.cp__muted {
+  color: var(--color-text-muted);
+  font-size: var(--fs-caption);
+}
+
+.cp__note {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-ui);
+  color: var(--color-warning-text);
+}
+
+.cp__pick {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.cp__pick input {
+  margin-top: 4px;
+}
+
+.cp__actions .cp__muted {
+  margin-right: auto;
+  align-self: center;
+}
+
+.cp__btn--primary {
+  color: var(--color-on-navy);
+  background: var(--color-navy-500);
+  border-color: var(--color-navy-500);
+}

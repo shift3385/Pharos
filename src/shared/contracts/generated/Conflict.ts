@@ -2,7 +2,14 @@
 import type { ConflictSide } from "./ConflictSide";
 
 /**
- * An open conflict as shown in the conflict panel: both full versions, so the
- * UI can diff them field by field (SYNC-02 can later add a merged resolution).
+ * An open conflict as shown in the conflict panel: both full versions, and
+ * what the field-level merge found (SYNC-02, ADR-0051).
  */
-export type Conflict = { id: string, entity: string, entityId: string, baseRevision: number | null, local: ConflictSide, remote: ConflictSide, detectedAt: string, };
+export type Conflict = { id: string, entity: string, entityId: string, baseRevision: number | null, local: ConflictSide, remote: ConflictSide, detectedAt: string, 
+/**
+ * What the field-level merge found (SYNC-02): `origins` (the fields
+ * combined without asking), `conflicts` (the keys to decide) or
+ * `guard` (decided per entity). Null before migration 0047 or when it
+ * could not run (no base kept, or a delete).
+ */
+merge: unknown, };

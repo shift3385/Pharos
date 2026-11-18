@@ -425,7 +425,7 @@
     "orphans_one": "{{count}} change without a known project yet; it will be sent once its project arrives",
     "orphans_other": "{{count}} changes without a known project yet; they will be sent once it arrives",
     "web": {
-      "staleWrite": "This item was changed elsewhere since you opened it. Your edit is still in the form: save again to replace that version, or close without saving to keep it.",
+      "staleWrite": "Someone changed the same fields of this item since you opened it. Your edit is still in the form: save again to replace that version, or close without saving to keep it.",
       "deletedElsewhere": "This item was deleted elsewhere since you opened it. Your edit is still in the form: copy what you need before closing it.",
       "keyTaken": "That ID is already used by another item of the project. Choose another one or leave it empty to number it automatically.",
       "keyRetired": "That ID belonged to a deleted item and is never reused. Choose another one or leave it empty.",
@@ -442,12 +442,16 @@
       "legacyDiscardConfirm_one": "Discard {{count}} item without downloading it? It cannot be recovered.",
       "legacyDiscardConfirm_other": "Discard the {{count}} items without downloading them? They cannot be recovered.",
       "legacySavedConfirm_one": "Remove {{count}} item from this browser? Check first that the downloaded file is in your downloads.",
-      "legacySavedConfirm_other": "Remove the {{count}} items from this browser? Check first that the downloaded file is in your downloads."
+      "legacySavedConfirm_other": "Remove the {{count}} items from this browser? Check first that the downloaded file is in your downloads.",
+      "merged": "Someone changed this item while you were editing it. It was combined with your changes, which touched other fields, and saved.",
+      "mergeTitle": "Someone changed the same fields while you were editing",
+      "mergeIntro": "What does not collide is already combined. Choose what stays in each field and it is saved; or go back to the form without saving.",
+      "mergeCancel": "Go back without saving"
     },
     "conflict": {
       "review": "Review conflicts",
       "title": "Sync conflicts",
-      "intro": "These items were edited on this computer and on another device since the last sync. Choose which version to keep; the other one is discarded.",
+      "intro": "These items were edited on this device and on another one since the last sync. What does not collide is already combined: choose what stays in each marked field, or keep one whole version.",
       "onlyChanged": "Show only the fields that differ",
       "empty": "No pending conflicts.",
       "close": "Close",
@@ -498,7 +502,26 @@
         "required": "Required",
         "defaultValue": "Default value",
         "appliesToCaseTypes": "Applies to",
-        "archivedAt": "Archived"
+        "archivedAt": "Archived",
+        "data": {
+          "steps": "Steps",
+          "preconditions": "Preconditions",
+          "background": "Background",
+          "examples": "Examples",
+          "flows": "Flows",
+          "requirementKeys": "Requirements",
+          "custom": "Custom fields",
+          "summary": "Summary",
+          "sprints": "Sprints",
+          "milestones": "Milestones",
+          "labels": "Labels",
+          "description": "Description"
+        },
+        "text": "Text",
+        "expected": "Expected result",
+        "values": "Values",
+        "riskLikelihood": "Likelihood",
+        "riskImpact": "Impact"
       },
       "key": {
         "title": "Repeated keys",
@@ -511,9 +534,35 @@
         "assigned": "Key assigned: {{key}}",
         "noBlock": "Sync first to get new numbers, or type a key.",
         "failed": "That key could not be used: {{reason}}"
+      },
+      "mergedCount_one": "{{count}} field was combined without asking",
+      "mergedCount_other": "{{count}} fields were combined without asking",
+      "origin": {
+        "local": "from this device",
+        "remote": "from the server",
+        "both": "both"
+      },
+      "order": "order",
+      "element": "item",
+      "groups": {
+        "risk": "Risk",
+        "content": "File content"
+      },
+      "missing_one": "{{count}} field left to choose",
+      "missing_other": "{{count}} fields left to choose",
+      "allChosen": "All chosen",
+      "apply": "Apply",
+      "allLocal": "Mine for everything",
+      "allRemote": "The server's for everything",
+      "guard": {
+        "review": "One side approved or reviewed the item and the other changed its content: an approval cannot cover content it did not see. Keep one whole version.",
+        "closed": "One side closed the cycle and the other edited it. Keep one whole version.",
+        "other": "These changes cannot be combined. Keep one whole version."
       }
     },
-    "accountDisabled": "Your account is disabled on the server. Sync is stopped; your data and pending changes stay on this device and are sent if an administrator enables it again."
+    "accountDisabled": "Your account is disabled on the server. Sync is stopped; your data and pending changes stay on this device and are sent if an administrator enables it again.",
+    "autoMerged_one": "Changes from someone else were combined in {{count}} item. Nothing was lost; it is in the audit log.",
+    "autoMerged_other": "Changes from others were combined in {{count}} items. Nothing was lost; it is in the audit log."
   },
   "admin": {
     "title": "Administration",
@@ -941,7 +990,8 @@
         "reason": "Reason",
         "from": "Before",
         "to": "Now",
-        "previousRole": "Previous role"
+        "previousRole": "Previous role",
+        "auto": "Without asking"
       },
       "device": {
         "this": "This device",
@@ -1071,7 +1121,8 @@
         "link": "Handed over",
         "account_disabled": "Account disabled",
         "account_enabled": "Account enabled",
-        "test_manager_succession": "New Test Manager (account disabled)"
+        "test_manager_succession": "New Test Manager (account disabled)",
+        "merged": "Combined"
       }
     },
     "users": {

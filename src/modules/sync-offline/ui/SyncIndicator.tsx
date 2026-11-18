@@ -97,6 +97,11 @@ export function SyncStatusProvider({ children }: { children: ReactNode }) {
       const count = (e as CustomEvent<{ count: number }>).detail?.count ?? 1;
       toast(t("sync.webConflictToast", { count }));
     };
+    // Edits from elsewhere combined field by field without asking (SYNC-02).
+    const merged = (e: Event) => {
+      const count = (e as CustomEvent<{ count: number }>).detail?.count ?? 1;
+      toast(t("sync.autoMerged", { count }));
+    };
     // Changes the server refused for their content: they stay pending.
     const refused = (e: Event) => {
       const count = (e as CustomEvent<{ count: number }>).detail?.count ?? 1;
@@ -107,6 +112,7 @@ export function SyncStatusProvider({ children }: { children: ReactNode }) {
     window.addEventListener("pharos:sync-state", changed);
     window.addEventListener("pharos:sync-conflict", lost);
     window.addEventListener("pharos:sync-skipped", refused);
+    window.addEventListener("pharos:sync-merged", merged);
     return () => {
       window.clearInterval(id);
       window.removeEventListener("online", on);
@@ -114,6 +120,7 @@ export function SyncStatusProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("pharos:sync-state", changed);
       window.removeEventListener("pharos:sync-conflict", lost);
       window.removeEventListener("pharos:sync-skipped", refused);
+      window.removeEventListener("pharos:sync-merged", merged);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
