@@ -1312,6 +1312,10 @@ const EXEMPT: &[(&str, &str)] = &[
     ),
     ("oplog::oplog_pending_count", "read"),
     (
+        "oplog::oplog_compact",
+        "sync bookkeeping: deletes oplog rows the server already has (SYNC-10); no data changes",
+    ),
+    (
         "sync::oplog_pending",
         "read (stamps an HLC on pre-0011 rows only)",
     ),

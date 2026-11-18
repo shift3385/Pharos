@@ -272,6 +272,7 @@ pub fn run() {
             ai::ai_list_models,
             ai::ai_web_access_upload,
             oplog::oplog_pending_count,
+            oplog::oplog_compact,
             sync::oplog_pending,
             sync::oplog_mark_synced,
             sync::oplog_mark_rejected,

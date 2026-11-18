@@ -17,7 +17,8 @@ export type SyncAction =
   | "audit-push"
   | "rejections-list"
   | "rejection-discard"
-  | "blobs";
+  | "blobs"
+  | "compact";
 
 /**
  * The value to log for a sync failure. A `SyncHttpError` becomes a new error

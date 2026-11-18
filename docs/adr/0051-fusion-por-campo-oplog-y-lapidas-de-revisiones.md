@@ -202,3 +202,43 @@ Precisiones sobre la decisión 1, sin cambiarla.
   como antes (aviso y «guarda de nuevo para reemplazar»). `serverApi` no es
   React: pregunta con un evento (`web/mergePrompt.ts`) que el diálogo,
   montado una vez por el shell de la web, contesta.
+
+## Compactar el oplog y la medición (PR S5, 2026-11-18)
+
+Precisiones sobre la decisión 4, sin cambiarla.
+
+- **Medición.** `oplog::tests::bench_oplog_and_audit_growth` (`#[ignore]`;
+  en release). Datos: 2 000 casos y 20 ediciones de título de cada uno, es
+  decir, 40 000 cambios.
+  - **Oplog: 80 000 filas.** Confirma las dos filas por cambio auditado (la
+    de la entidad y la del evento), unos 14 MiB de datos de fila sin contar
+    los índices. Tras sincronizar, la compactación las borra todas: quedan
+    0.
+  - **`audit_log`: 40 000 eventos.** Solo 2,1 MiB son de `changes` (media de
+    53 bytes y máximo de 57 con ediciones de título). Lo que pesa en cada
+    evento es la cadena (hash, ids, HLC), no el valor guardado.
+  - **La base de datos** pasa de 1 MiB a 67 MiB. La mayor parte es el
+    oplog sincronizado, que ahora se compacta, y los índices de la
+    auditoría.
+- **Decisión sobre `audit_log`, con estas cifras.** No se cambia su forma en
+  0.6.0. Guardar el hash en vez de valores grandes y plegar los movimientos
+  de tarjetas siguen como propuesta; se reabren si el diagnóstico
+  (`syncStorage.auditChangesMaxBytes`, `auditCardMoves`) de equipos reales
+  muestra valores grandes o muchos movimientos.
+- **`oplog::compact`.**
+  - Borra las filas sincronizadas de más de un día, salvo la última `delete`
+    de cada entidad. Esa fila la leen `restore_project_children`,
+    `trash::restore` y `runs::delete::revive_items`.
+  - `known_to_server` ya mira `sync_base`.
+  - Corre después de un sync completo, como mucho una vez al día
+    (`oplog_compact`, `sync_state.oplog_compacted_at`).
+  - Nunca hace VACUUM: liberar las páginas es de N4
+    ([ADR-0050](0050-pharos-core-y-sqlite-en-disco-cifrado.md)).
+- **Diagnóstico.** `syncStorage` con:
+  - filas del oplog pendientes y sincronizadas, por entidad;
+  - eventos de auditoría y bytes de `changes` (media y máximo);
+  - las cinco combinaciones `entidad:acción` más frecuentes;
+  - los movimientos de tarjetas;
+  - la fecha de la última compactación.
+
+  Solo números.
