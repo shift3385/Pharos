@@ -12,6 +12,7 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -714,6 +715,7 @@ fn get_revision(
     .map_err(|e| e.to_string())
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_case_list(
     db: State<Db>,
@@ -723,6 +725,7 @@ pub fn test_case_list(
     db.with_conn(|conn| list_cases(conn, &project_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_case_get(
     db: State<Db>,
@@ -732,6 +735,7 @@ pub fn test_case_get(
     db.with_conn(|conn| get_case(conn, &id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_case_create(db: State<Db>, input: TestCaseInput) -> Result<Option<TestCase>, String> {
     let id = db.with_tx(|conn| insert_case(conn, &input))?;
@@ -739,6 +743,7 @@ pub fn test_case_create(db: State<Db>, input: TestCaseInput) -> Result<Option<Te
     db.with_conn(|conn| get_case(conn, &id, &input.user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_case_update(
     db: State<Db>,
@@ -750,12 +755,14 @@ pub fn test_case_update(
     db.with_conn(|conn| get_case(conn, &id, &input.user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_case_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_case(conn, &id, &user_id))?;
     db.persist()
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_case_revisions(
     db: State<Db>,
@@ -767,6 +774,7 @@ pub fn test_case_revisions(
 
 /// A review transition (CAS-02, ADR-0047): send, approve, return, mark
 /// obsolete or reactivate. The case as it stands after it.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_case_review(
     db: State<Db>,
@@ -779,6 +787,7 @@ pub fn test_case_review(
 }
 
 /// The earlier state a reviewer compares the case with (CAS-02).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_case_review_base(
     db: State<Db>,
@@ -788,6 +797,7 @@ pub fn test_case_review_base(
     db.with_conn(|conn| review_base(conn, &id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_case_revision_get(
     db: State<Db>,

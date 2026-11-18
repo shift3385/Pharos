@@ -12,6 +12,7 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -332,16 +333,19 @@ pub(crate) fn outbox_done(conn: &Connection, user: &str, ids: &[String]) -> Resu
 // Commands. Every write is saved at once: a notification is small and the
 // panel must not lose a read mark on a crash.
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn notifications_list(db: State<Db>, user_id: String) -> Result<Vec<Notification>, String> {
     db.with_conn(|c| list(c, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn notifications_cursor(db: State<Db>, user_id: String) -> Result<i64, String> {
     db.with_conn(|c| cursor(c, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn notifications_apply_pull(
     db: State<Db>,
@@ -354,6 +358,7 @@ pub fn notifications_apply_pull(
     db.persist()
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn notifications_add_local(
     db: State<Db>,
@@ -367,6 +372,7 @@ pub fn notifications_add_local(
     Ok(added)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn notifications_mark_read(
     db: State<Db>,
@@ -380,11 +386,13 @@ pub fn notifications_mark_read(
     Ok(n)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn notifications_read_pending(db: State<Db>, user_id: String) -> Result<Vec<String>, String> {
     db.with_conn(|c| read_pending(c, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn notifications_read_sent(
     db: State<Db>,
@@ -395,12 +403,14 @@ pub fn notifications_read_sent(
     db.persist()
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn notifications_outbox_add(db: State<Db>, user_id: String, body: Value) -> Result<(), String> {
     db.with_tx(|c| outbox_add(c, &user_id, &body))?;
     db.persist()
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn notifications_outbox_list(
     db: State<Db>,
@@ -409,6 +419,7 @@ pub fn notifications_outbox_list(
     db.with_conn(|c| outbox_list(c, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn notifications_outbox_done(
     db: State<Db>,

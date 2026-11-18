@@ -1484,7 +1484,8 @@ const EXEMPT: &[(&str, &str)] = &[
 ];
 
 fn registered_commands() -> Vec<String> {
-    let lib = include_str!("lib.rs");
+    // The command list lives in the desktop shell (app.rs, CORE-01).
+    let lib = include_str!("app.rs");
     let start = lib.find("generate_handler![").unwrap() + "generate_handler![".len();
     let end = start + lib[start..].find(']').unwrap();
     lib[start..end]
@@ -1528,7 +1529,7 @@ fn every_registered_command_is_audited_or_exempt_with_a_reason() {
 
 #[test]
 fn only_the_journal_writes_the_oplog() {
-    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let dir = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../src")).to_path_buf();
     for entry in std::fs::read_dir(&dir).unwrap() {
         let path = entry.unwrap().path();
         let name = path.file_name().unwrap().to_string_lossy().to_string();

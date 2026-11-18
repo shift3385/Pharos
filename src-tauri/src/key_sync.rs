@@ -15,6 +15,7 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -646,6 +647,7 @@ pub(crate) fn resolve(
     Ok(new)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn key_lease_requests(db: State<Db>, user_id: String) -> Result<Vec<LeaseRequest>, String> {
     require_user(&user_id)?;
@@ -654,6 +656,7 @@ pub fn key_lease_requests(db: State<Db>, user_id: String) -> Result<Vec<LeaseReq
 
 /// What to lease before creating `count` keys of `kind` in a project with a
 /// connection (`lease_for`); None when nothing is needed.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn key_lease_for(
     db: State<Db>,
@@ -669,6 +672,7 @@ pub fn key_lease_for(
 
 /// Stores the leased blocks and gives the provisional keys their definitive
 /// one, in one transaction. Returns how many keys it assigned.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn key_blocks_apply(
     db: State<Db>,
@@ -687,6 +691,7 @@ pub fn key_blocks_apply(
     Ok(assigned)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn key_conflicts_record(
     db: State<Db>,
@@ -705,12 +710,14 @@ pub fn key_conflicts_record(
     db.persist()
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn key_conflicts_list(db: State<Db>, user_id: String) -> Result<Vec<KeyConflict>, String> {
     require_user(&user_id)?;
     db.with_conn(|conn| list(conn, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn key_conflict_resolve(
     db: State<Db>,

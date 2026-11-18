@@ -20,7 +20,7 @@ import {
   slashes,
   testKey,
   uniqueTags,
-} from "./common";
+} from "./common.js";
 
 type CtrfAttachment = { name?: string; contentType?: string; path?: string };
 interface CtrfAttempt {

@@ -935,6 +935,7 @@ pub struct DbStatus {
     pub data_dir: PathBuf,
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn db_open_error(status: tauri::State<DbStatus>) -> Option<String> {
     status.open_error.lock().ok().and_then(|e| e.clone())
@@ -949,12 +950,14 @@ fn is_key_error(error: &str) -> bool {
 /// in the keychain again (SEC-03). Only allowed while the database failed to
 /// open for a key error, so it can never replace the key of an open database.
 /// The key is never logged and no error repeats it.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn db_recover(
     app: tauri::AppHandle,
     status: tauri::State<DbStatus>,
     recovery_key: String,
 ) -> Result<(), String> {
+    #[cfg(feature = "tauri")]
     use tauri::Manager;
     let mut open_error = status
         .open_error
@@ -972,6 +975,7 @@ pub fn db_recover(
 
 /// The recovery key of the open database, shown once to the user who asked
 /// for it (Profile). It goes to the UI only; never to logs or sync.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn recovery_key_export(db: tauri::State<Db>) -> String {
     db.recovery_key()

@@ -6,7 +6,7 @@ import {
   parsePharosRun,
   pharosRunJsonSchema,
   resultSchema,
-} from "./schema";
+} from "./schema.js";
 import full from "./fixtures/full.json";
 import ctrf from "./fixtures/ctrf-playwright-shard.json";
 

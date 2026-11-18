@@ -978,7 +978,7 @@ fn stale_results_without_a_run_are_swept_fresh_ones_wait() {
 
 #[test]
 fn only_the_purge_deletes_immutable_rows() {
-    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let dir = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../src")).to_path_buf();
     let mut files = vec![];
     for d in [dir.clone(), dir.join("runs")] {
         for entry in std::fs::read_dir(&d).unwrap() {

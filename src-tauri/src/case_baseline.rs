@@ -7,6 +7,7 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -475,6 +476,7 @@ pub(crate) fn current_state(
     }))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn case_baseline_create(
     db: State<Db>,
@@ -485,6 +487,7 @@ pub fn case_baseline_create(
     db.with_conn(|conn| get_baseline(conn, &id, &input.user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn case_baseline_list(
     db: State<Db>,
@@ -494,6 +497,7 @@ pub fn case_baseline_list(
     db.with_conn(|conn| list_baselines(conn, &project_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn case_baseline_get(
     db: State<Db>,
@@ -503,6 +507,7 @@ pub fn case_baseline_get(
     db.with_conn(|conn| get_baseline(conn, &id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn case_baseline_current(
     db: State<Db>,

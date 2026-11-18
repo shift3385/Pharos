@@ -8,6 +8,7 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -286,6 +287,7 @@ pub(crate) fn reorder(
 
 // ---- Commands ----
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn planner_list(
     db: State<Db>,
@@ -295,6 +297,7 @@ pub fn planner_list(
     db.with_conn(|conn| list_cards(conn, &project_id, &owner_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn planner_create(
     db: State<Db>,
@@ -306,6 +309,7 @@ pub fn planner_create(
     db.with_conn(|conn| get_card(conn, &id, &owner))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn planner_update(
     db: State<Db>,
@@ -346,12 +350,14 @@ pub(crate) fn delete_card(conn: &Connection, id: &str, owner_id: &str) -> Result
     Ok(())
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn planner_delete(db: State<Db>, id: String, owner_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_card(conn, &id, &owner_id))?;
     db.persist()
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn planner_reorder(
     db: State<Db>,
@@ -367,6 +373,7 @@ pub fn planner_reorder(
 /// The upload is sealed off the lock, moved into the store under it (so a
 /// concurrent `collect` cannot remove it before its row exists), and the row,
 /// its `blobs` entry and the `link` event are written in one transaction.
+#[cfg(feature = "tauri")]
 #[tauri::command(async)]
 pub fn planner_attachment_add(
     db: State<'_, Db>,
@@ -608,6 +615,7 @@ pub(crate) fn delete_attachment(conn: &Connection, id: &str, owner_id: &str) -> 
     )
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn planner_attachment_list(
     db: State<Db>,
@@ -621,6 +629,7 @@ pub fn planner_attachment_list(
 /// decrypted block by block straight to disk: the bytes never pass through
 /// the webview and the file is never whole in memory. The content is checked
 /// against its sha256 before the saved file gets its name.
+#[cfg(feature = "tauri")]
 #[tauri::command(async)]
 pub fn planner_attachment_save(
     db: State<'_, Db>,
@@ -649,6 +658,7 @@ pub fn planner_attachment_save(
     Ok(saved)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn planner_attachment_delete(
     db: State<Db>,

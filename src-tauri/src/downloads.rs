@@ -25,7 +25,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "tauri")]
 use tauri::ipc::{InvokeBody, Request};
+#[cfg(feature = "tauri")]
 use tauri::State;
 
 /// Header carrying the percent-encoded file name of a `download_save` call.
@@ -352,6 +354,7 @@ fn percent_decode(raw: &str) -> Result<String, String> {
     String::from_utf8(out).map_err(|_| "bad file name".into())
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn download_dir_get(downloads: State<Downloads>) -> DownloadDirInfo {
     downloads.info()
@@ -360,6 +363,7 @@ pub fn download_dir_get(downloads: State<Downloads>) -> DownloadDirInfo {
 /// Opens the native folder picker, modal to the main window. `None` when the
 /// user cancels.
 #[cfg(windows)]
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub async fn download_dir_pick(
     window: tauri::WebviewWindow,
@@ -380,12 +384,14 @@ pub async fn download_dir_pick(
 /// Pharos ships for Windows; elsewhere there is no picker (files still go to
 /// the OS Downloads folder).
 #[cfg(not(windows))]
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub async fn download_dir_pick() -> Result<Option<DownloadDirInfo>, String> {
     Err("folder picker not available on this platform".into())
 }
 
 /// Forgets the chosen folder: files go to the OS Downloads folder again.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn download_dir_reset(downloads: State<Downloads>) -> Result<DownloadDirInfo, String> {
     downloads.set(None)?;
@@ -397,6 +403,7 @@ pub fn download_dir_reset(downloads: State<Downloads>) -> Result<DownloadDirInfo
 /// Mark-of-the-Web. Returns the full path written and whether it fell back to
 /// Downloads. Runs off the main thread (`async`): a large ZIP's fsync or a
 /// slow network folder never freezes the window.
+#[cfg(feature = "tauri")]
 #[tauri::command(async)]
 pub fn download_save(
     downloads: State<'_, Downloads>,

@@ -24,6 +24,7 @@ use std::collections::HashSet;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -1045,6 +1046,7 @@ pub fn migrate_restore(conn: &Connection) -> Result<(), String> {
 
 // ------------------------------------------------------------------ commands
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn custom_field_list(
     db: State<Db>,
@@ -1056,6 +1058,7 @@ pub fn custom_field_list(
     db.with_conn(|conn| list_fields(conn, &project_id, &entity, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn custom_field_create(db: State<Db>, input: CustomFieldInput) -> Result<CustomField, String> {
     let field = db.with_tx(|conn| create_field(conn, input))?;
@@ -1063,6 +1066,7 @@ pub fn custom_field_create(db: State<Db>, input: CustomFieldInput) -> Result<Cus
     Ok(field)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn custom_field_update(
     db: State<Db>,
@@ -1074,6 +1078,7 @@ pub fn custom_field_update(
     Ok(field)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn custom_field_archive(
     db: State<Db>,
@@ -1086,6 +1091,7 @@ pub fn custom_field_archive(
     Ok(field)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn custom_field_reorder(
     db: State<Db>,
@@ -1100,6 +1106,7 @@ pub fn custom_field_reorder(
     Ok(fields)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn custom_field_copy(
     db: State<Db>,

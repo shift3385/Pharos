@@ -21,6 +21,7 @@ use std::collections::HashSet;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -530,11 +531,13 @@ pub(crate) fn restore(
     Ok(out)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn trash_list(db: State<Db>, user_id: String) -> Result<Vec<TrashItem>, String> {
     db.with_conn(|conn| list(conn, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn trash_restore(
     db: State<Db>,
@@ -552,6 +555,7 @@ pub fn trash_restore(
 }
 
 /// «Eliminar para siempre» (`items`) or «Vaciar papelera» (`items` = None).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn trash_purge(
     db: State<Db>,

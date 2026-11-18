@@ -20,6 +20,7 @@ use std::collections::{HashMap, HashSet};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -624,6 +625,7 @@ pub(crate) fn exempt(
 // ---- commands -------------------------------------------------------------
 
 /// The retention of every kind in a project (Administration → Evidencias).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn evidence_retention_get(
     db: State<Db>,
@@ -634,6 +636,7 @@ pub fn evidence_retention_get(
 }
 
 /// How many files of a kind would expire with a new setting (read).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn evidence_retention_preview(
     db: State<Db>,
@@ -653,6 +656,7 @@ pub fn evidence_retention_preview(
 }
 
 /// Sets the retention of one kind in a project; saves when it changed.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn evidence_retention_set(
     db: State<Db>,
@@ -670,6 +674,7 @@ pub fn evidence_retention_set(
 
 /// Copies the retention of one project to another (UX-25); returns how many
 /// kinds changed. All or nothing: one transaction.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn evidence_retention_copy(
     db: State<Db>,

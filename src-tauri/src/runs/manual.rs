@@ -29,6 +29,7 @@ use base64::Engine;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 use serde_json::{json, Map, Value};
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -1174,6 +1175,7 @@ fn owned_attachment(
 
 // ---- commands ------------------------------------------------------------------
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn run_overview(
     db: State<Db>,
@@ -1183,6 +1185,7 @@ pub fn run_overview(
     db.with_conn(|conn| overview(conn, &run_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn run_item_detail(
     db: State<Db>,
@@ -1193,6 +1196,7 @@ pub fn run_item_detail(
 }
 
 /// Saves the draft of one target (local only).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn execution_draft_save(
     db: State<Db>,
@@ -1206,6 +1210,7 @@ pub fn execution_draft_save(
 }
 
 /// Discards the draft of one target and its attachments.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn execution_draft_discard(
     db: State<Db>,
@@ -1218,6 +1223,7 @@ pub fn execution_draft_discard(
 }
 
 /// Records an attempt from its draft; returns the result id.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn execution_record(db: State<Db>, input: ResultInput) -> Result<String, String> {
     let id = db.with_tx(|conn| record_from_draft(conn, &input))?;
@@ -1227,6 +1233,7 @@ pub fn execution_record(db: State<Db>, input: ResultInput) -> Result<String, Str
 
 /// Attaches a finished upload (`evidence_upload_*`) to a draft's target, or
 /// to one of its steps.
+#[cfg(feature = "tauri")]
 #[tauri::command(async)]
 #[allow(clippy::too_many_arguments)]
 pub fn execution_attach(
@@ -1397,6 +1404,7 @@ pub(crate) fn close_run(
 }
 
 /// «Nuevo run manual» (see `create_manual`).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn run_create_manual(
     db: State<Db>,
@@ -1410,6 +1418,7 @@ pub fn run_create_manual(
 }
 
 /// Closes a run (see `close_run`).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn run_close(
     db: State<Db>,
@@ -1423,6 +1432,7 @@ pub fn run_close(
     db.with_conn(|conn| get_run(conn, &run_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn execution_attachment_delete(
     db: State<Db>,
@@ -1434,6 +1444,7 @@ pub fn execution_attachment_delete(
 }
 
 /// Saves an attachment to the download folder, decrypted block by block.
+#[cfg(feature = "tauri")]
 #[tauri::command(async)]
 pub fn execution_attachment_save(
     db: State<'_, Db>,
@@ -1457,6 +1468,7 @@ pub fn execution_attachment_save(
 
 /// A `data:` URL of an image attachment for its thumbnail; None for other
 /// files, large ones, or a content that is not here.
+#[cfg(feature = "tauri")]
 #[tauri::command(async)]
 pub fn execution_attachment_preview(
     db: State<'_, Db>,

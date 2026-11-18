@@ -26,7 +26,7 @@ fn serialized() -> MutexGuard<'static, ()> {
 }
 
 /// The secret stored for `account` of `service`, or `None` if there is none.
-pub(crate) fn read(service: &str, account: &str) -> Result<Option<String>, String> {
+pub fn read(service: &str, account: &str) -> Result<Option<String>, String> {
     let _guard = serialized();
     let entry = Entry::new(service, account).map_err(|e| e.to_string())?;
     match entry.get_password() {
@@ -37,7 +37,7 @@ pub(crate) fn read(service: &str, account: &str) -> Result<Option<String>, Strin
 }
 
 /// Stores `secret` for `account` of `service`, replacing any previous one.
-pub(crate) fn write(service: &str, account: &str, secret: &str) -> Result<(), String> {
+pub fn write(service: &str, account: &str, secret: &str) -> Result<(), String> {
     let _guard = serialized();
     Entry::new(service, account)
         .and_then(|entry| entry.set_password(secret))
@@ -45,7 +45,7 @@ pub(crate) fn write(service: &str, account: &str, secret: &str) -> Result<(), St
 }
 
 /// Removes the secret of `account`; succeeds if there was none.
-pub(crate) fn delete(service: &str, account: &str) -> Result<(), String> {
+pub fn delete(service: &str, account: &str) -> Result<(), String> {
     let _guard = serialized();
     let entry = Entry::new(service, account).map_err(|e| e.to_string())?;
     match entry.delete_credential() {

@@ -1,0 +1,12 @@
+# Build context is the repo root (server/Dockerfile): send only what the image
+# copies. Docker reads <Dockerfile>.dockerignore before a root .dockerignore.
+*
+!server
+!packages/formats
+server/node_modules
+server/dist
+server/.env
+server/**/*.log
+server/tests
+packages/formats/node_modules
+packages/formats/src/**/*.test.ts

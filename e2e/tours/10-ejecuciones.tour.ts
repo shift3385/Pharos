@@ -26,8 +26,8 @@ import {
 const R = es.runs;
 const D = '[role="dialog"]';
 /** The ING-01 sample: a Playwright (playwright-bdd) JUnit report with a
- *  failed example and a retry (src/shared/contracts/pharos-run/fixtures). */
-const REPORT = join(repoDir, "src", "shared", "contracts", "pharos-run", "fixtures", "ing01", "single", "pw-junit.xml");
+ *  failed example and a retry (packages/formats/src/fixtures). */
+const REPORT = join(repoDir, "packages", "formats", "src", "fixtures", "ing01", "single", "pw-junit.xml");
 
 chapter("ejecuciones", () => {
   step("lista", {

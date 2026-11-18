@@ -20,6 +20,7 @@ use std::sync::{Mutex, OnceLock};
 
 use regex::Regex;
 use serde::Serialize;
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -495,6 +496,7 @@ fn e2e_pick_folder() -> Option<std::path::PathBuf> {
 /// Opens the native folder picker and returns the inventory of the folder
 /// (None when the person cancels). Nothing is read beyond the first bytes.
 #[cfg(windows)]
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub async fn project_scan_pick(
     window: tauri::WebviewWindow,
@@ -514,6 +516,7 @@ pub async fn project_scan_pick(
 
 /// Pharos ships for Windows; elsewhere there is no picker.
 #[cfg(not(windows))]
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub async fn project_scan_pick() -> Result<Option<ScanInventory>, String> {
     Err("folder picker not available on this platform".into())
@@ -521,6 +524,7 @@ pub async fn project_scan_pick() -> Result<Option<ScanInventory>, String> {
 
 /// The text of the files the person kept, numbered and with secrets replaced.
 /// A file that cannot be read comes back with its `error`, the rest still read.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn project_scan_read(
     scans: State<ProjectScans>,
@@ -543,6 +547,7 @@ pub fn project_scan_read(
 }
 
 /// Forgets a picked folder.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn project_scan_close(scans: State<ProjectScans>, scan_id: String) -> Result<(), String> {
     scans

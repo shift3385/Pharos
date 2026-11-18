@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ReportError,
   parseReportText,
-} from "@shared/contracts/pharos-run/importers";
+} from "@pharos/formats";
 import type { ReportImportOutcome } from "@shared/contracts/contract";
 import {
   attachAll,
@@ -22,7 +22,7 @@ vi.mock("../api/runsApi", () => ({
 
 const FIX = resolve(
   process.cwd(),
-  "src/shared/contracts/pharos-run/fixtures/ing01",
+  "packages/formats/src/fixtures/ing01",
 );
 const report = (p: string): ReadReport => ({
   file: new File(["x"], p.split("/").pop()!),

@@ -1,6 +1,6 @@
 //! Result import (ING-02..05; ADR-0012, ADR-0013, ADR-0005; design 0.2.0 §4
 //! «Importación de un informe»): the one persister of Pharos Run JSON. The
-//! parsers live in TypeScript (`src/shared/contracts/pharos-run/importers/`)
+//! parsers live in TypeScript (`packages/formats/src/importers/`)
 //! and send the document they built; this module links each test to a case,
 //! gives deterministic ids and writes run, shard, results and step results in
 //! one transaction with one `import` audit event.
@@ -35,6 +35,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -1641,6 +1642,7 @@ pub(crate) fn run_counts(
 
 // ---- commands ------------------------------------------------------------------
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn run_counts_list(
     db: State<Db>,
@@ -1650,6 +1652,7 @@ pub fn run_counts_list(
     db.with_conn(|conn| run_counts(conn, &project_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn run_import_preview(
     db: State<Db>,
@@ -1669,6 +1672,7 @@ pub fn run_import_preview(
 
 /// Commits an import: `rawUploadId` is the report file sent through
 /// `evidence_upload_*`; its sha256 must be the one that was read.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn run_import(
     db: State<'_, Db>,
@@ -1687,6 +1691,7 @@ pub fn run_import(
 }
 
 /// Attaches one uploaded attachment of an imported report (after `run_import`).
+#[cfg(feature = "tauri")]
 #[tauri::command]
 #[allow(clippy::too_many_arguments)]
 pub fn run_import_attach(
@@ -1721,6 +1726,7 @@ pub fn run_import_attach(
     Ok(id)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn unlinked_tests_list(
     db: State<Db>,

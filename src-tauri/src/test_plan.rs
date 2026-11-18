@@ -17,6 +17,7 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -634,6 +635,7 @@ fn plan_history(
     }))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_plan_history(
     db: State<Db>,
@@ -643,11 +645,13 @@ pub fn test_plan_history(
     db.with_conn(|conn| plan_history(conn, &id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_plan_list(db: State<Db>, user_id: String) -> Result<Vec<TestPlanSummary>, String> {
     db.with_conn(|conn| list_plans(conn, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_plan_get(
     db: State<Db>,
@@ -657,6 +661,7 @@ pub fn test_plan_get(
     db.with_conn(|conn| get_plan(conn, &id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_plan_by_project(
     db: State<Db>,
@@ -666,6 +671,7 @@ pub fn test_plan_by_project(
     db.with_conn(|conn| get_plan_by_project(conn, &project_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_plan_create(db: State<Db>, input: TestPlanInput) -> Result<Option<TestPlan>, String> {
     let id = db.with_tx(|conn| insert_plan(conn, &input))?;
@@ -673,6 +679,7 @@ pub fn test_plan_create(db: State<Db>, input: TestPlanInput) -> Result<Option<Te
     db.with_conn(|conn| get_plan(conn, &id, &input.user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_plan_update(
     db: State<Db>,
@@ -686,6 +693,7 @@ pub fn test_plan_update(
 
 /// Sends a plan to review, approves it, asks for changes, marks it obsolete
 /// or reactivates it (PLN-08). The plan as it stands after it.
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_plan_review(
     db: State<Db>,
@@ -697,12 +705,14 @@ pub fn test_plan_review(
     db.with_conn(|conn| get_plan(conn, &id, &input.user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_plan_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_plan(conn, &id, &user_id))?;
     db.persist()
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_plan_revisions(
     db: State<Db>,
@@ -712,6 +722,7 @@ pub fn test_plan_revisions(
     db.with_conn(|conn| list_revisions(conn, &id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn test_plan_revision_get(
     db: State<Db>,

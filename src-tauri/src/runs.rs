@@ -39,6 +39,7 @@ use std::collections::HashSet;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
+#[cfg(feature = "tauri")]
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -2042,6 +2043,7 @@ pub(crate) fn held_back(conn: &Connection) -> Result<i64, String> {
 
 // ---- commands ------------------------------------------------------------------
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn run_create(db: State<Db>, input: RunInput) -> Result<Option<Run>, String> {
     let id = db.with_tx(|conn| insert_run(conn, &input))?;
@@ -2049,6 +2051,7 @@ pub fn run_create(db: State<Db>, input: RunInput) -> Result<Option<Run>, String>
     db.with_conn(|conn| get_run(conn, &id, &input.user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn run_update(db: State<Db>, id: String, input: RunInput) -> Result<Option<Run>, String> {
     db.with_tx(|conn| update_run(conn, &id, &input))?;
@@ -2056,16 +2059,19 @@ pub fn run_update(db: State<Db>, id: String, input: RunInput) -> Result<Option<R
     db.with_conn(|conn| get_run(conn, &id, &input.user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn run_get(db: State<Db>, id: String, user_id: String) -> Result<Option<Run>, String> {
     db.with_conn(|conn| get_run(conn, &id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn run_list(db: State<Db>, project_id: String, user_id: String) -> Result<Vec<Run>, String> {
     db.with_conn(|conn| list_runs(conn, &project_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn run_items_add(
     db: State<Db>,
@@ -2078,6 +2084,7 @@ pub fn run_items_add(
     db.with_conn(|conn| list_items(conn, &run_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn run_items_list(
     db: State<Db>,
@@ -2087,6 +2094,7 @@ pub fn run_items_list(
     db.with_conn(|conn| list_items(conn, &run_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn result_record(db: State<Db>, input: ResultInput) -> Result<String, String> {
     let id = db.with_tx(|conn| record_result(conn, &input))?;
@@ -2094,6 +2102,7 @@ pub fn result_record(db: State<Db>, input: ResultInput) -> Result<String, String
     Ok(id)
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn results_list(
     db: State<Db>,
@@ -2103,6 +2112,7 @@ pub fn results_list(
     db.with_conn(|conn| list_results(conn, &run_id, &user_id))
 }
 
+#[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn unlinked_mapping_set(
     db: State<Db>,
