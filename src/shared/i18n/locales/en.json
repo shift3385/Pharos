@@ -5069,6 +5069,10 @@
       },
       "webhook": {
         "disabled": "The webhook {{title}} was disabled after 50 failures in a row. Check its target and turn it on again in «Integrations»."
+      },
+      "token": {
+        "expiring": "Your token {{title}} expires in 7 days. Create a new one and switch your CI to it before it stops working.",
+        "inactive": "{{owner}}'s token {{title}} stopped working: its owner left the workspace or their account was disabled. Reassign or revoke it in «Integrations»."
       }
     },
     "action": {

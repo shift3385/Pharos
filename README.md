@@ -556,6 +556,7 @@ Optional limits (defaults in brackets):
 | `WEBHOOK_ALLOW_PRIVATE` | `true` lets webhooks reach private network addresses (a LAN Jenkins) [false] |
 | `WEBHOOK_ALLOW_HOSTS` | Comma-separated host names a webhook may reach whatever they resolve to [empty] |
 | `WEBHOOK_DISPATCH_INTERVAL_MS` | How often pending webhook deliveries are sent [2000]; `0` = never |
+| `TOKEN_NOTICE_INTERVAL_MS` | How often API-token notices (expiring in 7 days, inactive) are looked for [3600000]; `0` = never |
 | `AI_VAULT_RATE_LIMIT_MAX` / `_WINDOW` | Uploads and removals of the AI key per account [10 per `1 hour`]                                                |
 | `AI_CHAT_BODY_LIMIT_BYTES` | Largest body on `/ai/chat`, images included [20 MiB]                                                                         |
 

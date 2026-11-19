@@ -1722,6 +1722,20 @@ core Postgres lacks). Modules:
   Runs: `GET`/`POST …/runs`, `GET …/runs/{runKey}` (with counts) and
   `…/results`, and `POST …/runs/{runKey}/close`, all on the web's run
   service (`insertRun` is shared).
+
+  Reads (A4, `v1.reads.ts`): `GET …/cases`, `…/cycles`, `…/defects` and
+  `…/requirements`, each a list and `/{key}` (key or id). A list is
+  incremental: `updatedSince` is the documents' global `seq` (the sync
+  pull's cursor), oldest change first, `nextCursor` and `hasMore`;
+  deletions come as `deleted: true` without `data`. `data` is the stored
+  document; a cycle adds the web's progress summary.
+
+  Token notices (A4, `tokenNotices.ts`, migration 0031): a sweep every
+  `TOKEN_NOTICE_INTERVAL_MS` (an hour) claims, with `UPDATE … RETURNING`,
+  tokens expiring within 7 days (`token.expiring` to the owner, without a
+  workspace for a personal token) and project tokens whose owner left or
+  was disabled (`token.inactive` to the workspace's Test Managers; the
+  claim is cleared when the token works again).
 - `webhooks` (INT-03, ADR-0052 §4) — outgoing webhooks of a workspace.
   - **Tables** (migration 0030):
     - `webhooks`: the signing secret encrypted with `WEBHOOK_SECRETS_KEY`,

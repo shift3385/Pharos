@@ -161,7 +161,7 @@ const LIBRARY_PENDING =
   "la biblioteca (CAS-01) llega a los tours y al manual en P4; la cubren src/modules/library/ui/LibraryPage.test.tsx y src/modules/test-cases/ui/TestCaseEditor.library.test.tsx";
 
 const TOKENS_PENDING =
-  "el capítulo «Integraciones» llega con la subida de resultados (INT-02, pista A, A4); lo cubren server/tests/api.tokens.test.ts y src/modules/integrations/ui/integrations.test.tsx";
+  "el capítulo «Integraciones» llega en A4b (INT-02, pista A), tras las lecturas de la API; lo cubren server/tests/api.tokens.test.ts y src/modules/integrations/ui/integrations.test.tsx";
 
 export const INVENTORY: Item[] = [
   // ---- 1 · Acceso y cuenta ------------------------------------------------------

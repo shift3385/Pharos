@@ -38,6 +38,11 @@ export const NOTIFICATION_KINDS = [
   // INT-03 (ADR-0052): a webhook was disabled after 50 failures in a row
   // (to the workspace's Test Managers).
   "webhook.disabled",
+  // INT-02 A4 (ADR-0052): a token expires in 7 days (to its owner), a project
+  // token stopped working because its owner left or was disabled (to the
+  // workspace's Test Managers).
+  "token.expiring",
+  "token.inactive",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
