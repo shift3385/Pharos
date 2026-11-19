@@ -1062,7 +1062,6 @@ pub fn custom_field_list(
 #[tauri::command]
 pub fn custom_field_create(db: State<Db>, input: CustomFieldInput) -> Result<CustomField, String> {
     let field = db.with_tx(|conn| create_field(conn, input))?;
-    db.persist()?;
     Ok(field)
 }
 
@@ -1074,7 +1073,6 @@ pub fn custom_field_update(
     input: CustomFieldInput,
 ) -> Result<CustomField, String> {
     let field = db.with_tx(|conn| update_field(conn, &id, input))?;
-    db.persist()?;
     Ok(field)
 }
 
@@ -1087,7 +1085,6 @@ pub fn custom_field_archive(
     user_id: String,
 ) -> Result<CustomField, String> {
     let field = db.with_tx(|conn| set_archived(conn, &id, archived, &user_id))?;
-    db.persist()?;
     Ok(field)
 }
 
@@ -1102,7 +1099,6 @@ pub fn custom_field_reorder(
 ) -> Result<Vec<CustomField>, String> {
     let entity = entity.unwrap_or_else(|| "test_case".into());
     let fields = db.with_tx(|conn| reorder(conn, &project_id, &entity, &ids, &user_id))?;
-    db.persist()?;
     Ok(fields)
 }
 
@@ -1118,6 +1114,5 @@ pub fn custom_field_copy(
     let entity = entity.unwrap_or_else(|| "test_case".into());
     let summary =
         db.with_tx(|conn| copy_fields(conn, &from_project_id, &to_project_id, &entity, &user_id))?;
-    db.persist()?;
     Ok(summary)
 }

@@ -96,6 +96,34 @@ export function useDbOpenError(): DbOpenState {
   return { error, converting, markOpened, retry };
 }
 
+/** When another process (the CLI) writes to the local database while the
+ *  app is open (SEC-05b), the app reloads what it shows the same way it does
+ *  after a sync: views listen to `pharos:synced`. Forms keep what is typed. */
+export function useExternalDbChanges(): void {
+  useEffect(() => {
+    if (!isTauri()) return;
+    let unlisten: (() => void) | undefined;
+    let gone = false;
+    void import("@tauri-apps/api/event")
+      .then(({ listen }) =>
+        listen("db://external-change", () =>
+          window.dispatchEvent(
+            new CustomEvent("pharos:synced", { detail: { source: "external" } }),
+          ),
+        ),
+      )
+      .then((stop) => {
+        if (gone) stop();
+        else unlisten = stop;
+      })
+      .catch(() => undefined);
+    return () => {
+      gone = true;
+      unlisten?.();
+    };
+  }, []);
+}
+
 /** Opens the database with a typed recovery key and stores the key in the
  *  keychain again (SEC-03). Rejects with the Rust error, which never repeats
  *  the key. */

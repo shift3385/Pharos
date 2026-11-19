@@ -2,9 +2,10 @@
 // wrong, produced for real inside the isolated tour profile.
 //
 // - The database screen: the app is closed and the tour holds the profile's
-//   `pharos.lock` open, as a second Pharos (or the CLI) would, so the app
-//   starts again on «Otro Pharos está usando tus datos» (ADR-0050 §7). Once
-//   the tour lets go, «Reintentar» opens the data without a restart. Only the
+//   `pharos.lock` open, as another Pharos (or the CLI) does while it
+//   updates the data, so the app starts again on «Otro Pharos está
+//   actualizando tus datos» once its wait runs out (ADR-0050 §5). Once the
+//   tour lets go, «Reintentar» opens the data without a restart. Only the
 //   tour profile's own folder is touched (PHAROS_E2E_PROFILE).
 // - The «Algo salió mal» screen: a route whose project id is not valid URL
 //   encoding makes the view throw, and the error boundary catches it.
@@ -46,7 +47,7 @@ let heldLock: number | null = null;
 chapter("errores", () => {
   step("base-de-datos", {
     title: "Si la base de datos local no abre",
-    caption: "Si los datos locales no se pueden abrir, Pharos lo dice al arrancar y no modifica ningún archivo. La pantalla cambia según la causa: «Otro Pharos está usando tus datos» (otra ventana de Pharos o el CLI los tiene abiertos, como en este ejemplo), «Estos datos son de una versión más nueva de Pharos» (instala esa versión o una posterior), «Falta la clave de la base de datos local» (un equipo nuevo o Windows reinstalado), que ofrece escribir la clave de recuperación (56 caracteres en grupos de 4), o, al actualizar desde la 0.5, «Falta espacio para actualizar tus datos». Cuando la causa puede pasar sola, ofrece «Reintentar».",
+    caption: "Si los datos locales no se pueden abrir, Pharos lo dice al arrancar y no modifica ningún archivo. La pantalla cambia según la causa: «Otro Pharos está actualizando tus datos» (otra ventana de Pharos o el CLI los está actualizando, como en este ejemplo), «Estos datos son de una versión más nueva de Pharos» (instala esa versión o una posterior), «Falta la clave de la base de datos local» (un equipo nuevo o Windows reinstalado), que ofrece escribir la clave de recuperación (56 caracteres en grupos de 4), o, al actualizar desde la 0.5, «Falta espacio para actualizar tus datos». Cuando la causa puede pasar sola, ofrece «Reintentar».",
     covers: ["state:db-error"],
     run: async () => {
       const db = profileFile("pharos.db");
@@ -58,15 +59,16 @@ chapter("errores", () => {
         heldLock = openSync(profileFile("pharos.lock"), "r+");
       });
       await browser.reloadSession();
-      await expect(byTestId("db-error")).toBeDisplayed();
-      await expect(byTestId("db-error")).toHaveText(expect.stringContaining("Otro Pharos está usando tus datos"));
+      // The app waits for the other open (10 s) before it says so.
+      await expect(byTestId("db-error")).toBeDisplayed({ wait: 30_000 });
+      await expect(byTestId("db-error")).toHaveText(expect.stringContaining("Otro Pharos está actualizando tus datos"));
     },
   });
 
   step("restaurar", {
     title: "Restaurar la copia",
     caption:
-      "En cuanto se cierra el otro Pharos, «Reintentar» abre los datos sin reiniciar y Liomar vuelve a su Inicio. Si el archivo está dañado, se restaura una copia (pharos.db o pharos.db.bak-…): por eso conviene guardar la clave de recuperación y hacer copias (capítulo 15).",
+      "En cuanto el otro Pharos termina, «Reintentar» abre los datos sin reiniciar y Liomar vuelve a su Inicio. Si el archivo está dañado, se restaura una copia (pharos.db o pharos.db.bak-…): por eso conviene guardar la clave de recuperación y hacer copias (capítulo 15).",
     shot: false,
     run: async () => {
       if (heldLock !== null) closeSync(heldLock);

@@ -12,11 +12,9 @@
     - **decisión 1** (CORE-01a, PR N1);
     - **decisión 7** y la API para el CLI (CORE-01b, PR N2);
     - **decisiones 2, 3, 4 y 6** (SEC-05a, PR N4), con lo que el spike
-      corrigió, en «Implementación (N4)».
-  - Pendientes (SEC-05b, PR N5):
-    - **decisión 5**: quitar el cerrojo provisional, `BEGIN IMMEDIATE` y
-      el vigía de `PRAGMA data_version`;
-    - borrar las llamadas a `persist()`.
+      corrigió, en «Implementación (N4)»;
+    - **decisión 5** y el fin del cerrojo provisional (SEC-05b, PR N5), en
+      «Implementación (N5)».
   - **Licencia.** El 2026-11-18 el usuario aprobó la Unlicense de una parte de
     sqlite3mc (miniz). Va como excepción solo para el crate `sqlite3mc-src`
     en `deny.toml`, con sus avisos en `THIRD-PARTY-NOTICES.md`.
@@ -139,9 +137,9 @@
    de nuevo.
 5. **Concurrencia.**
    - La app y el CLI abren la misma BD.
-   - **Migrar y convertir** exigen exclusividad: cerrojo de fichero más
-     `BEGIN EXCLUSIVE`. Quien llega mientras tanto espera o falla con un
-     mensaje claro.
+   - **Migrar y convertir** exigen exclusividad: el cerrojo de fichero
+     (`pharos.lock`) mientras dura la apertura. Quien llega mientras tanto
+     espera hasta 10 s y después falla con un mensaje claro.
    - **Cambios de otro proceso.** La app los detecta con
      `PRAGMA data_version` y emite `db://external-change`; la UI vuelve a
      pedir la vista actual.
@@ -152,9 +150,10 @@
      nuevas nunca se llevan la de la conversión.
    - `restored_copy` cuenta aperturas y copias, y la marca pasa a
      `pharos.db.seq`.
-7. **Cerrojo provisional (D4).** Hasta que llegue SEC-05b, abrir la BD toma
-   un cerrojo exclusivo (`pharos.lock`): con la app abierta, el CLI falla
-   con un mensaje claro en lugar de pisar datos.
+7. **Cerrojo provisional (D4), ya retirado.** Entre N2 y N5, abrir la BD
+   tomaba un cerrojo exclusivo (`pharos.lock`) mientras vivía el `Db`: con la
+   app abierta, el CLI fallaba con un mensaje claro en lugar de pisar datos.
+   Desde N5 el cerrojo dura solo la apertura (decisión 5).
    - **Cómo es el cerrojo.** `pharos.lock` se abre sin compartir
      lectura ni escritura (en Windows solo `FILE_SHARE_DELETE`, para que la
      carpeta se pueda borrar) y queda abierto mientras vive el `Db`. Al
@@ -199,9 +198,8 @@
 - **Espacio y páginas.** `auto_vacuum=INCREMENTAL` se fija en la imagen
   antes del `VACUUM INTO` y en cada BD nueva. Las páginas son de 4096 bytes,
   con 80 reservados (IV y HMAC): compatibles con SQLCipher 4.
-- **`persist()`** ya no escribe nada; solo anota `PRAGMA data_version`.
-  `changed_on_disk` lo compara: cambia solo cuando confirma otra conexión.
-  Las llamadas se borran en N5.
+- **`persist()`** ya no escribe nada (en N4 solo anotaba
+  `PRAGMA data_version`; N5 quitó sus llamadas).
 - **Recuento de aperturas (AUD-01c).** Cada apertura y cada copia suben
   `save_seq` y la marca `pharos.db.seq`. Una copia hecha a mano después de
   la última apertura no se distingue: es el límite aceptado.
@@ -213,6 +211,34 @@
     `db-convert-failed`;
   - no hay porcentaje: `VACUUM INTO` no informa de su avance, así que la
     pantalla dice qué pasa y que no hay que cerrar la app.
+
+## Implementación (N5, SEC-05b)
+
+- **Cerrojo solo al abrir.** `pharos.lock` se toma al empezar
+  `open_with_key` y se suelta al terminar (conversión, copia, migraciones).
+  Otra apertura espera hasta 10 s (`LOCK_WAIT`) y luego falla con
+  `db-in-use`. Al arrancar, la app abre en segundo plano si el cerrojo está
+  ocupado, para que la ventana no se congele; la pantalla dice «Otro Pharos
+  está actualizando tus datos» con «Reintentar».
+- **`BEGIN IMMEDIATE`** en `in_tx` y en las transacciones escritas a mano
+  (`db::begin_immediate`): el HLC, los contadores de claves y el oplog se
+  leen y escriben bajo el cerrojo de escritura. `busy_timeout` (5 s) espera
+  a otro escritor; después, dos reintentos más y el error `db-busy`, que el
+  CLI convierte en su código de salida.
+- **Vigía.** Un hilo de la app lee `PRAGMA data_version` cada 2 s y emite
+  `db://external-change`; la UI lo convierte en `pharos:synced`, el evento
+  con el que las vistas ya se recargaban tras sincronizar. Los formularios
+  no se tocan.
+- **Sin la guarda de evidencias** `evidence-db-changed`: todos los procesos
+  ven las mismas referencias confirmadas, así que un archivo que otro
+  enlazó no es huérfano (hay test).
+- **`persist()`** queda como función vacía para las ramas en vuelo; ya no
+  se llama desde ningún sitio.
+- **`incremental_vacuum`** en cada apertura (acuerdo con SYNC-10).
+- **Pruebas de aceptación:** dos procesos (el binario de tests relanzado
+  como hijo) escriben 150 filas cada uno con los dos abiertos, sin perder
+  ninguna ni repetir HLC; un commit pequeño sobre una BD de 20 MB añade
+  menos de 64 KiB al WAL.
 
 ## Alternativas
 
@@ -264,8 +290,8 @@
 - **`%APPDATA%` es Roaming (D3: se queda ahí).** Un perfil itinerante o la
   redirección de carpetas pueden copiar un `-wal` vivo. Se documenta en la
   guía.
-- **La recuperación de huérfanos de evidencias** ya no necesita
-  `changed_on_disk`: las referencias están en la misma BD que ven todos los
-  procesos.
+- **La recuperación de huérfanos de evidencias** ya no necesita la guarda
+  `evidence-db-changed` (quitada en N5): las referencias están en la misma BD
+  que ven todos los procesos.
 - **El formato en disco es un formato de datos** (VERSIONING §6): cambiar
   la cifra, la KDF o el tamaño de página exige otra conversión con testigo.

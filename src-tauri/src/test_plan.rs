@@ -675,7 +675,6 @@ pub fn test_plan_by_project(
 #[tauri::command]
 pub fn test_plan_create(db: State<Db>, input: TestPlanInput) -> Result<Option<TestPlan>, String> {
     let id = db.with_tx(|conn| insert_plan(conn, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_plan(conn, &id, &input.user_id))
 }
 
@@ -687,7 +686,6 @@ pub fn test_plan_update(
     input: TestPlanInput,
 ) -> Result<Option<TestPlan>, String> {
     db.with_tx(|conn| update_plan(conn, &id, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_plan(conn, &id, &input.user_id))
 }
 
@@ -701,7 +699,6 @@ pub fn test_plan_review(
     input: ReviewInput,
 ) -> Result<Option<TestPlan>, String> {
     db.with_tx(|conn| review_plan(conn, &id, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_plan(conn, &id, &input.user_id))
 }
 
@@ -709,7 +706,7 @@ pub fn test_plan_review(
 #[tauri::command]
 pub fn test_plan_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_plan(conn, &id, &user_id))?;
-    db.persist()
+    Ok(())
 }
 
 #[cfg(feature = "tauri")]

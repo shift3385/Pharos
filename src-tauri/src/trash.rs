@@ -545,12 +545,11 @@ pub fn trash_restore(
     items: Vec<TrashRef>,
 ) -> Result<RestoreSummary, String> {
     let summary = db.with_conn(|conn| {
-        let tx = conn.unchecked_transaction().map_err(err)?;
+        let tx = crate::db::begin_immediate(conn)?;
         let s = restore(&tx, &user_id, &items)?;
         tx.commit().map_err(err)?;
         Ok(s)
     })?;
-    db.persist()?;
     Ok(summary)
 }
 
@@ -565,7 +564,7 @@ pub fn trash_purge(
     let selection: Option<Selection> =
         items.map(|v| v.into_iter().map(|i| (i.entity, i.id)).collect());
     let summary = db.with_conn(|conn| {
-        let tx = conn.unchecked_transaction().map_err(err)?;
+        let tx = crate::db::begin_immediate(conn)?;
         let s = purge::purge_now(&tx, &user_id, selection.as_ref())?;
         crate::evidence::release_unreferenced(&tx)?;
         tx.commit().map_err(err)?;

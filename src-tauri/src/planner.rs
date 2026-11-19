@@ -305,7 +305,6 @@ pub fn planner_create(
 ) -> Result<Option<PlannerCard>, String> {
     let owner = input.owner_id.clone();
     let id = db.with_tx(|conn| insert_card(conn, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_card(conn, &id, &owner))
 }
 
@@ -318,7 +317,6 @@ pub fn planner_update(
 ) -> Result<Option<PlannerCard>, String> {
     let owner = input.owner_id.clone();
     db.with_tx(|conn| update_card(conn, &id, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_card(conn, &id, &owner))
 }
 
@@ -354,7 +352,7 @@ pub(crate) fn delete_card(conn: &Connection, id: &str, owner_id: &str) -> Result
 #[tauri::command]
 pub fn planner_delete(db: State<Db>, id: String, owner_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_card(conn, &id, &owner_id))?;
-    db.persist()
+    Ok(())
 }
 
 #[cfg(feature = "tauri")]
@@ -366,7 +364,7 @@ pub fn planner_reorder(
     ids: Vec<String>,
 ) -> Result<(), String> {
     db.with_tx(|conn| reorder(conn, &owner_id, &status, &ids))?;
-    db.persist()
+    Ok(())
 }
 
 /// Attaches a finished upload (`evidence_upload_*`) to a card the user owns.
@@ -397,7 +395,6 @@ pub fn planner_attachment_add(
         };
         attach_upload(conn, db.evidence(), upload, &card)
     })?;
-    db.persist()?;
     Ok(Some(AttachmentSummary {
         id,
         name,

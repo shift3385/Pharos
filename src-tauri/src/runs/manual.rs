@@ -1206,7 +1206,7 @@ pub fn execution_draft_save(
     user_id: String,
 ) -> Result<(), String> {
     db.with_tx(|conn| save_draft(conn, &run_item_id, &target_key, Some(&state), &user_id))?;
-    db.persist()
+    Ok(())
 }
 
 /// Discards the draft of one target and its attachments.
@@ -1227,7 +1227,6 @@ pub fn execution_draft_discard(
 #[tauri::command]
 pub fn execution_record(db: State<Db>, input: ResultInput) -> Result<String, String> {
     let id = db.with_tx(|conn| record_from_draft(conn, &input))?;
-    db.persist()?;
     Ok(id)
 }
 
@@ -1265,7 +1264,6 @@ pub fn execution_attach(
             },
         )
     })?;
-    db.persist()?;
     Ok(out)
 }
 
@@ -1413,7 +1411,6 @@ pub fn run_create_manual(
 ) -> Result<Option<Run>, String> {
     let user = input.user_id.clone();
     let id = db.with_tx(move |conn| create_manual(conn, input, &items))?;
-    db.persist()?;
     db.with_conn(|conn| get_run(conn, &id, &user))
 }
 

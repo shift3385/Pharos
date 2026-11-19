@@ -2,7 +2,9 @@
 // the run list, importing the reports of the automation of «Pharos» (the ING-01
 // Playwright JUnit sample and a JUnit with the capture of a failure, into the
 // cycle of chapter 9), the «Sin vincular» tray (link a test to a case, unlink
-// it, filter) and the list on a phone.
+// it, filter), the list on a phone, and findings and metrics (ING-06): a
+// Trivy SARIF and a k6 summary, the run's «Hallazgos» and «Métricas» tabs and
+// the triage of a finding.
 import { join } from "node:path";
 import { $, $$, browser, expect } from "@wdio/globals";
 import { DESKTOP, MOBILE, chapter, setViewport, step } from "./tour";
@@ -28,6 +30,17 @@ const D = '[role="dialog"]';
 /** The ING-01 sample: a Playwright (playwright-bdd) JUnit report with a
  *  failed example and a retry (packages/formats/src/fixtures). */
 const REPORT = join(repoDir, "packages", "formats", "src", "fixtures", "ing01", "single", "pw-junit.xml");
+/** Real SARIF and k6 samples of ING-06 (packages/formats/src/fixtures/*). */
+const SARIF = join(repoDir, "packages", "formats", "src", "fixtures", "sarif", "trivy-misconfig.sarif");
+const K6 = join(repoDir, "packages", "formats", "src", "fixtures", "k6", "handle-summary.json");
+const F = es.findings;
+/** The run key the import summary names (`RUN-012`). */
+async function importedRunKey(): Promise<string> {
+  const text = await $(".rn-done").getText();
+  const key = /[A-Z][A-Z0-9]*-\d+/.exec(text)?.[0];
+  if (!key) throw new Error(`no run key in: ${text}`);
+  return key;
+}
 
 chapter("ejecuciones", () => {
   step("lista", {
@@ -187,6 +200,105 @@ chapter("ejecuciones", () => {
     },
     after: async () => {
       await setViewport(DESKTOP);
+    },
+  });
+
+  step("importar-sarif", {
+    title: "Importar hallazgos de seguridad (SARIF)",
+    caption:
+      "«Importar informe» también lee un SARIF (Semgrep, Trivy, ZAP, CodeQL, ESLint…), un informe de axe o el resumen de k6. No traen tests sino hallazgos o métricas, y la vista previa los cuenta: aquí, Trivy encontró dos problemas en el Dockerfile del servidor, uno de severidad alta (la imagen se ejecuta como root) y otro baja (no tiene HEALTHCHECK).",
+    shot: { element: D },
+    run: async () => {
+      await openSection("runs");
+      await clickButton(R.import.open);
+      await expect(dialog()).toBeDisplayed();
+      await $(D).$('input[type="file"]:not([webkitdirectory])').setValue(SARIF);
+      await waitForText(R.format.sarif);
+      await (await field(R.field.title, D)).setValue("Análisis Trivy · imagen del servidor");
+      await $('[data-testid="import-preview-findings"]').waitForDisplayed({ timeout: 30_000 });
+      await expect($('[data-testid="import-preview-findings"]')).toHaveText(
+        expect.stringContaining(tf("findings.preview.findings_other", { count: 2 })),
+      );
+    },
+  });
+
+  let sarifRun = "";
+  step("hallazgos", {
+    title: "Los hallazgos de un run",
+    caption:
+      "En el run aparecen las pestañas «Hallazgos» y «Métricas» cuando hay algo que mostrar. «Hallazgos» los agrupa por regla, con su severidad, su ubicación (archivo y línea, o página y elemento) y sus referencias (CWE, WCAG…). «Nuevo» marca los que no estaban en el run anterior de la misma herramienta. Los filtros dejan ver solo una severidad, los abiertos, los que esperan revisión («A revisar») o los ya triajados.",
+    covers: ["tabs:src/modules/runs/ui/RunDetail.tsx"],
+    run: async () => {
+      await clickButton(R.import.confirm, D);
+      await $(".rn-done").waitForDisplayed({ timeout: 60_000 });
+      sarifRun = await importedRunKey();
+      await clickButton(es.common.close, D);
+      await $(`[data-testid="run-row-${sarifRun}"]`).click();
+      await $(`[role="tab"]*=${F.tabs.findings}`).click();
+      await $('[data-testid="findings-panel"]').waitForDisplayed();
+      await browser.waitUntil(async () => (await $$('[data-testid="finding"]')).length === 2, {
+        timeoutMsg: "the two Trivy findings are not listed",
+      });
+      // Every group open, for the picture.
+      for (const g of await $$('[data-testid="finding-rule"]')) {
+        if ((await g.getAttribute("open")) === null) await g.$("summary").click();
+      }
+    },
+  });
+
+  step("triaje", {
+    title: "Triaje de un hallazgo",
+    caption:
+      "«Triaje» decide qué hacer con un hallazgo: falso positivo, riesgo aceptado o corregido, siempre con un motivo, o reabrirlo. La decisión vale para ese hallazgo en todos los runs del proyecto, así que el próximo análisis llega ya triajado, y las decisiones anteriores quedan en su historial. Aquí se acepta el riesgo de no tener HEALTHCHECK hasta la versión 0.7.0.",
+    covers: ["dialogs:src/modules/runs/ui/TriageDialog.tsx"],
+    shot: { element: D },
+    run: async () => {
+      const low = await $(".fd-rule*=DS026");
+      await low.$('[data-testid="finding-triage"]').click();
+      await expect(dialog()).toBeDisplayed();
+      await $(D).$('[data-testid="triage-accepted_risk"] input').click();
+      await $(D).$('[data-testid="triage-reason"]').setValue("El orquestador ya comprueba /health; se añade en 0.7.0.");
+    },
+  });
+
+  step("triaje-hecho", {
+    title: "Hallazgo triajado",
+    caption:
+      "Al guardar, el hallazgo sale de «Abiertos» (ya no cuenta en la matriz ni en el informe) y aparece en «Triajados» con su estado.",
+    shot: false,
+    run: async () => {
+      await $(D).$('[data-testid="triage-save"]').click();
+      await $(D).waitForDisplayed({ reverse: true });
+      await browser.waitUntil(async () => (await $$('[data-testid="finding"]')).length === 1, {
+        timeoutMsg: "the triaged finding is still listed as open",
+      });
+      await $(`button.chips__chip*=${F.standing.triaged}`).click();
+      await waitForText(F.triageState.accepted_risk);
+    },
+  });
+
+  step("metricas", {
+    title: "Las métricas de una prueba de carga (k6)",
+    caption:
+      "El resumen de k6 trae métricas: cada una con su agregación (p95, media, tasa…), su valor y su umbral, si lo tiene. «Métricas» pone primero los umbrales incumplidos (aquí, peticiones fallidas por encima del 0,01 %), luego el resumen de cada métrica (con «Ver todas», cada agregación) y aparte los checks de k6. Un umbral incumplido de una métrica vinculada a un caso lo marca como fallido.",
+    run: async () => {
+      await openSection("runs");
+      await clickButton(R.import.open);
+      await expect(dialog()).toBeDisplayed();
+      await $(D).$('input[type="file"]:not([webkitdirectory])').setValue(K6);
+      await waitForText(R.format.k6);
+      await (await field(R.field.title, D)).setValue("Carga · API de Pharos, 5 usuarios");
+      await $('[data-testid="import-preview-metrics"]').waitForDisplayed({ timeout: 30_000 });
+      await clickButton(R.import.confirm, D);
+      await $(".rn-done").waitForDisplayed({ timeout: 60_000 });
+      const k6Run = await importedRunKey();
+      await clickButton(es.common.close, D);
+      await $(`[data-testid="run-row-${k6Run}"]`).click();
+      await $(`[role="tab"]*=${F.tabs.metrics}`).click();
+      await $('[data-testid="metrics-thresholds"]').waitForDisplayed();
+      await expect($('[data-testid="metrics-thresholds"]')).toHaveText(
+        expect.stringContaining(tf("findings.metric.thresholdsMet", { passed: 3, total: 4 })),
+      );
     },
   });
 });

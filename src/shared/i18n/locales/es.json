@@ -25,8 +25,8 @@
   "dbError": {
     "title": "No se pudo abrir la base de datos local",
     "body": "Pharos no ha modificado ningún archivo. Cierra la app y vuelve a intentarlo; si el problema sigue, comparte este detalle con soporte.",
-    "inUseTitle": "Otro Pharos está usando tus datos",
-    "inUseBody": "Otra ventana de Pharos o el CLI de Pharos tiene abierta la base de datos de este equipo. Ciérralo y pulsa «Reintentar». No se ha modificado ningún archivo.",
+    "inUseTitle": "Otro Pharos está actualizando tus datos",
+    "inUseBody": "Otra ventana de Pharos o el CLI de Pharos está actualizando la base de datos de este equipo (por ejemplo, al instalar una versión nueva). Espera a que termine y pulsa «Reintentar». No se ha modificado ningún archivo.",
     "noSpaceTitle": "Falta espacio para actualizar tus datos",
     "noSpaceBody": "Para convertirlos de forma segura, Pharos necesita espacio para una copia de seguridad y para la base nueva. Tus datos no se han tocado. Libera espacio en el disco (abajo, cuánto) y vuelve a intentarlo.",
     "convertFailedTitle": "No se pudieron actualizar tus datos",
@@ -870,8 +870,7 @@
           "error": "no se pudo borrar"
         },
         "failed": "No se pudieron borrar los archivos: {{reason}}",
-        "notSaved": "Los archivos se borraron, pero el registro de auditoría aún no se pudo guardar: se guardará con el próximo cambio.",
-        "dbChanged": "No se borró nada: la base de datos cambió en disco, quizá porque otra ventana de Pharos usa esta carpeta. Ciérrala, vuelve a abrir Pharos y verifica de nuevo."
+        "notSaved": "Los archivos se borraron, pero el registro de auditoría aún no se pudo guardar: se guardará con el próximo cambio."
       },
       "missing": {
         "title": "Faltan ({{count}})",
@@ -4329,7 +4328,10 @@
       "ctrf": "CTRF",
       "junit": "JUnit XML",
       "playwright_json": "Playwright JSON",
-      "pharos_run_json": "Pharos Run JSON"
+      "pharos_run_json": "Pharos Run JSON",
+      "sarif": "SARIF",
+      "k6": "Resumen de k6",
+      "axe": "axe-core"
     },
     "field": {
       "title": "Título del run",
