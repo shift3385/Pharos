@@ -6,6 +6,10 @@ authors = ["Pharos"]
 edition = "2021"
 rust-version = "1.77.2"
 publish = false
+# The workspace has two binaries among its default members: this one (the
+# desktop app) and `pharos-cli` (INT-01). `tauri dev` runs a plain `cargo run`,
+# and Tauri reads this key to know which binary is the app.
+default-run = "pharos"
 
 # Two crates share `src-tauri/src` (CORE-01, ADR-0050):
 # - `pharos-core` (core/Cargo.toml, rooted at src/lib.rs): the database,
