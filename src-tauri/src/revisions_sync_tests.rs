@@ -274,8 +274,8 @@ fn every_site_that_gives_a_case_a_new_revision_is_known() {
         ),
         (
             "sync.rs",
-            3,
-            "write_doc: tombstone and upsert; resolve_conflict(local)",
+            4,
+            "write_doc: tombstone and upsert; resolve_conflict(local); apply_merged (SYNC-02)",
         ),
     ];
     let files = [

@@ -516,6 +516,12 @@ export async function syncNow(): Promise<SyncResult> {
       new CustomEvent("pharos:sync-skipped", { detail: { count: skipped } }),
     );
   }
+  // Conflicts merged field by field without asking (SYNC-02): one notice
+  // per sync, however many there were. Each is in the audit log.
+  const merged = await invoke<unknown[]>("sync_auto_merged_take", { userId }).catch(() => []);
+  if (Array.isArray(merged) && merged.length > 0) {
+    window.dispatchEvent(new CustomEvent("pharos:sync-merged", { detail: { count: merged.length } }));
+  }
 
   return { pushed, pulled, conflicts, skipped };
 }
@@ -540,10 +546,12 @@ export async function listConflicts(): Promise<SyncConflict[]> {
 }
 
 /** Keeps one version of the entity. `local` re-bases this device's version on
- *  the server one (pushed on the next sync); `remote` takes the server's. */
+ *  the server one (pushed on the next sync); `remote` takes the server's;
+ *  `merged` (SYNC-02) combines both with `choices` for the keys that collide. */
 export async function resolveConflict(
   id: string,
   resolution: ConflictResolution,
+  choices?: Record<string, "local" | "remote">,
 ): Promise<void> {
   const session = await getSession();
   if (!session) throw new Error("not-authenticated");
@@ -552,6 +560,7 @@ export async function resolveConflict(
     userId: session.userId,
     id,
     resolution,
+    choices: choices ?? null,
   });
   window.dispatchEvent(new CustomEvent("pharos:synced"));
 }

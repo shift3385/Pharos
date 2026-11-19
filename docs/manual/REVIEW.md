@@ -96,6 +96,14 @@ se publica:
       en el tour:* necesita una segunda cuenta en la lista, y el manual solo
       muestra a su persona (NC-052). Los tours recorren la pestaña. Lo cubren
       además `server/tests/admin.test.ts` y `UsersTab.test.tsx`.
+- [ ] **Fusión por campo (SYNC-02)**: con dos equipos (o el escritorio y la
+      web) sobre la misma cuenta, cambiar campos distintos de un caso sin
+      sincronizar entre medias se combina sin preguntar y avisa «Se combinaron
+      cambios…»; cambiar el mismo campo abre el panel solo con ese campo; en la
+      web, guardar sobre una versión más nueva combina, o abre «Alguien cambió
+      los mismos campos…». *Por qué no en el tour:* necesita dos clientes a la
+      vez. Lo cubren `sync.rs` (tests de fusión), `merge.test.ts`,
+      `FieldMerge.test.tsx` y `serverApi.test.ts`.
 - [ ] **Desactivar una cuenta (SEC-12)** (Administración → Usuarios): con una
       segunda cuenta que sea el único Test Manager de un workspace
       compartido, «Desactivar cuenta…» pide el sucesor y el correo; la otra

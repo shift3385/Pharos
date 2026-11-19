@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { applyAppearance } from "@modules/admin";
-import { LegacyUnsentNotice, SyncStatusProvider } from "@modules/sync-offline";
+import { LegacyUnsentNotice, SyncStatusProvider, WebMergeDialog } from "@modules/sync-offline";
 import { NotificationsProvider } from "@modules/notifications";
 import { WorkspaceNotices, WorkspaceProvider, useWorkspace, workspaceApprover } from "@modules/workspaces";
 import { setApproverCheck } from "@modules/test-cases";
@@ -79,6 +79,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {!isTauri() && (
             <div className="shell-notice sync">
               <LegacyUnsentNotice />
+              <WebMergeDialog />
             </div>
           )}
           <main

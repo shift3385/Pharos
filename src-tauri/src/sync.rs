@@ -30,6 +30,7 @@ use crate::keys;
 use crate::oplog::{self, SYNCED};
 use crate::revisions;
 use crate::sync_class;
+use crate::sync_merge;
 
 /// True if `table` has the column (schemas before a migration, in its data
 /// steps and tests).
@@ -347,7 +348,236 @@ fn set_base(
         params![user, entity, id, revision, hlc],
     )
     .map_err(|e| e.to_string())?;
+    // The base moved: its kept content no longer describes it (SYNC-02).
+    // Before migration 0047 (a data step of an older one) there is no column.
+    match conn.execute(
+        "UPDATE sync_base SET base_payload = NULL
+          WHERE user_id = ?1 AND entity = ?2 AND entity_id = ?3 AND base_payload IS NOT NULL",
+        params![user, entity, id],
+    ) {
+        Ok(_) => Ok(()),
+        Err(e) if e.to_string().contains("no such column") => Ok(()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// Keeps the content of the synced version of an entity when its first
+/// local change after a sync is recorded (SYNC-02, ADR-0051): `before` is
+/// the entity as it was, which is the base while nothing is pending. It is
+/// the third side of a field-level merge. Only for entities that merge (not
+/// templates, whose snapshot has another shape, nor append-only ones).
+pub(crate) fn keep_base_payload(
+    conn: &Connection,
+    entity: &str,
+    id: &str,
+    before: &Value,
+) -> Result<(), String> {
+    if !SYNCED.contains(&entity) || entity == "template" {
+        return Ok(());
+    }
+    if before.get("deleted").and_then(Value::as_bool) == Some(true) {
+        return Ok(());
+    }
+    let mut payload = before.clone();
+    if let Some(map) = payload.as_object_mut() {
+        map.remove("deleted");
+    }
+    match conn.execute(
+        "UPDATE sync_base SET base_payload = ?3
+          WHERE entity = ?1 AND entity_id = ?2 AND base_payload IS NULL
+            AND NOT EXISTS (SELECT 1 FROM oplog
+                             WHERE entity = ?1 AND entity_id = ?2 AND synced_at IS NULL)",
+        params![entity, id, payload.to_string()],
+    ) {
+        Ok(_) => Ok(()),
+        // A data step of a migration before 0047: no column yet, no base.
+        Err(e) if e.to_string().contains("no such column") => Ok(()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// Sets the kept base content to `payload` (the remote version a resolved
+/// conflict is re-based on), so a later conflict can merge again.
+fn set_base_payload(
+    conn: &Connection,
+    user: &str,
+    entity: &str,
+    id: &str,
+    payload: &Value,
+) -> Result<(), String> {
+    conn.execute(
+        "UPDATE sync_base SET base_payload = ?4 WHERE user_id = ?1 AND entity = ?2 AND entity_id = ?3",
+        params![user, entity, id, payload.to_string()],
+    )
+    .map_err(|e| e.to_string())?;
     Ok(())
+}
+
+/// The kept base content of an entity, if any.
+fn base_payload(
+    conn: &Connection,
+    user: &str,
+    entity: &str,
+    id: &str,
+) -> Result<Option<Value>, String> {
+    let text: Option<Option<String>> = conn
+        .query_row(
+            "SELECT base_payload FROM sync_base WHERE user_id = ?1 AND entity = ?2 AND entity_id = ?3",
+            params![user, entity, id],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(|e| e.to_string())?;
+    Ok(text
+        .flatten()
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+        .filter(Value::is_object))
+}
+
+/// The field-level merge of a local and a remote version over the kept base
+/// (SYNC-02). None when it cannot run: no base kept (changes pending from
+/// before 0047), or a side is a tombstone (a delete against an edit stays a
+/// conflict of the whole entity).
+#[allow(clippy::too_many_arguments)]
+fn try_merge(
+    conn: &Connection,
+    user: &str,
+    entity: &str,
+    id: &str,
+    local: &Value,
+    local_deleted: bool,
+    remote: &Value,
+    remote_deleted: bool,
+    choices: &HashMap<String, sync_merge::Side>,
+) -> Result<Option<sync_merge::Outcome>, String> {
+    if local_deleted || remote_deleted || !local.is_object() || !remote.is_object() {
+        return Ok(None);
+    }
+    let Some(base) = base_payload(conn, user, entity, id)? else {
+        return Ok(None);
+    };
+    Ok(Some(sync_merge::merge(
+        entity, &base, local, remote, choices,
+    )))
+}
+
+/// What a merge found, as `sync_conflicts.merge` keeps it for the panel.
+fn merge_json(outcome: &sync_merge::Outcome) -> Value {
+    match outcome {
+        sync_merge::Outcome::Merged { origins, .. } => {
+            json!({ "origins": origins, "conflicts": [] })
+        }
+        sync_merge::Outcome::Conflict {
+            origins, conflicts, ..
+        } => json!({ "origins": origins, "conflicts": conflicts }),
+        sync_merge::Outcome::Entity { guard } => json!({ "guard": guard }),
+    }
+}
+
+/// `sync_state` key of the conflicts merged without asking since the
+/// indicator last read them (one notice per sync, ADR-0051).
+fn auto_merged_key(user: &str) -> String {
+    format!("auto_merged:{user}")
+}
+
+/// Writes a merged version and re-bases it on the remote one, as keeping the
+/// local version does: the local pending changes are folded into one fresh
+/// delta whose base is the remote version, so the next push fast-forwards
+/// the server. Audited as a resolution `merged` with where each field came
+/// from; `auto` when nobody was asked.
+#[allow(clippy::too_many_arguments)]
+fn apply_merged(
+    conn: &Connection,
+    workspace_id: &str,
+    user: &str,
+    entity: &str,
+    id: &str,
+    merged: &Value,
+    origins: &std::collections::BTreeMap<String, sync_merge::Origin>,
+    remote: &Value,
+    remote_revision: i64,
+    remote_hlc: &str,
+    auto: bool,
+) -> Result<(), String> {
+    let table = table_for(entity).ok_or("unknown entity")?;
+    let author = latest_pending(conn, user, entity, id)?
+        .map(|p| p.1)
+        .unwrap_or_default();
+    let before = journal::snapshot(conn, entity, id)?;
+    let doc = RemoteDoc {
+        entity: entity.to_string(),
+        entity_id: id.to_string(),
+        payload: merged.clone(),
+        revision: remote_revision,
+        deleted: false,
+        hlc: remote_hlc.to_string(),
+    };
+    write_doc(conn, workspace_id, user, &doc)?;
+    drop_drafts_of_remote(conn, user, &doc)?;
+    let revision = remote_revision + 1;
+    conn.execute(
+        &format!("UPDATE {table} SET revision = ?2 WHERE id = ?1"),
+        params![id, revision],
+    )
+    .map_err(|e| e.to_string())?;
+    mark_entity_synced(conn, user, entity, id)?;
+    set_base(conn, user, entity, id, remote_revision, remote_hlc)?;
+    set_base_payload(conn, user, entity, id, remote)?;
+    journal::record(
+        conn,
+        Change::new(
+            entity,
+            id,
+            Action::ResolveConflict,
+            Actor::user(user),
+            "upsert",
+            revision,
+            &author,
+        )
+        .before(before)
+        .summary(json!({
+            "resolution": "merged",
+            "auto": auto,
+            "fields": origins,
+            "remoteRevision": remote_revision,
+        })),
+    )?;
+    if entity == "test_case" {
+        revisions::ensure_current(conn, id, user, true)?;
+    }
+    if auto {
+        let key = auto_merged_key(user);
+        let mut list: Vec<Value> = state_value(conn, &key)?
+            .and_then(|t| serde_json::from_str(&t).ok())
+            .unwrap_or_default();
+        list.retain(|v| v["entity"] != entity || v["entityId"] != id);
+        list.push(json!({ "entity": entity, "entityId": id, "fields": origins }));
+        let keep = list.len().saturating_sub(50);
+        put_state(conn, &key, &Value::Array(list.split_off(keep)).to_string())?;
+    }
+    Ok(())
+}
+
+/// The conflicts merged without asking since the last call, and forgets
+/// them: what the indicator's notice lists (one notice per sync).
+pub(crate) fn take_auto_merged(conn: &Connection, user: &str) -> Result<Vec<Value>, String> {
+    let key = auto_merged_key(user);
+    let list: Vec<Value> = state_value(conn, &key)?
+        .and_then(|t| serde_json::from_str(&t).ok())
+        .unwrap_or_default();
+    if !list.is_empty() {
+        put_state(conn, &key, "[]")?;
+    }
+    Ok(list)
+}
+
+#[cfg(feature = "tauri")]
+#[tauri::command]
+pub fn sync_auto_merged_take(db: State<Db>, user_id: String) -> Result<Vec<Value>, String> {
+    require_user(&user_id)?;
+    let list = db.with_conn(|conn| take_auto_merged(conn, &user_id))?;
+    db.persist()?;
+    Ok(list)
 }
 
 /// Latest pending local change of an entity: (hlc, author). None if none pending.
@@ -900,9 +1130,14 @@ fn field<'a>(p: &'a Value, key: &str) -> &'a str {
 }
 
 /// Records (or refreshes) the conflict between the local pending state of an
-/// entity and a remote document that diverged from the same base.
+/// entity and a remote document that diverged from the same base. First it
+/// tries the field-level merge (SYNC-02, ADR-0051): when no field collides,
+/// the merged version is written and nobody is asked; otherwise the conflict
+/// keeps what the merge found (`merge`), so the panel asks only about the
+/// fields that collide.
 fn upsert_conflict(
     conn: &Connection,
+    workspace_id: &str,
     user: &str,
     doc: &RemoteDoc,
     base: Option<(i64, String)>,
@@ -912,25 +1147,60 @@ fn upsert_conflict(
         revisions::normalize_payload(&doc.entity_id, &mut remote);
     }
     let remote_payload = remote.to_string();
+    let (local_payload, local_revision, local_deleted) =
+        read_payload(conn, &doc.entity, &doc.entity_id)?.unwrap_or((Value::Null, 0, true));
+    let merged = try_merge(
+        conn,
+        user,
+        &doc.entity,
+        &doc.entity_id,
+        &local_payload,
+        local_deleted,
+        &remote,
+        doc.deleted,
+        &HashMap::new(),
+    )?;
     if let Some(id) = open_conflict_id(conn, user, &doc.entity, &doc.entity_id)? {
+        // A newer remote version of an open conflict: the person still
+        // decides, now about what this version brings.
         conn.execute(
             "UPDATE sync_conflicts SET remote_payload = ?2, remote_revision = ?3, remote_deleted = ?4,
-                    remote_hlc = ?5 WHERE id = ?1",
-            params![id, remote_payload, doc.revision, doc.deleted, doc.hlc],
+                    remote_hlc = ?5, merge = ?6 WHERE id = ?1",
+            params![
+                id,
+                remote_payload,
+                doc.revision,
+                doc.deleted,
+                doc.hlc,
+                merged.as_ref().map(|m| merge_json(m).to_string())
+            ],
         )
         .map_err(|e| e.to_string())?;
         return Ok(());
     }
-    let (local_payload, local_revision, local_deleted) =
-        read_payload(conn, &doc.entity, &doc.entity_id)?.unwrap_or((Value::Null, 0, true));
+    if let Some(sync_merge::Outcome::Merged { merged, origins }) = &merged {
+        return apply_merged(
+            conn,
+            workspace_id,
+            user,
+            &doc.entity,
+            &doc.entity_id,
+            merged,
+            origins,
+            &remote,
+            doc.revision,
+            &doc.hlc,
+            true,
+        );
+    }
     let local_hlc = latest_pending(conn, user, &doc.entity, &doc.entity_id)?
         .map(|p| p.0)
         .unwrap_or_default();
     conn.execute(
         "INSERT INTO sync_conflicts (id, entity, entity_id, base_revision, local_payload, local_revision,
                 local_deleted, local_hlc, remote_payload, remote_revision, remote_deleted, remote_hlc,
-                detected_at, user_id)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, datetime('now'), ?13)",
+                detected_at, user_id, merge)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, datetime('now'), ?13, ?14)",
         params![
             Uuid::new_v4().to_string(),
             doc.entity,
@@ -945,6 +1215,7 @@ fn upsert_conflict(
             doc.deleted,
             doc.hlc,
             user,
+            merged.as_ref().map(|m| merge_json(m).to_string()),
         ],
     )
     .map_err(|e| e.to_string())?;
@@ -1018,7 +1289,7 @@ pub(crate) fn apply_doc(
     if open_conflict_id(conn, user, &doc.entity, &doc.entity_id)?.is_some()
         || latest_pending(conn, user, &doc.entity, &doc.entity_id)?.is_some()
     {
-        return upsert_conflict(conn, user, doc, base);
+        return upsert_conflict(conn, workspace_id, user, doc, base);
     }
     write_doc(conn, workspace_id, user, doc)?;
     // A project moved to another workspace takes everything under it along.
@@ -1555,8 +1826,8 @@ pub struct ConflictSide {
     hlc: String,
 }
 
-/// An open conflict as shown in the conflict panel: both full versions, so the
-/// UI can diff them field by field (SYNC-02 can later add a merged resolution).
+/// An open conflict as shown in the conflict panel: both full versions, and
+/// what the field-level merge found (SYNC-02, ADR-0051).
 #[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -1568,10 +1839,17 @@ pub struct Conflict {
     local: ConflictSide,
     remote: ConflictSide,
     detected_at: String,
+    /// What the field-level merge found (SYNC-02): `origins` (the fields
+    /// combined without asking), `conflicts` (the keys to decide) or
+    /// `guard` (decided per entity). Null before migration 0047 or when it
+    /// could not run (no base kept, or a delete).
+    #[cfg_attr(test, ts(type = "unknown"))]
+    merge: Value,
 }
 
 const CONFLICT_COLS: &str = "id, entity, entity_id, base_revision, local_payload, local_revision,
-    local_deleted, local_hlc, remote_payload, remote_revision, remote_deleted, remote_hlc, detected_at";
+    local_deleted, local_hlc, remote_payload, remote_revision, remote_deleted, remote_hlc, detected_at,
+    merge";
 
 fn conflict_from_row(r: &rusqlite::Row) -> rusqlite::Result<Conflict> {
     let json_col = |i: usize| -> rusqlite::Result<Value> {
@@ -1596,6 +1874,10 @@ fn conflict_from_row(r: &rusqlite::Row) -> rusqlite::Result<Conflict> {
             hlc: r.get(11)?,
         },
         detected_at: r.get(12)?,
+        merge: r
+            .get::<_, Option<String>>(13)?
+            .and_then(|s| serde_json::from_str(&s).ok())
+            .unwrap_or(Value::Null),
     })
 }
 
@@ -1625,12 +1907,28 @@ pub fn sync_conflicts_list(db: State<Db>, user_id: String) -> Result<Vec<Conflic
 /// granularity). `local` keeps this device's version and re-bases it on the
 /// remote one so the next push is accepted; `remote` takes the server version
 /// and discards the local pending changes.
+// Without choices: the tests resolve per entity through these.
+#[cfg(test)]
 pub(crate) fn resolve_conflict(
     conn: &Connection,
     workspace_id: &str,
     user: &str,
     id: &str,
     resolution: &str,
+) -> Result<(), String> {
+    resolve_conflict_with(conn, workspace_id, user, id, resolution, &HashMap::new())
+}
+
+/// As `resolve_conflict`, and `merged` (SYNC-02): the field-level merge with
+/// the person's `choices` for the keys that collide, written and re-based on
+/// the remote version as keeping the local one is.
+pub(crate) fn resolve_conflict_with(
+    conn: &Connection,
+    workspace_id: &str,
+    user: &str,
+    id: &str,
+    resolution: &str,
+    choices: &HashMap<String, sync_merge::Side>,
 ) -> Result<(), String> {
     let c = conn
         .query_row(
@@ -1654,6 +1952,37 @@ pub(crate) fn resolve_conflict(
     };
 
     match resolution {
+        "merged" => {
+            let (local, _, local_deleted) =
+                read_payload(conn, &c.entity, &c.entity_id)?.ok_or("conflict entity not found")?;
+            match try_merge(
+                conn,
+                user,
+                &c.entity,
+                &c.entity_id,
+                &local,
+                local_deleted,
+                &c.remote.payload,
+                c.remote.deleted,
+                choices,
+            )? {
+                Some(sync_merge::Outcome::Merged { merged, origins }) => apply_merged(
+                    conn,
+                    workspace_id,
+                    user,
+                    &c.entity,
+                    &c.entity_id,
+                    &merged,
+                    &origins,
+                    &c.remote.payload,
+                    c.remote.revision,
+                    &c.remote.hlc,
+                    false,
+                )?,
+                Some(sync_merge::Outcome::Conflict { .. }) => return Err("merge-unresolved".into()),
+                _ => return Err("merge-unavailable".into()),
+            }
+        }
         "local" => {
             let author = latest_pending(conn, user, &c.entity, &c.entity_id)?
                 .map(|p| p.1)
@@ -1673,6 +2002,10 @@ pub(crate) fn resolve_conflict(
                 c.remote.revision,
                 &c.remote.hlc,
             )?;
+            // The fresh delta's base is the remote version (SYNC-02).
+            if !c.remote.deleted && c.remote.payload.is_object() {
+                set_base_payload(conn, user, &c.entity, &c.entity_id, &c.remote.payload)?;
+            }
             let deleted = read_payload(conn, &c.entity, &c.entity_id)?.map_or(true, |p| p.2);
             // A fresh delta (new HLC, after the remote one already observed) on
             // top of the remote base: the next push fast-forwards the server.
@@ -1807,23 +2140,42 @@ pub fn sync_conflict_resolve(
     user_id: String,
     id: String,
     resolution: String,
+    choices: Option<HashMap<String, sync_merge::Side>>,
 ) -> Result<(), String> {
     require_user(&user_id)?;
-    resolve_and_persist(&db, &user_id, &id, &resolution)
+    resolve_and_persist_with(
+        &db,
+        &user_id,
+        &id,
+        &resolution,
+        &choices.unwrap_or_default(),
+    )
 }
 
 /// Resolves a conflict in one transaction, then saves; taking the remote
 /// version may release draft files, removed after that save.
+// Without choices: the tests resolve per entity through these.
+#[cfg(test)]
 pub(crate) fn resolve_and_persist(
     db: &Db,
     user_id: &str,
     id: &str,
     resolution: &str,
 ) -> Result<(), String> {
+    resolve_and_persist_with(db, user_id, id, resolution, &HashMap::new())
+}
+
+pub(crate) fn resolve_and_persist_with(
+    db: &Db,
+    user_id: &str,
+    id: &str,
+    resolution: &str,
+    choices: &HashMap<String, sync_merge::Side>,
+) -> Result<(), String> {
     db.with_conn(|conn| {
         let workspace_id = ensure_workspace(conn)?;
         let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
-        resolve_conflict(&tx, &workspace_id, user_id, id, resolution)?;
+        resolve_conflict_with(&tx, &workspace_id, user_id, id, resolution, choices)?;
         tx.commit().map_err(|e| e.to_string())
     })?;
     db.persist_and_collect()
@@ -2912,5 +3264,194 @@ mod tests {
                 assert_eq!(&got[key], value, "{}.{key}", doc.entity);
             }
         }
+    }
+
+    // SYNC-02 (ADR-0051): field-level merge in the conflict path.
+
+    /// A local edit as the repositories make it: through the journal, with
+    /// the entity as it was (`before`), which keeps the base content.
+    fn edit_through_journal(c: &Connection, id: &str, column: &str, value: &str) {
+        let before = journal::snapshot(c, "test_case", id).unwrap();
+        let rev: i64 = c
+            .query_row(
+                "SELECT revision FROM test_cases WHERE id = ?1",
+                params![id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        c.execute(
+            &format!("UPDATE test_cases SET {column} = ?2, revision = ?3 WHERE id = ?1"),
+            params![id, value, rev + 1],
+        )
+        .unwrap();
+        journal::record(
+            c,
+            Change::new(
+                "test_case",
+                id,
+                Action::Update,
+                Actor::user(U1),
+                "upsert",
+                rev + 1,
+                "Ada",
+            )
+            .before(before),
+        )
+        .unwrap();
+    }
+
+    fn priority(c: &Connection, id: &str) -> String {
+        c.query_row(
+            "SELECT priority FROM test_cases WHERE id = ?1",
+            params![id],
+            |r| r.get(0),
+        )
+        .unwrap()
+    }
+
+    fn merge_of(c: &Connection) -> Value {
+        let text: Option<String> = c
+            .query_row(
+                "SELECT merge FROM sync_conflicts WHERE resolved_at IS NULL",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        text.map(|t| serde_json::from_str(&t).unwrap())
+            .unwrap_or(Value::Null)
+    }
+
+    #[test]
+    fn the_first_local_change_keeps_the_base_content_until_the_base_moves() {
+        let c = conn();
+        synced_case(&c, "c1", "Login");
+        edit_through_journal(&c, "c1", "title", "Login (desktop)");
+        let kept = base_payload(&c, U1, "test_case", "c1").unwrap().unwrap();
+        assert_eq!(kept["title"], "Login");
+        assert!(kept.get("deleted").is_none());
+        // A second edit before syncing keeps the first base.
+        edit_through_journal(&c, "c1", "title", "Login (desktop, again)");
+        let kept = base_payload(&c, U1, "test_case", "c1").unwrap().unwrap();
+        assert_eq!(kept["title"], "Login");
+        set_base(&c, U1, "test_case", "c1", 3, "x").unwrap();
+        assert!(base_payload(&c, U1, "test_case", "c1").unwrap().is_none());
+    }
+
+    #[test]
+    fn edits_to_different_fields_merge_without_asking() {
+        let c = conn();
+        let ws = synced_case(&c, "c1", "Login");
+        edit_through_journal(&c, "c1", "title", "Login (desktop)");
+        let mut doc = remote("c1", "Login", 2, WEB_HLC);
+        doc.payload["priority"] = json!("high");
+        apply_doc(&c, &ws, U1, &doc).unwrap();
+
+        assert_eq!(open_conflicts(&c), 0);
+        assert_eq!(title(&c, "c1"), "Login (desktop)");
+        assert_eq!(priority(&c, "c1"), "high");
+        // One fresh delta on top of the remote version: the push fast-forwards.
+        let pending = build_pending(&c, U1).unwrap().deltas;
+        let delta = pending.iter().find(|d| d.entity == "test_case").unwrap();
+        assert_eq!(delta.base_revision, Some(2));
+        assert_eq!(delta.revision, 3);
+        // Audited as merged without asking, and listed once for the notice.
+        let summary: String = c
+            .query_row(
+                "SELECT summary FROM audit_log WHERE action = 'resolve_conflict' ORDER BY rowid DESC LIMIT 1",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        let summary: Value = serde_json::from_str(&summary).unwrap();
+        assert_eq!(summary["resolution"], "merged");
+        assert_eq!(summary["auto"], true);
+        assert_eq!(summary["fields"]["title"], "local");
+        assert_eq!(summary["fields"]["priority"], "remote");
+        let merged = take_auto_merged(&c, U1).unwrap();
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged[0]["entityId"], "c1");
+        assert!(take_auto_merged(&c, U1).unwrap().is_empty());
+    }
+
+    #[test]
+    fn the_same_field_asks_and_the_choice_resolves_it() {
+        let c = conn();
+        let ws = synced_case(&c, "c1", "Login");
+        edit_through_journal(&c, "c1", "title", "Login (desktop)");
+        let mut doc = remote("c1", "Login (web)", 2, WEB_HLC);
+        doc.payload["priority"] = json!("high");
+        apply_doc(&c, &ws, U1, &doc).unwrap();
+
+        assert_eq!(open_conflicts(&c), 1);
+        let merge = merge_of(&c);
+        assert_eq!(merge["conflicts"][0]["key"], "title");
+        assert_eq!(merge["origins"]["priority"], "remote");
+        let id: String = c
+            .query_row("SELECT id FROM sync_conflicts", [], |r| r.get(0))
+            .unwrap();
+        // Without a choice for every key it is refused.
+        assert_eq!(
+            resolve_conflict_with(&c, &ws, U1, &id, "merged", &HashMap::new()).unwrap_err(),
+            "merge-unresolved"
+        );
+        let choices = HashMap::from([("title".to_string(), sync_merge::Side::Local)]);
+        resolve_conflict_with(&c, &ws, U1, &id, "merged", &choices).unwrap();
+        assert_eq!(open_conflicts(&c), 0);
+        assert_eq!(title(&c, "c1"), "Login (desktop)");
+        assert_eq!(priority(&c, "c1"), "high");
+        let pending = build_pending(&c, U1).unwrap().deltas;
+        assert_eq!(
+            pending
+                .iter()
+                .find(|d| d.entity == "test_case")
+                .unwrap()
+                .base_revision,
+            Some(2)
+        );
+        // Asked, so not in the notice of automatic merges.
+        assert!(take_auto_merged(&c, U1).unwrap().is_empty());
+    }
+
+    #[test]
+    fn without_a_kept_base_the_conflict_stays_per_entity() {
+        let c = conn();
+        let ws = synced_case(&c, "c1", "Login");
+        // A change pending from before migration 0047: no base kept.
+        edit_locally(&c, "c1", "Login (desktop)");
+        let mut doc = remote("c1", "Login", 2, WEB_HLC);
+        doc.payload["priority"] = json!("high");
+        apply_doc(&c, &ws, U1, &doc).unwrap();
+        assert_eq!(open_conflicts(&c), 1);
+        assert_eq!(merge_of(&c), Value::Null);
+    }
+
+    // SYNC-11 on a device: a case revision tombstone from the server (its
+    // project was deleted) deletes nothing here.
+    #[test]
+    fn a_revision_tombstone_deletes_nothing_locally() {
+        let c = conn();
+        let ws = synced_case(&c, "c1", "Login");
+        let rev = revisions::ensure_current(&c, "c1", U1, false)
+            .unwrap()
+            .expect("a revision");
+        let count = |c: &Connection| -> i64 {
+            c.query_row(
+                "SELECT count(*) FROM test_case_revisions WHERE id = ?1",
+                params![rev],
+                |r| r.get(0),
+            )
+            .unwrap()
+        };
+        assert_eq!(count(&c), 1);
+        let tomb = RemoteDoc {
+            entity: "test_case_revision".into(),
+            entity_id: rev.clone(),
+            payload: json!({ "id": rev, "projectId": "p1", "deletedWith": "p1" }),
+            revision: 2,
+            deleted: true,
+            hlc: WEB_HLC.into(),
+        };
+        apply_doc(&c, &ws, U1, &tomb).unwrap();
+        assert_eq!(count(&c), 1);
     }
 }

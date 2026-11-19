@@ -1345,6 +1345,10 @@ const EXEMPT: &[(&str, &str)] = &[
         "sync bookkeeping: the refused change never reached the server and the server's version comes back",
     ),
     ("sync::sync_conflicts_list", "read"),
+    (
+        "sync::sync_auto_merged_take",
+        "reads and clears the list behind the merge notice; each merge is audited where it happens (SYNC-02)",
+    ),
     ("audit_read::audit_facets", "read"),
     ("audit_read::audit_verify", "read: checks the chains"),
     (

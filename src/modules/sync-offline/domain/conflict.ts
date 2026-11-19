@@ -1,11 +1,31 @@
 // Sync conflicts (Phase 8C, spec §9): a local pending change and a remote one
-// that diverged from the same base. Resolution is per entity (decision
-// 2026-08-13); the field diff below is only for display, but it is the shape a
-// future field-level merge (SYNC-02) would build on.
+// that diverged from the same base. Since SYNC-02 (ADR-0051) the desktop first
+// merges field by field (`merge.ts`, `sync_merge.rs`): a conflict that reaches
+// the panel carries what the merge found (`merge`), and the person decides
+// only the keys that collide (`merged` with choices); the whole-entity
+// choices stay. The field diff below is the panel's view when no merge ran.
 
 import type { Assert, Contract, Covers } from "@shared/contracts";
 
-export type ConflictResolution = "local" | "remote";
+export type ConflictResolution = "local" | "remote" | "merged";
+
+/** One key the merge could not decide (`sync_merge::FieldConflict`). */
+export interface MergeConflictKey {
+  key: string;
+  type: string;
+  base: unknown;
+  local: unknown;
+  remote: unknown;
+}
+
+/** What the field-level merge found for a conflict (SYNC-02). */
+export type MergeInfo =
+  | {
+      origins: Record<string, "local" | "remote" | "both">;
+      conflicts: MergeConflictKey[];
+    }
+  | { guard: string }
+  | null;
 
 export interface ConflictSide {
   payload: Record<string, unknown> | null;
@@ -22,6 +42,23 @@ export interface SyncConflict {
   local: ConflictSide;
   remote: ConflictSide;
   detectedAt: string;
+  /** Null when no merge ran (no base kept, a delete, or before SYNC-02). */
+  merge?: unknown;
+}
+
+/** The merge info of a conflict, read defensively (it is stored JSON). */
+export function mergeInfo(c: SyncConflict): MergeInfo {
+  const m = c.merge;
+  if (!m || typeof m !== "object") return null;
+  const o = m as Record<string, unknown>;
+  if (typeof o.guard === "string") return { guard: o.guard };
+  if (Array.isArray(o.conflicts) && o.origins && typeof o.origins === "object") {
+    return {
+      origins: o.origins as Record<string, "local" | "remote" | "both">,
+      conflicts: o.conflicts as MergeConflictKey[],
+    };
+  }
+  return null;
 }
 
 export interface FieldDiff {

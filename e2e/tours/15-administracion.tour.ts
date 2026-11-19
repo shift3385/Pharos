@@ -236,7 +236,7 @@ chapter("administracion", () => {
   step("conflictos", {
     title: "Revisar conflictos",
     caption:
-      "«Sincronización → Revisar conflictos» (o el aviso del menú lateral) muestra cada conflicto campo a campo: tu versión y la del servidor, una junto a otra. Elige «Conservar la mía» o «Usar la del servidor»; la otra versión se descarta.",
+      "«Sincronización → Revisar conflictos» (o el aviso del menú lateral) muestra solo los campos que chocan: lo que cada equipo cambió en campos distintos ya está combinado. En cada campo eliges tu versión o la del servidor, una junto a otra, y «Aplicar»; «La mía en todo» y «La del servidor en todo» conservan una versión entera.",
     covers: ["dialogs:src/modules/sync-offline/ui/ConflictPanel.tsx"],
     shot: { element: D },
     run: async () => {
@@ -249,10 +249,13 @@ chapter("administracion", () => {
   step("conflicto-resuelto", {
     title: "Conflicto resuelto",
     caption:
-      "Al elegir una versión, el conflicto desaparece de la lista («Conflicto resuelto») y la versión elegida se sincroniza con el resto de tus equipos.",
+      "Al aplicar, el conflicto desaparece de la lista («Conflicto resuelto») y lo elegido se sincroniza con el resto de tus equipos. Aquí, el título del servidor.",
     shot: false,
     run: async () => {
-      await clickButton(es.sync.conflict.keepRemote, D);
+      // SYNC-02: the title changed on both sides, so the panel asks for it.
+      const title = es.sync.conflict.fields.title;
+      await $(`${D} input[aria-label="${title}: ${es.sync.conflict.remote}"]`).click();
+      await clickButton(es.sync.conflict.apply, D);
       await waitForToast(es.sync.conflict.resolved);
       // The panel's own «Cerrar» (Esc may land on a re-rendering list).
       await $(".cp__close").click();

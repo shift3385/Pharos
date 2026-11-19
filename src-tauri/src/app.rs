@@ -289,6 +289,7 @@ pub fn run() {
             sync::sync_server_features_set,
             sync::sync_conflicts_list,
             sync::sync_conflict_resolve,
+            sync::sync_auto_merged_take,
             purge::purge_deleted,
             trash::trash_list,
             trash::trash_restore,
