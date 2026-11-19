@@ -6,11 +6,10 @@ El plan completo y los bocetos están en [`design/l-int01-plan.md`](design/l-int
 
 > **Estado (L1).**
 >
-> - **Funciona:** `upload` en modo local (Pharos Run JSON), `projects` y `doctor`.
+> - **Funciona:** `upload` en modo local (Pharos Run JSON y JUnit), `projects` y `doctor`.
 > - **Llega más adelante:**
 >   - el modo remoto y `login`/`logout`/`run close` (L2);
 >   - `watch` (L3);
->   - JUnit en modo local (L4);
 >   - el CLI dentro del instalador (L5);
 >   - escribir con la app abierta (L7, tras SEC-05b).
 >
@@ -61,8 +60,12 @@ Con un directorio de target compartido, `CARGO_TARGET_DIR` decide dónde queda `
 El CLI escribe en la base de datos de Pharos de este equipo, con el mismo código que «Importar informe» de la app.
 
 - **Como quién:** como la cuenta que tiene la sesión iniciada en la app. La lee de su sesión en el Administrador de credenciales de Windows, sin los tokens. Sin sesión, sale con el código 3.
-- **Qué lee:** Pharos Run JSON 1.x, validado como lo valida la app (`parsePharosRun`).
-- **Qué rechaza:** JUnit, SARIF, k6, axe, CTRF, Playwright, Allure y TRX, con el código 5 y la indicación de subirlos al servidor o usar «Importar informe».
+- **Qué lee:**
+  - Pharos Run JSON 1.x, validado como lo valida la app (`parsePharosRun`);
+  - JUnit XML, convertido como lo convierte la app: Playwright, Surefire, pytest, cucumber-js… con los reintentos (`flakyFailure`, `rerunFailure`), las propiedades `test_id`, `tag` y `requirement`, y los adjuntos `[[ATTACHMENT|ruta]]` relativos a la carpeta del informe. Un `<!DOCTYPE>` en el prólogo se rechaza.
+
+  Hasta 50 MB por informe.
+- **Qué rechaza:** SARIF, k6, axe, CTRF, Playwright JSON, Cucumber Messages, Allure y TRX, con el código 5 y la indicación de subirlos al servidor o usar «Importar informe».
 - **Con la app abierta:** falla con `db-in-use` (código 6) hasta SEC-05b.
 - **Sin datos:** en una carpeta sin datos de Pharos no crea nada; sale con el código 4.
 - **En CI** (`CI=true`) está prohibido, con el código 2: allí no hay un Pharos de escritorio.

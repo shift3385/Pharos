@@ -34,6 +34,10 @@ toml = "0.9"
 # File patterns: PowerShell and cmd do not expand `*`, so the CLI does.
 glob = "0.3"
 sha2 = "0.10"
+# JUnit in local mode (L4): a port of @pharos/formats' parser. Both already
+# in the tree (Tauri, pharos-core); quick-xml reads no DTD.
+quick-xml = "0.41"
+regex = "1"
 
 # The user's display language when no PHAROS_LANG / --lang is given.
 [target.'cfg(windows)'.dependencies]

@@ -142,4 +142,9 @@
   - la feature `test-support` del core: los tests del CLI abren con su propia clave, nunca con la `db-key` del usuario.
 
   El CLI escribe como la cuenta con sesión en la app (la de su sesión en el Credential Manager): los proyectos son de cada cuenta. Remoto, `watch` y `login` responden «llega en una versión próxima» (código 2).
-- **L2–L7:** pendientes.
+- **L4 · JUnit en modo local:**
+  - `cli/src/junit.rs` es un port de `importers/junit.ts` y de lo que usa de `common.ts` y `xml.ts`. Lee XML con `quick-xml`, sin DTD y con la normalización de XML 1.0 de un DOM;
+  - el contrato son los siete snapshots `normalized/*junit*` de `@pharos/formats`: un test compara el documento entero con cada uno;
+  - escribe `normalizerVersion` 1, el que reproduce;
+  - el modo local lee JUnit e informes de hasta 50 MB (`MAX_WHOLE_REPORT_BYTES`).
+- **L2, L3, L5–L7:** pendientes.

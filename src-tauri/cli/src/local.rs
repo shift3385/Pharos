@@ -3,7 +3,8 @@
 //! Until SEC-05b (N5) only one process may open the database, so with the app
 //! open this fails cleanly with `db-in-use` (exit 6).
 //!
-//! Local mode reads Pharos Run JSON (JUnit comes with L4); every other format
+//! Local mode reads Pharos Run JSON and JUnit (a Rust port, `junit.rs`); every
+//! other format
 //! is refused with a pointer to remote mode or the app's «Importar informe».
 
 use std::path::{Path, PathBuf};
@@ -17,10 +18,11 @@ use crate::args::Opts;
 use crate::config::{Config, Env};
 use crate::exit::{core_code, from_core, Exit, Failure};
 use crate::output::{Mark, Printer};
-use crate::runjson;
+use crate::{junit, runjson};
 
-/// Largest report the evidence store takes (`evidence::MAX_FILE_BYTES`).
-const MAX_REPORT_BYTES: u64 = 200 * 1024 * 1024;
+/// Largest JSON or XML report, read whole (`MAX_WHOLE_REPORT_BYTES` of
+/// `@pharos/formats`; the evidence store would take 200 MB).
+const MAX_REPORT_BYTES: u64 = 50 * 1024 * 1024;
 
 /// How the CLI reaches the desktop's data: the real keychain and folder, or a
 /// test's own key and folder.
@@ -175,12 +177,16 @@ struct Prepared {
     bytes: Vec<u8>,
     sha256: String,
     doc: Value,
+    /// `pharos_run_json` or `junit`.
+    format: &'static str,
 }
 
 /// What a file looks like, by its content (as `@pharos/formats` detects, never
-/// by its extension). Only Pharos Run JSON is imported locally.
+/// by its extension). Pharos Run JSON and JUnit are imported locally.
 enum Seen {
     RunJson(Value),
+    /// XML that is not TRX: JUnit, or an error `junit::parse` explains.
+    Xml(String),
     /// Another format, by its display name.
     Other(&'static str),
     /// Neither JSON nor XML.
@@ -194,10 +200,8 @@ fn see(bytes: &[u8]) -> Seen {
         let head: String = text.chars().take(4096).collect();
         return if head.contains("<TestRun") {
             Seen::Other("TRX")
-        } else if head.contains("<testsuite") {
-            Seen::Other("JUnit")
         } else {
-            Seen::Other("XML")
+            Seen::Xml(text.to_string())
         };
     }
     match serde_json::from_str::<Value>(text) {
@@ -256,6 +260,7 @@ fn prepare(
             "pharos_run_json",
             "pharos-run-json",
             "pharos-run",
+            "junit",
         ]
         .contains(&f.as_str())
         {
@@ -277,8 +282,25 @@ fn prepare(
             .arg(shown)
             .detail(e.to_string())
     })?;
-    let mut doc = match see(&bytes) {
-        Seen::RunJson(doc) => doc,
+    let (mut doc, format) = match see(&bytes) {
+        Seen::RunJson(doc) => (doc, "pharos_run_json"),
+        Seen::Xml(text) => match junit::parse(&text) {
+            Ok(doc) => (doc, "junit"),
+            Err(e) if e.code == "unknown-format" => {
+                return Err(
+                    Failure::new(Exit::Report, "format-not-local", "err.format-not-local")
+                        .arg(shown)
+                        .arg("XML"),
+                )
+            }
+            Err(e) => {
+                return Err(
+                    Failure::new(Exit::Report, "invalid-report", "err.invalid-xml")
+                        .arg(shown)
+                        .detail(e.detail.unwrap_or_default()),
+                )
+            }
+        },
         Seen::Other(name) => {
             return Err(
                 Failure::new(Exit::Report, "format-not-local", "err.format-not-local")
@@ -332,6 +354,7 @@ fn prepare(
         bytes,
         sha256,
         doc,
+        format,
     })
 }
 
@@ -645,7 +668,11 @@ fn print_file(
 ) {
     let n = |v: &Value| v.as_u64().unwrap_or(0).to_string();
     let mark = p.mark(Mark::Ok);
-    let kind = p.dim("Pharos Run JSON");
+    let kind = p.dim(if file.format == "junit" {
+        "JUnit"
+    } else {
+        "Pharos Run JSON"
+    });
     let target = p.bold(target);
     p.line(&format!("  {mark} {}   {kind}   {target}", file.shown));
     let counts = p.t(
@@ -680,7 +707,7 @@ fn print_file(
         }
     }
     p.json_line(&json!({
-        "file": file.shown, "ok": true, "format": "pharos_run_json",
+        "file": file.shown, "ok": true, "format": file.format,
         "run": {"id": out["runId"], "key": out["runKey"]},
         "alreadyImported": out["alreadyImported"],
         "counts": {"results": out["results"], "linked": out["linked"], "unlinked": out["unlinked"], "byStatus": statuses},
