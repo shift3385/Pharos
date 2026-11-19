@@ -21,6 +21,7 @@ import { createDomainService } from "./modules/domain/domain.service";
 import { domainRoutes } from "./modules/domain/domain.routes";
 import { createCycleService, cycleRoutes } from "./modules/domain/cycles";
 import { createRunService, runRoutes } from "./modules/domain/runs";
+import { createFindingService, findingRoutes } from "./modules/domain/findings";
 import { createExecutionService, executionRoutes } from "./modules/domain/execution";
 import { homeMetricsRoutes } from "./modules/domain/home-metrics";
 import { createPreferenceStore, preferenceRoutes } from "./modules/preferences/preferences";
@@ -197,6 +198,7 @@ export function buildApp(deps: {
   const domain = createDomainService(domainStore);
   const cycles = createCycleService(domainStore);
   const runs = createRunService(domainStore);
+  const findings = createFindingService(domainStore);
   const execution = createExecutionService(domainStore);
 
   // The app checks a server with this before signing in to it (SEC-10): it
@@ -251,6 +253,7 @@ export function buildApp(deps: {
   });
   void app.register(async (instance) => {
     runRoutes(instance, { runs, tokens });
+    findingRoutes(instance, { findings, tokens });
     executionRoutes(instance, { execution, tokens });
   });
   void app.register(async (instance) => {

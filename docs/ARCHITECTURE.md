@@ -513,6 +513,16 @@ Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
   it reopens), `triage_current` derives each fingerprint's state from its
   latest event (HLC, then id) and `triage_history` lists the rest. There
   is no LWW entity and no conflict to resolve.
+- **Reading them** (F4): `run_findings_list` (worst first, each with its
+  current triage and `isNew`: the fingerprint was not in the previous run of
+  the project from the same tool; nothing is new in the first one),
+  `run_metrics_list` (failed thresholds first), `finding_triage_set` and
+  `finding_triage_history` on the desktop. The web reads the same through
+  `server/src/modules/domain/findings.ts`: `/api/runs/:id/findings`,
+  `/api/runs/:id/metrics` and `/api/finding-triage`, the twin of the same
+  rules; a decision from the web is one more `finding_triage` event.
+  `runsApi.findings`, `metrics`, `triage` and `triageHistory` pick the
+  side.
 
 **Manual execution (EJE-02; ADR-0013, ADR-0014).** `src-tauri/src/runs/manual.rs`
 and `src/modules/runs/` (`RunDetail`, `ExecutionPanel`), no migration:

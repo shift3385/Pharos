@@ -16,6 +16,8 @@ use serde_json::{json, Map, Value};
 
 use super::import::{clip, MAX_ATTRIBUTES, MAX_ERROR_MESSAGE};
 use super::{err, ids, is_purged, owner_of, ps};
+#[cfg(test)]
+use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::ensure_workspace;
@@ -542,6 +544,7 @@ pub(crate) fn appended_rows(
 
 /// One triage decision as read. The current one of a fingerprint is the
 /// latest (HLC, then id).
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TriageEvent {
@@ -716,4 +719,260 @@ pub fn triage_insert_if_absent(conn: &Connection, _user: &str, p: &Value) -> Res
 
 pub fn triage_owner(conn: &Connection, id: &str) -> Result<Option<String>, String> {
     owner_of(conn, FINDING_TRIAGE, id)
+}
+
+// ---- views (F4: the run detail, ADR-0053) -------------------------------------
+
+/// A finding as the run detail shows it: the stored row, its current triage
+/// and whether it is new (its fingerprint was not in the previous run of the
+/// project from the same tool; none is new in the first one).
+#[cfg_attr(test, derive(TS), ts(export))]
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FindingView {
+    pub id: String,
+    pub run_id: String,
+    pub shard_id: String,
+    pub rule_id: String,
+    pub rule_name: Option<String>,
+    /// `critical` | `high` | `medium` | `low` | `info`.
+    pub severity: String,
+    pub raw_severity: Option<String>,
+    pub message: String,
+    /// `uri`, `line`, `column`, `url`, `selector`, `component`, `html`…
+    #[cfg_attr(test, ts(type = "Record<string, unknown>"))]
+    pub location: Value,
+    pub fingerprint: String,
+    pub standard_refs: Vec<String>,
+    pub help_uri: Option<String>,
+    /// `tool`, `tags`, `needsReview`, `suppressed`, `wcagLevel`…
+    #[cfg_attr(test, ts(type = "Record<string, unknown>"))]
+    pub attributes: Value,
+    pub triage: Option<TriageEvent>,
+    pub is_new: bool,
+}
+
+/// A metric as the run detail shows it.
+#[cfg_attr(test, derive(TS), ts(export))]
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MetricView {
+    pub id: String,
+    pub run_id: String,
+    pub shard_id: String,
+    pub name: String,
+    pub aggregation: Option<String>,
+    pub scope: Option<String>,
+    pub value: f64,
+    pub unit: Option<String>,
+    pub threshold: Option<String>,
+    /// None when there is no threshold.
+    pub passed: Option<bool>,
+    #[cfg_attr(test, ts(type = "Record<string, unknown>"))]
+    pub attributes: Value,
+}
+
+/// Rank of a severity, worst first, for the order of the lists.
+fn severity_rank(s: &str) -> usize {
+    SEVERITIES
+        .iter()
+        .position(|x| *x == s)
+        .unwrap_or(SEVERITIES.len())
+}
+
+/// The fingerprints of the previous run of the project from the same tool,
+/// or None if there is none (then nothing is new).
+fn previous_fingerprints(
+    conn: &Connection,
+    run_id: &str,
+) -> Result<Option<std::collections::HashSet<String>>, String> {
+    let previous: Option<String> = conn
+        .query_row(
+            "SELECT p.id FROM runs r JOIN runs p
+                ON p.project_id = r.project_id AND p.id <> r.id AND p.deleted_at IS NULL
+               AND coalesce(p.source_tool, '') = coalesce(r.source_tool, '')
+               AND (coalesce(p.started_at, p.created_at) < coalesce(r.started_at, r.created_at)
+                    OR (coalesce(p.started_at, p.created_at) = coalesce(r.started_at, r.created_at)
+                        AND p.id < r.id))
+             WHERE r.id = ?1 AND EXISTS (SELECT 1 FROM findings f WHERE f.run_id = p.id)
+             ORDER BY coalesce(p.started_at, p.created_at) DESC, p.id DESC LIMIT 1",
+            params![run_id],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(err)?;
+    let Some(previous) = previous else {
+        return Ok(None);
+    };
+    let mut stmt = conn
+        .prepare("SELECT DISTINCT fingerprint FROM findings WHERE run_id = ?1")
+        .map_err(err)?;
+    let set = stmt
+        .query_map(params![previous], |r| r.get::<_, String>(0))
+        .map_err(err)?
+        .collect::<rusqlite::Result<_>>()
+        .map_err(err)?;
+    Ok(Some(set))
+}
+
+/// The findings of a run the user owns, worst first (then rule and id).
+pub fn list_findings(
+    conn: &Connection,
+    run_id: &str,
+    user: &str,
+) -> Result<Vec<FindingView>, String> {
+    let Ok((project, _)) = super::owned_run(conn, run_id, user) else {
+        return Ok(Vec::new());
+    };
+    let triage = triage_current(conn, &project)?;
+    let previous = previous_fingerprints(conn, run_id)?;
+    let mut stmt = conn
+        .prepare("SELECT * FROM findings WHERE run_id = ?1")
+        .map_err(err)?;
+    let mut out = stmt
+        .query_map(params![run_id], |r| {
+            let s = |c: &str| r.get::<_, Option<String>>(c);
+            let refs: Vec<String> =
+                serde_json::from_str(&s("standard_refs")?.unwrap_or_default()).unwrap_or_default();
+            Ok(FindingView {
+                id: r.get("id")?,
+                run_id: r.get("run_id")?,
+                shard_id: r.get("shard_id")?,
+                rule_id: r.get("rule_id")?,
+                rule_name: s("rule_name")?,
+                severity: r.get("severity")?,
+                raw_severity: s("raw_severity")?,
+                message: r.get("message")?,
+                location: json_of(s("location")?),
+                fingerprint: r.get("fingerprint")?,
+                standard_refs: refs,
+                help_uri: s("help_uri")?,
+                attributes: json_of(s("attributes")?),
+                triage: None,
+                is_new: false,
+            })
+        })
+        .map_err(err)?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(err)?;
+    for f in &mut out {
+        f.triage = triage.get(&f.fingerprint).cloned();
+        f.is_new = previous
+            .as_ref()
+            .is_some_and(|set| !set.contains(&f.fingerprint));
+    }
+    out.sort_by(|a, b| {
+        severity_rank(&a.severity)
+            .cmp(&severity_rank(&b.severity))
+            .then_with(|| a.rule_id.cmp(&b.rule_id))
+            .then_with(|| a.id.cmp(&b.id))
+    });
+    Ok(out)
+}
+
+/// The metrics of a run the user owns: failed thresholds first, then by
+/// name, scope and aggregation.
+pub fn list_metrics(
+    conn: &Connection,
+    run_id: &str,
+    user: &str,
+) -> Result<Vec<MetricView>, String> {
+    if super::owned_run(conn, run_id, user).is_err() {
+        return Ok(Vec::new());
+    }
+    let mut stmt = conn
+        .prepare(
+            "SELECT * FROM metrics WHERE run_id = ?1
+              ORDER BY (passed = 0) DESC, name, coalesce(scope, ''), coalesce(aggregation, ''), id",
+        )
+        .map_err(err)?;
+    let out = stmt
+        .query_map(params![run_id], |r| {
+            let s = |c: &str| r.get::<_, Option<String>>(c);
+            Ok(MetricView {
+                id: r.get("id")?,
+                run_id: r.get("run_id")?,
+                shard_id: r.get("shard_id")?,
+                name: r.get("name")?,
+                aggregation: s("aggregation")?,
+                scope: s("scope")?,
+                value: r.get("value")?,
+                unit: s("unit")?,
+                threshold: s("threshold")?,
+                passed: r.get("passed")?,
+                attributes: json_of(s("attributes")?),
+            })
+        })
+        .map_err(err)?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(err)?;
+    Ok(out)
+}
+
+// ---- commands -----------------------------------------------------------------
+
+#[cfg(feature = "tauri")]
+#[tauri::command]
+pub fn run_findings_list(
+    db: tauri::State<crate::db::Db>,
+    run_id: String,
+    user_id: String,
+) -> Result<Vec<FindingView>, String> {
+    db.with_conn(|conn| list_findings(conn, &run_id, &user_id))
+}
+
+#[cfg(feature = "tauri")]
+#[tauri::command]
+pub fn run_metrics_list(
+    db: tauri::State<crate::db::Db>,
+    run_id: String,
+    user_id: String,
+) -> Result<Vec<MetricView>, String> {
+    db.with_conn(|conn| list_metrics(conn, &run_id, &user_id))
+}
+
+/// A triage decision from the run detail (F4): returns the new current one.
+#[cfg(feature = "tauri")]
+#[tauri::command]
+#[allow(clippy::too_many_arguments)]
+pub fn finding_triage_set(
+    db: tauri::State<crate::db::Db>,
+    project_id: String,
+    user_id: String,
+    fingerprint: String,
+    state: String,
+    reason: Option<String>,
+    defect_id: Option<String>,
+) -> Result<TriageEvent, String> {
+    db.with_tx(|tx| {
+        triage_add(
+            tx,
+            &project_id,
+            &user_id,
+            &fingerprint,
+            &state,
+            reason.as_deref(),
+            defect_id.as_deref(),
+        )?;
+        triage_history(tx, &project_id, fingerprint.trim())?
+            .into_iter()
+            .next()
+            .ok_or_else(|| "invalid-triage: not stored".to_string())
+    })
+}
+
+#[cfg(feature = "tauri")]
+#[tauri::command]
+pub fn finding_triage_history(
+    db: tauri::State<crate::db::Db>,
+    project_id: String,
+    user_id: String,
+    fingerprint: String,
+) -> Result<Vec<TriageEvent>, String> {
+    db.with_conn(|conn| {
+        if !crate::project::owns(conn, &project_id, &user_id)? {
+            return Ok(Vec::new());
+        }
+        triage_history(conn, &project_id, &fingerprint)
+    })
 }

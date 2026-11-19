@@ -416,3 +416,86 @@ fn triage_waits_for_a_server_that_lists_findings() {
     sync::assume_server_features(&c, ALL_FEATURES);
     assert!(has_triage(&c));
 }
+
+fn with_sha(req: ReportImportRequest, sha: &str) -> ReportImportRequest {
+    serde_json::from_value(json!({
+        "projectId": req.project_id, "userId": req.user_id, "doc": req.doc,
+        "sha256": sha, "fileName": "report.json", "newRun": {"title": "CI"}
+    }))
+    .unwrap()
+}
+
+#[test]
+fn the_run_detail_lists_findings_worst_first_with_triage_and_what_is_new() {
+    let c = device();
+    let p = new_project(&c);
+    let doc = doc_of(normalized!("axe/normalized/checkout-broken.json"));
+    let first = import(&c, &new_run(&p, doc.clone())).unwrap();
+    // The first run of the tool: nothing is new.
+    let one = list_findings(&c, &first.run_id, U).unwrap();
+    assert_eq!(one.len(), 9);
+    assert!(one.iter().all(|f| !f.is_new));
+    let ranks: Vec<usize> = one.iter().map(|f| severity_rank(&f.severity)).collect();
+    assert!(ranks.windows(2).all(|w| w[0] <= w[1]), "{ranks:?}");
+    // A later run of the same tool where one finding moved to another node.
+    let mut later = doc;
+    later["findings"][0]["fingerprint"] = json!("pharos:moved");
+    let sha2 = "1111111111111111111111111111111111111111111111111111111111111111";
+    let raw = Stored {
+        sha256: sha2.into(),
+        size: 1,
+    };
+    let second = in_tx(&c, |tx| {
+        commit(tx, &with_sha(new_run(&p, later), sha2), &raw)
+    })
+    .unwrap();
+    let two = list_findings(&c, &second.run_id, U).unwrap();
+    let new: Vec<&str> = two
+        .iter()
+        .filter(|f| f.is_new)
+        .map(|f| f.fingerprint.as_str())
+        .collect();
+    assert_eq!(new, ["pharos:moved"]);
+    // A triage decision shows on every run with that fingerprint.
+    let fp = one[1].fingerprint.clone();
+    triage_add(
+        &c,
+        &p,
+        U,
+        &fp,
+        "accepted_risk",
+        Some("Diseño aprobado"),
+        None,
+    )
+    .unwrap();
+    for run in [&first.run_id, &second.run_id] {
+        let f = list_findings(&c, run, U).unwrap();
+        let t = f
+            .iter()
+            .find(|x| x.fingerprint == fp)
+            .unwrap()
+            .triage
+            .clone();
+        assert_eq!(t.map(|t| t.state), Some("accepted_risk".to_string()));
+    }
+    // Someone else sees nothing.
+    assert!(list_findings(&c, &first.run_id, "someone-else")
+        .unwrap()
+        .is_empty());
+}
+
+#[test]
+fn the_run_detail_lists_failed_thresholds_first() {
+    let c = device();
+    let p = new_project(&c);
+    let doc = doc_of(normalized!("k6/normalized/handle-summary.json"));
+    let out = import(&c, &new_run(&p, doc)).unwrap();
+    let m = list_metrics(&c, &out.run_id, U).unwrap();
+    assert_eq!(m.len(), 85);
+    assert_eq!(m[0].passed, Some(false));
+    assert_eq!(m[0].name, "http_req_failed");
+    assert!(m[1..].iter().all(|x| x.passed != Some(false)));
+    assert!(list_metrics(&c, &out.run_id, "someone-else")
+        .unwrap()
+        .is_empty());
+}
