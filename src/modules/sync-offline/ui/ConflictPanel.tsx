@@ -14,9 +14,11 @@ import { logSyncFailure } from "../api/syncFailure";
 import {
   conflictTitle,
   diffConflict,
+  mergeInfo,
   type ConflictResolution,
   type SyncConflict,
 } from "../domain/conflict";
+import { FieldMerge } from "./FieldMerge";
 import { KeyConflictList } from "./KeyConflictList";
 import { RejectedList } from "./RejectedList";
 import "./ConflictPanel.css";
@@ -27,8 +29,10 @@ function show(v: unknown): string {
 }
 
 /** Conflict panel (Phase 8C, spec §9): each entity edited here and on another
- *  device since the last sync, both versions side by side with the differing
- *  fields highlighted. The user keeps one version per entity. */
+ *  device since the last sync. Since SYNC-02 (ADR-0051) what does not collide
+ *  is already combined, and the person chooses only the keys that do; an
+ *  approval against new content, or a conflict without a merge, still shows
+ *  both versions side by side to keep one. The whole-entity buttons stay. */
 export function ConflictPanel({
   onClose,
   onResolved,
@@ -69,10 +73,14 @@ export function ConflictPanel({
     void load();
   }, []);
 
-  async function resolve(c: SyncConflict, resolution: ConflictResolution) {
+  async function resolve(
+    c: SyncConflict,
+    resolution: ConflictResolution,
+    choices?: Record<string, "local" | "remote">,
+  ) {
     setBusy(c.id);
     try {
-      await resolveConflict(c.id, resolution);
+      await resolveConflict(c.id, resolution, choices);
       toast(t("sync.conflict.resolved"));
       await load();
       onResolved();
@@ -136,6 +144,7 @@ export function ConflictPanel({
           const rows = diffConflict(c).filter(
             (d) => !onlyChanged || d.changed,
           );
+          const merge = mergeInfo(c);
           return (
             <li key={c.id} className="cp__item">
               <div className="cp__item-head">
@@ -146,6 +155,21 @@ export function ConflictPanel({
                 </span>
                 <span className="cp__name">{conflictTitle(c)}</span>
               </div>
+              {merge && "guard" in merge && (
+                <p className="cp__note">
+                  {t(`sync.conflict.guard.${merge.guard}`, {
+                    defaultValue: t("sync.conflict.guard.other"),
+                  })}
+                </p>
+              )}
+              {merge && "conflicts" in merge ? (
+                <FieldMerge
+                  origins={merge.origins}
+                  conflicts={merge.conflicts}
+                  busy={busy !== null}
+                  onApply={(choices) => void resolve(c, "merged", choices)}
+                />
+              ) : (
               <table className="cp__table">
                 <thead>
                   <tr>
@@ -194,6 +218,7 @@ export function ConflictPanel({
                   ))}
                 </tbody>
               </table>
+              )}
               <div className="cp__actions">
                 <button
                   type="button"
@@ -201,7 +226,9 @@ export function ConflictPanel({
                   disabled={busy !== null}
                   onClick={() => void resolve(c, "local")}
                 >
-                  {t("sync.conflict.keepLocal")}
+                  {merge && "conflicts" in merge
+                    ? t("sync.conflict.allLocal")
+                    : t("sync.conflict.keepLocal")}
                 </button>
                 <button
                   type="button"
@@ -209,7 +236,9 @@ export function ConflictPanel({
                   disabled={busy !== null}
                   onClick={() => void resolve(c, "remote")}
                 >
-                  {t("sync.conflict.keepRemote")}
+                  {merge && "conflicts" in merge
+                    ? t("sync.conflict.allRemote")
+                    : t("sync.conflict.keepRemote")}
                 </button>
               </div>
             </li>

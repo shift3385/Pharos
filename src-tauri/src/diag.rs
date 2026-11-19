@@ -431,6 +431,10 @@ struct DatabaseInfo {
     /// Counts of the evidence store; absent when the database is not open.
     #[serde(skip_serializing_if = "Option::is_none")]
     evidence: Option<EvidenceInfo>,
+    /// What the oplog and the audit log take, as counts (SYNC-10); absent
+    /// when the database is not open.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    sync_storage: Option<crate::oplog::SyncStorage>,
 }
 
 /// Evidence store counts (ADR-0014): numbers only.
@@ -575,6 +579,7 @@ fn build_bundle(
             defects_by_status: Some(crate::defects::counts_by_status(conn)?),
             open_error: None,
             evidence,
+            sync_storage: Some(crate::oplog::storage(conn)?),
         },
         None => DatabaseInfo {
             migrations: Vec::new(),
@@ -590,6 +595,7 @@ fn build_bundle(
             defects_by_status: None,
             open_error: Some(redact(open_error.as_deref().unwrap_or("database not open"))),
             evidence: None,
+            sync_storage: None,
         },
     };
     Ok(DiagnosticBundle {

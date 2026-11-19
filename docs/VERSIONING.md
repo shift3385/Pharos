@@ -296,6 +296,13 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      adjuntos ni plantillas (los retiene) y el servidor no se los da en el
      pull; un push que los traiga recibe 400 `blobs_unsupported`. Su
      contenido no viaja en el oplog: va por hash a `/blobs` antes del push.
+   - **Fusión por campo (SYNC-02, ADR-0051)**: sin puerta ni cambio de
+     forma. El cliente fusiona y envía un delta normal sobre la versión del
+     servidor, así que una app 0.5 sigue resolviendo por entidad y un
+     servidor 0.5 no nota nada. La migración local 0047 añade
+     `sync_base.base_payload` y `sync_conflicts.merge` (aditiva): los
+     cambios pendientes y los conflictos de antes de actualizar no tienen
+     base guardada y se resuelven por entidad una última vez.
    - **Lápidas de las revisiones de caso (SYNC-11, ADR-0051)**: sin puerta.
      Borrar un proyecto deja como lápidas sus `test_case_revision`
      (`payload.deletedWith`), y la migración del servidor 0028 hace lo mismo

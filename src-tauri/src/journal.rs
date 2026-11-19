@@ -348,6 +348,11 @@ pub fn record(conn: &Connection, change: Change) -> Result<(), String> {
             change.action == Action::Create,
         )?;
     }
+    // The first local change after a sync keeps the synced version: the base
+    // of a field-level merge if a conflict comes (SYNC-02, ADR-0051).
+    if let Some(before) = &change.before {
+        crate::sync::keep_base_payload(conn, change.entity, change.id, before)?;
+    }
     oplog::record(
         conn,
         change.entity,

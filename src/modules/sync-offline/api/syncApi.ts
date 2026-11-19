@@ -516,6 +516,16 @@ export async function syncNow(): Promise<SyncResult> {
       new CustomEvent("pharos:sync-skipped", { detail: { count: skipped } }),
     );
   }
+  // Conflicts merged field by field without asking (SYNC-02): one notice
+  // per sync, however many there were. Each is in the audit log.
+  const merged = await invoke<unknown[]>("sync_auto_merged_take", { userId }).catch(() => []);
+  if (Array.isArray(merged) && merged.length > 0) {
+    window.dispatchEvent(new CustomEvent("pharos:sync-merged", { detail: { count: merged.length } }));
+  }
+
+  // A sync that went through compacts the oplog rows the server already
+  // has, at most once a day (SYNC-10). Never fatal: it only frees space.
+  await invoke("oplog_compact", { userId }).catch((e: unknown) => logSyncFailure(e, "compact"));
 
   return { pushed, pulled, conflicts, skipped };
 }
@@ -540,10 +550,12 @@ export async function listConflicts(): Promise<SyncConflict[]> {
 }
 
 /** Keeps one version of the entity. `local` re-bases this device's version on
- *  the server one (pushed on the next sync); `remote` takes the server's. */
+ *  the server one (pushed on the next sync); `remote` takes the server's;
+ *  `merged` (SYNC-02) combines both with `choices` for the keys that collide. */
 export async function resolveConflict(
   id: string,
   resolution: ConflictResolution,
+  choices?: Record<string, "local" | "remote">,
 ): Promise<void> {
   const session = await getSession();
   if (!session) throw new Error("not-authenticated");
@@ -552,6 +564,7 @@ export async function resolveConflict(
     userId: session.userId,
     id,
     resolution,
+    choices: choices ?? null,
   });
   window.dispatchEvent(new CustomEvent("pharos:synced"));
 }

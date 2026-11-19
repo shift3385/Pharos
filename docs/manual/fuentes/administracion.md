@@ -103,6 +103,26 @@ workspace en el que trabajas y, debajo, tu rol en él. La lista
   pide confirmación y queda en la auditoría. En tu workspace Personal está
   siempre desactivada, porque trabajas solo. Las aprobaciones que ya existen
   no cambian.
+- **Cambios de dos sitios a la vez.** Si tú y otra persona (u otro equipo
+  tuyo) cambiáis el mismo elemento sin sincronizar entre medias, Pharos los
+  combina campo a campo: si cambiasteis campos distintos (tú el título, ella
+  la prioridad; tú un paso, ella otro), se queda con los dos y no pregunta.
+  Un aviso dice cuántos elementos se combinaron, y cada uno queda en la
+  auditoría como «Conflicto resuelto · Combinado».
+  - Solo pregunta por lo que choca: el mismo campo cambiado de dos formas,
+    un paso que uno borró y el otro editó, o los pasos reordenados de dos
+    maneras distintas. En el panel de conflictos eliges, campo a campo, «Mi
+    versión» o «Versión del servidor», y «Aplicar». «La mía en todo» y «La
+    del servidor en todo» siguen ahí.
+  - Un texto largo (una descripción) no se mezcla por líneas: si los dos lo
+    cambiasteis, eliges uno.
+  - Si uno aprobó o revisó el elemento y el otro cambió su contenido, eliges
+    una versión entera: una aprobación no puede cubrir un contenido que no
+    vio. Lo mismo al cerrar un ciclo que otro editaba.
+  - En la web pasa igual al guardar: si alguien cambió otros campos mientras
+    editabas, se combina y se guarda («Alguien cambió este elemento…»); si
+    cambió los mismos, un diálogo te deja elegir qué queda en cada uno, o
+    volver al formulario sin guardar.
 - **Rechazado por permisos.** Si cambias algo que tu rol ya no permite (por
   ejemplo, te cambiaron el rol mientras no tenías conexión), el servidor no
   lo guarda. El cambio espera en el panel de conflictos hasta que lo
@@ -200,8 +220,9 @@ acceso a los proyectos de nadie.
   web, escribe el nombre del modelo.
 - **Al cambiar de pestaña pregunta «¿Descartar los cambios?».** Hay ajustes
   sin guardar en la pestaña actual: guárdalos o descártalos.
-- **«Conflictos (N)» en el menú lateral.** El mismo dato cambió en dos
-  equipos. «Revisar conflictos» te deja elegir qué versión conservar.
+- **«Conflictos (N)» en el menú lateral.** El mismo campo cambió en dos
+  equipos (lo que no choca ya está combinado). «Revisar conflictos» te deja
+  elegir qué queda en cada campo, o una versión entera.
 - **«No se pudo leer la clave de recuperación.»** Pasa si el almacén de
   credenciales de Windows no está disponible. Vuelve a intentarlo; en la web
   no existe esta opción.

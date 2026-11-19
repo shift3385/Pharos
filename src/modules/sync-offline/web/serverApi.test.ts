@@ -7,6 +7,7 @@ import i18n from "i18next";
 import { ReportedError, TOAST_EVENT } from "@shared/ui/notify";
 import { DesktopOnlyError } from "@shared/platform";
 import { desktopOnly, forgetSeenRevisions, serverApi } from "./serverApi";
+import { listenForMergeAsks, MERGE_ASK_EVENT, type MergeAsk } from "./mergePrompt";
 
 const fetchMock = vi.fn();
 const toasts: string[] = [];
@@ -57,6 +58,70 @@ describe("serverApi", () => {
     expect(toasts).toEqual([i18n.t("sync.web.staleWrite")]);
     await serverApi.put("/api/projects/p1", "p1", { name: "Mine" });
     expect(sent(2).body.revision).toBe(3);
+  });
+
+  // SYNC-02 (ADR-0051): a stale write is merged field by field first.
+  it("an item changed elsewhere in other fields: the edit is combined and saved on top", async () => {
+    fetchMock.mockImplementationOnce(() =>
+      reply({ id: "r1", revision: 1, title: "Login", priority: "low", description: "a" }),
+    );
+    fetchMock.mockImplementationOnce(() =>
+      reply(
+        {
+          code: "stale_write",
+          message: "changed",
+          current: { id: "r1", revision: 2, title: "Login", priority: "high", description: "a" },
+        },
+        409,
+      ),
+    );
+    fetchMock.mockImplementationOnce(() => reply({ id: "r1", revision: 3 }));
+    await serverApi.get("/api/requirements/r1");
+    await serverApi.put("/api/requirements/r1", "r1", { title: "Login SSO", priority: "low", description: "a" });
+    expect(sent(2).body).toEqual({
+      input: { title: "Login SSO", priority: "high", description: "a" },
+      revision: 2,
+    });
+    expect(toasts).toEqual([i18n.t("sync.web.merged")]);
+  });
+
+  it("an item changed elsewhere in the same field: the user decides, as before", async () => {
+    fetchMock.mockImplementationOnce(() => reply({ id: "r1", revision: 1, title: "Login" }));
+    fetchMock.mockImplementationOnce(() =>
+      reply({ code: "stale_write", message: "changed", current: { id: "r1", revision: 2, title: "Inicio" } }, 409),
+    );
+    await serverApi.get("/api/requirements/r1");
+    await expect(serverApi.put("/api/requirements/r1", "r1", { title: "Login SSO" })).rejects.toBeInstanceOf(
+      ReportedError,
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(toasts).toEqual([i18n.t("sync.web.staleWrite")]);
+  });
+
+  it("the same field on both sides: the person chooses in the dialog, and it is saved", async () => {
+    const stop = listenForMergeAsks();
+    const answer = (e: Event) => {
+      const ask = (e as CustomEvent<MergeAsk>).detail;
+      expect(ask.conflicts.map((c) => c.key)).toEqual(["title"]);
+      ask.answer({ title: "local" });
+    };
+    window.addEventListener(MERGE_ASK_EVENT, answer);
+    try {
+      fetchMock.mockImplementationOnce(() => reply({ id: "r1", revision: 1, title: "Login", priority: "low" }));
+      fetchMock.mockImplementationOnce(() =>
+        reply(
+          { code: "stale_write", message: "changed", current: { id: "r1", revision: 2, title: "Inicio", priority: "high" } },
+          409,
+        ),
+      );
+      fetchMock.mockImplementationOnce(() => reply({ id: "r1", revision: 3 }));
+      await serverApi.get("/api/requirements/r1");
+      await serverApi.put("/api/requirements/r1", "r1", { title: "Login SSO", priority: "low" });
+      expect(sent(2).body).toEqual({ input: { title: "Login SSO", priority: "high" }, revision: 2 });
+    } finally {
+      stop();
+      window.removeEventListener(MERGE_ASK_EVENT, answer);
+    }
   });
 
   it("an item deleted elsewhere has its own notice and is not taken as a newer version", async () => {

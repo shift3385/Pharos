@@ -1312,6 +1312,10 @@ const EXEMPT: &[(&str, &str)] = &[
     ),
     ("oplog::oplog_pending_count", "read"),
     (
+        "oplog::oplog_compact",
+        "sync bookkeeping: deletes oplog rows the server already has (SYNC-10); no data changes",
+    ),
+    (
         "sync::oplog_pending",
         "read (stamps an HLC on pre-0011 rows only)",
     ),
@@ -1345,6 +1349,10 @@ const EXEMPT: &[(&str, &str)] = &[
         "sync bookkeeping: the refused change never reached the server and the server's version comes back",
     ),
     ("sync::sync_conflicts_list", "read"),
+    (
+        "sync::sync_auto_merged_take",
+        "reads and clears the list behind the merge notice; each merge is audited where it happens (SYNC-02)",
+    ),
     ("audit_read::audit_facets", "read"),
     ("audit_read::audit_verify", "read: checks the chains"),
     (
