@@ -14,7 +14,9 @@ export type SourceFormat =
   | "pharos_run_json"
   | "sarif"
   | "k6"
-  | "axe";
+  | "axe"
+  | "allure"
+  | "trx";
 
 export type ResultStatus = PharosRunResult["status"];
 /** The document a parser builds: Pharos Run JSON without the parts the four
@@ -226,9 +228,13 @@ export function uniqueTags(tags: Iterable<string>): string[] {
   return [...new Set([...tags].map((t) => t.trim()).filter(Boolean))];
 }
 
+/** Formats the 1.0.0 document cannot name (ING-07): their documents say
+ *  1.1.0; the others keep 1.0.0, so their snapshots and ids do not move. */
+const SINCE_1_1: readonly SourceFormat[] = ["allure", "trx"];
+
 export function emptyDoc(format: SourceFormat): ImportDoc {
   return {
-    schemaVersion: "1.0.0",
+    schemaVersion: SINCE_1_1.includes(format) ? "1.1.0" : "1.0.0",
     run: { trigger: "import" },
     shards: [{ ref: "s1", sourceFormat: format, normalizerVersion: NORMALIZER_VERSION }],
     results: [],

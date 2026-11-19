@@ -12,7 +12,7 @@ concreta de pruebas, y puede salir de tres sitios:
 - **De un ciclo:** «Ejecutar» crea un run por configuración (capítulo 9).
 - **A mano:** «Nuevo run manual», con los casos que elijas (capítulo 11).
 - **De tu automatización:** «Importar informe» lee los resultados de
-  Playwright, Cucumber, JUnit o CTRF, los hallazgos de un SARIF (Semgrep,
+  Playwright, Cucumber, JUnit, CTRF o .NET (TRX), los hallazgos de un SARIF (Semgrep,
   Trivy, ZAP, CodeQL, ESLint…) o de axe, y las métricas del resumen de k6.
 
 Al importar, Pharos enlaza cada test con su caso por la clave del caso. Los
@@ -55,6 +55,7 @@ hay algo que mostrar:
 | JSON de Playwright | Tag del test (`@PH-001`) o la anotación `test_id` |
 | CTRF | Sus `tags` |
 | JUnit XML | Propiedad `test_id` del `<testcase>` (`<property name="test_id" value="PH-001"/>`) o las propiedades `tag` / `tags`. JUnit no tiene tags propios, así que `@PH-001` en el nombre del test no basta |
+| TRX (.NET) | La categoría del test: `[TestCategory("PH-001")]` (NUnit `[Category]`) |
 | Pharos Run JSON | Sus `tags` |
 
 El detalle de cada formato está en [Formatos de importación](../formats/importers.md).

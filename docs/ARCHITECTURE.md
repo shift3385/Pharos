@@ -503,8 +503,9 @@ Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
   server that lists `runs` (`sync::server_takes_runs`; the diagnostics count
   them in `heldBackRuns`). A project delete soft-deletes runs, items and
   mappings here and tombstones all five on the server.
-- **Pharos Run JSON 1.0.0** (`packages/formats/src/`, the `@pharos/formats`
-  package; ADR-0053): zod schema,
+- **Pharos Run JSON 1.1.0** (`packages/formats/src/`, the `@pharos/formats`
+  package; ADR-0053; 1.1.0 adds the `allure` and `trx` source formats of
+  ING-07, and only their documents say 1.1.0): zod schema,
   `parsePharosRun` and the generated JSON Schema
   `docs/formats/pharos-run-1.schema.json`. `results[]` is a superset of CTRF
   `results.tests[]`. `findings[]` and `metrics[]` are stored since ING-06

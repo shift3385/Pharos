@@ -31,7 +31,7 @@ const BOM = String.fromCharCode(0xfeff);
 
 export type ReportParser = (text: string) => Promise<ParsedUpload>;
 
-/** Formats `?format=` accepts. `allure` and `trx` come with track F (F6). */
+/** Formats `?format=` accepts. `allure` comes with track F (F6). */
 export const UPLOAD_FORMATS = [
   "pharos_run_json",
   "junit",
@@ -45,7 +45,7 @@ export const UPLOAD_FORMATS = [
   "trx",
 ] as const;
 export type UploadFormat = (typeof UPLOAD_FORMATS)[number];
-const NOT_YET: readonly string[] = ["allure", "trx"];
+const NOT_YET: readonly string[] = ["allure"];
 
 export const UploadErrors = {
   unsupported: (format: string) =>

@@ -36,8 +36,8 @@ export const errorSchema = z
 
 const optText = (max: number) => z.string().trim().min(1).max(max).optional();
 
-/** Formats of `?format=` (ADR-0052 §2). `allure` and `trx` answer 422
- *  `unsupported_format` until track F ships their parsers. */
+/** Formats of `?format=` (ADR-0052 §2). `allure` answers 422
+ *  `unsupported_format` until track F ships its parser. */
 export const uploadFormatSchema = z.enum([
   "pharos_run_json",
   "junit",

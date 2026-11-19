@@ -2115,3 +2115,26 @@ fn api_import_interop_vectors() {
         "regenerate with UPDATE_API_IMPORT_VECTORS=1"
     );
 }
+
+// ---- ING-07: TRX and Allure documents (Pharos Run JSON 1.1.0) ----------------------
+
+#[test]
+fn a_trx_document_of_format_1_1_imports_its_results() {
+    let c = device();
+    let p = new_project(&c);
+    let doc = doc_of(include_str!(
+        "../../../../packages/formats/src/fixtures/trx/normalized/dotnet-xunitv3.trx.json"
+    ));
+    assert_eq!(doc["schemaVersion"], "1.1.0");
+    let out = import(&c, &new_run(&p, doc)).unwrap();
+    let results = list_results(&c, &out.run_id, U).unwrap();
+    assert_eq!(results.len(), 4);
+    let format: String = c
+        .query_row(
+            "SELECT source_format FROM run_shards WHERE run_id = ?1",
+            params![out.run_id],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(format, "trx");
+}
