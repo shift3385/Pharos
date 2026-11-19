@@ -173,4 +173,10 @@
   - plantillas en `docs/integraciones/github-actions/` (un PR y una matriz) con todas las acciones fijadas por SHA, sacado con `gh api` del commit de cada versión. La de `pharos watch` llega con L3;
   - `scripts/actions-pinned.test.mjs` comprueba los pines de `.github/` y de las plantillas, dentro de `test:scripts`;
   - `scripts/int04-smoke.mjs` (14 comprobaciones en local, puerto 3120, BD `pharos_test_db_int04`) y el workflow `pharos-selftest.yml`: en cada PR que toca la acción, la subida o los parsers, el servidor y Postgres arrancan dentro del runner, y la acción de la rama sube los cuatro formatos (decisión 6).
-- **L3, L6b:** pendientes.
+- **L6b · «Conectar CI» en la app:**
+  - en «Workspace › Integraciones», entre los tokens y los webhooks, el paso de GitHub Actions listo para copiar: proyecto y formatos a elegir. Lo construye `buildCiSnippet()` (`integrations/model/ciSnippet.ts`), una función pura con tests, uno de ellos para que nunca lleve un token;
+  - la acción se fija por el SHA completo que la compilación conoce (`APP_BUILD.actionSha`, de `vite.config.ts`), solo si el commit está en `main` o en una etiqueta de versión, es decir, en GitHub. Si no, como en una rama de integración local, muestra `<SHA-de-40-caracteres>` con una nota;
+  - el diálogo «Token creado» de la pista A ya no trae un ejemplo provisional: remite a «Conectar CI» (token de proyecto) o a `pharos login` (token personal);
+  - «Mi perfil › Tokens personales» enseña «Usar en el CLI»: el comando `pharos login --server …`, sin el token;
+  - el recorrido y el capítulo del manual van con el de «Integraciones» (§ ROADMAP, INT-02 A4).
+- **L3:** pendiente.

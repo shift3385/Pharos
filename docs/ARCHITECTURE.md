@@ -2377,6 +2377,12 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   the parsers) starts Postgres and the API inside the runner with
   `scripts/int04-smoke.mjs serve`, runs the action on JUnit, SARIF, k6 and axe,
   and checks the run with `verify`.
+  In the app, «Workspace › Integraciones › Conectar CI»
+  (`integrations/ui/ConnectCiSection.tsx`) builds that step with
+  `buildCiSnippet()` (`integrations/model/ciSnippet.ts`, never a token). The
+  action is pinned by `APP_BUILD.actionSha`, which `vite.config.ts` sets to the
+  full commit only when it is on GitHub (main, a release tag or an ancestor of
+  `origin/main`); otherwise the snippet shows a placeholder.
 - **The CLI in the installer (INT-01 L5, ADR-0054 §4):** `build:installer`
   first builds `pharos-cli` (release) and stages it as
   `src-tauri/bin/pharos.exe` (ignored by git), then runs `tauri build --config
