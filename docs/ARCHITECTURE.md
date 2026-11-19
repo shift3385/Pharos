@@ -2370,6 +2370,16 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   `main` and on `v*` tags and uploads `pharos-<version>-<sha7>-windows` (30
   days). The NSIS bundle installs for the current user and downloads WebView2
   only if it is missing.
+- **GitHub Actions (INT-04, ADR-0054 §5):** `.github/actions/pharos-report`
+  is a composite action (`action.yml` + `upload.sh`, bash and curl, jq or
+  node for JSON) that uploads each report to the API v1 with a project token
+  (stdin to curl, masked). Templates for users are in
+  `docs/integraciones/github-actions/`. `scripts/actions-pinned.test.mjs`
+  checks that every `uses:` there and in `.github/` is a full SHA. The
+  `pharos-selftest.yml` workflow (PRs touching the action, the API upload or
+  the parsers) starts Postgres and the API inside the runner with
+  `scripts/int04-smoke.mjs serve`, runs the action on JUnit, SARIF, k6 and axe,
+  and checks the run with `verify`.
 - **The CLI in the installer (INT-01 L5, ADR-0054 §4):** `build:installer`
   first builds `pharos-cli` (release) and stages it as
   `src-tauri/bin/pharos.exe` (ignored by git), then runs `tauri build --config

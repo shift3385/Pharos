@@ -165,4 +165,12 @@
   - los textos de `db-in-use` ya no piden cerrarla: ese código solo indica que otro proceso migra o convierte la carpeta;
   - `db-busy` sale con el código 6 sin reintentos propios;
   - **prueba de dos procesos:** el binario de tests se relanza como hijo y hace un `pharos upload` real mientras el padre tiene la BD abierta (como la app) e importa a la vez. Quedan los dos runs, con claves distintas, y la conexión del padre ve el del hijo sin reabrir.
-- **L3, L6:** pendientes.
+- **L6a · Acción y plantillas (INT-04):**
+  - `.github/actions/pharos-report`: acción compuesta, `action.yml` más `upload.sh`, que el smoke ejecuta tal cual. Usa bash + curl y lee JSON con `jq` o, si no hay, con `node`;
+  - el token llega a curl por stdin (`-K -`), enmascarado, sin redirecciones;
+  - en un PR desde un fork, sin secretos, avisa y no falla;
+  - el mismo ajuste que L2: con varios ficheros y sin `externalId`, crea antes el run;
+  - plantillas en `docs/integraciones/github-actions/` (un PR y una matriz) con todas las acciones fijadas por SHA, sacado con `gh api` del commit de cada versión. La de `pharos watch` llega con L3;
+  - `scripts/actions-pinned.test.mjs` comprueba los pines de `.github/` y de las plantillas, dentro de `test:scripts`;
+  - `scripts/int04-smoke.mjs` (14 comprobaciones en local, puerto 3120, BD `pharos_test_db_int04`) y el workflow `pharos-selftest.yml`: en cada PR que toca la acción, la subida o los parsers, el servidor y Postgres arrancan dentro del runner, y la acción de la rama sube los cuatro formatos (decisión 6).
+- **L3, L6b:** pendientes.

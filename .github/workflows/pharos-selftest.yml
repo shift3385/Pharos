@@ -1,0 +1,88 @@
+# INT-04 self-test (ADR-0054 §5, decision 6): a real pull request reports
+# JUnit, SARIF, k6 and axe to a real Pharos, the 0.6.0 exit criterion. The
+# server runs inside the runner (Postgres as a service, the API on port 3120,
+# a throwaway account and project token), so no server is exposed and no
+# secret is needed. It uses this branch's own `pharos-report` action.
+#
+# Only when the action, the API's upload or the parsers change (paths below),
+# to spend no Actions minutes on unrelated PRs.
+name: Pharos selftest
+
+on:
+  pull_request:
+    paths:
+      - ".github/actions/pharos-report/**"
+      - ".github/workflows/pharos-selftest.yml"
+      - "scripts/int04-smoke.mjs"
+      - "server/src/modules/api/**"
+      - "packages/formats/src/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pharos-selftest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  selftest:
+    name: pharos selftest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+      # The root has @pharos/formats' dependencies, which the server's upload needs.
+      - run: npm ci
+      - run: npm ci
+        working-directory: server
+      - name: Start Pharos on port 3120
+        run: node scripts/int04-smoke.mjs serve
+      - name: Report JUnit, SARIF, k6 and axe to Pharos
+        id: pharos
+        # This branch's own action, the one under test, from the checkout.
+        uses: ./.github/actions/pharos-report # zizmor: ignore[self-repository]
+        with:
+          server: ${{ env.PHAROS_URL }}
+          token: ${{ env.PHAROS_TOKEN }}
+          project: ${{ env.PHAROS_PROJECT }}
+          close: true
+          files: |
+            packages/formats/src/fixtures/ing01/single/pw-junit.xml
+            packages/formats/src/fixtures/sarif/eslint.sarif
+            packages/formats/src/fixtures/k6/summary-export.json
+            packages/formats/src/fixtures/axe/checkout-broken.json
+      - name: Check what Pharos stored
+        run: node scripts/int04-smoke.mjs verify
+        env:
+          PHAROS_RESULT_UPLOADED: ${{ steps.pharos.outputs.uploaded }}
+          PHAROS_RESULT_FAILED: ${{ steps.pharos.outputs.failed }}
+          PHAROS_RESULT_RUN_KEY: ${{ steps.pharos.outputs.run-key }}
+      - name: API log
+        if: failure()
+        run: cat e2e/results/int04/api.log || true
