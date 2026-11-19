@@ -1,0 +1,278 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Validaciones de Pharos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: one reading column; a sticky progress strip, then groups ordered by what each session needs. */
+:root {
+  --bg: #f5f7f8; --surface: #ffffff; --fg: #17222a; --muted: #5a6872; --line: #dbe2e6;
+  --accent: #0f6e7a; --accent-soft: #e2f1f2;
+  --ok: #1f7a46; --ok-soft: #e3f3e9; --fail: #b3261e; --fail-soft: #fbe7e5; --na: #6b6f76; --na-soft: #eceef0; --later: #8a5a00; --later-soft: #fbf0d9;
+  --f-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1619; --surface: #162126; --fg: #e4ecef; --muted: #98a7af; --line: #26343b;
+  --accent: #5cc3cf; --accent-soft: #15353a;
+  --ok: #6fd39a; --ok-soft: #173225; --fail: #f2948c; --fail-soft: #3a1c1a; --na: #a3a9b0; --na-soft: #242b30; --later: #f0c060; --later-soft: #3a2e14;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1619; --surface: #162126; --fg: #e4ecef; --muted: #98a7af; --line: #26343b;
+  --accent: #5cc3cf; --accent-soft: #15353a;
+  --ok: #6fd39a; --ok-soft: #173225; --fail: #f2948c; --fail-soft: #3a1c1a; --na: #a3a9b0; --na-soft: #242b30; --later: #f0c060; --later-soft: #3a2e14;
+  color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg) }
+.wrap { max-width: 860px; margin: 0 auto; display: grid; gap: 28px }
+h1 { font: 600 clamp(26px, 4vw, 34px)/1.15 var(--f-display); margin: 0; text-wrap: balance; letter-spacing: -0.01em }
+h2 { font: 600 20px/1.25 var(--f-display); margin: 0; text-wrap: balance }
+.lede { color: var(--muted); max-width: 65ch; margin: 8px 0 0 }
+.lede strong { color: var(--fg); font-weight: 600 }
+.strip { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 10px; border-bottom: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center }
+.bar { flex: 1 1 220px; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; display: flex }
+.bar span { display: block; height: 100% }
+.bar .b-ok { background: var(--ok) } .bar .b-fail { background: var(--fail) } .bar .b-na { background: var(--na) } .bar .b-later { background: var(--later) }
+.counts { display: flex; gap: 14px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; flex-wrap: wrap }
+.counts b { color: var(--fg); font-weight: 600 }
+.filter { display: flex; gap: 6px }
+.chip { font: 500 13px var(--f-body); border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 5px 10px; border-radius: 999px; cursor: pointer }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent) }
+.sync { font-size: 12px; color: var(--muted); width: 100% }
+section.group { display: grid; gap: 12px }
+.ghead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px }
+.need { color: var(--muted); font-size: 14px; margin: 2px 0 0; max-width: 65ch }
+.gcount { font: 500 13px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums }
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 10px; border-left: 4px solid var(--line) }
+.item[data-s="ok"] { border-left-color: var(--ok) } .item[data-s="fail"] { border-left-color: var(--fail) } .item[data-s="na"] { border-left-color: var(--na); opacity: .8 } .item[data-s="later"] { border-left-color: var(--later) }
+.itop { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap }
+.ids { font: 500 12px var(--f-mono); color: var(--accent); background: var(--accent-soft); padding: 2px 7px; border-radius: 4px; white-space: nowrap }
+.ititle { font-weight: 600; flex: 1 1 260px; min-width: 0 }
+.steps { margin: 0; padding-left: 20px; color: var(--fg); display: grid; gap: 3px; min-width: 0 }
+.steps li::marker { color: var(--muted) }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.st { font: 500 13px var(--f-body); border: 1px solid var(--line); background: transparent; color: var(--muted); padding: 5px 11px; border-radius: 6px; cursor: pointer }
+.st:hover { color: var(--fg); border-color: var(--muted) }
+.st[aria-pressed="true"][data-v="ok"] { background: var(--ok-soft); color: var(--ok); border-color: var(--ok) }
+.st[aria-pressed="true"][data-v="fail"] { background: var(--fail-soft); color: var(--fail); border-color: var(--fail) }
+.st[aria-pressed="true"][data-v="na"] { background: var(--na-soft); color: var(--na); border-color: var(--na) }
+.st[aria-pressed="true"][data-v="later"] { background: var(--later-soft); color: var(--later); border-color: var(--later) }
+.ver { font: 500 11px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin: 0 0 2px }
+.st:disabled { cursor: default; opacity: .6 }
+.note { width: 100%; min-height: 38px; resize: vertical; font: 14px/1.45 var(--f-body); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px }
+.note::placeholder { color: var(--muted) }
+.item[data-s="fail"] .note { border-color: var(--fail) }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.mine { background: var(--accent-soft); border-radius: 8px; padding: 14px 16px; font-size: 14px }
+.mine h2 { font-size: 16px; margin-bottom: 4px }
+.mine p { margin: 0; max-width: 65ch }
+footer { color: var(--muted); font-size: 13px; max-width: 65ch }
+@media (prefers-reduced-motion: no-preference) { .bar span { transition: width .3s ease } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Validaciones de Pharos</h1>
+    <p class="lede">Lo que solo puedes comprobar tú en la app para cerrar las versiones finales. Arriba, <strong>0.4.0</strong> (nuevo); debajo, lo que queda de <strong>0.3.0</strong>. Marca cada punto como <strong>Pasa</strong>, <strong>Falla</strong>, <strong>No aplica</strong> o <strong>Más adelante</strong> si ahora no puedes hacerlo; si falla, anota qué viste y lo convierto en una NC.</p>
+  </header>
+
+  <div class="strip" aria-live="polite">
+    <div class="bar" id="bar" aria-hidden="true"><span class="b-ok"></span><span class="b-fail"></span><span class="b-na"></span><span class="b-later"></span></div>
+    <div class="counts" id="counts"></div>
+    <div class="filter" role="group" aria-label="Mostrar">
+      <button class="chip" id="f-all" aria-pressed="true" type="button">Todo</button>
+      <button class="chip" id="f-pend" aria-pressed="false" type="button">Solo pendientes</button>
+    </div>
+    <div class="filter" role="group" aria-label="Versión">
+      <button class="chip" data-ver="" aria-pressed="true" type="button">Las dos</button>
+      <button class="chip" data-ver="0.4.0" aria-pressed="false" type="button">0.4.0</button>
+      <button class="chip" data-ver="0.3.0" aria-pressed="false" type="button">0.3.0</button>
+    </div>
+    <div class="sync" id="sync">Cargando lo que ya marcaste…</div>
+  </div>
+
+  <main id="groups" class="wrap" style="gap:34px"></main>
+
+  <div class="mine">
+    <h2>Lo hago yo, no tú</h2>
+    <p><b>BASE-14 · E2E:</b> en verde; es un check obligatorio del CI y pasa en cada PR, también en las betas de 0.3.0 y 0.4.0.</p>
+    <p><b>Instaladores:</b> <a href="https://github.com/shift3385/Pharos/actions/runs/43316574220" target="_blank" rel="noopener">v0.3.0-beta.1</a> y <a href="https://github.com/shift3385/Pharos/actions/runs/43328097896" target="_blank" rel="noopener">v0.4.0-beta.1</a> (sección «Artifacts»). Capturas del rediseño en <a href="https://claude.ai/artifact/KsmYigvo8zuZH77ucFG5Tp" target="_blank" rel="noopener">Capturas del rediseño</a>.</p>
+  </div>
+
+  <footer>Fuente: <code>docs/ROADMAP.md</code> §6 y las pistas de 0.4.0, en <code>main</code> 6f67a53 (2026-11-16). Lo que marques aquí se guarda para ti y para Claude, que lo lee para abrir las NC y para decidir las versiones finales.</footer>
+</div>
+
+<script>
+const GROUPS = [
+  {"id":"v4plan","v":"0.4.0","title":"Plan de pruebas completo","need":"La app con un proyecto que tenga plan. Cubre PLN-03, PLN-04, PLN-06 y PLN-07.","items":[{"id":"v4plan22","ids":"PLN-06","t":"El plan de 22 pasos","s":["Recorre los pasos nuevos: Supuestos y restricciones, Técnicas de prueba, Estimación y presupuesto (cálculo de tres puntos), Entrada, suspensión y reanudación, y Métricas y objetivos.","En Roles, rellena independencia y formación.","Guarda, cierra y vuelve a abrir el plan: todo sigue ahí."]},{"id":"v4metricas","ids":"PLN-06","t":"Métricas enlazadas a los criterios de salida","s":["En Métricas y objetivos crea «Tasa de éxito ≥ 95 %»: la unidad queda fija en %.","En Criterios de salida enlázala con «Medido por» y márcala Bloqueante; deja otro criterio como Orientativo."]},{"id":"v4aprob","ids":"PLN-07","t":"Aprobar el plan","s":["Pulsa «Aprobar versión N» y confirma: queda tu nombre y la fecha.","Cambia algo y guarda: avisa y el plan vuelve a «Revisado». El Historial lo muestra.","Exporta a PDF y .xlsx: la cabecera dice quién aprobó y cuándo."]},{"id":"v4pln0304","ids":"PLN-03 · PLN-04","t":"Guardar sin cambios e ID del documento","s":["Guarda sin cambiar nada: la versión no sube.","El plan tiene su propio ID de documento (TP-…), editable, y sale en el PDF y el .xlsx."]}]},
+  {"id":"v4cierre","v":"0.4.0","title":"Cerrar un ciclo y decidir","need":"Un ciclo con ejecuciones y, en el plan, un criterio de salida que no se cumpla. Es el criterio de salida de 0.4.0. Cubre DOC-01 y DOC-02.","items":[{"id":"v4gate","ids":"DOC-02","t":"«Cerrar ciclo…» con un criterio en «No cumple»","s":["Abre el ciclo y pulsa «Cerrar ciclo…».","El criterio que no se cumple pide una justificación (al menos 20 caracteres).","Elige el veredicto: Go, Go con riesgos o No-go.","Comprueba que desde «Editar» ya no se puede poner «Cerrado»."]},{"id":"v4decision","ids":"DOC-02","t":"La decisión en el informe de estado","s":["Abre el informe de estado del ciclo cerrado: la sección «Decisión de salida» trae el veredicto y la justificación.","Exporta: la hoja «Decisión» del .xlsx y el PDF la llevan."]},{"id":"v4informe","ids":"DOC-01","t":"El informe de cierre","s":["En la cabecera del ciclo cerrado pulsa «Informe de cierre»: tiene 11 secciones y la justificación aparece en la evaluación.","Escribe las lecciones aprendidas, guarda y aprueba.","Exporta a PDF y .xlsx."]},{"id":"v4reabrir","ids":"DOC-01","t":"Reabrir y volver a cerrar","s":["Reabre el ciclo y ciérralo otra vez: el informe conserva tus textos, pierde la aprobación y te avisa."]},{"id":"v4escape","ids":"DOC-06","t":"Un defecto escapado","s":["Después del cierre, marca un defecto como escapado (casilla en el editor del defecto).","En Inicio, «Tendencia de ciclos» lo cuenta."]}]},
+  {"id":"v4inicio","v":"0.4.0","title":"Inicio, riesgo y auditoría","need":"La app con datos de varios ciclos. Cubre DOC-06, RED-W4, TRZ-04 y AUD-01.","items":[{"id":"v4tendencia","ids":"DOC-06","t":"Tendencia de ciclos en Inicio","s":["El gadget aparece sin que la página haga scroll.","Con tu distribución guardada: o aparece, o un aviso te ofrece añadirlo.","Cambia la métrica principal con las mini gráficas."]},{"id":"v4comparar","ids":"RED-W4","t":"Comparar con el periodo anterior","s":["En el selector de periodo activa «Comparar con el periodo anterior».","Tasa de éxito muestra la diferencia en puntos; Ejecuciones diarias, el % y una línea gris punteada del periodo anterior."]},{"id":"v4bandas","ids":"TRZ-04","t":"Bandas de riesgo del proyecto","s":["En Ajustes del proyecto › Bandas de riesgo cambia los dos umbrales: la matriz 5×5 se actualiza.","En Trazabilidad, la banda de cada requisito sigue los umbrales nuevos."]},{"id":"v4ponderada","ids":"TRZ-04","t":"Cobertura ponderada por riesgo","s":["En Trazabilidad: el indicador «Cobertura ponderada» y las barritas por banda.","En el informe de estado, la sección de cobertura por riesgo trae las dos cifras ponderadas."]},{"id":"v4auditoria","ids":"AUD-01","t":"Administración › Auditoría","s":["Edita un caso y míralo arriba de la lista con su antes y después.","Filtra por proyecto y por tipo; «Ver todo su historial» lista solo ese elemento.","La cadena sale íntegra; exporta a .xlsx y a CSV y ábrelos en Excel."]},{"id":"v4web","ids":"Web","t":"Lo esencial en la versión web","s":["Repite en la web: cerrar un ciclo con justificación, abrir su informe de cierre y la pestaña Auditoría."]}]},
+  {"id":"v4equipos","v":"0.4.0","title":"Con el instalador o un segundo equipo","need":"El instalador de v0.4.0-beta.1 y, para el último punto, otro equipo o cuenta.","items":[{"id":"v4install","ids":"0.4.0-beta.1","t":"Instalar la beta encima de 0.3.0","s":["Instala v0.4.0-beta.1 encima de 0.3.0: los datos siguen y la versión visible es 0.4.0-beta.1."]},{"id":"v4sync","ids":"Sync","t":"Aprobaciones en otro equipo","s":["La aprobación del plan y la del informe de cierre se ven en el otro equipo tras sincronizar."]}]},
+  { id: "app", title: "Con la app instalada y tu cuenta", need: "Una sesión tranquila en la app de escritorio. No hace falta clave de IA ni otro equipo.", items: [
+    { id: "fase4", ids: "Fase 4", t: "Gherkin en las dos direcciones", s: ["Edita un caso en la vista Gherkin y en la de bloques, y comprueba que cada cambio se ve en la otra.", "Exporta el .feature y comprueba que es válido (que playwright-bdd o tu herramienta lo lee)."] },
+    { id: "fase6", ids: "Fase 6", t: "PDF nativo, importación y plantillas", s: ["Exporta un plan y un caso a PDF desde la app nativa y ábrelos.", "Importa un plan y unos casos.", "Crea un plan desde una plantilla."] },
+    { id: "fase9a", ids: "Fase 9A", t: "Panel de Administración", s: ["Recorre todas las pestañas de Administración.", "Cambia el tema a «Según el sistema» y mira las capacidades de IA con candado."] },
+    { id: "traza", ids: "Trazabilidad", t: "Requisitos, matriz y tags", s: ["En la app nativa, crea requisitos, vincúlalos a casos y revisa la matriz (todo y solo huecos).", "Filtra con playwright-bdd por los tags."] },
+    { id: "sec0102", ids: "SEC-01/02", t: "Guardado sin restos", s: ["Guarda varias veces desde la app.", "Abre la carpeta de datos y comprueba que no quedan archivos .tmp ni .new."] },
+    { id: "base08", ids: "BASE-08", t: "Exportar diagnóstico", s: ["Usa «Exportar diagnóstico» y abre el archivo.", "Comprueba que no lleva datos tuyos (nombres de proyectos, casos, correos)."] },
+    { id: "f1nativo", ids: "RED-F1", t: "El marco de la app al cambiar de tamaño", s: ["Estrecha la ventana: por debajo de 1280 px el menú lateral pasa a iconos y por debajo de 600 px a vista móvil, sin recargar.", "Contrae el menú lateral, cierra y reabre la app: lo recuerda.", "Entra en un proyecto (aparece el grupo «Proyecto activo») y abre el menú del usuario (idioma y cerrar sesión)."] },
+    { id: "v3nativo", ids: "RED-V3", t: "Casos en la app nativa", s: ["Ctrl P dentro del editor de casos.", "El botón «Atrás» del sistema desde un caso."] },
+    { id: "v1nativo", ids: "RED-V1", t: "Login, Inicio y Perfil en la app nativa", s: ["Login y registro en una ventana estrecha y baja, sin scroll al iniciar sesión.", "Periodo del Inicio (menú y hoja), selector de «Criterios de salida» y Preferencias."] },
+    { id: "alfa410", ids: "Alfa · 4.10", t: "El recorrido del rediseño completo", s: ["Proyectos y Ajustes (borrar un proyecto escribiendo su prefijo).", "Los 19 pasos del Plan.", "El aviso de cambios sin guardar en el Plan, en el editor de casos y en Administración."] },
+  ]},
+  { id: "ia", title: "Con tu clave de IA", need: "La app con tu clave real (Claude, Gemini u OpenAI) y un proyecto tuyo de verdad, para juzgar la calidad de lo que propone.", items: [
+    { id: "ia08", ids: "IA-08 · IA-11", t: "Claves y proveedores", s: ["Con cada proveedor que vayas a usar: «Probar» sin guardar y después «Guardar clave», que activa su proveedor."] },
+    { id: "ia0510", ids: "IA-05 · IA-10", t: "Casos y sugerencias desde un requisito", s: ["Genera casos desde un requisito y acepta algunos: quedan vinculados en la matriz.", "Pide riesgos, estrategia de automatización y precondiciones.", "Anota qué modelos devuelven JSON inválido a menudo."] },
+    { id: "ia1315", ids: "IA-13..15", t: "IA en el plan", s: ["Sugiere responsabilidades, criterios de cierre con su métrica y textos breves."] },
+    { id: "ia16", ids: "IA-16", t: "Revisión crítica de un caso", s: ["En un caso real: que proponga eliminar lo redundante y reformular lo ambiguo, que cada motivo nombre un defecto concreto y que no invente datos.", "Repite en un caso avanzado (debe detectar una precondición de flujo ya compartida) y en una checklist."] },
+    { id: "ia17", ids: "IA-17", t: "Requisitos desde un proyecto", s: ["Analiza la carpeta de un proyecto real y la del propio Pharos.", "El inventario excluye dependencias y secretos; cada propuesta cita archivos y líneas que existen; «Inferido» marca lo deducido; los duplicados propuestos lo son.", "Anota tokens, tiempo y coste por proveedor."] },
+    { id: "ia18", ids: "IA-18", t: "Requisitos desde diseños", s: ["Analiza capturas de una app, un PDF exportado de Figma, un .excalidraw y una carpeta de Claude Design.", "Cada propuesta cita su imagen; «Visto en el diseño» solo marca lo escrito; no inventa cifras; ignora un texto de la captura que dé órdenes.", "En el escritorio: pegar con Ctrl+V y «Elegir carpeta» funcionan."] },
+    { id: "ia19", ids: "IA-19", t: "La imagen de origen de un requisito", s: ["Aplica requisitos desde diseños con la casilla de guardar imágenes marcada.", "Abre uno y mira la imagen en su «Fuente», con la zona marcada."] },
+  ]},
+  { id: "ollama", title: "Con Ollama, sin internet", need: "Ollama instalado con un modelo de texto y otro de visión. Desconecta la red para la primera prueba.", items: [
+    { id: "fase7", ids: "Fase 7", t: "Asistencia sin internet", s: ["Sin red, usa la IA con Ollama en un caso y en el plan."] },
+    { id: "ollamaia", ids: "IA-05..18", t: "Las pruebas de IA con Ollama", s: ["Repite con Ollama lo esencial del grupo anterior: generar casos (IA-05/10), revisión crítica (IA-16), desde un proyecto (IA-17) y desde diseños con un modelo de visión (IA-18)."] },
+  ]},
+  { id: "dos", title: "Con dos cuentas o dos equipos", need: "Dos cuentas de prueba y, para la mayoría, un segundo equipo con Pharos instalado.", items: [
+    { id: "fix07", ids: "FIX-07", t: "Dos cuentas en el mismo equipo", s: ["Inicia sesión con una cuenta, sincroniza, cambia a la otra y comprueba que cada una ve solo lo suyo."] },
+    { id: "fix08b", ids: "FIX-08b", t: "Plantillas con dos cuentas", s: ["Crea plantillas con una cuenta y comprueba cómo se ven desde la otra."] },
+    { id: "pizarra", ids: "UX-27 · UX-28", t: "La pizarra de Inicio viaja con la cuenta", s: ["Personaliza el Inicio, cierra sesión, entra en otro equipo con la misma cuenta y comprueba que la distribución es la tuya."] },
+    { id: "fix05", ids: "FIX-05", t: "Borrar un proyecto en cascada", s: ["Borra un proyecto en un equipo y comprueba que en el otro desaparece con todo lo suyo."] },
+    { id: "dat01", ids: "DAT-01", t: "Dos equipos sin conexión", s: ["Crea casos en los dos equipos sin red, reconecta y sincroniza: no hay claves duplicadas."] },
+    { id: "sync06", ids: "SYNC-06", t: "Purga tras la retención", s: ["Pasado el plazo de retención, lo borrado se purga."] },
+    { id: "fase8", ids: "Fase 8", t: "Conflictos (8B y 8C)", s: ["Edita lo mismo en los dos equipos y resuelve el conflicto en el panel de la app nativa."] },
+    { id: "sec03", ids: "SEC-03", t: "Recuperar los datos con la clave", s: ["Exporta la clave de recuperación (Administración › Seguridad).", "Copia pharos.db.enc a otro equipo (o borra la entrada db-key del Administrador de credenciales tras guardar una copia del .enc) y recupera los datos con la clave.", "Prueba también una clave con una errata y la de otro equipo: deben fallar sin romper nada."] },
+  ]},
+  { id: "limpio", title: "Con un Windows 11 limpio", need: "Una máquina o VM con Windows 11 sin Pharos y el instalador NSIS que genera el CI.", items: [
+    { id: "base09", ids: "BASE-09 · Beta", t: "Instalar desde cero", s: ["Instala (sale el aviso de SmartScreen: el instalador no está firmado).", "Primer arranque y WebView2; la versión se ve; la carpeta de datos está donde dice la guía.", "Icono nuevo en la barra de tareas y en el instalador."] },
+    { id: "reinst", ids: "Beta", t: "Desinstalar, reinstalar y actualizar", s: ["Desinstala y reinstala.", "Actualiza encima de una versión anterior: los datos siguen y se ven con la interfaz nueva."] },
+    { id: "sec06", ids: "SEC-06", t: "Copia al migrar", s: ["Al actualizar con datos, queda una copia .bak-<versión>."] },
+  ]},
+  { id: "a11y", title: "Solo con teclado y lector de pantalla", need: "NVDA o el Narrador de Windows, y nada de ratón. Los puntos abiertos están en docs/accesibilidad/auditoria-wcag-0.1.0.md.", items: [
+    { id: "a11yplan", ids: "X1 · UX-05", t: "Plan y casos", s: ["Recorre el asistente del plan; guarda un plan con avisos y otro sin título.", "En el editor de casos, reordena pasos con Espacio y flechas."] },
+    { id: "a11ydlg", ids: "UX-01", t: "Diálogos solo con teclado y lector", s: ["Abre estos diálogos solo con el teclado: «Sugerir casos con IA» (en Casos), «Clave de recuperación» (Administración › Seguridad) y, si tienes un conflicto de sincronización, su panel (si no, ignóralo).", "Al abrir, el foco entra en el diálogo y el lector dice su título.", "Tab y Mayús+Tab recorren solo el diálogo, sin salirse a la página de detrás.", "Esc lo cierra y el foco vuelve al botón que lo abrió."] },
+  ]},
+  { id: "movil", title: "Con un móvil o una tableta", need: "Pharos web abierto en el teléfono o la tableta.", items: [
+    { id: "teclado", ids: "RED-V3", t: "Barra de palabras clave", s: ["Al editar Gherkin, la barra de palabras clave queda encima del teclado."] },
+    { id: "pestanas", ids: "RED-V1", t: "Pestañas del Inicio en el móvil", s: ["Las pestañas del Inicio se ven y funcionan en el teléfono."] },
+  ]},
+  { id: "capturas", title: "Revisar capturas", need: "Te las genero yo: el marco, Casos, Planificador, Trazabilidad, Login, Inicio y Perfil a 320, 390, 599, 600, 820, 1180, 1279, 1280 y 1440 px, en claro y oscuro.", items: [
+    { id: "capf1", ids: "RED-F1", t: "Capturas del marco de la app", s: ["Nada se corta ni se solapa en ningún ancho."] },
+    { id: "capv3", ids: "RED-V3", t: "Capturas de Casos, Planificador y Trazabilidad", s: ["Lista, editor en las tres vistas, menús de Prioridad y Estado, Gherkin en móvil; matriz con todo y solo huecos."] },
+    { id: "capv1", ids: "RED-V1", t: "Capturas de Login, Inicio y Perfil", s: ["Nada se corta ni se solapa en ningún ancho."] },
+  ]},
+];
+
+GROUPS.forEach(g => { g.v = g.v || "0.3.0"; });
+const ALL = GROUPS.flatMap(g => g.items);
+const state = {};       // id -> {s: "ok"|"fail"|"na"|"", note: ""}
+let db = null, canWrite = true, onlyPending = false;
+const $ = (s, r = document) => r.querySelector(s);
+const LABELS = [["ok", "Pasa"], ["fail", "Falla"], ["na", "No aplica"], ["later", "Más adelante"]];
+let onlyVer = "";
+
+function render() {
+  const root = $("#groups");
+  root.textContent = "";
+  for (const g of GROUPS) {
+    if (onlyVer && g.v !== onlyVer) continue;
+    const items = g.items.filter(i => !onlyPending || !(state[i.id]?.s));
+    const done = g.items.filter(i => state[i.id]?.s).length;
+    const sec = document.createElement("section");
+    sec.className = "group";
+    sec.innerHTML = `<div><p class="ver"></p><div class="ghead"><h2></h2><span class="gcount"></span></div><p class="need"></p></div>`;
+    $("h2", sec).textContent = g.title;
+    $(".ver", sec).textContent = "Versión " + g.v;
+    $(".gcount", sec).textContent = `${done}/${g.items.length}`;
+    $(".need", sec).textContent = g.need;
+    if (!items.length) { if (onlyPending) continue; }
+    for (const it of items) sec.appendChild(card(it));
+    root.appendChild(sec);
+  }
+  summary();
+}
+
+function card(it) {
+  const st = state[it.id] || { s: "", note: "" };
+  const el = document.createElement("article");
+  el.className = "item"; el.dataset.s = st.s || "";
+  el.innerHTML = `<div class="itop"><span class="ids"></span><span class="ititle"></span></div><ol class="steps"></ol><div class="actions"></div><textarea class="note" rows="1"></textarea>`;
+  $(".ids", el).textContent = it.ids;
+  $(".ititle", el).textContent = it.t;
+  for (const s of it.s) { const li = document.createElement("li"); li.textContent = s; $(".steps", el).appendChild(li); }
+  const acts = $(".actions", el);
+  for (const [v, label] of LABELS) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "st"; b.dataset.v = v; b.textContent = label;
+    b.setAttribute("aria-pressed", String(st.s === v)); b.disabled = !canWrite;
+    b.addEventListener("click", () => setState(it.id, { s: st.s === v ? "" : v }));
+    acts.appendChild(b);
+  }
+  const ta = $(".note", el);
+  ta.id = "note-" + it.id;
+  ta.setAttribute("aria-label", "Notas de " + it.t);
+  ta.placeholder = "Qué viste (si falla, con pasos para reproducirlo)";
+  ta.value = st.note || ""; ta.disabled = !canWrite;
+  ta.addEventListener("change", () => setState(it.id, { note: ta.value.trim() }));
+  return el;
+}
+
+function summary() {
+  const scope = onlyVer ? GROUPS.filter(g => g.v === onlyVer).flatMap(g => g.items) : ALL;
+  const n = scope.length;
+  const c = { ok: 0, fail: 0, na: 0, later: 0 };
+  for (const i of scope) { const s = state[i.id]?.s; if (s && s in c) c[s]++; }
+  const pend = n - c.ok - c.fail - c.na - c.later;
+  const [ok, fail, na, later] = $("#bar").children;
+  later.style.width = (c.later / n * 100) + "%";
+  ok.style.width = (c.ok / n * 100) + "%"; fail.style.width = (c.fail / n * 100) + "%"; na.style.width = (c.na / n * 100) + "%";
+  $("#counts").innerHTML = "";
+  for (const [k, v] of [["Pendientes", pend], ["Pasan", c.ok], ["Fallan", c.fail], ["No aplican", c.na], ["Más adelante", c.later]]) {
+    const s = document.createElement("span"); s.innerHTML = "<b></b> "; s.firstChild.textContent = v; s.append(k); $("#counts").appendChild(s);
+  }
+}
+
+const writing = {};
+async function setState(id, patch) {
+  const next = { s: "", note: "", ...state[id], ...patch, at: new Date().toISOString() };
+  state[id] = next;
+  render();
+  if (!db) return;
+  while (writing[id]) await writing[id];
+  writing[id] = db.collection("checks").doc(id).set(next)
+    .then(() => { $("#sync").textContent = "Guardado."; })
+    .catch(e => {
+      if (e && e.code === "invalid_argument") { canWrite = false; render(); $("#sync").textContent = "Solo lectura: no puedes cambiar esta lista."; }
+      else $("#sync").textContent = "No se pudo guardar el último cambio. Vuelve a marcarlo en un momento.";
+    })
+    .finally(() => { writing[id] = null; });
+}
+
+document.querySelectorAll("[data-ver]").forEach(b => b.addEventListener("click", () => { onlyVer = b.dataset.ver; document.querySelectorAll("[data-ver]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); render(); }));
+$("#f-all").addEventListener("click", () => { onlyPending = false; $("#f-all").setAttribute("aria-pressed", "true"); $("#f-pend").setAttribute("aria-pressed", "false"); render(); });
+$("#f-pend").addEventListener("click", () => { onlyPending = true; $("#f-all").setAttribute("aria-pressed", "false"); $("#f-pend").setAttribute("aria-pressed", "true"); render(); });
+
+render();
+
+(async () => {
+  try {
+    db = await (window.claude?.use ? window.claude.use("db") : null);
+    const user = await (window.claude?.use ? window.claude.use("user") : null);
+    if (user && user.can) { const w = await user.can("data.write"); if (w === false) canWrite = false; }
+  } catch { db = null; }
+  if (!db) { $("#sync").textContent = "Sin conexión con el almacén: lo que marques no se guardará."; return; }
+  const timer = setTimeout(() => { $("#sync").textContent = "Aún no llegan tus marcas; puede que lo que ves no esté al día."; }, 10000);
+  db.collection("checks").onSnapshot(snap => {
+    for (const d of snap.docs) { const v = d.data(); if (v) state[d.id] = { s: v.s || "", note: v.note || "" }; }
+    if (!snap.metadata.fromCache) { clearTimeout(timer); $("#sync").textContent = canWrite ? "Al día. Cada marca se guarda al momento." : "Solo lectura."; }
+    const active = document.activeElement;
+    if (!(active && active.classList.contains("note"))) render(); else summary();
+  }, () => { clearTimeout(timer); $("#sync").textContent = "Se perdió la conexión con el almacén. Recarga la página."; });
+})();
+</script>
+
+</body></html>

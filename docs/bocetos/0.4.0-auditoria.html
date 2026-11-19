@@ -1,0 +1,370 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Administración › Auditoría</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Propuesta AUD-01: cada boceto imita el panel de Administración de Pharos (pastillas agrupadas + tarjetas blancas). */
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --fg:#1b2433; --muted:#5d6878; --line:#d6dce5;
+  --navy:#13233b; --accent:#1f5fae; --accent-soft:#e3edf9;
+  --ok:#1f7a4d; --ok-soft:#e1f3ea; --warn:#9a5b00; --warn-soft:#fdf0d9; --bad:#b3261e; --bad-soft:#fbe4e2;
+  --agent:#6b3fa0; --agent-soft:#efe7f8;
+  --code-bg:#f5f7fa;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1522; --surface:#172234; --fg:#e4e9f1; --muted:#9aa6b8; --line:#2c3a50;
+  --navy:#0a1220; --accent:#6aa5ee; --accent-soft:#1d3352;
+  --ok:#5fcf97; --ok-soft:#163a2a; --warn:#f0b75a; --warn-soft:#3b2c12; --bad:#f08a82; --bad-soft:#3d1c1a;
+  --agent:#c3a0ee; --agent-soft:#2e2142; --code-bg:#111a29; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1522; --surface:#172234; --fg:#e4e9f1; --muted:#9aa6b8; --line:#2c3a50;
+  --navy:#0a1220; --accent:#6aa5ee; --accent-soft:#1d3352;
+  --ok:#5fcf97; --ok-soft:#163a2a; --warn:#f0b75a; --warn-soft:#3b2c12; --bad:#f08a82; --bad-soft:#3d1c1a;
+  --agent:#c3a0ee; --agent-soft:#2e2142; --code-bg:#111a29; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.55}
+.wrap{max-width:1100px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:40px}
+header.top{display:grid;gap:8px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:30px;margin:0;line-height:1.2;text-wrap:balance}
+h2{font-size:21px;margin:0 0 4px}
+h3{font-size:16px;margin:0}
+p{margin:0;max-width:75ch}
+.lead{color:var(--muted)}
+section{display:grid;gap:14px;min-width:0}
+.note{font-size:13.5px;color:var(--muted)}
+ul.tight,ol.tight{margin:0;padding-left:20px;display:grid;gap:5px}
+code,.mono{font-family:var(--mono);font-size:12.5px}
+.ids{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:4px;white-space:nowrap}
+
+/* Marco de la pantalla */
+.screen{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:14px;min-width:0;overflow:hidden}
+.screen .ttl{font-size:22px;font-weight:700}
+.screen .sub{font-size:13px;color:var(--muted)}
+.tabs{display:flex;gap:14px;align-items:flex-end;overflow-x:auto;padding-bottom:2px}
+.tg{display:grid;gap:4px}
+.tg .gl{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.tg .pills{display:flex;gap:4px}
+.pill{font-size:13px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);white-space:nowrap;color:var(--muted)}
+.pill.on{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:600}
+.pill.new{outline:2px dashed var(--accent);outline-offset:2px}
+.sep{width:1px;align-self:stretch;background:var(--line)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:12px;min-width:0;box-shadow:0 1px 2px rgba(10,20,40,.05)}
+
+/* Banner de integridad */
+.integ{display:flex;gap:12px;align-items:center;border-radius:10px;padding:10px 14px;flex-wrap:wrap}
+.integ.ok{background:var(--ok-soft);color:var(--ok)}
+.integ.bad{background:var(--bad-soft);color:var(--bad)}
+.integ .ic{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:var(--surface);flex:none}
+.integ.ok .ic{background:var(--ok)} .integ.bad .ic{background:var(--bad)}
+.integ b{font-weight:600}
+.integ .txt{flex:1;min-width:220px;font-size:14px}
+.integ .txt span{display:block;font-size:12.5px;opacity:.85}
+.btn{font-size:13px;border:1px solid var(--line);border-radius:6px;padding:5px 11px;background:var(--surface);color:var(--fg);white-space:nowrap;font-weight:500}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.link{border:none;background:none;color:var(--accent);padding:5px 4px}
+
+/* Filtros */
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.f{font-size:13px;border:1px solid var(--line);border-radius:6px;padding:5px 10px;background:var(--surface);white-space:nowrap}
+.f .k{color:var(--muted)}
+.f.set{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.search{flex:1;min-width:160px;color:var(--muted)}
+.right{margin-left:auto;display:flex;gap:6px}
+
+/* Tabla */
+.tbl{display:grid;font-size:13.5px;min-width:0;overflow-x:auto}
+.tr{display:grid;grid-template-columns:128px minmax(150px,1.3fr) 92px minmax(170px,1.6fr) minmax(150px,1.4fr) 76px;gap:10px;padding:9px 6px;border-bottom:1px solid var(--line);align-items:center;min-width:820px}
+.tr.h{font-size:12px;color:var(--muted);font-weight:600;border-bottom-width:2px}
+.tr.sel{background:var(--accent-soft)}
+.tr.broken{background:var(--bad-soft)}
+.when{font-variant-numeric:tabular-nums}
+.when span{display:block;font-size:11.5px;color:var(--muted)}
+.who{display:flex;gap:8px;align-items:center;min-width:0}
+.av{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:600;flex:none;background:var(--accent-soft);color:var(--accent)}
+.av.agent{background:var(--agent-soft);color:var(--agent);border-radius:6px}
+.av.sys{background:var(--code-bg);color:var(--muted);border-radius:6px}
+.who small{display:block;font-size:11.5px;color:var(--muted)}
+.act{font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;justify-self:start}
+.a-create{background:var(--ok-soft);color:var(--ok)}
+.a-update{background:var(--accent-soft);color:var(--accent)}
+.a-delete{background:var(--bad-soft);color:var(--bad)}
+.a-import,.a-execute{background:var(--warn-soft);color:var(--warn)}
+.ent small{display:block;font-size:11.5px;color:var(--muted)}
+.chg{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dev{font-size:11.5px;color:var(--muted)}
+.foot{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);flex-wrap:wrap;gap:8px}
+
+/* Detalle */
+.split{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:14px;align-items:start}
+@media (max-width:900px){.split{grid-template-columns:1fr}}
+.drawer{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:-6px 0 18px rgba(10,20,40,.08);padding:16px;display:grid;gap:12px;min-width:0}
+.drawer h4{margin:0;font-size:17px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;font-size:13px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.diff{display:grid;font-size:13px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.diff .r{display:grid;grid-template-columns:96px 1fr 1fr;border-bottom:1px solid var(--line)}
+.diff .r:last-child{border-bottom:none}
+.diff .r>div{padding:7px 9px;min-width:0;overflow-wrap:anywhere}
+.diff .hd{font-size:11.5px;color:var(--muted);font-weight:600;background:var(--code-bg)}
+.diff .fld{color:var(--muted);font-weight:500}
+.old{background:var(--bad-soft)} .old s{color:var(--bad);text-decoration-thickness:1px}
+.new{background:var(--ok-soft);color:var(--ok)}
+.empty{color:var(--muted);font-style:italic}
+.chainbox{background:var(--code-bg);border-radius:8px;padding:10px;font-size:12px;display:grid;gap:3px}
+.chainbox .mono{color:var(--muted);overflow-wrap:anywhere}
+.chainok{color:var(--ok);font-weight:600}
+
+/* Panel de cadenas */
+.chains{display:grid;gap:0;font-size:13.5px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.chains .c{display:grid;grid-template-columns:minmax(150px,1.4fr) 90px minmax(160px,2fr) 110px;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);align-items:center}
+.chains .c:last-child{border-bottom:none}
+.chains .c.h{font-size:12px;color:var(--muted);font-weight:600;background:var(--code-bg)}
+.st-ok{color:var(--ok);font-weight:600} .st-bad{color:var(--bad);font-weight:600}
+@media (max-width:640px){.chains .c{grid-template-columns:1fr 1fr}.chains .c.h{display:none}}
+
+/* Móvil */
+.phones{display:flex;gap:24px;flex-wrap:wrap}
+.phone{width:min(100%,340px);border:8px solid var(--navy);border-radius:28px;background:var(--bg);padding:14px 12px;display:grid;gap:10px;align-content:start}
+.mc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:5px;font-size:13px}
+.mc .top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.mc .muted{color:var(--muted);font-size:12px}
+.sheet{background:var(--surface);border-radius:16px 16px 0 0;border:1px solid var(--line);padding:12px;display:grid;gap:10px}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);justify-self:center}
+
+/* Plan */
+.plan{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:grid;gap:14px}
+.plan table{border-collapse:collapse;font-size:13.5px;width:100%}
+.plan td,.plan th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.plan th{color:var(--muted);font-weight:600;font-size:12.5px}
+.q{border-left:3px solid var(--accent);padding:8px 12px;background:var(--accent-soft);border-radius:0 8px 8px 0;font-size:14px}
+.scroll{overflow-x:auto}
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Pharos 0.4.0 · AUD-01 · propuesta para aprobar</div>
+  <h1>Administración › Auditoría</h1>
+  <p class="lead">El registro de auditoría ya existe desde 0.2.0 (ADR-0015): cada cambio deja un evento con quién, qué, cuándo, el antes y el después, encadenado con un hash. Falta la pantalla para consultarlo. Esta propuesta añade una pestaña <b>Auditoría</b> en Administración, en el escritorio y en la web, con filtros, el detalle de cada cambio, la comprobación de la cadena y la exportación a Excel o CSV.</p>
+</header>
+
+<!-- ============ A ============ -->
+<section>
+  <h2>A · La pestaña, con la cadena íntegra</h2>
+  <p class="note">Nueva pastilla <b>Auditoría</b> en el grupo «Cuenta y datos», tras Evidencias. Al abrirla se comprueba la cadena (unos milisegundos con miles de eventos) y el resultado queda arriba. Periodo por defecto: últimos 30 días. 50 eventos por página, los más recientes primero.</p>
+
+  <div class="screen">
+    <div><div class="ttl">Administración</div><div class="sub">Recursos, preferencias de la aplicación, tu cuenta y soporte.</div></div>
+    <div class="tabs">
+      <div class="tg"><div class="gl">Recursos</div><div class="pills"><span class="pill">Motor de IA</span><span class="pill">Plantillas 4</span></div></div>
+      <div class="sep"></div>
+      <div class="tg"><div class="gl">Aplicación</div><div class="pills"><span class="pill">General</span></div></div>
+      <div class="sep"></div>
+      <div class="tg"><div class="gl">Cuenta y datos</div><div class="pills"><span class="pill">Sincronización</span><span class="pill">Seguridad</span><span class="pill">Evidencias</span><span class="pill on new">Auditoría</span></div></div>
+      <div class="sep"></div>
+      <div class="tg"><div class="gl">Soporte</div><div class="pills"><span class="pill">Diagnóstico</span></div></div>
+    </div>
+
+    <div class="card">
+      <div class="integ ok">
+        <span class="ic">✓</span>
+        <div class="txt"><b>Registro íntegro.</b> 3 cadenas, 1.284 eventos comprobados.<span>Ningún evento se ha borrado, reordenado ni modificado. Comprobado hace un momento.</span></div>
+        <button class="btn">Ver cadenas</button><button class="btn">Comprobar de nuevo</button>
+      </div>
+
+      <div class="filters">
+        <span class="f set"><span class="k">Periodo:</span> Últimos 30 días ▾</span>
+        <span class="f"><span class="k">Quién:</span> Todos ▾</span>
+        <span class="f"><span class="k">Elemento:</span> Todos ▾</span>
+        <span class="f"><span class="k">Acción:</span> Todas ▾</span>
+        <span class="f"><span class="k">Proyecto:</span> Todos ▾</span>
+        <span class="f search">⌕ Buscar por clave (ATS_014, REQ-003…)</span>
+        <div class="right"><button class="btn">Exportar ▾</button></div>
+      </div>
+
+      <div class="tbl">
+        <div class="tr h"><div>Cuándo</div><div>Quién</div><div>Acción</div><div>Elemento</div><div>Cambios</div><div>Origen</div></div>
+        <div class="tr"><div class="when">12 nov 10:42<span>hace 5 min</span></div>
+          <div class="who"><span class="av agent">AI</span><div>Agente <span class="mono">planner-01</span><small>en nombre de Liomar R.</small></div></div>
+          <div><span class="act a-update">Editado</span></div>
+          <div class="ent">ATS_014 · Login con SSO<small>Caso de prueba · Portal clientes</small></div>
+          <div class="chg">Estado, Prioridad, Pasos</div><div class="dev">Este equipo</div></div>
+        <div class="tr"><div class="when">12 nov 10:31<span>hace 16 min</span></div>
+          <div class="who"><span class="av">LR</span><div>Liomar R.<small>tú</small></div></div>
+          <div><span class="act a-create">Creado</span></div>
+          <div class="ent">DEF-007 · Error 500 al exportar<small>Defecto · Portal clientes</small></div>
+          <div class="chg">9 campos</div><div class="dev">Web</div></div>
+        <div class="tr"><div class="when">12 nov 09:58<span>hace 49 min</span></div>
+          <div class="who"><span class="av">LR</span><div>Liomar R.<small>tú</small></div></div>
+          <div><span class="act a-import">Importado</span></div>
+          <div class="ent">Requisitos (CSV)<small>Importación · Portal clientes</small></div>
+          <div class="chg">42 creados · 3 actualizados</div><div class="dev">Este equipo</div></div>
+        <div class="tr"><div class="when">11 nov 18:20<span>ayer</span></div>
+          <div class="who"><span class="av">LR</span><div>Liomar R.<small>tú</small></div></div>
+          <div><span class="act a-execute">Ejecutado</span></div>
+          <div class="ent">Run #12 · Regresión 0.3<small>Ejecución · Portal clientes</small></div>
+          <div class="chg">ATS_014: Falla</div><div class="dev">Portátil</div></div>
+        <div class="tr"><div class="when">11 nov 17:02<span>ayer</span></div>
+          <div class="who"><span class="av sys">⚙</span><div>Sistema<small>sincronización</small></div></div>
+          <div><span class="act a-update">Conflicto resuelto</span></div>
+          <div class="ent">REQ-003 · Recuperar contraseña<small>Requisito · Portal clientes</small></div>
+          <div class="chg">Se quedó: la versión local</div><div class="dev">Este equipo</div></div>
+        <div class="tr"><div class="when">10 nov 12:15<span>hace 2 días</span></div>
+          <div class="who"><span class="av">LR</span><div>Liomar R.<small>tú</small></div></div>
+          <div><span class="act a-delete">Eliminado</span></div>
+          <div class="ent">Proyecto «Piloto viejo»<small>Proyecto</small></div>
+          <div class="chg">+ 18 casos, 2 ciclos en cascada</div><div class="dev">Este equipo</div></div>
+      </div>
+      <div class="foot"><span>1–50 de 312 eventos</span><span>‹ 1 2 3 … 7 ›</span></div>
+    </div>
+  </div>
+  <ul class="tight note">
+    <li><b>Quién</b>: el nombre de la cuenta (o «tú»); un agente lleva otro icono y «en nombre de»; el sistema dice qué componente (sincronización, migración, purga).</li>
+    <li><b>Origen</b>: «Este equipo», «Web» o el nombre corto de otro equipo (sus eventos llegan por sync).</li>
+    <li>Los filtros <b>Quién</b>, <b>Elemento</b> y <b>Proyecto</b> listan solo lo que aparece en el registro, no catálogos fijos. Los filtros viven en la URL (<code>/admin?tab=audit&amp;actor=…</code>), así un enlace abre la misma vista.</li>
+  </ul>
+</section>
+
+<!-- ============ B ============ -->
+<section>
+  <h2>B · Detalle de un evento: el antes y el después</h2>
+  <p class="note">Clic en una fila → panel lateral (en el móvil, hoja inferior). Una tabla campo a campo: lo que había tachado en rojo, lo nuevo en verde. Los textos largos (pasos, descripción) se comparan por líneas. «Ver todo su historial» filtra el registro por ese elemento.</p>
+  <div class="split">
+    <div class="card" style="opacity:.55">
+      <div class="tbl">
+        <div class="tr h"><div>Cuándo</div><div>Quién</div><div>Acción</div><div>Elemento</div><div>Cambios</div><div>Origen</div></div>
+        <div class="tr sel"><div class="when">12 nov 10:42</div><div class="who"><span class="av agent">AI</span><div>Agente planner-01</div></div><div><span class="act a-update">Editado</span></div><div class="ent">ATS_014 · Login con SSO</div><div class="chg">Estado, Prioridad, Pasos</div><div class="dev">Este equipo</div></div>
+        <div class="tr"><div class="when">12 nov 10:31</div><div class="who"><span class="av">LR</span><div>Liomar R.</div></div><div><span class="act a-create">Creado</span></div><div class="ent">DEF-007</div><div class="chg">9 campos</div><div class="dev">Web</div></div>
+      </div>
+    </div>
+    <aside class="drawer">
+      <h4><span class="act a-update">Editado</span> ATS_014 · Login con SSO</h4>
+      <dl class="kv">
+        <dt>Quién</dt><dd>Agente <span class="mono">planner-01</span>, en nombre de Liomar R.</dd>
+        <dt>Cuándo</dt><dd>12 nov 2026, 10:42:07</dd>
+        <dt>Elemento</dt><dd>Caso de prueba · Portal clientes</dd>
+        <dt>Origen</dt><dd>Este equipo</dd>
+      </dl>
+      <div class="diff">
+        <div class="r hd"><div>Campo</div><div>Antes</div><div>Después</div></div>
+        <div class="r"><div class="fld">Estado</div><div class="old"><s>Borrador</s></div><div class="new">Listo</div></div>
+        <div class="r"><div class="fld">Prioridad</div><div class="old"><s>Media</s></div><div class="new">Alta</div></div>
+        <div class="r"><div class="fld">Pasos</div><div class="old"><s>3. Pulsa «Entrar»</s></div><div class="new">3. Pulsa «Entrar con SSO»<br>4. Acepta el consentimiento</div></div>
+        <div class="r"><div class="fld">Etiquetas</div><div class="old"><span class="empty">vacío</span></div><div class="new">sso, smoke</div></div>
+      </div>
+      <div class="chainbox">
+        <div><span class="chainok">✓ Eslabón válido</span> · cadena «Este equipo», n.º 1.207</div>
+        <div class="mono">hash 9f3c…a1e2 · anterior 47b0…c9d8</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn">Ver todo su historial</button><button class="btn">Copiar como JSON</button></div>
+    </aside>
+  </div>
+  <ul class="tight note">
+    <li><b>Creado</b>: solo la columna «Después». <b>Eliminado</b>: solo «Antes» (el contenido completo que tenía).</li>
+    <li><b>Importado / borrado en cascada / ejecutado</b>: sin diff; muestra los recuentos del resumen (creados, actualizados, omitidos; casos y ciclos arrastrados…).</li>
+    <li><b>Redactado</b>: «El contenido se redactó el …»; el eslabón sigue verificando (ADR-0015).</li>
+    <li>Los nombres de campo y los valores de catálogo (estado, prioridad) se traducen; un campo desconocido se muestra con su clave.</li>
+  </ul>
+</section>
+
+<!-- ============ C ============ -->
+<section>
+  <h2>C · Si la cadena está rota</h2>
+  <p class="note">El banner pasa a rojo y dice dónde y por qué. «Ver evento» lleva a la fila marcada. «Ver cadenas» abre la lista de cadenas (una por equipo y cuenta; la web es otra).</p>
+  <div class="card">
+    <div class="integ bad">
+      <span class="ic">!</span>
+      <div class="txt"><b>La cadena del «Portátil» está rota en el evento n.º 213.</b> El contenido no coincide con su huella: alguien lo modificó fuera de Pharos.<span>Las otras 2 cadenas están íntegras. El registro no se repara solo: exporta el diagnóstico si necesitas investigarlo.</span></div>
+      <button class="btn">Ver evento</button><button class="btn">Ver cadenas</button>
+    </div>
+    <div class="chains">
+      <div class="c h"><div>Cadena</div><div>Eventos</div><div>Estado</div><div>Último evento</div></div>
+      <div class="c"><div>Este equipo</div><div class="u-num">1.031</div><div class="st-ok">✓ Íntegra</div><div>hace 5 min</div></div>
+      <div class="c"><div>Web</div><div>40</div><div class="st-ok">✓ Íntegra</div><div>hace 16 min</div></div>
+      <div class="c"><div>Portátil <span class="mono note">(a7c2…)</span></div><div>213</div><div class="st-bad">✕ Rota en n.º 213: contenido modificado</div><div>ayer</div></div>
+    </div>
+    <div class="tbl">
+      <div class="tr h"><div>Cuándo</div><div>Quién</div><div>Acción</div><div>Elemento</div><div>Cambios</div><div>Origen</div></div>
+      <div class="tr broken"><div class="when">11 nov 18:20</div><div class="who"><span class="av">LR</span><div>Liomar R.</div></div><div><span class="act a-execute">Ejecutado</span></div><div class="ent">⚠ Run #12 · Regresión 0.3</div><div class="chg">ATS_014: Falla</div><div class="dev">Portátil</div></div>
+    </div>
+  </div>
+  <ul class="tight note">
+    <li>Motivos que distingue (ya los detecta <code>verify_chain</code>): <b>falta un evento</b> (hueco en la numeración), <b>eslabón desenganchado</b>, <b>datos del evento modificados</b>, <b>contenido modificado</b>.</li>
+    <li>Una copia <code>.bak</code> restaurada a mano también se ve como rota (AUD-01c, 0.5.0); el texto de ayuda lo menciona.</li>
+  </ul>
+</section>
+
+<!-- ============ D ============ -->
+<section>
+  <h2>D · En el móvil (web)</h2>
+  <div class="phones">
+    <div class="phone">
+      <div class="integ ok" style="padding:8px 10px"><span class="ic">✓</span><div class="txt" style="min-width:0;font-size:13px"><b>Registro íntegro</b><span>3 cadenas · 1.284 eventos</span></div></div>
+      <div class="filters"><span class="f set">30 días ▾</span><span class="f">Filtros (0) ▾</span><span class="f">⤓</span></div>
+      <div class="mc"><div class="top"><span class="act a-update">Editado</span><span class="muted">10:42</span></div><b>ATS_014 · Login con SSO</b><span class="muted">Agente planner-01 · por Liomar R. · Este equipo</span></div>
+      <div class="mc"><div class="top"><span class="act a-create">Creado</span><span class="muted">10:31</span></div><b>DEF-007 · Error 500 al exportar</b><span class="muted">Liomar R. · Web</span></div>
+      <div class="mc"><div class="top"><span class="act a-import">Importado</span><span class="muted">09:58</span></div><b>Requisitos (CSV)</b><span class="muted">42 creados · 3 actualizados</span></div>
+    </div>
+    <div class="phone">
+      <div class="sheet">
+        <div class="grab"></div>
+        <b>Editado · ATS_014</b>
+        <span class="note">Agente planner-01, en nombre de Liomar R. · 12 nov 10:42</span>
+        <div class="diff">
+          <div class="r hd" style="grid-template-columns:80px 1fr 1fr"><div>Campo</div><div>Antes</div><div>Después</div></div>
+          <div class="r" style="grid-template-columns:80px 1fr 1fr"><div class="fld">Estado</div><div class="old"><s>Borrador</s></div><div class="new">Listo</div></div>
+          <div class="r" style="grid-template-columns:80px 1fr 1fr"><div class="fld">Prioridad</div><div class="old"><s>Media</s></div><div class="new">Alta</div></div>
+        </div>
+        <span class="note"><span class="chainok">✓ Eslabón válido</span> · n.º 1.207</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ E ============ -->
+<section>
+  <h2>E · Exportar</h2>
+  <p class="note">«Exportar ▾» → <b>Excel (.xlsx)</b> o <b>CSV</b>. Exporta <b>lo filtrado</b>, todas las páginas. Una fila por campo cambiado (así el antes/después se filtra en Excel), con: fecha UTC, quién, en nombre de, acción, tipo de elemento, clave, proyecto, campo, antes, después, origen, cadena, n.º, hash. El Excel lleva una segunda hoja «Integridad» con el resultado de la comprobación y la fecha. Usa <code>exceljs</code>, que ya está en el proyecto (informe de runs).</p>
+</section>
+
+<!-- ============ Plan ============ -->
+<section class="plan">
+  <h2>Plan de implementación</h2>
+
+  <h3>Quién ve qué (sin cambiar ADR-0015)</h3>
+  <ul class="tight">
+    <li>Cada cuenta ve <b>sus</b> eventos: en el escritorio, los de su cuenta y los que se quedan en el equipo (sistema, sin sesión); en la web, los documentos <code>audit_event</code> de su cuenta (los de la web y los que sus escritorios sincronizaron). Es lo que ADR-0015 da hasta que los roles se apliquen.</li>
+    <li>ADR-0015 reserva la auditoría al <b>Test Manager</b> desde 0.3.0, pero hoy el rol del perfil es declarativo y nada lo aplica (los roles llegan con TEN-01, 0.5.0). Propuesta: la pestaña se ve siempre con los datos propios, y la restricción por rol entra con TEN-01. Se anota en ADR-0015 como enmienda AUD-01 (no hace falta ADR nueva).</li>
+  </ul>
+
+  <h3>Lectura</h3>
+  <div class="scroll"><table>
+    <tr><th>Capa</th><th>Qué</th></tr>
+    <tr><td>Rust <code>audit.rs</code> + comandos</td><td><code>audit_list(filtro, página)</code> → filas + total; <code>audit_facets()</code> → actores, tipos de elemento, acciones y proyectos presentes (con nombres); <code>audit_verify()</code> → cada cadena visible con eventos, estado y motivo (usa el <code>verify_chain</code> que ya existe, quitando su <code>allow(dead_code)</code>). Sin migración local: los índices de 0019 bastan.</td></tr>
+    <tr><td>Servidor</td><td><code>GET /api/audit-events</code> (mismos filtros, paginado), <code>GET /api/audit-events/facets</code>, <code>GET /api/audit-events/verify</code> (usa <code>verifyChain</code> de <code>audit.chain.ts</code>). Solo lectura, con la sesión del usuario. Una migración de servidor con un índice parcial sobre <code>documents</code> (<code>entity = 'audit_event'</code>, por usuario y <code>at</code>): <b>0018</b>, la siguiente libre (0016 está reservada para IA-12).</td></tr>
+    <tr><td>Front</td><td><code>src/modules/admin</code>: <code>api/auditApi.ts</code> (Tauri o servidor según plataforma), <code>model/audit.ts</code> (filtros ↔ URL, etiquetas de actor, diff por líneas), <code>ui/tabs/AuditTab.tsx</code>, <code>AuditDetail.tsx</code>, <code>AuditIntegrity.tsx</code>, <code>export/auditExport.ts</code>. Reutiliza <code>DataTable</code>, <code>FilterMenuButton</code>/<code>FilterChips</code>, <code>DatePicker</code>, <code>Pagination</code>, <code>BottomSheet</code>, <code>saveFile</code>. i18n es/en.</td></tr>
+  </table></div>
+
+  <h3>Pruebas y documentación (en el mismo cambio)</h3>
+  <ul class="tight">
+    <li><code>cargo test</code>: filtros, paginación, quién ve qué, verificación con cadena íntegra y con cada tipo de rotura. Tests del servidor de las tres rutas (incluida la de otra cuenta: 404/vacío). Vitest/RTL de la pestaña, el detalle, los filtros en la URL y la exportación.</li>
+    <li>ROADMAP (fila AUD-01 → Hecho), <code>changes/AUD-01.md</code>, CHANGELOG, enmienda en ADR-0015, manual: nuevas secciones 15.17–15.19 (consultar, detalle, comprobar la cadena) en las fuentes y el tour de Administración, y la fila de la tabla de pestañas.</li>
+    <li><code>verify:static</code> y los tests; build de Tauri en el directorio de compilación compartido, tras comprobar el espacio en disco.</li>
+  </ul>
+
+  <h3>Fuera de alcance</h3>
+  <ul class="tight">
+    <li>Redactar contenido (SYNC-06), registrar lecturas (0.5.0), restricción por rol (TEN-01), reparar una cadena rota (AUD-01c).</li>
+    <li>Nada en el Inicio, la trazabilidad, el informe de cierre ni el cierre de ciclo.</li>
+  </ul>
+
+  <div class="q"><b>Para decidir:</b> (1) ¿la pestaña en «Cuenta y datos», tras Evidencias? (2) ¿visible para todos con sus propios eventos hasta TEN-01, o ya solo con el rol «Responsable de Pruebas» del perfil? (3) ¿periodo por defecto «últimos 30 días»? Recomiendo sí, todos con sus eventos, y sí.</div>
+</section>
+
+</div>
+
+</body></html>

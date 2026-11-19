@@ -1,0 +1,216 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Inventario de interfaz Pharos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: navy masthead band like Pharos's sidebar, then a two-column reference (palette rail + screen catalogue) that stacks on phones. Tokens mirror src/shared/theme/tokens.css. */
+:root {
+  --navy-900: #0b1f33; --navy-700: #14324f; --navy-500: #1f4e79; --navy-100: #e3eef7;
+  --accent: #f2a33c; --accent-contrast: #4a2e05;
+  --bg: #f7f8fa; --surface: #ffffff; --surface-2: #f1f4f8; --border: #e2e6eb; --border-input: #828c9a;
+  --text: #1c2530; --text-2: #5f6b7a; --muted: #616973;
+  --ok: #167859; --info: #2b6cac; --focus: #1f4e79;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", monospace;
+  --r-sm: 6px; --r-md: 8px; --r-lg: 12px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --navy-500: #6fa3cc; --navy-100: #193651;
+  --bg: #0d1620; --surface: #14202e; --surface-2: #1a2837; --border: #24344a; --border-input: #64758a;
+  --text: #e8edf2; --text-2: #93a3b5; --muted: #8491a0; --ok: #5dcaa5; --info: #6fb1ec; --focus: #f2a33c; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --navy-500: #6fa3cc; --navy-100: #193651;
+  --bg: #0d1620; --surface: #14202e; --surface-2: #1a2837; --border: #24344a; --border-input: #64758a;
+  --text: #e8edf2; --text-2: #93a3b5; --muted: #8491a0; --ok: #5dcaa5; --info: #6fb1ec; --focus: #f2a33c; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 var(--font-sans); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.mast { background: var(--navy-900); color: #e8edf2; }
+header.mast .wrap { padding-block: 36px 30px; display: grid; gap: 10px; }
+.eyebrow { font: 500 12px var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: #93a3b5; }
+h1 { margin: 0; font-size: clamp(26px, 4vw, 38px); line-height: 1.15; letter-spacing: -.01em; text-wrap: balance; }
+h1 .beam { color: var(--accent); }
+.lede { margin: 0; max-width: 68ch; color: #c9d4df; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.chip { font: 500 12px var(--font-mono); padding: 3px 10px; border-radius: 999px; border: 1px solid #2c4a68; color: #c9d4df; }
+.chip.amber { border-color: var(--accent); color: var(--accent); }
+main .wrap { padding-block: 28px 56px; display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 880px) { main .wrap { grid-template-columns: 1fr; } }
+aside { display: grid; gap: 20px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+@media (max-width: 880px) { aside { position: static; } }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.panel h2 { margin: 0; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); }
+.swatches { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sw { display: grid; gap: 4px; font: 12px var(--font-mono); color: var(--text-2); }
+.sw i { display: block; height: 34px; border-radius: var(--r-sm); border: 1px solid var(--border); }
+.sw b { font-weight: 500; color: var(--text); font-family: var(--font-sans); font-size: 12.5px; }
+.kv { display: grid; gap: 6px; font-size: 13.5px; }
+.kv div { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed var(--border); padding-bottom: 6px; }
+.kv code { font: 12.5px var(--font-mono); color: var(--navy-500); }
+.note { font-size: 13px; color: var(--text-2); margin: 0; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.toolbar h2 { margin: 0; font-size: 20px; }
+input[type=search] { font: inherit; padding: 8px 12px; border-radius: var(--r-md); border: 1px solid var(--border-input); background: var(--surface); color: var(--text); width: min(320px, 100%); }
+input:focus-visible, button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.screens { display: grid; gap: 14px; margin-top: 14px; }
+section.scr { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px 18px; display: grid; gap: 10px; min-width: 0; }
+.scr header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.scr h3 { margin: 0; font-size: 17px; }
+.route { font: 12px var(--font-mono); color: var(--muted); }
+.scr ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.scr li { max-width: 80ch; }
+.new { font: 600 10.5px var(--font-mono); letter-spacing: .05em; text-transform: uppercase; background: var(--navy-100); color: var(--navy-500); padding: 1px 6px; border-radius: 4px; margin-left: 4px; vertical-align: 1px; }
+.terms { display: flex; flex-wrap: wrap; gap: 6px; }
+.term { font: 12.5px var(--font-mono); padding: 4px 9px; border-radius: var(--r-sm); background: var(--surface-2); color: var(--text); border: 1px solid var(--border); cursor: pointer; }
+.term:hover { border-color: var(--accent); }
+.term.copied { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+.empty { color: var(--muted); font-size: 14px; }
+.tip { background: var(--navy-100); border-radius: var(--r-lg); padding: 14px 16px; font-size: 14.5px; color: var(--text); }
+.tip strong { color: var(--navy-500); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="mast"><div class="wrap">
+  <div class="eyebrow">Pharos · 0.1.0 · referencia de interfaz para diseño</div>
+  <h1>Lo que Pharos ya tiene en pantalla, <span class="beam">pieza por pieza</span></h1>
+  <p class="lede">App de escritorio (Tauri) para gestión de pruebas QA: barra lateral fija azul marino, tema “Faro Nocturno” claro y oscuro, interfaz en español e inglés, accesible WCAG 2.1 AA. Cada pantalla trae sus elementos y términos en inglés para buscar referencias en Dribbble o para pedírselas a un agente de diseño.</p>
+  <div class="chips"><span class="chip">Tauri 2 + React 18</span><span class="chip">Escritorio, también web</span><span class="chip">es / en</span><span class="chip">WCAG 2.1 AA</span><span class="chip amber">Estado en main 1f93e15 · 29 oct 2026</span></div>
+</div></header>
+
+<main><div class="wrap">
+  <aside>
+    <div class="panel">
+      <h2>Paleta del tema</h2>
+      <div class="swatches">
+        <div class="sw"><i style="background:#0b1f33"></i><b>Navy 900</b>#0B1F33 · barra lateral</div>
+        <div class="sw"><i style="background:#1f4e79"></i><b>Navy 500</b>#1F4E79 · activos</div>
+        <div class="sw"><i style="background:#f2a33c"></i><b>Ámbar</b>#F2A33C · acento, foco en navy</div>
+        <div class="sw"><i style="background:#e3eef7"></i><b>Navy 100</b>#E3EEF7 · distintivos</div>
+        <div class="sw"><i style="background:#f7f8fa"></i><b>Fondo claro</b>#F7F8FA</div>
+        <div class="sw"><i style="background:#0d1620"></i><b>Fondo oscuro</b>#0D1620</div>
+        <div class="sw"><i style="background:#1d9e75"></i><b>Éxito</b>#1D9E75</div>
+        <div class="sw"><i style="background:#d64545"></i><b>Error</b>#D64545</div>
+      </div>
+      <p class="note">Fuente única de colores: <code>src/shared/theme/tokens.css</code>. Los textos de estado usan variantes <code>-text</code> con contraste AA; los bordes de campo usan <code>--color-border-input</code> (≥3:1).</p>
+    </div>
+    <div class="panel">
+      <h2>Tipografía y forma</h2>
+      <div class="kv">
+        <div><span>Texto</span><code>Inter</code></div>
+        <div><span>Código y datos</span><code>JetBrains Mono</code></div>
+        <div><span>Radios</span><code>6 · 8 · 12 · pill</code></div>
+        <div><span>Foco</span><code>navy / ámbar sobre navy</code></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Vocabulario propio</h2>
+      <div class="kv">
+        <div><span>Requisito</span><code>REQ-001</code></div>
+        <div><span>Caso</span><code>ATS_001</code></div>
+        <div><span>Defecto</span><code>DEF-001</code></div>
+        <div><span>Etiquetas Gherkin</span><code>@REQ-xxx @TC-xxx</code></div>
+      </div>
+    </div>
+  </aside>
+
+  <div style="min-width:0">
+    <div class="toolbar">
+      <h2>Pantallas y componentes</h2>
+      <label for="q" class="visually"><input id="q" type="search" placeholder="Filtrar: kanban, matriz, diálogo…" aria-label="Filtrar pantallas y componentes"></label>
+    </div>
+    <p class="note" style="margin-top:6px">Toca un término para copiarlo. <span class="new">nuevo</span> marca lo que llegó con las olas 2 y 3.</p>
+    <div class="screens" id="screens"></div>
+    <p class="empty" id="empty" hidden>Nada coincide con el filtro.</p>
+    <div class="tip" style="margin-top:18px"><strong>Por dónde empezar en Dribbble:</strong> <code>test management tool</code> y <code>qa dashboard</code> son el género exacto de Pharos. Las pantallas con más margen de mejora visual son la matriz de trazabilidad, el editor dividido Editor | Gherkin y el panel de conflictos.</div>
+  </div>
+</div></main>
+
+<script>
+const S = [
+  { t: "Estructura general", r: "AppShell · Sidebar · Topbar", items: [
+    "Barra lateral fija: Inicio, Proyectos, Plantillas, Motor de IA, Administración, Perfil; logo del faro.",
+    "Barra superior: estado de sincronización, “Sincronizar ahora”, selector claro/oscuro, idioma y usuario con “Cerrar sesión”.",
+    "Enlace “Saltar al contenido” y anillo de foco visible en ambos temas <span class=new>nuevo</span>",
+    "Pantalla de arranque (splash) <span class=new>nuevo</span>"],
+    q: ["saas sidebar navigation", "desktop app shell dark navy", "top bar sync status", "skip to content link"] },
+  { t: "Acceso", r: "AuthScreen", items: ["Inicio de sesión y registro en una sola pantalla."], q: ["login screen desktop app", "minimal sign in"] },
+  { t: "Errores y recuperación", r: "ErrorFallback · DbErrorScreen", items: [
+    "Error general con reintento.",
+    "Base de datos que no abre, con formulario de clave de recuperación <span class=new>nuevo</span>"],
+    q: ["error state illustration app", "recovery key screen"] },
+  { t: "Inicio", r: "/ · DashboardPage", items: [
+    "Saludo, dos accesos grandes (“Iniciar nuevo proyecto”, “Continuar proyecto existente”).",
+    "Buscador y tarjetas de proyecto con último acceso, estado y barra de progreso de casos aprobados <span class=new>nuevo</span>"],
+    q: ["qa dashboard", "project cards progress bar", "test management dashboard"] },
+  { t: "Proyectos", r: "/projects · ProjectsPage · ProjectDetail", items: [
+    "Lista de proyectos con exportar ZIP (incluye PDF) y eliminar; “Exportar todo”.",
+    "Detalle con pestañas: Plan de pruebas, Casos, Trazabilidad, Planificador, Ajustes.",
+    "Modal de progreso de exportación."],
+    q: ["project detail tabs", "project list saas", "export progress modal"] },
+  { t: "Plan de pruebas", r: "TestPlanWizard · ScheduleCalendar · RevisionHistory", items: [
+    "Asistente de 19 pasos (ISO 29119) con navegación lateral por secciones y tablas editables.",
+    "Calendario de ceremonias con frecuencia configurable <span class=new>nuevo</span>",
+    "Historial de revisiones; exportar e importar .xlsx y .pdf."],
+    q: ["multi step form wizard", "stepper sidebar form", "schedule calendar planning", "version history timeline"] },
+  { t: "Casos de prueba", r: "TestCaseEditor · GherkinEditor · LevelPicker", items: [
+    "Lista de casos y selector de nivel en tarjetas (básico, avanzado, completo).",
+    "Editor con vista dividida Editor | Gherkin, pasos arrastrables con teclado, tabla de ejemplos, flujos y vínculos a requisitos.",
+    "Modal “Sugerir pruebas” con IA."],
+    q: ["test case editor", "split view code editor form", "drag and drop list steps", "gherkin editor", "card selector options"] },
+  { t: "Trazabilidad", r: "RequirementsPanel · MatrixView", items: [
+    "Panel de requisitos (REQ-xxx) con alta, importación CSV y migración.",
+    "Matriz de trazabilidad requisitos × casos, exportable.",
+    "Modal “Generar casos desde un requisito” con IA <span class=new>nuevo</span>"],
+    q: ["traceability matrix", "coverage matrix table", "requirements list"] },
+  { t: "Planificador", r: "PlannerBoard · CardEditor", items: [
+    "Tablero kanban con tarjetas y defectos (DEF-xxx).",
+    "Editor de tarjeta con adjuntos."],
+    q: ["kanban board dark", "task card detail modal", "bug tracker card"] },
+  { t: "Plantillas", r: "/templates · TemplatesPage", items: [
+    "Repositorio con distintivos “Incluida”, “Compartida”, idioma y versión; importar, editar y descargar.",
+    "Las plantillas heredadas son compartidas y de solo lectura <span class=new>nuevo</span>"],
+    q: ["template library cards", "file template gallery"] },
+  { t: "Motor de IA", r: "/ai · AiPage · AssistButton · ProvenanceBadge", items: [
+    "Configuración: modo automático, online u offline; proveedor (Gemini, OpenAI, Claude, OpenRouter, compatible), clave de API, lista de modelos y temperatura.",
+    "Botones “Asistir con IA”, lista de sugerencias para aceptar o descartar y distintivo de procedencia.",
+    "Aviso de fallo de IA; sin IA, los botones quedan deshabilitados con explicación <span class=new>nuevo</span>"],
+    q: ["ai settings page", "api key settings", "llm provider selector", "ai suggestions accept reject", "ai generated badge"] },
+  { t: "Sincronización", r: "SyncIndicator · ConflictPanel · KeyConflictList", items: [
+    "Indicador de sync: sincronizado, pendiente, error.",
+    "Panel de conflictos que compara versiones, con conflictos de clave <span class=new>nuevo</span>",
+    "Aviso de datos web antiguos sin enviar, con “Descargar” <span class=new>nuevo</span>"],
+    q: ["sync status indicator", "merge conflict resolution ui", "diff compare versions"] },
+  { t: "Administración y Perfil", r: "/admin · /profile", items: [
+    "Ajustes: fondo, retención, carpeta de descarga con selector nativo <span class=new>nuevo</span>",
+    "“Exportar diagnóstico” con la versión.",
+    "Perfil con alias y la sección de clave de recuperación <span class=new>nuevo</span>"],
+    q: ["settings page desktop", "profile settings", "backup recovery key ui"] },
+  { t: "Componentes comunes", r: "src/shared/ui", items: [
+    "Diálogo accesible común: foco atrapado, Escape, devuelve el foco y pregunta antes de descartar cambios <span class=new>nuevo</span>",
+    "Diálogo de confirmación, notificaciones (toasts) con acciones, estados vacíos, reporte de importación.",
+    "Campos de formulario con mensajes de error y resumen de errores accesible <span class=new>nuevo</span>",
+    "Campos de lista, pares y casillas con etiqueta obligatoria; logo del faro."],
+    q: ["accessible modal dialog", "toast notification", "empty state", "form validation errors", "error summary form", "import summary report"] },
+];
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const box = document.getElementById("screens");
+box.innerHTML = S.map((s, i) => `<section class="scr" data-text="${esc((s.t + " " + s.r + " " + s.items.join(" ") + " " + s.q.join(" ")).toLowerCase().replace(/<[^>]+>/g, ""))}">
+  <header><h3>${s.t}</h3><span class="route">${s.r}</span></header>
+  <ul>${s.items.map(x => `<li>${x}</li>`).join("")}</ul>
+  <div class="terms">${s.q.map(x => `<button type="button" class="term" data-q="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+</section>`).join("");
+box.addEventListener("click", async e => {
+  const b = e.target.closest(".term"); if (!b) return;
+  try { await navigator.clipboard.writeText(b.dataset.q); b.classList.add("copied"); b.textContent = "Copiado"; setTimeout(() => { b.classList.remove("copied"); b.textContent = b.dataset.q; }, 1200); }
+  catch { const r = document.createRange(); r.selectNodeContents(b); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+});
+const q = document.getElementById("q"), empty = document.getElementById("empty");
+q.addEventListener("input", () => {
+  const v = q.value.trim().toLowerCase(); let n = 0;
+  box.querySelectorAll(".scr").forEach(el => { const show = !v || el.dataset.text.includes(v); el.hidden = !show; if (show) n++; });
+  empty.hidden = n > 0;
+});
+</script>
+
+</body></html>

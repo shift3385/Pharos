@@ -748,6 +748,9 @@ prueba de los diálogos con teclado se reescribió el 2026-11-16 y está pendien
   - **Puntos compartidos:** el registro de migraciones de `db.rs`, las filas de §5, el índice de
     ADR y `changes/`. Se resuelven con rebase.
 - **Recorridos del manual de uno en uno** (ya hay un candado).
+- **Artefactos (2026-11-17):** cada artefacto nuevo de Pharos (bocetos, páginas de seguimiento) se
+  añade a [`artefactos.md`](artefactos.md) y se copia en `docs/bocetos/` en el mismo PR que lo usa,
+  después de revisar que no lleve secretos ni correos reales. La sesión de línea base mantiene el índice.
 - **Versiones:** una MENOR cuando se cumple su criterio de salida (§3); PARCHES, sin
   migraciones, cuando haga falta.
 
