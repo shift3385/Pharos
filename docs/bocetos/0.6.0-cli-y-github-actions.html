@@ -1,0 +1,445 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>CLI e integración continua de Pharos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: one reading column; terminal bocetos are fixed-dark consoles, app bocetos reuse the Pharos boceto token set (same as tracks A and F). */
+:root{
+  --bg:#f3f5f9; --surface:#ffffff; --sunken:#eef1f6; --fg:#14213a; --muted:#5a6680; --line:#d7dde8;
+  --navy:#1e3a6e; --accent:#2f6fd6; --ok:#1d7a4a; --ok-bg:#e3f4ea; --warn:#9a5b00; --warn-bg:#fff1d6;
+  --err:#b42318; --err-bg:#fde8e6; --new:#7a3fd1; --new-bg:#f1e9fd; --on-accent:#ffffff;
+  --term-bg:#101827; --term-bar:#1a2437; --term-fg:#d6deeb; --term-dim:#7f8ba3; --term-ok:#5fd394; --term-err:#ff8a7d; --term-warn:#f2b553; --term-acc:#7fb0ff; --term-cmd:#ffffff;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:Inter,system-ui,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --new:#c39bff; --new-bg:#2c2246; --on-accent:#0f1522;
+  --term-bg:#0a0f1a; --term-bar:#141c2c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --new:#c39bff; --new-bg:#2c2246; --on-accent:#0f1522;
+  --term-bg:#0a0f1a; --term-bar:#141c2c; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+main{max-width:980px;margin:0 auto;display:grid;gap:44px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:1.9rem;color:var(--navy)} h2{font-size:1.3rem;color:var(--navy)} h3{font-size:1.02rem}
+.lead{color:var(--muted);max-width:70ch;margin:6px 0 0}
+.eyebrow{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.block{display:grid;gap:14px}
+.note{max-width:74ch;margin:0;padding-left:1.2em}
+.note li{margin-bottom:4px}
+nav.toc{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.86rem}
+nav.toc a{color:var(--accent);text-decoration:none} nav.toc a:hover{text-decoration:underline}
+.tag-new{background:var(--new-bg);color:var(--new);font-size:.7rem;font-weight:700;border-radius:4px;padding:1px 6px;letter-spacing:.04em}
+/* terminal */
+.term{background:var(--term-bg);border-radius:10px;overflow:hidden;border:1px solid var(--line);min-width:0}
+.term-bar{background:var(--term-bar);color:var(--term-dim);font:500 .75rem var(--f-mono);padding:8px 14px;display:flex;gap:10px;align-items:center}
+.dots{display:flex;gap:6px}.dots i{width:9px;height:9px;border-radius:50%;background:#3a465e;display:block}
+pre{margin:0;overflow-x:auto}
+.term pre{color:var(--term-fg);font:400 .82rem/1.6 var(--f-mono);padding:14px 16px}
+.c{color:var(--term-cmd);font-weight:700}.d{color:var(--term-dim)}.ok{color:var(--term-ok)}.er{color:var(--term-err)}.wa{color:var(--term-warn)}.ac{color:var(--term-acc)}.b{font-weight:700}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+/* app frames */
+.frame{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.frame-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:var(--sunken);border-bottom:1px solid var(--line);font-size:.8rem;color:var(--muted)}
+.pad{padding:20px;display:grid;gap:16px}
+.tabs{display:flex;gap:18px;border-bottom:1px solid var(--line);font-size:.88rem;flex-wrap:wrap}
+.tabs span{padding:8px 0;color:var(--muted)}.tabs .on{color:var(--fg);font-weight:600;border-bottom:2px solid var(--accent)}
+.grid2{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:18px}
+@media (max-width:720px){.grid2{grid-template-columns:1fr}}
+.field{display:grid;gap:5px;font-size:.84rem}.field>label{font-weight:600}
+.input{border:1px solid var(--line);border-radius:7px;padding:8px 10px;background:var(--surface);font-size:.9rem;display:flex;justify-content:space-between;gap:8px}
+.input .car{color:var(--muted)}
+.checks{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.8rem;color:var(--muted)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;font-size:.82rem}
+.seg span{padding:5px 12px;color:var(--muted)}.seg .on{background:var(--sunken);color:var(--fg);font-weight:600}
+.help{color:var(--muted);font-size:.8rem;margin:0}
+.code{background:var(--sunken);border:1px solid var(--line);border-radius:8px;min-width:0;position:relative}
+.code pre{font:400 .78rem/1.55 var(--f-mono);padding:12px 14px;color:var(--fg)}
+.code .k{color:var(--accent)}.code .cm{color:var(--muted)}.code .s{color:var(--ok)}
+.code-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px 6px 14px;border-bottom:1px solid var(--line);font:500 .75rem var(--f-mono);color:var(--muted)}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:7px;padding:6px 12px;font:600 .8rem var(--f-body);cursor:pointer}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.steps{margin:0;padding-left:1.3em;font-size:.86rem;display:grid;gap:6px}
+.kbd{font:500 .78rem var(--f-mono);background:var(--sunken);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+.banner{border-radius:8px;padding:10px 12px;font-size:.84rem}
+.banner.warn{background:var(--warn-bg);color:var(--warn)}.banner.ok{background:var(--ok-bg);color:var(--ok)}
+/* github summary */
+.gh{font-size:.88rem}
+.gh h3{font-family:var(--f-body);font-size:1.1rem;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.84rem;font-variant-numeric:tabular-nums}
+th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;white-space:nowrap}
+th{background:var(--sunken)}
+td.n{text-align:right}
+.ann{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:6px;padding:8px 10px;font-size:.84rem}
+.ann.e{border-left-color:var(--err)}
+.ann b{white-space:nowrap}
+.dlg{max-width:560px;margin:0 auto;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 10px 30px rgba(10,20,40,.18);display:grid;gap:14px;padding:20px}
+.tok{font:500 .8rem var(--f-mono);background:var(--sunken);border:1px solid var(--line);border-radius:7px;padding:8px 10px;overflow-wrap:anywhere}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+table.pat td{white-space:normal}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<main>
+<header class="block">
+  <div class="eyebrow">Pista L · 0.6.0 · INT-01 e INT-04 · bocetos para aprobar</div>
+  <h1>CLI <code>pharos</code> e integración continua</h1>
+  <p class="lead">Qué ve una QA en la terminal cuando sube resultados o envuelve sus tests con <code>pharos watch</code>, qué aparece en el PR de GitHub, y dónde la app le da el YAML listo para copiar. Los textos van en español; el inglés sale con <code>--lang en</code> o con un sistema en inglés. Datos de ejemplo.</p>
+  <nav class="toc" aria-label="Bocetos">
+    <a href="#b1">1 · upload remoto</a><a href="#b2">2 · upload local y sus errores</a><a href="#b3">3 · watch</a><a href="#b4">4 · login y doctor</a><a href="#b5">5 · el PR en GitHub</a><a href="#b6">6 · la plantilla</a><a href="#b7">7 · Conectar CI en la app</a><a href="#b8">8 · token creado y CLI personal</a>
+  </nav>
+</header>
+
+<section class="block" id="b1">
+  <div class="eyebrow">Boceto 1 · terminal</div>
+  <h2>Subir cuatro informes al mismo run</h2>
+  <div class="term">
+    <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span>PowerShell · C:\repos\pagos-web</div>
+<pre><span class="c">&gt; pharos upload reports/junit.xml reports/eslint.sarif reports/k6-summary.json reports/axe.json --project PAGOS</span>
+<span class="d">Modo remoto · https://pharos.empresa.com · proyecto PAGOS (Pagos web) · token phr_prj_Ab3k… «CI GitHub»</span>
+
+  <span class="ok">✓</span> reports/junit.xml         <span class="d">JUnit  · 412 KB → 38 KB gzip</span>   <span class="b">RUN-128</span> creado
+      248 resultados · <span class="ok">231 pasan</span> · <span class="er">9 fallan</span> · 8 omitidos · 212 vinculados a casos · 36 sin vincular
+  <span class="ok">✓</span> reports/eslint.sarif      <span class="d">SARIF  · ESLint</span>                   RUN-128
+      14 hallazgos · <span class="er">2 altos</span> · 7 medios · 5 bajos · 3 nuevos
+  <span class="ok">✓</span> reports/k6-summary.json   <span class="d">k6</span>                                RUN-128
+      6 métricas · <span class="er">1 umbral incumplido</span> (http_req_duration p(95) 812 ms &gt; 500 ms)
+  <span class="ok">✓</span> reports/axe.json          <span class="d">axe    · 3 páginas</span>               RUN-128
+      11 hallazgos · <span class="er">1 crítico</span> · 4 serios · 6 moderados · 2 «A revisar»
+
+<span class="ok b">Subidos 4 de 4</span> al run <span class="b">RUN-128</span> · <span class="ac">https://pharos.empresa.com/p/PAGOS/ejecuciones/RUN-128</span>
+<span class="d">Aviso: 36 tests sin caso. Añade @PAG-n al nombre del test para vincularlos.</span>
+<span class="d">&gt; $LASTEXITCODE</span>
+0</pre>
+  </div>
+  <ul class="note">
+    <li>La primera línea dice siempre <b>modo, servidor, proyecto y token</b> (solo su prefijo visible). Nadie sube al sitio equivocado sin verlo.</li>
+    <li>Cada fichero se detecta solo (<code>--format</code> lo fuerza) y se comprime si pesa más de 64 KB. El primero crea el run y los demás van a ese mismo run.</li>
+    <li>Subir no es un veredicto: sale con 0 aunque haya tests fallidos. Para que CI falle, el código lo da el comando de tests (<code>watch</code>, boceto 3). El gate en el servidor llega en 0.7.0.</li>
+    <li><code>--json</code> cambia todo esto por una línea JSON por fichero con claves en inglés, para scripts.</li>
+  </ul>
+</section>
+
+<section class="block" id="b2">
+  <div class="eyebrow">Boceto 2 · terminal · modo local</div>
+  <h2>Escribir en el Pharos de este equipo, y qué pasa si no se puede</h2>
+  <div class="term">
+    <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span>PowerShell · sin servidor configurado → modo local</div>
+<pre><span class="c">&gt; pharos upload test-results\junit.xml --project PAGOS --cycle CIC-7</span>
+<span class="d">Modo local · Pharos de este equipo (%APPDATA%\com.pharos.desktop) · proyecto PAGOS · como Ana Pérez</span>
+
+  <span class="ok">✓</span> test-results\junit.xml    <span class="d">JUnit</span>   <span class="b">RUN-129</span> creado en el ciclo CIC-7
+      64 resultados · <span class="ok">60 pasan</span> · <span class="er">4 fallan</span> · 58 vinculados · 6 sin vincular
+
+<span class="ok b">Importado.</span> Ábrelo en Pharos › Pagos › Ejecuciones › RUN-129.</pre>
+  </div>
+  <div class="pair">
+    <div class="term">
+      <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span>Con la app abierta (hasta N5)</div>
+<pre><span class="c">&gt; pharos upload junit.xml -p PAGOS</span>
+<span class="d">Modo local · Pharos de este equipo · proyecto PAGOS</span>
+
+<span class="er b">✗ Pharos está abierto en este equipo</span> <span class="d">[db-in-use]</span>
+  Mientras la app está abierta, solo ella puede
+  escribir en tus datos. Ciérrala y repite, o
+  sube al servidor con --server.
+<span class="d">&gt; $LASTEXITCODE</span>
+6</pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span>Formato que el modo local no lee · --lang en</div>
+<pre><span class="c">&gt; pharos upload eslint.sarif -p PAGOS --lang en</span>
+<span class="d">Local mode · Pharos on this computer · project PAGOS</span>
+
+<span class="er b">✗ eslint.sarif: SARIF can't be imported in local mode</span>
+  <span class="d">[format-not-local]</span>
+  Local mode reads Pharos Run JSON and JUnit.
+  Upload it to your server (--server URL) or use
+  Import report in the app.
+<span class="d">&gt; $LASTEXITCODE</span>
+5</pre>
+    </div>
+  </div>
+  <ul class="note">
+    <li>Con el modo local, Pharos tiene que estar <b>cerrado</b> hasta que llegue N5. Después, el mismo comando escribe con la app abierta y el run aparece en ella sin recargar.</li>
+    <li>El código entre corchetes (<code>db-in-use</code>, <code>format-not-local</code>) es el mismo en los dos idiomas. El manual lo busca por ese código.</li>
+    <li>En CI (<code>CI=true</code>) el modo local está prohibido y sale con 2: un runner no tiene tu Pharos.</li>
+  </ul>
+</section>
+
+<section class="block" id="b3">
+  <div class="eyebrow">Boceto 3 · terminal</div>
+  <h2>Envolver los tests con <code>pharos watch</code></h2>
+  <div class="term">
+    <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span>bash · runner de GitHub Actions</div>
+<pre><span class="c">$ pharos watch -p PAGOS --report "test-results/*.xml" --report "a11y/*.json" -- npx playwright test</span>
+<span class="d">Modo remoto · https://pharos.empresa.com · proyecto PAGOS · token phr_prj_Ab3k… «CI GitHub»</span>
+<span class="d">Comprobado: token válido (caduca el 16 feb 2027), permiso runs:write, proyecto PAGOS.</span>
+<span class="d">Run: «CI · feature/checkout · 9f3c2a1» (github:empresa/pagos-web:9134412207:1)</span>
+<span class="d">── salida de npx playwright test ─────────────────────────────</span>
+Running 248 tests using 4 workers
+  ✘  checkout › paga con tarjeta caducada (@PAG-41) (3.2s)
+  …
+  9 failed · 231 passed · 8 skipped (2.4m)
+<span class="d">── fin (código 1, 2 min 31 s) ────────────────────────────────</span>
+
+  <span class="ok">✓</span> test-results/junit.xml   <span class="d">JUnit</span>  <span class="b">RUN-128</span> · <span class="ok">231</span> · <span class="er">9</span> · 8
+  <span class="ok">✓</span> a11y/axe.json            <span class="d">axe</span>    RUN-128 · 11 hallazgos (<span class="er">1 crítico</span>)
+  <span class="d">· test-results/old-run.xml  sin cambios desde antes del comando: no se sube</span>
+
+<span class="ok b">Subidos 2.</span> <span class="ac">https://pharos.empresa.com/p/PAGOS/ejecuciones/RUN-128</span>
+<span class="d">Sale con el código del comando: 1</span></pre>
+  </div>
+  <ul class="note">
+    <li>El token, el permiso y el proyecto se comprueban <b>antes</b> de lanzar los tests: un token caducado no se descubre a los 20 minutos.</li>
+    <li>Solo se suben los informes que el comando escribió o cambió. Un XML viejo que había en la carpeta no se mezcla.</li>
+    <li>Sale con el código del comando, así que CI sigue fallando cuando fallan los tests. Si la subida falla, avisa y conserva ese código; con <code>--require-upload</code> el fallo de la subida manda.</li>
+    <li>En GitHub, el nombre y el <code>externalId</code> del run salen solos del entorno. Los jobs de una matriz acaban en el mismo run.</li>
+  </ul>
+</section>
+
+<section class="block" id="b4">
+  <div class="eyebrow">Boceto 4 · terminal</div>
+  <h2>Guardar el token y comprobarlo todo</h2>
+  <div class="pair">
+    <div class="term">
+      <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span>pharos login</div>
+<pre><span class="c">&gt; pharos login --server https://pharos.empresa.com</span>
+Pega tu token (no se verá al escribir): <span class="d">••••••••</span>
+<span class="ok">✓</span> Token personal de <b>Ana Pérez</b> · phr_pat_7Hc2…
+  Workspaces: todos los tuyos
+  Permisos: runs:write runs:read cases:read
+  Caduca: 18 may 2027
+<span class="ok">✓</span> Guardado en el Administrador de
+  credenciales de Windows («Pharos CLI»).
+  Servidor por defecto: pharos.empresa.com
+
+<span class="d">Sin keychain (p. ej. un contenedor):</span>
+<span class="er">✗</span> Este sistema no tiene un almacén seguro de
+  credenciales, así que no guardo el token.
+  Usa la variable PHAROS_TOKEN. <span class="d">[no-keychain]</span></pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span>pharos doctor</div>
+<pre><span class="c">&gt; pharos doctor</span>
+pharos 0.6.0 · formato Pharos Run 1.1.0
+<span class="ok">✓</span> Instalado en C:\…\Pharos\bin (en el PATH)
+<span class="ok">✓</span> Config: C:\repos\pagos-web\pharos.toml
+    proyecto PAGOS · report test-results/*.xml
+<b>Servidor</b>
+<span class="ok">✓</span> https://pharos.empresa.com responde (API v1, 0.6.0)
+<span class="ok">✓</span> Token de Ana Pérez (Credential Manager)
+<span class="wa">!</span> Caduca en 5 días (23 nov 2026). Renuévalo
+    en Mi perfil › Tokens personales.
+<b>Local</b>
+<span class="ok">✓</span> Datos en %APPDATA%\com.pharos.desktop
+<span class="wa">!</span> Pharos está abierto: el modo local no
+    escribirá hasta que lo cierres. <span class="d">[db-in-use]</span>
+<span class="d">2 avisos · código 0</span></pre>
+    </div>
+  </div>
+  <ul class="note">
+    <li>No existe <code>--token &lt;valor&gt;</code>: quedaría en el historial y en la lista de procesos. Las vías son pegarlo en <code>login</code>, <code>--token-stdin</code> o la variable <code>PHAROS_TOKEN</code>.</li>
+    <li>Un <code>pharos.toml</code> con una clave <code>token</code> es un error (código 2). Los tokens nunca van en ficheros.</li>
+    <li><code>doctor</code> sale con 0 si solo hay avisos y con el código del primer error si no.</li>
+  </ul>
+</section>
+
+<section class="block" id="b5">
+  <div class="eyebrow">Boceto 5 · GitHub · resumen del job y anotaciones</div>
+  <h2>Lo que ve el equipo en el PR</h2>
+  <div class="frame">
+    <div class="frame-head">github.com › empresa/pagos-web › Actions › CI #482 › job «tests»<span class="tag-new">NUEVO</span></div>
+    <div class="pad gh">
+      <h3>Pharos · RUN-128</h3>
+      <p class="help" style="margin-top:-6px">Proyecto PAGOS · <span style="color:var(--accent)">Abrir en Pharos</span> · subido por el token «CI GitHub»</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Informe</th><th>Formato</th><th>Pasan</th><th>Fallan</th><th>Omitidos</th><th>Hallazgos</th><th>Umbrales</th></tr></thead>
+        <tbody>
+          <tr><td>test-results/junit.xml</td><td>JUnit</td><td class="n">231</td><td class="n">9</td><td class="n">8</td><td>—</td><td>—</td></tr>
+          <tr><td>reports/eslint.sarif</td><td>SARIF</td><td>—</td><td>—</td><td>—</td><td>2 altos · 7 medios · 5 bajos</td><td>—</td></tr>
+          <tr><td>reports/k6-summary.json</td><td>k6</td><td>—</td><td>—</td><td>—</td><td>—</td><td>5 de 6 cumplidos</td></tr>
+          <tr><td>a11y/axe.json</td><td>axe</td><td>—</td><td>—</td><td>—</td><td>1 crítico · 4 serios · 6 moderados</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+      <div class="ann"><b>⚠ Pharos</b><span>36 tests sin caso en PAGOS. Añade @PAG-n al nombre del test para vincularlos.</span></div>
+      <div class="ann e"><b>✗ Pharos</b><span>PR desde un fork: no hay secretos, así que no se sube nada. El job no falla por esto.</span></div>
+    </div>
+  </div>
+  <ul class="note">
+    <li>La tabla va a <code>$GITHUB_STEP_SUMMARY</code> y los avisos son anotaciones (<code>::warning::</code>), que GitHub enseña en el PR. Igual con la acción y con el CLI.</li>
+    <li>En un PR desde un fork, GitHub no da secretos: la acción lo dice y no rompe el PR. Las plantillas nunca usan <code>pull_request_target</code>.</li>
+  </ul>
+</section>
+
+<section class="block" id="b6">
+  <div class="eyebrow">Boceto 6 · docs/integraciones/github-actions/pharos-pr.yml</div>
+  <h2>La plantilla del criterio de salida: JUnit, SARIF, k6 y axe</h2>
+  <div class="code">
+    <div class="code-head"><span>.github/workflows/pharos.yml</span><button class="btn" type="button" data-copy="tpl">Copiar</button></div>
+<pre id="tpl"><span class="k">name:</span> Tests y Pharos
+<span class="k">on:</span>
+  <span class="k">pull_request:</span>
+<span class="k">permissions:</span>
+  <span class="k">contents:</span> read            <span class="cm"># nada más: el token de Pharos va aparte</span>
+<span class="k">jobs:</span>
+  <span class="k">tests:</span>
+    <span class="k">runs-on:</span> ubuntu-latest
+    <span class="k">steps:</span>
+      - <span class="k">uses:</span> actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 <span class="cm"># v7.0.1</span>
+        <span class="k">with:</span> { <span class="k">persist-credentials:</span> false }
+      - <span class="k">uses:</span> actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 <span class="cm"># v7.1.0</span>
+        <span class="k">with:</span> { <span class="k">node-version:</span> 22 }
+      - <span class="k">run:</span> npm ci
+      - <span class="k">run:</span> npx playwright test --reporter=junit       <span class="cm"># → test-results/junit.xml</span>
+        <span class="k">continue-on-error:</span> true
+      - <span class="k">run:</span> npx eslint . -f @microsoft/eslint-formatter-sarif -o reports/eslint.sarif
+        <span class="k">continue-on-error:</span> true
+      - <span class="k">run:</span> docker run --rm -v "$PWD:/w" -w /w grafana/k6@sha256:&lt;digest&gt; run --summary-export reports/k6-summary.json perf/smoke.js
+        <span class="k">continue-on-error:</span> true
+      - <span class="k">run:</span> npx @axe-core/cli@4.10.2 http://localhost:4173 --save reports/axe.json
+        <span class="k">continue-on-error:</span> true
+      - <span class="k">name:</span> Subir a Pharos
+        <span class="k">if:</span> always()
+        <span class="k">uses:</span> &lt;owner&gt;/pharos/.github/actions/pharos-report@&lt;sha de 40 caracteres&gt; <span class="cm"># v0.6.0</span>
+        <span class="k">with:</span>
+          <span class="k">server:</span> ${{ vars.PHAROS_URL }}
+          <span class="k">token:</span> ${{ secrets.PHAROS_TOKEN }}
+          <span class="k">project:</span> <span class="s">PAGOS</span>
+          <span class="k">files:</span> |
+            test-results/junit.xml
+            reports/eslint.sarif
+            reports/k6-summary.json
+            reports/axe.json</pre>
+  </div>
+  <ul class="note">
+    <li>Todo <code>uses:</code> va fijado por SHA de 40 caracteres, con la versión en un comentario. Las imágenes, por digest, y las herramientas npm, con versión exacta. Un script del repo lo comprueba en <code>.github/</code> y <code>docs/integraciones/</code>.</li>
+    <li>La acción <code>pharos-report</code> solo usa <code>bash</code> y <code>curl</code>: no descarga binarios ni usa acciones de terceros. El token entra por <code>env</code>, se enmascara y llega a curl por stdin.</li>
+    <li>Con el job de pruebas fallando, <code>if: always()</code> sube igual los informes; el PR sigue en rojo por los tests, no por Pharos.</li>
+    <li>Hay otras dos plantillas: <code>pharos-matriz.yml</code> (varios jobs al mismo run y un job final que lo cierra) y <code>pharos-cli-windows.yml</code> (<code>pharos watch -- npm test</code> en un runner Windows).</li>
+  </ul>
+</section>
+
+<section class="block" id="b7">
+  <div class="eyebrow">Boceto 7 · app · Workspace › Integraciones</div>
+  <h2>«Conectar CI»: el YAML listo para copiar</h2>
+  <div class="frame">
+    <div class="frame-head">Pharos › Workspace «QA Pagos» › Integraciones<span class="tag-new">NUEVO</span></div>
+    <div class="pad">
+      <div class="tabs"><span>Miembros</span><span>Política</span><span class="on">Integraciones</span></div>
+      <div class="tabs" style="border:0;gap:14px"><span>Tokens de proyecto</span><span>Webhooks</span><span class="on">Conectar CI</span></div>
+      <div class="grid2">
+        <div style="display:grid;gap:14px;align-content:start">
+          <div class="field"><label for="ci-proj">Proyecto</label><div class="input" id="ci-proj">PAGOS · Pagos web <span class="car">▾</span></div></div>
+          <div class="field"><label>Informes que genera tu CI</label>
+            <div class="checks"><span class="chip on">JUnit</span><span class="chip on">SARIF</span><span class="chip on">k6</span><span class="chip on">axe</span><span class="chip">Allure</span><span class="chip">TRX</span><span class="chip">CTRF</span><span class="chip">Playwright JSON</span></div></div>
+          <div class="field"><label>Runner</label><div><span class="seg"><span class="on">Linux</span><span>Windows</span></span></div></div>
+          <div class="field"><label>Cómo sube</label><div><span class="seg"><span class="on">Acción (curl)</span><span>CLI pharos watch</span></span></div>
+            <p class="help">La acción no instala nada. El CLI además envuelve el comando de tests.</p></div>
+          <div class="field"><label for="ci-tok">Token</label><div class="input" id="ci-tok">«CI GitHub» · phr_prj_Ab3k… · caduca 16 feb 2027 <span class="car">▾</span></div>
+            <p class="help">El token no va en el YAML: va en un secreto de GitHub. <span style="color:var(--accent)">Crear un token de proyecto…</span></p></div>
+        </div>
+        <div style="display:grid;gap:12px;min-width:0">
+          <div class="code">
+            <div class="code-head"><span>.github/workflows/pharos.yml</span><button class="btn pri" type="button" data-copy="tpl2">Copiar YAML</button></div>
+<pre id="tpl2">      - <span class="k">name:</span> Subir a Pharos
+        <span class="k">if:</span> always()
+        <span class="k">uses:</span> &lt;owner&gt;/pharos/.github/actions/pharos-report@&lt;sha&gt; <span class="cm"># v0.6.0</span>
+        <span class="k">with:</span>
+          <span class="k">server:</span> ${{ vars.PHAROS_URL }}
+          <span class="k">token:</span> ${{ secrets.PHAROS_TOKEN }}
+          <span class="k">project:</span> <span class="s">PAGOS</span>
+          <span class="k">files:</span> |
+            <span class="cm"># cambia estas rutas por las de tu proyecto</span>
+            test-results/*.xml
+            reports/*.sarif
+            reports/k6-summary.json
+            reports/axe.json</pre>
+          </div>
+          <div>
+            <h3 style="margin-bottom:6px">En GitHub, una vez por repositorio</h3>
+            <ol class="steps">
+              <li>Settings › Secrets and variables › Actions › <b>New repository secret</b>: nombre <span class="kbd">PHAROS_TOKEN</span>, valor el token (solo se ve al crearlo).</li>
+              <li>Pestaña <b>Variables</b>: <span class="kbd">PHAROS_URL</span> = <span class="kbd">https://pharos.empresa.com</span> <button class="btn" type="button" data-copy-text="https://pharos.empresa.com">Copiar</button></li>
+              <li>Pega el paso al final del job que ejecuta tus tests y abre un PR.</li>
+            </ol>
+          </div>
+          <div class="banner ok">El último informe recibido por este proyecto llegó hace 2 h desde «CI GitHub» (RUN-128).</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="note">
+    <li>Está junto a «Tokens de proyecto» y «Webhooks», de la pista A. Lo ven todos los roles; solo un Test Manager puede crear el token desde aquí.</li>
+    <li>El YAML lo arma una función pura con el servidor, la clave del proyecto y los formatos elegidos. Nunca contiene el token: un test lo comprueba.</li>
+    <li>La línea verde dice si ya llega algo, para confirmar que la conexión funciona sin salir de la app. Es una lectura de runs que ya existe: sin datos nuevos ni migración.</li>
+  </ul>
+</section>
+
+<section class="block" id="b8">
+  <div class="eyebrow">Boceto 8 · app · diálogo de la pista A y Mi perfil</div>
+  <h2>El token recién creado lleva el YAML de verdad, y el personal lleva el comando del CLI</h2>
+  <div class="pair">
+    <div class="frame">
+      <div class="frame-head">Workspace › Integraciones › Token creado (boceto 3 de la pista A, con el YAML de L)</div>
+      <div class="pad">
+        <div class="dlg">
+          <h3>Token creado</h3>
+          <p class="help" style="font-size:.86rem;color:var(--fg)">Cópialo ahora. Pharos no lo guarda y no podrá volver a enseñártelo.</p>
+          <div class="row"><div class="tok" style="flex:1">phr_prj_Ab3k····························_······ (ejemplo)</div><button class="btn pri" type="button">Copiar</button></div>
+          <div class="banner warn">Guárdalo en GitHub como secreto <b>PHAROS_TOKEN</b>. Después copia el paso desde <b>Conectar CI</b>, que ya trae este proyecto y tu servidor.</div>
+          <div class="row"><label style="font-size:.84rem"><input type="checkbox" id="saved"> Lo he guardado en un sitio seguro</label><button class="btn" type="button">Ir a Conectar CI</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="frame">
+      <div class="frame-head">Mi perfil › Tokens personales (boceto 8 de la pista A)</div>
+      <div class="pad">
+        <div class="tbl"><table class="pat">
+          <thead><tr><th>Nombre</th><th>Caduca</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Portátil · pharos CLI<br><span class="help">phr_pat_7Hc2… · runs:write</span></td><td>18 may 2027</td><td><button class="btn" type="button">Usar en el CLI</button></td></tr>
+          </tbody>
+        </table></div>
+        <div class="code">
+          <div class="code-head"><span>Usar en el CLI · PowerShell</span><button class="btn" type="button" data-copy="cli">Copiar</button></div>
+<pre id="cli">pharos login --server https://pharos.empresa.com</pre>
+        </div>
+        <p class="help">Te pedirá el token y lo guardará en el Administrador de credenciales de Windows. Si ya no lo tienes, crea uno nuevo: Pharos no puede volver a enseñarlo. <code>pharos</code> viene con la app desde 0.6.0; si la terminal no lo encuentra, abre una nueva.</p>
+      </div>
+    </div>
+  </div>
+  <ul class="note">
+    <li>El diálogo es el de A. L solo cambia su ejemplo provisional por un enlace a «Conectar CI», para que el YAML esté en un único sitio.</li>
+    <li>«Usar en el CLI» no muestra el token (ya no existe en claro): da el comando de <code>login</code> con el servidor puesto.</li>
+  </ul>
+</section>
+</main>
+
+<script>
+document.addEventListener('click', function (ev) {
+  var b = ev.target.closest('button[data-copy],button[data-copy-text]');
+  if (!b) return;
+  var text = b.dataset.copyText || (document.getElementById(b.dataset.copy) || {}).innerText || '';
+  var done = function () { var t = b.textContent; b.textContent = 'Copiado'; setTimeout(function () { b.textContent = t; }, 1400); };
+  try {
+    navigator.clipboard.writeText(text).then(done, function () { selectFallback(b); });
+  } catch (e) { selectFallback(b); }
+  function selectFallback(btn) {
+    var el = document.getElementById(btn.dataset.copy);
+    if (!el) return;
+    var r = document.createRange(); r.selectNodeContents(el);
+    var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+});
+</script>
+
+</body></html>

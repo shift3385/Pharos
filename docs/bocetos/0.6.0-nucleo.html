@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SEC-05 Conversión de datos</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Same token set as the other Pharos bocetos. Each boceto is the full-screen app-splash (DbErrorScreen) the desktop shows before the app. */
+:root{
+  --bg:#f3f5f9; --surface:#ffffff; --sunken:#eef1f6; --fg:#14213a; --muted:#5a6680; --line:#d7dde8;
+  --navy:#1e3a6e; --accent:#2f6fd6; --ok:#1d7a4a; --ok-bg:#e3f4ea; --warn:#9a5b00; --warn-bg:#fff1d6;
+  --err:#b42318; --err-bg:#fde8e6; --new:#7a3fd1; --new-bg:#f1e9fd; --on-accent:#ffffff;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:Inter,system-ui,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --new:#c39bff; --new-bg:#2c2246; --on-accent:#0f1522; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --new:#c39bff; --new-bg:#2c2246; --on-accent:#0f1522; color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);line-height:1.5;padding:32px 16px 64px}
+main{max-width:980px;margin:0 auto;display:grid;gap:44px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:1.9rem;color:var(--navy)} h2{font-size:1.3rem;color:var(--navy)}
+.lead{color:var(--muted);max-width:68ch;margin:6px 0 0}
+.eyebrow{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.block{display:grid;gap:14px}
+.note{max-width:72ch;margin:0;padding-left:1.2em;font-size:.92rem}
+.note li{margin-bottom:4px}
+.frame{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.frame-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:var(--sunken);border-bottom:1px solid var(--line);font-size:.8rem;color:var(--muted)}
+.tag-new{background:var(--new-bg);color:var(--new);font-size:.7rem;font-weight:700;border-radius:4px;padding:1px 6px;letter-spacing:.04em}
+.splash{min-height:360px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px 20px;text-align:center}
+.logo{width:48px;height:48px;border-radius:12px;background:var(--navy);display:grid;place-items:center;color:var(--on-accent);font:700 22px var(--f-display)}
+.splash h3{font-size:1.35rem;margin-top:6px}
+.splash p{margin:0;max-width:560px;color:var(--muted);font-size:.92rem}
+.meter{width:min(420px,100%);height:8px;border-radius:4px;background:var(--sunken);overflow:hidden}
+.meter i{display:block;height:100%;width:62%;background:var(--accent)}
+.steps{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:4px;font-size:.85rem;text-align:left}
+.steps li::before{content:"○ ";color:var(--muted)}
+.steps li.done::before{content:"✓ ";color:var(--ok)}
+.steps li.now{font-weight:600}
+.steps li.now::before{content:"● ";color:var(--accent)}
+.detail{font:500 .78rem var(--f-mono);background:var(--sunken);border-radius:6px;padding:6px 10px;color:var(--muted);max-width:640px;overflow-wrap:anywhere}
+.row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:7px;padding:7px 14px;font:500 .86rem var(--f-body);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.banner{display:flex;gap:10px;align-items:flex-start;border-radius:8px;padding:10px 12px;font-size:.86rem;text-align:left;max-width:560px}
+.banner.ok{background:var(--ok-bg);color:var(--ok)} .banner.warn{background:var(--warn-bg);color:var(--warn)} .banner.err{background:var(--err-bg);color:var(--err)}
+.kv{display:grid;grid-template-columns:auto auto;gap:4px 14px;font-size:.86rem;margin:0;text-align:left}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:600}
+</style>
+</head>
+<body>
+<main>
+<header class="block">
+  <span class="eyebrow">Pista N · 0.6.0 · SEC-05</span>
+  <h1>Conversión de los datos locales</h1>
+  <p class="lead">En el primer arranque de la 0.6, la app pasa los datos de <code>pharos.db.enc</code> (imagen cifrada en memoria) a una base SQLite en disco cifrada por página. Estas son las únicas pantallas nuevas. Todas usan la pantalla completa <code>app-splash</code> que ya muestra <code>DbErrorScreen</code>, antes de cargar la app. Nada cambia en la web.</p>
+</header>
+
+<section class="block">
+  <h2>1 · Conversión en curso</h2>
+  <div class="frame">
+    <div class="frame-head"><span class="tag-new">NUEVO</span> Escritorio · arranque · solo si tarda más de 1 s</div>
+    <div class="splash" role="status" aria-live="polite">
+      <div class="logo" aria-hidden="true">P</div>
+      <h3>Actualizando el formato de tus datos</h3>
+      <p>Pasa una sola vez, en esta versión. A partir de ahora, Pharos guardará cada cambio al instante y podrá recibir resultados del CLI con la app abierta.</p>
+      <div class="meter" role="progressbar" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso"><i></i></div>
+      <ul class="steps">
+        <li class="done">Copia de seguridad guardada</li>
+        <li class="now">Copiando los datos al nuevo formato (62 %)</li>
+        <li>Comprobando que no falta nada</li>
+      </ul>
+      <p style="font-size:.82rem">No cierres Pharos. Si se cierra, la próxima vez seguirá donde se quedó.</p>
+    </div>
+  </div>
+  <ul class="note">
+    <li>El progreso sale de la API de backup de SQLite, que avanza por páginas. Hay tres pasos visibles: copia, conversión y verificación. La migración de esquema, si la hay, va dentro de la conversión.</li>
+    <li>Una base pequeña convierte en menos de un segundo y no muestra nada: aparece el splash normal y después la app.</li>
+    <li>Al terminar no hay pantalla de éxito. La app abre y el CHANGELOG explica el cambio.</li>
+  </ul>
+</section>
+
+<section class="block">
+  <h2>2 · No hay espacio suficiente</h2>
+  <div class="frame">
+    <div class="frame-head"><span class="tag-new">NUEVO</span> Error <code>db-convert-no-space</code> · bloquea, no modifica nada</div>
+    <div class="splash" role="alert">
+      <div class="logo" aria-hidden="true">P</div>
+      <h3>Falta espacio para actualizar tus datos</h3>
+      <p>Para convertirlos de forma segura, Pharos necesita espacio para una copia de seguridad y para la base nueva. Tus datos no se han tocado.</p>
+      <dl class="kv">
+        <dt>Necesario</dt><dd>1,9 GB</dd>
+        <dt>Libre en C:</dt><dd>0,7 GB</dd>
+      </dl>
+      <p>Libera al menos 1,2 GB y vuelve a intentarlo.</p>
+      <div class="row"><button class="btn primary" type="button">Reintentar</button><button class="btn" type="button">Abrir la carpeta de datos</button></div>
+      <code class="detail">db-convert-no-space: need 1.9 GB, 0.7 GB free in C:\Users\…\com.pharos.desktop</code>
+    </div>
+  </div>
+  <ul class="note">
+    <li>«Reintentar» vuelve a abrir la BD sin reiniciar la app. La apertura ya corre en un hilo propio, no en el <code>setup</code> síncrono.</li>
+    <li>«Abrir la carpeta de datos» enseña dónde están también las copias <code>.bak</code> antiguas, que se pueden borrar si sobran.</li>
+  </ul>
+</section>
+
+<section class="block">
+  <h2>3 · La conversión falló</h2>
+  <div class="frame">
+    <div class="frame-head"><span class="tag-new">NUEVO</span> Error <code>db-convert-failed</code> · la verificación no cuadra o falla la E/S</div>
+    <div class="splash" role="alert">
+      <div class="logo" aria-hidden="true">P</div>
+      <h3>No se pudieron actualizar tus datos</h3>
+      <div class="banner ok">Tus datos están intactos: el archivo original no se ha modificado y hay una copia de seguridad.</div>
+      <p>Puedes reintentarlo. Si vuelve a fallar, exporta el diagnóstico y envíalo. No contiene tus datos ni tu clave.</p>
+      <div class="row"><button class="btn primary" type="button">Reintentar</button><button class="btn" type="button">Exportar diagnóstico</button></div>
+      <code class="detail">db-convert-failed: row count differs in table test_case (412 → 411); pharos.db.convert discarded</code>
+    </div>
+  </div>
+  <ul class="note">
+    <li>Al fallar, se borra <code>pharos.db.convert</code>. <code>pharos.db.enc</code> sigue siendo el original, que solo pasa a testigo cuando <code>pharos.db</code> está verificado.</li>
+    <li>«Exportar diagnóstico» reutiliza BASE-08, que ya existe (<code>diag.rs</code>), y lleva el detalle redactado.</li>
+  </ul>
+</section>
+
+<section class="block">
+  <h2>4 · Los datos están ocupados</h2>
+  <div class="frame">
+    <div class="frame-head"><span class="tag-new">NUEVO</span> Error <code>db-busy-migrating</code> · otro proceso migra o convierte</div>
+    <div class="splash" role="alert">
+      <div class="logo" aria-hidden="true">P</div>
+      <h3>Otro proceso está actualizando tus datos</h3>
+      <p>El CLI de Pharos (u otra ventana de Pharos) está actualizando la base de datos de esta carpeta. Espera a que termine.</p>
+      <div class="row"><button class="btn primary" type="button">Reintentar</button></div>
+      <code class="detail">db-busy-migrating: pharos.db is locked for an upgrade by another process</code>
+    </div>
+  </div>
+  <ul class="note">
+    <li>Solo pasa al migrar o convertir: es el único momento en que la BD se abre en exclusiva. Con la BD ya convertida, la app y el CLI conviven.</li>
+    <li>La app reintenta sola cada 2 s durante 30 s antes de mostrar esta pantalla.</li>
+    <li>En el CLI, el mismo caso es un error en la terminal (pista L).</li>
+  </ul>
+</section>
+
+<section class="block">
+  <h2>5 · Datos que llegan del CLI con la app abierta</h2>
+  <ul class="note">
+    <li><strong>No hay pantalla ni aviso nuevo.</strong> La app detecta el cambio (<code>PRAGMA data_version</code>, cada 2 s), emite <code>db://external-change</code> y vuelve a pedir la vista actual. Si estás en «Ejecución», el run importado aparece en la lista.</li>
+    <li>Un formulario a medio editar no se recarga: solo las listas y los paneles de lectura.</li>
+    <li>Si L quiere un aviso del tipo «3 resultados importados desde el CLI», va en INT-01 con su propio boceto.</li>
+  </ul>
+</section>
+
+<section class="block">
+  <h2>Lo que ve una app 0.5 tras la conversión</h2>
+  <ul class="note">
+    <li>Su pantalla de siempre, «Esta base de datos es de una versión más nueva de Pharos», sin cambios: <code>pharos.db.enc</code> pasa a ser un testigo con la migración desconocida <code>disk-format-v2</code>. Así no arranca vacía.</li>
+    <li>Para volver a la 0.5 hay que restaurar la copia <code>pharos.db.enc.bak-0.6.0-…</code>. Va documentado en el manual (19) y en la guía beta.</li>
+  </ul>
+</section>
+</main>
+</body>
+</html>

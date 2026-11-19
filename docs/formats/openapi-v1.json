@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pharos API",
-    "version": "1.1.1",
+    "version": "1.2.0",
     "description": "Public API of a Pharos server for CI and scripts. Authenticate with a project token or a personal access token: `Authorization: Bearer phr_…`. A token acts as its owner and never does more than the owner's current role allows. Retry only network errors, 429, 502, 503 and 504; an upload is idempotent (the same file in the same run answers 200 and writes nothing)."
   },
   "servers": [
@@ -871,6 +871,822 @@
           }
         }
       }
+    },
+    "/projects/{projectId}/cases": {
+      "get": {
+        "operationId": "listCases",
+        "summary": "The project's cases changed after a cursor, oldest change first.",
+        "description": "Scope `cases:read`. Read-only in v1.\n\nIncremental: keep `nextCursor` and send it back as `updatedSince` to get only what changed since (more pages while `hasMore`). Deletions come as `deleted: true` without `data`, unless `includeDeleted=false`.\n\n`status` filters on the item's `status` field.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "description": "The project's id, or its case-ID prefix (`PHR`) when it is unique within the token's reach (409 `ambiguous_project` otherwise).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "updatedSince",
+            "in": "query",
+            "required": false,
+            "description": "The `nextCursor` of an earlier page or sync. Omitted: from the beginning.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{1,19}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50
+            }
+          },
+          {
+            "name": "includeDeleted",
+            "in": "query",
+            "required": false,
+            "description": "Deleted items come as `deleted: true` without `data`, so a mirror can delete them too.",
+            "schema": {
+              "default": "true",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The cases.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`validation_error`: a bad cursor or limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found` or `run_not_found`: not in the token's reach, or it does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/cases/{key}": {
+      "get": {
+        "operationId": "getCase",
+        "summary": "One case, by key or id.",
+        "description": "Scope `cases:read`. A live item wins over a deleted one that once had the key.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "description": "The project's id, or its case-ID prefix (`PHR`) when it is unique within the token's reach (409 `ambiguous_project` otherwise).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "description": "Its key (`TC-001`, `CYC-003`, `DEF-007`, `REQ-002`) or its id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The case.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Case"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found` or `run_not_found`: not in the token's reach, or it does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/cycles": {
+      "get": {
+        "operationId": "listCycles",
+        "summary": "The project's cycles changed after a cursor, oldest change first.",
+        "description": "Scope `cycles:read`. Read-only in v1.\n\nIncremental: keep `nextCursor` and send it back as `updatedSince` to get only what changed since (more pages while `hasMore`). Deletions come as `deleted: true` without `data`, unless `includeDeleted=false`.\n\n`status` filters on the item's `status` field.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "description": "The project's id, or its case-ID prefix (`PHR`) when it is unique within the token's reach (409 `ambiguous_project` otherwise).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "updatedSince",
+            "in": "query",
+            "required": false,
+            "description": "The `nextCursor` of an earlier page or sync. Omitted: from the beginning.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{1,19}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50
+            }
+          },
+          {
+            "name": "includeDeleted",
+            "in": "query",
+            "required": false,
+            "description": "Deleted items come as `deleted: true` without `data`, so a mirror can delete them too.",
+            "schema": {
+              "default": "true",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The cycles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`validation_error`: a bad cursor or limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found` or `run_not_found`: not in the token's reach, or it does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/cycles/{key}": {
+      "get": {
+        "operationId": "getCycle",
+        "summary": "One cycle, by key or id.",
+        "description": "Scope `cycles:read`. A live item wins over a deleted one that once had the key.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "description": "The project's id, or its case-ID prefix (`PHR`) when it is unique within the token's reach (409 `ambiguous_project` otherwise).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "description": "Its key (`TC-001`, `CYC-003`, `DEF-007`, `REQ-002`) or its id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The cycle.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cycle"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found` or `run_not_found`: not in the token's reach, or it does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/defects": {
+      "get": {
+        "operationId": "listDefects",
+        "summary": "The project's defects changed after a cursor, oldest change first.",
+        "description": "Scope `defects:read`. Read-only in v1.\n\nIncremental: keep `nextCursor` and send it back as `updatedSince` to get only what changed since (more pages while `hasMore`). Deletions come as `deleted: true` without `data`, unless `includeDeleted=false`.\n\n`status` filters on the item's `status` field.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "description": "The project's id, or its case-ID prefix (`PHR`) when it is unique within the token's reach (409 `ambiguous_project` otherwise).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "updatedSince",
+            "in": "query",
+            "required": false,
+            "description": "The `nextCursor` of an earlier page or sync. Omitted: from the beginning.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{1,19}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50
+            }
+          },
+          {
+            "name": "includeDeleted",
+            "in": "query",
+            "required": false,
+            "description": "Deleted items come as `deleted: true` without `data`, so a mirror can delete them too.",
+            "schema": {
+              "default": "true",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The defects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`validation_error`: a bad cursor or limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found` or `run_not_found`: not in the token's reach, or it does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/defects/{key}": {
+      "get": {
+        "operationId": "getDefect",
+        "summary": "One defect, by key or id.",
+        "description": "Scope `defects:read`. A live item wins over a deleted one that once had the key.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "description": "The project's id, or its case-ID prefix (`PHR`) when it is unique within the token's reach (409 `ambiguous_project` otherwise).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "description": "Its key (`TC-001`, `CYC-003`, `DEF-007`, `REQ-002`) or its id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The defect.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found` or `run_not_found`: not in the token's reach, or it does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/requirements": {
+      "get": {
+        "operationId": "listRequirements",
+        "summary": "The project's requirements changed after a cursor, oldest change first.",
+        "description": "Scope `requirements:read`. Read-only in v1.\n\nIncremental: keep `nextCursor` and send it back as `updatedSince` to get only what changed since (more pages while `hasMore`). Deletions come as `deleted: true` without `data`, unless `includeDeleted=false`.\n\n`status` filters on the item's `status` field.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "description": "The project's id, or its case-ID prefix (`PHR`) when it is unique within the token's reach (409 `ambiguous_project` otherwise).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "updatedSince",
+            "in": "query",
+            "required": false,
+            "description": "The `nextCursor` of an earlier page or sync. Omitted: from the beginning.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{1,19}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50
+            }
+          },
+          {
+            "name": "includeDeleted",
+            "in": "query",
+            "required": false,
+            "description": "Deleted items come as `deleted: true` without `data`, so a mirror can delete them too.",
+            "schema": {
+              "default": "true",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The requirements.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`validation_error`: a bad cursor or limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found` or `run_not_found`: not in the token's reach, or it does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/requirements/{key}": {
+      "get": {
+        "operationId": "getRequirement",
+        "summary": "One requirement, by key or id.",
+        "description": "Scope `requirements:read`. A live item wins over a deleted one that once had the key.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "description": "The project's id, or its case-ID prefix (`PHR`) when it is unique within the token's reach (409 `ambiguous_project` otherwise).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "description": "Its key (`TC-001`, `CYC-003`, `DEF-007`, `REQ-002`) or its id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The requirement.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found` or `run_not_found`: not in the token's reach, or it does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1499,6 +2315,186 @@
           "shard",
           "counts",
           "warnings"
+        ]
+      },
+      "Item": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The document as the server stores it (null when deleted). Unknown fields must be ignored."
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "updatedAt",
+          "deleted",
+          "data"
+        ]
+      },
+      "ItemList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Item"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Send it back as `updatedSince` for the next page, or later for what changed since. Opaque: compare nothing with it."
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor",
+          "hasMore"
+        ],
+        "description": "In order of change, oldest first. Deletions older than the server's tombstone window (SYNC_TOMBSTONE_DAYS) are no longer listed: a mirror syncs at least that often, like a desktop."
+      },
+      "Case": {
+        "description": "A case may carry `sharedRefs[]` and `datasetRefs[]` (ADR-0055 §1-§3): references to the project's shared steps and datasets with `version`, `revisionId`, `follow`, `stepIds` and `args`. They are metadata a client may ignore: the case's `steps` and dataset rows are already a materialized copy, ordinary steps and rows, readable without knowing the library. `<name>` placeholders in steps are the case's parameters.",
+        "$ref": "#/components/schemas/Item"
+      },
+      "CaseList": {
+        "description": "A case may carry `sharedRefs[]` and `datasetRefs[]` (ADR-0055 §1-§3): references to the project's shared steps and datasets with `version`, `revisionId`, `follow`, `stepIds` and `args`. They are metadata a client may ignore: the case's `steps` and dataset rows are already a materialized copy, ordinary steps and rows, readable without knowing the library. `<name>` placeholders in steps are the case's parameters.",
+        "$ref": "#/components/schemas/ItemList"
+      },
+      "Cycle": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The document as the server stores it (null when deleted). Unknown fields must be ignored."
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "total": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "executed": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "passed": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "failed": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "blocked": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "skipped": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "other": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "notRun": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "total",
+                  "executed",
+                  "passed",
+                  "failed",
+                  "blocked",
+                  "skipped",
+                  "other",
+                  "notRun"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The cycle's progress over its items and configurations, as the web shows it (null when deleted)."
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "updatedAt",
+          "deleted",
+          "data",
+          "progress"
         ]
       },
       "Error": {

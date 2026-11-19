@@ -42,7 +42,8 @@ export type MatrixNote =
   | "openDefect"
   | "retest"
   | "flaky"
-  | "stale";
+  | "stale"
+  | "openFindings";
 export type RiskBand = "high" | "medium" | "low" | "unassessed";
 export type MatrixSort = "risk" | "key";
 
@@ -111,6 +112,9 @@ export interface MatrixRow {
   defectKeys: string[];
   /** The same defects with what the pills need, in the same order. */
   defects: { label: string; severity: string | null; open: boolean }[];
+  /** The case's open findings in the latest scan of each tool (ING-06):
+   *  how many and the worst severity; null when none. */
+  findings?: { open: number; worst: string } | null;
   coverage: Coverage;
   notes: MatrixNote[];
 }
@@ -155,6 +159,8 @@ export interface MatrixExecution {
     RequirementExecution,
     "requirementKey" | "riskLevel" | "riskBand"
   >[];
+  /** The open findings by case (ING-06, F5b); absent without findings. */
+  findings?: { cases: { caseId: string; open: number; worst: string }[] } | null;
 }
 
 const RISK_RANK: Record<RiskBand, number> = {
@@ -177,6 +183,7 @@ export function buildMatrix(
   const risks = new Map(
     execution?.requirements.map((r) => [r.requirementKey, r]) ?? [],
   );
+  const findingsByCase = new Map(execution?.findings?.cases.map((c) => [c.caseId, c]) ?? []);
   const records = new Map(requirements.map((r) => [r.requirementKey, r]));
   // The record's risk when it has one (stable while the summary loads), else
   // the summary's.
@@ -243,6 +250,8 @@ export function buildMatrix(
       if (status === "retest") notes.push("retest");
       if (last?.flaky) notes.push("flaky");
       if (last?.stale) notes.push("stale");
+      const found = findingsByCase.get(c.id);
+      if (found) notes.push("openFindings");
       executionCounts[status in executionCounts ? status : "other"]++;
       rows.push({
         ...base,
@@ -257,6 +266,7 @@ export function buildMatrix(
           severity: d.severity ?? null,
           open: isOpen(d),
         })),
+        findings: found ? { open: found.open, worst: found.worst } : null,
         notes,
       });
     }

@@ -158,6 +158,15 @@ describe("buildMatrix with execution (EJE-04)", () => {
     expect(m.summary.execution).toMatchObject({ passed: 1, retest: 1, not_run: 1, failed: 0 });
   });
 
+  it("badges the cases with open findings and notes them (ING-06)", () => {
+    const m = buildMatrix(reqs, cases, [], {
+      ...execution,
+      findings: { cases: [{ caseId: "c", open: 2, worst: "critical" }] },
+    }, "key");
+    expect(m.rows.map((r) => r.findings ?? null)).toEqual([null, null, { open: 2, worst: "critical" }]);
+    expect(m.rows[2].notes).toEqual(["openFindings"]);
+  });
+
   it("orders requirements by risk (band, then level), unassessed last", () => {
     const m = buildMatrix(reqs, cases, [], execution);
     expect(m.rows.map((r) => [r.requirementKey, r.riskBand, r.riskLevel])).toEqual([

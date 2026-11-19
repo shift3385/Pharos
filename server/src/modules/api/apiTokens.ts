@@ -26,7 +26,7 @@ export const MAX_TOKEN_DAYS = 366;
 export const MAX_PROJECT_TOKENS = 50;
 export const MAX_PERSONAL_TOKENS = 20;
 /** «Caduca pronto» in the lists. */
-const EXPIRING_DAYS = 7;
+export const EXPIRING_DAYS = 7;
 /** A rotated token may keep working this long so CI can switch secrets. */
 export const MAX_ROTATION_OVERLAP_HOURS = 24;
 /** `last_used_at` is written at most this often per token. */

@@ -1,0 +1,512 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Revisión de casos y baselines</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: documento de propuesta (CAS-02, pista K); cada boceto imita una pantalla de Pharos (marino + tarjetas blancas), como los bocetos de PLN-06/07. */
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --fg:#1b2433; --muted:#5d6878; --line:#d6dce5;
+  --navy:#13233b; --accent:#1f5fae; --accent-soft:#e3edf9;
+  --ok:#1f7a4d; --ok-soft:#e1f3ea; --warn:#9a5b00; --warn-soft:#fdf0d9; --bad:#b3261e; --bad-soft:#fbe4e2;
+  --info:#5a3fa8; --info-soft:#ece6f8;
+  --code-bg:#f5f7fa; --scrim:rgba(19,35,59,.08);
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1522; --surface:#172234; --fg:#e4e9f1; --muted:#9aa6b8; --line:#2c3a50;
+  --navy:#0a1220; --accent:#6aa5ee; --accent-soft:#1d3352;
+  --ok:#5fcf97; --ok-soft:#163a2a; --warn:#f0b75a; --warn-soft:#3b2c12; --bad:#f08a82; --bad-soft:#3d1c1a;
+  --info:#b7a2f2; --info-soft:#2a2244;
+  --code-bg:#111a29; --scrim:rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1522; --surface:#172234; --fg:#e4e9f1; --muted:#9aa6b8; --line:#2c3a50;
+  --navy:#0a1220; --accent:#6aa5ee; --accent-soft:#1d3352;
+  --ok:#5fcf97; --ok-soft:#163a2a; --warn:#f0b75a; --warn-soft:#3b2c12; --bad:#f08a82; --bad-soft:#3d1c1a;
+  --info:#b7a2f2; --info-soft:#2a2244;
+  --code-bg:#111a29; --scrim:rgba(0,0,0,.25); color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.55}
+.wrap{max-width:1040px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:40px}
+header.top{display:grid;gap:8px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:30px;margin:0;text-wrap:balance;line-height:1.2}
+h2{font-size:21px;margin:0 0 4px;text-wrap:balance}
+h3{font-size:16px;margin:0}
+p{margin:0;max-width:72ch}
+.lead{color:var(--muted);max-width:75ch}
+section{display:grid;gap:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:20px;align-items:start}
+.note{font-size:13.5px;color:var(--muted)}
+ul.tight{margin:0;padding-left:20px;display:grid;gap:4px}
+code,.ids{font-family:var(--mono);font-size:12.5px}
+.ids{background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:4px;white-space:nowrap}
+pre{margin:0;background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:14px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.55}
+.cap{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* Diagrama de estados */
+.flow{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;overflow-x:auto}
+.flow svg{display:block;min-width:640px;width:100%;height:auto}
+.flow text{font-family:var(--sans);fill:var(--fg)}
+.flow .sub{fill:var(--muted);font-size:11.5px}
+
+/* Ventana de app */
+.app{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(10,20,40,.05);min-width:0}
+.app .bar{background:var(--navy);color:#e8eef7;font-size:12.5px;padding:8px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.app .bar b{font-weight:600}
+.app .bar .crumb{opacity:.7}
+.app .body{padding:18px;display:grid;gap:14px}
+.head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.head .t{display:flex;gap:10px;align-items:center;flex-wrap:wrap;min-width:0}
+.head h4{margin:0;font-size:18px}
+.pill{display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:600;border-radius:999px;padding:2px 10px;white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.p-draft{background:var(--code-bg);color:var(--muted);border:1px solid var(--line)}
+.p-review{background:var(--info-soft);color:var(--info)}
+.p-ok{background:var(--ok-soft);color:var(--ok)}
+.p-obs{background:var(--code-bg);color:var(--muted);text-decoration:line-through}
+.p-back{background:var(--warn-soft);color:var(--warn)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:inherit;font-size:13.5px;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:6px;padding:6px 12px;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.btn.ghost{border-style:dashed;color:var(--accent)}
+.btn[disabled]{opacity:.5}
+.banner{border-radius:8px;padding:10px 12px;font-size:13.5px;display:grid;gap:4px}
+.b-info{background:var(--info-soft);color:var(--fg);border:1px solid color-mix(in srgb,var(--info) 30%,transparent)}
+.b-warn{background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent)}
+.b-ok{background:var(--ok-soft);border:1px solid color-mix(in srgb,var(--ok) 30%,transparent)}
+.banner .who{font-weight:600}
+.field{border:1px solid var(--line);border-radius:6px;padding:8px 11px;font-size:14px;background:var(--surface);min-height:20px}
+.field.area{min-height:64px}
+.field.ph{color:var(--muted)}
+.lbl{font-size:13px;color:var(--muted);font-weight:500}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:13.5px;margin:0}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+.steps{margin:0;padding-left:22px;display:grid;gap:4px;font-size:14px}
+.gwt{font-family:var(--mono);font-size:12.5px;color:var(--accent);font-weight:500}
+
+/* Diálogo */
+.dlg{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px var(--scrim);padding:20px;display:grid;gap:12px;max-width:470px;width:100%;justify-self:center}
+.dlg h5{margin:0;font-size:17px}
+.dlg .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.stage{background:var(--scrim);border-radius:10px;padding:22px 14px;display:grid}
+.radio{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+.radio i{flex:none;width:14px;height:14px;border-radius:50%;border:1.5px solid var(--muted);margin-top:3px}
+.radio.on i{border-color:var(--accent);box-shadow:inset 0 0 0 3px var(--surface);background:var(--accent)}
+.radio small{display:block;color:var(--muted);font-size:12.5px}
+.cb{display:flex;gap:8px;align-items:center;font-size:14px}
+.cb i{flex:none;width:14px;height:14px;border:1.5px solid var(--muted);border-radius:3px}
+.cb.on i{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--surface)}
+
+/* Tablas */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:600px}
+th{font-size:12px;color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--code-bg)}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.id{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+td.num{font-variant-numeric:tabular-nums;text-align:right}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--surface)}
+.chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.chip b{font-variant-numeric:tabular-nums}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,120px),1fr));gap:8px}
+.tile{border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid;gap:2px}
+.tile b{font-size:20px;font-variant-numeric:tabular-nums}
+.tile span{font-size:12px;color:var(--muted)}
+.t-add b{color:var(--ok)} .t-del b{color:var(--bad)} .t-mod b{color:var(--warn)} .t-st b{color:var(--info)}
+.chg{font-size:12px;font-weight:600;border-radius:4px;padding:1px 7px;white-space:nowrap}
+.c-add{background:var(--ok-soft);color:var(--ok)} .c-del{background:var(--bad-soft);color:var(--bad)} .c-mod{background:var(--warn-soft);color:var(--warn)} .c-st{background:var(--info-soft);color:var(--info)}
+.diff{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:10px}
+.diff > div{border:1px solid var(--line);border-radius:8px;padding:10px;display:grid;gap:6px;font-size:13.5px;min-width:0}
+del{background:var(--bad-soft);color:var(--bad);text-decoration:line-through;border-radius:3px;padding:0 2px}
+ins{background:var(--ok-soft);color:var(--ok);text-decoration:none;border-radius:3px;padding:0 2px}
+.sel{border:1px solid var(--line);border-radius:6px;padding:7px 11px;font-size:13.5px;display:flex;justify-content:space-between;gap:8px;min-width:0}
+.sel::after{content:"▾";color:var(--muted)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tabs span{font-size:13.5px;padding:7px 12px;color:var(--muted)}
+.tabs span.on{color:var(--accent);border-bottom:2px solid var(--accent);font-weight:600}
+.dec{display:grid;gap:12px}
+.dec > div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:6px}
+.dec .rec{font-size:13.5px}
+.dec .rec b{color:var(--ok)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Pharos 0.5.0 «Equipo» · pista K · CAS-02 · plan y bocetos</div>
+  <h1>Revisión de casos y baselines de suite</h1>
+  <p class="lead">Un caso pasa de Borrador a En revisión y a Aprobado, y editarlo lo devuelve a Borrador. Una baseline congela un conjunto de casos en sus revisiones exactas y se puede comparar con el estado actual o con otra baseline. Sigue el patrón de la aprobación del plan (PLN-07, ADR-0040): confirmación, quién y cuándo, y editar quita la aprobación.</p>
+  <p class="note">Reservas: ADR <span class="ids">0047</span>, migración local <span class="ids">0042</span>; la del servidor <span class="ids">0024</span> no hace falta (§7). Todavía no hay código.</p>
+</header>
+
+<section>
+  <h2>1. El flujo</h2>
+  <p>Los cuatro valores guardados no cambian (<code>draft</code>, <code>reviewed</code>, <code>approved</code>, <code>obsolete</code>), así que la app 0.4 sigue leyendo los datos. Cambia lo que muestra la 0.5: <code>reviewed</code> se lee «En revisión», es decir, pendiente de aprobación. El desplegable de estado desaparece del editor y cada paso es una acción con su regla.</p>
+  <div class="flow" role="img" aria-label="Diagrama de estados: Borrador pasa a En revisión al enviar; En revisión pasa a Aprobado al aprobar o vuelve a Borrador al devolver con comentario; editar el contenido de un caso en revisión o aprobado lo devuelve a Borrador; cualquier estado puede marcarse Obsoleto y reactivarse como Borrador.">
+    <svg viewBox="0 0 760 230" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+      </defs>
+      <g font-size="14" font-weight="600">
+        <rect x="20" y="70" width="140" height="48" rx="24" fill="var(--code-bg)" stroke="var(--line)"/>
+        <text x="90" y="99" text-anchor="middle">Borrador</text>
+        <rect x="300" y="70" width="160" height="48" rx="24" fill="var(--info-soft)" stroke="var(--info)"/>
+        <text x="380" y="99" text-anchor="middle">En revisión</text>
+        <rect x="600" y="70" width="140" height="48" rx="24" fill="var(--ok-soft)" stroke="var(--ok)"/>
+        <text x="670" y="99" text-anchor="middle">Aprobado</text>
+        <rect x="300" y="180" width="160" height="40" rx="20" fill="var(--code-bg)" stroke="var(--line)" stroke-dasharray="4 3"/>
+        <text x="380" y="205" text-anchor="middle" fill="var(--muted)">Obsoleto</text>
+      </g>
+      <g stroke="var(--muted)" stroke-width="1.5" fill="none" marker-end="url(#ar)">
+        <path d="M160,86 L298,86"/>
+        <path d="M460,86 L598,86"/>
+        <path d="M300,108 C250,140 200,140 160,110"/>
+        <path d="M640,70 C600,10 140,10 100,68"/>
+        <path d="M380,120 L380,178" stroke-dasharray="4 3"/>
+      </g>
+      <g font-size="12.5">
+        <text x="229" y="78" text-anchor="middle">Enviar a revisión</text>
+        <text x="529" y="78" text-anchor="middle">Aprobar versión N</text>
+        <text x="230" y="150" text-anchor="middle">Devolver con comentario</text>
+        <text x="380" y="22" text-anchor="middle">Editar el contenido (también desde En revisión): vuelve a Borrador y pierde la aprobación</text>
+        <text x="392" y="152" class="sub">Marcar obsoleto · Reactivar → Borrador</text>
+      </g>
+    </svg>
+  </div>
+  <ul class="tight note">
+    <li><b>Contenido</b> es el título y lo que se ejecuta: descripción, precondiciones, pasos, resultado esperado, ejemplos, flujos, Gherkin, datos y requisitos enlazados. No lo son la prioridad, el estado de automatización, los campos propios ni la marca de revisión de la IA. Cambiarlos no quita la aprobación.</li>
+    <li>Guardar un caso aprobado con cambios de contenido sube la versión (1.2 → 1.3), como el plan.</li>
+    <li>Un archivo importado nunca trae aprobación: un caso «Aprobado» en el .xlsx o el .feature entra como Borrador.</li>
+    <li>Un caso que ya estaba aprobado antes de la 0.5 no tiene registro de quién lo aprobó. Se muestra «Aprobado (sin registro)» hasta la próxima aprobación.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>2. Enviar a revisión</h2>
+  <p>En la cabecera del editor, junto a la píldora de estado. Solo con el caso guardado: con cambios sin guardar, el botón explica «Guarda antes de enviar». La nota al revisor es opcional.</p>
+  <div class="grid2">
+    <div class="app">
+      <div class="bar"><span class="crumb">Tienda web › Casos ›</span><b>ATS-014</b></div>
+      <div class="body">
+        <div class="head">
+          <div class="t"><h4>Pago con tarjeta caducada</h4><span class="pill p-draft">Borrador</span><span class="note">v1.0</span></div>
+          <div class="btns"><button class="btn">Guardar</button><button class="btn primary">Enviar a revisión</button></div>
+        </div>
+        <div class="banner b-warn"><span><span class="who">Devuelto por Marta Ruiz</span> · 16 nov 2026</span><span>«El paso 3 no dice qué mensaje de error se espera.»</span></div>
+        <div class="lbl">Pasos</div>
+        <ol class="steps"><li><span class="gwt">Given</span> un carrito con un producto</li><li><span class="gwt">When</span> pago con una tarjeta caducada</li><li><span class="gwt">Then</span> el pago se rechaza</li></ol>
+        <p class="note">El aviso del último «Devolver» se queda en el borrador hasta el siguiente envío.</p>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="dlg" role="dialog" aria-label="Enviar a revisión">
+        <h5>Enviar ATS-014 a revisión</h5>
+        <p class="note">La versión 1.0 queda pendiente de aprobación. Si alguien edita el contenido antes, vuelve a Borrador.</p>
+        <div class="lbl">Nota para quien revise (opcional)</div>
+        <div class="field area">Corregido el paso 3: ahora comprueba el mensaje «Tarjeta caducada».</div>
+        <div class="foot"><button class="btn">Cancelar</button><button class="btn primary">Enviar a revisión</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>3. La vista de quien revisa</h2>
+  <p>Al abrir un caso «En revisión» se ve quién lo envió, su nota, y qué cambió desde la última versión aprobada. El cambio sale de las revisiones que ya se guardan, con el mismo comparador que las baselines (§6). «Aprobar versión N» pide confirmación. «Devolver» exige un comentario.</p>
+  <div class="grid2">
+    <div class="app">
+      <div class="bar"><span class="crumb">Tienda web › Casos ›</span><b>ATS-014</b></div>
+      <div class="body">
+        <div class="head">
+          <div class="t"><h4>Pago con tarjeta caducada</h4><span class="pill p-review">En revisión</span><span class="note">v1.0</span></div>
+          <div class="btns"><button class="btn">Devolver…</button><button class="btn ok">Aprobar versión 1.0</button></div>
+        </div>
+        <div class="banner b-info"><span><span class="who">Enviado por Luis Pérez</span> · 17 nov 2026, 10:42</span><span>«Corregido el paso 3: ahora comprueba el mensaje “Tarjeta caducada”.»</span></div>
+        <div class="cap">Cambios desde que se devolvió (revisión 4 → 6)</div>
+        <div class="diff">
+          <div><span class="lbl">Paso 3</span><span><span class="gwt">Then</span> el pago se rechaza <ins>con el mensaje «Tarjeta caducada»</ins></span></div>
+          <div><span class="lbl">Resultado esperado</span><span><del>Error</del> <ins>Se muestra «Tarjeta caducada» y el pedido no se crea</ins></span></div>
+        </div>
+        <p class="note">Si el caso nunca se aprobó, se compara con el envío anterior; si es el primero, no hay bloque de cambios.</p>
+      </div>
+    </div>
+    <div class="stage" style="gap:14px">
+      <div class="dlg" role="dialog" aria-label="Devolver con comentario">
+        <h5>Devolver ATS-014 a Borrador</h5>
+        <div class="lbl">Qué hay que cambiar (obligatorio)</div>
+        <div class="field area">Falta comprobar que no queda un pedido a medias en «Mis pedidos».</div>
+        <div class="foot"><button class="btn">Cancelar</button><button class="btn primary">Devolver</button></div>
+      </div>
+      <div class="dlg" role="dialog" aria-label="Aprobar">
+        <h5>Aprobar la versión 1.0</h5>
+        <p>Quedará como aprobada por <b>Marta Ruiz</b> el 17 nov 2026.</p>
+        <div class="foot"><button class="btn">Cancelar</button><button class="btn ok">Aprobar</button></div>
+      </div>
+    </div>
+  </div>
+  <h3>Autoaprobación con un solo usuario</h3>
+  <div class="grid2">
+    <div class="stage">
+      <div class="dlg" role="dialog" aria-label="Autoaprobación">
+        <h5>Aprobar la versión 1.0</h5>
+        <div class="banner b-warn"><span>Eres quien escribió este caso. Como en este espacio de trabajo no hay nadie más, puedes aprobarlo, y quedará registrado como <b>autoaprobación</b>.</span></div>
+        <p>Quedará como aprobada por <b>Luis Pérez</b> (autoaprobación) el 17 nov 2026.</p>
+        <div class="foot"><button class="btn">Cancelar</button><button class="btn ok">Aprobar</button></div>
+      </div>
+    </div>
+    <div class="app">
+      <div class="body">
+        <div class="cap">Panel «Estado del caso», ya aprobado</div>
+        <dl class="kv"><dt>Estado</dt><dd><span class="pill p-ok">Aprobado</span></dd><dt>Aprobado por</dt><dd>Luis Pérez · <i>autoaprobación</i></dd><dt>Fecha</dt><dd>17 nov 2026, 11:05</dd><dt>Versión</dt><dd>1.0 (revisión 6)</dd><dt>Enviado por</dt><dd>Luis Pérez · 17 nov 2026, 10:42</dd></dl>
+        <p class="note">Con dos o más miembros (cuando W conecte los roles), el autor ve el botón desactivado con «Lo tiene que aprobar otra persona». El PDF del caso y el historial muestran «autoaprobación».</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>4. El estado en la lista de casos</h2>
+  <p>La píldora de estado ya existe; cambia su texto, sale el aviso «Devuelto» y se añade el filtro rápido «Por revisar», que cuenta los casos en revisión que no escribiste tú. La ayuda emergente de la píldora dice quién y cuándo.</p>
+  <div class="app">
+    <div class="bar"><span class="crumb">Tienda web ›</span><b>Casos</b></div>
+    <div class="body">
+      <div class="head">
+        <div class="chips"><span class="chip">Todos <b>42</b></span><span class="chip on">Por revisar <b>3</b></span><span class="chip">Borrador <b>11</b></span><span class="chip">En revisión <b>5</b></span><span class="chip">Aprobado <b>24</b></span><span class="chip">Obsoleto <b>2</b></span></div>
+        <div class="btns"><button class="btn">Baselines</button><button class="btn primary">Nuevo caso</button></div>
+      </div>
+      <div class="tbl"><table>
+        <thead><tr><th>ID</th><th>Título</th><th>Estado</th><th>Enviado por</th><th>Prioridad</th></tr></thead>
+        <tbody>
+          <tr><td class="id">ATS-014</td><td>Pago con tarjeta caducada</td><td><span class="pill p-review" title="Enviado por Luis Pérez · 17 nov 2026">En revisión</span></td><td>Luis Pérez · hoy</td><td>Alta</td></tr>
+          <tr><td class="id">ATS-021</td><td>Cupón caducado en el carrito</td><td><span class="pill p-review">En revisión</span></td><td>Ana Gil · ayer</td><td>Media</td></tr>
+          <tr><td class="id">ATS-030</td><td>Devolución parcial</td><td><span class="pill p-review">En revisión</span></td><td>Ana Gil · 14 nov</td><td>Baja</td></tr>
+        </tbody>
+      </table></div>
+      <div class="cap">Otras filas, con «Todos»</div>
+      <div class="tbl"><table>
+        <thead><tr><th>ID</th><th>Título</th><th>Estado</th></tr></thead>
+        <tbody>
+          <tr><td class="id">ATS-002</td><td>Alta de usuario</td><td><span class="pill p-ok" title="Aprobado por Marta Ruiz · 12 nov 2026 · v1.1">Aprobado</span></td></tr>
+          <tr><td class="id">ATS-009</td><td>Cambio de dirección</td><td><span class="pill p-draft">Borrador</span> <span class="pill p-back">Devuelto</span></td></tr>
+          <tr><td class="id">ATS-011</td><td>Pago con PayPal</td><td><span class="pill p-ok" title="Aprobado por Luis Pérez (autoaprobación)">Aprobado</span> <span class="note">· auto</span></td></tr>
+          <tr><td class="id">ATS-003</td><td>Registro con Google</td><td><span class="pill p-obs">Obsoleto</span></td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">Las acciones en lote de la lista ganan «Enviar a revisión» para los seleccionados en Borrador. Aprobar sigue siendo de uno en uno: cada aprobación es una decisión sobre una versión concreta.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>5. Crear una baseline de suite</h2>
+  <p>Desde «Baselines» en la lista de casos (también desde la selección). Una baseline guarda, para cada caso, el ID, la revisión exacta y su estado en ese momento. No se edita ni se borra: para cambiarla se crea otra, como pide ISTQB para una línea base bajo control de cambios.</p>
+  <div class="grid2">
+    <div class="stage">
+      <div class="dlg" role="dialog" aria-label="Nueva baseline">
+        <h5>Nueva baseline</h5>
+        <div class="lbl">Nombre</div><div class="field">Regresión release 2.4</div>
+        <div class="lbl">Descripción (opcional)</div><div class="field area ph">Para qué sirve esta línea base…</div>
+        <div class="lbl">Casos</div>
+        <div class="radio"><i></i><span>Todos los casos del proyecto<small>40 sin contar los obsoletos</small></span></div>
+        <div class="radio on"><i></i><span>Los del filtro actual<small>Prioridad alta o crítica · 18 casos</small></span></div>
+        <div class="radio"><i></i><span>Los 6 casos seleccionados</span></div>
+        <div class="cb on"><i></i><span>Solo los casos aprobados</span></div>
+        <div class="banner b-warn"><span>Entran <b>15</b> casos. Se quedan fuera 3 que no están aprobados: ATS-014, ATS-021 y ATS-009.</span></div>
+        <div class="foot"><button class="btn">Cancelar</button><button class="btn primary">Congelar 15 casos</button></div>
+      </div>
+    </div>
+    <div class="app">
+      <div class="bar"><span class="crumb">Tienda web › Casos ›</span><b>Baselines</b></div>
+      <div class="body">
+        <div class="head"><h4>Baselines</h4><button class="btn primary">Nueva baseline</button></div>
+        <div class="tbl"><table>
+          <thead><tr><th>Nombre</th><th>Casos</th><th>Creada</th><th></th></tr></thead>
+          <tbody>
+            <tr><td><b>Regresión release 2.4</b><br><span class="note">Solo aprobados · filtro: prioridad alta o crítica</span></td><td class="num">15</td><td>Marta Ruiz<br><span class="note">17 nov 2026</span></td><td><button class="btn">Comparar</button></td></tr>
+            <tr><td><b>Regresión release 2.3</b></td><td class="num">13</td><td>Marta Ruiz<br><span class="note">2 oct 2026</span></td><td><button class="btn">Comparar</button></td></tr>
+            <tr><td><b>Smoke inicial</b></td><td class="num">6</td><td>Luis Pérez<br><span class="note">10 sep 2026</span></td><td><button class="btn">Comparar</button></td></tr>
+          </tbody>
+        </table></div>
+        <p class="note">Abrir una baseline muestra sus casos tal como se congelaron, de solo lectura, con el contenido de esa revisión. Exportarla queda fuera de esta pista (§9).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>6. Comparar baselines</h2>
+  <p>Se compara una baseline con el estado actual o con otra baseline. Arriba el resumen, debajo un caso por fila y, al abrir una fila, los cambios campo a campo. Un caso puede tener a la vez cambios de contenido y de estado.</p>
+  <div class="app">
+    <div class="bar"><span class="crumb">Tienda web › Casos › Baselines ›</span><b>Comparar</b></div>
+    <div class="body">
+      <div class="head" style="justify-content:flex-start">
+        <div class="sel" style="flex:1 1 220px">Regresión release 2.3 · 2 oct</div><span class="note">frente a</span><div class="sel" style="flex:1 1 220px">Regresión release 2.4 · 17 nov</div>
+      </div>
+      <div class="tiles">
+        <div class="tile t-add"><b>3</b><span>Añadidos</span></div>
+        <div class="tile t-del"><b>1</b><span>Quitados</span></div>
+        <div class="tile t-mod"><b>4</b><span>Contenido cambiado</span></div>
+        <div class="tile t-st"><b>2</b><span>Solo estado cambiado</span></div>
+        <div class="tile"><b>7</b><span>Sin cambios</span></div>
+      </div>
+      <div class="chips"><span class="chip on">Con cambios <b>10</b></span><span class="chip">Todos <b>17</b></span></div>
+      <div class="tbl"><table>
+        <thead><tr><th>ID</th><th>Título</th><th>Cambio</th><th>Revisión</th><th>Estado</th></tr></thead>
+        <tbody>
+          <tr><td class="id">ATS-031</td><td>Pago fraccionado</td><td><span class="chg c-add">Añadido</span></td><td class="num">— → 3</td><td>Aprobado</td></tr>
+          <tr><td class="id">ATS-007</td><td>Pago con transferencia</td><td><span class="chg c-del">Quitado</span></td><td class="num">5 → —</td><td>Aprobado → Obsoleto</td></tr>
+          <tr><td class="id">ATS-014</td><td>Pago con tarjeta caducada</td><td><span class="chg c-mod">Contenido</span> <span class="chg c-st">Estado</span></td><td class="num">2 → 7</td><td>Borrador → Aprobado</td></tr>
+          <tr><td class="id">ATS-002</td><td>Alta de usuario</td><td><span class="chg c-mod">Contenido</span></td><td class="num">4 → 6</td><td>Aprobado</td></tr>
+        </tbody>
+      </table></div>
+      <div class="cap">ATS-014 abierto · revisión 2 → 7</div>
+      <div class="diff">
+        <div><span class="lbl">Título</span><span>Pago con tarjeta caducada</span><span class="note">Sin cambios</span></div>
+        <div><span class="lbl">Paso 3</span><span><span class="gwt">Then</span> el pago se rechaza <ins>con el mensaje «Tarjeta caducada»</ins></span></div>
+        <div><span class="lbl">Paso 4 (nuevo)</span><span><ins><span class="gwt">And</span> no queda ningún pedido a medias en «Mis pedidos»</ins></span></div>
+        <div><span class="lbl">Requisitos</span><span>REQ-020 <ins>REQ-024</ins></span></div>
+      </div>
+      <p class="note">Los pasos se emparejan por su ID estable (DAT-02), así que mover un paso se ve como «movido» y no como borrar y añadir.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>7. Datos, servidor y sincronización</h2>
+  <div class="grid2">
+    <div style="display:grid;gap:8px;min-width:0">
+      <h3>En el caso (sin migración)</h3>
+      <p class="note">Como <code>data.approval</code> del plan, viaja con el caso y se sincroniza como el resto de su contenido.</p>
+<pre>data.review = {            // ciclo en curso o último devuelto
+  state: "pending" | "returned",
+  sentBy, sentByName, sentAt,
+  revision, version, note?,
+  returnedBy?, returnedByName?,
+  returnedAt?, comment?
+}
+data.approval = {
+  by, byName, at,
+  version, revision,
+  selfApproved: boolean
+}</pre>
+    </div>
+    <div style="display:grid;gap:8px;min-width:0">
+      <h3>Baselines (migración local 0042)</h3>
+<pre>case_baselines(
+  id, project_id, name, description,
+  scope_label, approved_only,
+  created_by, created_at)
+case_baseline_items(
+  baseline_id, case_id, scenario_id,
+  revision, status, title,
+  PRIMARY KEY(baseline_id, case_id))</pre>
+      <p class="note">El contenido se lee de <code>test_case_revisions</code>, que ya existe y ya se sincroniza (DAT-02). Congelar es guardar <code>(caso, revisión)</code>, igual que un ciclo congela la revisión de sus ítems.</p>
+    </div>
+  </div>
+  <ul class="tight">
+    <li><b>Las reglas se aplican en el núcleo, no solo en la pantalla.</b> El guardado normal ya no puede poner <code>reviewed</code> ni <code>approved</code>: lo hacen comandos propios (<code>test_case_review</code> en Rust y <code>POST /api/test-cases/:id/review</code> en la web) con <code>send | approve | return | obsolete | reactivate</code>. El servidor usa la cuenta autenticada, no un nombre enviado por el cliente. Un guardado que cambia el contenido de un caso en revisión o aprobado lo devuelve a Borrador en el propio núcleo, también si viene del import, de la IA o del CLI.</li>
+    <li><b>Servidor:</b> la baseline se guarda como documento de solo-añadir (<code>tx.append("case_baseline", …)</code>) en la tabla de documentos que ya existe, así que la migración 0024 del servidor no hace falta y queda libre. Rutas: <code>GET/POST /api/case-baselines</code>, <code>GET /api/case-baselines/:id</code> y <code>GET /api/case-baselines/compare?from=&amp;to=</code>.</li>
+    <li><b>Sincronización de baselines (punto con W):</b> para que la baseline creada en el escritorio llegue a la web hay que registrar <code>case_baseline</code> como entidad de solo-añadir: una entrada en <code>sync_class.rs</code>, una línea en <code>sync.schemas.ts</code> del servidor y subir <code>APPLIED_SET_VERSION</code>. Es núcleo de sync, que es de W. Propuesta: lo añado yo en un commit aparte y W hace rebase, o se deja para la ola 2 y hasta entonces las baselines del escritorio son locales.</li>
+    <li><b>Compatibilidad (VERSIONING §6.5):</b> no cambia ningún valor guardado. La app 0.4 ve «Revisado» donde la 0.5 dice «En revisión» e ignora <code>data.review</code> y <code>data.approval</code>. Contra un servidor 0.5 la 0.4 está en solo lectura, así que no puede saltarse el flujo.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>8. Las dos costuras para otras pistas</h2>
+  <div class="grid2">
+    <div style="display:grid;gap:8px;min-width:0">
+      <h3>Quién puede aprobar (para W)</h3>
+<pre>// src/modules/test-cases/review/approver.ts
+export interface ApprovalRequest {
+  workspaceId: string;
+  projectId: string;
+  caseId: string;
+  authorId: string;    // created_by del caso
+  approverId: string;  // cuenta que aprueba
+}
+export type ApprovalVerdict =
+  | { ok: true; selfApproval: boolean }
+  | { ok: false; reason: "author" | "role" | "notMember" };
+export interface ApproverCheck {
+  canApprove(req: ApprovalRequest): Promise&lt;ApprovalVerdict&gt;;
+}
+// Por defecto, hasta que lleguen los roles:
+// «otra persona que no sea el autor»; con un
+// solo miembro, autoaprobación registrada.
+export function otherThanAuthor(
+  memberCount: (workspaceId: string) =&gt; Promise&lt;number&gt;,
+): ApproverCheck;
+export function setApproverCheck(check: ApproverCheck): void;</pre>
+      <p class="note">La misma forma en el servidor (<code>server/src/modules/domain/case-review.ts</code>, con la transacción) y en Rust (<code>trait ApproverCheck</code> en <code>case_review.rs</code>), porque la regla tiene que aplicarse donde se escribe. Hasta W, <code>memberCount</code> devuelve 1. W conecta su versión: rol Test Manager o Test Analyst y distinto del autor, y devuelve <code>"role"</code> si la cuenta no tiene ese rol.</p>
+    </div>
+    <div style="display:grid;gap:8px;min-width:0">
+      <h3>Eventos para notificaciones (para R)</h3>
+<pre>// src/modules/test-cases/model/events.ts
+export const CASE_REVIEW_EVENT = "pharos:case-review";
+export interface CaseReviewEvent {
+  kind: "sent" | "approved" | "returned";
+  caseId: string;
+  scenarioId: string;   // ATS-014
+  title: string;
+  projectId: string;
+  authorId: string;
+  actorId: string;
+  actorName: string;
+  at: string;           // ISO
+  version: string;
+  comment?: string;     // nota o motivo
+  selfApproval?: boolean;
+}
+export function onCaseReview(
+  listener: (e: CaseReviewEvent) =&gt; void,
+): () =&gt; void;          // devuelve "darse de baja"</pre>
+      <p class="note">Se emite en el cliente después de que el núcleo acepta la transición. R se suscribe y decide a quién avisar. Si R necesita notificar a otra persona en otro equipo, el mismo objeto sirve de carga para su API del servidor; no envío nada al servidor por mi cuenta.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>9. Alcance, pruebas y documentación</h2>
+  <div class="grid2">
+    <div style="display:grid;gap:6px">
+      <h3>Entra</h3>
+      <ul class="tight">
+        <li>Flujo completo en escritorio y web, con las reglas en Rust y en el servidor.</li>
+        <li>Filtro «Por revisar», aviso «Devuelto», envío a revisión en lote.</li>
+        <li>Baselines: crear, ver de solo lectura, comparar con el estado actual o con otra.</li>
+        <li>«Aprobado por» y «autoaprobación» en el PDF del caso y en el historial. El .xlsx no cambia (sus celdas las lee la importación).</li>
+        <li>Pruebas: Rust (transiciones, editar quita la aprobación, autoaprobación, baseline congelada aunque el caso cambie), servidor (las mismas, más un autor que intenta aprobar con dos miembros simulados), Vitest de UI y a11y, y un E2E del recorrido.</li>
+        <li>Docs en el mismo cambio: ADR-0047, fila de ROADMAP §5, <code>changes/</code>, manual (capítulo de casos) y glosario («baseline»).</li>
+      </ul>
+    </div>
+    <div style="display:grid;gap:6px">
+      <h3>No entra</h3>
+      <ul class="tight">
+        <li>Roles reales: la comprobación de W llega en la ola 2.</li>
+        <li>Varios revisores o un mínimo de aprobaciones: el usuario aprobó que basta uno.</li>
+        <li>Exportar una baseline o su comparación a .xlsx o PDF: se puede pedir aparte.</li>
+        <li>Que un ciclo se cree desde una baseline: tiene sentido, pero es trabajo de ciclos.</li>
+        <li>Notificaciones: las pinta R a partir del evento.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>10. Lo que necesito que decida el usuario</h2>
+  <div class="dec">
+    <div><h3>1. ¿«Revisado» pasa a llamarse «En revisión»?</h3><p>Guardar un valor nuevo (<code>in_review</code>) rompe la lectura de la app 0.4 y deja <code>reviewed</code> sin sentido. Reutilizar <code>reviewed</code> con otra etiqueta no cambia los datos.</p><p class="rec"><b>Recomendación:</b> reutilizar <code>reviewed</code> con la etiqueta «En revisión». Los casos que hoy están en «Revisado» quedan pendientes de aprobación.</p></div>
+    <div><h3>2. ¿Editar un caso «En revisión» lo devuelve a Borrador?</h3><p>Si no lo hace, alguien podría aprobar algo distinto de lo que se envió.</p><p class="rec"><b>Recomendación:</b> sí. Cambiar el contenido de un caso en revisión o aprobado lo devuelve a Borrador.</p></div>
+    <div><h3>3. ¿La baseline incluye solo casos aprobados?</h3><p class="rec"><b>Recomendación:</b> la casilla «Solo los casos aprobados» viene marcada y se puede desmarcar, avisando de cuántos se quedan fuera.</p></div>
+    <div><h3>4. ¿Las baselines se sincronizan ya, en la ola 1?</h3><p>Hace falta una entrada en el núcleo de sync (§7), que es de W.</p><p class="rec"><b>Recomendación:</b> sí, en un commit aparte y pequeño, avisando a W. La alternativa es que sean locales hasta la ola 2.</p></div>
+  </div>
+</section>
+
+</div>
+
+</body></html>

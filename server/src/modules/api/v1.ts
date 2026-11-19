@@ -15,6 +15,8 @@ import type { RunImport } from "./runImport.js";
 import type { ReportParser } from "./reportParse.js";
 import type { DomainStore } from "../domain/domain.store.js";
 import type { RunService } from "../domain/runs.js";
+import type { CycleService } from "../domain/cycles.js";
+import { apiV1ReadRoutes } from "./v1.reads.js";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -118,6 +120,7 @@ export function apiV1Routes(
     service: ApiTokenService;
     store: DomainStore;
     runs: RunService;
+    cycles: CycleService;
     runImport: RunImport;
     parser: ReportParser;
     limits: UploadLimits;
@@ -175,4 +178,5 @@ export function apiV1Routes(
   });
 
   apiV1RunRoutes(app, { ...deps, preHandler });
+  apiV1ReadRoutes(app, { pool, service, cycles: deps.cycles, preHandler, config });
 }

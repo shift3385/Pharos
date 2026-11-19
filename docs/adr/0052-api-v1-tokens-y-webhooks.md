@@ -277,3 +277,28 @@ Con F2 en `main` (ADR-0053: entidades `finding` y `metric`), la subida guarda lo
   - Ya no hace falta el enlace `/app/node_modules` de F1.
 - **CI:** el job `server` ejecuta `npm run build` y arranca `node dist/server.js` contra una base de datos propia (`pharos_build_smoke`) hasta que `/health` responde.
 - **Sin probar:** no se ha construido la imagen con Docker; no hay Docker en la máquina de desarrollo. Se probó la etapa final a mano: una carpeta limpia con solo `npm ci --omit=dev`, `dist/` y `migrations/`, sin el repo por encima, con `NODE_ENV=production`. Arranca, migra, responde `/health`, el comando del health check sale con 0 y una subida JUnit se lee en el proceso hijo.
+
+### A4 · Lecturas y avisos de tokens (2026-11-19)
+
+El usuario aprobó el plan con las tres recomendaciones: el aviso de caducidad de un token personal va a la bandeja sin workspace; `token.inactive` va solo a los Test Manager; los borrados salen en las listas por defecto.
+
+- **Lecturas** (`v1.reads.ts`): `GET …/cases`, `…/cycles`, `…/defects` y `…/requirements`, cada uno con su scope de A1, en lista y como `/{key}` (clave o id, sin distinguir mayúsculas).
+  - **Elemento:** `{ id, key, updatedAt, deleted, data }`. `data` es el documento tal como se guarda. Un ciclo añade `progress`, el resumen que calcula la web.
+  - **Cursor:** `updatedSince` es el `seq` global de `documents`, el mismo cursor que usa el pull del sync. Las listas van del cambio más antiguo al más reciente y responden `nextCursor` y `hasMore`. Sin cambios, la respuesta trae el mismo cursor.
+  - **Borrados:** salen como `deleted: true` y sin `data`, salvo con `includeDeleted=false`. Los que tienen más de `SYNC_TOMBSTONE_DAYS` ya no se listan, porque la compactación vacía su contenido. Un espejo tiene que sincronizar al menos así de a menudo, como un escritorio.
+  - **Filtros:** solo `status=`. La búsqueda por texto o por etiqueta queda fuera hasta que un cliente la pida.
+  - **Casos:** el OpenAPI explica `sharedRefs[]` y `datasetRefs[]` (ADR-0055 §1–§3) como metadatos que se pueden ignorar, como se acordó con la pista P.
+  - **Contrato:** pasa a 1.2.0.
+- **Avisos** (`tokenNotices.ts`, migración del servidor **0031**): un barrido cada `TOKEN_NOTICE_INTERVAL_MS`, una hora por defecto.
+  - `token.expiring` va al dueño cuando faltan 7 días o menos, una vez. El de un token de proyecto va en su workspace; el de un token personal, sin workspace. Lleva a «Integraciones» o a «Mi perfil».
+  - `token.inactive` va a los Test Manager del workspace cuando el dueño de un token de proyecto sale o se le desactiva la cuenta. Se avisa una vez cada vez que pasa: la marca se borra cuando el token vuelve a funcionar.
+  - Que el dueño **baje de rol no deja el token inactivo**. Con el modelo de A1, el token sigue funcionando con lo que el nuevo rol permite. Por eso no hay aviso.
+  - Cada aviso se reclama con `UPDATE … RETURNING` (`expiry_notified_at`, `inactive_notified_at`), así que dos instancias no lo envían dos veces.
+- **Guía:** [`docs/api-v1.md`](../api-v1.md) explica, con ejemplos de `curl`:
+  - el token;
+  - la subida en una matriz;
+  - el cierre del run;
+  - la lectura incremental;
+  - los errores y los reintentos;
+  - la comprobación de la firma de un webhook en Node y en Python.
+- **Pendiente: A4b**, el capítulo «Integraciones» del manual (tokens de proyecto y personales, webhooks y entregas). Necesita grabar un tour con la app de escritorio, y va en su propio PR. Las entradas del inventario siguen como pendientes y apuntan a A4b.

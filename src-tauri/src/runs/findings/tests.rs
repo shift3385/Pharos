@@ -500,3 +500,164 @@ fn the_run_detail_lists_failed_thresholds_first() {
         .unwrap()
         .is_empty());
 }
+
+fn scan(day: &str, findings: Value) -> Value {
+    json!({
+        "schemaVersion": "1.0.0",
+        "run": {"sourceTool": "Semgrep", "startedAt": format!("{day}T09:00:00Z")},
+        "shards": [{"ref": "s1", "sourceFormat": "sarif", "normalizerVersion": 1}],
+        "findings": findings
+    })
+}
+
+fn finding(fp: &str, severity: &str, attributes: Value) -> Value {
+    json!({"ruleId": "r", "severity": severity, "message": "m", "fingerprint": fp,
+           "attributes": attributes, "shardRef": "s1"})
+}
+
+fn import_doc(c: &Connection, p: &str, doc: Value, sha: &str) -> String {
+    let req: ReportImportRequest = serde_json::from_value(json!({
+        "projectId": p, "userId": U, "doc": doc, "sha256": sha, "fileName": "r.json",
+        "newRun": {"title": "Scan"}
+    }))
+    .unwrap();
+    let raw = Stored {
+        sha256: sha.into(),
+        size: 1,
+    };
+    in_tx(c, |tx| commit(tx, &req, &raw)).unwrap().run_id
+}
+
+#[test]
+fn the_summary_counts_the_latest_scan_of_each_tool_and_the_cases() {
+    let c = device();
+    let p = new_project(&c);
+    let input: crate::test_case::TestCaseInput = serde_json::from_value(json!({
+        "projectId": p, "scenarioId": "TC-001", "title": "Pago", "author": "Ada",
+        "data": {}, "userId": U
+    }))
+    .unwrap();
+    let tc1 = crate::test_case::insert_case(&c, &input).unwrap();
+    // An older scan: its «gone» finding is fixed in the newer one.
+    import_doc(
+        &c,
+        &p,
+        scan(
+            "2026-11-01",
+            json!([
+                finding("gone", "critical", json!({})),
+                finding("kept", "high", json!({}))
+            ]),
+        ),
+        &"a".repeat(64),
+    );
+    import_doc(
+        &c,
+        &p,
+        scan(
+            "2026-11-02",
+            json!([
+                finding("kept", "high", json!({})),
+                finding("tagged", "critical", json!({"tags": ["@TC-001"]})),
+                finding("tagged-low", "low", json!({"tags": ["@TC-001"]})),
+                finding("judged", "medium", json!({})),
+                finding("review", "info", json!({"needsReview": true}))
+            ]),
+        ),
+        &"b".repeat(64),
+    );
+    triage_add(
+        &c,
+        &p,
+        U,
+        "judged",
+        "false_positive",
+        Some("No aplica"),
+        None,
+    )
+    .unwrap();
+    // A k6 run with a failed threshold of TC-001.
+    import_doc(
+        &c,
+        &p,
+        json!({
+            "schemaVersion": "1.0.0",
+            "run": {"sourceTool": "k6", "startedAt": "2026-11-02T10:00:00Z"},
+            "shards": [{"ref": "s1", "sourceFormat": "k6", "normalizerVersion": 1}],
+            "metrics": [
+                {"name": "http_req_duration", "aggregation": "p95", "value": 742.0, "unit": "ms",
+                 "threshold": "p(95)<500", "passed": false, "caseKey": "TC-001", "shardRef": "s1"},
+                {"name": "http_req_failed", "aggregation": "rate", "value": 0.0,
+                 "threshold": "rate<0.01", "passed": true, "shardRef": "s1"}
+            ]
+        }),
+        &"c".repeat(64),
+    );
+    let filter = crate::execution::derive::ExecutionFilter {
+        project_id: p.clone(),
+        ..Default::default()
+    };
+    let s = crate::execution::execution_summary_of(&c, &filter, U)
+        .unwrap()
+        .unwrap();
+    let f = s.findings.expect("the summary has findings");
+    // Only the newer Semgrep scan counts: «gone» is fixed.
+    assert_eq!(f.tools.len(), 1);
+    assert_eq!(
+        (
+            f.open.critical,
+            f.open.high,
+            f.open.medium,
+            f.open.low,
+            f.open.info
+        ),
+        (1, 1, 0, 1, 0)
+    );
+    assert_eq!((f.triaged, f.review), (1, 1));
+    // New since the older scan: the two tagged ones.
+    assert_eq!(f.new, 2);
+    assert_eq!(
+        f.cases,
+        vec![summary::CaseFindings {
+            case_id: tc1.clone(),
+            open: 2,
+            worst: "critical".into()
+        }]
+    );
+    assert_eq!((f.thresholds_total, f.thresholds_passed), (2, 1));
+    assert_eq!(f.failed_thresholds.len(), 1);
+    assert_eq!(
+        f.failed_thresholds[0].case_id.as_deref(),
+        Some(tc1.as_str())
+    );
+    assert_eq!(f.failed_thresholds[0].threshold, "p(95)<500");
+    // The runs list (F5b): runs with findings or thresholds only are not empty.
+    let counts = crate::runs::import::run_counts(&c, &p, U).unwrap();
+    let mut seen: Vec<(i64, Option<String>, i64)> = counts
+        .iter()
+        .map(|x| (x.findings, x.findings_worst.clone(), x.thresholds_failed))
+        .collect();
+    seen.sort();
+    assert_eq!(
+        seen,
+        vec![
+            (0, None, 1),
+            (2, Some("critical".into()), 0),
+            (3, Some("critical".into()), 0)
+        ]
+    );
+}
+
+#[test]
+fn a_summary_without_findings_or_thresholds_has_none() {
+    let c = device();
+    let p = new_project(&c);
+    let filter = crate::execution::derive::ExecutionFilter {
+        project_id: p,
+        ..Default::default()
+    };
+    let s = crate::execution::execution_summary_of(&c, &filter, U)
+        .unwrap()
+        .unwrap();
+    assert!(s.findings.is_none());
+}

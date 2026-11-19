@@ -1131,7 +1131,8 @@ fn run_counts_are_of_final_results() {
             passed: 3,
             failed: 1,
             other: 0,
-            unlinked: 0
+            unlinked: 0,
+            ..Default::default()
         }]
     );
     assert!(run_counts(&c, &p, "someone-else").unwrap().is_empty());

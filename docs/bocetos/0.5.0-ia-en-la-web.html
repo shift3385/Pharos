@@ -1,0 +1,358 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Pharos IA en la web</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: una columna de lectura; cada boceto es un marco de la pantalla de Pharos con notas al lado (debajo en móvil). Tokens de src/shared/theme/tokens.css. */
+:root {
+  --navy-900: #0b1f33; --navy-500: #1f4e79; --navy-300: #6fa3cc; --on-navy: #e8edf2;
+  --page: #f3f5f8; --surface: #ffffff; --surface-2: #f7f9fb; --scrim: #0b1f3366;
+  --text: #1c2530; --text-2: #5f6b7a; --muted: #616973;
+  --border: #d9dee5; --border-input: #828c9a; --focus: #6fa3cc55;
+  --ok: #1d9e75; --err: #d64545; --err-text: #bc3d3d; --warn: #b8860b; --warn-text: #886308;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Code", monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --page: #0d1621; --surface: #14202e; --surface-2: #192737; --text: #e8edf2; --text-2: #93a3b5; --muted: #8491a0; --scrim: #00000080;
+  --border: #2a3a4d; --border-input: #64758a; --navy-500: #6fa3cc; --focus: #6fa3cc44;
+  --ok: #5dcaa5; --err: #f09595; --err-text: #f09595; --warn: #e0b341; --warn-text: #e0b341; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --page: #0d1621; --surface: #14202e; --surface-2: #192737; --text: #e8edf2; --text-2: #93a3b5; --muted: #8491a0; --scrim: #00000080;
+  --border: #2a3a4d; --border-input: #64758a; --navy-500: #6fa3cc; --focus: #6fa3cc44;
+  --ok: #5dcaa5; --err: #f09595; --err-text: #f09595; --warn: #e0b341; --warn-text: #e0b341; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--page); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 64px }
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 40px }
+h1 { font-size: 28px; margin: 0; text-wrap: balance; letter-spacing: -0.01em }
+h2 { font-size: 19px; margin: 0; text-wrap: balance }
+h3 { font-size: 15px; margin: 0 }
+p { margin: 0 }
+.lede { color: var(--text-2); max-width: 72ch; display: grid; gap: 8px }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--navy-500) }
+code, .mono { font-family: var(--mono); font-size: .88em }
+section { display: grid; gap: 16px }
+.row { display: grid; grid-template-columns: minmax(0, 460px) minmax(0, 1fr); gap: 24px; align-items: start }
+@media (max-width: 800px) { .row { grid-template-columns: minmax(0, 1fr) } }
+.notes { display: grid; gap: 8px; color: var(--text-2); font-size: 14px; min-width: 0 }
+.notes ul { margin: 0; padding-left: 18px; display: grid; gap: 4px }
+.notes strong { color: var(--text) }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px }
+
+.frame { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: grid; gap: 14px; min-width: 0 }
+.f-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap }
+.f-title { font-size: 16px; font-weight: 600 }
+.hint { font-size: 13px; color: var(--muted) }
+.btn { font: inherit; font-weight: 600; font-size: 14px; border-radius: 8px; padding: 8px 12px; border: 1px solid transparent; cursor: pointer; text-align: center }
+.btn-primary { background: var(--navy-900); color: var(--on-navy) }
+:root[data-theme="dark"] .btn-primary { background: var(--navy-300); color: #0b1f33 }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn-primary { background: var(--navy-300); color: #0b1f33 } }
+.btn-ghost { background: transparent; color: var(--text); border-color: var(--border) }
+.btn-danger { background: transparent; color: var(--err-text); border-color: var(--err) }
+.btn[disabled] { opacity: .5; cursor: default }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); white-space: nowrap }
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted) }
+.chip.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, var(--border)) }
+.chip.ok .dot { background: var(--ok) }
+.chip.warn { color: var(--warn-text); border-color: color-mix(in srgb, var(--warn) 50%, var(--border)) }
+.chip.warn .dot { background: var(--warn) }
+.chip.err { color: var(--err-text); border-color: color-mix(in srgb, var(--err) 50%, var(--border)) }
+.chip.err .dot { background: var(--err) }
+
+/* Interruptor */
+.sw-row { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2) }
+.sw { flex: none; width: 38px; height: 22px; border-radius: 99px; background: var(--border-input); position: relative; margin-top: 2px }
+.sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface) }
+.sw.on { background: var(--ok) }
+.sw.on::after { left: 19px }
+.sw.off-dis { opacity: .45 }
+.sw-text { display: grid; gap: 3px; min-width: 0 }
+.sw-label { font-weight: 600; font-size: 14px }
+.sw-sub { font-size: 13px; color: var(--text-2) }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 13px }
+.kv dt { color: var(--muted) }
+.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere }
+
+.field { display: grid; gap: 4px }
+.label { font-size: 13px; font-weight: 500; color: var(--text-2) }
+.input { font: inherit; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--border-input); border-radius: 8px; padding: 7px 10px; min-width: 0 }
+.input.ro { background: var(--surface-2); border-color: var(--border) }
+.provs { display: flex; gap: 6px; flex-wrap: wrap }
+.prov { font-size: 13px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 8px }
+.prov.sel { border-color: var(--navy-500); box-shadow: 0 0 0 2px var(--focus); font-weight: 600 }
+
+.msg { border-radius: 8px; padding: 10px 12px; font-size: 13.5px; display: grid; gap: 4px; border: 1px solid }
+.msg-warn { color: var(--warn-text); background: color-mix(in srgb, var(--warn) 10%, transparent); border-color: var(--warn) }
+.msg-err { color: var(--err-text); background: color-mix(in srgb, var(--err) 9%, transparent); border-color: var(--err) }
+.msg-info { color: var(--text); background: var(--surface-2); border-color: var(--border) }
+.msg .sub { color: var(--text-2) }
+
+/* Diálogo */
+.scrim { background: var(--scrim); border-radius: 12px; padding: 24px 16px; display: grid; place-items: center; min-width: 0 }
+.dialog { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: grid; gap: 12px; max-width: 440px; width: 100%; box-shadow: 0 12px 32px #0b1f3333 }
+.dialog h3 { font-size: 17px }
+.dialog ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 14px }
+.box { flex: none; width: 16px; height: 16px; border: 1.5px solid var(--border-input); border-radius: 4px; margin-top: 3px }
+.box.on { background: var(--navy-500); border-color: var(--navy-500) }
+
+.assist { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
+.state { display: grid; gap: 8px; align-content: start }
+.state .cap { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 14px; font-weight: 600 }
+
+.diagram { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px }
+.diagram svg { display: block; min-width: 780px; width: 100% }
+.diagram text { font-family: var(--sans); font-size: 13px; fill: var(--text) }
+.diagram .small { font-size: 11.5px; fill: var(--text-2) }
+.diagram .box2 { fill: var(--surface-2); stroke: var(--border) }
+.diagram .hi { fill: color-mix(in srgb, var(--navy-500) 12%, var(--surface)); stroke: var(--navy-500) }
+.diagram .line { stroke: var(--text-2); stroke-width: 1.5; fill: none }
+.diagram .no { stroke: var(--err); stroke-width: 1.5; fill: none; stroke-dasharray: 5 4 }
+.diagram .noText { fill: var(--err-text); font-size: 11.5px }
+.diagram .arrow { fill: var(--text-2) }
+table { border-collapse: collapse; width: 100%; font-size: 14px }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-2); font-weight: 600 }
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px }
+.q { background: var(--surface); border: 1px solid var(--navy-500); border-radius: 12px; padding: 16px; display: grid; gap: 8px }
+.q ol { margin: 0; padding-left: 20px; display: grid; gap: 8px }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:12px">
+    <span class="eyebrow">Pharos 0.5.0 «Equipo» · Pista I · IA-12 · ADR-0034</span>
+    <h1>Usar en la web la clave de IA del escritorio</h1>
+    <div class="lede">
+      <p>Bocetos del interruptor en Motor de IA del escritorio, del diálogo de consentimiento antes de subir la clave y del estado «IA disponible» en la web. Siguen el ADR-0034: una clave por usuario, cifrada en el servidor con AES-256-GCM y una clave maestra fuera de la base de datos; por defecto, desactivado; al desactivar, la copia se borra.</p>
+      <p>Textos en español; la versión en inglés sigue el mismo patrón. Nombres y fechas de ejemplo.</p>
+    </div>
+  </header>
+
+  <section>
+    <div><span class="eyebrow">Recorrido de la clave</span><h2>La clave sale del keychain por Rust y solo la lee el servidor</h2></div>
+    <div class="diagram" role="img" aria-label="La clave va del keychain a Rust, por HTTPS al servidor, que la guarda cifrada y llama al proveedor. La vista web y el navegador nunca la ven.">
+      <svg viewBox="0 0 900 250">
+        <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="arrow"/></marker></defs>
+        <rect x="10" y="20" width="150" height="56" rx="8" class="box2"/>
+        <text x="85" y="44" text-anchor="middle">Keychain de Windows</text>
+        <text x="85" y="62" text-anchor="middle" class="small">pharos-ai · claude</text>
+        <rect x="200" y="20" width="150" height="56" rx="8" class="hi"/>
+        <text x="275" y="44" text-anchor="middle">Rust (escritorio)</text>
+        <text x="275" y="62" text-anchor="middle" class="small">ai_web_access_enable</text>
+        <rect x="430" y="20" width="200" height="56" rx="8" class="hi"/>
+        <text x="530" y="44" text-anchor="middle">Servidor Pharos</text>
+        <text x="530" y="62" text-anchor="middle" class="small">PUT /ai/web-access · HTTPS</text>
+        <rect x="430" y="120" width="200" height="56" rx="8" class="box2"/>
+        <text x="530" y="144" text-anchor="middle">Tabla ai_vault (0016)</text>
+        <text x="530" y="162" text-anchor="middle" class="small">AES-256-GCM · AI_VAULT_KEY fuera de la BD</text>
+        <rect x="710" y="20" width="170" height="56" rx="8" class="box2"/>
+        <text x="795" y="44" text-anchor="middle">Proveedor de IA</text>
+        <text x="795" y="62" text-anchor="middle" class="small">Gemini · OpenAI · Claude · OpenRouter</text>
+        <rect x="200" y="180" width="150" height="56" rx="8" class="box2"/>
+        <text x="275" y="204" text-anchor="middle">Navegador (web)</text>
+        <text x="275" y="222" text-anchor="middle" class="small">POST /ai/chat</text>
+        <rect x="10" y="120" width="150" height="56" rx="8" class="box2"/>
+        <text x="85" y="144" text-anchor="middle">Vista web (React)</text>
+        <text x="85" y="162" text-anchor="middle" class="small">pide activar, sin clave</text>
+        <path d="M160 48H198" class="line" marker-end="url(#a)"/>
+        <path d="M350 48H428" class="line" marker-end="url(#a)"/>
+        <text x="389" y="40" text-anchor="middle" class="small">clave</text>
+        <path d="M530 76V118" class="line" marker-end="url(#a)"/>
+        <path d="M630 48H708" class="line" marker-end="url(#a)"/>
+        <path d="M350 208H500V178" class="line" marker-end="url(#a)"/>
+        <text x="425" y="200" text-anchor="middle" class="small">mensajes, sin clave</text>
+        <path d="M120 120L215 78" class="line" marker-end="url(#a)"/>
+        <text x="190" y="110" class="small">orden + sesión</text>
+        <path d="M85 176V230H196" class="no"/>
+        <text x="20" y="246" class="noText">la clave nunca pasa por la vista web ni el navegador</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 1 -->
+  <section>
+    <div><span class="eyebrow">Boceto 1 · Escritorio</span><h2>Interruptor en Ajustes › Motor de IA, columna «IA en línea»</h2></div>
+    <div class="row">
+      <div class="frame" aria-label="Boceto: interruptor desactivado">
+        <div class="f-head"><span class="f-title">IA en línea</span><span class="chip ok"><span class="dot"></span>Clave configurada</span></div>
+        <div class="provs"><span class="prov">Gemini</span><span class="prov">OpenAI</span><span class="prov sel">Claude</span><span class="prov">OpenRouter</span><span class="prov">Compatible</span></div>
+        <div class="field"><span class="label">Modelo</span><div class="input">claude-opus-5-5</div></div>
+        <div class="sw-row">
+          <span class="sw" aria-hidden="true"></span>
+          <div class="sw-text">
+            <span class="sw-label">Usar esta clave también en la web</span>
+            <span class="sw-sub">Al iniciar sesión en la web con tu cuenta tendrás «Asistir con IA» con esta clave y este modelo. El servidor guarda una copia cifrada.</span>
+          </div>
+        </div>
+      </div>
+      <div class="notes">
+        <p><strong>Debajo del modelo</strong>, en la misma columna, porque el interruptor sube la clave del proveedor activo con su modelo.</p>
+        <ul>
+          <li>Desactivado por defecto. Al activarlo se abre el diálogo del boceto 2; nada se sube antes de aceptar.</li>
+          <li>El estado lo dice el servidor (<code>GET /ai/web-access</code>), no este equipo: si otro escritorio o la web lo apagó, aquí se ve apagado.</li>
+          <li>El texto de ayuda nombra solo lo que cambia para la persona; los detalles de custodia van en el diálogo.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="frame" aria-label="Boceto: interruptor activado">
+        <div class="sw-row">
+          <span class="sw on" aria-hidden="true"></span>
+          <div class="sw-text">
+            <span class="sw-label">Usar esta clave también en la web</span>
+            <dl class="kv">
+              <dt>En la web</dt><dd>Claude · claude-opus-5-5</dd>
+              <dt>Subida</dt><dd>17 nov 2026, 10:42, desde este equipo</dd>
+              <dt>Servidor</dt><dd class="mono">pharos.miempresa.com</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="msg msg-info"><span>Cambiaste el modelo a <b>claude-sonnet-5-5</b>. La web sigue con claude-opus-5-5.</span>
+          <div class="btns" style="justify-content:flex-start"><button class="btn btn-ghost">Usar el nuevo modelo en la web</button></div></div>
+      </div>
+      <div class="notes">
+        <p><strong>Activado.</strong> Muestra qué usa la web y desde cuándo.</p>
+        <ul>
+          <li><strong>Cambiar el modelo o el proveedor</strong> no sube nada solo: aparece el aviso y la persona decide. Cambiar de proveedor sube otra clave, así que vuelve a pedir el consentimiento (boceto 2) con el nuevo proveedor.</li>
+          <li><strong>Guardar una clave nueva</strong> del mismo proveedor con el interruptor activo la sube otra vez: el diálogo ya decía «si la cambias aquí, se actualiza la copia». El toast lo dice: «Clave guardada. También se actualizó en la web».</li>
+          <li><strong>Quitar la clave</strong> de este equipo borra también la copia del servidor, y lo avisa en la confirmación.</li>
+          <li><strong>Desactivar</strong> pide confirmación: «¿Dejar de usar la clave en la web? La copia se borra del servidor y la web se queda sin IA en línea». Botón «Borrar la copia».</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="frame state" aria-label="Boceto: Compatible">
+        <div class="cap"><span class="chip">No disponible</span> Proveedor «Compatible»</div>
+        <div class="sw-row"><span class="sw off-dis" aria-hidden="true"></span><div class="sw-text"><span class="sw-label">Usar esta clave también en la web</span><span class="sw-sub">No está disponible con «Compatible»: el servidor no llega a un servidor de IA de tu red. Elige Gemini, OpenAI, Claude u OpenRouter.</span></div></div>
+      </div>
+      <div class="frame state" aria-label="Boceto: servidor sin bóveda">
+        <div class="cap"><span class="chip warn"><span class="dot"></span>No disponible</span> El servidor no la tiene activada</div>
+        <div class="sw-row"><span class="sw off-dis" aria-hidden="true"></span><div class="sw-text"><span class="sw-label">Usar esta clave también en la web</span><span class="sw-sub">Tu servidor no tiene activada la IA en la web. Quien lo administra debe configurar <code>AI_VAULT_KEY</code> (guía de despliegue).</span></div></div>
+      </div>
+      <div class="frame state" aria-label="Boceto: sin clave o sin conexión">
+        <div class="cap"><span class="chip">No disponible</span> Sin clave o sin conexión</div>
+        <div class="sw-row"><span class="sw off-dis" aria-hidden="true"></span><div class="sw-text"><span class="sw-label">Usar esta clave también en la web</span><span class="sw-sub">Guarda primero la clave de Claude. · Sin conexión con el servidor: inténtalo cuando vuelva.</span></div></div>
+      </div>
+      <div class="frame state" aria-label="Boceto: hay que volver a subirla">
+        <div class="cap"><span class="chip err"><span class="dot"></span>Hay que volver a subirla</span></div>
+        <div class="sw-row"><span class="sw on" aria-hidden="true"></span><div class="sw-text"><span class="sw-label">Usar esta clave también en la web</span><span class="sw-sub">El servidor cambió su clave maestra y ya no puede leer la copia. Súbela otra vez.</span></div></div>
+        <div class="btns" style="justify-content:flex-start"><button class="btn btn-primary">Volver a subir</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section>
+    <div><span class="eyebrow">Boceto 2 · Escritorio</span><h2>Consentimiento antes de subir la clave</h2></div>
+    <div class="row">
+      <div class="scrim" aria-label="Boceto: diálogo de consentimiento">
+        <div class="dialog" role="dialog" aria-labelledby="d2t">
+          <h3 id="d2t">¿Usar tu clave de Claude en la web?</h3>
+          <p style="font-size:14px;color:var(--text-2)">Pharos enviará una copia de la clave al servidor <span class="mono">pharos.miempresa.com</span> por una conexión cifrada.</p>
+          <ul>
+            <li>El servidor la guarda cifrada y nunca la muestra, ni a ti.</li>
+            <li>Quien administre el servidor y tenga a la vez su base de datos y su clave maestra podría leerla.</li>
+            <li>Lo que pidas a la IA desde la web se cobra a esta clave.</li>
+            <li>Si cambias o quitas la clave en este equipo, la copia se actualiza o se borra.</li>
+            <li>Puedes desactivarlo cuando quieras, aquí o en la web: la copia se borra.</li>
+          </ul>
+          <div class="check"><span class="box on" aria-hidden="true"></span><span>Entiendo que el servidor guarda una copia cifrada de mi clave.</span></div>
+          <div class="btns"><button class="btn btn-ghost">Cancelar</button><button class="btn btn-primary">Subir la clave</button></div>
+        </div>
+      </div>
+      <div class="notes">
+        <p><strong>Consentimiento explícito</strong>, como pide el ADR-0034 («el aviso al activar debe decirlo»).</p>
+        <ul>
+          <li>«Subir la clave» queda desactivado hasta marcar la casilla. Cancelar deja el interruptor apagado.</li>
+          <li>El nombre del servidor es el elegido al iniciar sesión (SEC-10). Si es <code>localhost</code> por http, una línea más: «Este servidor está en tu equipo».</li>
+          <li>Al aceptar, la vista web llama al comando de Rust; Rust lee el keychain y hace el <code>PUT</code>. La clave nunca llega a React.</li>
+          <li>Mientras sube: botón con spinner «Subiendo…». Al terminar, toast «La web ya puede usar tu clave de Claude».</li>
+          <li>Si el servidor la rechaza (sin bóveda, límite, sin sesión), el diálogo muestra el motivo y el interruptor sigue apagado.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section>
+    <div><span class="eyebrow">Boceto 3 · Web</span><h2>Estado «IA disponible» en la web</h2></div>
+    <div class="row">
+      <div class="frame" aria-label="Boceto: web con IA disponible">
+        <div class="f-head"><span class="f-title">IA en línea</span><span class="chip ok"><span class="dot"></span>IA disponible</span></div>
+        <p style="font-size:14px">Usas la clave de tu escritorio.</p>
+        <dl class="kv">
+          <dt>Proveedor</dt><dd>Claude</dd>
+          <dt>Modelo</dt><dd>claude-opus-5-5</dd>
+          <dt>Subida</dt><dd>17 nov 2026, 10:42</dd>
+        </dl>
+        <p class="hint">Para cambiar la clave o el modelo, hazlo en Pharos de escritorio, en Motor de IA.</p>
+        <div class="btns" style="justify-content:space-between"><button class="btn btn-ghost">Probar conexión</button><button class="btn btn-danger">Dejar de usarla en la web</button></div>
+      </div>
+      <div class="notes">
+        <p><strong>En la web, la columna «IA en línea»</strong> pasa a ser este resumen cuando hay copia: proveedor y modelo de solo lectura, porque los fija el escritorio.</p>
+        <ul>
+          <li>«Probar conexión» envía una petición corta por <code>POST /ai/chat</code> y muestra el tiempo de respuesta, como hoy en el escritorio.</li>
+          <li>«Dejar de usarla en la web» borra la copia (útil si se pierde el portátil) tras confirmar.</li>
+          <li>Sin copia, la columna sigue como hoy (probar una clave en el navegador, ADR-0033) con el aviso del estado de abajo.</li>
+          <li>La columna de Ollama no cambia: en la web sigue pudiendo usar un Ollama local.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="frame state" aria-label="Boceto: web sin activar">
+        <div class="cap"><span class="chip">IA en línea no activada</span></div>
+        <div class="msg msg-info"><span>Para usar en la web tu clave de IA, abre Pharos de escritorio y activa <b>Ajustes › Motor de IA › «Usar esta clave también en la web»</b>.</span></div>
+      </div>
+      <div class="frame state" aria-label="Boceto: servidor sin bóveda">
+        <div class="cap"><span class="chip warn"><span class="dot"></span>No disponible en este servidor</span></div>
+        <div class="msg msg-warn"><span>Este servidor no tiene activada la IA en la web.</span><span class="sub">Quien lo administra debe configurar <code>AI_VAULT_KEY</code>.</span></div>
+      </div>
+      <div class="frame state" aria-label="Boceto: clave rechazada">
+        <div class="cap"><span class="chip err"><span class="dot"></span>La clave no funciona</span></div>
+        <div class="msg msg-err"><span>Claude rechazó la clave guardada.</span><span class="sub">Cámbiala en el escritorio; con el interruptor activo, la copia se actualiza sola.</span></div>
+      </div>
+      <div class="frame state" aria-label="Boceto: asistir en la web">
+        <div class="cap">«Asistir con IA» en un formulario de la web</div>
+        <div class="assist"><button class="btn btn-ghost">✦ Asistir con IA</button><span class="chip">Claude · claude-opus-5-5</span></div>
+        <p class="hint">El aviso antes de enviar (IA-17) dice «a Claude, en la nube, a través de tu servidor». Con el límite superado: «Has hecho muchas peticiones seguidas. Prueba dentro de un minuto».</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div><span class="eyebrow">Plan técnico</span><h2>Qué se construye</h2></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Pieza</th><th>Qué hace</th></tr></thead>
+      <tbody>
+        <tr><td>Migración servidor <b>0016</b></td><td>Tabla <code>ai_vault</code>: una fila por usuario (<code>user_id</code> PK, <code>ON DELETE CASCADE</code>), proveedor, modelo, <code>nonce</code>, <code>ciphertext</code>, huella de la clave maestra, fechas.</td></tr>
+        <tr><td><code>server/src/modules/ai/</code></td><td>Cifrado AES-256-GCM con nonce aleatorio y datos asociados <code>usuario + proveedor</code> (una copia no sirve en otra fila). Rutas <code>GET/PUT/DELETE /ai/web-access</code> y <code>POST /ai/chat</code>. Llamadas a Gemini, OpenAI, Claude y OpenRouter, sin «Compatible».</td></tr>
+        <tr><td><code>AI_VAULT_KEY</code></td><td>32 bytes en base64. Sin ella: rutas responden <code>ai_vault_disabled</code> y el servidor arranca. En producción se rechaza un valor de ejemplo. Si cambia, las copias antiguas se ven como «hay que volver a subirla», sin error 500.</td></tr>
+        <tr><td>Protecciones</td><td>Solo HTTPS en producción (hook SEC-07 ya en <code>main</code>). Límite por usuario: <code>/ai/chat</code> 30/min y <code>PUT/DELETE</code> 10/hora (configurables). Límite de cuerpo propio para <code>/ai/chat</code> por las imágenes (IA-18). Ni la clave ni los mensajes en logs, errores, auditoría ni respuestas; los errores del proveedor se limpian de cualquier trozo de la clave.</td></tr>
+        <tr><td>Rust</td><td>Comandos <code>ai_web_access_enable(provider, model, authorization)</code> y <code>ai_web_access_disable</code>: leen el keychain y hablan con el servidor elegido por el mismo cliente de <code>server_request</code>. La clave no vuelve nunca a la vista web.</td></tr>
+        <tr><td><code>src/modules/ai/**</code></td><td>Interruptor, diálogo y estados (bocetos 1–3); en la web, el enrutador usa el servidor como proveedor en línea en <code>aiChatWithProvenance</code>, con su procedencia (IA-01).</td></tr>
+        <tr><td>Pruebas</td><td>Servidor (Vitest + Postgres propio <code>pharos_test_db_tracki</code>): cifrado, acceso solo a la fila propia, KEK ausente o cambiada, límites, borrado en cascada, que la clave no aparezca en logs ni respuestas. Rust: comando con servidor de prueba. Frontend: estados de los bocetos. <code>verify:static</code>.</td></tr>
+        <tr><td>Documentación</td><td>Fila IA-12 en ROADMAP, <code>changes/IA-12*.md</code>, enmienda al ADR-0034 con la revisión de seguridad, guía de despliegue (<code>AI_VAULT_KEY</code>), fuentes del manual es/en.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="q">
+      <span class="eyebrow">Decisiones para aprobar</span>
+      <ol>
+        <li><b>Clave por usuario</b>, como dice el ADR-0034, también con workspaces: el uso desde cualquier workspace se cobra a la clave de quien lo pide.</li>
+        <li><b>El «interruptor de administración»</b> es el del servidor: <code>AI_VAULT_KEY</code> encendida o no. No propongo una política por workspace en esta pista; si se quiere, va aparte con los roles de W.</li>
+        <li><b>Cambiar el modelo</b> con el interruptor activo pide confirmación; <b>guardar una clave nueva</b> del mismo proveedor la actualiza sola (el diálogo lo avisa); <b>quitarla</b> borra la copia.</li>
+        <li><b>La web puede borrar</b> la copia («Dejar de usarla en la web») pero nunca subir ni cambiar la clave.</li>
+      </ol>
+    </div>
+  </section>
+</div>
+
+</body></html>

@@ -10,7 +10,8 @@ concreta de pruebas, y puede salir de tres sitios:
 - **De un ciclo:** «Ejecutar» crea un run por configuración (capítulo 9).
 - **A mano:** «Nuevo run manual», con los casos que elijas (capítulo 11).
 - **De tu automatización:** «Importar informe» lee los resultados de
-  Playwright, Cucumber, JUnit o CTRF.
+  Playwright, Cucumber, JUnit, CTRF o .NET (TRX), los hallazgos de un SARIF (Semgrep,
+  Trivy, ZAP, CodeQL, ESLint…) o de axe, y las métricas del resumen de k6.
 
 Al importar, Pharos enlaza cada test con su caso por la clave del caso. Los
 que no la llevan esperan en la bandeja **«Sin vincular»**: vinculándolos una
@@ -87,6 +88,42 @@ En el móvil, cada run es una tarjeta con su clave, su estado, su título y sus 
 
 <img src="img/ejecuciones/11-movil.png" alt="Las ejecuciones en el móvil" width="280">
 
+## Hallazgos y métricas
+
+Un SARIF o un informe de axe no traen tests, sino **hallazgos**: una regla
+incumplida en un sitio (un archivo y una línea, o una página y un elemento).
+Un resumen de k6 trae **métricas**, con sus umbrales. Al importarlos, la vista
+previa cuenta los hallazgos por severidad y los umbrales incumplidos.
+
+En el run, las pestañas **«Hallazgos»** y **«Métricas»** aparecen solo si
+hay algo que mostrar:
+
+- «Hallazgos» los agrupa por regla, con la severidad y las referencias (WCAG,
+  CWE…). «Nuevo» marca los que no estaban en el run anterior de la misma
+  herramienta. Los que axe no pudo decidir quedan «A revisar» y no cuentan
+  como abiertos.
+- **«Triaje»** decide qué hacer con un hallazgo: falso positivo, riesgo
+  aceptado o corregido, siempre con un motivo, o reabrirlo. La decisión vale
+  para ese hallazgo en todos los runs del proyecto, y las anteriores quedan
+  en su historial.
+- «Métricas» pone primero los umbrales incumplidos. «Ver todas» muestra cada
+  agregación, y los *checks* de k6 van aparte.
+
+Fuera del run, cuenta el **último escaneo de cada herramienta** (lo que ya no
+aparece en él se dio por corregido):
+
+- La **lista de runs** muestra los hallazgos abiertos de cada run, con el color
+  de la peor severidad, y sus umbrales incumplidos. Un run que solo trae
+  hallazgos o métricas ya no figura como «Sin resultados».
+- En la **matriz de trazabilidad**, un caso con hallazgos abiertos lleva una
+  insignia con cuántos son y el color del peor, y la nota «Hallazgos
+  abiertos». El interruptor **«Con hallazgos abiertos»** deja solo los
+  requisitos afectados.
+- El **informe de estado** añade la sección «7.1 Hallazgos y rendimiento»
+  (abiertos por severidad, nuevos, triados, a revisar, umbrales cumplidos y
+  los incumplidos), y el **informe de cierre** los lista entre los riesgos
+  residuales. Si no hay hallazgos ni umbrales, la sección no aparece.
+
 ## Cómo se vincula un test a su caso
 
 | Formato | Dónde va la clave del caso |
@@ -95,6 +132,7 @@ En el móvil, cada run es una tarjeta con su clave, su estado, su título y sus 
 | JSON de Playwright | Tag del test (`@PH-001`) o la anotación `test_id` |
 | CTRF | Sus `tags` |
 | JUnit XML | Propiedad `test_id` del `<testcase>` (`<property name="test_id" value="PH-001"/>`) o las propiedades `tag` / `tags`. JUnit no tiene tags propios, así que `@PH-001` en el nombre del test no basta |
+| TRX (.NET) | La categoría del test: `[TestCategory("PH-001")]` (NUnit `[Category]`) |
 | Pharos Run JSON | Sus `tags` |
 
 El detalle de cada formato está en [Formatos de importación](../formats/importers.md).
