@@ -30,9 +30,10 @@ backend; data-compatibility rules for migrations and sync): `docs/VERSIONING.md`
   Other processes (the CLI) use `pharos_core::api` (`open`, `import_preview`,
   `import_report`, `import_attach`: the same code as the desktop import
   commands) and `pharos_core::paths::default_data_dir()` (the app's data
-  folder without Tauri). Until SEC-05b a `Db` holds `pharos.lock` open
-  sharing nothing but deletion: a second process (another app, the CLI) gets `db-in-use`
-  and reads or writes nothing (ADR-0050 §7).
+  folder without Tauri). Any number of processes open the
+  same folder and write (SEC-05b, ADR-0050 §5); `pharos.lock` is held only
+  while one opens it (converting or migrating), and another waits up to 10 s
+  for it before `db-in-use`.
 
   `cargo test`, `clippy` and `fmt` in `src-tauri/` cover both
   (`default-members`). A new command is written in its module behind
@@ -1801,9 +1802,14 @@ disk, encrypted per page**:
     while the database is open and after it closes.
 - **Saving is SQLite's commit.** It writes the pages that changed, not the
   whole database.
-  - `Db::persist()` only records `PRAGMA data_version`, which
-    `changed_on_disk` uses (DAT-03b). The calls go in SEC-05b.
-  - `with_tx` keeps entity, oplog and audit rows in one transaction.
+  - `Db::persist()` does nothing (kept so older branches compile; no call
+    is left).
+  - `with_tx` keeps entity, oplog and audit rows in one transaction, which
+    starts with `BEGIN IMMEDIATE` (`db::begin_immediate`, also used by the
+    hand-written transactions): HLC, key counters and oplog are read and
+    written under the write lock, so two processes never hand out the same
+    value. `busy_timeout` waits for another writer; after it, `BEGIN` is
+    retried twice before `db-busy`.
 - **Pragmas:**
   - `journal_mode=WAL`, `synchronous=NORMAL`, `foreign_keys=ON`,
     `busy_timeout=5000`;
@@ -1816,7 +1822,23 @@ disk, encrypted per page**:
   - Recovery keys and `evidence/` are unchanged.
   - A wrong key only fails on the first read, so `open_disk` probes
     `sqlite_master` and maps `SQLITE_NOTADB` to a key error.
-- **One process per data folder until SEC-05b.** `pharos.lock` (ADR-0050 §7).
+- **Several processes at once (SEC-05b).** The app and the CLI (INT-01)
+  open the same folder and write with each other open.
+  - `pharos.lock` is held only while a `Db` opens (conversion, migrations,
+    backups); another open waits up to 10 s, then fails with `db-in-use`.
+    At startup the app then opens in the background, so the window never
+    freezes.
+  - **Changes by another process.** A thread of the app reads
+    `PRAGMA data_version` every 2 s (it changes only when another
+    connection commits) and emits `db://external-change`; the UI turns it
+    into `pharos:synced`, so views reload as after a sync and forms keep
+    what is typed.
+  - **Space.** `PRAGMA incremental_vacuum` gives back free pages at every
+    open.
+  - Tests: two processes (the test binary started again as a child) write
+    150 audited-style rows each with both open, with no lost row and no
+    repeated HLC; a small commit on a 20 MB database adds less than 64 KiB
+    to the WAL.
 
 **Conversion from 0.5 (`convert_legacy`).** Before 0.6, the database lived in
 memory and was saved whole to `pharos.db.enc` as one AES-256-GCM blob. On the
@@ -2073,10 +2095,9 @@ and its `VACUUM` can briefly double that image.)
     without a row, created or modified more than 24 hours ago (the later of
     both times: a copy or a restore keeps the source's modification time but
     gets a new creation time) and not open by another process (detected on
-    Windows only: an open without sharing fails). Nothing is deleted if
-    another connection committed to the database since this process last
-    saved (`Db::changed_on_disk`, `PRAGMA data_version`): a second Pharos on the same data folder may have
-    linked those files in a database this one does not see. For each file its
+    Windows only: an open without sharing fails). Every process on the folder
+    shares one database (SEC-05b), so a file another one linked is referenced
+    by a committed row and is not an orphan. For each file its
     audit event is written in a savepoint first and the file removed after;
     a failed removal rolls the savepoint back. The result is always partial
     (skipped files with their reason), and a failed save after deleting still

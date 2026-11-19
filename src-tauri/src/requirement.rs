@@ -437,7 +437,7 @@ pub(crate) fn import_requirements(
     if !project::owns(conn, project_id, user_id)? {
         return Err("project not found".to_string());
     }
-    let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+    let tx = crate::db::begin_immediate(conn)?;
     let mut summary = ImportSummary {
         created: 0,
         updated: 0,
@@ -530,7 +530,6 @@ pub fn requirement_create(
     input: RequirementInput,
 ) -> Result<Option<Requirement>, String> {
     let id = db.with_tx(|conn| insert_requirement(conn, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_requirement(conn, &id, &input.user_id))
 }
 
@@ -542,7 +541,6 @@ pub fn requirement_update(
     input: RequirementInput,
 ) -> Result<Option<Requirement>, String> {
     db.with_tx(|conn| update_requirement(conn, &id, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_requirement(conn, &id, &input.user_id))
 }
 
@@ -550,7 +548,7 @@ pub fn requirement_update(
 #[tauri::command]
 pub fn requirement_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_requirement(conn, &id, &user_id))?;
-    db.persist()
+    Ok(())
 }
 
 #[cfg(feature = "tauri")]
@@ -563,7 +561,6 @@ pub fn requirement_risk_set(
     user_id: String,
 ) -> Result<Option<Requirement>, String> {
     db.with_tx(|conn| set_risk(conn, &id, likelihood, impact, &user_id))?;
-    db.persist()?;
     db.with_conn(|conn| get_requirement(conn, &id, &user_id))
 }
 
@@ -576,7 +573,6 @@ pub fn requirement_import(
     rows: Vec<RequirementImportRow>,
 ) -> Result<ImportSummary, String> {
     let summary = db.with_conn(|conn| import_requirements(conn, &project_id, &user_id, &rows))?;
-    db.persist()?;
     Ok(summary)
 }
 

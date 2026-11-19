@@ -276,20 +276,37 @@ pub struct Db {
     key: [u8; 32],
     /// `evidence/` next to the database, keyed from `key` (ADR-0014).
     evidence: EvidenceStore,
-    /// `PRAGMA data_version` as this process last left the database: it
-    /// changes only when another connection commits, so a change by another
-    /// process can be told (DAT-03b: deleting orphan evidence refuses then).
-    seen_version: Mutex<i64>,
-    /// `pharos.lock`, held open while this `Db` lives (D4, ADR-0050).
-    _lock: fs::File,
 }
 
 /// Prefix of the `Db::open` error when another process (the app or the CLI)
-/// has this data folder open. Until SEC-05b only one process may use it.
+/// is opening this data folder (converting or migrating it) and did not
+/// finish within `LOCK_WAIT`. Once open, any number of processes write
+/// (SEC-05b, ADR-0050 §5).
 pub const DB_IN_USE_ERROR: &str = "db-in-use";
+
+/// How long an open waits for another process's open to finish.
+#[cfg(not(test))]
+const LOCK_WAIT: std::time::Duration = std::time::Duration::from_secs(10);
+#[cfg(test)]
+const LOCK_WAIT: std::time::Duration = std::time::Duration::from_millis(600);
 
 /// Name of the lock file next to the database.
 const LOCK_FILE: &str = "pharos.lock";
+
+/// Holds `pharos.lock` for the length of an open: converting and migrating
+/// need the folder to themselves. Waits up to `LOCK_WAIT` for another
+/// process's open, then fails with `DB_IN_USE_ERROR`.
+fn lock_for_open(dir: &Path) -> Result<fs::File, String> {
+    let deadline = std::time::Instant::now() + LOCK_WAIT;
+    loop {
+        match lock_data_dir(dir) {
+            Err(e) if e.starts_with(DB_IN_USE_ERROR) && std::time::Instant::now() < deadline => {
+                std::thread::sleep(std::time::Duration::from_millis(200));
+            }
+            other => return other,
+        }
+    }
+}
 
 /// Opens `pharos.lock` sharing only deletion, so a second process fails to
 /// open it until this one closes it (on exit too, so a crash never leaves it
@@ -309,8 +326,8 @@ fn lock_data_dir(dir: &Path) -> Result<fs::File, String> {
         // ERROR_SHARING_VIOLATION: another process holds the file.
         if e.raw_os_error() == Some(32) {
             format!(
-                "{DB_IN_USE_ERROR}: another Pharos process (the app or the CLI) is using \
-                 this data folder. Close it and try again."
+                "{DB_IN_USE_ERROR}: another Pharos process (the app or the CLI) is \
+                 updating this data folder. Wait until it finishes and try again."
             )
         } else {
             format!("failed to lock the data folder: {e}")
@@ -437,7 +454,6 @@ impl Db {
         // device id, so its audit chain (AUD-01) and HLCs never fork the ones the
         // original device may still extend.
         db.with_conn(crate::oplog::rotate_device_id)?;
-        db.persist()?;
         if let Ok(Some(old)) = store.load() {
             if old != key {
                 store.keep_previous(&old)?;
@@ -458,8 +474,9 @@ impl Db {
     /// the key is known to open the database and its migrations are known.
     pub(crate) fn open_with_key(app_data_dir: &Path, key: [u8; 32]) -> Result<Self, String> {
         fs::create_dir_all(app_data_dir).map_err(|e| e.to_string())?;
-        // Before anything is read: another process may be writing (D4, ADR-0050).
-        let lock = lock_data_dir(app_data_dir)?;
+        // Converting and migrating need the folder to themselves: held until
+        // the database is open, then released (SEC-05b, ADR-0050 §5).
+        let lock = lock_for_open(app_data_dir)?;
         let db_path = app_data_dir.join(DB_FILE);
         let store = EvidenceStore::new(app_data_dir, &key);
         convert_legacy(app_data_dir, &key, &store)?;
@@ -491,6 +508,10 @@ impl Db {
                 .map_err(|e| format!("{e}; nothing was migrated"))?;
         }
         run_migrations_with(&conn, Some(&store))?;
+        // Give back the pages freed while the database was closed (rows the
+        // sync compaction deleted, SYNC-10): incremental, never a full VACUUM.
+        conn.execute_batch("PRAGMA incremental_vacuum;")
+            .map_err(|e| e.to_string())?;
         evidence::check::load_damaged(&conn, &store)?;
         // A copy put back by hand gets a new device id (AUD-01c); every open
         // is counted, inside and next to the file.
@@ -498,20 +519,18 @@ impl Db {
             crate::restored_copy::check(&conn, &db_path)?;
         }
         mark_open(&conn, &db_path)?;
-        let seen = data_version(&conn)?;
         let db = Db {
             conn: Mutex::new(conn),
             db_path,
             key,
             evidence: store,
-            seen_version: Mutex::new(seen),
-            _lock: lock,
         };
         // Finish the evidence deletions an earlier run committed but did not
         // complete (ADR-0014).
         if db.with_conn(evidence::has_pending_deletions)? {
             db.persist_and_collect()?;
         }
+        drop(lock);
         Ok(db)
     }
 
@@ -559,7 +578,7 @@ impl Db {
         if evidence::has_pending_deletions(&conn)? {
             evidence::collect(&conn, &self.evidence)?;
         }
-        self.seen(&conn)
+        Ok(())
     }
 
     /// Keeps an encrypted copy of the database as
@@ -574,38 +593,21 @@ impl Db {
         backup_disk(&conn, &self.db_path, &self.key, label)
             .map_err(|e| format!("backup before {label}: {e}"))?;
         // The copy must count below the live database (AUD-01c).
-        mark_open(&conn, &self.db_path)?;
-        self.seen(&conn)
+        mark_open(&conn, &self.db_path)
     }
 
-    /// Every change is committed to disk as it is made (SEC-05): this only
-    /// records that this process has seen the database as it is now (see
-    /// `changed_on_disk`). The calls go when SEC-05b lets other processes write.
+    /// Does nothing: every change is committed to disk as it is made
+    /// (SEC-05). Kept so code written before 0.6 still compiles; do not call
+    /// it in new code.
     pub fn persist(&self) -> Result<(), String> {
-        let conn = self
-            .conn
-            .lock()
-            .map_err(|_| "db lock poisoned".to_string())?;
-        self.seen(&conn)
-    }
-
-    fn seen(&self, conn: &Connection) -> Result<(), String> {
-        let version = data_version(conn)?;
-        if let Ok(mut seen) = self.seen_version.lock() {
-            *seen = version;
-        }
         Ok(())
     }
 
-    /// True if another connection (another process on the same data folder)
-    /// committed since this process last saved. `conn` is this database's
-    /// connection, already locked by the caller.
-    pub(crate) fn changed_on_disk(&self, conn: &Connection) -> bool {
-        let now = data_version(conn).ok();
-        self.seen_version
-            .lock()
-            .map(|seen| now != Some(*seen))
-            .unwrap_or(true)
+    /// `PRAGMA data_version` of this process's connection: it changes when
+    /// another connection (another process) commits. The app watches it to
+    /// refresh what it shows (`watch_external_changes`).
+    pub fn data_version(&self) -> Result<i64, String> {
+        self.with_conn(data_version)
     }
 }
 
@@ -1257,14 +1259,48 @@ fn load_image(conn: &mut Connection, image: &[u8]) -> Result<(), String> {
 }
 
 /// `Db::with_tx` on a bare connection (also what tests use).
+///
+/// The transaction starts with `BEGIN IMMEDIATE` (SEC-05b): it takes the
+/// write lock before reading, so the HLC, the key counters and the oplog are
+/// read and written under it and two processes never hand out the same value
+/// (a deferred transaction could also fail on commit with `SQLITE_BUSY`
+/// after another process wrote). Waiting for the lock is `busy_timeout`;
+/// after it, `BEGIN` is tried a few more times before failing.
 pub(crate) fn in_tx<T>(
     conn: &Connection,
     f: impl FnOnce(&Connection) -> Result<T, String>,
 ) -> Result<T, String> {
-    let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+    let tx = begin_immediate(conn)?;
     let out = f(&tx)?;
     tx.commit().map_err(|e| e.to_string())?;
     Ok(out)
+}
+
+/// Times `BEGIN IMMEDIATE` is tried before giving up on a busy database.
+const BEGIN_TRIES: u32 = 3;
+
+/// Prefix of the error when another process kept the database busy past
+/// every retry (the CLI turns it into its exit code `db-busy`).
+pub const DB_BUSY_ERROR: &str = "db-busy";
+
+/// `BEGIN IMMEDIATE` with a bounded retry on `SQLITE_BUSY`.
+pub(crate) fn begin_immediate(conn: &Connection) -> Result<rusqlite::Transaction<'_>, String> {
+    let mut tries = 1;
+    loop {
+        match rusqlite::Transaction::new_unchecked(conn, rusqlite::TransactionBehavior::Immediate) {
+            Ok(tx) => return Ok(tx),
+            Err(rusqlite::Error::SqliteFailure(e, _)) if e.code == ErrorCode::DatabaseBusy => {
+                if tries >= BEGIN_TRIES {
+                    return Err(format!(
+                        "{DB_BUSY_ERROR}: another Pharos process kept the local database \
+                         busy; try again"
+                    ));
+                }
+                tries += 1;
+            }
+            Err(e) => return Err(e.to_string()),
+        }
+    }
 }
 
 /// Returns the device's own (`local`) workspace id, creating it on first use.
@@ -1503,6 +1539,7 @@ pub fn open_and_manage(app: &tauri::AppHandle) {
                 "local database opened"
             );
             app.manage(database);
+            watch_external_changes(app.clone());
             None
         }
         Err(e) => {
@@ -1515,16 +1552,54 @@ pub fn open_and_manage(app: &tauri::AppHandle) {
     status.finish(error);
 }
 
+/// How often the app checks whether another process wrote (SEC-05b).
+#[cfg(feature = "tauri")]
+const WATCH_EVERY: std::time::Duration = std::time::Duration::from_secs(2);
+
+/// Event the app emits when another process (the CLI) committed to the
+/// database; the UI reloads what it shows, as after a sync.
+#[cfg(feature = "tauri")]
+pub const EXTERNAL_CHANGE_EVENT: &str = "db://external-change";
+
+/// Watches `PRAGMA data_version`, which changes only when another
+/// connection commits, and tells the UI (`EXTERNAL_CHANGE_EVENT`).
+#[cfg(feature = "tauri")]
+fn watch_external_changes(app: tauri::AppHandle) {
+    use tauri::{Emitter, Manager};
+    std::thread::spawn(move || {
+        let mut last: Option<i64> = None;
+        loop {
+            std::thread::sleep(WATCH_EVERY);
+            let Some(db) = app.try_state::<Db>() else {
+                continue;
+            };
+            let Ok(version) = db.data_version() else {
+                continue;
+            };
+            if last.is_some_and(|seen| seen != version) {
+                let _ = app.emit(EXTERNAL_CHANGE_EVENT, ());
+            }
+            last = Some(version);
+        }
+    });
+}
+
 /// Opens the database at startup: at once, or in the background when a
-/// `pharos.db.enc` has to be converted first (SEC-05).
+/// `pharos.db.enc` has to be converted first (SEC-05) or another process is
+/// opening the folder (SEC-05b).
 #[cfg(feature = "tauri")]
 pub fn open_at_startup(app: &tauri::AppHandle) {
     use tauri::Manager;
     let status = app.state::<DbStatus>();
-    if conversion_pending(&status.data_dir) {
+    let converting = conversion_pending(&status.data_dir);
+    // Another process opening (converting or migrating) the folder: waiting
+    // for it must not freeze the window either.
+    let busy = !converting
+        && lock_data_dir(&status.data_dir).is_err_and(|e| e.starts_with(DB_IN_USE_ERROR));
+    if converting || busy {
         status
             .converting
-            .store(true, std::sync::atomic::Ordering::SeqCst);
+            .store(converting, std::sync::atomic::Ordering::SeqCst);
         let app = app.clone();
         std::thread::spawn(move || open_and_manage(&app));
     } else {
@@ -1729,9 +1804,7 @@ mod tests {
         let dir = temp_dir();
         let id = {
             let db = Db::open_with_key(&dir, KEY).unwrap();
-            let id = db.with_conn(ensure_workspace).unwrap();
-            db.persist().unwrap();
-            id
+            db.with_conn(ensure_workspace).unwrap()
         };
         let db = Db::open_with_key(&dir, KEY).unwrap();
         assert_eq!(db.with_conn(ensure_workspace).unwrap(), id);
@@ -1790,21 +1863,33 @@ mod tests {
         fs::remove_dir_all(&dir).unwrap();
     }
 
-    /// D4, ADR-0050: while one `Db` has the folder open, a second open fails
-    /// without reading or writing anything; once the first is gone it opens.
+    /// SEC-05b, ADR-0050 §5: two processes open the same folder and both
+    /// write; only an open still converting or migrating (it holds
+    /// `pharos.lock`) makes another wait, and fail after `LOCK_WAIT`.
     #[cfg(windows)]
     #[test]
-    fn a_second_open_of_the_same_folder_is_refused_until_the_first_closes() {
+    fn two_opens_share_the_folder_and_wait_only_for_an_open_in_progress() {
         let dir = temp_dir();
-        let db = Db::open_with_key(&dir, KEY).unwrap();
-        db.with_conn(ensure_workspace).unwrap();
-        let before = file_names(&dir);
+        let first = Db::open_with_key(&dir, KEY).unwrap();
+        let second = Db::open_with_key(&dir, KEY).unwrap();
+        first.with_conn(ensure_workspace).unwrap();
+        second
+            .with_tx(|c| {
+                c.execute("UPDATE workspaces SET name = 'From the second'", [])
+                    .map_err(|e| e.to_string())
+            })
+            .unwrap();
+        assert_eq!(workspace_name(&first), "From the second");
+        drop(second);
+        // Another process in the middle of its open holds the lock.
+        let opening = lock_data_dir(&dir).unwrap();
+        let started = std::time::Instant::now();
         let err = Db::open_with_key(&dir, KEY).err().unwrap();
         assert!(err.starts_with(DB_IN_USE_ERROR), "{err}");
-        assert!(!err.contains("  "), "{err}");
-        assert_eq!(file_names(&dir), before);
-        drop(db);
+        assert!(started.elapsed() >= LOCK_WAIT, "{:?}", started.elapsed());
+        drop(opening);
         drop(Db::open_with_key(&dir, KEY).unwrap());
+        drop(first);
         fs::remove_dir_all(&dir).unwrap();
     }
 
@@ -2154,31 +2239,27 @@ mod tests {
         fs::remove_dir_all(&dir).unwrap();
     }
 
-    /// DAT-03b on the new format: another connection's commit (a process from
-    /// before the folder lock, or any other writer) is seen until this process
-    /// saves again.
+    /// SEC-05b: `data_version` changes when another connection (another
+    /// process) commits, not when this one writes: what the app watches.
     #[test]
-    fn a_commit_by_another_connection_is_seen_as_a_change_on_disk() {
+    fn data_version_changes_only_on_another_connections_commit() {
         let dir = temp_dir();
         let db = Db::open_with_key(&dir, KEY).unwrap();
         db.with_conn(ensure_workspace).unwrap();
-        db.persist().unwrap();
-        assert!(!db.with_conn(|c| Ok(db.changed_on_disk(c))).unwrap());
-        // Our own writes are not a change by someone else.
+        let before = db.data_version().unwrap();
         db.with_conn(|c| {
             c.execute("UPDATE workspaces SET name = 'Mine'", [])
                 .map_err(|e| e.to_string())
         })
         .unwrap();
-        assert!(!db.with_conn(|c| Ok(db.changed_on_disk(c))).unwrap());
+        assert_eq!(db.data_version().unwrap(), before);
         let other = open_disk(&dir.join(DB_FILE), &KEY, false).unwrap();
         other
             .execute("UPDATE workspaces SET name = 'Theirs'", [])
             .unwrap();
         drop(other);
-        assert!(db.with_conn(|c| Ok(db.changed_on_disk(c))).unwrap());
-        db.persist().unwrap();
-        assert!(!db.with_conn(|c| Ok(db.changed_on_disk(c))).unwrap());
+        assert_ne!(db.data_version().unwrap(), before);
+        assert_eq!(workspace_name(&db), "Theirs");
         drop(db);
         fs::remove_dir_all(&dir).unwrap();
     }
@@ -2353,7 +2434,6 @@ mod tests {
                 .map_err(|e| e.to_string())
         })
         .unwrap();
-        db.persist().unwrap();
         id
     }
 
@@ -2615,6 +2695,113 @@ mod tests {
         fs::remove_dir_all(&dir).unwrap();
     }
 
+    /// Rows each process writes in `two_processes_write_with_both_open`.
+    const TWO_PROCESS_ROWS: usize = 150;
+    /// Set by the parent half: the folder the child half writes to.
+    const CHILD_DIR_VAR: &str = "PHAROS_TEST_CHILD_DIR";
+
+    /// One writer: `TWO_PROCESS_ROWS` transactions, each taking an HLC and
+    /// keeping it in its own row, as an audited change does.
+    fn write_rows(db: &Db, who: &str) {
+        for i in 0..TWO_PROCESS_ROWS {
+            db.with_tx(|c| {
+                let hlc = crate::oplog::next_hlc(c)?;
+                c.execute(
+                    "INSERT INTO sync_state (key, value) VALUES (?1, ?2)",
+                    params![format!("{who}-{i}"), hlc],
+                )
+                .map_err(|e| e.to_string())
+            })
+            .unwrap();
+        }
+    }
+
+    /// The child half of `two_processes_write_with_both_open`: it does
+    /// nothing unless that test started this process.
+    #[test]
+    fn child_writer_of_the_two_process_test() {
+        let Ok(dir) = std::env::var(CHILD_DIR_VAR) else {
+            return;
+        };
+        let db = Db::open_with_key(Path::new(&dir), KEY).unwrap();
+        write_rows(&db, "child");
+    }
+
+    /// SEC-05b acceptance: another process (here, this test binary again)
+    /// writes while this one has the database open and writes too. Nothing
+    /// is lost, and no two writes get the same HLC: `BEGIN IMMEDIATE` reads
+    /// and advances it under the write lock.
+    #[test]
+    fn two_processes_write_with_both_open() {
+        let dir = temp_dir();
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        db.with_conn(ensure_workspace).unwrap();
+        let mut child = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "db::tests::child_writer_of_the_two_process_test",
+                "--test-threads=1",
+            ])
+            .env(CHILD_DIR_VAR, &dir)
+            .stdout(std::process::Stdio::null())
+            .spawn()
+            .unwrap();
+        write_rows(&db, "parent");
+        assert!(child.wait().unwrap().success(), "the child writer failed");
+        let (rows, distinct): (i64, i64) = db
+            .with_conn(|c| {
+                c.query_row(
+                    "SELECT count(*), count(DISTINCT value) FROM sync_state \
+                     WHERE key LIKE 'parent-%' OR key LIKE 'child-%'",
+                    [],
+                    |r| Ok((r.get(0)?, r.get(1)?)),
+                )
+                .map_err(|e| e.to_string())
+            })
+            .unwrap();
+        assert_eq!(rows, 2 * TWO_PROCESS_ROWS as i64);
+        assert_eq!(distinct, rows, "two writes got the same HLC");
+        drop(db);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// SEC-05 acceptance: saving is not O(size of the database). With a
+    /// database of about 20 MB, a small commit adds a few pages to the WAL.
+    #[test]
+    fn a_small_commit_writes_far_less_than_the_database() {
+        let dir = temp_dir();
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        db.with_conn(ensure_workspace).unwrap();
+        let filler = "x".repeat(10 * 1024);
+        db.with_tx(|c| {
+            for i in 0..2000 {
+                c.execute(
+                    "INSERT INTO sync_state (key, value) VALUES (?1, ?2)",
+                    params![format!("filler-{i}"), filler],
+                )
+                .map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })
+        .unwrap();
+        db.with_conn(|c| {
+            c.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(()))
+                .map_err(|e| e.to_string())
+        })
+        .unwrap();
+        let size = fs::metadata(dir.join(DB_FILE)).unwrap().len();
+        assert!(size > 15 * 1024 * 1024, "{size}");
+        db.with_tx(|c| {
+            c.execute("UPDATE workspaces SET name = 'One small change'", [])
+                .map_err(|e| e.to_string())
+        })
+        .unwrap();
+        let wal = fs::metadata(dir.join("pharos.db-wal")).unwrap().len();
+        assert!(wal < 64 * 1024, "a small commit wrote {wal} bytes");
+        drop(db);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
     #[test]
     fn a_recovery_key_with_a_typo_is_rejected_before_touching_anything() {
         let dir = temp_dir();
@@ -2653,7 +2840,6 @@ mod tests {
                 .map_err(|e| e.to_string())
             })
             .unwrap();
-            db.persist().unwrap();
         }
         fs::write(dir.join("pharos.db.tmp"), b"legacy").unwrap();
         assert!(Db::open_with_key(&dir, KEY).is_err());

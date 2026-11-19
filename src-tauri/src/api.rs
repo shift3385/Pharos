@@ -6,9 +6,10 @@
 //! code (`runs::import`), so the desktop and the CLI cannot drift apart.
 //! Requests are the same JSON the UI sends: build them with `serde_json`.
 //!
-//! Until SEC-05b, opening the database takes the data folder for this process
-//! only (`db::DB_IN_USE_ERROR` while the app or another CLI has it open), so a
-//! CLI never overwrites what the app is saving.
+//! The CLI and the app use the database at the same time (SEC-05b). Opening
+//! waits up to 10 s for another process that is opening (converting or
+//! migrating) the folder, then fails with `db::DB_IN_USE_ERROR`; a write the
+//! other processes keep busy past every retry fails with `db::DB_BUSY_ERROR`.
 
 use std::io::Read;
 use std::path::Path;

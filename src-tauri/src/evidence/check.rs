@@ -25,8 +25,8 @@
 //!   the database lock, and never a file created or modified in the last 24
 //!   hours or open by another process (detected on Windows only): it may belong
 //!   to an upload of another instance or to a database the user moved aside.
-//!   Nothing is deleted if another connection committed to the database since
-//!   this process last saved (another Pharos on the same folder).
+//!   Every process on the folder shares the database (SEC-05b), so a file
+//!   another one linked is referenced and is not an orphan.
 //! - **Audit.** Each deleted orphan and each check that changed a mark leaves
 //!   an event through `journal::record_event_in`, as `system:evidence` on
 //!   behalf of the user and with no project: in the device's local chain
@@ -774,9 +774,6 @@ pub(crate) fn run(
         let scan = scan(db.evidence(), snap, Some(check));
         let report =
             db.with_conn(|c| reconcile(c, db.evidence(), scan, user, SystemTime::now()))?;
-        if report.marked + report.restored > 0 {
-            db.persist()?;
-        }
         Ok(report)
     })();
     check.update(|p| p.running = false);
@@ -1115,15 +1112,10 @@ pub fn evidence_check_cancel(check: State<EvidenceCheck>) {
     check.request_cancel();
 }
 
-/// Error prefix when another connection committed to the database since this
-/// process last saved: another Pharos may be using the same data folder.
-pub const DB_CHANGED: &str = "evidence-db-changed";
-
-/// Deletes the orphans the user confirmed (see `delete_orphans`), unless the
-/// database file changed on disk since this process last read or wrote it:
-/// then another instance on the same folder may have linked those files in a
-/// database this one does not see. If saving afterwards fails, the files are
-/// still reported as deleted (`saved: false`).
+/// Deletes the orphans the user confirmed (see `delete_orphans`). Every
+/// process on the folder shares one database (SEC-05b), so a file another
+/// process linked is referenced by a committed row `delete_orphans` sees,
+/// and is skipped; one it is still uploading is too recent to be an orphan.
 pub(crate) fn delete_confirmed(
     db: &Db,
     check: &EvidenceCheck,
@@ -1133,20 +1125,8 @@ pub(crate) fn delete_confirmed(
     min_age: Duration,
 ) -> Result<EvidenceDeleted, String> {
     let _guard = check.guard()?;
-    let mut out = db.with_conn(|c| {
-        if db.changed_on_disk(c) {
-            return Err(format!(
-                "{DB_CHANGED}: the database file changed on disk; another Pharos may be \
-                 using this data folder"
-            ));
-        }
-        delete_orphans(c, db.evidence(), files, user, now, min_age)
-    })?;
+    let out = db.with_conn(|c| delete_orphans(c, db.evidence(), files, user, now, min_age))?;
     if out.deleted > 0 {
-        if let Err(e) = db.persist() {
-            tracing::warn!(error = %e, "orphans deleted; saving their audit events failed");
-            out.saved = false;
-        }
         // The orphans just deleted leave the last report.
         if let Some(mut last) = check.last() {
             let gone: HashSet<&str> = files.iter().map(String::as_str).collect();

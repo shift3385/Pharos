@@ -681,13 +681,12 @@ pub fn key_blocks_apply(
 ) -> Result<usize, String> {
     require_user(&user_id)?;
     let assigned = db.with_conn(|conn| {
-        let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+        let tx = crate::db::begin_immediate(conn)?;
         apply_blocks(&tx, &user_id, &blocks)?;
         let assigned = finalize(&tx, &user_id)?;
         tx.commit().map_err(|e| e.to_string())?;
         Ok(assigned)
     })?;
-    db.persist()?;
     Ok(assigned)
 }
 
@@ -703,11 +702,11 @@ pub fn key_conflicts_record(
         return Ok(());
     }
     db.with_conn(|conn| {
-        let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+        let tx = crate::db::begin_immediate(conn)?;
         record_rejected(&tx, &user_id, &items)?;
         tx.commit().map_err(|e| e.to_string())
     })?;
-    db.persist()
+    Ok(())
 }
 
 #[cfg(feature = "tauri")]
@@ -727,12 +726,11 @@ pub fn key_conflict_resolve(
 ) -> Result<String, String> {
     require_user(&user_id)?;
     let new = db.with_conn(|conn| {
-        let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+        let tx = crate::db::begin_immediate(conn)?;
         let new = resolve(&tx, &user_id, &id, key.as_deref())?;
         tx.commit().map_err(|e| e.to_string())?;
         Ok(new)
     })?;
-    db.persist()?;
     Ok(new)
 }
 

@@ -176,9 +176,9 @@ seguir.
       `pharos.db.enc.bak-0.6…`; `pharos.db.enc` queda como un archivo
       pequeño. Abrir esa carpeta con la `0.5` muestra «Estos datos son de una
       versión más nueva de Pharos» y no la modifica (SEC-05).
-- [ ] Con dos Pharos abiertos a la vez, el segundo dice «Otro Pharos está
-      usando tus datos» y no abre nada; «Reintentar» abre en cuanto se
-      cierra el primero.
+- [ ] Con dos Pharos abiertos a la vez, los dos funcionan: lo que guardas
+      en uno aparece en el otro en unos segundos, sin recargar a mano
+      (SEC-05b).
 - [ ] **Roaming.** `%APPDATA%` es la carpeta itinerante de Windows. Si tu
       equipo usa perfiles itinerantes o redirige carpetas (equipos de
       empresa), anota si Pharos abre bien al iniciar sesión en otro equipo:

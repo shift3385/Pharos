@@ -29,10 +29,12 @@ modifica tus datos.
   - **«Falta el archivo de tus datos»:** tus datos están en `pharos.db` y no
     está en la carpeta de datos. Vuelve a ponerlo (o una copia
     `pharos.db.bak-…`); Pharos no crea una base vacía en su lugar.
-  - **«Otro Pharos está usando tus datos»:** otra ventana de Pharos, o el CLI
-    de Pharos, tiene abierta la base de datos de este equipo. Ciérrala y
-    pulsa «Reintentar». Hasta ahora, la segunda ventana pisaba en silencio
-    lo que guardaba la primera.
+  - **«Otro Pharos está actualizando tus datos»:** otra ventana de Pharos, o
+    el CLI de Pharos, está convirtiendo o actualizando la base de datos de este
+    equipo (por ejemplo, tras instalar una versión nueva). Pharos espera unos
+    segundos; si no termina, lo dice. Espera y pulsa «Reintentar». Varias
+    ventanas de Pharos y el CLI pueden usar los mismos datos a la vez: lo que
+    escribe uno aparece en los demás.
   - **«Falta la clave de la base de datos local»** o **«La clave guardada no
     abre la base de datos local»:** pasa en un equipo nuevo o tras reinstalar
     Windows. Escribe la clave de recuperación (56 caracteres en grupos de 4;
@@ -41,20 +43,20 @@ modifica tus datos.
   abierta y tus datos, a salvo. Ofrece «Reintentar», «Recargar» y «Exportar
   diagnóstico»; «Detalles técnicos» enseña el error para el informe.
 
-En este manual, el tour hace de «otro Pharos» que tiene abiertos los datos de
+En este manual, el tour hace de «otro Pharos» que está actualizando los datos de
 Liomar y simula un fallo de una vista; después todo vuelve a la normalidad.
 
 ## Paso a paso
 
 ### 19.1. Si la base de datos local no abre
 
-Si los datos locales no se pueden abrir, Pharos lo dice al arrancar y no modifica ningún archivo. La pantalla cambia según la causa: «Otro Pharos está usando tus datos» (otra ventana de Pharos o el CLI los tiene abiertos, como en este ejemplo), «Estos datos son de una versión más nueva de Pharos» (instala esa versión o una posterior), «Falta la clave de la base de datos local» (un equipo nuevo o Windows reinstalado), que ofrece escribir la clave de recuperación (56 caracteres en grupos de 4), o, al actualizar desde la 0.5, «Falta espacio para actualizar tus datos». Cuando la causa puede pasar sola, ofrece «Reintentar».
+Si los datos locales no se pueden abrir, Pharos lo dice al arrancar y no modifica ningún archivo. La pantalla cambia según la causa: «Otro Pharos está actualizando tus datos» (otra ventana de Pharos o el CLI los está actualizando, como en este ejemplo), «Estos datos son de una versión más nueva de Pharos» (instala esa versión o una posterior), «Falta la clave de la base de datos local» (un equipo nuevo o Windows reinstalado), que ofrece escribir la clave de recuperación (56 caracteres en grupos de 4), o, al actualizar desde la 0.5, «Falta espacio para actualizar tus datos». Cuando la causa puede pasar sola, ofrece «Reintentar».
 
 ![Si la base de datos local no abre](img/errores/01-base-de-datos.png)
 
 ### 19.2. Restaurar la copia
 
-En cuanto se cierra el otro Pharos, «Reintentar» abre los datos sin reiniciar y Liomar vuelve a su Inicio. Si el archivo está dañado, se restaura una copia (pharos.db o pharos.db.bak-…): por eso conviene guardar la clave de recuperación y hacer copias (capítulo 15).
+En cuanto el otro Pharos termina, «Reintentar» abre los datos sin reiniciar y Liomar vuelve a su Inicio. Si el archivo está dañado, se restaura una copia (pharos.db o pharos.db.bak-…): por eso conviene guardar la clave de recuperación y hacer copias (capítulo 15).
 
 ### 19.3. «Algo salió mal»
 
@@ -80,10 +82,10 @@ Si una vista falla, Pharos no se cierra: muestra «Algo salió mal» con «Reint
 - **«La clave es válida, pero no abre esta base de datos…».** Es la clave de
   otro equipo, o el archivo está dañado. Comprueba que sea la de este equipo;
   si lo es, prueba con una copia `pharos.db.bak-…`.
-- **«Otro Pharos está usando tus datos» y no ves otra ventana.** Puede que
-  el CLI de Pharos esté importando resultados, o que haya un proceso
-  `pharos.exe` sin ventana. Espera a que termine o ciérralo en el
-  Administrador de tareas.
+- **«Otro Pharos está actualizando tus datos» y no ves otra ventana.**
+  Puede que el CLI de Pharos esté actualizando la base tras instalar una
+  versión nueva, o que haya un proceso `pharos.exe` sin ventana atascado.
+  Espera a que termine o ciérralo en el Administrador de tareas.
 - **«Algo salió mal» vuelve a salir tras «Reintentar».** Pulsa «Recargar»; si
   se repite, exporta el diagnóstico e informa del fallo.
 

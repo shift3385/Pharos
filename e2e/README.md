@@ -128,8 +128,8 @@ it happen inside the isolated run instead of skipping them:
   in the tour profile's `evidence/` folder.
 - **Database that does not open** (chapter 19): the app is closed and the
   tour holds the profile's `pharos.lock` open, as a second Pharos would; the app
-  restarts on «Otro Pharos está usando tus datos», the tour lets go and
-  «Reintentar» opens the data (ADR-0050 §7).
+  restarts on «Otro Pharos está actualizando tus datos» once its 10-second wait
+  runs out, the tour lets go and «Reintentar» opens the data (ADR-0050 §5).
 - **«Algo salió mal»** (chapter 15): date formatting is made to throw in the
   WebView, so a view fails and the error boundary catches it.
 - **Clipboard paste** (chapter 13) and the **attachments folder** of a report

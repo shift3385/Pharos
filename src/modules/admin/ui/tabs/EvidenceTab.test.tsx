@@ -32,7 +32,6 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock("../../api/evidenceApi", () => ({
   EVIDENCE_CHECK_BUSY: "evidence-check-busy",
-  EVIDENCE_DB_CHANGED: "evidence-db-changed",
   evidenceApi: api,
 }));
 
@@ -367,22 +366,6 @@ describe("Administración → Evidencias", () => {
     expect(await screen.findByText("Se borró 1 archivo (2 KB).", { exact: false })).toBeInTheDocument();
     expect(screen.getByText("Los archivos se borraron, pero", { exact: false })).toBeInTheDocument();
     expect(screen.queryByText("No se pudieron borrar", { exact: false })).not.toBeInTheDocument();
-  });
-
-  it("deletes nothing when another Pharos changed the database", async () => {
-    api.deleteOrphans.mockRejectedValue("evidence-db-changed: the database file changed on disk");
-    const user = userEvent.setup();
-    renderTab();
-    await user.click(await screen.findByTestId("evidence-verify"));
-    const orphans = await screen.findByTestId("evidence-orphans");
-    await user.click(within(orphans).getByRole("checkbox", { name: "Seleccionar Archivo ab1111111111" }));
-    await user.click(screen.getByTestId("evidence-repair"));
-    expect(screen.getByRole("alertdialog")).toHaveTextContent("solo en Windows");
-    await user.click(screen.getByTestId("evidence-confirm"));
-    expect(
-      await screen.findByText("No se borró nada: la base de datos cambió en disco", { exact: false }),
-    ).toBeInTheDocument();
-    expect(screen.getByTestId("evidence-orphans")).toHaveTextContent("Archivos sin registro (2)");
   });
 
   it("formats sizes in the UI language", () => {

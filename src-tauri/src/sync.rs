@@ -576,7 +576,6 @@ pub(crate) fn take_auto_merged(conn: &Connection, user: &str) -> Result<Vec<Valu
 pub fn sync_auto_merged_take(db: State<Db>, user_id: String) -> Result<Vec<Value>, String> {
     require_user(&user_id)?;
     let list = db.with_conn(|conn| take_auto_merged(conn, &user_id))?;
-    db.persist()?;
     Ok(list)
 }
 
@@ -824,7 +823,7 @@ pub fn sync_server_features_set(
 ) -> Result<(), String> {
     require_user(&user_id)?;
     db.with_conn(|conn| put_state(conn, &server_features_key(&user_id), &features.join(",")))?;
-    db.persist()
+    Ok(())
 }
 
 /// True if the account's server listed `feature` in its last answer (the
@@ -1057,7 +1056,6 @@ pub fn oplog_pending(
         "append_only" => db.with_conn(|conn| build_pending_append(conn, &user_id))?,
         other => return Err(format!("unknown sync class: {other}")),
     };
-    db.persist()?;
     Ok(pending)
 }
 
@@ -1119,7 +1117,7 @@ pub fn oplog_mark_rejected(
         return Ok(());
     }
     db.with_tx(|conn| mark_rejected(conn, &user_id, &op_ids))?;
-    db.persist()
+    Ok(())
 }
 
 #[cfg(feature = "tauri")]
@@ -1134,11 +1132,11 @@ pub fn oplog_mark_synced(
         return Ok(());
     }
     db.with_conn(|conn| {
-        let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+        let tx = crate::db::begin_immediate(conn)?;
         mark_pushed(&tx, &user_id, &deltas)?;
         tx.commit().map_err(|e| e.to_string())
     })?;
-    db.persist()
+    Ok(())
 }
 
 fn field<'a>(p: &'a Value, key: &str) -> &'a str {
@@ -1781,7 +1779,7 @@ pub fn sync_cursor_set(
             &value,
         )
     })?;
-    db.persist()
+    Ok(())
 }
 
 /// Applies one page of remote documents (pulled from the backend), of one
@@ -1822,7 +1820,7 @@ pub(crate) fn apply_page_in(
             Some(ws) => ws.to_string(),
             None => ensure_workspace(conn)?,
         };
-        let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+        let tx = crate::db::begin_immediate(conn)?;
         for doc in docs {
             apply_doc(&tx, &workspace_id, user_id, doc)?;
         }
@@ -2190,7 +2188,7 @@ pub(crate) fn resolve_and_persist_with(
 ) -> Result<(), String> {
     db.with_conn(|conn| {
         let workspace_id = ensure_workspace(conn)?;
-        let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+        let tx = crate::db::begin_immediate(conn)?;
         resolve_conflict_with(&tx, &workspace_id, user_id, id, resolution, choices)?;
         tx.commit().map_err(|e| e.to_string())
     })?;

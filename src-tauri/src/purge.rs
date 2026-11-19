@@ -581,7 +581,7 @@ pub fn purge_deleted(
     retention_days: i64,
 ) -> Result<PurgeSummary, String> {
     let summary = db.with_conn(|conn| {
-        let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+        let tx = crate::db::begin_immediate(conn)?;
         let summary = purge(&tx, &user_id, retention_days)?;
         let evidence = purge_evidence(&tx, &user_id, retention_days)?;
         let released = crate::evidence::has_pending_deletions(&tx)?;
