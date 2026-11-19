@@ -4329,7 +4329,10 @@
       "ctrf": "CTRF",
       "junit": "JUnit XML",
       "playwright_json": "Playwright JSON",
-      "pharos_run_json": "Pharos Run JSON"
+      "pharos_run_json": "Pharos Run JSON",
+      "sarif": "SARIF",
+      "k6": "k6 summary",
+      "axe": "axe-core"
     },
     "field": {
       "title": "Run title",
