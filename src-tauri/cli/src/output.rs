@@ -146,7 +146,7 @@ mod tests {
         assert!(line["error"]["message"]
             .as_str()
             .unwrap()
-            .starts_with("Pharos is open"));
+            .starts_with("Another Pharos process"));
     }
 
     #[test]

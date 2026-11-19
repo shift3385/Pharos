@@ -1,11 +1,13 @@
 //! Local mode (ADR-0054 §1): write into the desktop's database on this
 //! computer through `pharos_core::api`, as the account signed in to the app.
-//! Until SEC-05b (N5) only one process may open the database, so with the app
-//! open this fails cleanly with `db-in-use` (exit 6).
+//! Since SEC-05b (N5) it writes with the app open, and the app shows the run
+//! within seconds. `db-in-use` (exit 6) now only means another process is
+//! migrating or converting the folder; a write still blocked after the
+//! core's retries is `db-busy` (exit 6).
 //!
 //! Local mode reads Pharos Run JSON and JUnit (a Rust port, `junit.rs`); every
-//! other format
-//! is refused with a pointer to remote mode or the app's «Importar informe».
+//! other format is refused with a pointer to remote mode or the app's
+//! «Importar informe».
 
 use std::path::{Path, PathBuf};
 

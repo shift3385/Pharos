@@ -60,6 +60,26 @@ impl Fixture {
         Fixture { root, data, local }
     }
 
+    /// The fixture another process created in `root`, left in place when
+    /// this one ends (the parent cleans up).
+    fn at(root: &Path) -> std::mem::ManuallyDrop<Fixture> {
+        let data = root.join("data");
+        let local = TestLocal {
+            dir: data.clone(),
+            user: Some(SignedInUser {
+                id: U.into(),
+                display_name: "Ana Pérez".into(),
+                email: "ana@example.com".into(),
+                server: None,
+            }),
+        };
+        std::mem::ManuallyDrop::new(Fixture {
+            root: root.to_path_buf(),
+            data,
+            local,
+        })
+    }
+
     fn work(&self) -> PathBuf {
         self.root.join("work")
     }
@@ -203,6 +223,57 @@ fn with_the_app_open_it_writes_and_the_app_sees_it() {
     let p = &api::list_projects(&app, U).unwrap()[0];
     assert!(api::find_run(&app, &p.id, U, "RUN-001").unwrap().is_some());
     drop(app);
+}
+
+/// The folder the child process of the next test works in.
+const CHILD_ROOT_VAR: &str = "PHAROS_CLI_TEST_CHILD_ROOT";
+
+/// SEC-05b from the CLI's side (INT-01 L7): a real second process (this test
+/// binary again, running `child_cli_upload`) runs `pharos upload` while this
+/// one holds the database open, as the app does, and imports too. Both runs
+/// are there afterwards, each with its own key, and the app's connection sees
+/// the child's run without reopening.
+#[test]
+fn another_process_uploads_while_the_app_has_the_database_open() {
+    let f = Fixture::new();
+    f.write("child.json", &report("single__ctrf.json"));
+    f.write("app.json", &report("single__pw.json"));
+    let app = f.db();
+    let mut child = std::process::Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "local::tests::child_cli_upload",
+            "--test-threads=1",
+        ])
+        .env(CHILD_ROOT_VAR, &f.root)
+        .stdout(std::process::Stdio::null())
+        .spawn()
+        .unwrap();
+    // The app writes at the same time, through its own open database.
+    let (code, out, err) = f.run(&["upload", "app.json", "-p", "TC", "--lang", "en"], &[]);
+    assert_eq!(code, 0, "{out}\n{err}");
+    assert!(
+        child.wait().unwrap().success(),
+        "the child `pharos upload` failed"
+    );
+    let p = &api::list_projects(&app, U).unwrap()[0];
+    let runs: Vec<String> = ["RUN-001", "RUN-002"]
+        .iter()
+        .filter_map(|k| api::find_run(&app, &p.id, U, k).unwrap().map(|r| r.key))
+        .collect();
+    assert_eq!(runs, vec!["RUN-001", "RUN-002"], "both runs, two keys");
+    drop(app);
+}
+
+/// The child of the test above; a no-op in a normal run.
+#[test]
+fn child_cli_upload() {
+    let Ok(root) = std::env::var(CHILD_ROOT_VAR) else {
+        return;
+    };
+    let f = Fixture::at(Path::new(&root));
+    let (code, out, err) = f.run(&["upload", "child.json", "-p", "TC", "--lang", "en"], &[]);
+    assert_eq!(code, 0, "{out}\n{err}");
 }
 
 #[test]
