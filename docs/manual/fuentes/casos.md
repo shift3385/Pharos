@@ -130,15 +130,16 @@ aviso dice cuántos casos se actualizan y cuántos aprobados volverán a revisi�
 Si un caso no debe moverse, fíjalo en su versión antes.
 
 **Un dataset de 3 filas da 3 resultados.** Al añadir el caso a un run, el
-diálogo muestra «3 filas · Usuarios válidos (v2)». En la ejecución, cada fila
-es una ejecución propia («Fila 2 de 3 · usuario = luis»), con sus valores
-resaltados en los pasos, y los pasos insertados aparecen bajo «Paso compartido
-· Iniciar sesión · v5». Cada fila guarda su resultado, que recuerda el dataset
-y la versión de cada paso compartido. El progreso cuenta el caso una vez.
+diálogo muestra «3 filas · Usuarios válidos (v1)». En la ejecución, cada fila
+es una ejecución propia («Flujo principal · Fila 2 de 3», con el primer valor
+de la fila, qa.web@pharos.test), con sus valores resaltados en los pasos, y los
+pasos insertados aparecen bajo «Paso compartido · Iniciar sesión · v2». Cada
+fila guarda su resultado, que recuerda el dataset y la versión de cada paso
+compartido. El progreso cuenta el caso una vez.
 
 **Al exportar**, el `.feature`, el PDF y el `.xlsx` llevan los pasos y las
-filas completos, y nombran su origen: «Paso compartido: Iniciar sesión (v4)» y
-«Dataset: Usuarios válidos (v2)».
+filas completos, y nombran su origen: «Paso compartido: Iniciar sesión (v2)» y
+«Dataset: Usuarios válidos (v1)».
 
 ## Atajos de teclado
 
