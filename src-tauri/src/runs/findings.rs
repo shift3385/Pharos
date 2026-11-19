@@ -603,6 +603,24 @@ pub fn triage_add(
     )
     .map_err(err)?;
     journal::record_append(conn, FINDING_TRIAGE, &id, user)?;
+    // The decision is a judgement: it goes to the audit trail too (AUD-01).
+    let mut changes = Map::new();
+    changes.insert("fingerprint".into(), json!([null, fingerprint]));
+    changes.insert("state".into(), json!([null, state]));
+    changes.insert("reason".into(), json!([null, reason]));
+    if let Some(d) = defect_id.map(str::trim).filter(|d| !d.is_empty()) {
+        changes.insert("defectId".into(), json!([null, d]));
+    }
+    journal::record_event_in(
+        conn,
+        journal::Actor::user(user),
+        journal::Action::Create,
+        FINDING_TRIAGE,
+        &id,
+        Some(project_id),
+        changes,
+        None,
+    )?;
     Ok(id)
 }
 
@@ -793,9 +811,11 @@ fn previous_fingerprints(
                AND coalesce(p.source_tool, '') = coalesce(r.source_tool, '')
                AND (coalesce(p.started_at, p.created_at) < coalesce(r.started_at, r.created_at)
                     OR (coalesce(p.started_at, p.created_at) = coalesce(r.started_at, r.created_at)
-                        AND p.id < r.id))
+                        AND (p.created_at < r.created_at
+                             OR (p.created_at = r.created_at AND p.id < r.id))))
              WHERE r.id = ?1 AND EXISTS (SELECT 1 FROM findings f WHERE f.run_id = p.id)
-             ORDER BY coalesce(p.started_at, p.created_at) DESC, p.id DESC LIMIT 1",
+             ORDER BY coalesce(p.started_at, p.created_at) DESC, p.created_at DESC, p.id DESC
+             LIMIT 1",
             params![run_id],
             |r| r.get(0),
         )

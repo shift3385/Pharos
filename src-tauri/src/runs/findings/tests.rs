@@ -440,6 +440,7 @@ fn the_run_detail_lists_findings_worst_first_with_triage_and_what_is_new() {
     // A later run of the same tool where one finding moved to another node.
     let mut later = doc;
     later["findings"][0]["fingerprint"] = json!("pharos:moved");
+    later["run"]["startedAt"] = json!("2030-01-01T00:00:00.000Z");
     let sha2 = "1111111111111111111111111111111111111111111111111111111111111111";
     let raw = Stored {
         sha256: sha2.into(),

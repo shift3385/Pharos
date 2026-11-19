@@ -1194,6 +1194,7 @@ const AUDITED: &[&str] = &[
     "runs::run_items_add",
     "runs::result_record",
     "runs::unlinked_mapping_set",
+    "runs::findings::finding_triage_set",
     "cycles::configuration_create",
     "cycles::configuration_update",
     "cycles::configuration_archive",
@@ -1491,6 +1492,10 @@ const EXEMPT: &[(&str, &str)] = &[
         "test_plan::test_plan_history",
         "read (the exported plan's revision history, PLN-02)",
     ),
+    (
+        "runs::findings::finding_triage_history",
+        "read (the triage decisions on a fingerprint, ING-06)",
+    ),
 ];
 
 fn registered_commands() -> Vec<String> {
@@ -1748,6 +1753,9 @@ fn every_audited_command_leaves_an_event() {
     });
     step("runs::unlinked_mapping_set", &mut |tx| {
         crate::runs::set_mapping(tx, &p, "tests/a.spec.ts::x", None, U).map(drop)
+    });
+    step("runs::findings::finding_triage_set", &mut |tx| {
+        crate::runs::findings::triage_add(tx, &p, U, "fp", "fixed", Some("Hecho"), None).map(drop)
     });
     let config_input = |name: &str, label: &str| -> crate::cycles::ConfigurationInput {
         serde_json::from_value(

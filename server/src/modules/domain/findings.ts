@@ -87,6 +87,17 @@ const rank = (severity: string) => {
 };
 const when = (run: RemoteDoc) =>
   s(run.payload, "startedAt") ?? s(run.payload, "createdAt") ?? "";
+/** Run order for «previous»: start, then creation, then id (the desktop's). */
+const order = (run: RemoteDoc) => [
+  when(run),
+  s(run.payload, "createdAt") ?? "",
+  run.entityId,
+];
+const before = (a: RemoteDoc, b: RemoteDoc) => {
+  const [x, y] = [order(a), order(b)];
+  for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] < y[i];
+  return false;
+};
 
 const eventOf = (d: RemoteDoc): TriageEvent => ({
   id: d.entityId,
@@ -129,7 +140,6 @@ async function previousFingerprints(
   projectId: string,
 ): Promise<Set<string> | null> {
   const tool = s(run.payload, "sourceTool") ?? "";
-  const mine = when(run);
   const findings = await tx.list("finding", projectId);
   const withFindings = new Set(findings.map((d) => s(d.payload, "runId")));
   const earlier = (await tx.list("run", projectId))
@@ -139,17 +149,9 @@ async function previousFingerprints(
         r.entityId !== run.entityId &&
         withFindings.has(r.entityId) &&
         (s(r.payload, "sourceTool") ?? "") === tool &&
-        (when(r) < mine || (when(r) === mine && r.entityId < run.entityId)),
+        before(r, run),
     )
-    .sort((a, b) =>
-      when(a) === when(b)
-        ? a.entityId < b.entityId
-          ? 1
-          : -1
-        : when(a) < when(b)
-          ? 1
-          : -1,
-    );
+    .sort((a, b) => (before(a, b) ? 1 : before(b, a) ? -1 : 0));
   const previous = earlier[0];
   if (!previous) return null;
   return new Set(
@@ -292,6 +294,19 @@ export function createFindingService(store: DomainStore) {
           hlc: tx.stamp(),
         };
         await tx.append("finding_triage", id, payload);
+        // A judgement: it goes to the audit trail too, as on the desktop.
+        await tx.audit(
+          "create",
+          "finding_triage",
+          id,
+          {},
+          {
+            fingerprint: [null, payload.fingerprint],
+            state: [null, payload.state],
+            reason: [null, payload.reason],
+            ...(payload.defectId ? { defectId: [null, payload.defectId] } : {}),
+          },
+        );
         return eventOf({ entityId: id, payload } as unknown as RemoteDoc);
       }),
   };
