@@ -2,7 +2,7 @@
 
 > Completa [ADR-0011](0011-revision-del-caso-y-pasos-estables.md) (pasos, filas y revisiones con id estable) y [ADR-0013](0013-campos-del-run.md) (objetivos de ejecución por fila). Aplica la regla de edición de [ADR-0049](0049-estados-del-plan-y-aprobacion-independiente.md) (opción A) a los cambios que llegan desde la biblioteca. No cambia ninguna decisión anterior.
 
-- **Estado:** Propuesto (pista P de 0.6.0, ola 2, 2026-11-19). Pendiente de la aprobación del usuario y de las respuestas a las preguntas de «Decisiones abiertas».
+- **Estado:** Aceptado (decisión del usuario, 2026-11-19: el plan y las cinco respuestas recomendadas; ver «Decisiones del usuario»). Pista P de 0.6.0, ola 2.
 - **Relacionados:**
   - [ADR-0011](0011-revision-del-caso-y-pasos-estables.md) (pasos `{id, text, expected?}`, filas `{id, values}`, revisiones inmutables con id determinista, clase `append_only`);
   - [ADR-0013](0013-campos-del-run.md) (`run_items` congelan la revisión; `manual::targets_of` da un objetivo por flujo y fila; el resultado guarda `example_row_id`, `example_row` y `example_values`);
@@ -112,7 +112,7 @@ interface DatasetRef {
   - uno en **Borrador** sigue en Borrador;
   - las **baselines no cambian**: apuntan a revisiones congeladas.
 
-  Es la recomendación; las alternativas están en «Decisiones abiertas», 1.
+  Lo eligió el usuario (decisión 1).
 - **Permisos:** `shared_step`, `shared_step_revision`, `dataset` y `dataset_revision` piden `case.edit`, igual que los casos (`workspace-roles.json`, `workspaces.rs` `capability_for` y `roles.ts` `capabilityFor`). Quien no puede editar casos tampoco puede cambiar la biblioteca: un Viewer o un Product Owner la ven en solo lectura.
 
 ### 5. Ejecución: un dataset de 3 filas da 3 resultados
@@ -126,7 +126,7 @@ interface DatasetRef {
 ### 6. Informes importados
 
 - **Sin cambios en el vínculo:** la fila de un resultado importado se resuelve por su índice contra las filas de la revisión ejecutada (`link.rs`). La tabla materializada es la que exporta el `.feature`, así que un repositorio que ejecuta ese `.feature` produce los mismos índices.
-- **Propuesta para cuando la pista F lo permita** (decisión abierta 3): admitir una fila explícita fuera de Cucumber, con la propiedad JUnit `example_row`, `extra.exampleRow` en CTRF y la anotación `row` de Playwright. Cambia lo que producen los parsers, así que sube `NORMALIZER_VERSION`.
+- **Fila explícita, en P5 después de la pista F** (decisión del usuario 3): se admitirá una fila explícita fuera de Cucumber, con la propiedad JUnit `example_row`, `extra.exampleRow` en CTRF y la anotación `row` de Playwright. Cambia lo que producen los parsers, así que sube `NORMALIZER_VERSION`.
 
 ### 7. Sync y fusión
 
@@ -154,7 +154,7 @@ interface DatasetRef {
 
 ### 9. Fuera de 0.6.0
 
-- **Casos avanzados** (varios flujos, `featureSource`): sin pasos compartidos ni datasets hasta RUN-02 (0.7.0, Gherkin de ida y vuelta). Decisión abierta 2.
+- **Casos avanzados** (varios flujos, `featureSource`): sin pasos compartidos ni datasets hasta RUN-02 (0.7.0, Gherkin de ida y vuelta). Decisión del usuario 2.
 - Anidar pasos compartidos, claves visibles (`SS-001`), datasets entre proyectos o del workspace, valores secretos o enmascarados en datasets, y generar datos con IA.
 - Leer la biblioteca desde la API v1 (pista A) o el MCP (IA-06): se anota para esas pistas.
 
@@ -174,13 +174,14 @@ interface DatasetRef {
 - **Prueba de actualización** desde un fixture 0.5.0: abre sin pérdida, los casos no cambian de hash y la biblioteca empieza vacía.
 - **Formatos exportados** (§6.6): el `.feature` y el xlsx añaden comentarios o líneas, pero no cambian de forma. Pharos Run JSON no cambia. Nota en el CHANGELOG.
 
-## Decisiones abiertas (para el usuario)
+## Decisiones del usuario (2026-11-19)
 
-1. **Casos aprobados cuando cambia un paso compartido o un dataset.**
-   - **A (rec.):** se actualizan y vuelven a En revisión (regla de ADR-0049), con el diálogo de impacto antes de guardar. El caso que no deba moverse se fija en su versión.
-   - **B:** los aprobados no se actualizan solos. Muestran «Hay una versión nueva» y «Actualizar» (uno o en bloque), que aplica la misma regla; los Borradores y los En revisión se actualizan solos.
-   - **C:** el paso compartido tiene su propia revisión y aprobación, y aprobar una versión actualiza los casos aprobados sin reabrirlos. Es más flujo y más pantallas.
-2. **Casos avanzados (varios flujos).** **Rec.:** quedan fuera de 0.6.0 y llegan con RUN-02. Alternativa: datasets por flujo ya en 0.6.0 (`datasetRefs` con el id del flujo), sin pasos compartidos.
-3. **Fila explícita en informes que no son Cucumber** (JUnit `example_row`, CTRF, Playwright). **Rec.:** sí, en un PR aparte después de la pista F, porque toca sus parsers y sube `NORMALIZER_VERSION`.
-4. **Límites** (50 pasos y 20 parámetros por paso compartido; 30 columnas, 500 filas y 4 KB por celda en un dataset). **Rec.:** estos.
-5. **¿Dónde vive la biblioteca en la interfaz?** **Rec.:** una sección del proyecto, «Biblioteca», con dos pestañas («Pasos compartidos» y «Datasets»), en `/projects/:projectId/library?tab=` (ADR-0029). Alternativa: dos entradas dentro de «Casos».
+El usuario aprobó el plan y eligió las cinco recomendaciones («Sí, apruebo»; lo transmitió el coordinador):
+
+1. **Casos aprobados cuando cambia un paso compartido o un dataset: opción A.** Se actualizan y vuelven a En revisión (regla de ADR-0049). Antes de guardar se muestra el aviso de impacto, y un caso que no deba moverse se fija en su versión. Se descartaron:
+   - **B:** los aprobados esperan a «Actualizar»;
+   - **C:** el paso compartido tiene su propia aprobación.
+2. **Casos avanzados (varios flujos):** fuera de 0.6.0; llegan con RUN-02 (0.7.0).
+3. **Fila explícita en informes que no son Cucumber** (JUnit `example_row`, `extra.exampleRow` de CTRF y la anotación `row` de Playwright): sí, en un PR aparte (P5), después de la pista F, porque toca sus parsers y sube `NORMALIZER_VERSION`.
+4. **Límites:** 50 pasos y 20 parámetros por paso compartido; 30 columnas, 500 filas y 4 KB por celda en un dataset.
+5. **La biblioteca en la interfaz:** una sección del proyecto, «Biblioteca», con las pestañas «Pasos compartidos» y «Datasets», en `/projects/:projectId/library?tab=` (ADR-0029).

@@ -1,8 +1,8 @@
-# Pista P · 0.6.0 · CAS-01 (pasos compartidos, parámetros y datasets) · plan PROPUESTO (2026-11-19)
+# Pista P · 0.6.0 · CAS-01 (pasos compartidos, parámetros y datasets) · plan APROBADO (2026-11-19)
 
-Estado: **propuesto**, pendiente de la aprobación del usuario y de las cinco preguntas del §7.
+Estado: **aprobado por el usuario el 2026-11-19**, con las cinco respuestas recomendadas del §7.
 Bocetos: https://claude.ai/artifact/4r43GgYrREyp8cuGuB63sT (fuente: `p-cas01-bocetos.html` en esta carpeta).
-ADR: [ADR-0055](../adr/0055-pasos-compartidos-parametros-y-datasets.md) (propuesto).
+ADR: [ADR-0055](../adr/0055-pasos-compartidos-parametros-y-datasets.md) (aceptado).
 Criterio de ROADMAP: «Cambiar un paso compartido actualiza N casos; un dataset de 3 filas da 3 resultados».
 
 ## 0. Lo que encontré en `main` (y decide el diseño)
@@ -25,7 +25,7 @@ Cada PR lleva sus docs (ADR, ROADMAP, GLOSARIO, manual, `changes/CAS-01-*.md`) y
 
 | PR | Contenido | Archivos principales |
 | --- | --- | --- |
-| **P0 · docs** (este) | ADR-0055 propuesto, este plan, bocetos, reserva de la migración local 0049, ROADMAP (CAS-01 en curso) y GLOSARIO | `docs/adr/0055-*`, `docs/adr/README.md`, `docs/design/p-cas01-*`, `docs/ROADMAP.md`, `docs/GLOSARIO.md`, `scripts/migration-registry.json` |
+| **P0 · docs** (este) | ADR-0055 (aceptado), este plan, bocetos, reserva de la migración local 0049, ROADMAP (CAS-01 en curso) y GLOSARIO | `docs/adr/0055-*`, `docs/adr/README.md`, `docs/design/p-cas01-*`, `docs/ROADMAP.md`, `docs/GLOSARIO.md`, `scripts/migration-registry.json` |
 | **P1 · núcleo** | Migración 0049. `shared_library.rs` (entidades, revisiones, validación y límites, parámetros, materializar, propagar, reconciliar, integridad). Llamada a `case_review` en la propagación. Comandos Tauri `shared_step_*` y `dataset_*`. Contratos `ts-rs`. Vectores `shared-steps-vectors.json`. Registro en sync (`oplog::SYNCED`, `sync_class`, `read_payload`/`apply_doc`, papelera, purga, `restore_project_children`, `workspaces.rs`), retenidas hasta ver `shared-steps`. Entradas de `merge-fields.json` y la regla «derivado» en `sync_merge.rs` y `merge.ts`, con vectores. Prueba de actualización desde 0.5.0 | `src-tauri/migrations/0049_shared_library.sql`, `src-tauri/src/db.rs`, `src-tauri/src/shared_library.rs` (nuevo), `test_case.rs`, `case_review.rs`, `oplog.rs`, `sync_class.rs`, `sync.rs`, `sync_merge.rs`, `trash.rs`, `purge.rs`, `workspaces.rs`, `app.rs`, `src/shared/contracts/{merge-fields.json,generated/*,fixtures/sync/*}`, `src/modules/sync-offline/domain/merge.ts` |
 | **P2 · servidor y web API** | Entidades en `sync.schemas.ts` (LWW, append-only, `PROJECT_CHILDREN`, `FEATURE_DATA_KEYS`, payloads zod), funcionalidad `shared-steps` (`sync.version.ts`, filtro de pull, 400 en push), `roles.ts`. Rutas de dominio `/api/shared-steps` y `/api/datasets` (CRUD, impacto, propagación, CSV) con el mismo algoritmo en TS y los vectores de P1. `transport.ts` anuncia la funcionalidad. Pruebas en `pharos_test_db_trackp2` | `server/src/modules/sync/{sync.schemas.ts,sync.version.ts,sync.routes.ts,sync.repository.ts}`, `server/src/modules/domain/{shared-library.ts (nuevo),domain.service.ts,domain.routes.ts}`, `server/src/modules/workspaces/roles.ts`, `src/modules/sync-offline/api/transport.ts` |
 | **P3 · interfaz** | Sección «Biblioteca» (pestañas Pasos compartidos y Datasets): lista, ficha, editor de pasos con parámetros, rejilla de dataset (pegar, importar CSV/xlsx, exportar CSV) y «Usado en». En el editor de casos: «Insertar paso compartido», bloque con versión y acciones, argumentos, «Vincular dataset» y diálogo de impacto. Escritorio y web (adaptador `serverApi`). Pruebas de componente y de accesibilidad | `src/modules/library/` (nuevo: `api`, `model`, `ui`), `src/modules/test-cases/ui/{TestCaseEditor.tsx,SortableSteps*,ExamplesTable*}`, `src/modules/test-cases/model/steps.ts`, rutas del proyecto, i18n |
@@ -92,7 +92,7 @@ Cada PR lleva sus docs (ADR, ROADMAP, GLOSARIO, manual, `changes/CAS-01-*.md`) y
 - Base de datos del servidor: `pharos_test_db_trackp2`. API y tours en el puerto 3130.
 - Nunca se para un `pharos.exe` que no haya lanzado la pista.
 
-## 7. Preguntas para el usuario (con recomendación)
+## 7. Preguntas (respondidas el 2026-11-19: las cinco recomendaciones)
 
 1. **Casos aprobados al cambiar un paso compartido o un dataset.**
    - **A (rec.):** se actualizan y vuelven a En revisión (ADR-0049), con aviso de impacto antes de guardar; el caso que no deba moverse se fija en su versión.
