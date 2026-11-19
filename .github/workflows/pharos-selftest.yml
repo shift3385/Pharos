@@ -65,7 +65,8 @@ jobs:
         run: node scripts/int04-smoke.mjs serve
       - name: Report JUnit, SARIF, k6 and axe to Pharos
         id: pharos
-        uses: ./.github/actions/pharos-report
+        # This branch's own action, the one under test, from the checkout.
+        uses: ./.github/actions/pharos-report # zizmor: ignore[self-repository]
         with:
           server: ${{ env.PHAROS_URL }}
           token: ${{ env.PHAROS_TOKEN }}
