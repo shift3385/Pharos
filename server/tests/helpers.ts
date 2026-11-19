@@ -54,6 +54,11 @@ export const testEnv: Env = {
   RESET_TOKEN_TTL: 1_800_000,
   ADMIN_RESET_TTL: 86_400_000,
   PHAROS_ADMINS: [],
+  // 32 bytes of test key; the dispatcher runs only when a test calls it.
+  WEBHOOK_SECRETS_KEY: Buffer.alloc(32, 7).toString("base64"),
+  WEBHOOK_ALLOW_PRIVATE: false,
+  WEBHOOK_ALLOW_HOSTS: [],
+  WEBHOOK_DISPATCH_INTERVAL_MS: 0,
   // A folder per test run, removed by the OS temp cleanup.
   BLOB_DIR: join(tmpdir(), `pharos-blobs-${process.pid}`),
   BLOB_MAX_BYTES: 1_048_576,

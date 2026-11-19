@@ -195,6 +195,23 @@ No hay que activar nada: funciona con un token.
 - **Ante una fuga:** el administrador del servidor revoca todos los tokens de
   una cuenta desde «Administración › Usuarios» › «Revocar sus tokens…».
 
+## Webhooks (opcional)
+
+Un webhook es un aviso que el servidor envía a otra herramienta (Slack, un bot de PRs, Jenkins) cuando pasa algo en un workspace. Lo crea un Test Manager en la pestaña «Integraciones» del workspace ([ADR-0052](adr/0052-api-v1-tokens-y-webhooks.md)).
+
+- **Activarlos:** `WEBHOOK_SECRETS_KEY` con 32 bytes aleatorios en base64 (`openssl rand -base64 32`).
+  - Cifra los secretos de firma en la base de datos.
+  - Sin ella, los webhooks salen como «no disponibles».
+  - Guárdala fuera de las copias de la base de datos. Si cambia, los webhooks existentes dejan de firmar y hay que rotar su secreto.
+- **Destinos:** solo `https` y fuera de la red privada.
+  - Un servidor dentro de una red de empresa que avisa a su Jenkins usa `WEBHOOK_ALLOW_PRIVATE=true`; con eso también admite `http` hacia esas direcciones.
+  - Para permitir solo nombres concretos, usa `WEBHOOK_ALLOW_HOSTS=jenkins.empresa.lan,ci.empresa.lan`.
+- **Envío:** cada 2 s (`WEBHOOK_DISPATCH_INTERVAL_MS`).
+  - Reintenta durante unas 22 horas.
+  - Tras 50 fallos seguidos, desactiva el webhook y avisa a los Test Manager.
+  - El cortafuegos tiene que dejar salir al servidor hacia esos destinos.
+- **Verificar la firma:** cada envío lleva `webhook-id`, `webhook-timestamp` y `webhook-signature` ([Standard Webhooks](https://www.standardwebhooks.com/)). Las librerías de Standard Webhooks la comprueban con el secreto `whsec_…` que se mostró al crear el webhook.
+
 ## IA en la web (opcional)
 
 Quien tiene su clave de IA en la app de escritorio puede usarla también en la

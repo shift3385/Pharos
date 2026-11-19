@@ -49,6 +49,11 @@ import { API_V1, apiV1Routes } from "./modules/api/v1";
 import { hashToken, parseToken } from "./modules/api/tokenFormat";
 import { processParser, type ReportParser } from "./modules/api/reportParse";
 import { createRunImport } from "./modules/api/runImport";
+import { createVault } from "./modules/ai/vault";
+import { setDocumentHook } from "./modules/sync/sync.repository";
+import { createWebhookService } from "./modules/webhooks/webhooks.service";
+import { webhookRoutes } from "./modules/webhooks/webhooks.routes";
+import { createDispatcher, type Sender } from "./modules/webhooks/dispatcher";
 
 /** Routes limited per client IP: guessing passwords on login, and burning
  *  Argon2 CPU on register; guessing passwords, recovery codes or reset links,
@@ -100,6 +105,8 @@ export function buildApp(deps: {
   /** How an uploaded report is read (INT-02 A2): tests pass the in-process
    *  parser; the server reads each one in a child process with a deadline. */
   reportParser?: ReportParser;
+  /** How a webhook delivery is sent (INT-03): tests pass a fake one. */
+  webhookSender?: Sender;
   /** Where logs go instead of stdout (tests read it). */
   logStream?: { write(line: string): void };
 }) {
@@ -221,6 +228,22 @@ export function buildApp(deps: {
   });
   void app.register(async (instance) => {
     adminRoutes(instance, { tokens, admin, account });
+  });
+  // Outgoing webhooks (INT-03, ADR-0052 §4): the outbox every document write
+  // feeds, and the dispatcher that sends it.
+  const webhookVault = env.WEBHOOK_SECRETS_KEY ? createVault(env.WEBHOOK_SECRETS_KEY) : null;
+  const webhookPolicy = { allowPrivate: env.WEBHOOK_ALLOW_PRIVATE, allowHosts: env.WEBHOOK_ALLOW_HOSTS };
+  const webhooks = createWebhookService({ pool, clock, vault: webhookVault, policy: webhookPolicy, publicUrl: env.APP_PUBLIC_URL });
+  setDocumentHook(webhooks.outbox);
+  const dispatcher = createDispatcher({ pool, vault: webhookVault, policy: webhookPolicy, membership, send: deps.webhookSender });
+
+  app.decorate("webhookDispatcher", dispatcher);
+  if (env.WEBHOOK_DISPATCH_INTERVAL_MS > 0) {
+    app.addHook("onReady", async () => dispatcher.start(env.WEBHOOK_DISPATCH_INTERVAL_MS, app.log));
+  }
+  app.addHook("onClose", async () => dispatcher.stop());
+  void app.register(async (instance) => {
+    webhookRoutes(instance, { service: webhooks, tokens });
   });
   // API tokens and the public API /api/v1 (INT-02, ADR-0052).
   const apiTokens = createApiTokenService(pool, clock);

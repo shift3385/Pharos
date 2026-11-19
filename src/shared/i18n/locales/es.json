@@ -5063,6 +5063,9 @@
         "admin_granted": "{{actor}} te nombró administrador del servidor",
         "admin_revoked": "{{actor}} te quitó el rol de administrador del servidor",
         "enabled": "{{actor}} reactivó tu cuenta"
+      },
+      "webhook": {
+        "disabled": "Se desactivó el webhook {{title}} tras 50 fallos seguidos. Revisa su destino y vuelve a activarlo en «Integraciones»."
       }
     },
     "action": {
@@ -5074,7 +5077,8 @@
       "resolve": "Resolver",
       "open": "Abrir",
       "members": "Ver miembros",
-      "profile": "Ver mi perfil"
+      "profile": "Ver mi perfil",
+      "integrations": "Ver integraciones"
     }
   },
   "workspaces": {
@@ -5327,6 +5331,77 @@
       "confirm_other": "Revocar {{count}} tokens",
       "done_one": "{{count}} token de {{name}} revocado",
       "done_other": "{{count}} tokens de {{name}} revocados"
+    },
+    "webhooks": {
+      "title": "Webhooks",
+      "hint": "Pharos envía un POST firmado a otra herramienta cuando pasa algo en este workspace, también si pasa en el escritorio (llega al sincronizar).",
+      "new": "Nuevo webhook…",
+      "none": "Todavía no hay webhooks.",
+      "disabledServer": "Los webhooks no están disponibles en este servidor. Quien lo administra puede activarlos con WEBHOOK_SECRETS_KEY.",
+      "limit": "Este workspace ya tiene el máximo de webhooks. Borra alguno que no se use.",
+      "name": "Nombre",
+      "url": "Destino",
+      "urlHint": "Una dirección https. Pharos no sigue redirecciones.",
+      "eventsLabel": "Eventos",
+      "eventRequired": "Elige al menos un evento.",
+      "allProjects": "Todos los proyectos",
+      "last": "Última entrega",
+      "failing_one": "Fallando ({{count}})",
+      "failing_other": "Fallando ({{count}})",
+      "off": {
+        "manual": "Desactivado",
+        "failures": "Desactivado tras 50 fallos"
+      },
+      "deliveries": "Entregas",
+      "edit": "Editar",
+      "test": "Enviar prueba",
+      "testQueued": "Prueba en cola: mira «Entregas» en unos segundos",
+      "activate": "Activar",
+      "activated": "«{{name}}» activado: se reenvía lo pendiente",
+      "rotate": "Rotar secreto",
+      "rotateTitle": "Rotar el secreto de «{{name}}»",
+      "rotateBody": "Se crea un secreto nuevo. Durante 24 horas Pharos firma con los dos, para que dé tiempo a cambiarlo en el destino.",
+      "delete": "Borrar",
+      "deleteTitle": "Borrar «{{name}}»",
+      "deleteBody": "Deja de recibir eventos ahora y se descartan las entregas pendientes. No se puede deshacer.",
+      "deleted": "«{{name}}» borrado",
+      "newTitle": "Nuevo webhook",
+      "editTitle": "Editar webhook",
+      "create": "Crear webhook",
+      "save": "Guardar",
+      "saved": "«{{name}}» guardado",
+      "secretTitle": "Secreto de firma de «{{name}}»",
+      "secretOnce": "Copia el secreto ahora. No se volverá a mostrar.",
+      "secretHint": "Cada envío lleva las cabeceras webhook-id, webhook-timestamp y webhook-signature (Standard Webhooks). El manual explica cómo verificarlas.",
+      "deliveriesTitle": "Entregas · {{name}}",
+      "noDeliveries": "Todavía no hay entregas.",
+      "state": "Estado",
+      "attempt": "intento {{n}}",
+      "next": "Próximo intento",
+      "answer": "Respuesta",
+      "redeliver": "Reintentar ahora",
+      "requeued": "En cola para enviar de nuevo",
+      "statuses": {
+        "pending": "Pendiente",
+        "delivered": "Entregada",
+        "failed": "Fallando",
+        "abandoned": "Abandonada"
+      },
+      "urlErrors": {
+        "invalid_url": "Esa dirección no es válida.",
+        "scheme": "Usa una dirección https.",
+        "credentials": "La dirección no puede llevar usuario ni contraseña: usa la firma para autenticar.",
+        "private": "Este servidor no permite enviar a direcciones de la red privada ni a sí mismo."
+      },
+      "events": {
+        "run_created": "Run creado",
+        "run_results_uploaded": "Resultados subidos",
+        "run_completed": "Run cerrado",
+        "cycle_closed": "Ciclo cerrado",
+        "defect_created": "Defecto creado",
+        "defect_status_changed": "Defecto cambia de estado",
+        "review_decided": "Caso o plan aprobado o devuelto"
+      }
     }
   },
   "findings": {

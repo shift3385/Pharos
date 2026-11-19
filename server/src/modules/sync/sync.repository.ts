@@ -35,6 +35,33 @@ export interface Scope {
   userId: string;
 }
 
+/** A document write as a hook sees it (INT-03, ADR-0052 §4): the version
+ *  before (null when the document is new) and after, in the writer's
+ *  transaction. */
+export interface DocumentWrite {
+  scope: Scope;
+  entity: string;
+  entityId: string;
+  before: { payload: Record<string, unknown>; deleted: boolean } | null;
+  after: Record<string, unknown>;
+  deleted: boolean;
+}
+
+/** Something that reacts to document writes inside their transaction
+ *  (the webhooks' outbox). Only for `entities`: any other write costs
+ *  nothing. Every writer passes here: the web, the API and `/sync/push`. */
+export interface DocumentHook {
+  entities: ReadonlySet<string>;
+  onWrite(client: PoolClient, w: DocumentWrite): Promise<void>;
+}
+
+let documentHook: DocumentHook | null = null;
+
+/** Installs the hook (`app.ts`); null removes it. */
+export function setDocumentHook(hook: DocumentHook | null): void {
+  documentHook = hook;
+}
+
 /** A device push or a key lease: the user's role there is checked per delta
  *  (`apply`) or per request (`leaseBlocks`). */
 export interface PushScope extends Scope {
@@ -350,6 +377,15 @@ export async function storeDoc(
   d: Delta,
   opts: StoreOpts = { merge: false },
 ): Promise<{ payload: Record<string, unknown>; cascade: Record<string, number> | null }> {
+  const hook = documentHook?.entities.has(d.entity) ? documentHook : null;
+  const before = hook
+    ? ((
+        await client.query<{ payload: Record<string, unknown>; deleted: boolean }>(
+          `SELECT payload, deleted FROM documents WHERE workspace_id = $1 AND entity = $2 AND entity_id = $3`,
+          [scope.workspaceId, d.entity, d.entityId],
+        )
+      ).rows[0] ?? null)
+    : null;
   const keep = opts.keep ?? [];
   const keepData = opts.keepData ?? [];
   const kept = !opts.merge && (keep.length > 0 || keepData.length > 0);
@@ -386,6 +422,16 @@ export async function storeDoc(
   // A project that comes back (its delete lost a conflict elsewhere) brings
   // back the case revisions its delete took (SYNC-11).
   if (d.entity === "project" && d.op !== "delete") await reviveProjectRevisions(client, scope, d.entityId);
+  if (hook) {
+    await hook.onWrite(client, {
+      scope,
+      entity: d.entity,
+      entityId: d.entityId,
+      before,
+      after: rows[0].payload,
+      deleted: d.op === "delete",
+    });
+  }
   return { payload: rows[0].payload, cascade };
 }
 
@@ -450,6 +496,9 @@ export async function storeAppend(client: PoolClient, scope: Scope, delta: Delta
         scope.userId,
       ],
     );
+    if (!orphan && documentHook?.entities.has(d.entity)) {
+      await documentHook.onWrite(client, { scope, entity: d.entity, entityId: d.entityId, before: null, after: d.payload, deleted: false });
+    }
     return { accepted: true };
   }
   if (current.deleted) return { accepted: true };

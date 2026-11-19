@@ -5063,6 +5063,9 @@
         "admin_granted": "{{actor}} made you a server administrator",
         "admin_revoked": "{{actor}} removed your server administrator role",
         "enabled": "{{actor}} enabled your account again"
+      },
+      "webhook": {
+        "disabled": "The webhook {{title}} was disabled after 50 failures in a row. Check its target and turn it on again in «Integrations»."
       }
     },
     "action": {
@@ -5074,7 +5077,8 @@
       "resolve": "Resolve",
       "open": "Open",
       "members": "View members",
-      "profile": "Open my profile"
+      "profile": "Open my profile",
+      "integrations": "See integrations"
     }
   },
   "workspaces": {
@@ -5327,6 +5331,77 @@
       "confirm_other": "Revoke {{count}} tokens",
       "done_one": "{{count}} token of {{name}} revoked",
       "done_other": "{{count}} tokens of {{name}} revoked"
+    },
+    "webhooks": {
+      "title": "Webhooks",
+      "hint": "Pharos sends a signed POST to another tool when something happens in this workspace, also when it happens on the desktop (it arrives when it syncs).",
+      "new": "New webhook…",
+      "none": "No webhooks yet.",
+      "disabledServer": "Webhooks are not available on this server. Its administrator can turn them on with WEBHOOK_SECRETS_KEY.",
+      "limit": "This workspace already has the maximum of webhooks. Delete one that is no longer used.",
+      "name": "Name",
+      "url": "Target",
+      "urlHint": "An https address. Pharos does not follow redirects.",
+      "eventsLabel": "Events",
+      "eventRequired": "Choose at least one event.",
+      "allProjects": "All projects",
+      "last": "Last delivery",
+      "failing_one": "Failing ({{count}})",
+      "failing_other": "Failing ({{count}})",
+      "off": {
+        "manual": "Off",
+        "failures": "Off after 50 failures"
+      },
+      "deliveries": "Deliveries",
+      "edit": "Edit",
+      "test": "Send test",
+      "testQueued": "Test queued: look at «Deliveries» in a few seconds",
+      "activate": "Turn on",
+      "activated": "«{{name}}» is on: what was pending is sent again",
+      "rotate": "Rotate secret",
+      "rotateTitle": "Rotate the secret of «{{name}}»",
+      "rotateBody": "A new secret is created. For 24 hours Pharos signs with both, so there is time to change it at the target.",
+      "delete": "Delete",
+      "deleteTitle": "Delete «{{name}}»",
+      "deleteBody": "It stops receiving events now and its pending deliveries are dropped. This cannot be undone.",
+      "deleted": "«{{name}}» deleted",
+      "newTitle": "New webhook",
+      "editTitle": "Edit webhook",
+      "create": "Create webhook",
+      "save": "Save",
+      "saved": "«{{name}}» saved",
+      "secretTitle": "Signing secret of «{{name}}»",
+      "secretOnce": "Copy the secret now. It will not be shown again.",
+      "secretHint": "Each delivery carries the headers webhook-id, webhook-timestamp and webhook-signature (Standard Webhooks). The manual explains how to verify them.",
+      "deliveriesTitle": "Deliveries · {{name}}",
+      "noDeliveries": "No deliveries yet.",
+      "state": "State",
+      "attempt": "attempt {{n}}",
+      "next": "Next attempt",
+      "answer": "Answer",
+      "redeliver": "Retry now",
+      "requeued": "Queued to be sent again",
+      "statuses": {
+        "pending": "Pending",
+        "delivered": "Delivered",
+        "failed": "Failing",
+        "abandoned": "Abandoned"
+      },
+      "urlErrors": {
+        "invalid_url": "That address is not valid.",
+        "scheme": "Use an https address.",
+        "credentials": "The address cannot carry a user or password: the signature authenticates.",
+        "private": "This server does not allow sending to private network addresses or to itself."
+      },
+      "events": {
+        "run_created": "Run created",
+        "run_results_uploaded": "Results uploaded",
+        "run_completed": "Run closed",
+        "cycle_closed": "Cycle closed",
+        "defect_created": "Defect created",
+        "defect_status_changed": "Defect changes status",
+        "review_decided": "Case or plan approved or returned"
+      }
     }
   },
   "findings": {

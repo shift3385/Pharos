@@ -202,3 +202,134 @@ describe("Administración › Usuarios", () => {
     await waitFor(() => expect(requests.some((r) => r.path === "/admin/users/u2/tokens/revoke")).toBe(true));
   });
 });
+
+// ---- webhooks (INT-03, bocetos 4-6) ------------------------------------------
+
+const hook = (over: Record<string, unknown> = {}) => ({
+  id: "h1",
+  workspaceId: "ws-t",
+  name: "Bot de PRs",
+  url: "https://ci.empresa.com/pharos",
+  projectId: null,
+  projectName: null,
+  events: ["run.results_uploaded", "run.completed"],
+  active: true,
+  disabledReason: null,
+  consecutiveFailures: 0,
+  rotating: false,
+  lastDelivery: { status: "delivered", httpStatus: 200, at: "2026-11-18T10:00:00.000Z" },
+  createdAt: "2026-11-18T09:00:00.000Z",
+  ...over,
+});
+
+describe("Workspace › Integraciones › Webhooks", () => {
+  it("a Test Manager creates a webhook and sees its secret once", async () => {
+    serve({
+      "GET /workspaces": { body: { workspaces: [team("test_manager")] } },
+      "GET /workspaces/ws-t/tokens": { body: { tokens: [], projects: [{ id: "p1", name: "Pagos Web" }] } },
+      "GET /workspaces/ws-t/webhooks": { body: { webhooks: [hook()], enabled: true } },
+      "POST /workspaces/ws-t/webhooks": (body) => ({ status: 201, body: { secret: "whsec_c2VjcmV0", view: hook({ id: "h2", ...(body as object) }) } }),
+    });
+    const { container } = integrationsTab();
+    const table = await screen.findByTestId("webhooks-table");
+    expect(within(table).getByText("Bot de PRs")).toBeInTheDocument();
+    expect(within(table).getByText("200")).toBeInTheDocument();
+    await expectNoAxeViolations(container);
+
+    await userEvent.click(screen.getByTestId("webhook-new"));
+    await userEvent.type(screen.getByTestId("webhook-name"), "Slack");
+    await userEvent.type(screen.getByTestId("webhook-url"), "https://hooks.slack.com/x");
+    await userEvent.click(screen.getByTestId("webhook-event-defect.created"));
+    await userEvent.click(screen.getByTestId("webhook-save"));
+    await waitFor(() =>
+      expect(requests.find((r) => r.method === "POST" && r.path === "/workspaces/ws-t/webhooks")?.body).toMatchObject({
+        name: "Slack",
+        url: "https://hooks.slack.com/x",
+        projectId: null,
+        events: ["run.results_uploaded", "run.completed", "defect.created"],
+      }),
+    );
+    expect(await screen.findByTestId("webhook-secret")).toHaveTextContent("whsec_c2VjcmV0");
+    expect(screen.getByTestId("webhook-secret-done")).toBeDisabled();
+  });
+
+  it("says why a target is refused", async () => {
+    serve({
+      "GET /workspaces": { body: { workspaces: [team("test_manager")] } },
+      "GET /workspaces/ws-t/tokens": { body: { tokens: [], projects: [] } },
+      "GET /workspaces/ws-t/webhooks": { body: { webhooks: [], enabled: true } },
+      "POST /workspaces/ws-t/webhooks": { status: 400, body: { code: "webhook_url", reason: "private", message: "x" } },
+    });
+    integrationsTab();
+    await userEvent.click(await screen.findByTestId("webhook-new"));
+    await userEvent.type(screen.getByTestId("webhook-name"), "Jenkins");
+    await userEvent.type(screen.getByTestId("webhook-url"), "https://10.0.0.5/hook");
+    await userEvent.click(screen.getByTestId("webhook-save"));
+    expect(await screen.findByText(/no permite enviar a direcciones de la red privada/)).toBeInTheDocument();
+  });
+
+  it("shows a webhook disabled after failures and turns it on again", async () => {
+    serve({
+      "GET /workspaces": { body: { workspaces: [team("test_manager")] } },
+      "GET /workspaces/ws-t/tokens": { body: { tokens: [], projects: [] } },
+      "GET /workspaces/ws-t/webhooks": { body: { webhooks: [hook({ active: false, disabledReason: "failures", consecutiveFailures: 50 })], enabled: true } },
+      "PATCH /workspaces/ws-t/webhooks/h1": { body: hook() },
+    });
+    integrationsTab();
+    const table = await screen.findByTestId("webhooks-table");
+    expect(within(table).getByText("Desactivado tras 50 fallos")).toBeInTheDocument();
+    await userEvent.click(within(table).getByRole("button", { name: "Activar" }));
+    await waitFor(() => expect(requests.find((r) => r.method === "PATCH")?.body).toEqual({ active: true }));
+  });
+
+  it("lists the deliveries with the target's answer and retries one", async () => {
+    serve({
+      "GET /workspaces": { body: { workspaces: [team("test_manager")] } },
+      "GET /workspaces/ws-t/tokens": { body: { tokens: [], projects: [] } },
+      "GET /workspaces/ws-t/webhooks": { body: { webhooks: [hook()], enabled: true } },
+      "GET /workspaces/ws-t/webhooks/h1/deliveries": {
+        body: {
+          deliveries: [
+            {
+              id: "d1",
+              eventType: "run.completed",
+              status: "failed",
+              attempt: 3,
+              nextAttemptAt: "2026-11-18T10:10:00.000Z",
+              lastStatus: 503,
+              lastError: null,
+              lastDurationMs: 10000,
+              lastResponse: "upstream unavailable",
+              createdAt: "2026-11-18T10:00:00.000Z",
+              deliveredAt: null,
+              payload: { type: "run.completed", data: { run: { key: "RUN-042" } } },
+            },
+          ],
+        },
+      },
+      "POST /workspaces/ws-t/webhooks/h1/deliveries/d1/redeliver": { status: 202, body: { queued: true } },
+    });
+    integrationsTab();
+    const table = await screen.findByTestId("webhooks-table");
+    await userEvent.click(within(table).getByRole("button", { name: "Entregas" }));
+    const detail = await screen.findByTestId("delivery-detail");
+    expect(detail).toHaveTextContent("upstream unavailable");
+    expect(detail).toHaveTextContent("RUN-042");
+    await userEvent.click(screen.getByTestId("delivery-redeliver"));
+    await waitFor(() => expect(requests.some((r) => r.path.endsWith("/d1/redeliver"))).toBe(true));
+  });
+
+  it("others read the list without actions; a server without the key says so", async () => {
+    serve({
+      "GET /workspaces": { body: { workspaces: [team("automation_engineer")] } },
+      "GET /workspaces/ws-t/tokens": { body: { tokens: [], projects: [] } },
+      "GET /workspaces/ws-t/webhooks": { body: { webhooks: [hook({ url: "ci.empresa.com" })], enabled: false } },
+    });
+    integrationsTab();
+    const table = await screen.findByTestId("webhooks-table");
+    expect(within(table).getByText("ci.empresa.com")).toBeInTheDocument();
+    expect(within(table).queryByRole("button")).toBeNull();
+    expect(screen.queryByTestId("webhook-new")).toBeNull();
+    expect(screen.getByText(/no están disponibles en este servidor/)).toBeInTheDocument();
+  });
+});

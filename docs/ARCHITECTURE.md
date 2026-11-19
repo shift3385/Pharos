@@ -1719,6 +1719,25 @@ core Postgres lacks). Modules:
   Runs: `GET`/`POST …/runs`, `GET …/runs/{runKey}` (with counts) and
   `…/results`, and `POST …/runs/{runKey}/close`, all on the web's run
   service (`insertRun` is shared).
+- `webhooks` (INT-03, ADR-0052 §4) — outgoing webhooks of a workspace.
+  - **Tables** (migration 0030):
+    - `webhooks`: the signing secret encrypted with `WEBHOOK_SECRETS_KEY`,
+      and the previous one during a 24 h rotation;
+    - `webhook_deliveries`: the outbox.
+  - **Events:** `storeDoc` and `storeAppend` call a `DocumentHook`
+    (`setDocumentHook`) inside the writer's transaction, so the web, the
+    API and `/sync/push` all produce events. The hook only acts for a few
+    entities (`EVENT_ENTITIES`). `events.ts` derives them (a pure
+    function) and the outbox queues one delivery per subscribed webhook.
+  - **Dispatcher** (`dispatcher.ts`): claims due deliveries with
+    `SKIP LOCKED` every `WEBHOOK_DISPATCH_INTERVAL_MS`, signs them (Standard
+    Webhooks, `signing.ts`) and sends them through the SSRF guard
+    (`ssrf.ts`: checked URL, IP pinned through the socket's `lookup`, no
+    redirects). It retries 7 times over about 22 h; after 50 failures in a
+    row it disables the webhook and sends a `webhook.disabled`
+    notification to the Test Managers.
+  - **Routes:** `/workspaces/:id/webhooks…`, session only. Members read;
+    `token.manage` changes.
 - `blobs` (SYNC-04b, ADR-0042 §7) — attachment and template contents by
   hash, outside the oplog. Table `blobs (workspace_id, sha256, …)`
   (migration 0020) over a `BlobStore`; today `diskBlobStore(BLOB_DIR)`,
