@@ -1882,6 +1882,32 @@ fn api_import_interop_vectors() {
         ("merged/ctrf".into(), doc_of(snapshot!("merged__ctrf.json"))),
     ];
     inputs.push(("edge".into(), edge_doc()));
+    // ING-06 (A2b): findings and metrics.
+    let sample = |s: &str| serde_json::from_str::<Value>(s).unwrap()["doc"].clone();
+    inputs.push((
+        "sarif/trivy".into(),
+        sample(include_str!(
+            "../../../../packages/formats/src/fixtures/sarif/normalized/trivy-misconfig.sarif.json"
+        )),
+    ));
+    inputs.push((
+        "sarif/eslint".into(),
+        sample(include_str!(
+            "../../../../packages/formats/src/fixtures/sarif/normalized/eslint.sarif.json"
+        )),
+    ));
+    inputs.push((
+        "axe/checkout".into(),
+        sample(include_str!(
+            "../../../../packages/formats/src/fixtures/axe/normalized/checkout-broken.json"
+        )),
+    ));
+    inputs.push((
+        "k6/summary".into(),
+        sample(include_str!(
+            "../../../../packages/formats/src/fixtures/k6/normalized/summary-export.json"
+        )),
+    ));
     let mut cases = Vec::new();
     for (name, doc) in inputs {
         let c = device();
@@ -1902,6 +1928,32 @@ fn api_import_interop_vectors() {
             .iter()
             .map(|id| crate::runs::result_payload(&c, id).unwrap().unwrap())
             .collect();
+        let of = |table: &str| -> Vec<String> {
+            c.prepare(&format!(
+                "SELECT id FROM {table} WHERE shard_id = ?1 ORDER BY id"
+            ))
+            .unwrap()
+            .query_map(params![out.shard_id], |r| r.get(0))
+            .unwrap()
+            .map(Result::unwrap)
+            .collect()
+        };
+        let findings: Vec<Value> = of("findings")
+            .iter()
+            .map(|id| {
+                crate::runs::findings::finding_payload(&c, id)
+                    .unwrap()
+                    .unwrap()
+            })
+            .collect();
+        let metrics: Vec<Value> = of("metrics")
+            .iter()
+            .map(|id| {
+                crate::runs::findings::metric_payload(&c, id)
+                    .unwrap()
+                    .unwrap()
+            })
+            .collect();
         let warnings: Vec<Value> = out
             .warnings
             .iter()
@@ -1918,7 +1970,8 @@ fn api_import_interop_vectors() {
             .collect();
         cases.push(json!({
             "name": name, "doc": doc, "sha256": SHA, "runId": out.run_id, "shardId": out.shard_id,
-            "shard": shard, "results": results, "warnings": warnings,
+            "shard": shard, "results": results, "findings": findings, "metrics": metrics,
+            "warnings": warnings,
         }));
     }
     let got = json!({
@@ -1978,9 +2031,19 @@ fn api_import_interop_vectors() {
                     r["attempt"].to_string(),
                 )
             });
+            // Findings and metrics, by their whole content.
+            let sorted = |k: &str| -> Vec<Value> {
+                let mut v: Vec<Value> = c[k]
+                    .as_array()
+                    .map(|a| a.iter().map(strip).collect())
+                    .unwrap_or_default();
+                v.sort_by_key(|x| x.to_string());
+                v
+            };
             out.push(json!({
                 "name": c["name"], "doc": c["doc"], "shard": strip(&c["shard"]),
-                "results": results, "warnings": c["warnings"],
+                "results": results, "findings": sorted("findings"), "metrics": sorted("metrics"),
+                "warnings": c["warnings"],
             }));
         }
         Value::Array(out)

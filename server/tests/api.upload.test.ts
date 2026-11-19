@@ -2,6 +2,7 @@
 // to, idempotency, a CI matrix on one run, closing, links derived as on the
 // desktop, what a device pulls, and every refusal (security review: size,
 // gzip, DTD, format, scope, role, errors that never echo the file).
+import { readFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
@@ -275,5 +276,65 @@ describe("refusals", () => {
     expect((await upload(token, FILE_A, "runKey=RUN-001&externalId=x")).statusCode).toBe(400);
     expect((await upload(token, FILE_A, "token=abc")).json().code).toBe("token_in_url");
     expect((await upload(token, FILE_A, "colour=blue")).statusCode).toBe(400);
+  });
+});
+
+// ---- findings and metrics (A2b, ADR-0053) -------------------------------------
+
+const sample = (path: string) =>
+  readFileSync(new URL(`../../packages/formats/src/fixtures/${path}`, import.meta.url), "utf8");
+
+describe("findings and metrics", () => {
+  it("stores SARIF findings, k6 metrics and axe findings as the desktop does", async () => {
+    const { token, ws } = await setup();
+    const sarif = await upload(token, sample("sarif/trivy-misconfig.sarif"), "format=sarif&externalId=pr-7", {
+      "content-type": "application/json",
+    });
+    expect(sarif.statusCode).toBe(201);
+    const body = sarif.json();
+    expect(body.counts.findings).toBeGreaterThan(0);
+    expect(body.counts.results).toBe(0);
+    const k6 = await upload(token, sample("k6/summary-export.json"), "format=k6&externalId=pr-7", { "content-type": "application/json" });
+    expect(k6.json().counts.metrics).toBeGreaterThan(0);
+    const axe = await upload(token, sample("axe/checkout-broken.json"), "format=axe&externalId=pr-7", { "content-type": "application/json" });
+    expect(axe.json().counts.findings).toBeGreaterThan(0);
+    expect(new Set([body.run.id, k6.json().run.id, axe.json().run.id]).size).toBe(1);
+
+    const docs = (await pool.query("SELECT entity, payload FROM documents WHERE workspace_id = $1", [ws])).rows;
+    const findings = docs.filter((d) => d.entity === "finding").map((d) => d.payload);
+    const metrics = docs.filter((d) => d.entity === "metric").map((d) => d.payload);
+    expect(findings).toHaveLength(body.counts.findings + k6.json().counts.findings + axe.json().counts.findings);
+    expect(metrics).toHaveLength(body.counts.metrics + k6.json().counts.metrics + axe.json().counts.metrics);
+    expect(findings[0]).toMatchObject({ runId: body.run.id, createdBy: expect.any(String) });
+    expect(["critical", "high", "medium", "low", "info"]).toContain(findings[0].severity);
+    expect(typeof metrics[0].value).toBe("number");
+    const ev = (await pool.query(`SELECT payload FROM documents WHERE entity = 'audit_event' AND payload->>'action' = 'import'`)).rows.map((r) =>
+      typeof r.payload.summary === "string" ? JSON.parse(r.payload.summary) : r.payload.summary,
+    );
+    expect(ev.find((s) => s.format === "sarif")).toMatchObject({ findings: body.counts.findings, findingSeverities: expect.any(Object) });
+  });
+
+  it("the same SARIF again stores nothing new", async () => {
+    const { token } = await setup();
+    const file = sample("sarif/eslint.sarif");
+    const first = await upload(token, file, "", { "content-type": "application/json" });
+    const again = await upload(token, file, "", { "content-type": "application/json" });
+    expect(again.statusCode).toBe(200);
+    expect(again.json().shard.id).toBe(first.json().shard.id);
+    const n = (await pool.query("SELECT count(*) AS n FROM documents WHERE entity = 'finding'")).rows[0].n;
+    expect(Number(n)).toBe(first.json().counts.findings);
+  });
+
+  it("refuses a metric without a value, writing nothing", async () => {
+    const { token } = await setup();
+    const doc = {
+      schemaVersion: "1.0.0",
+      results: [],
+      metrics: [{ name: "http_req_duration", aggregation: "p(95)" }],
+    };
+    const res = await upload(token, JSON.stringify(doc), "", { "content-type": "application/json" });
+    expect(res.statusCode).toBe(422);
+    expect(res.json()).toMatchObject({ code: "invalid_report" });
+    expect((await pool.query("SELECT count(*) AS n FROM documents WHERE entity IN ('run_shard', 'metric')")).rows[0].n).toBe("0");
   });
 });

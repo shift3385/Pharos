@@ -170,7 +170,7 @@ Por PR: A1 tokens, A2 subida, A3 webhooks, A4 lecturas, A5 DEU-01.
 - **El informe** es el cuerpo de la petición, un fichero por petición, en su propio ámbito de Fastify (cuerpo en bruto), sin multipart y sin dependencias nuevas.
   - `?format=` se compara con el formato que detecta `@pharos/formats`. Si no coincide, responde 400 `format_mismatch`; sin `format`, vale el detectado.
   - `allure` y `trx` responden 422 `unsupported_format` hasta que la pista F publique sus parsers. Por eso todavía no hay lectura de zip ni sus límites.
-  - Los hallazgos de SARIF y las métricas de k6 y axe se guardan en el informe crudo hasta F2. `counts.findings` y `counts.metrics` valen 0, y un aviso `findings-in-raw-report` dice cuántos hay.
+  - Los hallazgos de SARIF y las métricas de k6 y axe se guardan desde A2b (ver abajo).
 - **El run de destino:**
   - `runKey`: un run abierto;
   - `externalId`: el run `UUIDv5(NS_API_RUN, [projectId, externalId])`, que crea la primera subida y queda abierto hasta `close`;
@@ -200,3 +200,21 @@ Por PR: A1 tokens, A2 subida, A3 webhooks, A4 lecturas, A5 DEU-01.
   - **Errores:** solo dicen el código del parser, nunca un trozo del fichero, ni en la respuesta ni en el log.
   - **Ritmo:** `API_UPLOAD_RATE_LIMIT_MAX`, 60 subidas por minuto y token.
 - **Reintentos:** la subida es idempotente, así que reintentar tras un timeout es seguro. Solo se reintentan errores de red, 429, 502, 503 y 504 (acordado con la pista L).
+
+### A2b · Hallazgos y métricas (2026-11-18)
+
+Con F2 en `main` (ADR-0053: entidades `finding` y `metric`), la subida guarda los hallazgos y las métricas de SARIF, axe y k6 junto con su shard, como el escritorio.
+
+- **El planificador:** `importPlan.ts::planFindings` es la copia de `findings.rs::plan`:
+  - mismos ids (`findingId`, `metricId` del paquete);
+  - mismas comprobaciones (regla, severidad, mensaje y huella en un hallazgo; nombre y valor finito en una métrica; si no, 422 `invalid_report` antes de escribir nada);
+  - mismos recortes (mensaje, `html` de axe, ubicación y atributos);
+  - mismo aviso `duplicate-metric`.
+- **Los documentos** se añaden en la misma transacción que el shard.
+  - Solo los reciben los clientes con la funcionalidad `findings` (VERSIONING §6.5).
+  - El evento `import` lleva `findings`, `findingSeverities`, `metrics` y `thresholdsFailed`, como en el escritorio.
+- **La respuesta** cuenta `counts.findings` y `counts.metrics`. El contrato pasa a 1.1.1: cambia el texto, no las formas.
+- **Vectores:** `api_import_interop_vectors` incluye las muestras de SARIF (trivy, eslint), axe y k6, con sus documentos `finding` y `metric`. El servidor da los mismos ids y el mismo contenido.
+- **Sigue fuera:**
+  - los adjuntos que trae el propio informe (aviso `attachments-in-raw-report`);
+  - `caseKey` en los hallazgos: F2 no lo guarda todavía y el vínculo se deriva de las etiquetas, como dice ADR-0053 §5.
