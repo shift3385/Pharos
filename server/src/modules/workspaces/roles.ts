@@ -65,8 +65,11 @@ export function capabilityFor(entity: string, isNew: boolean): Capability {
       return "plan.edit";
     case "requirement":
       return "requirement.edit";
+    // A suite baseline freezes case revisions (CAS-02, ADR-0047): whoever may
+    // edit cases may create one, as on the desktop (`workspaces.rs`).
     case "test_case":
     case "test_case_revision":
+    case "case_baseline":
       return "case.edit";
     case "custom_field":
       return "field.edit";
