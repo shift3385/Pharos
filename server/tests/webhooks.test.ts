@@ -325,9 +325,13 @@ describe("the SSRF guard", () => {
   });
 
   it("a name that resolves to a private address is refused when connecting (rebinding)", async () => {
-    const r = await httpSender("https://localtest.me/x", "{}", {}, { allowPrivate: false, allowHosts: [] });
+    // A public-looking name whose DNS answers 127.0.0.1: a fake resolver, so
+    // the test needs no network and always takes the same path.
+    const resolve = ((_host: string, _opts: unknown, cb: (e: null, a: { address: string; family: number }[]) => void) =>
+      cb(null, [{ address: "127.0.0.1", family: 4 }])) as never;
+    const r = await httpSender("https://rebind.ejemplo.test/x", "{}", {}, { allowPrivate: false, allowHosts: [], resolve });
     expect(r.ok).toBe(false);
-    expect(r.error).toMatch(/EPRIVATE|ENOTFOUND|EAI_AGAIN/);
+    expect(r.error).toBe("EPRIVATE");
   });
 
   it("delivers for real to an allowed private receiver, without following redirects", async () => {
