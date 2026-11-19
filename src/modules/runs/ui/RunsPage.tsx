@@ -23,6 +23,7 @@ import { NewRunDialog } from "./NewRunDialog";
 import { RunDetail } from "./RunDetail";
 import { StatusReportButton } from "../report/StatusReportButton";
 import { UnlinkedTray } from "./UnlinkedTray";
+import { severityTone as findingSeverityTone } from "../model/findings";
 import "@shared/ui/buttons.css";
 import "./Runs.css";
 
@@ -189,21 +190,40 @@ function RunsList({
         // The counts load with the list: a run missing here has no results
         // yet (NC-042), it is not still loading.
         if (!c) return <span className="tp-field__hint">{t("runs.list.noResults")}</span>;
+        // F5b: a run of findings or thresholds only has no results to count.
+        const results = c.passed + c.failed + c.other > 0;
         return (
           <span className="rn-counts">
-            <StatusPill tone={statusTone("passed")} dot>
-              {c.passed}
-            </StatusPill>
-            <StatusPill tone={statusTone("failed")} dot>
-              {c.failed}
-            </StatusPill>
+            {results && (
+              <>
+                <StatusPill tone={statusTone("passed")} dot>
+                  {c.passed}
+                </StatusPill>
+                <StatusPill tone={statusTone("failed")} dot>
+                  {c.failed}
+                </StatusPill>
+              </>
+            )}
             {c.other > 0 && <StatusPill tone="neutral">{c.other}</StatusPill>}
+            {c.findings > 0 && (
+              <StatusPill
+                tone={findingSeverityTone(c.findingsWorst ?? "info")}
+                title={t("runs.list.findingsTitle", {
+                  severity: t(`findings.severity.${c.findingsWorst ?? "info"}`),
+                })}
+              >
+                {t("runs.list.findings", { count: c.findings })}
+              </StatusPill>
+            )}
+            {c.thresholdsFailed > 0 && (
+              <StatusPill tone="error">{t("runs.list.thresholdsFailed", { count: c.thresholdsFailed })}</StatusPill>
+            )}
             {c.unlinked > 0 && (
               <span className="tp-field__hint">
                 {t("runs.list.unlinked", { count: c.unlinked })}
               </span>
             )}
-            <span className="sr-only">
+            <span className="sr-only" hidden={!results}>
               {t("runs.list.countsSr", {
                 passed: c.passed,
                 failed: c.failed,

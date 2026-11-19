@@ -1,0 +1,358 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bocetos pista S</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Same token set as the other Pharos bocetos (sec09-admin, w-sync07). One reading column; each boceto is a framed mock with notes underneath. */
+:root{
+  --bg:#f3f5f9; --surface:#ffffff; --sunken:#eef1f6; --fg:#14213a; --muted:#5a6680; --line:#d7dde8;
+  --navy:#1e3a6e; --accent:#2f6fd6; --ok:#1d7a4a; --ok-bg:#e3f4ea; --warn:#9a5b00; --warn-bg:#fff1d6;
+  --err:#b42318; --err-bg:#fde8e6; --new:#7a3fd1; --new-bg:#f1e9fd; --on-accent:#ffffff;
+  --ins:#e3f4ea; --del:#fde8e6;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:Inter,system-ui,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --new:#c39bff; --new-bg:#2c2246; --on-accent:#0f1522;
+  --ins:#16352a; --del:#3d1c1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --new:#c39bff; --new-bg:#2c2246; --on-accent:#0f1522;
+  --ins:#16352a; --del:#3d1c1a; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+main{max-width:980px;margin:0 auto;display:grid;gap:44px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:1.9rem;color:var(--navy)} h2{font-size:1.3rem;color:var(--navy)} h3{font-size:1.02rem}
+.lead{color:var(--muted);max-width:68ch;margin:6px 0 0}
+.eyebrow{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.block{display:grid;gap:14px}
+.note{max-width:72ch;margin:0;padding-left:1.2em}
+.note li{margin-bottom:4px}
+.frame{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.frame-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:var(--sunken);border-bottom:1px solid var(--line);font-size:.8rem;color:var(--muted)}
+.tag-new{background:var(--new-bg);color:var(--new);font-size:.7rem;font-weight:700;border-radius:4px;padding:1px 6px;letter-spacing:.04em}
+.pad{padding:20px;display:grid;gap:16px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.spread{justify-content:space-between}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:7px;padding:7px 14px;font:500 .86rem var(--f-body);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.danger{background:var(--err);border-color:var(--err);color:var(--on-accent)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn:focus-visible,.seg button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.link{color:var(--accent);font-size:.84rem;font-weight:500;cursor:pointer;background:none;border:0;padding:0;font-family:inherit}
+.banner{display:flex;gap:10px;align-items:flex-start;border-radius:8px;padding:10px 12px;font-size:.85rem}
+.banner.ok{background:var(--ok-bg);color:var(--ok)} .banner.warn{background:var(--warn-bg);color:var(--warn)} .banner.err{background:var(--err-bg);color:var(--err)}
+.banner.info{background:var(--sunken);color:var(--fg)}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.75rem;font-weight:600;white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.err{background:var(--err-bg);color:var(--err)}
+.pill.muted{background:var(--sunken);color:var(--muted)} .pill.new{background:var(--new-bg);color:var(--new)}
+.mono{font-family:var(--f-mono);font-size:.8rem}
+.muted{color:var(--muted)} .small{font-size:.82rem}
+.conf{border:1px solid var(--line);border-radius:10px;display:grid;min-width:0}
+.conf-head{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.conf-body{padding:14px 16px;display:grid;gap:14px}
+details.merged{border:1px dashed var(--line);border-radius:8px;padding:8px 12px;font-size:.85rem}
+details.merged summary{cursor:pointer;font-weight:600;color:var(--ok)}
+details.merged ul{margin:8px 0 0;padding-left:1.2em}
+.fld{border:1px solid var(--line);border-radius:8px;display:grid;min-width:0}
+.fld-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--sunken);border-bottom:1px solid var(--line);font-size:.85rem;font-weight:600;border-radius:8px 8px 0 0}
+.sides{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.side{padding:10px 12px;font-size:.86rem;display:grid;gap:6px;min-width:0;border-top:1px solid var(--line)}
+.side + .side{border-left:1px solid var(--line)}
+@media (max-width:540px){.side + .side{border-left:0}}
+.side.chosen{outline:2px solid var(--accent);outline-offset:-2px;background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.side .who{font-size:.74rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.radio{display:flex;gap:8px;align-items:center;font-size:.84rem;font-weight:600}
+.radio i{width:14px;height:14px;border:2px solid var(--muted);border-radius:50%;display:inline-block;flex:none}
+.radio.on i{border-color:var(--accent);box-shadow:inset 0 0 0 3px var(--surface);background:var(--accent)}
+ins{background:var(--ins);text-decoration:none;border-radius:3px;padding:0 2px}
+del{background:var(--del);border-radius:3px;padding:0 2px}
+.steps{margin:0;padding-left:1.3em;display:grid;gap:3px;font-size:.85rem}
+.steps li.add{background:var(--ins);border-radius:4px;padding:0 4px}
+.steps li.gone{background:var(--del);text-decoration:line-through;border-radius:4px;padding:0 4px}
+.steps li.edit{background:var(--warn-bg);border-radius:4px;padding:0 4px}
+.foot{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;padding:12px 16px;border-top:1px solid var(--line);background:var(--sunken);border-radius:0 0 10px 10px}
+.ind{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:.84rem;background:var(--surface)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.pop{border:1px solid var(--line);border-radius:10px;padding:12px 14px;max-width:360px;display:grid;gap:8px;font-size:.85rem;box-shadow:0 6px 24px rgb(0 0 0 / .08);background:var(--surface)}
+.dialog{max-width:620px;margin:0 auto;border:1px solid var(--line);border-radius:12px;background:var(--surface);display:grid;box-shadow:0 10px 40px rgb(0 0 0 / .12);min-width:0}
+.dialog > header{padding:16px 20px 0} .dialog > .body{padding:12px 20px;display:grid;gap:12px} .dialog > footer{padding:12px 20px 16px;display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.85rem;min-width:620px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+tr.off td{color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);color:var(--fg);padding:5px 12px;font:500 .82rem var(--f-body);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.field{display:grid;gap:4px;font-size:.84rem}
+.field label{font-weight:600}
+.input{border:1px solid var(--line);border-radius:7px;padding:8px 10px;background:var(--surface);color:var(--fg);font:inherit;font-size:.9rem;min-width:0;display:flex;justify-content:space-between;gap:8px}
+.input.ph{color:var(--muted)}
+.ws{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:6px}
+.menu{border:1px solid var(--line);border-radius:8px;padding:4px;display:grid;width:max-content;font-size:.85rem;background:var(--surface);box-shadow:0 6px 24px rgb(0 0 0 / .08)}
+.menu span{padding:6px 12px;border-radius:5px}
+.menu span.dis{color:var(--muted)}
+.menu span.red{color:var(--err)}
+.login{max-width:380px;margin:0 auto;display:grid;gap:12px}
+.toc{display:flex;flex-wrap:wrap;gap:8px;font-size:.84rem}
+.toc a{color:var(--accent);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--surface)}
+</style>
+</head>
+<body>
+<main>
+<header class="block">
+  <span class="eyebrow">Pharos 0.6.0 · pista S · bocetos para aprobar</span>
+  <h1>Fusión por campo y desactivar una cuenta</h1>
+  <p class="lead">Seis pantallas: el panel de conflictos con la fusión por campo (SYNC-02), el aviso de fusiones automáticas, el diálogo de la web ante una edición simultánea, y la desactivación de una cuenta en «Administración › Usuarios» (SEC-12). Todo es estático; las elecciones solo cambian el boceto.</p>
+  <nav class="toc" aria-label="Bocetos">
+    <a href="#b1">1 · Panel de conflictos</a><a href="#b2">2 · Aviso de fusión</a><a href="#b3">3 · Web: edición simultánea</a>
+    <a href="#b4">4 · Usuarios</a><a href="#b5">5 · Desactivar cuenta</a><a href="#b6">6 · Cuenta desactivada</a>
+  </nav>
+</header>
+
+<!-- 1 -->
+<section class="block" id="b1">
+  <h2>1 · Panel de conflictos: solo pregunta por lo que choca</h2>
+  <div class="frame">
+    <div class="frame-head">Escritorio · Panel de conflictos <span class="tag-new">CAMBIA</span></div>
+    <div class="pad">
+      <div class="row spread"><h3>Conflictos de sincronización (1)</h3><span class="link">Cerrar</span></div>
+      <p class="muted small" style="margin:0">Otro equipo cambió los mismos campos que tú. Lo que no choca ya se ha combinado; elige qué versión queda en cada campo marcado.</p>
+      <div class="conf">
+        <div class="conf-head">
+          <div><strong>Caso CP-042</strong> · Inicio de sesión con SSO <span class="muted small">· r7 (tuya) / r8 (servidor, Ana Ruiz)</span></div>
+          <span class="pill warn">2 campos por decidir</span>
+        </div>
+        <div class="conf-body">
+          <details class="merged">
+            <summary>✓ Se combinaron 3 campos sin preguntar</summary>
+            <ul>
+              <li><strong>Prioridad</strong>: Alta <span class="muted">(del servidor)</span></li>
+              <li><strong>Requisitos</strong>: REQ-004, REQ-011 <span class="muted">(+REQ-011 tuyo)</span>, REQ-019 <span class="muted">(+ del servidor)</span></li>
+              <li><strong>Pasos 1 y 3</strong> <span class="muted">(cambios de cada lado en pasos distintos)</span></li>
+            </ul>
+          </details>
+
+          <div class="fld" data-group="title">
+            <div class="fld-head">Título <span class="pill err">Cambiado en los dos</span></div>
+            <div class="sides">
+              <div class="side chosen" data-pick="local"><span class="who">Mía · hoy 10:42</span><span>Inicio de sesión con SSO corporativo</span><span class="radio on" role="radio" aria-checked="true"><i></i>Quedarme con la mía</span></div>
+              <div class="side" data-pick="remote"><span class="who">Del servidor · Ana Ruiz · 10:51</span><span>Login con SSO (Azure AD)</span><span class="radio" role="radio" aria-checked="false"><i></i>Usar la del servidor</span></div>
+            </div>
+          </div>
+
+          <div class="fld" data-group="step2">
+            <div class="fld-head">Paso 2 <span class="pill err">Borrado allí, editado aquí</span></div>
+            <div class="sides">
+              <div class="side" data-pick="local"><span class="who">Mía</span>
+                <ol class="steps" start="2"><li class="edit">Introducir el correo corporativo <ins>y pulsar «Continuar»</ins> → Redirige al proveedor</li></ol>
+                <span class="radio" role="radio" aria-checked="false"><i></i>Conservar el paso editado</span></div>
+              <div class="side" data-pick="remote"><span class="who">Del servidor</span>
+                <ol class="steps" start="2"><li class="gone">Introducir el correo corporativo → Redirige al proveedor</li></ol>
+                <span class="radio" role="radio" aria-checked="false"><i></i>Quitar el paso</span></div>
+            </div>
+          </div>
+          <p class="small muted" style="margin:0">Los textos largos (descripción, precondiciones) muestran además «Ver diferencias» palabra por palabra. Una revisión o aprobación frente a un cambio de contenido nunca se combina sola y aparece aquí como un campo más.</p>
+        </div>
+        <div class="foot">
+          <div class="row"><button class="btn">Mía en todo</button><button class="btn">Del servidor en todo</button></div>
+          <div class="row"><span class="small muted" id="left">Falta 1 campo</span><button class="btn primary" id="apply" disabled>Aplicar</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="note">
+    <li>Antes: dos versiones enteras y «Quedarme con la mía» o «Usar la del servidor». Ahora solo se pregunta por los campos que cambiaron en los dos lados; el resto ya está combinado y se puede revisar desplegando.</li>
+    <li>«Aplicar» se habilita cuando todos los campos tienen elección. Los dos atajos de abajo resuelven la entidad entera, como hoy.</li>
+    <li>Los pasos se comparan por su id (DAT-02): un paso añadido o editado en un lado entra solo; solo choca editar y borrar el mismo paso, editar el mismo texto en los dos, o reordenar los dos de forma distinta («Orden de los pasos»).</li>
+    <li>Borrar frente a editar el elemento entero sigue siendo un conflicto de entidad, con el aspecto de hoy.</li>
+    <li>Un conflicto abierto antes de actualizar, o uno sin versión base guardada, se ve como hoy (por entidad) con la nota «No se pudo combinar: falta la versión de partida».</li>
+  </ul>
+</section>
+
+<!-- 2 -->
+<section class="block" id="b2">
+  <h2>2 · Aviso de fusiones automáticas</h2>
+  <div class="frame">
+    <div class="frame-head">Escritorio y web · indicador de sincronización <span class="tag-new">NUEVO</span></div>
+    <div class="pad">
+      <div class="row"><span class="ind"><span class="dot"></span>Sincronizado · <strong>3 combinados</strong></span></div>
+      <div class="pop" role="status">
+        <strong>Se combinaron cambios de otras personas en 3 elementos</strong>
+        <span class="muted">CP-042 (Prioridad), REQ-011 (Riesgo), Plan «Release 2.4» (Sprints). Nada se perdió: cada lado conservó sus campos.</span>
+        <div class="row"><span class="link">Ver en la auditoría</span><span class="link">Entendido</span></div>
+      </div>
+    </div>
+  </div>
+  <ul class="note">
+    <li>Un solo aviso por sincronización, no uno por elemento. Desaparece con «Entendido» o en la siguiente sincronización.</li>
+    <li>«Ver en la auditoría» abre «Administración › Auditoría» filtrada por «Conflicto resuelto · combinado». Cada evento dice de dónde salió cada campo («Título: de otro equipo · Pasos: los dos»).</li>
+  </ul>
+</section>
+
+<!-- 3 -->
+<section class="block" id="b3">
+  <h2>3 · Web: alguien guardó a la vez</h2>
+  <div class="frame">
+    <div class="frame-head">Web · al guardar un caso (antes era «Este elemento cambió; recarga») <span class="tag-new">CAMBIA</span></div>
+    <div class="pad">
+      <div class="banner ok">✓ Guardado. Se combinó con un cambio de Ana Ruiz en otros campos (Prioridad).</div>
+      <div class="dialog" role="dialog" aria-labelledby="d3t">
+        <header><h3 id="d3t">Ana Ruiz cambió este caso mientras lo editabas</h3></header>
+        <div class="body">
+          <p class="small" style="margin:0">Hemos combinado lo que no choca. Elige qué queda en este campo:</p>
+          <div class="fld">
+            <div class="fld-head">Resultado esperado del paso 4</div>
+            <div class="sides">
+              <div class="side chosen"><span class="who">Tu versión</span><span>Muestra el panel <ins>con el nombre del usuario</ins></span><span class="radio on"><i></i>La mía</span></div>
+              <div class="side"><span class="who">Ana Ruiz · hace 2 min</span><span>Muestra el panel <ins>de inicio</ins></span><span class="radio"><i></i>La de Ana</span></div>
+            </div>
+          </div>
+        </div>
+        <footer><button class="btn">Cancelar (no guardar)</button><button class="btn primary">Guardar</button></footer>
+      </div>
+    </div>
+  </div>
+  <ul class="note">
+    <li>Si nada choca, la web guarda sola y lo dice en el aviso verde. Solo abre el diálogo si un mismo campo cambió en los dos lados.</li>
+    <li>Las reglas son las mismas que en el escritorio: un único contrato (<span class="mono">merge-fields.json</span>) y los mismos vectores de prueba en Rust y en TypeScript.</li>
+  </ul>
+</section>
+
+<!-- 4 -->
+<section class="block" id="b4">
+  <h2>4 · Administración › Usuarios, con cuentas desactivadas</h2>
+  <div class="frame">
+    <div class="frame-head">Escritorio con conexión y web · solo para administradores <span class="tag-new">CAMBIA</span></div>
+    <div class="pad">
+      <div class="row spread">
+        <div class="row"><strong>Cuentas del servidor</strong><span class="muted small">Administradores activos: 2</span></div>
+        <div class="seg" role="group" aria-label="Filtrar cuentas"><button aria-pressed="true">Activas (14)</button><button aria-pressed="false">Desactivadas (1)</button><button aria-pressed="false">Todas</button></div>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Nombre</th><th>Correo</th><th>Alta</th><th>Estado</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Liomar R. <span class="pill new">Administrador</span> <span class="muted small">(tú)</span></td><td>admin@equipo.test</td><td>2026-10-02</td><td><span class="pill ok">Activa</span></td><td>⋯</td></tr>
+            <tr><td>Ana Ruiz</td><td>ana@equipo.test</td><td>2026-10-14</td><td><span class="pill ok">Activa</span></td><td>⋯</td></tr>
+            <tr class="off"><td>Marcos Gil</td><td>marcos@equipo.test</td><td>2026-10-20</td><td><span class="pill muted">Desactivada · 18 nov</span></td><td>⋯</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="row" style="align-items:flex-start;gap:24px">
+        <div class="grid" style="display:grid;gap:4px"><span class="small muted">Menú de una cuenta activa</span>
+          <div class="menu"><span>Restablecer contraseña…</span><span>Hacer administrador</span><span class="red">Desactivar cuenta…</span></div></div>
+        <div style="display:grid;gap:4px"><span class="small muted">Menú de una cuenta desactivada</span>
+          <div class="menu"><span>Reactivar cuenta</span><span class="dis" title="Reactívala primero">Restablecer contraseña… (reactívala primero)</span></div></div>
+        <div style="display:grid;gap:4px"><span class="small muted">Último administrador activo</span>
+          <div class="menu"><span class="dis">Desactivar cuenta… — es el último administrador activo</span></div></div>
+      </div>
+    </div>
+  </div>
+  <ul class="note">
+    <li>La vista por defecto muestra las activas; la pastilla «Desactivada» lleva la fecha, y el título de la fila dice quién la desactivó y el motivo.</li>
+    <li>En tu propia fila no aparece «Desactivar». En la del último administrador activo sale deshabilitado con el motivo.</li>
+    <li>«Reactivar cuenta» pide una confirmación sencilla: la persona vuelve a entrar con su contraseña y conserva sus roles.</li>
+  </ul>
+</section>
+
+<!-- 5 -->
+<section class="block" id="b5">
+  <h2>5 · Diálogo «Desactivar cuenta»</h2>
+  <div class="frame">
+    <div class="frame-head">Administración › Usuarios › Desactivar cuenta… <span class="tag-new">NUEVO</span></div>
+    <div class="pad">
+      <div class="dialog" role="dialog" aria-labelledby="d5t">
+        <header><h3 id="d5t">Desactivar la cuenta de Marcos Gil</h3></header>
+        <div class="body">
+          <ul class="note small" style="padding-left:1.1em">
+            <li>Se cierran todas sus sesiones al momento, también en la web y en la API.</li>
+            <li>No podrá entrar ni sincronizar. Lo que tenga en su equipo se queda allí.</li>
+            <li>Sus datos, su autoría y su auditoría se conservan. Puedes reactivarla cuando quieras.</li>
+          </ul>
+          <div class="field"><label for="why">Motivo (opcional, lo verán los administradores)</label><div class="input ph" id="why">Ej.: dejó el equipo</div></div>
+          <div class="banner warn">Es el único Test Manager activo de 2 workspaces. Elige quién pasa a serlo en cada uno:</div>
+          <div class="ws">
+            <strong class="small">QA Móvil <span class="muted">· 4 miembros</span></strong>
+            <div class="field"><label for="s1">Nuevo Test Manager</label><div class="input" id="s1">Ana Ruiz · Test Analyst <span class="muted">▾</span></div></div>
+          </div>
+          <div class="ws">
+            <strong class="small">Pagos <span class="muted">· 2 miembros</span></strong>
+            <div class="field"><label for="s2">Nuevo Test Manager</label><div class="input ph" id="s2">Elige un miembro… <span>▾</span></div></div>
+          </div>
+          <div class="ws">
+            <strong class="small">Prototipos <span class="muted">· solo él</span></strong>
+            <span class="small muted">Sin otros miembros activos: el workspace quedará sin Test Manager activo hasta que reactives la cuenta.</span>
+          </div>
+          <div class="field"><label for="conf">Escribe <span class="mono">marcos@equipo.test</span> para confirmar</label><div class="input ph" id="conf">marcos@equipo.test</div></div>
+        </div>
+        <footer><button class="btn">Cancelar</button><button class="btn danger" disabled>Desactivar cuenta</button></footer>
+      </div>
+    </div>
+  </div>
+  <ul class="note">
+    <li>El botón se habilita cuando cada workspace con otros miembros tiene sucesor y el correo coincide. El sucesor sube a Test Manager en la misma operación, y queda en la auditoría de ese workspace.</li>
+    <li>Los Test Manager de sus workspaces reciben la notificación «Marcos Gil ya no tiene acceso (cuenta desactivada)».</li>
+    <li>Queda en la auditoría de quien actúa y en la de la persona: «Cuenta desactivada · por Liomar R. · Motivo: …».</li>
+  </ul>
+</section>
+
+<!-- 6 -->
+<section class="block" id="b6">
+  <h2>6 · Lo que ve la cuenta desactivada</h2>
+  <div class="frame">
+    <div class="frame-head">Escritorio · tarjeta en la barra de sincronización <span class="tag-new">NUEVO</span></div>
+    <div class="pad">
+      <div class="banner err" role="alert"><div><strong>Tu cuenta está desactivada en el servidor.</strong><br>La sincronización está parada. Tus datos y tus 4 cambios pendientes se quedan en este equipo y se enviarán si un administrador la reactiva. <span class="link">Exportar proyectos…</span></div></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="frame-head">Web y escritorio · iniciar sesión <span class="tag-new">NUEVO</span></div>
+    <div class="pad">
+      <div class="login">
+        <div class="field"><label>Correo</label><div class="input">marcos@equipo.test</div></div>
+        <div class="field"><label>Contraseña</label><div class="input">••••••••••</div></div>
+        <div class="banner err">Esta cuenta está desactivada. Habla con el administrador del servidor para reactivarla.</div>
+        <button class="btn primary">Entrar</button>
+      </div>
+    </div>
+  </div>
+  <ul class="note">
+    <li>El mensaje solo aparece con la contraseña correcta; con una equivocada sale el error de siempre, para no revelar qué cuentas existen.</li>
+    <li>Un escritorio 0.5 no conoce este mensaje: ve «Tu sesión ha caducado» y deja de sincronizar, sin perder nada.</li>
+  </ul>
+</section>
+</main>
+<script>
+// Boceto 1: picking a side per field updates the radio state and enables «Aplicar».
+(function(){
+  const groups=[...document.querySelectorAll('#b1 .fld[data-group]')];
+  const apply=document.getElementById('apply'), left=document.getElementById('left');
+  function refresh(){
+    const missing=groups.filter(g=>!g.querySelector('.side.chosen')).length;
+    apply.disabled=missing>0;
+    left.textContent=missing?`Falta${missing>1?'n':''} ${missing} campo${missing>1?'s':''}`:'Todo decidido';
+  }
+  groups.forEach(g=>g.querySelectorAll('.side').forEach(s=>s.addEventListener('click',()=>{
+    g.querySelectorAll('.side').forEach(o=>{o.classList.remove('chosen');const r=o.querySelector('.radio');r.classList.remove('on');r.setAttribute('aria-checked','false');});
+    s.classList.add('chosen');const r=s.querySelector('.radio');r.classList.add('on');r.setAttribute('aria-checked','true');refresh();
+  })));
+  document.querySelectorAll('.seg').forEach(seg=>seg.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    seg.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');})));
+  refresh();
+})();
+</script>
+</body>
+</html>
+
+</body></html>

@@ -44,6 +44,8 @@ const ICONS: Record<string, { icon: LucideIcon; tone: string }> = {
   "member.disabled": { icon: UserX, tone: "neutral" },
   "account.enabled": { icon: UserCheck, tone: "success" },
   "webhook.disabled": { icon: Unplug, tone: "warning" },
+  "token.expiring": { icon: KeyRound, tone: "warning" },
+  "token.inactive": { icon: KeyRound, tone: "neutral" },
 };
 
 /** «hace 5 min», «11:02», as the day group already says which day. */
@@ -160,6 +162,8 @@ function Row({ n, time, onOpen }: { n: AppNotification; time: string; onOpen: (n
     count,
     // SEC-12: «… ya no tiene acceso a QA Móvil».
     workspaceName: typeof n.data?.workspaceName === "string" ? n.data.workspaceName : "",
+    // INT-02 A4: whose token stopped working.
+    owner: typeof n.data?.ownerName === "string" ? n.data.ownerName : "",
     defaultValue: n.subject.title,
   });
   return (

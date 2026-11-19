@@ -1,0 +1,480 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Pista R · Experiencia</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: documento de plan; cada boceto imita el shell de Pharos (barra marina + tarjetas blancas) a tamaño real. */
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --fg:#1b2433; --muted:#5d6878; --line:#d6dce5;
+  --navy:#13233b; --navy-fg:#e9eef6; --accent:#1f5fae; --accent-soft:#e3edf9;
+  --ok:#1f7a4d; --ok-soft:#e1f3ea; --warn:#9a5b00; --warn-soft:#fdf0d9; --bad:#b3261e; --bad-soft:#fbe4e2;
+  --code-bg:#f5f7fa; --unread:#f3f7fd; --scrim:rgba(19,35,59,.38);
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1522; --surface:#172234; --fg:#e4e9f1; --muted:#9aa6b8; --line:#2c3a50;
+  --navy:#0a1220; --navy-fg:#e4e9f1; --accent:#6aa5ee; --accent-soft:#1d3352;
+  --ok:#5fcf97; --ok-soft:#163a2a; --warn:#f0b75a; --warn-soft:#3b2c12; --bad:#f08a82; --bad-soft:#3d1c1a;
+  --code-bg:#111a29; --unread:#1a2a42; --scrim:rgba(0,0,0,.5); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1522; --surface:#172234; --fg:#e4e9f1; --muted:#9aa6b8; --line:#2c3a50;
+  --navy:#0a1220; --navy-fg:#e4e9f1; --accent:#6aa5ee; --accent-soft:#1d3352;
+  --ok:#5fcf97; --ok-soft:#163a2a; --warn:#f0b75a; --warn-soft:#3b2c12; --bad:#f08a82; --bad-soft:#3d1c1a;
+  --code-bg:#111a29; --unread:#1a2a42; --scrim:rgba(0,0,0,.5); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.55}
+.wrap{max-width:1060px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:40px}
+header.top{display:grid;gap:8px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:30px;margin:0;text-wrap:balance;line-height:1.2}
+h2{font-size:21px;margin:0;text-wrap:balance}
+h3{font-size:16px;margin:0}
+p{margin:0;max-width:72ch}
+.lead{color:var(--muted);max-width:75ch}
+section{display:grid;gap:16px;min-width:0}
+.note{font-size:13.5px;color:var(--muted)}
+ul.tight{margin:0;padding-left:20px;display:grid;gap:5px;max-width:78ch}
+.ids{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:4px;white-space:nowrap}
+code{font-family:var(--mono);font-size:12.5px;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:22px;align-items:start}
+.cap{font-size:12.5px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.stage{display:grid;gap:8px;min-width:0}
+
+/* Shell imitation */
+.shell{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg);min-width:0}
+.topbar{background:var(--navy);color:var(--navy-fg);display:flex;align-items:center;gap:12px;padding:9px 14px;font-size:13.5px}
+.topbar .brand{font-weight:700;letter-spacing:.02em}
+.topbar .sp{flex:1}
+.searchfake{border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:4px 10px;color:rgba(233,238,246,.7);font-size:12.5px;min-width:0}
+.icon{width:30px;height:30px;border-radius:6px;display:grid;place-items:center;position:relative;color:var(--navy-fg)}
+.icon.on{background:rgba(255,255,255,.14)}
+.icon svg{width:18px;height:18px}
+.badge{position:absolute;top:1px;right:0;min-width:16px;height:16px;border-radius:8px;background:var(--bad);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;padding:0 4px;border:2px solid var(--navy);font-variant-numeric:tabular-nums}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:12px;font-weight:700}
+.canvas{position:relative;padding:14px;min-height:520px;display:flex;justify-content:flex-end}
+.canvas.short{min-height:0}
+
+/* Notifications panel */
+.np{width:400px;max-width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px rgba(10,20,40,.18);display:grid;grid-template-rows:auto auto 1fr auto;max-height:560px;overflow:hidden}
+.np-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px 8px}
+.np-head h3{font-size:15px}
+.linkbtn{font-size:12.5px;color:var(--accent);font-weight:600;background:none;border:0;padding:2px 4px;font-family:inherit;cursor:pointer}
+.seg{display:flex;gap:4px;padding:0 14px 10px;border-bottom:1px solid var(--line)}
+.seg span{font-size:12.5px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.seg span.sel{background:var(--accent-soft);border-color:var(--accent-soft);color:var(--accent);font-weight:600}
+.np-list{overflow:auto;min-height:0}
+.day{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 14px 4px;position:sticky;top:0;background:var(--surface)}
+.item{display:grid;grid-template-columns:30px 1fr auto;gap:10px;padding:9px 14px;align-items:start;border-top:1px solid transparent}
+.item.unread{background:var(--unread)}
+.item .ico{width:30px;height:30px;border-radius:8px;display:grid;place-items:center}
+.item .ico svg{width:16px;height:16px}
+.ico.k-inv{background:var(--accent-soft);color:var(--accent)}
+.ico.k-rev{background:var(--warn-soft);color:var(--warn)}
+.ico.k-ok{background:var(--ok-soft);color:var(--ok)}
+.ico.k-def{background:var(--bad-soft);color:var(--bad)}
+.ico.k-cyc{background:var(--code-bg);color:var(--muted)}
+.ico.k-sync{background:var(--warn-soft);color:var(--warn)}
+.item .txt{min-width:0;display:grid;gap:2px;font-size:13.5px;line-height:1.4}
+.item .txt b{font-weight:600}
+.item .meta{font-size:12px;color:var(--muted)}
+.key{font-family:var(--mono);font-size:12px;color:var(--accent)}
+.item .act{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.udot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.btn{border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:12.5px;font-weight:500;background:var(--surface);color:var(--fg);white-space:nowrap;font-family:inherit}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn.dangerfill{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn[disabled]{opacity:.5}
+.np-foot{border-top:1px solid var(--line);padding:9px 14px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+
+/* mobile */
+.phone{width:340px;max-width:100%;border:1px solid var(--line);border-radius:22px;overflow:hidden;background:var(--bg);position:relative;height:600px;display:grid;grid-template-rows:auto 1fr}
+.phone .topbar{padding:10px 12px}
+.sheet{position:absolute;inset:auto 0 0 0;height:82%;background:var(--surface);border-radius:16px 16px 0 0;display:grid;grid-template-rows:auto auto auto 1fr;box-shadow:0 -8px 24px rgba(10,20,40,.2)}
+.scrim{position:absolute;inset:0;background:var(--scrim)}
+.grab{width:36px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 2px}
+.sheet .np-list{overflow:auto}
+
+/* empty */
+.empty{display:grid;justify-items:center;gap:6px;padding:34px 20px;text-align:center}
+.empty .big{width:44px;height:44px;border-radius:50%;background:var(--code-bg);display:grid;place-items:center;color:var(--muted)}
+.empty .big svg{width:22px;height:22px}
+
+/* Admin / trash */
+.adm{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:14px;min-width:0}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);font-size:13.5px;overflow-x:auto}
+.tabs span{padding:8px 12px;color:var(--muted);white-space:nowrap}
+.tabs span.sel{color:var(--accent);border-bottom:2px solid var(--accent);font-weight:600}
+.trash-head{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.trash-head .ti{width:36px;height:36px;border-radius:8px;background:var(--code-bg);display:grid;place-items:center;color:var(--muted);flex:none}
+.trash-head .ti svg{width:18px;height:18px}
+.trash-head .tx{flex:1;min-width:220px;display:grid;gap:2px}
+.lbl{font-weight:600;font-size:14.5px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.count{font-size:12px;font-weight:700;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:1px 8px;font-variant-numeric:tabular-nums}
+.hint{font-size:12.5px;color:var(--muted)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;display:inline-flex;gap:6px;align-items:center;background:var(--surface)}
+.chip b{font-variant-numeric:tabular-nums}
+.chip.sel{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;color:var(--muted);font-weight:600;background:var(--code-bg)}
+tr:last-child td{border-bottom:0}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.cb{width:15px;height:15px;border:1.5px solid var(--muted);border-radius:3px;display:inline-block;vertical-align:middle}
+.cb.on{background:var(--accent);border-color:var(--accent);position:relative}
+.cb.on::after{content:"";position:absolute;left:4px;top:1px;width:4px;height:8px;border:solid var(--surface);border-width:0 2px 2px 0;transform:rotate(45deg)}
+tr.selrow td{background:var(--unread)}
+.kind{font-size:11.5px;color:var(--muted)}
+.child{padding-left:30px}
+.pill{font-size:11.5px;border-radius:999px;padding:1px 8px;font-weight:600;white-space:nowrap}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.info{background:var(--code-bg);color:var(--muted)}
+.selbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;background:var(--accent-soft);color:var(--accent);border-radius:8px;padding:8px 12px}
+.selbar b{font-weight:600}
+.dlg{width:440px;max-width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px rgba(10,20,40,.22);padding:20px;display:grid;gap:12px}
+.dlg h3{display:flex;gap:10px;align-items:center}
+.dlg .warnico{width:32px;height:32px;border-radius:50%;background:var(--bad-soft);color:var(--bad);display:grid;place-items:center;flex:none}
+.dlg .warnico svg{width:16px;height:16px}
+.dlg ul{margin:0;padding-left:18px;font-size:13.5px;display:grid;gap:2px}
+.dlg .row{display:flex;justify-content:flex-end;gap:8px}
+.dlgstage{background:var(--scrim);border-radius:10px;padding:28px 16px;display:grid;place-items:center}
+
+/* Profile pref */
+.pref{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.pref:last-child{border-bottom:0}
+.sel-fake{border:1px solid var(--line);border-radius:6px;padding:5px 10px;font-size:13px;min-width:150px;display:flex;justify-content:space-between;gap:10px;background:var(--surface)}
+.synced{display:inline-flex;gap:5px;align-items:center;font-size:12px;color:var(--ok)}
+.synced svg{width:13px;height:13px}
+
+/* Plan blocks */
+.planbox{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;display:grid;gap:12px;min-width:0}
+pre{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.55;background:var(--code-bg);border-radius:8px;padding:14px;overflow-x:auto;color:var(--fg)}
+.q{display:grid;gap:4px;border-top:1px solid var(--line);padding-top:10px}
+.q:first-of-type{border-top:0;padding-top:0}
+.rec{font-size:13.5px;color:var(--ok);font-weight:500}
+.ktable{min-width:560px}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-bug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3 3 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6 13H2"/><path d="M22 13h-4"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></symbol>
+  <symbol id="i-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><path d="m9 14 2 2 4-4"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">Pharos 0.5.0 «Equipo» · pista R · plan para aprobar</span>
+    <h1>Notificaciones, papelera y preferencias sincronizadas</h1>
+    <p class="lead">Bocetos y plan de <span class="ids">RED-W2</span> <span class="ids">RED-W3</span> <span class="ids">SYNC-09</span> <span class="ids">AUD-01c</span>. Todavía no hay código. Los textos son los que irán en la app (es); los datos son de ejemplo.</p>
+  </header>
+
+  <!-- ============ RED-W2 ============ -->
+  <section>
+    <h2>RED-W2 · Panel de notificaciones</h2>
+    <p class="note">Se abre desde la campana que ya está en la barra superior. El punto rojo dice cuántas hay sin leer (9+ a partir de 10). Agrupado por día, «Sin leer» como filtro, cada fila con su acción directa. Al abrir una notificación o usar su acción, se marca como leída.</p>
+
+    <div class="grid2">
+      <div class="stage">
+        <span class="cap">Escritorio y web · panel abierto</span>
+        <div class="shell">
+          <div class="topbar">
+            <span class="brand">Pharos</span><span class="sp"></span>
+            <span class="searchfake">Buscar…  Ctrl K</span>
+            <span class="icon on" aria-label="Notificaciones"><svg><use href="#i-bell"/></svg><span class="badge">4</span></span>
+            <span class="icon"><svg><use href="#i-moon"/></svg></span>
+            <span class="avatar">LR</span>
+          </div>
+          <div class="canvas">
+            <div class="np" role="dialog" aria-label="Notificaciones">
+              <div class="np-head"><h3>Notificaciones</h3><button class="linkbtn" type="button">Marcar todo como leído</button></div>
+              <div class="seg"><span class="sel">Todas</span><span>Sin leer · 4</span></div>
+              <div class="np-list">
+                <div class="day">Hoy</div>
+                <div class="item unread">
+                  <span class="ico k-inv"><svg><use href="#i-users"/></svg></span>
+                  <span class="txt"><span><b>Ana Torres</b> te invitó al workspace <b>Banca Móvil</b> como Test Analyst</span><span class="meta">hace 5 min</span></span>
+                  <span class="act"><span class="udot" aria-label="Sin leer"></span><button class="btn primary" type="button">Ver invitación</button></span>
+                </div>
+                <div class="item unread">
+                  <span class="ico k-rev"><svg><use href="#i-eye"/></svg></span>
+                  <span class="txt"><span><b>Carlos Ruiz</b> envió a revisión <span class="key">BM-CP-0142</span> Transferencia con token caducado</span><span class="meta">Banca Móvil · hace 40 min</span></span>
+                  <span class="act"><span class="udot"></span><button class="btn primary" type="button">Revisar</button></span>
+                </div>
+                <div class="item unread">
+                  <span class="ico k-sync"><svg><use href="#i-sync"/></svg></span>
+                  <span class="txt"><span><b>2 conflictos de sincronización</b> en Banca Móvil</span><span class="meta">Tus cambios y los del servidor no coinciden · 11:02</span></span>
+                  <span class="act"><span class="udot"></span><button class="btn" type="button">Resolver</button></span>
+                </div>
+                <div class="day">Ayer</div>
+                <div class="item unread">
+                  <span class="ico k-def"><svg><use href="#i-bug"/></svg></span>
+                  <span class="txt"><span><b>Ana Torres</b> te asignó <span class="key">BM-DEF-031</span> El saldo no se refresca tras pagar</span><span class="meta">Banca Móvil · 17:24</span></span>
+                  <span class="act"><span class="udot"></span><button class="btn" type="button">Ver defecto</button></span>
+                </div>
+                <div class="item">
+                  <span class="ico k-ok"><svg><use href="#i-check"/></svg></span>
+                  <span class="txt"><span><b>Marta Gil</b> aprobó <span class="key">BM-CP-0139</span> Login con biometría</span><span class="meta">Banca Móvil · 12:10</span></span>
+                  <span class="act"><button class="btn" type="button">Abrir caso</button></span>
+                </div>
+                <div class="day">Lunes 15 nov</div>
+                <div class="item">
+                  <span class="ico k-cyc"><svg><use href="#i-flag"/></svg></span>
+                  <span class="txt"><span><b>Ana Torres</b> cerró el ciclo <b>Sprint 42 · Regresión</b>: 87 % de éxito</span><span class="meta">Banca Móvil · 18:02</span></span>
+                  <span class="act"><button class="btn" type="button">Ver informe</button></span>
+                </div>
+              </div>
+              <div class="np-foot"><span>Se guardan 90 días</span><span>Sincronizado</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage">
+        <span class="cap">Móvil · hoja inferior, filtro «Sin leer»</span>
+        <div class="phone">
+          <div class="topbar"><span class="brand">Pharos</span><span class="sp"></span><span class="icon on"><svg><use href="#i-bell"/></svg><span class="badge">4</span></span><span class="avatar">LR</span></div>
+          <div></div>
+          <div class="scrim"></div>
+          <div class="sheet" role="dialog" aria-label="Notificaciones">
+            <div class="grab"></div>
+            <div class="np-head"><h3>Notificaciones</h3><button class="linkbtn" type="button">Marcar todo como leído</button></div>
+            <div class="seg"><span>Todas</span><span class="sel">Sin leer · 4</span></div>
+            <div class="np-list">
+              <div class="day">Hoy</div>
+              <div class="item unread"><span class="ico k-inv"><svg><use href="#i-users"/></svg></span><span class="txt"><span><b>Ana Torres</b> te invitó a <b>Banca Móvil</b></span><span class="meta">hace 5 min</span></span><span class="act"><button class="btn primary" type="button">Ver</button></span></div>
+              <div class="item unread"><span class="ico k-rev"><svg><use href="#i-eye"/></svg></span><span class="txt"><span>Revisión pedida: <span class="key">BM-CP-0142</span></span><span class="meta">Carlos Ruiz · hace 40 min</span></span><span class="act"><button class="btn primary" type="button">Revisar</button></span></div>
+              <div class="item unread"><span class="ico k-sync"><svg><use href="#i-sync"/></svg></span><span class="txt"><span><b>2 conflictos</b> de sincronización</span><span class="meta">11:02</span></span><span class="act"><button class="btn" type="button">Resolver</button></span></div>
+              <div class="day">Ayer</div>
+              <div class="item unread"><span class="ico k-def"><svg><use href="#i-bug"/></svg></span><span class="txt"><span>Te asignaron <span class="key">BM-DEF-031</span></span><span class="meta">Ana Torres · 17:24</span></span><span class="act"><button class="btn" type="button">Ver</button></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="stage">
+        <span class="cap">Sin notificaciones</span>
+        <div class="shell"><div class="canvas short">
+          <div class="np" style="grid-template-rows:auto auto auto">
+            <div class="np-head"><h3>Notificaciones</h3><button class="linkbtn" type="button" disabled style="opacity:.45">Marcar todo como leído</button></div>
+            <div class="seg"><span class="sel">Todas</span><span>Sin leer</span></div>
+            <div class="empty"><span class="big"><svg><use href="#i-bell"/></svg></span><b>Estás al día</b><span class="note">Aquí verás invitaciones, revisiones, defectos asignados, ciclos cerrados y conflictos.</span></div>
+          </div>
+        </div></div>
+      </div>
+      <div class="stage">
+        <span class="cap">Reglas del panel</span>
+        <ul class="tight note">
+          <li>Grupos: «Hoy», «Ayer», y después el día con su nombre («Lunes 15 nov»). Cabecera fija al desplazar.</li>
+          <li>Una fila sin leer lleva fondo suave y punto azul. Clic en la fila = abrir el destino y marcar leída.</li>
+          <li>La acción directa depende del tipo: Ver invitación · Revisar · Abrir caso · Ver defecto · Ver informe · Resolver.</li>
+          <li>Si el destino ya no existe (borrado, sin acceso), la acción queda desactivada con el motivo en el tooltip.</li>
+          <li>Varios conflictos de una misma sincronización se agrupan en una sola fila con el número.</li>
+          <li>Leído/sin leer viaja entre tus equipos: lo que lees en el escritorio deja de estar sin leer en la web.</li>
+          <li>No tus propias acciones: cerrar tú un ciclo no te notifica a ti.</li>
+          <li>Sin sonidos ni notificaciones del sistema operativo en 0.5.0.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RED-W3 ============ -->
+  <section>
+    <h2>RED-W3 · Papelera</h2>
+    <p class="note">Sustituye al «Próximamente» de Administración → General. Lista lo borrado que aún no se ha purgado, con el mismo alcance que la purga (SYNC-06): proyectos tuyos y sus elementos, tarjetas del planificador y plantillas. Un elemento borrado junto con su proyecto aparece dentro de él.</p>
+
+    <div class="stage">
+      <span class="cap">Administración → General · tarjeta de la papelera, con 2 elementos seleccionados</span>
+      <div class="adm">
+        <div class="tabs"><span>Motor de IA</span><span>Plantillas</span><span class="sel">General</span><span>Sincronización</span><span>Seguridad</span><span>Diagnóstico</span></div>
+        <div class="trash-head">
+          <span class="ti"><svg><use href="#i-trash"/></svg></span>
+          <div class="tx">
+            <span class="lbl">Papelera <span class="count">23</span></span>
+            <span class="hint">Lo borrado se guarda 30 días y después se elimina para siempre. Cambia el plazo en Retención.</span>
+          </div>
+          <div class="actions"><button class="btn danger" type="button">Vaciar papelera</button></div>
+        </div>
+        <div class="chips" aria-label="Desglose">
+          <span class="chip sel">Todo <b>23</b></span>
+          <span class="chip">Proyectos <b>1</b></span>
+          <span class="chip">Casos <b>14</b></span>
+          <span class="chip">Requisitos <b>3</b></span>
+          <span class="chip">Defectos <b>2</b></span>
+          <span class="chip">Ciclos <b>1</b></span>
+          <span class="chip">Tarjetas <b>2</b></span>
+        </div>
+        <div class="selbar"><span><b>2 seleccionados</b></span><span class="actions"><button class="btn primary" type="button">Restaurar</button><button class="btn danger" type="button">Eliminar para siempre</button></span></div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th style="width:34px"><span class="cb"></span></th><th>Elemento</th><th>Proyecto</th><th>Borrado</th><th>Se elimina</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><span class="cb"></span></td><td><b>Portal Proveedores</b><div class="kind">Proyecto · con 12 elementos</div></td><td>—</td><td class="num">16 nov 2026 · Liomar R.</td><td class="num">en 29 días</td><td><button class="btn" type="button">Restaurar</button></td></tr>
+              <tr class="selrow"><td><span class="cb on"></span></td><td><span class="key">BM-CP-0151</span> Pago QR con saldo insuficiente<div class="kind">Caso de prueba</div></td><td>Banca Móvil</td><td class="num">15 nov 2026 · Carlos R.</td><td class="num">en 28 días</td><td><button class="btn" type="button">Restaurar</button></td></tr>
+              <tr class="selrow"><td><span class="cb on"></span></td><td><span class="key">BM-REQ-018</span> Límite diario de transferencias<div class="kind">Requisito</div></td><td>Banca Móvil</td><td class="num">12 nov 2026 · Liomar R.</td><td class="num">en 25 días</td><td><button class="btn" type="button">Restaurar</button></td></tr>
+              <tr><td><span class="cb"></span></td><td><span class="key">BM-DEF-027</span> Crash al girar en el resumen<div class="kind">Defecto</div></td><td>Banca Móvil</td><td class="num">20 oct 2026 · Ana T.</td><td class="num">en 2 días</td><td><span class="pill warn" title="Tiene cambios sin enviar: se conserva hasta sincronizar">Pendiente de sincronizar</span></td></tr>
+              <tr><td><span class="cb"></span></td><td><span class="key">BM-CP-0098</span> Recuperar PIN por SMS<div class="kind">Caso de prueba · su proyecto está en la papelera</div></td><td>Portal Proveedores</td><td class="num">16 nov 2026 · Liomar R.</td><td class="num">en 29 días</td><td><button class="btn" type="button" disabled title="Restaura antes el proyecto Portal Proveedores">Restaurar</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint">Restaurar devuelve el elemento a su sitio con su clave y su historial, y se sincroniza como cualquier cambio. Restaurar un proyecto devuelve también lo que se borró con él.</p>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="stage">
+        <span class="cap">Confirmación de «Vaciar papelera»</span>
+        <div class="dlgstage">
+          <div class="dlg" role="alertdialog" aria-label="Vaciar papelera">
+            <h3><span class="warnico"><svg><use href="#i-alert"/></svg></span>¿Vaciar la papelera?</h3>
+            <p class="note">Se eliminarán para siempre en este equipo 22 elementos:</p>
+            <ul><li>1 proyecto con sus 12 elementos</li><li>13 casos, 3 requisitos, 1 defecto, 1 ciclo y 2 tarjetas</li></ul>
+            <p class="note">1 defecto con cambios sin sincronizar se conserva hasta que se envíe. Esto no se puede deshacer; las claves no se reutilizan.</p>
+            <div class="row"><button class="btn" type="button">Cancelar</button><button class="btn dangerfill" type="button">Vaciar papelera</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="stage">
+        <span class="cap">Estados</span>
+        <div class="adm">
+          <div class="trash-head">
+            <span class="ti"><svg><use href="#i-trash"/></svg></span>
+            <div class="tx"><span class="lbl">Papelera <span class="count">0</span></span><span class="hint">La papelera está vacía. Lo que borres se guardará aquí 30 días.</span></div>
+            <div class="actions"><button class="btn danger" type="button" disabled title="No hay nada que vaciar">Vaciar papelera</button></div>
+          </div>
+        </div>
+        <div class="adm">
+          <div class="trash-head">
+            <span class="ti"><svg><use href="#i-trash"/></svg></span>
+            <div class="tx"><span class="lbl">Papelera</span><span class="hint">En la web no se guarda lo borrado. Abre la papelera en la app de escritorio.</span></div>
+          </div>
+        </div>
+        <p class="note">Toast tras restaurar: «2 elementos restaurados». Tras vaciar: «22 elementos eliminados para siempre».</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SYNC-09 ============ -->
+  <section>
+    <h2>SYNC-09 · Perfil, idioma y preferencias</h2>
+    <div class="grid2">
+      <div class="stage">
+        <span class="cap">Perfil → Preferencias</span>
+        <div class="adm">
+          <div class="pref"><span><b>Idioma</b><br><span class="synced"><svg><use href="#i-cloud"/></svg>Se aplica en todos tus equipos</span></span><span class="sel-fake">Español <span>▾</span></span></div>
+          <div class="pref"><span><b>Tema</b><br><span class="synced"><svg><use href="#i-cloud"/></svg>Se aplica en todos tus equipos</span></span><span class="sel-fake">Según el sistema <span>▾</span></span></div>
+        </div>
+        <p class="note">Sin pantallas nuevas: solo esa línea bajo cada preferencia que viaja.</p>
+      </div>
+      <div class="stage">
+        <span class="cap">Qué viaja con la cuenta y qué no</span>
+        <ul class="tight note">
+          <li><b>Viaja:</b> nombres del perfil (alias, nombre y apellidos), idioma, tema, sombra de tarjetas, opacidad del fondo y fondo «predeterminado / ninguno». Gana el cambio más reciente, aunque se hiciera sin conexión, como el tablero de Inicio (UX-27).</li>
+          <li><b>Se queda en el equipo:</b> imagen de fondo propia (puede pesar más que el límite de 16 KB), retención de la papelera, sincronización automática y carpeta de descargas: dependen del equipo.</li>
+          <li>Servidor: nuevas claves en <code>user_preferences</code> (<code>ui.language</code>, <code>ui.theme</code>, <code>ui.appearance</code>) y <code>GET /api/me/preferences</code> para traerlas de una vez. Sin migración.</li>
+          <li>Prueba de aceptación: cambiar el idioma en un equipo lo cambia en otro al sincronizar.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ AUD-01c ============ -->
+  <section>
+    <h2>AUD-01c · Copia <code>.bak</code> restaurada a mano</h2>
+    <div class="planbox">
+      <p>Sin pantalla. Cada guardado sube un contador dentro de la base cifrada (<code>sync_state.save_seq</code>) y lo escribe también en un fichero junto a ella (<code>pharos.db.seq</code>, solo el número). Al abrir, si la base trae un contador menor que el del fichero, es una copia antigua puesta encima: se rota el <code>device_id</code> (<code>oplog::rotate_device_id</code>, como ya hace la recuperación con clave) y sus eventos empiezan una cadena nueva.</p>
+      <ul class="tight note">
+        <li>Sin el fichero (primer arranque tras actualizar, o borrado) no se rota nada. Rotar de más es inofensivo: solo abre otra cadena.</li>
+        <li>El diagnóstico exportado anota <code>restoredCopyDetectedAt</code>; el registro de auditoría añade un evento «Copia restaurada detectada».</li>
+        <li>No necesita migración local: la 0044 queda sin usar y pasa a <code>retired</code>.</li>
+        <li>Test: abrir, guardar dos veces, volver a poner el <code>.bak</code>, abrir y editar → <code>verify_chain</code> ve dos cadenas íntegras, ninguna rota.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ Event API ============ -->
+  <section>
+    <h2>API de eventos para las pistas W y K</h2>
+    <p class="note">Las notificaciones son de otras personas (te asignan, te piden revisión, te invitan), así que tienen que viajar por el servidor. Dos puertas, con la misma forma:</p>
+    <div class="planbox">
+      <h3>Cliente (escritorio y web) · <code>@modules/notifications</code></h3>
+<pre>import { notify } from "@modules/notifications";
+
+await notify({
+  kind: "case.review_requested",          // ver tabla
+  to: { userIds: [reviewerId] },          // o { workspace: true } = todos los miembros
+  workspaceId, projectId,                 // opcionales
+  subject: { entity: "test_case", id: caseId, key: "BM-CP-0142", title: "Transferencia…" },
+  data: { /* extra por tipo, ≤ 2 KB */ },
+});
+// Nunca lanza ni bloquea la acción: sin conexión se encola y sale en la próxima sincronización.
+// El emisor nunca se notifica a sí mismo; el actor lo pone el servidor desde la sesión.</pre>
+      <h3>Servidor · <code>server/src/modules/notifications</code></h3>
+<pre>import { emitNotification } from "../notifications";
+
+await emitNotification(client /* Pool o PoolClient, dentro de tu transacción */, {
+  kind: "invitation.received",
+  actorId: req.userId,
+  recipientIds: [inviteeUserId],          // o { workspaceId } para todos sus miembros
+  workspaceId,
+  subject: { entity: "workspace_invitation", id: invitationId, title: workspaceName },
+  data: { role: "test_analyst" },
+});</pre>
+      <div class="tablewrap">
+        <table class="ktable">
+          <thead><tr><th>kind</th><th>Quién lo emite</th><th>Para quién</th><th>Acción directa</th></tr></thead>
+          <tbody>
+            <tr><td><code>invitation.received</code></td><td>W, en el servidor al crear la invitación</td><td>la persona invitada</td><td>Ver invitación</td></tr>
+            <tr><td><code>case.review_requested</code></td><td>K, en el cliente al enviar a revisión</td><td>revisores (o el workspace)</td><td>Revisar</td></tr>
+            <tr><td><code>case.approved</code> · <code>case.changes_requested</code></td><td>K, en el cliente</td><td>el autor</td><td>Abrir caso</td></tr>
+            <tr><td><code>defect.assigned</code></td><td>R, en defectos al cambiar el responsable</td><td>el responsable, si es miembro</td><td>Ver defecto</td></tr>
+            <tr><td><code>cycle.closed</code></td><td>R, en «Cerrar ciclo»</td><td>miembros del workspace</td><td>Ver informe</td></tr>
+            <tr><td><code>sync.conflict</code></td><td>R, tras una sincronización con conflictos nuevos</td><td>solo este equipo (no viaja)</td><td>Resolver</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Hasta que W fusione los miembros, <code>{ workspace: true }</code> se resuelve a nadie y solo se aceptan destinatarios que sean el propio usuario. Con W, el servidor rechaza destinatarios que no compartan workspace con el emisor (sin spam entre cuentas). La función de miembros la pone W; R solo la llama.</p>
+    </div>
+  </section>
+
+  <!-- ============ Plan técnico ============ -->
+  <section>
+    <h2>Plan técnico y reservas</h2>
+    <div class="planbox">
+      <ul class="tight">
+        <li><b>Servidor 0023</b> <code>notifications</code> (id, recipient_id, kind, actor_id, workspace_id, project_id, subject jsonb, data jsonb, created_at, read_at) + rutas <code>GET /api/me/notifications?since=</code>, <code>POST /api/notifications</code>, <code>POST /api/me/notifications/read</code> (ids o todo). Purga a los 90 días. Hace falta un ADR.</li>
+        <li><b>Local 0043</b> <code>notifications</code> en el escritorio: copia cifrada de las recibidas, la cola de salida y los conflictos locales. La web lee del servidor y no guarda copia.</li>
+        <li><b>Papelera</b>: <code>src-tauri/src/trash.rs</code> nuevo (listar, restaurar, eliminar para siempre) que reutiliza la purga de SYNC-06 con plazo 0 y anota cada restauración en el oplog y la auditoría. <code>TrashSection.tsx</code> ampliado. Sin migración.</li>
+        <li><b>Shell</b>: módulo <code>src/modules/notifications</code> (modelo, API, panel); <code>TopbarControls.tsx</code> solo cambia el «Próximamente» por el panel.</li>
+        <li><b>Puntos compartidos mínimos</b>: registro de comandos en <code>lib.rs</code>, registro de migraciones en <code>db.rs</code>, dos líneas en <code>db.rs</code> (guardar/abrir) para AUD-01c, la llamada a <code>notify</code> en defectos y ciclos, y un fichero nuevo en <code>src/modules/profile/api/</code> para SYNC-09 (zona de C: le aviso).</li>
+        <li><b>Docs</b>: filas de ROADMAP, <code>changes/RED-W2.md</code>, <code>RED-W3.md</code>, <code>SYNC-09.md</code>, <code>AUD-01c.md</code>, manual (barra superior, Administración, Perfil), GLOSARIO, ARCHITECTURE y ADR-0015 (AUD-01c).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Decisiones que necesito</h2>
+    <div class="planbox">
+      <div class="q"><b>1. ¿Las notificaciones viajan por el servidor?</b><span class="note">Sin eso solo habría avisos de tus propias acciones y de conflictos, y ninguno de los eventos aprobados llegaría a otra persona.</span><span class="rec">Recomiendo: sí (migración 0023) y un número de ADR para «Notificaciones».</span></div>
+      <div class="q"><b>2. ¿Papelera solo en el escritorio en 0.5.0?</b><span class="note">La web no guarda lo borrado; restaurar desde la web exigiría rutas nuevas en el servidor.</span><span class="rec">Recomiendo: solo escritorio; la web muestra el aviso del boceto.</span></div>
+      <div class="q"><b>3. ¿Qué preferencias viajan?</b><span class="rec">Recomiendo: la lista «Viaja» de SYNC-09; lo que depende del equipo se queda.</span></div>
+      <div class="q"><b>4. ¿Cuánto se guardan las notificaciones?</b><span class="rec">Recomiendo: 90 días, máximo 500 por cuenta.</span></div>
+    </div>
+  </section>
+</div>
+
+</body></html>

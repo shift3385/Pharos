@@ -433,3 +433,79 @@ describe("a linked threshold in the web's matrix (F5)", () => {
     expect(row.status).toBe("failed");
   });
 });
+
+describe("the findings of the web's matrix and reports (F5b)", () => {
+  it("counts the latest scan of each tool, its cases and its thresholds", async () => {
+    const token = await tokenFor();
+    const p = await projectOf(token);
+    const web = async (method: "GET" | "POST", url: string, payload?: unknown) => {
+      const res = await app.inject({
+        method,
+        url,
+        headers: headers(token, "key-conflicts,stable-steps"),
+        payload: payload as object,
+      });
+      return res.json();
+    };
+    const empty = await web("GET", `/api/execution/summary?projectId=${p}`);
+    expect(empty.findings).toBeUndefined();
+    const pay = await web("POST", "/api/test-cases", {
+      projectId: p,
+      title: "Pago",
+      data: { steps: ["pagar"] },
+    });
+    const key = pay.scenarioId as string;
+    const runOf = async (title: string, sourceTool: string, startedAt: string) =>
+      (await web("POST", "/api/runs", { input: { projectId: p, title, sourceTool, startedAt } })).id as string;
+    const old = await runOf("axe antes", "axe-core", "2026-11-10T09:00:00.000Z");
+    const now = await runOf("axe ahora", "axe-core", "2026-11-11T09:00:00.000Z");
+    const load = await runOf("k6", "k6", "2026-11-11T10:00:00.000Z");
+    const f = (id: string, runId: string, fingerprint: string, severity: string, attributes: Record<string, unknown> = {}) => ({
+      ...finding(p, { id, runId, fingerprint, severity, attributes }),
+      entityId: id,
+    });
+    const m = (id: string, passed: boolean, attributes: Record<string, unknown>) => ({
+      ...metric(p),
+      entityId: id,
+      payload: { ...metric(p).payload, id, runId: load, name: id, passed, attributes },
+    });
+    expect(
+      (
+        await push(token, ALL, [
+          f("o1", old, "fp-a", "high"),
+          f("n1", now, "fp-a", "high", { tags: [`@${key}`] }),
+          f("n2", now, "fp-b", "critical", { tags: [`@${key}`] }),
+          f("n3", now, "fp-c", "low"),
+          f("n4", now, "fp-d", "medium", { needsReview: true }),
+          f("n5", now, "fp-e", "high"),
+          m("p95", true, {}),
+          m("failed", false, { tags: [`@${key}`] }),
+        ])
+      ).statusCode,
+    ).toBe(200);
+    await web("POST", "/api/finding-triage", {
+      projectId: p,
+      fingerprint: "fp-e",
+      state: "false_positive",
+      reason: "No aplica",
+    });
+    const s = (await web("GET", `/api/execution/summary?projectId=${p}`)).findings;
+    expect(s.open).toEqual({ critical: 1, high: 1, medium: 0, low: 1, info: 0 });
+    expect([s.new, s.triaged, s.review]).toEqual([2, 1, 1]);
+    expect(s.tools.map((t: { tool: string; runId: string }) => [t.tool, t.runId])).toEqual([["axe-core", now]]);
+    expect(s.cases).toEqual([{ caseId: pay.id, open: 2, worst: "critical" }]);
+    expect([s.thresholdsTotal, s.thresholdsPassed]).toEqual([2, 1]);
+    expect(s.failedThresholds).toMatchObject([{ runId: load, name: "failed", caseId: pay.id }]);
+    // The runs list (F5b): runs with findings or thresholds only are listed.
+    const counts = (await web("GET", `/api/runs/counts?projectId=${p}`)) as {
+      runId: string;
+      findings: number;
+      findingsWorst: string | null;
+      thresholdsFailed: number;
+    }[];
+    const by = new Map(counts.map((c) => [c.runId, [c.findings, c.findingsWorst, c.thresholdsFailed]]));
+    expect(by.get(old)).toEqual([1, "high", 0]);
+    expect(by.get(now)).toEqual([3, "critical", 0]);
+    expect(by.get(load)).toEqual([0, null, 1]);
+  });
+});

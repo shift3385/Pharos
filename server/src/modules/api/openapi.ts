@@ -6,11 +6,18 @@
 // (no `additionalProperties: false`) so a client accepts fields added later.
 import { z } from "zod";
 import { API_SCOPES } from "./scopes.js";
+import { READ_RESOURCES } from "./v1.reads.js";
 import {
+  caseListSchema,
+  caseSchema,
+  cycleSchema,
   errorSchema,
   meSchema,
   projectListSchema,
   projectSchema,
+  readItemSchema,
+  readListSchema,
+  readQuerySchema,
   resultListSchema,
   runCloseSchema,
   runCreateSchema,
@@ -34,6 +41,11 @@ const COMPONENTS = {
   ResultList: resultListSchema,
   UploadFormat: uploadFormatSchema,
   UploadResult: uploadResponseSchema,
+  Item: readItemSchema,
+  ItemList: readListSchema,
+  Case: caseSchema,
+  CaseList: caseListSchema,
+  Cycle: cycleSchema,
   Error: errorSchema,
 };
 type Component = keyof typeof COMPONENTS;
@@ -60,9 +72,9 @@ function components(): Record<string, unknown> {
   return Object.fromEntries(Object.entries(schemas).map(([id, s]) => [id, open(s)]));
 }
 
-/** The upload's query parameters, one by one, from their schema. */
-function uploadParameters() {
-  const s = open(z.toJSONSchema(uploadQuerySchema, { io: "input" })) as {
+/** Query parameters, one by one, from their schema. */
+function queryParameters(schema: z.ZodType = uploadQuerySchema) {
+  const s = open(z.toJSONSchema(schema, { io: "input" })) as {
     properties: Record<string, Record<string, unknown>>;
   };
   return Object.entries(s.properties).map(([name, schema]) => {
@@ -97,8 +109,49 @@ const NOT_FOUND = json("Error", "`not_found` or `run_not_found`: not in the toke
 
 /** The version of the v1 contract (VERSIONING §6.6): the minor grows with
  *  each additive change, the patch with corrections of the text. A new
- *  major is a new path (`/api/v2`). 1.1.0: runs and report uploads (A2). 1.1.1: findings and metrics are stored (A2b); the text changes, not the shapes. */
-export const API_V1_CONTRACT_VERSION = "1.1.1";
+ *  major is a new path (`/api/v2`). 1.1.0: runs and report uploads (A2). 1.1.1: findings and metrics are stored (A2b); the text changes, not the shapes. 1.2.0: read-only cases, cycles, defects and requirements with a cursor (A4). */
+export const API_V1_CONTRACT_VERSION = "1.2.0";
+
+/** The read paths of A4 (`v1.reads.ts`): a list and an item each. */
+function readPaths(): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const r of READ_RESOURCES) {
+    const [list, one]: [Component, Component] =
+      r.path === "cases" ? ["CaseList", "Case"] : r.path === "cycles" ? ["ItemList", "Cycle"] : ["ItemList", "Item"];
+    out[`/projects/{projectId}/${r.path}`] = {
+      get: {
+        operationId: `list${r.noun}s`,
+        summary: `The project's ${r.path} changed after a cursor, oldest change first.`,
+        description: [
+          `Scope \`${r.scope}\`. Read-only in v1.`,
+          "Incremental: keep `nextCursor` and send it back as `updatedSince` to get only what changed since (more pages while `hasMore`). Deletions come as `deleted: true` without `data`, unless `includeDeleted=false`.",
+          "`status` filters on the item's `status` field.",
+        ].join("\n\n"),
+        parameters: [PROJECT, ...queryParameters(readQuerySchema)],
+        responses: { "200": json(list, `The ${r.path}.`), "400": json("Error", "`validation_error`: a bad cursor or limit."), "404": NOT_FOUND, ...ERRORS },
+      },
+    };
+    out[`/projects/{projectId}/${r.path}/{key}`] = {
+      get: {
+        operationId: `get${r.noun}`,
+        summary: `One ${r.noun.toLowerCase()}, by key or id.`,
+        description: `Scope \`${r.scope}\`. A live item wins over a deleted one that once had the key.`,
+        parameters: [
+          PROJECT,
+          {
+            name: "key",
+            in: "path",
+            required: true,
+            description: "Its key (`TC-001`, `CYC-003`, `DEF-007`, `REQ-002`) or its id.",
+            schema: { type: "string" },
+          },
+        ],
+        responses: { "200": json(one, `The ${r.noun.toLowerCase()}.`), "404": NOT_FOUND, ...ERRORS },
+      },
+    };
+  }
+  return out;
+}
 
 /** The document. */
 export function buildOpenApi() {
@@ -148,7 +201,7 @@ export function buildOpenApi() {
             "The run: `runKey`, or `externalId` (created by the first upload, open until closed), or a new run closed as completed once imported. Case links are derived when read, from `@<prefix><n>` tags or `caseKey`.",
             "SARIF, axe and k6 bring findings and metrics instead of results: they are stored with the shard as the desktop stores them (ADR-0053) and counted in `counts.findings` and `counts.metrics`. A finding without its rule, severity, message or fingerprint, or a metric without a name or a finite value, is 422 `invalid_report` and nothing is written.",
           ].join("\n\n"),
-          parameters: [PROJECT, ...uploadParameters()],
+          parameters: [PROJECT, ...queryParameters()],
           requestBody: {
             required: true,
             description: "The report file.",
@@ -228,6 +281,7 @@ export function buildOpenApi() {
           },
         },
       },
+      ...readPaths(),
     },
     components: {
       securitySchemes: {

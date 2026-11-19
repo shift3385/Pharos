@@ -10,6 +10,7 @@ import type { ExecutionFilter } from "./ExecutionFilter";
 import type { ExecutionProgress } from "./ExecutionProgress";
 import type { ExitCriterion } from "./ExitCriterion";
 import type { FilterOptions } from "./FilterOptions";
+import type { FindingsSummary } from "./FindingsSummary";
 import type { RequirementExecution } from "./RequirementExecution";
 import type { RunRef } from "./RunRef";
 import type { TargetExecution } from "./TargetExecution";
@@ -27,4 +28,10 @@ closure: CycleClosure | null,
  * With a cycle scope, the closed cycle before it (the one closed last
  * before its closing, or before now if it is open), to compare with.
  */
-previous: CycleTrendPoint | null, daily: Array<DailyCount>, undated: number, runs: Array<RunRef>, options: FilterOptions, };
+previous: CycleTrendPoint | null, daily: Array<DailyCount>, undated: number, runs: Array<RunRef>, options: FilterOptions, 
+/**
+ * Findings and thresholds of the runs in scope (ING-06, F5b): filled
+ * after this derivation (`runs::findings::summary`), absent when there
+ * are none, so the shared vectors do not carry it.
+ */
+findings?: FindingsSummary, };

@@ -596,7 +596,13 @@ pub(crate) fn execution_summary_of(
     if let Some(ds) = &filter.day_starts {
         check_day_starts(ds)?;
     }
-    Ok(load_project(conn, &filter.project_id, user)?.map(|d| derive::summarize(&d, filter)))
+    let Some(data) = load_project(conn, &filter.project_id, user)? else {
+        return Ok(None);
+    };
+    let mut summary = derive::summarize(&data, filter);
+    // Findings and thresholds of the runs in scope (ING-06, F5b).
+    summary.findings = crate::runs::findings::summary::of(conn, &filter.project_id, &summary.runs)?;
+    Ok(Some(summary))
 }
 
 // Its production caller is RED-W6's `home_metrics` command.

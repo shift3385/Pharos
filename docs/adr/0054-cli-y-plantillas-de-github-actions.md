@@ -179,4 +179,10 @@
   - el diálogo «Token creado» de la pista A ya no trae un ejemplo provisional: remite a «Conectar CI» (token de proyecto) o a `pharos login` (token personal);
   - «Mi perfil › Tokens personales» enseña «Usar en el CLI»: el comando `pharos login --server …`, sin el token;
   - el recorrido y el capítulo del manual van con el de «Integraciones» (§ ROADMAP, INT-02 A4).
-- **L3:** pendiente.
+- **L3 · `watch`:**
+  - `watch.rs`: comprobaciones previas (remoto: `GET /me`; local: sesión, BD y proyecto) para que un problema salga antes de las pruebas;
+  - el comando se ejecuta con la terminal heredada. En Windows, un nombre sin extensión se busca con `PATHEXT`; Ctrl+C llega al hijo y no corta `watch` (un manejador que responde «atendido», que el hijo no hereda);
+  - solo se suben los informes con fecha de modificación posterior al inicio del comando (con 2 s de margen por el redondeo de algunos sistemas de ficheros), a través del mismo `upload` local o remoto;
+  - sale con el código del comando, y una subida fallida es un aviso; con `--require-upload`, la subida decide;
+  - la plantilla `docs/integraciones/github-actions/pharos-cli-windows.yml`.
+- INT-01 e INT-04 quedan completos en 0.6.0.

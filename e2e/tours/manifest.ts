@@ -158,7 +158,7 @@ const WORKSPACES_PENDING =
   "necesita una segunda cuenta y un servidor con workspaces: lo cubre la validación de 0.5.0 con dos personas (SYNC-07); el flujo lo prueban los tests de la UI y del servidor";
 
 const TOKENS_PENDING =
-  "el capítulo «Integraciones» llega con la subida de resultados (INT-02, pista A, A4); lo cubren server/tests/api.tokens.test.ts y src/modules/integrations/ui/integrations.test.tsx";
+  "el capítulo «Integraciones» llega en A4b (INT-02, pista A), tras las lecturas de la API; lo cubren server/tests/api.tokens.test.ts y src/modules/integrations/ui/integrations.test.tsx";
 
 export const INVENTORY: Item[] = [
   // ---- 1 · Acceso y cuenta ------------------------------------------------------

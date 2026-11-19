@@ -11,6 +11,7 @@ Usan la acción [`pharos-report`](../../../.github/actions/pharos-report/action.
 |---|---|
 | [`pharos-pr.yml`](pharos-pr.yml) | Un job que ejecuta las pruebas y sube **JUnit, SARIF, k6 y axe** al mismo run. Es el criterio de salida de 0.6.0. |
 | [`pharos-matriz.yml`](pharos-matriz.yml) | Una matriz de navegadores. Cada job sube su informe y todos convergen en un run; un último job lo cierra. |
+| [`pharos-cli-windows.yml`](pharos-cli-windows.yml) | Un runner Windows con el CLI: `pharos watch` comprueba el token, ejecuta las pruebas, sube sus informes y sale con el código de las pruebas. |
 
 ## Antes de usarlas, en GitHub
 

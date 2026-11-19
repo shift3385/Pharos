@@ -59,6 +59,12 @@ export async function buildCompletionXlsx(
   row = section(ws, row, s.risks);
   row = table(ws, label(row, l.openDefects), r.openDefects, l.noDefects);
   row = table(ws, label(row, l.riskyRequirements), r.riskyRequirements, l.noRisky);
+  const f = r.findings;
+  if (f) {
+    row = text(ws, label(row, l.findings), [f.findingsLine, f.thresholdsLine].filter(Boolean).join(" · "));
+    row = table(ws, row, f.tools, l.noData);
+    row = table(ws, row, f.failed, l.noFailedThresholds);
+  }
   if (r.risksNote.trim()) row = text(ws, label(row, l.notes), r.risksNote);
   row = section(ws, row, s.deliverables);
   row = table(ws, row, r.deliverables, l.noData);
@@ -96,7 +102,11 @@ export async function buildCompletionXlsx(
     return row + 1;
   };
   const rr = table(rw, bold(1, l.openDefects), r.openDefects, l.noDefects);
-  table(rw, bold(rr, l.riskyRequirements), r.riskyRequirements, l.noRisky);
+  const rf = table(rw, bold(rr, l.riskyRequirements), r.riskyRequirements, l.noRisky);
+  if (f) {
+    const ft = table(rw, bold(rf, `${l.findings}: ${f.findingsLine}`), f.tools, l.noData);
+    table(rw, ft, f.failed, l.noFailedThresholds);
+  }
   sheet(l.sheets.deliverables, r.deliverables, [60, 16, 12]);
   sheet(l.sheets.cases, cases, [12, 40, 14, 12, 22, 16, 12, 8, 14]);
   return (await wb.xlsx.writeBuffer()) as ArrayBuffer;

@@ -279,7 +279,7 @@ describe("runs on the web", () => {
       [1, "passed", true, true],
     ]);
     expect((await call("GET", `/api/runs/counts?projectId=${s.projectId}`)).body).toEqual([
-      { runId: run.id, passed: 2, failed: 0, other: 0, unlinked: 0 },
+      { runId: run.id, passed: 2, failed: 0, other: 0, unlinked: 0, findings: 0, findingsWorst: null, thresholdsFailed: 0 },
     ]);
     // One `execute` event per attempt, with the status and the test.
     const executed = (await events()).filter((e) => e.action === "execute");
@@ -437,7 +437,7 @@ describe("runs on the web", () => {
     await call("POST", "/api/results", { input: { runItemId: itemOf(gone.id), attemptId: uuid(2), status: "failed" } });
     await pool.query("UPDATE documents SET deleted = true WHERE entity = 'run' AND entity_id = $1", [gone.id]);
     expect((await call("GET", `/api/runs/counts?projectId=${s.projectId}`)).body).toEqual([
-      { runId: kept.id, passed: 1, failed: 0, other: 0, unlinked: 0 },
+      { runId: kept.id, passed: 1, failed: 0, other: 0, unlinked: 0, findings: 0, findingsWorst: null, thresholdsFailed: 0 },
     ]);
     expect((await call("GET", `/api/runs?projectId=${s.projectId}`)).body.map((r: Payload) => r.title)).toEqual(["Kept"]);
   });

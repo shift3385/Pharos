@@ -1,0 +1,332 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Pharos servidor configurable</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: una columna de lectura; cada boceto es un marco de la pantalla de inicio de sesión de Pharos, con nota a la derecha (o debajo en móvil). Tokens tomados de src/shared/theme/tokens.css. */
+:root {
+  --navy-900: #0b1f33; --navy-500: #1f4e79; --navy-300: #6fa3cc; --on-navy: #e8edf2;
+  --page: #f3f5f8; --surface: #ffffff; --surface-2: #f7f9fb;
+  --text: #1c2530; --text-2: #5f6b7a; --muted: #616973;
+  --border: #d9dee5; --border-input: #828c9a; --focus: #6fa3cc55;
+  --ok: #1d9e75; --err: #d64545; --err-text: #bc3d3d; --warn: #b8860b; --warn-text: #886308;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Code", monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --page: #0d1621; --surface: #14202e; --surface-2: #192737; --text: #e8edf2; --text-2: #93a3b5; --muted: #8491a0;
+  --border: #2a3a4d; --border-input: #64758a; --navy-500: #6fa3cc; --focus: #6fa3cc44;
+  --ok: #5dcaa5; --err: #f09595; --err-text: #f09595; --warn: #e0b341; --warn-text: #e0b341; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --page: #0d1621; --surface: #14202e; --surface-2: #192737; --text: #e8edf2; --text-2: #93a3b5; --muted: #8491a0;
+  --border: #2a3a4d; --border-input: #64758a; --navy-500: #6fa3cc; --focus: #6fa3cc44;
+  --ok: #5dcaa5; --err: #f09595; --err-text: #f09595; --warn: #e0b341; --warn-text: #e0b341; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--page); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 64px }
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 40px }
+h1 { font-size: 28px; margin: 0; text-wrap: balance; letter-spacing: -0.01em }
+h2 { font-size: 19px; margin: 0; text-wrap: balance }
+h3 { font-size: 15px; margin: 0 }
+p { margin: 0 }
+.lede { color: var(--text-2); max-width: 70ch; display: grid; gap: 8px }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--navy-500) }
+code, .mono { font-family: var(--mono); font-size: .88em }
+section { display: grid; gap: 16px }
+.row { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 24px; align-items: start }
+@media (max-width: 760px) { .row { grid-template-columns: minmax(0, 1fr) } }
+.notes { display: grid; gap: 8px; color: var(--text-2); font-size: 14px; min-width: 0 }
+.notes ul { margin: 0; padding-left: 18px; display: grid; gap: 4px }
+.notes strong { color: var(--text) }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px }
+
+/* Marco de la pantalla de inicio (columna del formulario) */
+.frame { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px 28px 22px; display: grid; gap: 18px; min-width: 0 }
+.f-title { font-size: 26px; font-weight: 600; letter-spacing: -0.01em }
+.f-switch { color: var(--text-2); font-size: 14px }
+.link { color: var(--navy-500); font-weight: 600; background: none; border: 0; padding: 0; font: inherit; cursor: pointer }
+.field { display: grid; gap: 6px }
+.label { font-size: 14px; font-weight: 500 }
+.input { font: inherit; font-size: 15px; color: var(--text); background: var(--surface); border: 1px solid var(--border-input); border-radius: 8px; padding: 9px 12px; width: 100%; min-width: 0 }
+.input.ph { color: var(--muted) }
+.input.focus { border-color: var(--navy-500); box-shadow: 0 0 0 2px var(--focus) }
+.input.bad { border-color: var(--err); box-shadow: 0 0 0 2px color-mix(in srgb, var(--err) 18%, transparent) }
+.hint { font-size: 13px; color: var(--muted) }
+.btn { font: inherit; font-weight: 600; font-size: 15px; border-radius: 8px; padding: 10px 14px; border: 1px solid transparent; cursor: pointer; text-align: center }
+.btn-primary { background: var(--navy-900); color: var(--on-navy) }
+:root[data-theme="dark"] .btn-primary { background: var(--navy-300); color: #0b1f33 }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn-primary { background: var(--navy-300); color: #0b1f33 } }
+.btn-ghost { background: transparent; color: var(--text); border-color: var(--border) }
+.btn[disabled] { opacity: .55; cursor: default }
+.btns { display: flex; gap: 8px; flex-wrap: wrap }
+.btns .btn { flex: 1 1 auto }
+
+/* La línea «Servidor: …» */
+.server { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border); font-size: 14px; min-width: 0 }
+.server .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none }
+.server .dot.off { background: var(--muted) }
+.server .dot.warn { background: var(--warn) }
+.server .host { font-family: var(--mono); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1 }
+.server .k { color: var(--text-2); flex: none }
+.lock { flex: none; color: var(--ok) }
+
+.msg { border-radius: 8px; padding: 10px 12px; font-size: 14px; display: grid; gap: 4px; border: 1px solid }
+.msg b { font-weight: 600 }
+.msg-err { color: var(--err-text); background: color-mix(in srgb, var(--err) 9%, transparent); border-color: var(--err) }
+.msg-warn { color: var(--warn-text); background: color-mix(in srgb, var(--warn) 10%, transparent); border-color: var(--warn) }
+.msg-ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 9%, transparent); border-color: var(--ok) }
+.msg .sub { color: var(--text-2) }
+.recent { display: grid; gap: 4px }
+.recent button { display: flex; justify-content: space-between; gap: 8px; text-align: left; font: inherit; font-size: 14px; background: none; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; color: var(--text); cursor: pointer; min-width: 0 }
+.recent .mono { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.recent .meta { color: var(--muted); font-size: 12px; white-space: nowrap }
+.spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--navy-500); border-radius: 50%; display: inline-block; vertical-align: -2px; margin-right: 6px; animation: spin 1s linear infinite }
+@keyframes spin { to { transform: rotate(360deg) } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none } }
+.tag { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2) }
+.state { display: grid; gap: 10px; align-content: start }
+.state .cap { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap }
+.state .why { font-size: 13px; color: var(--text-2) }
+
+/* Diagrama */
+.diagram { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px }
+.diagram svg { display: block; min-width: 760px; width: 100% }
+.diagram text { font-family: var(--sans); font-size: 13px; fill: var(--text) }
+.diagram .small { font-size: 11.5px; fill: var(--text-2) }
+.diagram .box { fill: var(--surface-2); stroke: var(--border) }
+.diagram .box-hi { fill: color-mix(in srgb, var(--navy-500) 12%, var(--surface)); stroke: var(--navy-500) }
+.diagram .line { stroke: var(--text-2); stroke-width: 1.5; fill: none }
+.diagram .no { stroke: var(--err); stroke-width: 1.5; fill: none; stroke-dasharray: 5 4 }
+.diagram .noText { fill: var(--err-text); font-size: 11.5px }
+table { border-collapse: collapse; width: 100%; font-size: 14px }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-2); font-weight: 600 }
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px }
+.pick { color: var(--ok); font-weight: 600 }
+.reject { color: var(--err-text); font-weight: 600 }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:12px">
+    <span class="eyebrow">Pharos 0.5.0 «Equipo» · Pista D · ADR-0046</span>
+    <h1>Servidor configurable desde la app y TLS</h1>
+    <div class="lede">
+      <p>Bocetos de la línea «Servidor: …» en el inicio de sesión del escritorio, del panel para cambiarlo y de cada estado de error. Siguen las decisiones ya aprobadas: el servidor se elige al iniciar sesión, https es obligatorio salvo localhost, los datos locales quedan separados por servidor y cuenta, y el TLS lo termina un proxy (Caddy).</p>
+      <p>La web no muestra la línea: su servidor es el que la sirve. Textos en español; la versión en inglés sigue el mismo patrón.</p>
+    </div>
+  </header>
+
+  <!-- 1 -->
+  <section>
+    <div><span class="eyebrow">Boceto 1</span><h2>Inicio de sesión con la línea «Servidor»</h2></div>
+    <div class="row">
+      <div class="frame" aria-label="Boceto: inicio de sesión">
+        <div style="display:grid;gap:4px">
+          <div class="f-title">Iniciar sesión</div>
+          <div class="f-switch">¿No tienes cuenta? <button class="link">Crear una</button></div>
+        </div>
+        <div class="server" title="Servidor al que se conecta la app">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="k">Servidor</span>
+          <span class="host">pharos.miempresa.com</span>
+          <svg class="lock" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-label="Conexión cifrada"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <button class="link" style="font-size:14px">Cambiar</button>
+        </div>
+        <div class="field"><span class="label">Correo electrónico</span><div class="input">ana.garcia@miempresa.test</div></div>
+        <div class="field"><span class="label">Contraseña</span><div class="input">••••••••••</div></div>
+        <button class="btn btn-primary">Iniciar sesión</button>
+        <p class="hint" style="text-align:center">Tus datos viajan cifrados.</p>
+      </div>
+      <div class="notes">
+        <p><strong>Dónde va.</strong> Debajo del título y encima del correo, porque decide a quién se envían las credenciales. Siempre visible, en una sola línea.</p>
+        <ul>
+          <li>Punto verde: el servidor respondió la última vez que se comprobó. Gris: aún no se ha comprobado (por ejemplo, sin red: la app abre igual con la sesión guardada).</li>
+          <li>Candado solo con https. Con <code>localhost</code> no hay candado y el texto dice «Este equipo (localhost:3000)».</li>
+          <li>Primera vez: viene puesto el servidor por defecto de la compilación (<code>VITE_API_URL</code>, hoy <code>http://localhost:3000</code>), así que nadie que ya use Pharos nota el cambio.</li>
+          <li>«Cambiar» solo existe con la sesión cerrada. Dentro de la app, el menú de la cuenta muestra «Conectado a pharos.miempresa.com» sin opción de cambiarlo.</li>
+          <li>En «Crear una cuenta» aparece la misma línea: la cuenta se crea en ese servidor.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section>
+    <div><span class="eyebrow">Boceto 2</span><h2>Cambiar de servidor</h2></div>
+    <div class="row">
+      <div class="frame" aria-label="Boceto: cambiar de servidor">
+        <div style="display:grid;gap:4px">
+          <div class="f-title">Servidor</div>
+          <div class="f-switch">Elige a qué servidor de Pharos te conectas.</div>
+        </div>
+        <div class="field">
+          <label class="label" for="srv">Dirección del servidor</label>
+          <div class="input focus mono" id="srv">https://pharos.miempresa.com</div>
+          <span class="hint">Te la da quien administra Pharos en tu equipo. Debe empezar por <code>https://</code>, salvo <code>localhost</code>.</span>
+        </div>
+        <div class="field">
+          <span class="label">Usados en este equipo</span>
+          <div class="recent">
+            <button><span class="mono">pharos.miempresa.com</span><span class="meta">ana.garcia · hace 2 días</span></button>
+            <button><span class="mono">Este equipo (localhost:3000)</span><span class="meta">liomar · hoy</span></button>
+          </div>
+        </div>
+        <div class="btns"><button class="btn btn-ghost">Cancelar</button><button class="btn btn-primary">Conectar</button></div>
+      </div>
+      <div class="notes">
+        <p><strong>Cómo funciona.</strong> Sustituye al formulario dentro de la misma columna; no es un diálogo encima.</p>
+        <ul>
+          <li>Si se escribe solo el nombre (<code>pharos.miempresa.com</code>), la app añade <code>https://</code>. Se guarda solo el origen: esquema, nombre y puerto; una ruta o una <code>?consulta</code> se rechazan.</li>
+          <li>«Conectar» comprueba el servidor (<code>GET /health</code> y la versión) antes de guardar nada. Si falla, el servidor anterior sigue elegido.</li>
+          <li>La lista «Usados en este equipo» sale de los servidores en los que hay datos locales o una sesión guardada. Pulsar uno lo rellena; no conecta solo.</li>
+          <li>Teclado: Intro conecta y Escape cancela. El foco vuelve a «Cambiar» al cerrar.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="row">
+      <div class="frame" aria-label="Boceto: comprobando">
+        <div class="field">
+          <span class="label">Dirección del servidor</span>
+          <div class="input mono">https://pharos.miempresa.com</div>
+        </div>
+        <div class="btns"><button class="btn btn-ghost">Cancelar</button><button class="btn btn-primary" disabled><span class="spinner" aria-hidden="true"></span>Comprobando…</button></div>
+        <div class="msg msg-ok" role="status"><b>Conectado a pharos.miempresa.com</b><span class="sub">Pharos 0.5.0 · conexión cifrada. Ya puedes iniciar sesión.</span></div>
+      </div>
+      <div class="notes">
+        <p><strong>Comprobando y correcto.</strong> El botón muestra el progreso; el resto del panel sigue legible. Corta a los 10 segundos.</p>
+        <p>Si va bien, se vuelve al formulario con la línea «Servidor» ya actualizada y el aviso verde unos segundos (anunciado a lectores de pantalla con <code>role="status"</code>).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section>
+    <div><span class="eyebrow">Boceto 3</span><h2>Estados de error al conectar</h2></div>
+    <p class="lede">Cada error dice qué pasó y qué hacer. Ninguno tiene un botón para «continuar de todos modos»: con https y certificados, saltarse el error es justo el ataque que se quiere evitar.</p>
+    <div class="grid2">
+      <div class="frame state">
+        <div class="cap"><span class="tag">E1</span><h3>Dirección no válida</h3></div>
+        <div class="input bad mono">pharos miempresa</div>
+        <div class="msg msg-err" role="alert"><b>Esa dirección no es válida.</b><span class="sub">Escríbela como <code>https://pharos.miempresa.com</code>, sin espacios ni rutas.</span></div>
+        <p class="why">Se valida en la app, sin red.</p>
+      </div>
+      <div class="frame state">
+        <div class="cap"><span class="tag">E2</span><h3>http fuera de este equipo</h3></div>
+        <div class="input bad mono">http://10.0.4.21:3000</div>
+        <div class="msg msg-err" role="alert"><b>Pharos solo se conecta con https:// a otro equipo.</b><span class="sub">Sin cifrado, tu contraseña y tus datos viajarían a la vista. Pide a quien administra el servidor la dirección https. Solo <code>localhost</code> puede ir con http.</span></div>
+        <p class="why">Se valida en la app y otra vez en Rust. Cubre <code>localhost</code>, <code>127.0.0.1</code> y <code>[::1]</code>.</p>
+      </div>
+      <div class="frame state">
+        <div class="cap"><span class="tag">E3</span><h3>No responde</h3></div>
+        <div class="input bad mono">https://pharos.miempresa.com</div>
+        <div class="msg msg-err" role="alert"><b>pharos.miempresa.com no responde.</b><span class="sub">Revisa la dirección y tu conexión. Si el servidor es interno, puede que necesites la VPN de tu empresa.</span></div>
+        <p class="why">Nombre que no existe, conexión rechazada o tiempo agotado.</p>
+      </div>
+      <div class="frame state">
+        <div class="cap"><span class="tag">E4</span><h3>Certificado no válido</h3></div>
+        <div class="input bad mono">https://pharos.miempresa.com</div>
+        <div class="msg msg-err" role="alert"><b>No se puede comprobar la identidad de pharos.miempresa.com.</b><span class="sub">Su certificado está caducado, es de otro nombre o lo firmó alguien en quien Windows no confía. Pharos no se conecta. Avisa a quien administra el servidor.</span></div>
+        <p class="why">Solo se puede distinguir de E3 porque la petición la hace Rust (ver el diagrama). Un certificado de una CA interna vale si Windows confía en esa CA.</p>
+      </div>
+      <div class="frame state">
+        <div class="cap"><span class="tag">E5</span><h3>No es un servidor Pharos</h3></div>
+        <div class="input bad mono">https://intranet.miempresa.com</div>
+        <div class="msg msg-err" role="alert"><b>Esa dirección responde, pero no es un servidor de Pharos.</b><span class="sub">Comprueba que sea la dirección del servidor de Pharos y no la de otra web de tu empresa.</span></div>
+        <p class="why"><code>/health</code> no devuelve <code>{"status":"ok"}</code>, o devuelve HTML, o hay una redirección (la app no sigue redirecciones).</p>
+      </div>
+      <div class="frame state">
+        <div class="cap"><span class="tag">E6</span><h3>Versión no compatible</h3></div>
+        <div class="input mono">https://pharos.miempresa.com</div>
+        <div class="msg msg-err" role="alert"><b>Este servidor necesita una versión más nueva de Pharos.</b><span class="sub">El servidor es la 0.6.0 y esta app es la 0.5.0. Actualiza la app para conectarte.</span></div>
+        <p class="why">La respuesta 426 que ya usa el sync (VERSIONING §6.5). Si la app es de la menor anterior, conecta en solo lectura y lo dice, como hoy.</p>
+      </div>
+      <div class="frame state">
+        <div class="cap"><span class="tag">E7</span><h3>El servidor exige https</h3></div>
+        <div class="input mono">https://pharos.miempresa.com</div>
+        <div class="msg msg-err" role="alert"><b>El servidor rechazó la conexión por no estar cifrada.</b><span class="sub">El problema está en el servidor, no en tu equipo: su proxy no le indica que la conexión es https. Pásale este código a quien lo administra: <code>https_required</code>.</span></div>
+        <p class="why">SEC-07 en el servidor: 403 <code>https_required</code>. Pasa si falta <code>TRUST_PROXY</code> o el proxy no envía <code>X-Forwarded-Proto</code>. La guía de despliegue lo explica.</p>
+      </div>
+      <div class="frame state">
+        <div class="cap"><span class="tag">E8</span><h3>Cambios sin enviar en el servidor anterior</h3></div>
+        <div class="msg msg-warn" role="alert"><b>Hay 3 cambios sin enviar a pharos.miempresa.com.</b><span class="sub">Son de ana.garcia@miempresa.test. Se quedan guardados en este equipo y se envían cuando vuelvas a entrar en ese servidor con esa cuenta. En el otro servidor no se ven.</span></div>
+        <div class="btns"><button class="btn btn-ghost">Cancelar</button><button class="btn btn-primary">Cambiar de servidor</button></div>
+        <p class="why">Es un aviso, no un bloqueo. Sale al pulsar «Conectar» si el servidor anterior tiene cambios pendientes de alguna cuenta.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section>
+    <div><span class="eyebrow">Boceto 4</span><h2>Sin red y con la sesión guardada</h2></div>
+    <div class="row">
+      <div class="frame" aria-label="Boceto: sin conexión">
+        <div class="server">
+          <span class="dot off" aria-hidden="true"></span>
+          <span class="k">Servidor</span>
+          <span class="host">pharos.miempresa.com</span>
+          <span class="hint" style="flex:none">sin conexión</span>
+        </div>
+        <div class="msg msg-err" role="alert"><b>No se puede conectar con pharos.miempresa.com.</b><span class="sub">Revisa tu conexión. Si ya habías iniciado sesión en este equipo, la app abre con tus datos locales y sincroniza cuando vuelva la red.</span></div>
+      </div>
+      <div class="notes">
+        <p><strong>El mensaje de red del login nombra el servidor.</strong> Hoy dice «No se puede conectar con el servidor»; ahora dice cuál, para que se note si apunta al servidor equivocado.</p>
+        <p>Con sesión guardada nada cambia: la app abre sin red como ahora (spec §4).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section>
+    <div><span class="eyebrow">Arquitectura</span><h2>Cómo queda la CSP cerrada</h2></div>
+    <div class="diagram" role="img" aria-label="Diagrama: la vista web llama a Rust por IPC; Rust hace la petición https al servidor elegido a través de Caddy; la vista web no puede abrir conexiones a otros servidores">
+      <svg viewBox="0 0 900 250" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--text-2)"/></marker></defs>
+        <rect class="box" x="10" y="40" width="200" height="120" rx="10"/>
+        <text x="26" y="66" font-weight="600">Vista web (React)</text>
+        <text x="26" y="88" class="small">authApi y transport llaman a</text>
+        <text x="26" y="106" class="small">serverFetch(ruta, …)</text>
+        <text x="26" y="132" class="small">CSP connect-src: solo ipc: y</text>
+        <text x="26" y="148" class="small">Ollama local (sin :3000)</text>
+        <rect class="box-hi" x="270" y="40" width="230" height="120" rx="10"/>
+        <text x="286" y="66" font-weight="600">Rust · server_request</text>
+        <text x="286" y="88" class="small">URL base guardada en Rust</text>
+        <text x="286" y="106" class="small">solo rutas «/…»; https o loopback</text>
+        <text x="286" y="124" class="small">sin redirecciones; 30 s</text>
+        <text x="286" y="142" class="small">errores: red · tls · tiempo</text>
+        <rect class="box" x="560" y="40" width="140" height="120" rx="10"/>
+        <text x="576" y="66" font-weight="600">Caddy</text>
+        <text x="576" y="88" class="small">termina TLS</text>
+        <text x="576" y="106" class="small">Let's Encrypt o</text>
+        <text x="576" y="124" class="small">CA interna</text>
+        <text x="576" y="142" class="small">X-Forwarded-Proto</text>
+        <rect class="box" x="750" y="40" width="140" height="120" rx="10"/>
+        <text x="766" y="66" font-weight="600">Servidor Node</text>
+        <text x="766" y="88" class="small">127.0.0.1:3000</text>
+        <text x="766" y="106" class="small">TRUST_PROXY=true</text>
+        <text x="766" y="124" class="small">http remoto → 403</text>
+        <text x="766" y="142" class="small">https_required</text>
+        <path class="line" d="M210 100 H268" marker-end="url(#arr)"/>
+        <text x="220" y="92" class="small">invoke</text>
+        <path class="line" d="M500 100 H558" marker-end="url(#arr)"/>
+        <text x="510" y="92" class="small">https</text>
+        <path class="line" d="M700 100 H748" marker-end="url(#arr)"/>
+        <text x="708" y="92" class="small">http</text>
+        <path class="no" d="M110 160 V215 H630 V162"/>
+        <text x="250" y="236" class="noText">fetch directo desde la vista web: lo bloquea la CSP (también si un XSS lo intenta)</text>
+      </svg>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Opción para la CSP</th><th>Seguridad</th><th>Coste</th><th>Propuesta</th></tr></thead>
+        <tbody>
+          <tr><td><b>A · Peticiones por Rust</b> (un comando <code>server_request</code>)</td><td>La vista web no puede hablar con ningún servidor; Rust solo con el elegido. Se distinguen los errores de certificado (E4).</td><td>Un comando nuevo con <code>reqwest</code>, que ya está en el árbol (IA). Las dos llamadas actuales envían y reciben JSON.</td><td class="pick">Elegida</td></tr>
+          <tr><td><b>B · CSP fijada al arrancar</b> con el origen guardado</td><td>Buena: solo el origen elegido.</td><td>Cambiar de servidor obliga a reiniciar la app. Los errores de certificado no se distinguen de «no responde».</td><td>Alternativa</td></tr>
+          <tr><td><b>C · <code>connect-src https:</code></b></td><td>Un XSS podría enviar datos a cualquier sitio.</td><td>Mínimo.</td><td class="reject">Descartada</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+</body></html>

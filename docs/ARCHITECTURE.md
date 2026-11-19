@@ -565,6 +565,20 @@ Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
   (`execution::load_attempts`, the server's `execution.ts`): a failed
   threshold fails the case and a newer run decides as usual. The derivation
   core and its vectors are untouched.
+- **Findings summary** (F5b): `ExecutionSummary.findings` (optional, absent
+  without findings or thresholds) is computed after `derive::summarize` by
+  `runs/findings/summary.rs` (server twin `findingsSummary.ts`, fed by the
+  execution loader's lazy `findingsInput`): from the summary's runs, the
+  latest of each tool, its open findings by severity (not triaged, not «A
+  revisar»), new ones (not in the tool's previous run), triaged and review
+  counts, the open findings of each linked case with the worst severity, and
+  the thresholds (total, passed, failed with their case). The matrix reads
+  `findings.cases` (badge, note `openFindings`, «Con hallazgos abiertos»
+  filter); the status report adds «7.1 Hallazgos y rendimiento» and the
+  completion report lists them under residual risks (`findingsSection.ts`).
+  `RunCounts` gains open `findings`, `findingsWorst` and
+  `thresholdsFailed` (`import::add_finding_counts`, the server's
+  `findingCountsOf`); a run with findings or metrics only is listed.
 - **Screens** (F4b): the run detail gains underline tabs (`?tab=`) «Casos»,
   «Hallazgos» and «Métricas», shown only when the run has findings or
   metrics. `FindingsPanel` filters by severity, standing (open, «A revisar»,
@@ -1722,6 +1736,20 @@ core Postgres lacks). Modules:
   Runs: `GET`/`POST …/runs`, `GET …/runs/{runKey}` (with counts) and
   `…/results`, and `POST …/runs/{runKey}/close`, all on the web's run
   service (`insertRun` is shared).
+
+  Reads (A4, `v1.reads.ts`): `GET …/cases`, `…/cycles`, `…/defects` and
+  `…/requirements`, each a list and `/{key}` (key or id). A list is
+  incremental: `updatedSince` is the documents' global `seq` (the sync
+  pull's cursor), oldest change first, `nextCursor` and `hasMore`;
+  deletions come as `deleted: true` without `data`. `data` is the stored
+  document; a cycle adds the web's progress summary.
+
+  Token notices (A4, `tokenNotices.ts`, migration 0031): a sweep every
+  `TOKEN_NOTICE_INTERVAL_MS` (an hour) claims, with `UPDATE … RETURNING`,
+  tokens expiring within 7 days (`token.expiring` to the owner, without a
+  workspace for a personal token) and project tokens whose owner left or
+  was disabled (`token.inactive` to the workspace's Test Managers; the
+  claim is cleared when the token works again).
 - `webhooks` (INT-03, ADR-0052 §4) — outgoing webhooks of a workspace.
   - **Tables** (migration 0030):
     - `webhooks`: the signing secret encrypted with `WEBHOOK_SECRETS_KEY`,

@@ -1,0 +1,400 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Plan ISO 29119-3 completo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: documento de propuesta; cada boceto imita la tarjeta central del asistente de Pharos (marino + tarjetas blancas). */
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --fg:#1b2433; --muted:#5d6878; --line:#d6dce5;
+  --navy:#13233b; --accent:#1f5fae; --accent-soft:#e3edf9;
+  --ok:#1f7a4d; --ok-soft:#e1f3ea; --warn:#9a5b00; --warn-soft:#fdf0d9; --bad:#b3261e; --bad-soft:#fbe4e2;
+  --code-bg:#f5f7fa;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1522; --surface:#172234; --fg:#e4e9f1; --muted:#9aa6b8; --line:#2c3a50;
+  --navy:#0a1220; --accent:#6aa5ee; --accent-soft:#1d3352;
+  --ok:#5fcf97; --ok-soft:#163a2a; --warn:#f0b75a; --warn-soft:#3b2c12; --bad:#f08a82; --bad-soft:#3d1c1a;
+  --code-bg:#111a29; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1522; --surface:#172234; --fg:#e4e9f1; --muted:#9aa6b8; --line:#2c3a50;
+  --navy:#0a1220; --accent:#6aa5ee; --accent-soft:#1d3352;
+  --ok:#5fcf97; --ok-soft:#163a2a; --warn:#f0b75a; --warn-soft:#3b2c12; --bad:#f08a82; --bad-soft:#3d1c1a;
+  --code-bg:#111a29; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.55}
+.wrap{max-width:1040px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:36px}
+header.top{display:grid;gap:8px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:30px;margin:0;text-wrap:balance;line-height:1.2}
+h2{font-size:21px;margin:0 0 4px;text-wrap:balance}
+h3{font-size:16px;margin:0}
+p{margin:0;max-width:72ch}
+.lead{color:var(--muted);max-width:75ch}
+section{display:grid;gap:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;align-items:start}
+.note{font-size:13.5px;color:var(--muted)}
+ul.tight{margin:0;padding-left:20px;display:grid;gap:4px}
+.ids{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:4px;white-space:nowrap}
+/* Pasos */
+.steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:6px 16px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+.step{display:flex;gap:10px;align-items:center;font-size:14px}
+.num{flex:none;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.step.new .num{border-color:var(--accent);background:var(--accent);color:var(--surface);font-weight:600}
+.step.new{font-weight:600}
+.step .tag{font-size:11px;color:var(--accent);font-weight:600}
+/* Tarjeta tipo asistente */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:grid;gap:14px;min-width:0;box-shadow:0 1px 2px rgba(10,20,40,.05)}
+.card .meta{font-size:12.5px;color:var(--muted)}
+.card .meta b{color:var(--warn);font-weight:500}
+.card h4{font-size:19px;margin:0;display:flex;gap:8px;align-items:center}
+.help{width:16px;height:16px;border-radius:50%;border:1.3px solid var(--muted);font-size:10px;display:inline-grid;place-items:center;color:var(--muted);font-weight:600}
+.lbl{font-size:13px;color:var(--muted);font-weight:500}
+.field{border:1px solid var(--line);border-radius:6px;padding:8px 11px;font-size:14px;background:var(--surface);min-height:20px}
+.field.ph{color:var(--muted)}
+.field.area{min-height:56px}
+.row{display:flex;gap:8px;align-items:center}
+.row > .field{flex:1;min-width:0}
+.del{flex:none;width:34px;height:34px;border:1px solid var(--line);border-radius:6px;display:grid;place-items:center;color:var(--muted);font-size:13px}
+.add{font-size:13.5px;color:var(--accent);border:1px dashed var(--line);border-radius:6px;padding:5px 10px;justify-self:start}
+.ai{font-size:13px;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:4px 12px;justify-self:start}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:16px}
+.col{display:grid;gap:8px;align-content:start}
+.sel{border:1px solid var(--line);border-radius:6px;padding:8px 11px;font-size:14px;display:flex;justify-content:space-between;gap:8px}
+.sel::after{content:"▾";color:var(--muted)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.cols > div{padding:10px 12px;display:grid;gap:6px;align-content:start;border-right:1px solid var(--line)}
+.cols > div:last-child{border-right:0}
+.gh{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.cb{display:flex;gap:7px;align-items:center;font-size:13.5px}
+.cb i{flex:none;width:14px;height:14px;border:1.5px solid var(--muted);border-radius:3px;display:inline-block}
+.cb.on i{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--surface)}
+.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.scale span{font-size:11.5px;text-align:center;padding:6px 2px;border:1px solid var(--line);border-radius:6px;color:var(--muted)}
+.scale span.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.calc{font-family:var(--mono);font-size:13px;background:var(--code-bg);border-radius:6px;padding:8px 11px;font-variant-numeric:tabular-nums}
+/* Tabla de métricas */
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:560px}
+th{font-size:12px;color:var(--muted);font-weight:500;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.n{font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:13px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;border-radius:999px;padding:2px 9px;font-weight:500;white-space:nowrap}
+.chip.auto{background:var(--ok-soft);color:var(--ok)}
+.chip.man{background:var(--warn-soft);color:var(--warn)}
+.chip.gate{background:var(--accent-soft);color:var(--accent)}
+.toggle{display:inline-block;width:28px;height:16px;border-radius:999px;background:var(--line);position:relative;vertical-align:middle}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--surface)}
+.toggle.on{background:var(--accent)}.toggle.on::after{left:14px}
+/* Aprobación */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:10px;min-width:0}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13.5px;margin:0}
+.facts dt{color:var(--muted)}.facts dd{margin:0;text-align:right}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.draft{background:var(--code-bg);color:var(--muted)}
+.pill.rev{background:var(--accent-soft);color:var(--accent)}
+.pill.app{background:var(--ok-soft);color:var(--ok)}
+.btn{border:1px solid var(--line);border-radius:6px;padding:7px 12px;font-size:13.5px;text-align:center;font-weight:500}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn.dis{opacity:.5}
+.small{font-size:12.5px;color:var(--muted)}
+.banner{border-radius:8px;padding:10px 12px;font-size:13.5px;display:flex;gap:10px;align-items:flex-start}
+.banner.warn{background:var(--warn-soft);color:var(--warn)}
+.banner.ok{background:var(--ok-soft);color:var(--ok)}
+.dialog{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:grid;gap:12px;box-shadow:0 8px 28px rgba(10,20,40,.18);max-width:440px}
+.actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.hist{display:grid;gap:0;font-size:13.5px}
+.hist > div{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.hist > div:last-child{border-bottom:0}
+.hist time{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12.5px;white-space:nowrap}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:14px 16px;font-family:var(--mono);font-size:12.5px;line-height:1.55;overflow-x:auto;margin:0;color:var(--fg)}
+.cmt{color:var(--muted)}
+.qa{display:grid;gap:10px}
+.qa > div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:grid;gap:4px}
+.qa b{font-weight:600}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">Pharos 0.4.0 «Estrategia medible» · pista del plan · propuesta para aprobar</div>
+  <h1>Plan de pruebas completo (ISO/IEC/IEEE 29119-3) y aprobación con autor y fecha</h1>
+  <p class="lead">PLN-06 (NC-023) y PLN-07 (NC-032). Propongo sumar PLN-03 y PLN-04 (NC-031): tocan el mismo guardado y la misma cabecera del documento, son pequeños y evitan chocar con otra pista. Nada de esto está programado: son bocetos para decidir.</p>
+</header>
+
+<section>
+  <h2>1. Los pasos del asistente: de 17 a 22</h2>
+  <p class="note">Los apartados nuevos van donde los pone la norma (contexto → estrategia → actividades y estimación → personal → criterios). Ningún paso existente cambia de id, así que los enlaces <span class="ids">?step=</span> y los planes guardados siguen valiendo. En un plan antiguo los pasos nuevos aparecen sin ✓ y el paso final los lista como pendientes; el plan se guarda igual.</p>
+  <div class="steps">
+    <div class="step"><span class="num">1</span>Identificación del plan</div>
+    <div class="step"><span class="num">2</span>Resumen</div>
+    <div class="step"><span class="num">3</span>Alcance</div>
+    <div class="step new"><span class="num">4</span><span>Supuestos y restricciones <span class="tag">NUEVO</span></span></div>
+    <div class="step"><span class="num">5</span>Niveles y tipos de prueba</div>
+    <div class="step new"><span class="num">6</span><span>Técnicas de prueba <span class="tag">NUEVO</span></span></div>
+    <div class="step"><span class="num">7</span>Metodología</div>
+    <div class="step"><span class="num">8</span>Entregables</div>
+    <div class="step"><span class="num">9</span>Entorno de pruebas</div>
+    <div class="step"><span class="num">10</span>Herramientas y automatización</div>
+    <div class="step"><span class="num">11</span>Datos de prueba</div>
+    <div class="step"><span class="num">12</span>Gestión de defectos</div>
+    <div class="step"><span class="num">13</span>Roles, independencia y formación <span class="tag">AMPLIADO</span></div>
+    <div class="step new"><span class="num">14</span><span>Estimación y presupuesto <span class="tag">NUEVO</span></span></div>
+    <div class="step"><span class="num">15</span>Cronograma</div>
+    <div class="step"><span class="num">16</span>Riesgos y mitigación</div>
+    <div class="step"><span class="num">17</span>Plan de comunicación</div>
+    <div class="step new"><span class="num">18</span><span>Entrada, suspensión y reanudación <span class="tag">NUEVO</span></span></div>
+    <div class="step new"><span class="num">19</span><span>Métricas y objetivos medibles <span class="tag">NUEVO</span></span></div>
+    <div class="step"><span class="num">20</span>Criterios de salida <span class="tag">ENLAZA MÉTRICAS</span></div>
+    <div class="step"><span class="num">21</span>Propósito</div>
+    <div class="step"><span class="num">22</span>Conclusión</div>
+  </div>
+  <p class="note">Independencia y formación entran en el paso de roles (la norma los agrupa como «personal») para no pasar de 22. Si el usuario prefiere menos pasos, «Supuestos y restricciones» puede ir dentro de «Alcance».</p>
+</section>
+
+<section>
+  <h2>2. Bocetos de los pasos nuevos</h2>
+  <div class="grid2">
+
+    <div class="card">
+      <div class="meta">Paso 4 de 22</div>
+      <h4>Supuestos y restricciones <span class="help">?</span></h4>
+      <div class="two">
+        <div class="col"><span class="lbl">Supuestos</span>
+          <div class="row"><div class="field">El entorno de staging está disponible de 8 a 20 h</div><span class="del">✕</span></div>
+          <div class="row"><div class="field">Las historias llegan con criterios de aceptación</div><span class="del">✕</span></div>
+          <span class="add">+ Añadir</span></div>
+        <div class="col"><span class="lbl">Restricciones</span>
+          <div class="row"><div class="field">Dos analistas a media jornada</div><span class="del">✕</span></div>
+          <div class="row"><div class="field">Sin datos reales de clientes (RGPD)</div><span class="del">✕</span></div>
+          <span class="add">+ Añadir</span></div>
+      </div>
+      <span class="ai">✦ Sugerir con IA</span>
+    </div>
+
+    <div class="card">
+      <div class="meta">Paso 6 de 22</div>
+      <h4>Técnicas de prueba <span class="help">?</span></h4>
+      <div class="cols">
+        <div><span class="gh">Caja negra</span>
+          <span class="cb on"><i></i>Particiones de equivalencia</span>
+          <span class="cb on"><i></i>Valores límite</span>
+          <span class="cb"><i></i>Tablas de decisión</span>
+          <span class="cb on"><i></i>Transición de estados</span></div>
+        <div><span class="gh">Caja blanca</span>
+          <span class="cb"><i></i>Sentencias</span>
+          <span class="cb"><i></i>Ramas</span></div>
+        <div><span class="gh">Basadas en experiencia</span>
+          <span class="cb on"><i></i>Predicción de errores</span>
+          <span class="cb on"><i></i>Exploratoria</span>
+          <span class="cb"><i></i>Basada en listas</span></div>
+        <div><span class="gh">Colaborativas</span>
+          <span class="cb"><i></i>Historias en colaboración</span>
+          <span class="cb on"><i></i>Criterios de aceptación</span>
+          <span class="cb"><i></i>ATDD</span></div>
+      </div>
+      <p class="small">Catálogo de CTFL v4 cap. 4, con la celda «Propios» de siempre (el mismo <span class="ids">CheckColumns</span> de Niveles y Entregables).</p>
+    </div>
+
+    <div class="card">
+      <div class="meta">Paso 13 de 22</div>
+      <h4>Roles, independencia y formación <span class="help">?</span></h4>
+      <span class="small">… tabla de roles de hoy, sin cambios …</span>
+      <span class="lbl">Independencia de las pruebas</span>
+      <div class="scale"><span>Quien lo escribe</span><span>Un compañero</span><span class="on">Probadores del equipo</span><span>Equipo de la organización</span><span>Externa</span></div>
+      <div class="field">Los analistas de QA no programan las funciones que prueban</div>
+      <span class="lbl">Necesidades de formación</span>
+      <div class="row"><div class="field">Playwright para el nuevo analista</div><div class="field" style="flex:.6">Antes del sprint 2</div><span class="del">✕</span></div>
+      <span class="add">+ Añadir</span>
+    </div>
+
+    <div class="card">
+      <div class="meta">Paso 14 de 22</div>
+      <h4>Estimación y presupuesto <span class="help">?</span></h4>
+      <div class="col"><span class="lbl">Técnica de estimación</span><div class="sel">Estimación de tres puntos</div></div>
+      <div class="two">
+        <div class="col"><span class="lbl">Optimista</span><div class="field">12 persona-días</div></div>
+        <div class="col"><span class="lbl">Más probable</span><div class="field">18 persona-días</div></div>
+        <div class="col"><span class="lbl">Pesimista</span><div class="field">30 persona-días</div></div>
+      </div>
+      <div class="calc">E = (12 + 4·18 + 30) / 6 = 19,0 persona-días · σ = 3,0</div>
+      <div class="col"><span class="lbl">Presupuesto</span><div class="field">9 500 € (horas de QA + licencias)</div></div>
+      <div class="col"><span class="lbl">Base y notas</span><div class="field area ph">De dónde salen las cifras…</div></div>
+      <p class="small">Técnicas de CTFL v4 §5.1.4: por proporciones, por extrapolación, Wideband Delphi, tres puntos, juicio experto. Solo la de tres puntos pide tres cifras; las demás, el esfuerzo total.</p>
+    </div>
+
+    <div class="card">
+      <div class="meta">Paso 18 de 22</div>
+      <h4>Entrada, suspensión y reanudación <span class="help">?</span></h4>
+      <div class="col"><span class="lbl">Criterios de entrada (definición de preparado)</span>
+        <div class="row"><div class="field">Build desplegado en staging y prueba de humo en verde</div><span class="del">✕</span></div>
+        <div class="row"><div class="field">Casos del ciclo revisados</div><span class="del">✕</span></div>
+        <span class="add">+ Añadir</span></div>
+      <div class="two">
+        <div class="col"><span class="lbl">Se suspende si…</span>
+          <div class="row"><div class="field">Falla el login o más del 30 % de los casos se bloquean</div><span class="del">✕</span></div>
+          <span class="add">+ Añadir</span></div>
+        <div class="col"><span class="lbl">Se reanuda cuando…</span>
+          <div class="row"><div class="field">Hay build con el bloqueo corregido y re-test en verde</div><span class="del">✕</span></div>
+          <span class="add">+ Añadir</span></div>
+      </div>
+      <span class="ai">✦ Sugerir con IA</span>
+    </div>
+
+    <div class="card">
+      <div class="meta">Paso 20 de 22</div>
+      <h4>Criterios de salida <span class="help">?</span></h4>
+      <div class="row"><div class="field">% de casos ejecutados</div><div class="sel" style="flex:1">Medido por: Casos ejecutados ≥ 95 %</div><span class="chip gate">Bloqueante</span><span class="del">✕</span></div>
+      <div class="row"><div class="field">Defectos críticos abiertos</div><div class="sel" style="flex:1">Medido por: Defectos críticos abiertos = 0</div><span class="chip gate">Bloqueante</span><span class="del">✕</span></div>
+      <div class="row"><div class="field">Demo aceptada por el PO</div><div class="sel" style="flex:1">Sin métrica · se marca a mano</div><span class="chip man">Orientativo</span><span class="del">✕</span></div>
+      <span class="add">+ Añadir fila</span>
+      <p class="small">Cada criterio puede enlazar una métrica del paso 19; entonces el cierre de ciclo (DOC-02) lo evalúa solo. Sin métrica queda como hoy: texto libre que se marca a mano. «Bloqueante» (por defecto) u «Orientativo» se cambia con un clic: un orientativo en «No cumple» no frena el cierre.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="meta">Paso 19 de 22</div>
+    <h4>Métricas y objetivos medibles <span class="help">?</span></h4>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Métrica</th><th>Objetivo</th><th>Cómo se mide</th><th>Criterio de salida</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>Casos ejecutados</td><td class="n">≥ 95 %</td><td><span class="chip auto">Pharos la mide</span></td><td><span class="toggle on"></span></td><td>✕</td></tr>
+        <tr><td>Tasa de éxito</td><td class="n">≥ 90 %</td><td><span class="chip auto">Pharos la mide</span></td><td><span class="toggle"></span></td><td>✕</td></tr>
+        <tr><td>Defectos críticos abiertos</td><td class="n">= 0</td><td><span class="chip auto">Pharos la mide</span></td><td><span class="toggle on"></span></td><td>✕</td></tr>
+        <tr><td>Cobertura de requisitos</td><td class="n">≥ 90 %</td><td><span class="chip auto">Pharos la mide</span></td><td><span class="toggle on"></span></td><td>✕</td></tr>
+        <tr><td>Tasa de reapertura</td><td class="n">≤ 5 %</td><td><span class="chip auto">Pharos la mide (DOC-06)</span></td><td><span class="toggle"></span></td><td>✕</td></tr>
+        <tr><td>Satisfacción del PO en la demo</td><td class="n">≥ 4 / 5</td><td><span class="chip man">A mano</span></td><td><span class="toggle"></span></td><td>✕</td></tr>
+      </tbody>
+    </table></div>
+    <div class="row" style="flex-wrap:wrap"><span class="add">+ Métrica del catálogo</span><span class="add">+ Métrica propia</span></div>
+    <p class="small">El catálogo trae la unidad y el sentido (% , número, horas); el usuario solo elige comparador y objetivo. Activar «Criterio de salida» crea o enlaza la fila del paso 20; desactivarlo la quita. Los cuatro valores por defecto de un plan nuevo son los criterios A3 de hoy.</p>
+  </div>
+</section>
+
+<section>
+  <h2>3. La aprobación (PLN-07)</h2>
+  <p class="note">«Aprobado» deja de ser una opción más del desplegable: se aprueba con un botón y una confirmación, y queda quién, cuándo y qué versión. El desplegable conserva Borrador, Revisado y Obsoleto. Hasta los roles de 0.5.0 aprueba la cuenta con sesión; con roles, otra persona.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Estado del plan · revisado</h3>
+      <dl class="facts"><dt>Estado</dt><dd><span class="pill rev">Revisado</span></dd><dt>Versión</dt><dd class="n">v1.3</dd><dt>Autor</dt><dd>Liomar Rodríguez</dd><dt>Actualizado</dt><dd>11 nov 2026, 10:42</dd></dl>
+      <span class="btn primary">Aprobar versión 1.3</span>
+      <span class="small">Solo se aprueba un plan guardado y en «Revisado». Con cambios sin guardar, el botón dice «Guarda antes de aprobar».</span>
+    </div>
+
+    <div class="dialog">
+      <h3>¿Aprobar el plan?</h3>
+      <p style="font-size:14px">Aprobarás la versión <b>1.3</b> como <b>Liomar Rodríguez</b>, hoy 11 nov 2026. Si después se edita el contenido, el plan vuelve a «Revisado» y habrá que aprobarlo de nuevo.</p>
+      <div class="actions"><span class="btn">Cancelar</span><span class="btn primary">Aprobar</span></div>
+    </div>
+
+    <div class="panel">
+      <h3>Estado del plan · aprobado</h3>
+      <dl class="facts"><dt>Estado</dt><dd><span class="pill app">Aprobado</span></dd><dt>Versión</dt><dd class="n">v1.3</dd><dt>Aprobado por</dt><dd>Liomar Rodríguez</dd><dt>Aprobado el</dt><dd>11 nov 2026, 11:05</dd><dt>Autor</dt><dd>Liomar Rodríguez</dd></dl>
+      <span class="small">El PDF y el .xlsx llevan «Aprobado por» y la fecha en la cabecera.</span>
+    </div>
+
+    <div class="card">
+      <div class="meta">Paso 5 de 22 · <b>Cambios sin guardar</b></div>
+      <div class="banner warn">⚠ Este plan está aprobado (v1.3). Al guardar estos cambios vuelve a «Revisado» y pasa a la versión 1.4.</div>
+      <span class="small">Aviso fijo encima del formulario en cuanto se toca un campo de un plan aprobado. Cambiar solo el estado a «Obsoleto» no lo muestra.</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Revisiones (panel lateral y diálogo «Ver todas»)</h3>
+    <div class="hist">
+      <div><time>11 nov, 12:20</time><span><span class="pill rev">Revisado</span> v1.4 · editado por Liomar Rodríguez (Niveles y tipos) · <b>pierde la aprobación de v1.3</b></span></div>
+      <div><time>11 nov, 11:05</time><span><span class="pill app">Aprobado</span> v1.3 · aprobado por Liomar Rodríguez</span></div>
+      <div><time>10 nov, 17:48</time><span><span class="pill rev">Revisado</span> v1.3 · Liomar Rodríguez (Métricas, Criterios de salida)</span></div>
+      <div><time>10 nov, 09:12</time><span><span class="pill draft">Borrador</span> v1.2 · Liomar Rodríguez (Resumen)</span></div>
+    </div>
+    <span class="small">Sale de la auditoría del plan (la misma fuente del historial exportado de PLN-02), así que también funciona en la web. Restaurar sigue en «Ver todas».</span>
+  </div>
+</section>
+
+<section>
+  <h2>4. La forma de los datos, para acordar con «metrics-gate»</h2>
+  <p class="note">Todo vive en <span class="ids">data</span> del plan (JSON): sin migración ni número de migración que reservar, y se sincroniza como hoy. El texto <span class="ids">criterion</span>/<span class="ids">metric</span> de cada criterio se sigue escribiendo, generado desde la métrica, así que una app 0.3 que abra un plan 0.4 lo sigue evaluando por texto.</p>
+<pre><span class="cmt">// src/modules/test-plan/model/types.ts (dueña: pista del plan)</span>
+export type MetricKind =
+  | "executed" | "passRate" | "criticalDefects" | "coverage"   <span class="cmt">// las mide derive hoy</span>
+  | "defectDensity" | "escapedDefects" | "fixTime" | "reopenRate" | "flakyRate"; <span class="cmt">// DOC-06</span>
+<span class="cmt">// Contrato cerrado: metrics-gate repite estos literales en src/shared/metrics y en Rust</span>
+export type MetricOp = "&gt;=" | "&gt;" | "&lt;=" | "&lt;" | "=";
+export type MetricUnit = "percent" | "count" | "per100cases" | "days" | "score";
+export const METRIC_UNIT: Record&lt;MetricKind, MetricUnit&gt; = {
+  executed: "percent", passRate: "percent", coverage: "percent", reopenRate: "percent", flakyRate: "percent",
+  criticalDefects: "count", escapedDefects: "count",
+  defectDensity: "per100cases",   <span class="cmt">// defectos por cada 100 casos ejecutados</span>
+  fixTime: "days",                <span class="cmt">// mediana de creación a «Corregido»</span>
+};
+
+export interface PlanMetric {
+  id: string;               <span class="cmt">// estable en el plan</span>
+  kind: MetricKind | null;  <span class="cmt">// null = métrica propia, se evalúa a mano</span>
+  name: string;             <span class="cmt">// la de una propia; "" en las del catálogo (etiqueta i18n)</span>
+  op: MetricOp;
+  target: number;
+  unit: MetricUnit;         <span class="cmt">// METRIC_UNIT[kind], bloqueada; libre solo si kind es null</span>
+  note?: string;
+}
+
+export interface ClosureCriterion {
+  criterion: string;        <span class="cmt">// como hoy</span>
+  metric: string;           <span class="cmt">// como hoy; «≥ 95 %» generado si hay metricId</span>
+  metricId?: string;        <span class="cmt">// NUEVO: enlaza data.metrics[].id</span>
+  blocking?: boolean;       <span class="cmt">// NUEVO (DOC-02): true por defecto; false = orientativo</span>
+}
+
+TestPlanData += {
+  metrics?: PlanMetric[];
+  entryCriteria?: string[]; suspensionCriteria?: string[]; resumptionCriteria?: string[];
+  assumptions?: string[]; constraints?: string[];
+  techniques?: string[];    <span class="cmt">// claves de catálogo + propias (ADR-0030)</span>
+  independence?: "author" | "peer" | "team" | "organization" | "external"; independenceNote?: string;
+  training?: { need: string; when: string }[];
+  estimation?: { technique: "ratio" | "extrapolation" | "wideband" | "threePoint" | "expert";
+                 effort?: number; optimistic?: number; likely?: number; pessimistic?: number;
+                 budget?: string; notes?: string };
+  approval?: { by: string; byName: string; at: string; version: string } | null;  <span class="cmt">// PLN-07</span>
+  documentId?: string;      <span class="cmt">// PLN-04</span>
+}</pre>
+  <div class="qa">
+    <div><b>Qué hace la pista del plan</b><span>Tipos, asistente, import/export, i18n, y que el texto de cada criterio enlazado quede escrito. No toca <span class="ids">derive</span>, <span class="ids">execution.ts</span> del servidor, el cierre de ciclo ni el Inicio.</span></div>
+    <div><b>Qué haría «metrics-gate» (DOC-02)</b><span>Leer <span class="ids">data.metrics</span> y <span class="ids">closureCriteria[].metricId</span> en <span class="ids">CriterionData</span>/<span class="ids">planCriteria</span>; con <span class="ids">metricId</span>, tomar <span class="ids">kind</span>/<span class="ids">op</span>/<span class="ids">target</span> de la métrica en vez de adivinar por el texto (<span class="ids">criterion_kind</span> queda para criterios sin enlace). Una métrica <span class="ids">kind: null</span> se resuelve a mano en el cierre, como los criterios «manual» de hoy.</span></div>
+    <div><b>Qué necesito que confirme</b><span>La lista de <span class="ids">MetricKind</span> de DOC-06 (nombres y unidad de cada una: ¿densidad por requisito o por cada 100 casos? ¿tiempo de corrección en horas o días?) y si quiere <span class="ids">metricId</span> en el criterio o prefiere copiar <span class="ids">kind/op/target</span> dentro del criterio.</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>5. PLN-03 y PLN-04 en la misma pista</h2>
+  <ul class="tight">
+    <li><b>PLN-03 / NC-031:</b> guardar sin cambios no llama al guardado (aviso «Sin cambios»); la versión sube solo si cambian título o contenido (no por cambiar el estado ni por aprobar); el escritorio no copia revisión si título y datos son iguales (<span class="ids">test_plan.rs</span>).</li>
+    <li><b>PLN-04:</b> ID de documento por plan en «Identificación», editable, con valor por defecto <span class="ids">TP-&lt;prefijo del proyecto&gt;-&lt;6 hex del id&gt;</span> (p. ej. <span class="ids">TP-PH-3F9A1C</span>); el .xlsx lo escribe en C3 y el PDF en la cabecera.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>6. Export, import, docs y pruebas</h2>
+  <ul class="tight">
+    <li><b>PDF:</b> secciones nuevas en el orden de los pasos; «Aprobado por / fecha» y el ID en la cabecera.</li>
+    <li><b>.xlsx:</b> la plantilla (C3 y bloque de cabecera) gana «Aprobado por» y la fecha; los apartados nuevos van en una hoja «Estrategia» detrás de la del plan, con cabeceras es/en que el importador lee por nombre. Así la plantilla vieja y el importador de hoy siguen intactos.</li>
+    <li><b>IA:</b> «Sugerir con IA» en supuestos/restricciones y en entrada/suspensión/reanudación, con el mismo resumen del plan (procedencia IA-01). Lo dejo fuera si el usuario prefiere no ampliar la IA ahora.</li>
+    <li><b>Docs en el mismo cambio:</b> filas PLN-03/04/06/07 del ROADMAP, fragmentos <span class="ids">changes/PLN-0x-*.md</span>, <span class="ids">docs/manual/fuentes/plan.md</span> y capturas del capítulo 5, GLOSARIO (técnicas, independencia, métricas), NC-log (NC-023, NC-031, NC-032), README del módulo y un ADR «Métricas del plan y criterios de salida enlazados».</li>
+    <li><b>Pruebas:</b> formState (round trip, versión, vuelta a Revisado), steps, a11y de los 22 pasos, export/import (round trip de la hoja nueva), planHistory (aprobación y pérdida), Rust (sin copia de revisión sin cambios), tour del capítulo 5, <span class="ids">verify:static</span>.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>7. Decisiones que pido al usuario</h2>
+  <div class="qa">
+    <div><b>1. ¿22 pasos?</b><span>O meter «Supuestos y restricciones» dentro de «Alcance» y quedarnos en 21.</span></div>
+    <div><b>2. ¿Aprobar con botón y confirmación</b><span>en lugar de elegir «Aprobado» en el desplegable?</span></div>
+    <div><b>3. ¿PLN-03 y PLN-04 entran en esta pista?</b><span>Con el formato de ID propuesto.</span></div>
+    <div><b>4. ¿IA en los dos pasos nuevos de listas?</b><span>O sin IA por ahora.</span></div>
+  </div>
+</section>
+</div>
+
+</body></html>
