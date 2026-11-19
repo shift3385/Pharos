@@ -550,6 +550,10 @@ Optional limits (defaults in brackets):
 | `API_UPLOAD_MAX_BYTES` | Largest report once decompressed [100 MiB] |
 | `API_PARSE_TIMEOUT_MS` | Time to read one uploaded report before it is refused [30000] |
 | `API_UPLOAD_RATE_LIMIT_MAX` / `_WINDOW` | Report uploads per API token [60 per `1 minute`] |
+| `WEBHOOK_SECRETS_KEY` | 32 random bytes in base64 that encrypt the webhooks' signing secrets [empty = webhooks are off] |
+| `WEBHOOK_ALLOW_PRIVATE` | `true` lets webhooks reach private network addresses (a LAN Jenkins) [false] |
+| `WEBHOOK_ALLOW_HOSTS` | Comma-separated host names a webhook may reach whatever they resolve to [empty] |
+| `WEBHOOK_DISPATCH_INTERVAL_MS` | How often pending webhook deliveries are sent [2000]; `0` = never |
 | `AI_VAULT_RATE_LIMIT_MAX` / `_WINDOW` | Uploads and removals of the AI key per account [10 per `1 hour`]                                                |
 | `AI_CHAT_BODY_LIMIT_BYTES` | Largest body on `/ai/chat`, images included [20 MiB]                                                                         |
 

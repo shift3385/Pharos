@@ -109,3 +109,65 @@
   display: grid;
   gap: var(--space-2);
 }
+/* Webhooks (INT-03): the deliveries dialog (boceto 6). */
+.int-deliveries {
+  width: min(960px, 100%);
+}
+.int-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: var(--space-3);
+}
+.int-dl {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 420px;
+  overflow-y: auto;
+}
+.int-dl__row {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+}
+.int-dl__row.is-on {
+  background: var(--color-surface-2);
+  border-radius: 6px;
+}
+.int-dl__row:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.int-dl__detail {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  min-width: 0;
+}
+.int-kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 0.85rem;
+}
+.int-kv dt {
+  color: var(--color-text-muted);
+}
+.int-kv dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .int-split {
+    grid-template-columns: 1fr;
+  }
+}

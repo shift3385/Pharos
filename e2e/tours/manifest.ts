@@ -465,6 +465,7 @@ export const INVENTORY: Item[] = [
   I("administracion", "dialog", "dialogs:src/modules/integrations/ui/ProjectTokensSection.tsx", "Revocar o reasignar un token de proyecto", { pending: TOKENS_PENDING }),
   I("administracion", "dialog", "dialogs:src/modules/integrations/ui/TokenDialogs.tsx", "Nuevo token, token creado (una sola vez) y rotar", { pending: TOKENS_PENDING }),
   I("administracion", "dialog", "dialogs:src/modules/integrations/ui/PersonalTokensSection.tsx", "Revocar un token personal", { pending: TOKENS_PENDING }),
+  I("administracion", "dialog", "dialogs:src/modules/integrations/ui/WebhooksSection.tsx", "Nuevo y editar webhook, su secreto, entregas, rotar y borrar (INT-03)", { pending: TOKENS_PENDING }),
   I("administracion", "dialog", "dialogs:src/modules/integrations/ui/AdminRevokeTokens.tsx", "Revocar todos los tokens de una cuenta (administrador)", {
     skip: "Necesita una segunda cuenta con tokens, y el manual solo muestra a su persona (NC-052). Lo cubren server/tests/api.tokens.test.ts y src/modules/integrations/ui/integrations.test.tsx.",
   }),

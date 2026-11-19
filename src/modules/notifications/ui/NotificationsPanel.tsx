@@ -14,6 +14,7 @@ import {
   Undo2,
   UserMinus,
   UserCheck,
+  Unplug,
   UserPlus,
   UserX,
   Users,
@@ -42,6 +43,7 @@ const ICONS: Record<string, { icon: LucideIcon; tone: string }> = {
   "account.admin_revoked": { icon: ShieldOff, tone: "neutral" },
   "member.disabled": { icon: UserX, tone: "neutral" },
   "account.enabled": { icon: UserCheck, tone: "success" },
+  "webhook.disabled": { icon: Unplug, tone: "warning" },
 };
 
 /** «hace 5 min», «11:02», as the day group already says which day. */

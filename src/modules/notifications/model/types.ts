@@ -17,6 +17,8 @@ export const TRAVELLING_KINDS = [
   "account.admin_granted",
   "account.admin_revoked",
   "account.enabled",
+  // INT-03 (ADR-0052): a webhook was disabled after 50 failures in a row.
+  "webhook.disabled",
 ] as const;
 
 export type TravellingKind = (typeof TRAVELLING_KINDS)[number];

@@ -35,6 +35,9 @@ export const NOTIFICATION_KINDS = [
   "account.admin_granted",
   "account.admin_revoked",
   "account.enabled",
+  // INT-03 (ADR-0052): a webhook was disabled after 50 failures in a row
+  // (to the workspace's Test Managers).
+  "webhook.disabled",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -108,7 +111,8 @@ const dataSchema = z
 
 export interface EmitInput {
   kind: NotificationKind;
-  actorId: string;
+  /** Who did it; null when the server itself did (a webhook it disabled). */
+  actorId: string | null;
   /** People, or every member of a workspace. */
   recipientIds: string[] | { workspaceId: string; roles?: readonly string[] };
   /** Set only by server code that already decided who is told (W's hooks:
@@ -149,7 +153,8 @@ async function resolveRecipients(input: EmitInput, membership: Membership): Prom
   const out: string[] = [];
   for (const id of new Set(wanted)) {
     if (id === input.actorId) continue;
-    if (input.trusted || (await membership.canNotify(input.actorId, id, workspace))) out.push(id);
+    // A server event (no actor) is always trusted by its caller.
+    if (input.trusted || (input.actorId !== null && (await membership.canNotify(input.actorId, id, workspace)))) out.push(id);
   }
   return out;
 }

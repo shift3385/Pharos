@@ -218,3 +218,41 @@ Con F2 en `main` (ADR-0053: entidades `finding` y `metric`), la subida guarda lo
 - **Sigue fuera:**
   - los adjuntos que trae el propio informe (aviso `attachments-in-raw-report`);
   - `caseKey` en los hallazgos: F2 no lo guarda todavía y el vínculo se deriva de las etiquetas, como dice ADR-0053 §5.
+
+### A3 · Webhooks (2026-11-19)
+
+- **Datos:** migración del servidor 0030, con dos tablas:
+  - `webhooks`: secreto cifrado, el anterior mientras dura una rotación, fallos seguidos y desactivación;
+  - `webhook_deliveries`: la bandeja de salida.
+- **Origen único de los eventos:** `storeDoc` y `storeAppend` (`sync.repository.ts`) llaman a un `DocumentHook` en la misma transacción que la escritura, con el documento de antes y el de después.
+  - Por ahí pasan la web, la API y `/sync/push`.
+  - El hook solo actúa para `run`, `run_shard`, `test_cycle`, `defect`, `test_case` y `test_plan`; las demás entidades no cuestan nada.
+  - `webhooks/events.ts` deriva los eventos (función pura):
+    - `run.created` y `run.completed` (al dejar `in_progress`);
+    - `run.results_uploaded` (un shard nuevo);
+    - `cycle.closed`;
+    - `defect.created` y `defect.status_changed`;
+    - `review.decided` (un caso o plan aprobado, o devuelto con `changesRequested`).
+  - Cada webhook activo del workspace que pide ese evento, y es del proyecto o de todos, recibe su entrega con el sobre de §4.
+  - `run.results_uploaded` pone sus recuentos en el primer intento, cuando los resultados del shard ya están guardados aunque lleguen en otro lote.
+- **Envío:** `webhooks/dispatcher.ts`.
+  - Reclama lo pendiente con `FOR UPDATE SKIP LOCKED` y un plazo de 60 s.
+  - Firma con Standard Webhooks (`signing.ts`) y envía con `node:http(s)`, sin dependencias nuevas.
+  - Un intervalo (`WEBHOOK_DISPATCH_INTERVAL_MS`, 2 s) lo pone en marcha. Los tests lo llaman a mano.
+- **Protección SSRF** (`ssrf.ts`):
+  - comprueba la URL al guardarla y al enviar;
+  - el `lookup` propio del socket fija la IP comprobada;
+  - `BlockList` de rangos privados y reservados, y las IPv4 mapeadas como IPv6 rechazadas aparte (el `BlockList` de Node aplica `::ffff:0:0/96` a todas las IPv4);
+  - `http` solo hacia un destino privado que el servidor permite (`WEBHOOK_ALLOW_PRIVATE`, `WEBHOOK_ALLOW_HOSTS`).
+- **Desactivación:** tras 50 fallos seguidos el webhook se apaga y avisa a los Test Manager.
+  - Es una notificación nueva, `webhook.disabled`, sin actor: la hace el servidor. `EmitInput.actorId` admite `null`.
+  - Activarlo de nuevo reenvía lo pendiente.
+- **Clave:** `WEBHOOK_SECRETS_KEY`, el mismo esquema que `AI_VAULT_KEY`. El AAD ata el secreto a su webhook. Sin la clave, la lista responde `enabled: false` y crear responde 409 `webhooks_disabled`.
+- **Rutas** (solo con sesión): `GET/POST /workspaces/:id/webhooks`, `PATCH/DELETE …/:hook`, `…/rotate-secret`, `…/test`, `…/deliveries` y `…/deliveries/:delivery/redeliver`. Leer: cualquier miembro; cambiar: `token.manage`.
+- **Auditoría:** entidad `webhook` (`create`, `update`, `delete`), con la URL enmascarada y nunca el secreto.
+- **App:** `WebhooksSection` dentro de `IntegrationsTab`, en la pestaña «Integraciones» del workspace:
+  - lista, nuevo y editar;
+  - el secreto una sola vez;
+  - «Enviar prueba», «Rotar secreto», «Activar» y «Borrar»;
+  - «Entregas», con la respuesta del destino y «Reintentar ahora».
+- **Pendiente** (como dice A1): el aviso de caducidad de los tokens y el de token inactivo no se han hecho en A3. Quedan para A4.

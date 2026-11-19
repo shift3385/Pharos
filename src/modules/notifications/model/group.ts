@@ -76,6 +76,10 @@ export function targetOf(n: AppNotification): Target | null {
     case "member.disabled":
       path = "/workspaces/members";
       break;
+    // INT-03: the workspace's integrations, where the webhook can be turned on again.
+    case "webhook.disabled":
+      path = n.workspaceId ? `/workspaces/members?id=${n.workspaceId}&tab=integrations` : "/workspaces/members?tab=integrations";
+      break;
     // Account security (SEC-09, SEC-11): the profile, where the account is.
     case "account.reset_issued":
     case "account.admin_granted":
@@ -108,6 +112,8 @@ export function labelOf(kind: string): string {
     case "member.joined":
     case "member.disabled":
       return "notifications.action.members";
+    case "webhook.disabled":
+      return "notifications.action.integrations";
     case "account.reset_issued":
     case "account.admin_granted":
     case "account.admin_revoked":

@@ -180,6 +180,23 @@ const schema = z
     // Emails of accounts that are server administrators (SEC-11), comma
     // separated: named at start-up and when they sign up, never removed. The
     // way to recover the role if every administrator is lost.
+    // INT-03 (ADR-0052 §4): the key that encrypts the webhooks' signing
+    // secrets (32 random bytes in base64; empty = webhooks are off), whether
+    // they may reach private addresses (a LAN Jenkins), host names allowed
+    // whatever they resolve to, and how often the outbox is sent (0 = never:
+    // tests send it by hand).
+    WEBHOOK_SECRETS_KEY: vaultKey,
+    WEBHOOK_ALLOW_PRIVATE: flag,
+    WEBHOOK_ALLOW_HOSTS: z
+      .string()
+      .optional()
+      .transform((v) =>
+        (v ?? "")
+          .split(",")
+          .map((e) => e.trim().toLowerCase())
+          .filter(Boolean),
+      ),
+    WEBHOOK_DISPATCH_INTERVAL_MS: z.coerce.number().int().nonnegative().default(2000),
     PHAROS_ADMINS: z
       .string()
       .optional()

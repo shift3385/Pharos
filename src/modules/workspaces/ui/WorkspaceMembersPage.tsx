@@ -6,7 +6,7 @@ import { Alert } from "@shared/ui/Alert";
 import { Select } from "@shared/ui/Select";
 import { Switch } from "@shared/ui/Switch";
 import { TabPanel, Tabs } from "@shared/ui/Tabs";
-import { ProjectTokensSection } from "@modules/integrations";
+import { IntegrationsTab } from "@modules/integrations";
 import { useSyncStatus } from "@modules/sync-offline";
 import { isTauri } from "@shared/platform";
 import { useToast } from "@shared/ui/Toast";
@@ -157,7 +157,7 @@ export function WorkspaceMembersPage() {
       />
       {tab === "integrations" ? (
         <TabPanel id="integrations" idPrefix="ws-">
-          <ProjectTokensSection workspace={workspace} manager={can(workspace.role, "token.manage")} />
+          <IntegrationsTab workspace={workspace} manager={can(workspace.role, "token.manage")} />
         </TabPanel>
       ) : (
       <TabPanel id="members" idPrefix="ws-">
