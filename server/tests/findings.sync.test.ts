@@ -180,3 +180,81 @@ describe("findings and metrics over sync (ING-06)", () => {
     expect(res2.statusCode).toBe(400);
   });
 });
+
+const triage = (
+  projectId: string,
+  id: string,
+  state: string,
+  reason: string | null,
+  hlc: string,
+) => ({
+  entity: "finding_triage",
+  entityId: id,
+  op: "append",
+  payload: {
+    id,
+    projectId,
+    fingerprint: "pharos:eeae370c-678f-555d-adc4-65070e88eac6",
+    state,
+    reason,
+    hlc,
+    createdBy: "u1",
+    createdAt: "2026-11-19T10:00:00.000Z",
+  },
+  revision: 1,
+  author: "x",
+  hlc,
+});
+
+describe("finding triage over sync (ADR-0053 as amended: append-only events)", () => {
+  it("keeps every decision as its own document, behind the findings feature", async () => {
+    const token = await tokenFor();
+    const p = await projectOf(token);
+    expect(
+      (
+        await push(token, BEFORE, [
+          triage(p, "t1", "open", null, "0000000000001-0000-a"),
+        ])
+      ).json().code,
+    ).toBe("findings_unsupported");
+    const res = await push(token, ALL, [
+      triage(
+        p,
+        "t1",
+        "false_positive",
+        "Validado en el esquema",
+        "0000000000001-0000-a",
+      ),
+      triage(p, "t2", "open", null, "0000000000002-0000-b"),
+    ]);
+    expect(res.statusCode).toBe(200);
+    const res2 = await app.inject({
+      method: "GET",
+      url: "/sync/pull?since=0",
+      headers: headers(token, ALL),
+    });
+    const docs = (
+      res2.json().docs as { entity: string; entityId: string }[]
+    ).filter((d) => d.entity === "finding_triage");
+    expect(docs.map((d) => d.entityId).sort()).toEqual(["t1", "t2"]);
+  });
+
+  it("refuses a decision without its reason, or with an unknown state", async () => {
+    const token = await tokenFor();
+    const p = await projectOf(token);
+    expect(
+      (
+        await push(token, ALL, [
+          triage(p, "t1", "accepted_risk", null, "0000000000001-0000-a"),
+        ])
+      ).statusCode,
+    ).toBe(400);
+    expect(
+      (
+        await push(token, ALL, [
+          triage(p, "t1", "ignored", "x", "0000000000001-0000-a"),
+        ])
+      ).statusCode,
+    ).toBe(400);
+  });
+});

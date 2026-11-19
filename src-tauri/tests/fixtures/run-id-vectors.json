@@ -1,5 +1,5 @@
 {
-  "$comment": "Deterministic execution ids (ADR-0013, design 0.2.0 §3.3). UUIDv5 over the JCS of the parts as a JSON array. Generated with Node's uuid; checked by src-tauri/src/runs/ids.rs and packages/formats/src/ids.test.ts. Shard: [run, sha256, normalizerVersion]. Finding: [shard, fingerprint, occurrence]; metric: [shard, name, aggregation|\"\", scope|\"\"]; triage: [project, fingerprint]; derived fingerprint: \"pharos:\" + UUIDv5([lowercased tool, ruleId, locationKey]) (ADR-0053).",
+  "$comment": "Deterministic execution ids (ADR-0013, design 0.2.0 §3.3). UUIDv5 over the JCS of the parts as a JSON array. Generated with Node's uuid; checked by src-tauri/src/runs/ids.rs and packages/formats/src/ids.test.ts. Shard: [run, sha256, normalizerVersion]. Finding: [shard, fingerprint, occurrence]; metric: [shard, name, aggregation|\"\", scope|\"\"]; derived fingerprint: \"pharos:\" + UUIDv5([lowercased tool, ruleId, locationKey]) (ADR-0053).",
   "namespaces": {
     "runShard": "3b6d1f0a-8c2e-5d47-a913-6e0f2b8c4d71",
     "result": "9a4e7c21-0b5f-5e83-b6d2-1c9a3f70e845",
@@ -7,7 +7,6 @@
     "stepResult": "e2b74c18-6d3a-5f91-b0c5-8a1d4e6f2b37",
     "finding": "da798b6f-8ada-5d20-a2e3-05615f2bee74",
     "metric": "0d206a05-0b02-540b-822e-1f2592aa6a40",
-    "findingTriage": "2bdee14c-b812-54bf-90a6-b8bb1cf767eb",
     "findingFingerprint": "65eb100e-b26d-5f57-9997-6ea9e5b42fcd"
   },
   "shards": [
@@ -176,18 +175,6 @@
       "aggregation": null,
       "scope": null,
       "id": "9fe705e3-1df8-554e-9397-8ecc9cfa07a2"
-    }
-  ],
-  "findingTriages": [
-    {
-      "projectId": "p1",
-      "fingerprint": "sarif:codeql:js/sql-injection:primaryLocationLineHash=abc:1",
-      "id": "829edece-ea43-5fed-824b-bc63f0f10f41"
-    },
-    {
-      "projectId": "p2",
-      "fingerprint": "sarif:codeql:js/sql-injection:primaryLocationLineHash=abc:1",
-      "id": "1158c084-d318-54e7-858b-757c04ffb94d"
     }
   ],
   "fingerprints": [

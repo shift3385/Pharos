@@ -288,3 +288,131 @@ fn findings_wait_for_a_server_that_lists_findings() {
     assert_eq!(sent.iter().filter(|e| *e == FINDING).count(), 9);
     assert_eq!(sent.iter().filter(|e| *e == METRIC).count(), 3);
 }
+
+const FP: &str = "sarif:trivy:DS002:primaryLocationLineHash=abc:1";
+
+#[test]
+fn a_triage_decision_needs_a_known_state_and_a_reason() {
+    let c = device();
+    let p = new_project(&c);
+    let add = |state: &str, reason: Option<&str>| triage_add(&c, &p, U, FP, state, reason, None);
+    assert_eq!(
+        add("false_positive", None).unwrap_err(),
+        "invalid-triage: reason"
+    );
+    assert_eq!(
+        add("false_positive", Some("  ")).unwrap_err(),
+        "invalid-triage: reason"
+    );
+    assert!(add("ignored", Some("x"))
+        .unwrap_err()
+        .starts_with("invalid-triage: state"));
+    assert_eq!(
+        triage_add(&c, &p, U, " ", "open", None, None).unwrap_err(),
+        "invalid-triage: fingerprint"
+    );
+    assert_eq!(
+        triage_add(&c, &p, "someone-else", FP, "open", None, None).unwrap_err(),
+        "project-not-found"
+    );
+    // Taking a decision back needs no reason.
+    add("open", None).unwrap();
+}
+
+#[test]
+fn the_latest_decision_is_the_current_one_and_the_rest_is_history() {
+    let c = device();
+    let p = new_project(&c);
+    triage_add(
+        &c,
+        &p,
+        U,
+        FP,
+        "false_positive",
+        Some("Validado en el esquema"),
+        None,
+    )
+    .unwrap();
+    triage_add(
+        &c,
+        &p,
+        U,
+        FP,
+        "accepted_risk",
+        Some("Hasta 0.7.0"),
+        Some("d1"),
+    )
+    .unwrap();
+    triage_add(&c, &p, U, "other", "fixed", Some("Corregido en #120"), None).unwrap();
+    let history = triage_history(&c, &p, FP).unwrap();
+    assert_eq!(
+        history.iter().map(|e| e.state.as_str()).collect::<Vec<_>>(),
+        ["accepted_risk", "false_positive"]
+    );
+    let current = triage_current(&c, &p).unwrap();
+    assert_eq!(current.len(), 2);
+    assert_eq!(current[FP].state, "accepted_risk");
+    assert_eq!(current[FP].defect_id.as_deref(), Some("d1"));
+    assert_eq!(current["other"].state, "fixed");
+    // Each decision is one append for the push.
+    assert_eq!(
+        count(
+            &c,
+            "SELECT count(*) FROM oplog WHERE entity = 'finding_triage' AND op = 'append'"
+        ),
+        3
+    );
+}
+
+#[test]
+fn two_devices_agree_on_the_current_decision() {
+    let a = device();
+    let p = new_project(&a);
+    let b = device();
+    let doc_a = {
+        let id = triage_add(&a, &p, U, FP, "false_positive", Some("A"), None).unwrap();
+        triage_payload(&a, &id).unwrap().unwrap()
+    };
+    // b knows the same project (as a pull would bring it) and decides later,
+    // on its own clock.
+    let pb = new_project(&b);
+    b.execute(
+        "UPDATE projects SET id = ?1 WHERE id = ?2",
+        rusqlite::params![p, pb],
+    )
+    .unwrap();
+    let doc_b = {
+        let id = triage_add(&b, &p, U, FP, "fixed", Some("B"), None).unwrap();
+        triage_payload(&b, &id).unwrap().unwrap()
+    };
+    triage_insert_if_absent(&a, U, &doc_b).unwrap();
+    triage_insert_if_absent(&b, U, &doc_a).unwrap();
+    triage_insert_if_absent(&b, U, &doc_a).unwrap();
+    let on_a = triage_current(&a, &p).unwrap();
+    let on_b = triage_current(&b, &p).unwrap();
+    assert_eq!(on_a[FP], on_b[FP]);
+    assert_eq!(
+        triage_history(&a, &p, FP).unwrap(),
+        triage_history(&b, &p, FP).unwrap()
+    );
+    assert_eq!(triage_history(&a, &p, FP).unwrap().len(), 2);
+}
+
+#[test]
+fn triage_waits_for_a_server_that_lists_findings() {
+    let c = device();
+    let p = new_project(&c);
+    triage_add(&c, &p, U, FP, "open", None, None).unwrap();
+    let has_triage = |c: &Connection| {
+        let pending = serde_json::to_value(sync::build_pending_append(c, U).unwrap()).unwrap();
+        pending["deltas"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|d| d["entity"] == FINDING_TRIAGE)
+    };
+    sync::assume_server_features(&c, "key-conflicts,append-only,stable-steps,runs");
+    assert!(!has_triage(&c));
+    sync::assume_server_features(&c, ALL_FEATURES);
+    assert!(has_triage(&c));
+}

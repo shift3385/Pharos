@@ -7,6 +7,7 @@
   y en 0.2.0 su forma queda fijada en Pharos Run JSON. Bloquea EJE-01; ING-06
   (0.5.0) e ING-07 dependen de él.
 - **Completado por [ADR-0053](0053-hallazgos-metricas-y-paquete-de-formatos.md)** (2026-11-18): las tablas de hallazgos y métricas llegan en 0.6.0, y ese ADR fija las reglas de vínculo, la severidad y la huella que aquí quedaban para ING-06.
+- **Enmendado por ADR-0053** (2026-11-19): `finding_triage` no es LWW con id por huella, sino eventos _append-only_; el estado actual de una huella es su evento más reciente.
 - **Diseño de conjunto:** [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
 
 ## Contexto

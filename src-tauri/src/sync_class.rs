@@ -57,6 +57,12 @@ pub const APPEND_ONLY: &[AppendOnly] = &[
         owner: crate::runs::findings::metric_owner,
     },
     AppendOnly {
+        entity: crate::runs::findings::FINDING_TRIAGE,
+        read: crate::runs::findings::triage_payload,
+        insert_if_absent: crate::runs::findings::triage_insert_if_absent,
+        owner: crate::runs::findings::triage_owner,
+    },
+    AppendOnly {
         entity: crate::case_baseline::ENTITY,
         read: crate::case_baseline::payload,
         insert_if_absent: crate::case_baseline::insert_if_absent,
@@ -79,8 +85,8 @@ pub const APPEND_ONLY: &[AppendOnly] = &[
 /// 8: case_baseline, suite baselines (CAS-02, ADR-0047). 9: workspaces
 /// (SYNC-07, ADR-0042): one cursor per workspace, so every workspace is pulled
 /// from the start once. 10: attachment and template (SYNC-04b), whose
-/// content travels by hash outside the oplog. 11: finding and metric (ING-06,
-/// ADR-0053).
+/// content travels by hash outside the oplog. 11: finding, metric and
+/// finding_triage (ING-06, ADR-0053).
 pub const APPLIED_SET_VERSION: i64 = 11;
 
 pub fn append_only(entity: &str) -> Option<&'static AppendOnly> {

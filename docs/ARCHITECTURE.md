@@ -507,6 +507,12 @@ Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
   tombstones them with their project. Case links stay in `attributes.tags`,
   resolved when read (F5). A finding without a fingerprint gets the derived
   one when its Pharos Run JSON is read (`fingerprintOf`).
+- **Finding triage** (ADR-0053 as amended): `finding_triage`, append-only
+  events keyed by fingerprint (same migration, `findings` feature,
+  `run.execute` to write). `triage_add` records a decision (a reason unless
+  it reopens), `triage_current` derives each fingerprint's state from its
+  latest event (HLC, then id) and `triage_history` lists the rest. There
+  is no LWW entity and no conflict to resolve.
 
 **Manual execution (EJE-02; ADR-0013, ADR-0014).** `src-tauri/src/runs/manual.rs`
 and `src/modules/runs/` (`RunDetail`, `ExecutionPanel`), no migration:

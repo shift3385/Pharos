@@ -50,6 +50,8 @@ export const APPEND_ONLY_ENTITIES = [
   // Findings and metrics of a run (ING-06, ADR-0053).
   "finding",
   "metric",
+  // Triage decisions, one event each; the latest is the current one.
+  "finding_triage",
 ] as const;
 
 /** Suite baselines (CAS-02, ADR-0047). Only clients that send the
@@ -61,7 +63,7 @@ export const isBaselineEntity = (entity: string): boolean =>
 
 /** Findings and metrics (ING-06, ADR-0053). Only clients that send the
  *  `findings` feature pull or push them (VERSIONING §6.5). */
-export const FINDING_ENTITIES = ["finding", "metric"] as const;
+export const FINDING_ENTITIES = ["finding", "metric", "finding_triage"] as const;
 
 export const isFindingEntity = (entity: string): boolean =>
   (FINDING_ENTITIES as readonly string[]).includes(entity);
@@ -166,6 +168,7 @@ export const PROJECT_CHILDREN = [
   "result",
   "finding",
   "metric",
+  "finding_triage",
   "custom_field",
   "configuration",
   "test_cycle",
@@ -211,6 +214,19 @@ const FINDING_PAYLOADS: Partial<Record<string, z.ZodType>> = {
     value: z.number().refine(Number.isFinite, "A metric value is a finite number."),
     passed: z.boolean().nullable().optional(),
   }),
+  // One triage decision (ADR-0053 as amended): a reason unless it reopens.
+  finding_triage: z
+    .looseObject({
+      projectId: id,
+      fingerprint: z.string().min(1).max(1000),
+      state: z.enum(["open", "false_positive", "accepted_risk", "fixed"]),
+      reason: z.string().max(2000).nullable().optional(),
+      hlc: z.string().min(1),
+    })
+    .refine((t) => t.state === "open" || (typeof t.reason === "string" && t.reason.trim() !== ""), {
+      message: "A triage decision other than open needs its reason.",
+      path: ["reason"],
+    }),
 };
 
 /** What the server checks of an execution document (design §3.11: it

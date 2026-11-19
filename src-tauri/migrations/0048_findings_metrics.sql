@@ -53,3 +53,23 @@ CREATE TABLE IF NOT EXISTS metrics (
 );
 
 CREATE INDEX IF NOT EXISTS metrics_run_idx ON metrics (run_id);
+
+-- The triage of a finding (ADR-0012, ADR-0053 as amended): one row per
+-- decision, append-only like the findings, keyed by the fingerprint so it
+-- holds for that finding in every run of the project. The current state of a
+-- fingerprint is its latest event (by HLC, then id), derived when read; the
+-- rows are its history. Random ids: two decisions are two facts.
+CREATE TABLE IF NOT EXISTS finding_triage (
+    id           TEXT PRIMARY KEY,
+    workspace_id TEXT NOT NULL,
+    project_id   TEXT NOT NULL,
+    fingerprint  TEXT NOT NULL,
+    state        TEXT NOT NULL,                   -- open | false_positive | accepted_risk | fixed
+    reason       TEXT,                            -- required unless open
+    defect_id    TEXT,                            -- an optional defect (DEF-01)
+    created_by   TEXT NOT NULL,
+    created_at   TEXT NOT NULL,
+    hlc          TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS finding_triage_fp_idx ON finding_triage (project_id, fingerprint, hlc);

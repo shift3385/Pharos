@@ -18,7 +18,6 @@ pub const NS_STEP_RESULT: Uuid = Uuid::from_u128(0xe2b7_4c18_6d3a_5f91_b0c5_8a1d
 // Findings and metrics (ING-06, ADR-0053).
 pub const NS_FINDING: Uuid = Uuid::from_u128(0xda79_8b6f_8ada_5d20_a2e3_0561_5f2b_ee74);
 pub const NS_METRIC: Uuid = Uuid::from_u128(0x0d20_6a05_0b02_540b_822e_1f25_92aa_6a40);
-pub const NS_FINDING_TRIAGE: Uuid = Uuid::from_u128(0x2bde_e14c_b812_54bf_90a6_b8bb_1cf7_67eb);
 pub const NS_FINDING_FINGERPRINT: Uuid = Uuid::from_u128(0x65eb_100e_b26d_5f57_9997_6ea9_e5b4_2fcd);
 
 fn v5(ns: &Uuid, parts: Value) -> String {
@@ -90,11 +89,6 @@ pub fn metric_id(
             scope.unwrap_or("")
         ]),
     )
-}
-
-/// `UUIDv5(NS_FINDING_TRIAGE, [project_id, fingerprint])` (ADR-0012).
-pub fn finding_triage_id(project_id: &str, fingerprint: &str) -> String {
-    v5(&NS_FINDING_TRIAGE, json!([project_id, fingerprint]))
 }
 
 /// The fingerprint of a finding whose tool gives none: `pharos:` + UUIDv5 of
@@ -179,12 +173,6 @@ mod tests {
                     x["aggregation"].as_str(),
                     x["scope"].as_str()
                 ),
-                s(x, "id")
-            );
-        }
-        for x in v["findingTriages"].as_array().unwrap() {
-            assert_eq!(
-                finding_triage_id(&s(x, "projectId"), &s(x, "fingerprint")),
                 s(x, "id")
             );
         }

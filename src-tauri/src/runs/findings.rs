@@ -16,13 +16,21 @@ use serde_json::{json, Map, Value};
 
 use super::import::{clip, MAX_ATTRIBUTES, MAX_ERROR_MESSAGE};
 use super::{err, ids, is_purged, owner_of, ps};
+use uuid::Uuid;
+
 use crate::db::ensure_workspace;
 use crate::journal;
 
 pub const FINDING: &str = "finding";
 pub const METRIC: &str = "metric";
-/// The entities of this module (both append-only).
-pub const ENTITIES: [&str; 2] = [FINDING, METRIC];
+/// One triage decision on a fingerprint (ADR-0053 as amended).
+pub const FINDING_TRIAGE: &str = "finding_triage";
+/// The entities of this module (all append-only).
+pub const ENTITIES: [&str; 3] = [FINDING, METRIC, FINDING_TRIAGE];
+
+/// Triage states (ADR-0012). `open` takes back an earlier decision.
+pub const TRIAGE_STATES: [&str; 4] = ["open", "false_positive", "accepted_risk", "fixed"];
+const MAX_REASON: usize = 2_000;
 
 /// Per import, as the parsers check (ADR-0053).
 pub(crate) const MAX_FINDINGS: usize = 20_000;
@@ -50,6 +58,9 @@ pub(crate) fn owner_sql(entity: &str) -> Option<&'static str> {
         }
         METRIC => {
             "SELECT p.owner_id FROM metrics x JOIN projects p ON p.id = x.project_id WHERE x.id = ?1"
+        }
+        FINDING_TRIAGE => {
+            "SELECT p.owner_id FROM finding_triage x JOIN projects p ON p.id = x.project_id WHERE x.id = ?1"
         }
         _ => return None,
     })
@@ -525,4 +536,184 @@ pub(crate) fn appended_rows(
         out.extend(rows.into_iter().map(|id| (entity, id)));
     }
     Ok(out)
+}
+
+// ---- triage (ADR-0012; ADR-0053 as amended: append-only events) --------------
+
+/// One triage decision as read. The current one of a fingerprint is the
+/// latest (HLC, then id).
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TriageEvent {
+    pub id: String,
+    pub fingerprint: String,
+    pub state: String,
+    pub reason: Option<String>,
+    pub defect_id: Option<String>,
+    pub created_by: String,
+    pub created_at: String,
+}
+
+/// Records a triage decision on a fingerprint of the project, in the
+/// transaction of the caller. A reason is required unless the decision is
+/// `open`. Returns the id of the new event.
+pub fn triage_add(
+    conn: &Connection,
+    project_id: &str,
+    user: &str,
+    fingerprint: &str,
+    state: &str,
+    reason: Option<&str>,
+    defect_id: Option<&str>,
+) -> Result<String, String> {
+    if !crate::project::owns(conn, project_id, user)? {
+        return Err("project-not-found".into());
+    }
+    let fingerprint = fingerprint.trim();
+    if fingerprint.is_empty() {
+        return Err("invalid-triage: fingerprint".into());
+    }
+    if !TRIAGE_STATES.contains(&state) {
+        return Err(format!("invalid-triage: state {state}"));
+    }
+    let reason = reason.map(str::trim).filter(|r| !r.is_empty());
+    if state != "open" && reason.is_none() {
+        return Err("invalid-triage: reason".into());
+    }
+    let id = Uuid::new_v4().to_string();
+    let hlc = crate::oplog::next_hlc(conn)?;
+    conn.execute(
+        "INSERT INTO finding_triage (id, workspace_id, project_id, fingerprint, state, reason,
+                defect_id, created_by, created_at, hlc)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), ?9)",
+        params![
+            id,
+            ensure_workspace(conn)?,
+            project_id,
+            clip(fingerprint, MAX_TEXT).0,
+            state,
+            reason.map(|r| clip(r, MAX_REASON).0),
+            defect_id.map(str::trim).filter(|d| !d.is_empty()),
+            user,
+            hlc,
+        ],
+    )
+    .map_err(err)?;
+    journal::record_append(conn, FINDING_TRIAGE, &id, user)?;
+    Ok(id)
+}
+
+fn event_of(r: &rusqlite::Row) -> rusqlite::Result<TriageEvent> {
+    Ok(TriageEvent {
+        id: r.get("id")?,
+        fingerprint: r.get("fingerprint")?,
+        state: r.get("state")?,
+        reason: r.get("reason")?,
+        defect_id: r.get("defect_id")?,
+        created_by: r.get("created_by")?,
+        created_at: r.get("created_at")?,
+    })
+}
+
+/// The decisions on a fingerprint, newest first (HLC, then id: the same
+/// order on every device).
+pub fn triage_history(
+    conn: &Connection,
+    project_id: &str,
+    fingerprint: &str,
+) -> Result<Vec<TriageEvent>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT * FROM finding_triage WHERE project_id = ?1 AND fingerprint = ?2
+              ORDER BY hlc DESC, id DESC",
+        )
+        .map_err(err)?;
+    let rows = stmt
+        .query_map(params![project_id, fingerprint], event_of)
+        .map_err(err)?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(err)?;
+    Ok(rows)
+}
+
+/// The current decision on each fingerprint of the project that has one.
+pub fn triage_current(
+    conn: &Connection,
+    project_id: &str,
+) -> Result<HashMap<String, TriageEvent>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT * FROM finding_triage t WHERE t.project_id = ?1
+               AND NOT EXISTS (SELECT 1 FROM finding_triage n
+                                WHERE n.project_id = t.project_id
+                                  AND n.fingerprint = t.fingerprint
+                                  AND (n.hlc > t.hlc OR (n.hlc = t.hlc AND n.id > t.id)))",
+        )
+        .map_err(err)?;
+    let rows = stmt
+        .query_map(params![project_id], event_of)
+        .map_err(err)?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(err)?;
+    Ok(rows
+        .into_iter()
+        .map(|e| (e.fingerprint.clone(), e))
+        .collect())
+}
+
+/// The `finding_triage` document pushed for a row.
+pub fn triage_payload(conn: &Connection, id: &str) -> Result<Option<Value>, String> {
+    conn.query_row(
+        "SELECT * FROM finding_triage WHERE id = ?1",
+        params![id],
+        |r| {
+            let s = |c: &str| r.get::<_, Option<String>>(c);
+            Ok(json!({
+                "id": s("id")?, "workspaceId": s("workspace_id")?, "projectId": s("project_id")?,
+                "fingerprint": s("fingerprint")?, "state": s("state")?, "reason": s("reason")?,
+                "defectId": s("defect_id")?, "createdBy": s("created_by")?,
+                "createdAt": s("created_at")?, "hlc": s("hlc")?,
+            }))
+        },
+    )
+    .optional()
+    .map_err(err)
+}
+
+/// Stores a pulled triage decision unless its id is here.
+pub fn triage_insert_if_absent(conn: &Connection, _user: &str, p: &Value) -> Result<(), String> {
+    let state_ok = ps(p, "state").is_some_and(|s| TRIAGE_STATES.contains(&s));
+    let (Some(id), Some(project), Some(fp), Some(hlc), true) = (
+        ps(p, "id"),
+        ps(p, "projectId"),
+        ps(p, "fingerprint"),
+        ps(p, "hlc"),
+        state_ok,
+    ) else {
+        tracing::warn!("skipped a pulled finding_triage without its required fields");
+        return Ok(());
+    };
+    conn.execute(
+        "INSERT OR IGNORE INTO finding_triage (id, workspace_id, project_id, fingerprint, state,
+                reason, defect_id, created_by, created_at, hlc)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+        params![
+            id,
+            ensure_workspace(conn)?,
+            project,
+            fp,
+            ps(p, "state"),
+            ps(p, "reason"),
+            ps(p, "defectId"),
+            ps(p, "createdBy").unwrap_or_default(),
+            ps(p, "createdAt").unwrap_or_default(),
+            hlc,
+        ],
+    )
+    .map_err(err)?;
+    Ok(())
+}
+
+pub fn triage_owner(conn: &Connection, id: &str) -> Result<Option<String>, String> {
+    owner_of(conn, FINDING_TRIAGE, id)
 }
