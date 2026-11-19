@@ -118,6 +118,8 @@ export interface TraceableCase {
   status: string;
   requirementKeys: string[];
   traceability: string;
+  /** The dataset bound to its Examples (CAS-01). */
+  dataset?: { name: string; version: number; rows: number };
 }
 
 export type TestCaseStatus = "draft" | "reviewed" | "approved" | "obsolete";
@@ -171,6 +173,8 @@ export interface TestCaseSummary {
   createdBy: string;
   updatedAt: string;
   revision: number;
+  /** The dataset bound to its Examples (CAS-01). */
+  dataset?: { name: string; version: number; rows: number };
 }
 
 export interface TestCaseInput {

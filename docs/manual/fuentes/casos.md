@@ -90,6 +90,56 @@ una versión.
   cambiado, solo estado cambiado, sin cambios). Debajo, un caso por fila: al
   pulsar su título se ven los cambios campo a campo.
 
+## Biblioteca: pasos compartidos y datasets
+
+La sección **«Biblioteca»** del proyecto, después de «Casos», guarda lo que se
+repite en muchos casos. Tiene dos pestañas:
+
+- **Pasos compartidos:** unos pasos con nombre, por ejemplo «Iniciar sesión».
+  Pueden llevar parámetros entre ángulos (`<usuario>`, `<clave>`), como un
+  Outline.
+- **Datasets:** una tabla de datos con nombre, por ejemplo «Usuarios
+  válidos», con una columna por parámetro y una fila por cada juego de datos.
+  Se escribe en la rejilla, se pega desde una hoja de cálculo o se importa
+  desde CSV o `.xlsx`.
+
+Cada cambio en el contenido sube la **versión** (v1, v2…). «Usado en» dice qué
+casos lo usan, y «Versiones» guarda cada versión.
+
+**Usarlos en un caso** (básico o «Básico avanzado»):
+
+1. En los pasos o las precondiciones, pulsa «Insertar paso compartido…»,
+   elige el paso y escribe sus argumentos. Un argumento vacío deja el
+   parámetro tal cual: su valor sale de la tabla de datos.
+2. En la tabla de ejemplos, pulsa «Vincular dataset…» y elige el dataset (y,
+   si quieres, solo algunas filas con «Elegir filas…»).
+
+El caso muestra los pasos insertados como un bloque, y la tabla vinculada, de
+solo lectura. Para editarlos se abre el elemento en la biblioteca, o se pulsa
+«Desvincular», que los convierte en pasos y filas propios del caso.
+
+**Seguir o fijar una versión.** Un bloque nuevo **sigue la última versión**:
+cuando alguien cambia el paso o el dataset en la biblioteca, el caso se
+actualiza solo. Con «Fijar en vN» se queda en esa versión, y el caso avisa «Hay
+una versión nueva» con el botón «Actualizar».
+
+**Los casos aprobados vuelven a revisión.** Actualizar un caso cambia su
+contenido, así que, como al editarlo a mano, un caso **Aprobado** pasa a **En
+revisión** y sube su versión. Antes de guardar el cambio en la biblioteca, un
+aviso dice cuántos casos se actualizan y cuántos aprobados volverán a revisión.
+Si un caso no debe moverse, fíjalo en su versión antes.
+
+**Un dataset de 3 filas da 3 resultados.** Al añadir el caso a un run, el
+diálogo muestra «3 filas · Usuarios válidos (v2)». En la ejecución, cada fila
+es una ejecución propia («Fila 2 de 3 · usuario = luis»), con sus valores
+resaltados en los pasos, y los pasos insertados aparecen bajo «Paso compartido
+· Iniciar sesión · v5». Cada fila guarda su resultado, que recuerda el dataset
+y la versión de cada paso compartido. El progreso cuenta el caso una vez.
+
+**Al exportar**, el `.feature`, el PDF y el `.xlsx` llevan los pasos y las
+filas completos, y nombran su origen: «Paso compartido: Iniciar sesión (v4)» y
+«Dataset: Usuarios válidos (v2)».
+
 ## Atajos de teclado
 
 | Tecla | Dónde | Qué hace |

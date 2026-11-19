@@ -148,6 +148,8 @@ export interface LinkableItem {
   id: string;
   key: string;
   title: string;
+  /** A case's bound dataset (CAS-01), shown when it is added to a run. */
+  dataset?: { name: string; version: number; rows: number };
 }
 
 // The Rust contract (BASE-05, ADR-0026): what Rust sends covers what this

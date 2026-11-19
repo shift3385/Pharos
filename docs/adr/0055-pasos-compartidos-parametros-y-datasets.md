@@ -254,3 +254,19 @@ Hecho en el módulo `src/modules/library` y en el editor de casos. Sigue los boc
   - **Reimportar un CSV o un `.xlsx`** sobre un dataset conserva el id de cada columna por su nombre y el de cada fila por su posición, para que los resultados sigan apuntando a la misma fila.
   - **Exportar CSV** usa `;` con la interfaz en español y `,` en inglés, y lleva BOM.
   - **Solo lectura para quien no puede editar casos:** la interfaz no oculta los botones; el núcleo y el servidor rechazan el cambio y se muestra su mensaje.
+
+## Implementación: ejecución y exportes (P4, 2026-11-19)
+
+Sigue el boceto 7 y los §5 y §8. Precisiones, sin cambiar la decisión:
+
+- **Atributos del resultado.** `step_results` no tiene columna JSON y no se añade migración: los datos de cada paso van en el resultado, como un mapa.
+  - `attributes.dataset = {id, name, version}` cuando el intento ejecuta la tabla del caso (flujo principal) y la revisión congelada la vincula (`datasetRefs`, entrada `"case"`).
+  - `attributes.sharedSteps = {<stepId>: {id, version}}` para cada paso registrado que es copia de una llamada.
+  - Los calcula `runs::record_result` desde la revisión congelada (`manual::library_attributes`), y el servidor igual (`runs-targets.ts` `libraryAttributes`). Las claves `dataset` y `sharedSteps` que mande el cliente se descartan. Un reintento con el mismo `attemptId` devuelve el resultado guardado sin recalcular nada.
+- **Pantalla del run.** `RunItemRow.dataset` (y el resumen del caso, `TestCaseSummary.dataset`) da «Usuarios válidos v2 · 3 filas». Ambos campos son opcionales y solo aparecen cuando hay dataset. «Añadir casos» muestra «3 filas · Usuarios válidos (v2)».
+- **Ejecución.** Cada fila se lista como «Fila n de m», con su primer valor («usuario = luis»). Los pasos de una llamada llevan encima «Paso compartido · nombre · vN», y su nombre también va en la etiqueta accesible del paso. Los valores sustituidos se resaltan (`<mark>`, con «Valor de `<nombre>`» como título).
+- **Exportes.**
+  - Los comentarios del `.feature` solo los escribe la exportación (`toGherkin(…, {library: true})`). La pestaña Gherkin del editor no los muestra, para que no entren en el texto que se edita.
+  - Un caso sin referencias exporta lo mismo que antes (los golden de `ATS_001` a `ATS_005` no cambian). El nuevo `ATS_006` cubre una llamada y un dataset.
+  - En B31 del `.xlsx`, la línea «Dataset: nombre (vN)» va al final.
+- **Manual:** sección «Biblioteca: pasos compartidos y datasets» en `docs/manual/fuentes/casos.md`. Los pasos con captura de la biblioteca siguen pendientes en `e2e/tours/manifest.ts` hasta que un tour la recorra.

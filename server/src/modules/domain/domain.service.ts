@@ -38,6 +38,7 @@ import { linkId, stampLifecycle } from "../sync/defects.js";
 import { afterSave, approverCheck, reviewTransition, statusOnCreate, stripReview } from "./case-review.js";
 import { planAfterSave, planOnCreate } from "./plan-review.js";
 import { createLibraryService, materializeCase } from "./shared-library.service.js";
+import { boundDataset } from "./runs-targets.js";
 import type {
   CaseBaselineInput,
   CaseReviewInput,
@@ -116,6 +117,12 @@ function aiPending(data: unknown): boolean {
 function requirementKeys(data: unknown): string[] {
   const keys = (data as { requirementKeys?: unknown } | null)?.requirementKeys;
   return Array.isArray(keys) ? keys.filter((k): k is string => typeof k === "string") : [];
+}
+
+/** `manual::bound_dataset` as a summary field: absent when there is none. */
+function withDataset(data: unknown) {
+  const d = isObject(data) ? boundDataset(data) : null;
+  return d ? { dataset: d } : {};
 }
 
 const isObject = (v: unknown): v is Payload => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -532,6 +539,8 @@ export function createDomainService(store: DomainStore) {
             createdBy: authors.get(str(c, "id")) ?? userId,
             updatedAt: c.updatedAt,
             revision: c.revision,
+            // CAS-01: the dataset bound to its Examples, for «Añadir casos».
+            ...withDataset(c.data),
           }));
       }),
     get: (userId: string, id: string) =>

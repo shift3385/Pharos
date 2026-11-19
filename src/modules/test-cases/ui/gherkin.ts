@@ -11,6 +11,13 @@ import {
   type TextFlow,
   type TextTable,
 } from "../model/steps";
+import {
+  blockStarts,
+  boundDataset,
+  callsByStep,
+  libraryName,
+  type CallNote,
+} from "../model/libraryNotes";
 
 // Steps carry stable ids (DAT-02): the renderers print their texts only, so
 // the Gherkin is exactly what it was with text steps; the parsers return texts
@@ -159,7 +166,17 @@ function scaffoldAdvanced(title: string, data: TestCaseData): string {
  *  precondiciones → Given, pasos → When, resultado esperado → Then. The case ID
  *  (`scenarioId`) is the scenario tag and the linked requirements are feature
  *  tags (TRZ-03). */
-export function toGherkin(title: string, data: TestCaseData, scenarioId = ""): string {
+/** `library`: the `.feature` export names the library (CAS-01, ADR-0055 §8):
+ *  `# Paso compartido: <name> (vN)` above each block of a shared step's copy
+ *  and `# Dataset: <name> (vN)` above the bound Examples. Cucumber ignores
+ *  comments; a case without library references prints the same as without
+ *  the option. The editor's Gherkin tab leaves them out. */
+export function toGherkin(
+  title: string,
+  data: TestCaseData,
+  scenarioId = "",
+  opts: { library?: boolean } = {},
+): string {
   const level: GherkinLevel = data.gherkinLevel ?? "basic";
 
   if (level === "advanced") {
@@ -178,12 +195,20 @@ export function toGherkin(title: string, data: TestCaseData, scenarioId = ""): s
   const step = (kw: string, first: boolean, text: string) =>
     lines.push(`${INDENT_STEP}${first ? kw : "And"} ${text}`);
 
-  texts(data.preconditions)
-    .filter((s) => s.trim())
-    .forEach((p, i) => step("Given", i === 0, p.trim()));
-  texts(data.steps)
-    .filter((s) => s.trim())
-    .forEach((s, i) => step("When", i === 0, s.trim()));
+  const calls = opts.library ? callsByStep(data) : new Map<string, CallNote>();
+  const list = (steps: readonly unknown[] | undefined, kw: string) => {
+    const starts = blockStarts(steps, calls);
+    let first = true;
+    texts(steps).forEach((s, i) => {
+      if (!s.trim()) return;
+      const call = starts[i];
+      if (call) lines.push(`${INDENT_STEP}# Paso compartido: ${libraryName(call)}`);
+      step(kw, first, s.trim());
+      first = false;
+    });
+  };
+  list(data.preconditions, "Given");
+  list(data.steps, "When");
   (data.expectedResult ?? "")
     .split("\n")
     .map((s) => s.trim())
@@ -191,7 +216,12 @@ export function toGherkin(title: string, data: TestCaseData, scenarioId = ""): s
     .forEach((t, i) => step("Then", i === 0, t));
 
   if (isOutline && data.examples) {
-    lines.push(...renderExamples(data.examples));
+    const examples = renderExamples(data.examples);
+    const dataset = opts.library ? boundDataset(data) : null;
+    // After the blank line, right above `Examples:`.
+    if (dataset && examples.length)
+      examples.splice(1, 0, `${INDENT_STEP}# Dataset: ${libraryName(dataset)}`);
+    lines.push(...examples);
   }
 
   return lines.join("\n") + "\n";

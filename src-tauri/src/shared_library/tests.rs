@@ -328,6 +328,72 @@ fn a_dataset_of_three_rows_gives_three_targets() {
 }
 
 #[test]
+fn a_manual_result_records_the_dataset_and_its_shared_steps() {
+    use crate::runs::{add_items, insert_run, record_result, ResultInput, RunInput, RunItemInput};
+    let c = conn();
+    let p = project(&c);
+    let login = create_item(&c, &login_input(&p, "Entonces veo mi nombre")).unwrap();
+    let users = create_item(&c, &users_input(&p, 3)).unwrap();
+    let mut raw = case_json(&p, "Compra", &login.id, true);
+    raw["data"]["datasetRefs"] = json!([{"id": "case", "datasetId": users.id}]);
+    let input: test_case::TestCaseInput = serde_json::from_value(raw).unwrap();
+    let id = test_case::insert_case(&c, &input).unwrap();
+    let d = data_of(&c, &id);
+    let copied = d["sharedRefs"][0]["stepIds"][1]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let row = d["examples"]["rows"][1]["id"].as_str().unwrap().to_string();
+
+    let run: RunInput =
+        serde_json::from_value(json!({"projectId": p, "title": "R", "userId": USER})).unwrap();
+    let run = insert_run(&c, &run).unwrap();
+    let whole: RunItemInput = serde_json::from_value(json!({"testCaseId": id})).unwrap();
+    let item = add_items(&c, &run, USER, &[whole]).unwrap().remove(0);
+    // The run screen names the dataset of the frozen revision.
+    let o = crate::runs::manual::overview(&c, &run, USER)
+        .unwrap()
+        .unwrap();
+    let bound = o.items[0].dataset.clone().unwrap();
+    assert_eq!(
+        (bound.name.as_str(), bound.version, bound.rows),
+        ("Usuarios válidos", 1, 3)
+    );
+
+    // A client's own `dataset` / `sharedSteps` keys do not stand.
+    let attempt = Uuid::new_v4().to_string();
+    let input: ResultInput = serde_json::from_value(json!({
+        "runItemId": item, "status": "failed", "userId": USER, "attemptId": attempt,
+        "exampleRowId": row,
+        "attributes": {"notes": "n", "dataset": {"id": "x"}, "sharedSteps": {"y": 1}},
+        "steps": [
+            {"stepId": copied, "text": "Cuando escribo luis@acme.test", "status": "failed"},
+            {"stepId": "OWN00001", "text": "Cuando pago el pedido", "status": "skipped"}
+        ]
+    }))
+    .unwrap();
+    let rid = record_result(&c, &input).unwrap();
+    let attrs: String = c
+        .query_row(
+            "SELECT attributes FROM results WHERE id = ?1",
+            params![rid],
+            |r| r.get(0),
+        )
+        .unwrap();
+    let attrs: Value = serde_json::from_str(&attrs).unwrap();
+    assert_eq!(
+        attrs,
+        json!({
+            "notes": "n",
+            "dataset": {"id": users.id, "name": "Usuarios válidos", "version": 1},
+            "sharedSteps": {copied.clone(): {"id": login.id, "version": 1}}
+        })
+    );
+    // A retry of the same attempt returns it unchanged.
+    assert_eq!(record_result(&c, &input).unwrap(), rid);
+}
+
+#[test]
 fn advanced_cases_cannot_use_the_library_in_0_6() {
     let c = conn();
     let p = project(&c);

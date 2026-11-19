@@ -4492,6 +4492,10 @@
     "targets": "Flows and rows of this item",
     "mainFlow": "Main flow",
     "row": "Row {{n}}",
+    "rowOf": "Row {{n}} of {{total}}",
+    "sharedBlock": "Shared step · {{name}} · v{{version}}",
+    "stepInShared": "{{label}} Shared step {{name}}, v{{version}}.",
+    "paramValue": "Value of <{{name}}>",
     "inDraft": "Draft",
     "notRun": "Not run",
     "rowValues": "Row data: {{row}}",
@@ -4586,6 +4590,8 @@
       "finished": "Finished",
       "targets_one": "{{count}} execution",
       "targets_other": "{{count}} executions",
+      "dataset_one": "{{name}} v{{version}} · {{count}} row",
+      "dataset_other": "{{name}} v{{version}} · {{count}} rows",
       "case": "Case",
       "caseDeleted": "case deleted",
       "done": "Done",
@@ -4634,6 +4640,8 @@
       "deletedNotice": "This run was deleted (perhaps on another device)."
     },
     "picker": {
+      "dataset_one": "{{count}} row · {{name}} (v{{version}})",
+      "dataset_other": "{{count}} rows · {{name}} (v{{version}})",
       "search": "Search by ID or title",
       "cases": "Cases",
       "inRun": "already in the run",
@@ -5527,6 +5535,11 @@
     }
   },
   "library": {
+    "export": {
+      "sharedBlock": "Shared step · {{name}} · v{{version}}",
+      "datasetTable": "Test data · {{name}} (v{{version}})",
+      "datasetLine": "Dataset: {{name}} (v{{version}})"
+    },
     "title": "Library",
     "tab": {
       "steps": "Shared steps",

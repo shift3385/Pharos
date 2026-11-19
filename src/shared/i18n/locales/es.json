@@ -4492,6 +4492,10 @@
     "targets": "Flujos y filas de este elemento",
     "mainFlow": "Flujo principal",
     "row": "Fila {{n}}",
+    "rowOf": "Fila {{n}} de {{total}}",
+    "sharedBlock": "Paso compartido · {{name}} · v{{version}}",
+    "stepInShared": "{{label}} Paso compartido {{name}}, v{{version}}.",
+    "paramValue": "Valor de <{{name}}>",
     "inDraft": "Borrador",
     "notRun": "Sin ejecutar",
     "rowValues": "Datos de la fila: {{row}}",
@@ -4586,6 +4590,8 @@
       "finished": "Fin",
       "targets_one": "{{count}} ejecución",
       "targets_other": "{{count}} ejecuciones",
+      "dataset_one": "{{name}} v{{version}} · {{count}} fila",
+      "dataset_other": "{{name}} v{{version}} · {{count}} filas",
       "case": "Caso",
       "caseDeleted": "caso eliminado",
       "done": "Hechos",
@@ -4634,6 +4640,8 @@
       "deletedNotice": "Este run se eliminó (quizá en otro equipo)."
     },
     "picker": {
+      "dataset_one": "{{count}} fila · {{name}} (v{{version}})",
+      "dataset_other": "{{count}} filas · {{name}} (v{{version}})",
       "search": "Buscar por ID o título",
       "cases": "Casos",
       "inRun": "ya en el run",
@@ -5527,6 +5535,11 @@
     }
   },
   "library": {
+    "export": {
+      "sharedBlock": "Paso compartido · {{name}} · v{{version}}",
+      "datasetTable": "Datos de prueba · {{name}} (v{{version}})",
+      "datasetLine": "Dataset: {{name}} (v{{version}})"
+    },
     "title": "Biblioteca",
     "tab": {
       "steps": "Pasos compartidos",

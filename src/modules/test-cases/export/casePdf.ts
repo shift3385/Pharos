@@ -18,6 +18,7 @@ import {
 } from "../model/steps";
 import type { ExportableCase } from "./caseXlsx";
 import { traceabilityText } from "../model/trace";
+import { blockStarts, boundDataset, callsByStep, type CallNote } from "../model/libraryNotes";
 
 type Translate = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -41,6 +42,45 @@ function examplesBlock(
   ];
 }
 
+/** A list of steps; above the first step of each shared-step block, the label
+ *  «Paso compartido · <name> · vN» (CAS-01, ADR-0055 §8). Without blocks it
+ *  is `itemList`, so a case without the library prints as before. */
+function stepList(
+  raw: readonly unknown[] | undefined,
+  calls: Map<string, CallNote>,
+  t: Translate,
+  ordered = false,
+): Content {
+  const starts = blockStarts(raw, calls);
+  if (!starts.some(Boolean)) return itemList(texts(raw), ordered);
+  const items: Content[] = [];
+  texts(raw).forEach((s, i) => {
+    const text = s.trim();
+    if (!text) return;
+    const call = starts[i];
+    items.push(
+      call
+        ? {
+            stack: [
+              {
+                text: t("library.export.sharedBlock", {
+                  name: call.name,
+                  version: call.version ?? "?",
+                }),
+                bold: true,
+                fontSize: 8,
+              },
+              text,
+            ],
+          }
+        : text,
+    );
+  });
+  return ordered
+    ? { ol: items, style: "value", alignment: "justify" }
+    : { ul: items, style: "value", alignment: "justify" };
+}
+
 /** Body sections shared by every level (preconditions → notes). */
 function standardBody(
   c: ExportableCase,
@@ -54,20 +94,23 @@ function standardBody(
   },
 ): Content[] {
   const d = c.data ?? {};
-  const preconditions = texts(over?.preconditions ?? d.preconditions);
-  const steps = texts(over?.steps ?? d.steps);
+  const calls = callsByStep(d);
   const expected = over?.expected ?? d.expectedResult ?? "";
   const examples = over?.examples ?? d.examples;
+  const dataset = over?.examples ? null : boundDataset(d);
+  const examplesTitle = dataset
+    ? t("library.export.datasetTable", { name: dataset.name, version: dataset.version ?? "?" })
+    : t("testCase.examples.title");
   return [
     sectionHeader(t("testCase.preconditions")),
-    itemList(preconditions),
+    stepList(over?.preconditions ?? d.preconditions, calls, t),
     sectionHeader(t("testCase.steps")),
-    itemList(steps, true),
+    stepList(over?.steps ?? d.steps, calls, t, true),
     sectionHeader(t("testCase.expectedResult")),
     field(expected),
     sectionHeader(t("testCase.testData")),
     field(d.testData ?? ""),
-    ...examplesBlock(examples, t("testCase.examples.title"), none),
+    ...examplesBlock(examples, examplesTitle, none),
     sectionHeader(t("testCase.postconditions")),
     itemList(d.postconditions ?? []),
     sectionHeader(t("testCase.acceptanceCriteria")),

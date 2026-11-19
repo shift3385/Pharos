@@ -301,3 +301,76 @@ export function attemptsOf<
       (r.effectiveExampleRowId ?? null) === (target.exampleRowId ?? null),
   );
 }
+
+// ---- the project library in the executor (CAS-01, ADR-0055 §5) ----------------
+
+/** The shared-step call a copied step belongs to. */
+export interface SharedBlock {
+  /** The call's id in `data.sharedRefs`. */
+  callId: string;
+  name: string;
+  version: number | null;
+  /** The first step of the call's copy: the block's header goes above it. */
+  first: boolean;
+}
+
+/** By step id, the call of each copied step of the frozen revision
+ *  (`data.sharedRefs[].stepIds`). */
+export function sharedBlocks(revision: Obj): Map<string, SharedBlock> {
+  const out = new Map<string, SharedBlock>();
+  if (!Array.isArray(revision.sharedRefs)) return out;
+  for (const call of revision.sharedRefs) {
+    if (!isObj(call) || typeof call.id !== "string" || !Array.isArray(call.stepIds)) continue;
+    const name = typeof call.name === "string" ? call.name : "";
+    const version = typeof call.version === "number" ? call.version : null;
+    call.stepIds.forEach((id, i) => {
+      if (typeof id === "string" && !out.has(id))
+        out.set(id, { callId: call.id as string, name, version, first: i === 0 });
+    });
+  }
+  return out;
+}
+
+/** The dataset bound to the case's own Examples, as the frozen revision
+ *  names it (`data.datasetRefs`, entry `"case"`). */
+export function boundDatasetOf(
+  revision: Obj,
+): { name: string; version: number | null; rows: number } | null {
+  if (!Array.isArray(revision.datasetRefs)) return null;
+  const r = revision.datasetRefs.find((x) => isObj(x) && x.id === "case");
+  if (!isObj(r)) return null;
+  const ex = isObj(revision.examples) ? revision.examples : {};
+  return {
+    name: typeof r.name === "string" ? r.name : "",
+    version: typeof r.version === "number" ? r.version : null,
+    rows: Array.isArray(ex.rows) ? ex.rows.length : 0,
+  };
+}
+
+/** A text split where `fill` substitutes: plain parts, and each value with
+ *  the parameter it replaced (the executor highlights them). */
+export type FilledPart = string | { name: string; value: string };
+
+export function fillParts(text: string, values: ExecutionTarget["values"]): FilledPart[] {
+  if (!values || Array.isArray(values)) return [text];
+  const out: FilledPart[] = [];
+  let last = 0;
+  for (const m of text.matchAll(/<([^<>]+)>/g)) {
+    const name = m[1];
+    if (!Object.prototype.hasOwnProperty.call(values, name)) continue;
+    const at = m.index ?? 0;
+    if (at > last) out.push(text.slice(last, at));
+    out.push({ name, value: values[name] });
+    last = at + m[0].length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+
+/** The first parameter of a row and its value: «usuario = luis». */
+export function firstValue(values: ExecutionTarget["values"]): string {
+  if (!values) return "";
+  if (Array.isArray(values)) return values[0] ?? "";
+  const first = Object.entries(values)[0];
+  return first ? `${first[0]} = ${first[1]}` : "";
+}

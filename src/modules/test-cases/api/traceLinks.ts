@@ -14,6 +14,7 @@ export async function projectTraceableCases(
     status: s.status,
     requirementKeys: s.requirementKeys,
     traceability: s.traceability,
+    ...(s.dataset ? { dataset: s.dataset } : {}),
   }));
 }
 

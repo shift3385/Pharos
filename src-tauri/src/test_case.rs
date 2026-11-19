@@ -61,6 +61,11 @@ pub struct TestCaseSummary {
     created_by: String,
     updated_at: String,
     revision: i64,
+    /// The dataset bound to its Examples (CAS-01): «3 filas · Usuarios
+    /// válidos (v2)» when it is added to a run.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, ts(optional))]
+    dataset: Option<crate::runs::manual::BoundDataset>,
 }
 
 /// The string entries of `data.requirementKeys`; anything else is ignored.
@@ -285,6 +290,7 @@ pub(crate) fn list_cases(
                 created_by: r.get("created_by")?,
                 updated_at: r.get("updated_at")?,
                 revision: r.get("revision")?,
+                dataset: crate::runs::manual::bound_dataset(&data),
             })
         })
         .map_err(|e| e.to_string())?;

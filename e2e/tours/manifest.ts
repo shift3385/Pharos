@@ -158,7 +158,7 @@ const WORKSPACES_PENDING =
   "necesita una segunda cuenta y un servidor con workspaces: lo cubre la validación de 0.5.0 con dos personas (SYNC-07); el flujo lo prueban los tests de la UI y del servidor";
 
 const LIBRARY_PENDING =
-  "la biblioteca (CAS-01) llega a los tours y al manual en P4; la cubren src/modules/library/ui/LibraryPage.test.tsx y src/modules/test-cases/ui/TestCaseEditor.library.test.tsx";
+  "la biblioteca (CAS-01) ya tiene su texto en el manual (docs/manual/fuentes/casos.md, «Biblioteca: pasos compartidos y datasets»); sus pasos con captura llegan cuando se recorra en un tour. La cubren src/modules/library/ui/LibraryPage.test.tsx, src/modules/test-cases/ui/TestCaseEditor.library.test.tsx y, en la ejecución, src/modules/runs/ui/RunDetail.test.tsx";
 
 const TOKENS_PENDING =
   "el capítulo «Integraciones» llega con la subida de resultados (INT-02, pista A, A4); lo cubren server/tests/api.tokens.test.ts y src/modules/integrations/ui/integrations.test.tsx";
@@ -359,7 +359,7 @@ export const INVENTORY: Item[] = [
   I("casos", "action", "action:case-baseline-compare", "Comparar una baseline con el estado actual o con otra"),
 
   // CAS-01 (ADR-0055): the library section and its use in a case. The tours
-  // and the manual chapter come with P4.
+  // come later; the manual prose is in fuentes/casos.md (P4).
   I("casos", "section", "section:library", "Biblioteca del proyecto: pasos compartidos y datasets", { pending: LIBRARY_PENDING }),
   I("casos", "tab", "tabs:src/modules/library/ui/LibraryPage.tsx", "Pestañas de la Biblioteca (Pasos compartidos / Datasets)", { pending: LIBRARY_PENDING }),
   I("casos", "tab", "tabs:src/modules/library/ui/ItemEditorFrame.tsx", "Pestañas de un elemento (Pasos o Datos / Usado en / Versiones)", { pending: LIBRARY_PENDING }),

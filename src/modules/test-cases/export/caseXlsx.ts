@@ -40,6 +40,9 @@ export interface ExportableCase {
   /** Who approved the case, when and which version (CAS-02): a line of the
    *  PDF. The .xlsx template has no cell for it. */
   approvalLine?: string;
+  /** «Dataset: Usuarios válidos (v2)» when the Examples are a bound dataset
+   *  (CAS-01, ADR-0055 §8): one more line in B31, localized by the caller. */
+  datasetLine?: string;
 }
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -138,7 +141,10 @@ export async function buildCaseXlsx(
     set("B17", list(d.preconditions));
     set("B19", numbered(d.steps));
     set("B25", d.expectedResult);
-    set("B31", [d.testData, tableText(d.examples)].filter(Boolean).join("\n\n"));
+    set(
+      "B31",
+      [d.testData, tableText(d.examples), c.datasetLine].filter(Boolean).join("\n\n"),
+    );
   }
 
   if (gherkinSheet && c.gherkin) {

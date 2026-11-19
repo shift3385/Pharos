@@ -7,6 +7,7 @@ import {
   useState,
   type ClipboardEvent,
   type KeyboardEvent,
+  type ReactNode,
 } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -48,12 +49,15 @@ import {
   elapsedAt,
   expectedOf,
   fill,
+  fillParts,
+  firstValue,
   formatElapsed,
   newDraft,
   nextUnmarked,
   parseDraft,
   resultStatus,
   rowLabel,
+  sharedBlocks,
   STEP_STATUSES,
   stepsOf,
   toggleTimer,
@@ -224,6 +228,26 @@ export function ExecutionPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [detail, target?.key],
   );
+  // Copied steps of a shared-step call, by step id (CAS-01).
+  const blocks = useMemo(
+    () => sharedBlocks((detail?.revision ?? {}) as Record<string, unknown>),
+    [detail],
+  );
+  /** A text with the row's values in place, each one highlighted. */
+  const filled = (text: string): ReactNode =>
+    fillParts(text, target?.values ?? null).map((part, k) =>
+      typeof part === "string" ? (
+        part
+      ) : (
+        <mark
+          key={k}
+          className="ex-param"
+          title={t("execution.paramValue", { name: part.name })}
+        >
+          {part.value}
+        </mark>
+      ),
+    );
   const draft = target ? drafts[target.key] : undefined;
   const editable = runOpen && detail?.runStatus === "in_progress";
   const attempts = detail && target ? attemptsOf(detail.results, target) : [];
@@ -737,9 +761,16 @@ export function ExecutionPanel({
                     <span className="ex-target__name">
                       {x.flowName ?? t("execution.mainFlow")}
                       {x.exampleRow !== null &&
-                        ` · ${t("execution.row", { n: x.exampleRow + 1 })}`}
+                        ` · ${t("execution.rowOf", {
+                          n: x.exampleRow + 1,
+                          total: detail.targets.filter((y) => y.flowId === x.flowId).length,
+                        })}`}
                     </span>
-                    {x.values && <span className="ex-target__row">{rowLabel(x.values)}</span>}
+                    {x.values && (
+                      <span className="ex-target__row" title={rowLabel(x.values)}>
+                        {firstValue(x.values)}
+                      </span>
+                    )}
                     <StatusPill tone={final ? statusTone(final.status) : "neutral"} dot>
                       {final
                         ? t(`runs.status.${final.status}`, final.status)
@@ -777,6 +808,14 @@ export function ExecutionPanel({
               const sd = d.steps[s.id];
               const files = draftFiles.filter((a) => a.stepId === s.id);
               const notesOpen = openNotes.has(s.id) || Boolean(sd?.actual);
+              const block = blocks.get(s.id);
+              const stepLabel = t("execution.stepLabel", {
+                n: i + 1,
+                text: fill(s.text, target.values),
+                status: sd?.status
+                  ? t(`runs.status.${sd.status}`)
+                  : t("execution.notMarked"),
+              });
               return (
                 <li
                   key={s.id}
@@ -784,6 +823,7 @@ export function ExecutionPanel({
                     stepRefs.current[i] = el;
                   }}
                   className="ex-step"
+                  data-shared={block ? (block.first ? "first" : "rest") : undefined}
                   data-status={sd?.status}
                   data-focused={i === focus || undefined}
                   tabIndex={i === focus ? 0 : -1}
@@ -791,14 +831,24 @@ export function ExecutionPanel({
                     if (e.target === e.currentTarget) setFocus(i);
                   }}
                   onClick={() => setFocus(i)}
-                  aria-label={t("execution.stepLabel", {
-                    n: i + 1,
-                    text: fill(s.text, target.values),
-                    status: sd?.status
-                      ? t(`runs.status.${sd.status}`)
-                      : t("execution.notMarked"),
-                  })}
+                  aria-label={
+                    block
+                      ? t("execution.stepInShared", {
+                          label: stepLabel,
+                          name: block.name,
+                          version: block.version ?? "?",
+                        })
+                      : stepLabel
+                  }
                 >
+                  {block?.first && (
+                    <p className="ex-shared" aria-hidden="true">
+                      {t("execution.sharedBlock", {
+                        name: block.name,
+                        version: block.version ?? "?",
+                      })}
+                    </p>
+                  )}
                   <div className="ex-step__main">
                     <span className="ex-step__n" aria-hidden="true">
                       {i + 1}
@@ -809,10 +859,11 @@ export function ExecutionPanel({
                           {t(`execution.section.${s.section}`)}
                         </span>
                       )}
-                      <span>{fill(s.text, target.values)}</span>
+                      <span>{filled(s.text)}</span>
                       {s.expected && (
                         <span className="ex-step__expected">
-                          {t("execution.expected", { text: fill(s.expected, target.values) })}
+                          {t("execution.expected", { text: "" })}
+                          {filled(s.expected)}
                         </span>
                       )}
                     </div>

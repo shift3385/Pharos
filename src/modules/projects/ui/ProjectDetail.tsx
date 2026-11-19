@@ -123,7 +123,10 @@ export function ProjectDetail({
       // Only options for the section: without them its own load still reports.
       void projectTraceableCases(projectId, ownerId)
         .then((list) => {
-          if (live) setLinkableCases(list.map((c) => ({ id: c.id, key: c.scenarioId, title: c.title })));
+          if (live)
+            setLinkableCases(
+              list.map((c) => ({ id: c.id, key: c.scenarioId, title: c.title, dataset: c.dataset })),
+            );
         })
         .catch((e: unknown) => logClientError(e, "project linkable cases"));
       void requirementApi
@@ -249,7 +252,12 @@ export function ProjectDetail({
             projectId={projectId}
             projectName={project.name}
             runId={runId}
-            cases={linkableCases.map((c) => ({ id: c.id, scenarioId: c.key, title: c.title }))}
+            cases={linkableCases.map((c) => ({
+              id: c.id,
+              scenarioId: c.key,
+              title: c.title,
+              dataset: c.dataset,
+            }))}
             requirements={linkableRequirements}
           />
         )}

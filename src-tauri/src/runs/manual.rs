@@ -153,6 +153,23 @@ pub struct RunItemRow {
     pub(crate) status: String,
     pub(crate) attempts: i64,
     pub(crate) has_draft: bool,
+    /// The dataset the frozen revision binds to its Examples (CAS-01).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, ts(optional))]
+    pub(crate) dataset: Option<BoundDataset>,
+}
+
+/// A dataset bound to a case's Examples, as the frozen revision names it
+/// (ADR-0055 §5): «Usuarios válidos v2 · 3 filas».
+#[cfg_attr(test, derive(TS), ts(export))]
+#[derive(Serialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BoundDataset {
+    pub(crate) id: String,
+    pub(crate) name: String,
+    pub(crate) version: i64,
+    /// Rows of the materialized table (the targets it gives).
+    pub(crate) rows: i64,
 }
 
 /// Targets of a run by their final status.
@@ -261,6 +278,74 @@ fn has_steps(c: &Value) -> bool {
             .and_then(Value::as_array)
             .is_some_and(|a| !a.is_empty())
     })
+}
+
+/// The dataset bound to the case's own Examples (`datasetRefs` entry
+/// `"case"`, ADR-0055 §2), if any.
+pub(crate) fn bound_dataset(data: &Value) -> Option<BoundDataset> {
+    let r = data
+        .get("datasetRefs")
+        .and_then(Value::as_array)?
+        .iter()
+        .find(|r| r.get("id").and_then(Value::as_str) == Some("case"))?;
+    Some(BoundDataset {
+        id: r.get("datasetId").and_then(Value::as_str)?.to_string(),
+        name: r
+            .get("name")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_string(),
+        version: r.get("version").and_then(Value::as_i64).unwrap_or(0),
+        rows: rows_of(data).len() as i64,
+    })
+}
+
+/// What a manual result records about the library (ADR-0055 §5), derived
+/// from the frozen revision, never from the client: `dataset` when the
+/// attempt runs the case's bound table, and `sharedSteps` (step id → the
+/// call's shared step and version) for each recorded step that is a copy.
+/// `step_results` has no JSON column, so the per-step facts live here.
+pub(crate) fn library_attributes(
+    data: &Value,
+    flow_id: Option<&str>,
+    step_ids: &[String],
+) -> Map<String, Value> {
+    let mut out = Map::new();
+    if flow_id.is_none() {
+        if let Some(d) = bound_dataset(data) {
+            out.insert(
+                "dataset".into(),
+                json!({ "id": d.id, "name": d.name, "version": d.version }),
+            );
+        }
+    }
+    let mut steps = Map::new();
+    for call in data
+        .get("sharedRefs")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+    {
+        let Some(id) = call.get("sharedStepId").and_then(Value::as_str) else {
+            continue;
+        };
+        let version = call.get("version").cloned().unwrap_or(Value::Null);
+        for s in call
+            .get("stepIds")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(Value::as_str)
+        {
+            if step_ids.iter().any(|x| x == s) {
+                steps.insert(s.to_string(), json!({ "id": id, "version": version }));
+            }
+        }
+    }
+    if !steps.is_empty() {
+        out.insert("sharedSteps".into(), Value::Object(steps));
+    }
+    out
 }
 
 /// The key of a target, as drafts and the UI name it.
@@ -715,6 +800,7 @@ pub(crate) fn overview(
                 .to_string(),
             attempts: attempts.get(item.id.as_str()).copied().unwrap_or(0),
             has_draft: drafts.contains(&item.id),
+            dataset: bound_dataset(&data),
             item,
         });
     }

@@ -161,3 +161,38 @@ export function overlaps(a: ExecutionTarget[], b: ExecutionTarget[]): boolean {
   const keys = new Set(a.map((t) => t.key));
   return b.some((t) => keys.has(t.key));
 }
+
+/** The dataset bound to the case's own Examples (`manual::bound_dataset`,
+ *  ADR-0055 §2): the `datasetRefs` entry `"case"`. */
+export function boundDataset(data: Payload): { id: string; name: string; version: number; rows: number } | null {
+  const r = arr(data.datasetRefs).find((x) => idOf(x) === "case");
+  if (!isObj(r) || typeof r.datasetId !== "string") return null;
+  return {
+    id: r.datasetId,
+    name: typeof r.name === "string" ? r.name : "",
+    version: typeof r.version === "number" && Number.isInteger(r.version) ? r.version : 0,
+    rows: rowsOf(data).length,
+  };
+}
+
+/** What a manual result records about the library (`manual::library_attributes`,
+ *  ADR-0055 §5), from the frozen revision: `dataset` when the attempt runs the
+ *  case's bound table, and `sharedSteps` (step id → the call's shared step and
+ *  version) for each recorded step that is a copy. */
+export function libraryAttributes(data: Payload, flowId: string | null, stepIds: string[]): Payload {
+  const out: Payload = {};
+  if (flowId === null) {
+    const d = boundDataset(data);
+    if (d) out.dataset = { id: d.id, name: d.name, version: d.version };
+  }
+  const steps: Payload = {};
+  for (const call of arr(data.sharedRefs)) {
+    if (!isObj(call) || typeof call.sharedStepId !== "string") continue;
+    const version = call.version === undefined ? null : call.version;
+    for (const s of arr(call.stepIds)) {
+      if (typeof s === "string" && stepIds.includes(s)) steps[s] = { id: call.sharedStepId, version };
+    }
+  }
+  if (Object.keys(steps).length) out.sharedSteps = steps;
+  return out;
+}
