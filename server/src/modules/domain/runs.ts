@@ -12,6 +12,7 @@ import { staleWrite, type DomainStore, type DomainTx } from "./domain.store.js";
 import { sortable, timestamp } from "./domain.service.js";
 import { isImported, projectLinks, supersededShards, type ResultLink } from "./resultLink.js";
 import { isLiveRun } from "./run-live.js";
+import { findingCountsOf } from "./findings.js";
 import {
   flowShape,
   manualTestKey,
@@ -1029,11 +1030,24 @@ export function createRunService(store: DomainStore) {
         const project = await tx.get("project", projectId);
         if (!project || project.deleted) return [];
         const { data, cases } = await viewsOf(tx, projectId);
+        // F5b: open findings and failed thresholds; a run with them only is
+        // listed too.
+        const found = await findingCountsOf(tx, projectId);
         const out = [];
         for (const r of data.runs.sort((a, b) => (a.entityId < b.entityId ? -1 : 1))) {
           const finals = resultViews(data, r.entityId, cases).filter((v) => v.isFinal);
-          if (!finals.length) continue;
-          const c = { runId: r.entityId, passed: 0, failed: 0, other: 0, unlinked: 0 };
+          const f = found.get(r.entityId);
+          if (!finals.length && !f) continue;
+          const c = {
+            runId: r.entityId,
+            passed: 0,
+            failed: 0,
+            other: 0,
+            unlinked: 0,
+            findings: f?.findings ?? 0,
+            findingsWorst: f?.findingsWorst ?? null,
+            thresholdsFailed: f?.thresholdsFailed ?? 0,
+          };
           for (const v of finals) {
             if (v.status === "passed") c.passed++;
             else if (v.status === "failed") c.failed++;

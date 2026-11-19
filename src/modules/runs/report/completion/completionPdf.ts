@@ -50,6 +50,14 @@ export function completionDocDefinition(r: CompletionReport, l: CompletionLabels
     dataTable(r.openDefects.headers, r.openDefects.rows, l.noDefects, [60, "*", 60, 70]),
     subTitle(l.riskyRequirements),
     dataTable(r.riskyRequirements.headers, r.riskyRequirements.rows, l.noRisky, [60, "*", 35, 60, 70]),
+    ...(r.findings
+      ? [
+          subTitle(l.findings),
+          field([r.findings.findingsLine, r.findings.thresholdsLine].filter(Boolean).join(" · ")),
+          dataTable(r.findings.tools.headers, r.findings.tools.rows, l.noData),
+          dataTable(r.findings.failed.headers, r.findings.failed.rows, l.noFailedThresholds, [60, "*", 70, 60, 60]),
+        ]
+      : []),
     ...note(l.notes, r.risksNote),
     ...section(s.deliverables, dataTable(r.deliverables.headers, r.deliverables.rows, l.noData, ["*", 80, 60])),
     ...section(s.assets, pairsTable(r.assets)),

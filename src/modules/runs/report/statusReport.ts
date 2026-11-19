@@ -2,6 +2,7 @@ import type { ExecutionSummary } from "@shared/contracts/contract";
 import { parseStamp } from "@shared/time/stamp";
 import { criterionValue, evaluateExitCriteria } from "../model/exitCriteria";
 import { decisionSection, type DecisionSection } from "./decisionSection";
+import { findingsSection, type FindingsSection } from "./findingsSection";
 
 // The test status report (EJE-03, ISO/IEC/IEEE 29119-3 «Test Status
 // Report»), built from the execution derivation (contract v1) only: the
@@ -52,6 +53,8 @@ export interface StatusReport {
   /** Met / not met / no data per exit criterion, in `exit.rows` order. */
   exitStates: ("met" | "notMet" | "noData" | "manual")[];
   issues: ReportTable;
+  /** «Hallazgos y rendimiento» (ING-06): null without findings or thresholds. */
+  findings: FindingsSection | null;
   /** Per case: the latest final result (the .xlsx «Resultados» sheet). */
   cases: ReportTable;
   /** Per requirement: risk, coverage and status (the «Cobertura» sheet). */
@@ -273,6 +276,7 @@ export function buildStatusReport(
       ],
       rows: issues,
     },
+    findings: findingsSection(s.findings, (id) => cases.get(id)?.scenarioId ?? id, t),
     cases: {
       headers: [
         t("statusReport.col.case"),

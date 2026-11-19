@@ -6,6 +6,7 @@
 //! The link to a case is not stored: the tags stay in `attributes` and are
 //! resolved when read (ADR-0013), like an imported result's.
 
+pub mod summary;
 #[cfg(test)]
 mod tests;
 

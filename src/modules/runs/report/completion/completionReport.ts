@@ -1,4 +1,5 @@
 import type { CycleClosure, ExecutionSummary } from "@shared/contracts/contract";
+import { findingsSection, type FindingsSection } from "../findingsSection";
 import {
   METRIC_KINDS,
   OP_SYMBOL,
@@ -198,6 +199,9 @@ export interface CompletionReport {
   riskyRequirements: ReportTable;
   /** Per row of `riskyRequirements`: the risk band (high | medium | …). */
   riskyBands: string[];
+  /** Open findings and failed thresholds of the latest scans (ING-06);
+   *  null without findings or thresholds. */
+  findings: FindingsSection | null;
   risksNote: string;
   /** Section 8: deliverable, origin, delivered. `plan` rows can be ticked. */
   deliverables: ReportTable;
@@ -495,6 +499,11 @@ export function buildCompletionReport(
       ]),
     },
     riskyBands: risky.map((r) => r.riskBand),
+    findings: findingsSection(
+      s.findings,
+      (id) => s.cases.find((c) => c.caseId === id)?.scenarioId ?? id,
+      t,
+    ),
     risksNote: ctx.texts.risks,
     deliverables: {
       headers: [
@@ -552,6 +561,8 @@ export interface CompletionLabels {
   sheets: Record<"report" | "decision" | "measures" | "risks" | "deliverables" | "cases", string>;
   openDefects: string;
   riskyRequirements: string;
+  findings: string;
+  noFailedThresholds: string;
   metrics: string;
   notes: string;
   noData: string;
@@ -575,6 +586,8 @@ export function completionLabels(t: Translate): CompletionLabels {
     },
     openDefects: t("completionReport.openDefects"),
     riskyRequirements: t("completionReport.riskyRequirements"),
+    findings: t("completionReport.findings"),
+    noFailedThresholds: t("statusReport.findings.noFailed"),
     metrics: t("gate.report.metricsSection"),
     notes: t("completionReport.notes"),
     noData: t("common.noData"),

@@ -86,6 +86,7 @@ export interface ReportLabels {
     | "coverage"
     | "exit"
     | "issues"
+    | "findings"
     | "summary"
     | "recommendations",
     string
@@ -95,6 +96,8 @@ export interface ReportLabels {
   noRisky: string;
   noIssues: string;
   noData: string;
+  /** Under «Hallazgos y rendimiento» when every threshold passed. */
+  noFailedThresholds: string;
 }
 
 /** Builds the workbook (no I/O; testable). */
@@ -150,6 +153,15 @@ export async function buildReportXlsx(
   r = table(ws, r, report.exit, labels.noData);
   r = section(ws, r, s.issues);
   r = table(ws, r, report.issues, labels.noIssues);
+  const f = report.findings;
+  if (f) {
+    r = section(ws, r, s.findings);
+    ws.getRow(r).getCell(1).value = f.findingsLine;
+    ws.getRow(r + 1).getCell(1).value = f.thresholdsLine;
+    r += 3;
+    r = table(ws, r, f.tools, labels.noData);
+    r = table(ws, r, f.failed, labels.noFailedThresholds);
+  }
   r = section(ws, r, s.summary);
   r = text(ws, r, report.summary);
   r = section(ws, r, s.recommendations);
