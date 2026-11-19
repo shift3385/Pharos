@@ -160,4 +160,9 @@
   - GitHub Actions: `externalId` y nombre del run automáticos, `$GITHUB_STEP_SUMMARY`, `$GITHUB_OUTPUT` y anotaciones;
   - **ajuste respecto del plan:** el servidor cierra al momento el run que crea una subida, así que para varios ficheros el CLI crea antes el run vacío (`createRun`), sube a él y lo cierra al final. Con `externalId` no se cierra: lo cierra el último job;
   - **prueba de punta a punta** contra un servidor real en el puerto 3120 (BD `pharos_test_db_trackl`, borrada al terminar), con 23 comprobaciones: JUnit, SARIF, k6 y axe en un mismo run, con sus hallazgos y métricas guardados; una matriz de GitHub que converge y se cierra por `externalId`; los códigos 3, 4 y 5. El token nunca aparece en la salida. El script pasa a `scripts/int04-smoke.mjs` con L6.
-- **L3, L6, L7:** pendientes.
+- **L7 · Con la app abierta:**
+  - desde SEC-05b (N5) el CLI escribe con la app abierta;
+  - los textos de `db-in-use` ya no piden cerrarla: ese código solo indica que otro proceso migra o convierte la carpeta;
+  - `db-busy` sale con el código 6 sin reintentos propios;
+  - **prueba de dos procesos:** el binario de tests se relanza como hijo y hace un `pharos upload` real mientras el padre tiene la BD abierta (como la app) e importa a la vez. Quedan los dos runs, con claves distintas, y la conexión del padre ve el del hijo sin reabrir.
+- **L3, L6:** pendientes.

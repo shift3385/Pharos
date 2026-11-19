@@ -12,7 +12,6 @@ El plan completo y los bocetos están en [`design/l-int01-plan.md`](design/l-int
 > - **Llega más adelante:**
 >   - `watch` (L3);
 >   - las plantillas de GitHub Actions y «Conectar CI» (L6);
->   - los textos de `db-in-use` ya no piden cerrar Pharos (L7): desde SEC-05b el CLI escribe con la app abierta.
 >
 > Mientras tanto, esos comandos responden «llega en una versión próxima» y salen con el código 2.
 
@@ -91,7 +90,9 @@ El CLI escribe en la base de datos de Pharos de este equipo, con el mismo códig
 
   Hasta 50 MB por informe.
 - **Qué rechaza:** SARIF, k6, axe, CTRF, Playwright JSON, Cucumber Messages, Allure y TRX, con el código 5 y la indicación de subirlos al servidor o usar «Importar informe».
-- **Con la app abierta:** falla con `db-in-use` (código 6) hasta SEC-05b.
+- **Con la app abierta:** escribe igual (SEC-05b) y la app muestra el run en unos segundos, sin recargar.
+  - `db-in-use` (código 6) solo sale si otro proceso de Pharos está migrando o convirtiendo la carpeta, y la apertura ya ha esperado hasta 10 s.
+  - `db-busy` (código 6) sale si una escritura sigue bloqueada tras los reintentos del núcleo: repite en unos segundos.
 - **Sin datos:** en una carpeta sin datos de Pharos no crea nada; sale con el código 4.
 - **En CI** (`CI=true`) está prohibido, con el código 2: allí no hay un Pharos de escritorio.
 
@@ -165,7 +166,7 @@ Son estables: cambiar el significado de uno es un cambio incompatible (VERSIONIN
 
 | Código | Qué hacer |
 |---|---|
-| `db-in-use` | Cierra Pharos y repite, o usa el modo remoto. |
+| `db-in-use` · `db-busy` | Otro proceso de Pharos está actualizando la carpeta o escribiendo mucho a la vez (una sincronización grande, por ejemplo). Espera unos segundos y repite. |
 | `not-signed-in` | Abre Pharos e inicia sesión. |
 | `no-data` | La carpeta no tiene datos de Pharos. Abre la app una vez o revisa `--data-dir`. |
 | `project-not-found` | Mira tus proyectos con `pharos projects`. |
