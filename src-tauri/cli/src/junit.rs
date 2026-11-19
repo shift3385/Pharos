@@ -18,7 +18,7 @@ use regex::Regex;
 use serde_json::{json, Map, Value};
 
 /// The `NORMALIZER_VERSION` of `@pharos/formats` this port reproduces.
-pub const NORMALIZER_VERSION: u64 = 1;
+pub const NORMALIZER_VERSION: u64 = 2;
 
 /// A JUnit report that cannot be read, with the code `ReportError` uses.
 #[derive(Debug, PartialEq)]
@@ -377,6 +377,20 @@ fn row_of_title(title: &str) -> Option<u64> {
     None
 }
 
+/// `explicitRow` (CAS-01, ADR-0055 decision 3): the `example_row` property,
+/// a whole number from 1 (1 to 6 digits, like the TS port), as a 0-based
+/// row. Anything else is ignored and the title decides.
+fn explicit_row(value: Option<&String>) -> Option<u64> {
+    let text = value?.trim();
+    let valid = (1..=6).contains(&text.len())
+        && text.bytes().all(|b| b.is_ascii_digit())
+        && !text.starts_with('0');
+    if !valid {
+        return None;
+    }
+    text.parse::<u64>().ok().map(|n| n - 1)
+}
+
 /// `atTag`.
 fn at_tag(tag: &str) -> String {
     if tag.starts_with('@') {
@@ -597,7 +611,7 @@ pub fn parse(text: &str) -> Result<Value, JunitError> {
             .filter(|x| RETRIES.contains(&x.local.as_str()))
             .collect();
         let key = test_key((!path.is_empty()).then_some(path.as_str()), name);
-        let row = row_of_title(name);
+        let row = explicit_row(prop("example_row").first()).or_else(|| row_of_title(name));
 
         let mut base = Map::new();
         base.insert("name".into(), json!(name));
@@ -669,7 +683,9 @@ pub fn parse(text: &str) -> Result<Value, JunitError> {
         }
         let other: Vec<&(String, Vec<String>)> = props
             .iter()
-            .filter(|(k, _)| !["test_id", "requirement", "tag", "tags"].contains(&k.as_str()))
+            .filter(|(k, _)| {
+                !["test_id", "requirement", "tag", "tags", "example_row"].contains(&k.as_str())
+            })
             .collect();
         if !other.is_empty() {
             let mut properties = Map::new();
@@ -846,6 +862,34 @@ mod tests {
             (json!("passed"), json!(1))
         );
         assert_eq!(r[3]["attributes"]["flaky"], true);
+    }
+
+    /// The same case as the TS test «JUnit: the example_row property names
+    /// the row and stays out of properties» (CAS-01).
+    #[test]
+    fn the_example_row_property_names_the_row() {
+        let xml = "<testsuite name=\"s\"><testcase classname=\"a.Login\" name=\"login(ana)\">\
+<properties><property name=\"test_id\" value=\"ATS_002\"/><property name=\"example_row\" value=\"2\"/>\
+<property name=\"team\" value=\"qa\"/></properties></testcase>\
+<testcase classname=\"a.Login\" name=\"login › Example #3\"><properties>\
+<property name=\"example_row\" value=\"0\"/></properties></testcase></testsuite>";
+        let doc = parse(xml).unwrap();
+        let r = doc["results"].as_array().unwrap();
+        assert_eq!(r[0]["exampleRow"], 1);
+        assert_eq!(r[0]["attributes"]["properties"], json!({ "team": "qa" }));
+        // An invalid value is ignored: the title decides.
+        assert_eq!(r[1]["exampleRow"], 2);
+        assert_eq!(doc["shards"][0]["normalizerVersion"], 2);
+        for (v, want) in [
+            ("3", Some(2)),
+            (" 1 ", Some(0)),
+            ("0", None),
+            ("-1", None),
+            ("1.5", None),
+            ("1234567", None),
+        ] {
+            assert_eq!(explicit_row(Some(&v.to_string())), want, "{v}");
+        }
     }
 
     #[test]

@@ -102,7 +102,7 @@ El CLI escribe en la base de datos de Pharos de este equipo, con el mismo códig
 - **Como quién:** como la cuenta que tiene la sesión iniciada en la app. La lee de su sesión en el Administrador de credenciales de Windows, sin los tokens. Sin sesión, sale con el código 3.
 - **Qué lee:**
   - Pharos Run JSON 1.x, validado como lo valida la app (`parsePharosRun`);
-  - JUnit XML, convertido como lo convierte la app: Playwright, Surefire, pytest, cucumber-js… con los reintentos (`flakyFailure`, `rerunFailure`), las propiedades `test_id`, `tag` y `requirement`, y los adjuntos `[[ATTACHMENT|ruta]]` relativos a la carpeta del informe. Un `<!DOCTYPE>` en el prólogo se rechaza.
+  - JUnit XML, convertido como lo convierte la app: Playwright, Surefire, pytest, cucumber-js… con los reintentos (`flakyFailure`, `rerunFailure`), las propiedades `test_id`, `tag`, `requirement` y `example_row` (la fila del dataset, desde 1; CAS-01), y los adjuntos `[[ATTACHMENT|ruta]]` relativos a la carpeta del informe. Un `<!DOCTYPE>` en el prólogo se rechaza.
 
   Hasta 50 MB por informe.
 - **Qué rechaza:** SARIF, k6, axe, CTRF, Playwright JSON, Cucumber Messages, Allure y TRX, con el código 5 y la indicación de subirlos al servidor o usar «Importar informe».
