@@ -59,6 +59,7 @@ export const testEnv: Env = {
   WEBHOOK_ALLOW_PRIVATE: false,
   WEBHOOK_ALLOW_HOSTS: [],
   WEBHOOK_DISPATCH_INTERVAL_MS: 0,
+  TOKEN_NOTICE_INTERVAL_MS: 0,
   // A folder per test run, removed by the OS temp cleanup.
   BLOB_DIR: join(tmpdir(), `pharos-blobs-${process.pid}`),
   BLOB_MAX_BYTES: 1_048_576,

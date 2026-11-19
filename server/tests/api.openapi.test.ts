@@ -26,6 +26,14 @@ describe("OpenAPI v1", () => {
       "/projects/{projectId}/runs/{runKey}",
       "/projects/{projectId}/runs/{runKey}/results",
       "/projects/{projectId}/runs/{runKey}/close",
+      "/projects/{projectId}/cases",
+      "/projects/{projectId}/cases/{key}",
+      "/projects/{projectId}/cycles",
+      "/projects/{projectId}/cycles/{key}",
+      "/projects/{projectId}/defects",
+      "/projects/{projectId}/defects/{key}",
+      "/projects/{projectId}/requirements",
+      "/projects/{projectId}/requirements/{key}",
     ]);
     expect(JSON.stringify(doc)).not.toContain('"additionalProperties":false');
     for (const path of Object.values(doc.paths) as Record<string, { responses: Record<string, unknown> }>[])

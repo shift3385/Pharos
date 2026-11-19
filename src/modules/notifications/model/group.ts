@@ -80,6 +80,12 @@ export function targetOf(n: AppNotification): Target | null {
     case "webhook.disabled":
       path = n.workspaceId ? `/workspaces/members?id=${n.workspaceId}&tab=integrations` : "/workspaces/members?tab=integrations";
       break;
+    // INT-02 A4: a project token in its workspace's integrations; a personal
+    // token (no workspace) in the profile, under «Tokens personales».
+    case "token.expiring":
+    case "token.inactive":
+      path = n.workspaceId ? `/workspaces/members?id=${n.workspaceId}&tab=integrations` : "/profile";
+      break;
     // Account security (SEC-09, SEC-11): the profile, where the account is.
     case "account.reset_issued":
     case "account.admin_granted":
@@ -90,11 +96,11 @@ export function targetOf(n: AppNotification): Target | null {
     // W's events go where W says (`data.path`), handled above; without it,
     // there is nothing to open.
   }
-  return path ? { kind: "path", path, label: labelOf(n.kind) } : null;
+  return path ? { kind: "path", path, label: labelOf(n.kind, n.workspaceId) } : null;
 }
 
 /** i18n key of the direct action's label. */
-export function labelOf(kind: string): string {
+export function labelOf(kind: string, workspaceId: string | null = null): string {
   switch (kind) {
     case "invitation.received":
       return "notifications.action.invitation";
@@ -114,6 +120,9 @@ export function labelOf(kind: string): string {
       return "notifications.action.members";
     case "webhook.disabled":
       return "notifications.action.integrations";
+    case "token.expiring":
+    case "token.inactive":
+      return workspaceId ? "notifications.action.integrations" : "notifications.action.profile";
     case "account.reset_issued":
     case "account.admin_granted":
     case "account.admin_revoked":

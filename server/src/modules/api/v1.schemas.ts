@@ -144,3 +144,70 @@ export const resultSchema = z.looseObject({
 });
 
 export const resultListSchema = z.object({ results: z.array(resultSchema) });
+
+// ---- reads (A4) -------------------------------------------------------------
+
+const SHARED_LIBRARY =
+  "A case may carry `sharedRefs[]` and `datasetRefs[]` (ADR-0055 §1-§3): references to the project's shared steps and datasets with `version`, `revisionId`, `follow`, `stepIds` and `args`. They are metadata a client may ignore: the case's `steps` and dataset rows are already a materialized copy, ordinary steps and rows, readable without knowing the library. `<name>` placeholders in steps are the case's parameters.";
+
+/** `?updatedSince=` and `?limit=` of every list (ADR-0052 «A4»). */
+export const readQuerySchema = z.object({
+  updatedSince: z
+    .string()
+    .regex(/^\d{1,19}$/, "A cursor from a previous `nextCursor`.")
+    .optional()
+    .meta({ description: "The `nextCursor` of an earlier page or sync. Omitted: from the beginning." }),
+  limit: z.coerce.number().int().min(1).max(500).default(100),
+  status: z.string().trim().min(1).max(50).optional(),
+  includeDeleted: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((v) => v === "true")
+    .meta({ description: "Deleted items come as `deleted: true` without `data`, so a mirror can delete them too." }),
+});
+
+export const readItemSchema = z.object({
+  id: z.string(),
+  key: z.string().nullable(),
+  updatedAt: z.string(),
+  deleted: z.boolean(),
+  data: z
+    .record(z.string(), z.unknown())
+    .nullable()
+    .meta({ description: "The document as the server stores it (null when deleted). Unknown fields must be ignored." }),
+});
+
+export const readListSchema = z
+  .object({
+    items: z.array(readItemSchema),
+    nextCursor: z.string().meta({
+      description:
+        "Send it back as `updatedSince` for the next page, or later for what changed since. Opaque: compare nothing with it.",
+    }),
+    hasMore: z.boolean(),
+  })
+  .meta({
+    description:
+      "In order of change, oldest first. Deletions older than the server's tombstone window (SYNC_TOMBSTONE_DAYS) are no longer listed: a mirror syncs at least that often, like a desktop.",
+  });
+
+export const caseListSchema = readListSchema.meta({ description: SHARED_LIBRARY });
+export const caseSchema = readItemSchema.meta({ description: SHARED_LIBRARY });
+
+const n = z.number().int();
+export const cycleProgressSchema = z.object({
+  total: n,
+  executed: n,
+  passed: n,
+  failed: n,
+  blocked: n,
+  skipped: n,
+  other: n,
+  notRun: n,
+});
+
+export const cycleSchema = readItemSchema.extend({
+  progress: cycleProgressSchema
+    .nullable()
+    .meta({ description: "The cycle's progress over its items and configurations, as the web shows it (null when deleted)." }),
+});
