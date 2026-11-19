@@ -6,12 +6,12 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { Pool } from "pg";
 import { z } from "zod";
-import { makeRequireAuth } from "../auth/middleware";
-import type { TokenService } from "../auth/tokens";
-import { requireSupportedVersion } from "../sync/sync.version";
-import { verifyChain, type AuditEvent } from "./audit.chain";
-import { WEB_DEVICE } from "./audit.store";
-import { CAPABILITIES } from "../workspaces/roles";
+import { makeRequireAuth } from "../auth/middleware.js";
+import type { TokenService } from "../auth/tokens.js";
+import { requireSupportedVersion } from "../sync/sync.version.js";
+import { verifyChain, type AuditEvent } from "./audit.chain.js";
+import { WEB_DEVICE } from "./audit.store.js";
+import { CAPABILITIES } from "../workspaces/roles.js";
 
 /** Largest page served (the UI asks for 50; the export pages through). */
 export const MAX_LIMIT = 500;

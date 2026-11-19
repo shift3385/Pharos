@@ -4,7 +4,7 @@
 // told is decided here, so the emits are `trusted`: an invitee or a removed
 // person is no longer (or not yet) a member.
 import type { Pool, PoolClient } from "pg";
-import { emitNotification, type Membership } from "./notifications";
+import { emitNotification, type Membership } from "./notifications.js";
 
 type Db = Pool | PoolClient;
 

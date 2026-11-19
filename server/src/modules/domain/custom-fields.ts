@@ -3,7 +3,7 @@
 // domain API. The same rules as the desktop's `custom_fields.rs` and the
 // client's `src/modules/custom-fields/model/validate.ts`, all checked against
 // `src-tauri/tests/fixtures/custom-field-vectors.json`.
-import { uuidV5 } from "../sync/stable-steps";
+import { uuidV5 } from "../sync/stable-steps.js";
 
 /** Namespace of the definition ids (`custom_fields.rs::NS_CUSTOM_FIELD`). */
 export const NS_CUSTOM_FIELD = "3a7c91d2-5b4e-5f60-8a1b-c3d5e7f90b2d";

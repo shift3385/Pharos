@@ -2,7 +2,7 @@
 // each one needs from the token's owner. A token never does more than its
 // owner may do today: the request needs the scope AND the owner's current
 // role must have the capability.
-import type { Capability } from "../workspaces/roles";
+import type { Capability } from "../workspaces/roles.js";
 
 export const API_SCOPES = [
   "projects:read",

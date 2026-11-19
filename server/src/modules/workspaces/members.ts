@@ -1,5 +1,5 @@
 import type { Pool, PoolClient } from "pg";
-import { isRole, type WorkspaceRole } from "./roles";
+import { isRole, type WorkspaceRole } from "./roles.js";
 
 /** A pool, or a client inside a transaction. */
 export type Queryable = Pick<Pool, "query"> | PoolClient;

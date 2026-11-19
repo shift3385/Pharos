@@ -1,7 +1,7 @@
 import type { Pool } from "pg";
-import type { ApprovalRequest, ApprovalVerdict, ApproverCheck } from "../domain/case-review";
-import { membership, type Membership } from "./members";
-import { can } from "./roles";
+import type { ApprovalRequest, ApprovalVerdict, ApproverCheck } from "../domain/case-review.js";
+import { membership, type Membership } from "./members.js";
+import { can } from "./roles.js";
 
 // Who may approve a test case or a test plan (CAS-02, PLN-08; ADR-0042 §8).
 // The interface is track K's (`case-review.ts`); `app.ts` installs this

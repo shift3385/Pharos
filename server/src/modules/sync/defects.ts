@@ -5,7 +5,7 @@
 // `src-tauri/tests/fixtures/defect-vectors.json`.
 
 import type { PoolClient } from "pg";
-import { jcs, uuidV5 } from "./stable-steps";
+import { jcs, uuidV5 } from "./stable-steps.js";
 
 /** UUIDv5 namespace of defect link ids. Never changes. */
 export const NS_DEFECT_LINK = "21d4651e-667c-5993-bf7d-4d2f8399f56e";

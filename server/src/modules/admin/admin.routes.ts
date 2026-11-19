@@ -1,9 +1,9 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
-import { makeRequireAuth } from "../auth/middleware";
-import type { TokenService } from "../auth/tokens";
-import type { AccountService } from "../auth/account.service";
-import type { AdminService } from "./admin.service";
+import { makeRequireAuth } from "../auth/middleware.js";
+import type { TokenService } from "../auth/tokens.js";
+import type { AccountService } from "../auth/account.service.js";
+import type { AdminService } from "./admin.service.js";
 
 // Administración › Usuarios (SEC-11, SEC-09 by an administrator; ADR-0045).
 // Every route checks the role in the database, on this request.

@@ -13,9 +13,9 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { Pool, PoolClient } from "pg";
 import { z } from "zod";
-import { makeRequireAuth } from "../auth/middleware";
-import type { TokenService } from "../auth/tokens";
-import { requireSupportedVersion } from "../sync/sync.version";
+import { makeRequireAuth } from "../auth/middleware.js";
+import type { TokenService } from "../auth/tokens.js";
+import { requireSupportedVersion } from "../sync/sync.version.js";
 
 /** Kinds that travel. `sync.conflict` is local to a device and never sent. */
 export const NOTIFICATION_KINDS = [

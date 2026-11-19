@@ -1,12 +1,12 @@
 import type { Pool, PoolClient } from "pg";
-import { AppError } from "../auth/errors";
-import { appendWebEvent } from "../audit/audit.store";
-import type { ServerClock } from "../sync/sync.hlc";
-import { lockWorkspaces, MOVE_TOMBSTONE_SQL } from "../sync/sync.repository";
-import { requireMembership, requireRole, WorkspaceErrors } from "./access";
-import { hashCode, newInvitationCode } from "./invitations";
-import { listMembers, memberships, type Membership } from "./members";
-import { isRole, type WorkspaceRole } from "./roles";
+import { AppError } from "../auth/errors.js";
+import { appendWebEvent } from "../audit/audit.store.js";
+import type { ServerClock } from "../sync/sync.hlc.js";
+import { lockWorkspaces, MOVE_TOMBSTONE_SQL } from "../sync/sync.repository.js";
+import { requireMembership, requireRole, WorkspaceErrors } from "./access.js";
+import { hashCode, newInvitationCode } from "./invitations.js";
+import { listMembers, memberships, type Membership } from "./members.js";
+import { isRole, type WorkspaceRole } from "./roles.js";
 
 /** A member as the workspace screens show it (and the desktop mirrors). */
 export interface MemberView {

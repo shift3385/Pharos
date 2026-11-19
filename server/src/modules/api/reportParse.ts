@@ -15,7 +15,7 @@
 import { gunzipSync } from "node:zlib";
 import { fork } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { AppError } from "../auth/errors";
+import { AppError } from "../auth/errors.js";
 
 /** What a parse gives back: the format it detected and the document. */
 export interface ParsedUpload {

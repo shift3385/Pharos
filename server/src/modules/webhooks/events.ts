@@ -3,7 +3,7 @@
 // events out. Derived on the server, where every writer passes (the web, the
 // API and the desktop's `/sync/push`), so a run closed in the desktop app
 // notifies too, once it syncs.
-import type { DocumentWrite } from "../sync/sync.repository";
+import type { DocumentWrite } from "../sync/sync.repository.js";
 
 export const WEBHOOK_EVENTS = [
   "run.created",

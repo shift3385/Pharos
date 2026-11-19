@@ -9,7 +9,7 @@ import {
   randomId,
   shortHash,
   uuidV5,
-} from "../sync/stable-steps";
+} from "../sync/stable-steps.js";
 
 type Json = unknown;
 export type Obj = Record<string, unknown>;

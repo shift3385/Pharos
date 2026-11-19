@@ -10,16 +10,16 @@
 // - Every change is a `webhook` audit event, never with the secret.
 import { randomUUID } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
-import { AppError } from "../auth/errors";
-import { appendWebEvent } from "../audit/audit.store";
-import type { Vault } from "../ai/vault";
-import type { ServerClock } from "../sync/sync.hlc";
-import { lockWorkspaces, type DocumentHook, type DocumentWrite } from "../sync/sync.repository";
-import { requireMembership, requireRole } from "../workspaces/access";
-import { can } from "../workspaces/roles";
-import { deriveEvents, EVENT_ENTITIES, PING, WEBHOOK_EVENTS, type WebhookEvent } from "./events";
-import { newSecret } from "./signing";
-import { checkUrl, type TargetPolicy } from "./ssrf";
+import { AppError } from "../auth/errors.js";
+import { appendWebEvent } from "../audit/audit.store.js";
+import type { Vault } from "../ai/vault.js";
+import type { ServerClock } from "../sync/sync.hlc.js";
+import { lockWorkspaces, type DocumentHook, type DocumentWrite } from "../sync/sync.repository.js";
+import { requireMembership, requireRole } from "../workspaces/access.js";
+import { can } from "../workspaces/roles.js";
+import { deriveEvents, EVENT_ENTITIES, PING, WEBHOOK_EVENTS, type WebhookEvent } from "./events.js";
+import { newSecret } from "./signing.js";
+import { checkUrl, type TargetPolicy } from "./ssrf.js";
 
 /** Live webhooks per workspace. */
 export const MAX_WEBHOOKS = 20;

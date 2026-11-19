@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { FIELD_ENTITIES, fieldId, validKey } from "../domain/custom-fields";
-import { LIMITS, isLibraryRevision, libraryRevisionId, shaOf } from "../domain/shared-library";
+import { FIELD_ENTITIES, fieldId, validKey } from "../domain/custom-fields.js";
+import { LIMITS, isLibraryRevision, libraryRevisionId, shaOf } from "../domain/shared-library.js";
 import {
   DEFECT_PRIORITIES,
   DEFECT_RESOLUTIONS,
@@ -8,7 +8,7 @@ import {
   DEFECT_STATUSES,
   LINK_TARGET_KINDS,
   linkId,
-} from "./defects";
+} from "./defects.js";
 
 /** Entities of the `lww` sync class (Phase 8B core + SYNC-04a requirements
  *  and planner cards, EJE-01 runs, run items and unlinked mappings, FLD-01

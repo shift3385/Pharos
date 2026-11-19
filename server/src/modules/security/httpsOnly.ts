@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import type { Env } from "../../config/env";
+import type { Env } from "../../config/env.js";
 
 // SEC-07 (ADR-0006, ADR-0046): in production the server only serves https.
 // TLS is ended by a reverse proxy on the same machine (Caddy, see

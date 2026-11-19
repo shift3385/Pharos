@@ -8,8 +8,8 @@
 // run screen shows them) and key conflicts (they exist only on a device).
 // A manual result (no shard) keeps the link it was written with.
 
-import type { RemoteDoc } from "../sync/sync.repository";
-import type { DomainTx } from "./domain.store";
+import type { RemoteDoc } from "../sync/sync.repository.js";
+import type { DomainTx } from "./domain.store.js";
 
 type Payload = Record<string, unknown>;
 

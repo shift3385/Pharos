@@ -11,7 +11,7 @@ export {
   type NotificationKind,
   type NotificationStore,
   type WorkspaceMemberQueries,
-} from "./notifications";
+} from "./notifications.js";
 export {
   notificationWorkspaceHooks,
   JOIN_WATCHERS,
@@ -19,4 +19,4 @@ export {
   type MemberJoined,
   type MemberRemoved,
   type NotificationWorkspaceHooks,
-} from "./workspaceHooks";
+} from "./workspaceHooks.js";

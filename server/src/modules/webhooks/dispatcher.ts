@@ -12,10 +12,10 @@
 import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import type { Pool, PoolClient } from "pg";
-import type { Vault } from "../ai/vault";
-import { emitNotification, type Membership } from "../notifications";
-import { signatureHeaders } from "./signing";
-import { checkUrl, guardedLookup, type TargetPolicy } from "./ssrf";
+import type { Vault } from "../ai/vault.js";
+import { emitNotification, type Membership } from "../notifications/index.js";
+import { signatureHeaders } from "./signing.js";
+import { checkUrl, guardedLookup, type TargetPolicy } from "./ssrf.js";
 
 export const RETRY_DELAYS_S = [30, 120, 600, 3600, 10_800, 21_600, 43_200];
 export const MAX_ATTEMPTS = RETRY_DELAYS_S.length + 1;

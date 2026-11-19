@@ -1,10 +1,10 @@
 import type { Pool, PoolClient } from "pg";
-import { AppError } from "../auth/errors";
-import { appendWebEvent } from "../audit/audit.store";
-import type { ServerClock } from "../sync/sync.hlc";
-import { lockWorkspaces } from "../sync/sync.repository";
-import { personalOf } from "../workspaces/members";
-import { emitNotification } from "../notifications/notifications";
+import { AppError } from "../auth/errors.js";
+import { appendWebEvent } from "../audit/audit.store.js";
+import type { ServerClock } from "../sync/sync.hlc.js";
+import { lockWorkspaces } from "../sync/sync.repository.js";
+import { personalOf } from "../workspaces/members.js";
+import { emitNotification } from "../notifications/notifications.js";
 
 // The server administrator (SEC-11, ADR-0045 amendment): an instance-level
 // role, apart from the workspace roles. It is read from the database on every

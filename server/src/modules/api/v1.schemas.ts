@@ -1,7 +1,7 @@
 // Response schemas of /api/v1 (INT-02, ADR-0052 §1): the routes parse what
 // they send with them, and `openapi.ts` turns them into the contract.
 import { z } from "zod";
-import { API_SCOPES } from "./scopes";
+import { API_SCOPES } from "./scopes.js";
 
 export const meSchema = z
   .object({

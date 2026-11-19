@@ -48,6 +48,11 @@ El `docker-compose.yml` de la raíz trae tres servicios:
 3. En la app, en el inicio de sesión, pulsa «Cambiar» junto a «Servidor» y
    escribe `https://pharos.miempresa.com`.
 
+La imagen de `api` corre el servidor compilado (`node dist/server.js`) con el
+usuario `node`, no root, y trae un `HEALTHCHECK` contra `/health`:
+`docker compose ps` muestra `healthy` cuando la API responde. Lo único que
+escribe es `data/blobs` (los adjuntos guardados).
+
 Con un **dominio público**, con los puertos 80 y 443 abiertos y el DNS
 apuntando a esta máquina, Caddy obtiene y renueva solo el certificado de
 Let's Encrypt.
@@ -57,7 +62,16 @@ Con un **nombre interno** (`pharos.miempresa.lan`) o una IP, quita el `#` de
 
 ## Opción 2 · Un servidor sin Docker
 
-1. Instala Node.js 20 o superior y PostgreSQL. Arranca la API con estas
+1. Instala Node.js 20 o superior y PostgreSQL. Compila la API desde la raíz
+   del repo, con `server/` y `packages/formats/`:
+
+   ```bash
+   cd server
+   npm ci
+   npm run build
+   ```
+
+   Arráncala con `node dist/server.js` (o `npm run start:dist`) y estas
    variables:
 
    ```

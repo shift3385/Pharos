@@ -5,7 +5,7 @@
 // v1 only grows: new paths, new optional fields. Objects are open
 // (no `additionalProperties: false`) so a client accepts fields added later.
 import { z } from "zod";
-import { API_SCOPES } from "./scopes";
+import { API_SCOPES } from "./scopes.js";
 import {
   errorSchema,
   meSchema,
@@ -20,7 +20,7 @@ import {
   uploadFormatSchema,
   uploadQuerySchema,
   uploadResponseSchema,
-} from "./v1.schemas";
+} from "./v1.schemas.js";
 
 const COMPONENTS = {
   Me: meSchema,

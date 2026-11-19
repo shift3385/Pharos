@@ -16,14 +16,14 @@
 // same run is a no-op (200), never a duplicate.
 import { randomUUID } from "node:crypto";
 import { v5 as uuidv5 } from "uuid";
-import { AppError } from "../auth/errors";
-import { sha256Hex, type BlobStore } from "../blobs/blobStore";
-import type { DomainStore, DomainTx } from "../domain/domain.store";
-import { insertRun, liveRun, type RunService } from "../domain/runs";
-import { timestamp } from "../domain/domain.service";
-import type { RemoteDoc } from "../sync/sync.repository";
+import { AppError } from "../auth/errors.js";
+import { sha256Hex, type BlobStore } from "../blobs/blobStore.js";
+import type { DomainStore, DomainTx } from "../domain/domain.store.js";
+import { insertRun, liveRun, type RunService } from "../domain/runs.js";
+import { timestamp } from "../domain/domain.service.js";
+import type { RemoteDoc } from "../sync/sync.repository.js";
 import type { Pool } from "pg";
-import type { ApiPrincipal } from "./apiTokens";
+import type { ApiPrincipal } from "./apiTokens.js";
 import {
   checkDoc,
   clip,
@@ -38,8 +38,8 @@ import {
   statusCounts,
   text,
   type ImportWarning,
-} from "./importPlan";
-import type { ParsedUpload } from "./reportParse";
+} from "./importPlan.js";
+import type { ParsedUpload } from "./reportParse.js";
 
 /** Namespace of the runs an `externalId` names (ADR-0052 §2). */
 export const NS_API_RUN = "8d3f6a2e-41c7-5b09-9e18-7a2c4b6d0f53";

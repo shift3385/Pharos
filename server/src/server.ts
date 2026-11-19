@@ -1,9 +1,9 @@
-import { env, startupWarnings } from "./config/env";
-import { createPool } from "./db/pool";
-import { runMigrations } from "./db/migrate";
-import { buildApp } from "./app";
-import { createSyncRepository } from "./modules/sync/sync.repository";
-import { tlsWarnings } from "./modules/security/httpsOnly";
+import { env, startupWarnings } from "./config/env.js";
+import { createPool } from "./db/pool.js";
+import { runMigrations } from "./db/migrate.js";
+import { buildApp } from "./app.js";
+import { createSyncRepository } from "./modules/sync/sync.repository.js";
+import { tlsWarnings } from "./modules/security/httpsOnly.js";
 
 /** How often old tombstones are cleared (SYNC-06): once at start, then daily. */
 const COMPACT_EVERY_MS = 24 * 60 * 60 * 1000;

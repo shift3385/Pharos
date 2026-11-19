@@ -1,8 +1,8 @@
-import type { AuthRepository, UserRow } from "./auth.repository";
-import type { TokenService } from "./tokens";
-import { hashPassword, verifyPassword } from "./password";
-import { AuthErrors } from "./errors";
-import type { LoginInput, ProfileInput, RegisterInput } from "./auth.schemas";
+import type { AuthRepository, UserRow } from "./auth.repository.js";
+import type { TokenService } from "./tokens.js";
+import { hashPassword, verifyPassword } from "./password.js";
+import { AuthErrors } from "./errors.js";
+import type { LoginInput, ProfileInput, RegisterInput } from "./auth.schemas.js";
 
 export interface PublicUser {
   id: string;

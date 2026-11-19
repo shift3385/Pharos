@@ -6,7 +6,7 @@
 // client input object fits both backends. Type-only: nothing here runs.
 
 import type { z } from "zod";
-import type { Assert, Contract, Covers } from "../../../../src/shared/contracts";
+import type { Assert, Contract, Covers } from "../../../../src/shared/contracts/index.js";
 import type {
   defectInputSchema,
   plannerCardInputSchema,
@@ -15,9 +15,9 @@ import type {
   requirementInputSchema,
   testCaseInputSchema,
   testPlanInputSchema,
-} from "../domain/domain.schemas";
-import type { KeyBlock, KeyConflict, RemoteDoc } from "./sync.repository";
-import type { Delta, keyBlocksSchema } from "./sync.schemas";
+} from "../domain/domain.schemas.js";
+import type { KeyBlock, KeyConflict, RemoteDoc } from "./sync.repository.js";
+import type { Delta, keyBlocksSchema } from "./sync.schemas.js";
 
 type LeaseRequest = z.output<typeof keyBlocksSchema>["requests"][number];
 type Sent<T extends z.ZodType> = z.input<T>;

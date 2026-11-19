@@ -1,4 +1,4 @@
-import type { MailMessage } from "./mailer";
+import type { MailMessage } from "./mailer.js";
 
 // The password reset email (SEC-09, ADR-0045), in the language the app asked
 // in. It names the account and the server, says how long the link lasts, and

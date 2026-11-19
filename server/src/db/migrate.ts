@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Pool, PoolClient } from "pg";
-import { convertPlannerDefects } from "../modules/sync/defects";
+import { convertPlannerDefects } from "../modules/sync/defects.js";
 
 const migrationsDir = join(
   dirname(fileURLToPath(import.meta.url)),

@@ -403,6 +403,25 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - run: npm ci
       - run: npm run typecheck
+      # The production build (DEU-01): tsc to dist/, then the compiled server
+      # boots with plain node, migrates and answers /health, as in the image.
+      - run: npm run build
+      - name: The compiled server starts
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/pharos_build_smoke
+          JWT_ACCESS_SECRET: ci-only-build-smoke-secret-0123456789abcdef
+          PORT: "3000"
+          HOST: 127.0.0.1
+        run: |
+          PGPASSWORD=postgres createdb -h localhost -U postgres pharos_build_smoke
+          node dist/server.js > api.log 2>&1 &
+          api=$!
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/health; then kill "$api"; exit 0; fi
+            sleep 1
+          done
+          cat api.log
+          exit 1
       - run: npm run check:licenses
       - run: npm test
 

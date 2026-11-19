@@ -1,6 +1,6 @@
-import { env } from "../config/env";
-import { createPool } from "./pool";
-import { runMigrations } from "./migrate";
+import { env } from "../config/env.js";
+import { createPool } from "./pool.js";
+import { runMigrations } from "./migrate.js";
 
 const pool = createPool(env.DATABASE_URL);
 try {

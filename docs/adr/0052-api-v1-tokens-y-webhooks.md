@@ -256,3 +256,24 @@ Con F2 en `main` (ADR-0053: entidades `finding` y `metric`), la subida guarda lo
   - «Enviar prueba», «Rotar secreto», «Activar» y «Borrar»;
   - «Entregas», con la respuesta del destino y «Reintentar ahora».
 - **Pendiente** (como dice A1): el aviso de caducidad de los tokens y el de token inactivo no se han hecho en A3. Quedan para A4.
+
+### A5 · DEU-01, build con `tsc` (2026-11-19)
+
+- **Build:** `cd server && npm run build` (`scripts/build.mjs`) borra `dist/` y lo vuelve a generar en dos pasos:
+  1. `@pharos/formats` se compila con su propio `tsconfig.json` (NodeNext), con `.d.ts`, en `dist/node_modules/@pharos/formats`. Desde cualquier fichero de `dist/`, Node encuentra ahí el paquete, y el paquete encuentra `zod` y `uuid` en el `node_modules` del servidor, un nivel más arriba. No hace falta enlace simbólico ni dependencia `file:`, y `npm ci` no lo toca.
+  2. El servidor se compila con `tsconfig.build.json` (NodeNext, `rootDir: src`, `outDir: dist`). Ahí el alias `@pharos/formats` apunta al `.d.ts` del paso 1, así que `tsc` no emite fuentes de fuera de `src/`.
+- **Imports:** un codemod añadió `.js` (o `/index.js`) a todos los imports relativos de `server/src`. `tsconfig.json` (typecheck, tsx y vitest) sigue con `moduleResolution: bundler`, que acepta los dos.
+- **Rutas que dependen de la carpeta:** `migrate.ts` (`../../migrations`) y `sync.version.ts` (`../../../package.json`) están a la misma profundidad en `dist/` que en `src/`, así que no cambian. `sync.contracts.ts` queda fuera del build: son comprobaciones de tipos contra `src/shared/contracts` y nada lo importa.
+- **El parser de subidas** sigue en un proceso hijo, no en un worker: funciona igual con tsx y con `dist/` (elige `reportWorker.ts` o `.js`), y no hay motivo para tener dos caminos.
+- **Arranque:**
+  - en producción, `node dist/server.js` (`npm run start:dist`);
+  - `tsx` pasa a `devDependencies`, porque solo lo usan `dev`, `migrate`, `seed:test-user` y los tests.
+  - `npm start` sigue con `tsx src/server.ts`. Es como se arranca la API de una copia del repo para la app de escritorio, y `scripts/api-port.mjs` y la E2E reconocen la API de cada copia por esa línea de comandos. Un `node dist/server.js` no dice de qué copia es, y además pediría compilar antes de cada arranque.
+- **Imagen** (`server/Dockerfile`), en dos etapas:
+  - `build` instala todo y compila;
+  - la final instala solo las dependencias de producción y copia `dist/` y `migrations/`.
+  - Corre como `USER node` (Trivy DS002). Lo único que escribe, `data/blobs` (`BLOB_DIR`), es del usuario `node`; el código sigue siendo de root.
+  - `HEALTHCHECK` con el `fetch` de node contra `http://127.0.0.1:$PORT/health` (Trivy DS026). Con `NODE_ENV=production`, la API atiende http desde loopback sin proxy (SEC-07), así que el health check pasa.
+  - Ya no hace falta el enlace `/app/node_modules` de F1.
+- **CI:** el job `server` ejecuta `npm run build` y arranca `node dist/server.js` contra una base de datos propia (`pharos_build_smoke`) hasta que `/health` responde.
+- **Sin probar:** no se ha construido la imagen con Docker; no hay Docker en la máquina de desarrollo. Se probó la etapa final a mano: una carpeta limpia con solo `npm ci --omit=dev`, `dist/` y `migrations/`, sin el repo por encima, con `NODE_ENV=production`. Arranca, migra, responde `/health`, el comando del health check sale con 0 y una subida JUnit se lee en el proceso hijo.
