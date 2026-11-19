@@ -1,30 +1,41 @@
-//! Local encrypted SQLite (spec §16 Phase 2). The working database lives in
-//! memory; at rest it is persisted to `pharos.db.enc` as an AES-256-GCM blob.
-//! The 32-byte key is kept in the OS keychain. SQLCipher was not used because
-//! its OpenSSL build did not compile under the former GNU toolchain (see SEC-04).
+//! Local SQLite on disk, encrypted per page (SEC-05, ADR-0050). The database
+//! is `pharos.db` (+ `-wal`/`-shm`, WAL mode), encrypted with SQLite3 Multiple
+//! Ciphers in the SQLCipher 4 scheme (pharos-sqlite3mc-sys, SEC-04). Every
+//! page is encrypted, the WAL too, and temporary tables stay in memory: no
+//! plaintext reaches disk. Saving is SQLite's commit: it writes the pages that
+//! changed, not the whole database.
 //!
-//! The plaintext image only ever exists in memory: it is moved in and out of
-//! SQLite with `deserialize`/`serialize`. The encrypted file is replaced
-//! atomically (write `pharos.db.enc.new`, fsync, rename), so a crash mid-save
-//! leaves the previous copy intact.
+//! Key: the 32-byte `db-key` in the OS keychain stays the only secret. The
+//! page key is `HKDF-SHA256(db_key, "pharos-page-v1")`, given raw (no PBKDF),
+//! so the recovery keys already exported (ADR-0024) and `evidence/` (ADR-0014)
+//! keep working.
+//!
+//! Before 0.6 the database lived in memory and was saved whole to
+//! `pharos.db.enc` as one AES-256-GCM blob. On the first open it is converted
+//! (`convert_legacy`): the blob is kept byte for byte as
+//! `pharos.db.enc.bak-<version>-<last migration>`, pending migrations run in
+//! memory, `VACUUM INTO` writes `pharos.db.convert`, which is checked and
+//! renamed to `pharos.db`, and `pharos.db.enc` becomes a small witness whose
+//! unknown migration `disk-format-v2` makes a 0.5 refuse it with its usual
+//! message instead of starting empty. Every step can be resumed.
 //!
 //! Data compatibility (SEC-06, VERSIONING §6): before applying pending
-//! migrations to an existing database the encrypted file is copied to
-//! `pharos.db.enc.bak-<app version>-<last migration>` (the newest 3 are kept), and a database that already carries
-//! migrations this build does not know (written by a newer Pharos) is refused
-//! without touching any file.
+//! migrations to an existing database it is copied (encrypted, SQLite's backup
+//! API) to `pharos.db.bak-<app version>-<last migration>` (the newest 3 are
+//! kept), and a database that already carries migrations this build does not
+//! know (written by a newer Pharos) is refused without writing anything.
 //!
 //! Recovery (SEC-03, ADR-0024): the key can be exported as a recovery key
 //! (recovery.rs). A key is only generated on a fresh install: if the keychain
-//! entry is missing while an encrypted file exists (new PC, reinstalled
-//! Windows), opening fails with `KEY_MISSING_ERROR` instead of silently
-//! storing a new key, and `db_recover` opens the file with the recovery key and
-//! stores it in the keychain again.
+//! entry is missing while a database exists (new PC, reinstalled Windows),
+//! opening fails with `KEY_MISSING_ERROR` instead of silently storing a new
+//! key, and `db_recover` opens the database with the recovery key and stores
+//! it in the keychain again.
 //!
 //! Evidence (DAT-03, ADR-0014): attachment contents live next to the database
 //! in `evidence/` (evidence.rs), keyed from the same key; `Db` owns that store,
 //! migration 0023 moves the old planner attachment BLOBs into it, and
-//! `persist_and_collect` removes files only after the save that released them.
+//! `persist_and_collect` removes files only after the commit that released them.
 
 use std::fs;
 use std::io::Write;
@@ -35,9 +46,11 @@ use std::sync::Mutex;
 use aes_gcm::aead::{Aead, AeadCore, KeyInit, OsRng};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
 use base64::Engine as _;
+use hkdf::Hkdf;
 use keyring::Entry;
 use rusqlite::serialize::OwnedData;
-use rusqlite::{Connection, OptionalExtension, MAIN_DB};
+use rusqlite::{params, Connection, ErrorCode, OptionalExtension, MAIN_DB};
+use sha2::{Digest, Sha256};
 
 use crate::evidence::{self, EvidenceStore};
 use crate::recovery;
@@ -47,7 +60,7 @@ const KEYCHAIN_DB_KEY: &str = "db-key";
 const B64: base64::engine::general_purpose::GeneralPurpose =
     base64::engine::general_purpose::STANDARD;
 const NONCE_LEN: usize = 12;
-/// Version stamped on the pre-migration backup (`pharos.db.enc.bak-<version>-<migration>`).
+/// Version stamped on the backups (`pharos.db.bak-<version>-<migration>`).
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Prefix of the `Db::open` error for a database written by a newer Pharos. The
 /// UI matches it to show a translated, blocking message.
@@ -61,7 +74,32 @@ pub const KEY_MISMATCH_ERROR: &str = "db-key-mismatch";
 /// Prefix of the `db_recover` error for a well-formed recovery key that does
 /// not decrypt the database.
 pub const WRONG_RECOVERY_KEY: &str = "recovery-key-wrong";
+/// Prefix of the `Db::open` error when there is not enough free space to
+/// convert `pharos.db.enc` safely; nothing was changed.
+pub const CONVERT_NO_SPACE_ERROR: &str = "db-convert-no-space";
+/// Prefix of the `Db::open` error when converting `pharos.db.enc` failed; the
+/// original file and its backup are intact.
+pub const CONVERT_FAILED_ERROR: &str = "db-convert-failed";
+/// Prefix of the `Db::open` error when `pharos.db.enc` is a witness but
+/// `pharos.db`, where the data moved, is not there.
+pub const DB_MISSING_ERROR: &str = "db-missing";
 const DECRYPT_ERROR: &str = "failed to decrypt local database";
+
+/// The database, encrypted per page (SEC-05).
+const DB_FILE: &str = "pharos.db";
+/// The database before 0.6: one encrypted image, now a witness.
+const LEGACY_FILE: &str = "pharos.db.enc";
+/// What a conversion writes before it is checked and renamed to `DB_FILE`.
+const CONVERT_FILE: &str = "pharos.db.convert";
+/// The migration a converted `pharos.db.enc` (the witness) carries, unknown to
+/// every Pharos before 0.6, so they refuse it (SEC-06).
+const WITNESS_MIGRATION: &str = "disk-format-v2";
+/// Where the sha256 of the converted `pharos.db.enc` is kept in `sync_state`.
+const CONVERTED_FROM_KEY: &str = "converted_from";
+/// HKDF info of the page key.
+const PAGE_KEY_INFO: &[u8] = b"pharos-page-v1";
+/// How long a write waits for another connection's write (WAL).
+const BUSY_TIMEOUT_MS: u32 = 5_000;
 
 pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
     ("0001_init.sql", include_str!("../migrations/0001_init.sql")),
@@ -225,21 +263,21 @@ const RUST_STEPS: &[(&str, RustStep)] = &[
 
 pub struct Db {
     conn: Mutex<Connection>,
-    enc_path: PathBuf,
+    /// `pharos.db`.
+    db_path: PathBuf,
     key: [u8; 32],
     /// `evidence/` next to the database, keyed from `key` (ADR-0014).
     evidence: EvidenceStore,
-    /// `pharos.db.enc` as this process last read or wrote it (length and
-    /// modification time), so a change by another process can be told
-    /// (DAT-03b: deleting orphan evidence refuses then).
-    disk: Mutex<Option<DiskStamp>>,
+    /// `PRAGMA data_version` as this process last left the database: it
+    /// changes only when another connection commits, so a change by another
+    /// process can be told (DAT-03b: deleting orphan evidence refuses then).
+    seen_version: Mutex<i64>,
     /// `pharos.lock`, held open while this `Db` lives (D4, ADR-0050).
     _lock: fs::File,
 }
 
 /// Prefix of the `Db::open` error when another process (the app or the CLI)
-/// has this data folder open. Until SEC-05b only one process may use it: a
-/// second one would overwrite the other's saves.
+/// has this data folder open. Until SEC-05b only one process may use it.
 pub const DB_IN_USE_ERROR: &str = "db-in-use";
 
 /// Name of the lock file next to the database.
@@ -263,21 +301,13 @@ fn lock_data_dir(dir: &Path) -> Result<fs::File, String> {
         // ERROR_SHARING_VIOLATION: another process holds the file.
         if e.raw_os_error() == Some(32) {
             format!(
-                "{DB_IN_USE_ERROR}: another Pharos process (the app or the CLI) is using                  this data folder. Close it and try again."
+                "{DB_IN_USE_ERROR}: another Pharos process (the app or the CLI) is using \
+                 this data folder. Close it and try again."
             )
         } else {
             format!("failed to lock the data folder: {e}")
         }
     })
-}
-
-/// Length and modification time of a file; None when it is not there.
-type DiskStamp = (u64, Option<std::time::SystemTime>);
-
-fn disk_stamp(path: &Path) -> Option<DiskStamp> {
-    fs::metadata(path)
-        .ok()
-        .map(|m| (m.len(), m.modified().ok()))
 }
 
 /// Where the database key is kept: the OS keychain in the app, memory in tests.
@@ -342,11 +372,10 @@ impl Db {
     }
 
     /// Opens with the key in `store`. A key is generated and stored only when
-    /// there is no encrypted file yet; otherwise a missing or non-matching key
-    /// is an error the UI answers with the recovery key.
+    /// there is no database yet; otherwise a missing or non-matching key is an
+    /// error the UI answers with the recovery key.
     fn open_with_store(app_data_dir: &Path, store: &dyn KeyStore) -> Result<Self, String> {
-        let enc_path = app_data_dir.join("pharos.db.enc");
-        let saved = has_saved_file(&enc_path)?;
+        let saved = has_saved_file(app_data_dir)?;
         let key = match store.load() {
             Ok(Some(key)) => key,
             Ok(None) if saved => {
@@ -376,30 +405,26 @@ impl Db {
     /// Opens an existing database with a typed recovery key and, once it
     /// decrypts, stores the key in `store` (SEC-03). The key it replaces is kept
     /// once with `keep_previous`. A malformed or wrong key leaves the files and
-    /// the store untouched: the saved file must decrypt before anything else.
+    /// the store untouched: the database must decrypt before anything else.
     pub(crate) fn recover(
         app_data_dir: &Path,
         store: &dyn KeyStore,
         recovery_key: &str,
     ) -> Result<Self, String> {
         let key = recovery::decode(recovery_key)?;
-        let wrong = |e: String| {
+        if !has_saved_file(app_data_dir)? {
+            return Err("there is no local database to recover".to_string());
+        }
+        let db = Self::open_with_key(app_data_dir, key).map_err(|e| {
             if e == DECRYPT_ERROR {
                 format!(
                     "{WRONG_RECOVERY_KEY}: this recovery key does not open the local database \
-                     (another key, or a damaged file; a pharos.db.enc.bak-* copy may still open)"
+                     (another key, or a damaged file; a pharos.db.bak-* copy may still open)"
                 )
             } else {
                 e
             }
-        };
-        if latest_save(&app_data_dir.join("pharos.db.enc"), &key)
-            .map_err(wrong)?
-            .is_none()
-        {
-            return Err("there is no local database to recover".to_string());
-        }
-        let db = Self::open_with_key(app_data_dir, key).map_err(wrong)?;
+        })?;
         // A recovered file is a copy (another PC, a reinstall): it gets a new
         // device id, so its audit chain (AUD-01) and HLCs never fork the ones the
         // original device may still extend.
@@ -420,20 +445,19 @@ impl Db {
         recovery::encode(&self.key)
     }
 
-    pub(crate) fn open_with_key(app_data_dir: &Path, key: [u8; 32]) -> Result<Self, String> {
+    /// Opens `pharos.db` in `app_data_dir` with `key`, converting a
+    /// `pharos.db.enc` of an earlier version first. Nothing is written before
+    /// the key is known to open the database and its migrations are known.
+    pub fn open_with_key(app_data_dir: &Path, key: [u8; 32]) -> Result<Self, String> {
         fs::create_dir_all(app_data_dir).map_err(|e| e.to_string())?;
-        // Before anything is read: another process may be saving (D4, ADR-0050).
+        // Before anything is read: another process may be writing (D4, ADR-0050).
         let lock = lock_data_dir(app_data_dir)?;
-        let enc_path = app_data_dir.join("pharos.db.enc");
-        // Read the latest save without changing any file yet: a database from a
-        // newer version must be refused before anything on disk is touched.
-        let disk = disk_stamp(&enc_path);
-        let saved = latest_save(&enc_path, &key)?;
-        let mut conn = Connection::open_in_memory().map_err(|e| e.to_string())?;
-        if let Some((_, plain)) = &saved {
-            load_image(&mut conn, plain)?;
-        }
+        let db_path = app_data_dir.join(DB_FILE);
+        let store = EvidenceStore::new(app_data_dir, &key);
+        convert_legacy(app_data_dir, &key, &store)?;
 
+        let existed = db_path.try_exists().map_err(|e| e.to_string())?;
+        let conn = open_disk(&db_path, &key, !existed)?;
         let unknown = unknown_migrations(&conn)?;
         if !unknown.is_empty() {
             return Err(format!(
@@ -443,31 +467,41 @@ impl Db {
                 unknown.join(", ")
             ));
         }
-        recover_leftovers(app_data_dir, &enc_path, &key)?;
-        let store = EvidenceStore::new(app_data_dir, &key);
+        // A plaintext copy written by versions before the in-memory fix (only
+        // once the database is known to be ours to change).
+        let legacy_plain = app_data_dir.join("pharos.db.tmp");
+        if legacy_plain.try_exists().map_err(|e| e.to_string())? {
+            wipe_file(&legacy_plain)?;
+        }
         store.clean_tmp();
-
-        let migrate_existing = saved.is_some() && !pending_migrations(&conn)?.is_empty();
-        if let Some((blob, _)) = saved.as_ref().filter(|_| migrate_existing) {
+        if existed && !pending_migrations(&conn)?.is_empty() {
             let last = applied_migrations(&conn)?.pop();
-            write_backup(&enc_path, blob, last.as_deref())?;
+            let label = last
+                .as_deref()
+                .map_or("empty", |m| m.trim_end_matches(".sql"));
+            backup_disk(&conn, &db_path, &key, label)
+                .map_err(|e| format!("{e}; nothing was migrated"))?;
         }
         run_migrations_with(&conn, Some(&store))?;
         evidence::check::load_damaged(&conn, &store)?;
-        // A copy put back by hand gets a new device id (AUD-01c).
-        let restored = saved.is_some() && crate::restored_copy::check(&conn, &enc_path)?;
+        // A copy put back by hand gets a new device id (AUD-01c); every open
+        // is counted, inside and next to the file.
+        if existed {
+            crate::restored_copy::check(&conn, &db_path)?;
+        }
+        mark_open(&conn, &db_path)?;
+        let seen = data_version(&conn)?;
         let db = Db {
             conn: Mutex::new(conn),
-            enc_path,
+            db_path,
             key,
             evidence: store,
-            disk: Mutex::new(disk),
+            seen_version: Mutex::new(seen),
             _lock: lock,
         };
-        // Save the migrated image right away, so the backup and the file on
-        // disk are always exactly one upgrade apart; then finish the evidence
-        // deletions an earlier run saved but did not complete (ADR-0014).
-        if migrate_existing || restored || db.with_conn(evidence::has_pending_deletions)? {
+        // Finish the evidence deletions an earlier run committed but did not
+        // complete (ADR-0014).
+        if db.with_conn(evidence::has_pending_deletions)? {
             db.persist_and_collect()?;
         }
         Ok(db)
@@ -503,66 +537,67 @@ impl Db {
         &self.evidence
     }
 
-    /// Saves, then removes the evidence files that save released, then saves
-    /// the removal of their rows: all under one lock, so every `deleting` row
-    /// `collect` sees is in the image just written. No other transaction can
-    /// release a content between the save and the removal, and a failed save
-    /// removes nothing. Use it instead of `persist` after a change that may
-    /// release evidence.
+    /// Removes the evidence files the committed changes released, then their
+    /// rows: all under one lock, so every `deleting` row `collect` sees is
+    /// committed. Use it instead of `persist` after a change that may release
+    /// evidence.
     pub(crate) fn persist_and_collect(&self) -> Result<(), String> {
-        let mut conn = self
+        let conn = self
             .conn
             .lock()
             .map_err(|_| "db lock poisoned".to_string())?;
-        self.save(&mut conn)?;
         // Any `deleting` row changes in `collect`: its removal, or its return to
-        // `present` / `damaged` when it was referenced again. Either is saved.
+        // `present` / `damaged` when it was referenced again.
         if evidence::has_pending_deletions(&conn)? {
             evidence::collect(&conn, &self.evidence)?;
-            self.save(&mut conn)?;
         }
-        Ok(())
+        self.seen(&conn)
     }
 
-    /// Saves, then keeps a copy of the encrypted database as
-    /// `pharos.db.enc.bak-<app version>-<label>` before a change of many rows
-    /// that is not a migration (the first sync with workspaces moving the
-    /// device's rows, SYNC-07). The newest 3 backups are kept.
+    /// Keeps an encrypted copy of the database as
+    /// `pharos.db.bak-<app version>-<label>` before a change of many rows that
+    /// is not a migration (the first sync with workspaces moving the device's
+    /// rows, SYNC-07). The newest 3 backups are kept.
     pub(crate) fn backup_now(&self, label: &str) -> Result<(), String> {
-        self.persist()?;
-        let blob = fs::read(&self.enc_path).map_err(|e| format!("backup before {label}: {e}"))?;
-        // Never over another copy: the same rules as before a migration.
-        write_backup(&self.enc_path, &blob, Some(label))
-            .map_err(|e| format!("backup before {label}: {e}"))
-    }
-
-    /// Serializes the in-memory database and writes it encrypted to disk.
-    pub fn persist(&self) -> Result<(), String> {
-        let mut conn = self
+        let conn = self
             .conn
             .lock()
             .map_err(|_| "db lock poisoned".to_string())?;
-        self.save(&mut conn)
+        backup_disk(&conn, &self.db_path, &self.key, label)
+            .map_err(|e| format!("backup before {label}: {e}"))?;
+        // The copy must count below the live database (AUD-01c).
+        mark_open(&conn, &self.db_path)?;
+        self.seen(&conn)
     }
 
-    fn save(&self, conn: &mut Connection) -> Result<(), String> {
-        // Counted inside and next to the file, to spot a restored copy (AUD-01c).
-        let seq = crate::restored_copy::bump(conn)?;
-        let image = conn.serialize(MAIN_DB).map_err(|e| e.to_string())?;
-        let blob = encrypt(&self.key, &image)?;
-        write_atomic(&self.enc_path, &blob)?;
-        crate::restored_copy::write_mark(&self.enc_path, seq);
-        if let Ok(mut disk) = self.disk.lock() {
-            *disk = disk_stamp(&self.enc_path);
+    /// Every change is committed to disk as it is made (SEC-05): this only
+    /// records that this process has seen the database as it is now (see
+    /// `changed_on_disk`). The calls go when SEC-05b lets other processes write.
+    pub fn persist(&self) -> Result<(), String> {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| "db lock poisoned".to_string())?;
+        self.seen(&conn)
+    }
+
+    fn seen(&self, conn: &Connection) -> Result<(), String> {
+        let version = data_version(conn)?;
+        if let Ok(mut seen) = self.seen_version.lock() {
+            *seen = version;
         }
         Ok(())
     }
 
-    /// True if `pharos.db.enc` is not what this process last read or wrote:
-    /// another process (a second Pharos on the same data folder) saved it.
-    pub(crate) fn changed_on_disk(&self) -> bool {
-        let now = disk_stamp(&self.enc_path);
-        self.disk.lock().map(|d| *d != now).unwrap_or(true)
+    /// True if another connection (another process on the same data folder)
+    /// committed since this process last saved. `conn` is this database's
+    /// connection, already locked by the caller.
+    pub(crate) fn changed_on_disk(&self, conn: &Connection) -> bool {
+        let now = data_version(conn).ok();
+        self.seen_version
+            .lock()
+            .map(|seen| now != Some(*seen))
+            .unwrap_or(true)
     }
 }
 
@@ -574,12 +609,420 @@ fn new_key(store: &dyn KeyStore) -> Result<[u8; 32], String> {
     Ok(key)
 }
 
-/// True if a database was ever saved here (`pharos.db.enc`, or a first save
-/// that never got renamed): then a missing key must not be replaced. An I/O
-/// error is an error, not "no file", so it never leads to a new key.
-fn has_saved_file(enc_path: &Path) -> Result<bool, String> {
+/// True if a database was ever saved here (`pharos.db`, `pharos.db.enc`, or
+/// a first save that never got renamed): then a missing key must not be
+/// replaced. An I/O error is an error, not "no file", so it never leads to a
+/// new key.
+fn has_saved_file(dir: &Path) -> Result<bool, String> {
     let exists = |p: &Path| p.try_exists().map_err(|e| e.to_string());
-    Ok(exists(enc_path)? || exists(&pending_path(enc_path))?)
+    let legacy = dir.join(LEGACY_FILE);
+    Ok(exists(&dir.join(DB_FILE))? || exists(&legacy)? || exists(&pending_path(&legacy))?)
+}
+
+/// `HKDF-SHA256(db_key, "pharos-page-v1")`: the raw key of the pages.
+fn page_key(key: &[u8; 32]) -> [u8; 32] {
+    let mut out = [0u8; 32];
+    Hkdf::<Sha256>::new(None, key)
+        .expand(PAGE_KEY_INFO, &mut out)
+        .expect("32 bytes is a valid HKDF output");
+    out
+}
+
+/// The raw-key literal of SQLCipher: exactly `x'` + 64 hex digits + `'`
+/// (any other length would be taken as a passphrase and run PBKDF2).
+fn raw_key_literal(key: &[u8; 32]) -> String {
+    format!("x'{}'", evidence::hex(&page_key(key)))
+}
+
+/// Opens `path` with the page key and checks it decrypts (a wrong key only
+/// fails on the first read: `DECRYPT_ERROR`), then sets the pragmas. A new
+/// file gets `auto_vacuum=INCREMENTAL` before its first table.
+pub(crate) fn open_disk(path: &Path, key: &[u8; 32], new: bool) -> Result<Connection, String> {
+    let conn = Connection::open(path).map_err(|e| format!("failed to open local database: {e}"))?;
+    conn.execute_batch(&format!("PRAGMA key = \"{}\";", raw_key_literal(key)))
+        .map_err(|_| "failed to set the database key".to_string())?;
+    let probe = conn.query_row("SELECT count(*) FROM sqlite_master", [], |r| {
+        r.get::<_, i64>(0)
+    });
+    match probe {
+        Ok(_) => {}
+        Err(rusqlite::Error::SqliteFailure(e, _)) if e.code == ErrorCode::NotADatabase => {
+            return Err(DECRYPT_ERROR.to_string())
+        }
+        Err(e) => return Err(format!("failed to read local database: {e}")),
+    }
+    if new {
+        conn.execute_batch("PRAGMA auto_vacuum = INCREMENTAL;")
+            .map_err(|e| e.to_string())?;
+    }
+    let mode: String = conn
+        .query_row("PRAGMA journal_mode = WAL", [], |r| r.get(0))
+        .map_err(|e| e.to_string())?;
+    if !mode.eq_ignore_ascii_case("wal") {
+        return Err(format!(
+            "failed to put the local database in WAL mode ({mode})"
+        ));
+    }
+    conn.execute_batch(&format!(
+        "PRAGMA synchronous = NORMAL; PRAGMA temp_store = MEMORY; \
+         PRAGMA foreign_keys = ON; PRAGMA busy_timeout = {BUSY_TIMEOUT_MS};"
+    ))
+    .map_err(|e| e.to_string())?;
+    Ok(conn)
+}
+
+/// `PRAGMA data_version`: changes when another connection commits.
+fn data_version(conn: &Connection) -> Result<i64, String> {
+    conn.query_row("PRAGMA data_version", [], |r| r.get(0))
+        .map_err(|e| e.to_string())
+}
+
+/// Counts this open (or backup) inside the database and next to it, so a copy
+/// put back by hand reads as older (AUD-01c, `restored_copy`).
+fn mark_open(conn: &Connection, db_path: &Path) -> Result<(), String> {
+    let seq = crate::restored_copy::bump(conn)?;
+    crate::restored_copy::write_mark(db_path, seq);
+    Ok(())
+}
+
+/// Copies the encrypted database with SQLite's backup API to
+/// `pharos.db.bak-<app version>-<label>` (`-2`, `-3`… if taken; never over
+/// another copy), then keeps the newest 3. The copy has the same key.
+fn backup_disk(
+    conn: &Connection,
+    db_path: &Path,
+    key: &[u8; 32],
+    label: &str,
+) -> Result<(), String> {
+    let base = backup_path(db_path, Some(label));
+    let mut path = base.clone();
+    let mut n = 1;
+    while path.try_exists().map_err(|e| e.to_string())? {
+        n += 1;
+        if n > BACKUP_NAME_TRIES {
+            return Err(format!(
+                "failed to save the backup: {} and the names after it are taken",
+                base.display()
+            ));
+        }
+        let mut next = base.as_os_str().to_owned();
+        next.push(format!("-{n}"));
+        path = PathBuf::from(next);
+    }
+    let pending = pending_path(&path);
+    let copied = (|| {
+        let _ = fs::remove_file(&pending);
+        let mut dst = Connection::open(&pending).map_err(|e| e.to_string())?;
+        dst.execute_batch(&format!("PRAGMA key = \"{}\";", raw_key_literal(key)))
+            .map_err(|_| "failed to set the backup key".to_string())?;
+        {
+            let backup =
+                rusqlite::backup::Backup::new(conn, &mut dst).map_err(|e| e.to_string())?;
+            backup
+                .run_to_completion(256, std::time::Duration::ZERO, None)
+                .map_err(|e| e.to_string())?;
+        }
+        dst.close().map_err(|(_, e)| e.to_string())?;
+        sync_file(&pending).map_err(|e| e.to_string())?;
+        fs::rename(&pending, &path).map_err(|e| e.to_string())
+    })();
+    if let Err(e) = copied {
+        let _ = fs::remove_file(&pending);
+        return Err(format!("failed to save the backup {}: {e}", path.display()));
+    }
+    prune_backups(db_path);
+    Ok(())
+}
+
+/// Converts a `pharos.db.enc` of a version before 0.6 to `pharos.db`
+/// (SEC-05, ADR-0050 §4). Does nothing when there is none, or when it is the
+/// witness of an earlier conversion. Resumable at every step:
+/// - `pharos.db.convert` left by an interrupted run is discarded;
+/// - a `pharos.db` converted from this very file (its `converted_from`) only
+///   lacks the witness;
+/// - a `pharos.db` next to a different `pharos.db.enc` means the user went
+///   back to 0.5 and kept working: that `pharos.db` is put aside as a backup
+///   and the newer file is converted.
+fn convert_legacy(dir: &Path, key: &[u8; 32], store: &EvidenceStore) -> Result<(), String> {
+    let enc_path = dir.join(LEGACY_FILE);
+    let db_path = dir.join(DB_FILE);
+    let convert_path = dir.join(CONVERT_FILE);
+    // Read without changing any file yet: a database from a newer version, or
+    // under another key, must be refused before anything on disk is touched.
+    let Some((blob, plain)) = latest_save(&enc_path, key)? else {
+        return Ok(());
+    };
+    let mut mem = Connection::open_in_memory().map_err(|e| e.to_string())?;
+    load_image(&mut mem, &plain)?;
+    let applied = applied_migrations(&mem)?;
+    let db_exists = db_path.try_exists().map_err(|e| e.to_string())?;
+    if applied.iter().any(|m| m == WITNESS_MIGRATION) {
+        if !db_exists {
+            return Err(format!(
+                "{DB_MISSING_ERROR}: the local data moved to pharos.db, which is not in \
+                 the data folder. Put it (or a pharos.db.bak-* copy) back there."
+            ));
+        }
+        return Ok(());
+    }
+    let unknown = unknown_migrations(&mem)?;
+    if !unknown.is_empty() {
+        return Err(format!(
+            "{NEWER_DB_ERROR}: the local database was written by a newer version of \
+             Pharos (unknown migrations: {}). It was not modified; install that \
+             version or a later one to open it.",
+            unknown.join(", ")
+        ));
+    }
+    let source_sha = evidence::hex(&Sha256::digest(&blob));
+    if db_exists {
+        let converted_from = {
+            let conn = open_disk(&db_path, key, false)?;
+            converted_from(&conn)?
+        };
+        if converted_from.as_deref() == Some(source_sha.as_str()) {
+            // Stopped between the rename and the witness: only the witness is missing.
+            return write_witness(&enc_path, key, &applied);
+        }
+        put_aside(&db_path, key)?;
+    }
+    recover_leftovers(dir, &enc_path, key)?;
+    if convert_path.try_exists().map_err(|e| e.to_string())? {
+        fs::remove_file(&convert_path).map_err(|e| e.to_string())?;
+    }
+    check_space(dir, (blob.len() + 2 * plain.len()) as u64, free_space(dir))?;
+    // The original file, byte for byte, before anything changes (SEC-06).
+    write_backup(&enc_path, &blob, applied.last().map(String::as_str))
+        .map_err(|e| format!("{CONVERT_FAILED_ERROR}: {e}"))?;
+    run_migrations_with(&mem, Some(store))?;
+    // A copy put back by hand before the update (AUD-01c, the old mark).
+    crate::restored_copy::check(&mem, &enc_path)?;
+    mem.execute(
+        "INSERT INTO sync_state (key, value) VALUES (?1, ?2)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        params![CONVERTED_FROM_KEY, source_sha],
+    )
+    .map_err(|e| e.to_string())?;
+    let written = write_converted(&mem, &convert_path, key);
+    if let Err(e) = written {
+        let _ = fs::remove_file(&convert_path);
+        return Err(format!(
+            "{CONVERT_FAILED_ERROR}: {e}; pharos.db.convert was discarded and \
+             pharos.db.enc was not modified"
+        ));
+    }
+    fs::rename(&convert_path, &db_path)
+        .map_err(|e| format!("{CONVERT_FAILED_ERROR}: renaming pharos.db.convert: {e}"))?;
+    write_witness(&enc_path, key, &applied_migrations(&mem)?)
+}
+
+/// `VACUUM INTO` an encrypted file (the backup API cannot copy a plain
+/// database into an encrypted one, SEC-04), then checks it against `mem`:
+/// integrity, the same tables with the same row counts. The key travels in the
+/// URI, so SQLite's messages are never passed on.
+fn write_converted(mem: &Connection, path: &Path, key: &[u8; 32]) -> Result<(), String> {
+    mem.execute_batch("PRAGMA auto_vacuum = INCREMENTAL;")
+        .map_err(|e| e.to_string())?;
+    let uri = format!(
+        "{}?cipher=sqlcipher&legacy=4&key={}",
+        file_uri(path),
+        raw_key_literal(key).replace('\'', "%27")
+    );
+    mem.execute("VACUUM INTO ?1", [&uri]).map_err(|e| match e {
+        rusqlite::Error::SqliteFailure(f, _) => {
+            format!("writing the converted database failed ({:?})", f.code)
+        }
+        _ => "writing the converted database failed".to_string(),
+    })?;
+    let conn = open_disk(path, key, false)?;
+    let ok: String = conn
+        .query_row("PRAGMA integrity_check", [], |r| r.get(0))
+        .map_err(|e| e.to_string())?;
+    if ok != "ok" {
+        return Err(format!(
+            "the converted database fails its integrity check ({ok})"
+        ));
+    }
+    for table in tables(mem)? {
+        let count = |c: &Connection| {
+            c.query_row(&format!("SELECT count(*) FROM \"{table}\""), [], |r| {
+                r.get::<_, i64>(0)
+            })
+            .map_err(|e| e.to_string())
+        };
+        let (before, after) = (count(mem)?, count(&conn)?);
+        if before != after {
+            return Err(format!(
+                "row count differs in table {table} ({before} → {after})"
+            ));
+        }
+    }
+    if tables(mem)? != tables(&conn)? {
+        return Err("the converted database does not have the same tables".to_string());
+    }
+    conn.close().map_err(|(_, e)| e.to_string())?;
+    sync_file(path).map_err(|e| e.to_string())
+}
+
+/// fsync of a file just written (Windows needs a handle with write access).
+fn sync_file(path: &Path) -> std::io::Result<()> {
+    fs::OpenOptions::new().write(true).open(path)?.sync_all()
+}
+
+/// The user tables of a database, sorted.
+fn tables(conn: &Connection) -> Result<Vec<String>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT name FROM sqlite_master WHERE type = 'table' \
+             AND name NOT LIKE 'sqlite_%' ORDER BY name",
+        )
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map([], |r| r.get::<_, String>(0))
+        .map_err(|e| e.to_string())?;
+    rows.collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(|e| e.to_string())
+}
+
+/// `converted_from` of a converted database, if any.
+fn converted_from(conn: &Connection) -> Result<Option<String>, String> {
+    let has_state = conn
+        .query_row(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'sync_state'",
+            [],
+            |_| Ok(()),
+        )
+        .optional()
+        .map_err(|e| e.to_string())?
+        .is_some();
+    if !has_state {
+        return Ok(None);
+    }
+    conn.query_row(
+        "SELECT value FROM sync_state WHERE key = ?1",
+        [CONVERTED_FROM_KEY],
+        |r| r.get(0),
+    )
+    .optional()
+    .map_err(|e| e.to_string())
+}
+
+/// Moves a `pharos.db` aside as `pharos.db.bak-<version>-superseded`, after
+/// folding its WAL into it, so its data stays openable with the same key.
+fn put_aside(db_path: &Path, key: &[u8; 32]) -> Result<(), String> {
+    {
+        let conn = open_disk(db_path, key, false)?;
+        conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(()))
+            .map_err(|e| e.to_string())?;
+        conn.execute_batch("PRAGMA journal_mode = DELETE;")
+            .map_err(|e| e.to_string())?;
+    }
+    let base = backup_path(db_path, Some("superseded"));
+    let mut path = base.clone();
+    let mut n = 1;
+    while path.try_exists().map_err(|e| e.to_string())? {
+        n += 1;
+        let mut next = base.as_os_str().to_owned();
+        next.push(format!("-{n}"));
+        path = PathBuf::from(next);
+    }
+    fs::rename(db_path, &path).map_err(|e| format!("failed to put pharos.db aside: {e}"))
+}
+
+/// Replaces `pharos.db.enc` with the witness: an image holding only
+/// `schema_migrations` with the migrations it had plus `disk-format-v2`, so a
+/// Pharos before 0.6 refuses it (SEC-06) instead of starting empty.
+fn write_witness(enc_path: &Path, key: &[u8; 32], applied: &[String]) -> Result<(), String> {
+    let mut conn = Connection::open_in_memory().map_err(|e| e.to_string())?;
+    conn.execute_batch(
+        "CREATE TABLE schema_migrations (
+            name TEXT PRIMARY KEY,
+            applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )",
+    )
+    .map_err(|e| e.to_string())?;
+    for name in applied
+        .iter()
+        .map(String::as_str)
+        .chain([WITNESS_MIGRATION])
+    {
+        conn.execute(
+            "INSERT OR IGNORE INTO schema_migrations (name) VALUES (?1)",
+            [name],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    let image = conn.serialize(MAIN_DB).map_err(|e| e.to_string())?;
+    write_atomic(enc_path, &encrypt(key, &image)?)
+}
+
+/// Fails with `CONVERT_NO_SPACE_ERROR` when `free` is known and below `need`.
+fn check_space(dir: &Path, need: u64, free: Option<u64>) -> Result<(), String> {
+    match free {
+        Some(free) if free < need => {
+            let mb = |b: u64| b.div_ceil(1024 * 1024);
+            Err(format!(
+                "{CONVERT_NO_SPACE_ERROR}: need {} MB, {} MB free in {}",
+                mb(need),
+                mb(free),
+                dir.display()
+            ))
+        }
+        _ => Ok(()),
+    }
+}
+
+/// Bytes the user can still write in `dir`'s volume (None when unknown).
+#[cfg(windows)]
+fn free_space(dir: &Path) -> Option<u64> {
+    use std::os::windows::ffi::OsStrExt;
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn GetDiskFreeSpaceExW(
+            directory: *const u16,
+            available: *mut u64,
+            total: *mut u64,
+            free: *mut u64,
+        ) -> i32;
+    }
+    let wide: Vec<u16> = dir.as_os_str().encode_wide().chain(Some(0)).collect();
+    let mut available = 0u64;
+    // SAFETY: a NUL-terminated wide path and a valid out pointer; the other
+    // two outputs are optional (null).
+    let ok = unsafe {
+        GetDiskFreeSpaceExW(
+            wide.as_ptr(),
+            &mut available,
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+        )
+    };
+    (ok != 0).then_some(available)
+}
+
+#[cfg(not(windows))]
+fn free_space(_dir: &Path) -> Option<u64> {
+    None
+}
+
+/// A `file:` URI for SQLite (`SQLITE_USE_URI`): forward slashes, and every
+/// byte outside the unreserved set percent-encoded.
+fn file_uri(path: &Path) -> String {
+    let raw = path.to_string_lossy().replace('\\', "/");
+    let mut out = String::from(if raw.starts_with('/') {
+        "file://"
+    } else {
+        "file:///"
+    });
+    for b in raw.bytes() {
+        match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' | b'/' | b':' => {
+                out.push(b as char)
+            }
+            _ => out.push_str(&format!("%{b:02X}")),
+        }
+    }
+    out
 }
 
 /// Path of the in-progress copy written before the atomic rename.
@@ -972,12 +1415,150 @@ fn pending_migrations(conn: &Connection) -> Result<Vec<&'static str>, String> {
 pub struct DbStatus {
     pub open_error: Mutex<Option<String>>,
     pub data_dir: PathBuf,
+    /// True while the database is being opened. Converting a `pharos.db.enc`
+    /// (SEC-05) runs in the background so the window can say so; every other
+    /// open finishes before the UI asks.
+    opening: Mutex<bool>,
+    opened: std::sync::Condvar,
+    /// The open in progress converts a `pharos.db.enc` of 0.5.
+    converting: std::sync::atomic::AtomicBool,
 }
 
+impl DbStatus {
+    /// A status for `data_dir` whose open has not finished yet.
+    pub fn new(data_dir: PathBuf) -> Self {
+        DbStatus {
+            open_error: Mutex::new(None),
+            data_dir,
+            opening: Mutex::new(true),
+            opened: std::sync::Condvar::new(),
+            converting: std::sync::atomic::AtomicBool::new(false),
+        }
+    }
+
+    /// Records how the open ended and wakes whoever waits for it.
+    pub fn finish(&self, error: Option<String>) {
+        if let Ok(mut open_error) = self.open_error.lock() {
+            *open_error = error;
+        }
+        self.converting
+            .store(false, std::sync::atomic::Ordering::SeqCst);
+        if let Ok(mut opening) = self.opening.lock() {
+            *opening = false;
+        }
+        self.opened.notify_all();
+    }
+
+    /// The open error, once the open has finished.
+    fn wait(&self) -> Option<String> {
+        let mut opening = match self.opening.lock() {
+            Ok(guard) => guard,
+            Err(_) => return Some("db status lock poisoned".to_string()),
+        };
+        while *opening {
+            opening = match self.opened.wait(opening) {
+                Ok(guard) => guard,
+                Err(_) => return Some("db status lock poisoned".to_string()),
+            };
+        }
+        drop(opening);
+        self.open_error.lock().ok().and_then(|e| e.clone())
+    }
+}
+
+/// True when `dir` holds a `pharos.db.enc` that is probably not converted
+/// yet (no `pharos.db`, or larger than any witness): opening it will take a
+/// while, so it runs in the background behind a progress screen. Only a hint
+/// for the UI; `Db::open` decides.
+pub fn conversion_pending(dir: &Path) -> bool {
+    const WITNESS_MAX: u64 = 64 * 1024;
+    let legacy = fs::metadata(dir.join(LEGACY_FILE)).map(|m| m.len()).ok();
+    match legacy {
+        None => false,
+        Some(len) => !dir.join(DB_FILE).exists() || len > WITNESS_MAX,
+    }
+}
+
+/// Opens the database of `status` and hands it to the app, or records why it
+/// failed (logged, and kept for a diagnostics export). A database that cannot
+/// be opened does not stop the app: the UI asks `db_open_error` and explains.
+#[cfg(feature = "tauri")]
+pub fn open_and_manage(app: &tauri::AppHandle) {
+    use tauri::Manager;
+    let status = app.state::<DbStatus>();
+    let started = std::time::Instant::now();
+    let error = match Db::open(&status.data_dir) {
+        Ok(database) => {
+            tracing::info!(
+                elapsed_ms = started.elapsed().as_millis() as u64,
+                e2e_profile = crate::instance::e2e_profile().is_some(),
+                "local database opened"
+            );
+            app.manage(database);
+            None
+        }
+        Err(e) => {
+            tracing::error!(error = %crate::diag::redact(&e), "local database failed to open");
+            app.state::<crate::diag::DiagState>()
+                .record_db_open_error(&e);
+            Some(e)
+        }
+    };
+    status.finish(error);
+}
+
+/// Opens the database at startup: at once, or in the background when a
+/// `pharos.db.enc` has to be converted first (SEC-05).
+#[cfg(feature = "tauri")]
+pub fn open_at_startup(app: &tauri::AppHandle) {
+    use tauri::Manager;
+    let status = app.state::<DbStatus>();
+    if conversion_pending(&status.data_dir) {
+        status
+            .converting
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+        let app = app.clone();
+        std::thread::spawn(move || open_and_manage(&app));
+    } else {
+        open_and_manage(app);
+    }
+}
+
+/// Why the local database could not be opened (None when it opened), once
+/// the open has finished.
+#[cfg(feature = "tauri")]
+#[tauri::command(async)]
+pub fn db_open_error(status: tauri::State<'_, DbStatus>) -> Option<String> {
+    status.wait()
+}
+
+/// True while the open converts a `pharos.db.enc` of 0.5 (SEC-05): the UI
+/// shows the conversion screen instead of the plain splash.
 #[cfg(feature = "tauri")]
 #[tauri::command]
-pub fn db_open_error(status: tauri::State<DbStatus>) -> Option<String> {
-    status.open_error.lock().ok().and_then(|e| e.clone())
+pub fn db_open_converting(status: tauri::State<'_, DbStatus>) -> bool {
+    status.converting.load(std::sync::atomic::Ordering::SeqCst)
+}
+
+/// Opens again after an error that may go away (space freed, the other
+/// Pharos closed, a conversion that failed). Key errors go through
+/// `db_recover`; a newer database never opens here.
+#[cfg(feature = "tauri")]
+#[tauri::command(async)]
+pub fn db_open_retry(app: tauri::AppHandle, status: tauri::State<'_, DbStatus>) -> Option<String> {
+    let error = status.wait()?;
+    if is_key_error(&error) || error.starts_with(NEWER_DB_ERROR) {
+        return Some(error);
+    }
+    if let Ok(mut opening) = status.opening.lock() {
+        *opening = true;
+    }
+    status.converting.store(
+        conversion_pending(&status.data_dir),
+        std::sync::atomic::Ordering::SeqCst,
+    );
+    open_and_manage(&app);
+    status.wait()
 }
 
 /// True for the open errors a recovery key can fix.
@@ -1099,13 +1680,40 @@ mod tests {
         let mut names: Vec<String> = fs::read_dir(dir)
             .unwrap()
             .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
-            // The save count next to the file (AUD-01c) has its own tests.
-            .filter(|n| n != "pharos.db.enc.seq")
+            // The open counts next to the files (AUD-01c) have their own tests.
+            .filter(|n| n != "pharos.db.enc.seq" && n != "pharos.db.seq")
             // The lock held while the database is open (ADR-0050) has its own test.
             .filter(|n| n != LOCK_FILE)
             .collect();
         names.sort();
         names
+    }
+
+    /// The image of a pre-0.6 database (every migration of this build, one
+    /// workspace named `name`) and its workspace id.
+    fn legacy_image(name: &str) -> (Vec<u8>, String) {
+        let mut conn = Connection::open_in_memory().unwrap();
+        run_migrations(&conn).unwrap();
+        let id = ensure_workspace(&conn).unwrap();
+        conn.execute("UPDATE workspaces SET name = ?1", [name])
+            .unwrap();
+        (conn.serialize(MAIN_DB).unwrap().to_vec(), id)
+    }
+
+    /// Writes a pre-0.6 `pharos.db.enc` (or `file`) encrypted with `KEY`.
+    fn write_legacy(dir: &Path, file: &str, name: &str) -> (Vec<u8>, String) {
+        let (image, id) = legacy_image(name);
+        let blob = encrypt(&KEY, &image).unwrap();
+        fs::write(dir.join(file), &blob).unwrap();
+        (blob, id)
+    }
+
+    fn workspace_name(db: &Db) -> String {
+        db.with_conn(|c| {
+            c.query_row("SELECT name FROM workspaces", [], |r| r.get(0))
+                .map_err(|e| e.to_string())
+        })
+        .unwrap()
     }
 
     #[test]
@@ -1119,22 +1727,16 @@ mod tests {
         };
         let db = Db::open_with_key(&dir, KEY).unwrap();
         assert_eq!(db.with_conn(ensure_workspace).unwrap(), id);
-        // Writes after a deserialize (memdb-backed) must persist too.
+        // Every write is committed to disk as it is made.
         db.with_conn(|c| {
             c.execute("UPDATE workspaces SET name = 'Renamed'", [])
                 .map_err(|e| e.to_string())
         })
         .unwrap();
-        db.persist().unwrap();
         drop(db);
         let db = Db::open_with_key(&dir, KEY).unwrap();
-        let name: String = db
-            .with_conn(|c| {
-                c.query_row("SELECT name FROM workspaces", [], |r| r.get(0))
-                    .map_err(|e| e.to_string())
-            })
-            .unwrap();
-        assert_eq!(name, "Renamed");
+        assert_eq!(workspace_name(&db), "Renamed");
+        drop(db);
         fs::remove_dir_all(&dir).unwrap();
     }
 
@@ -1143,25 +1745,21 @@ mod tests {
     #[test]
     fn a_restored_copy_gets_a_new_device_id() {
         let dir = temp_dir();
-        let enc = dir.join("pharos.db.enc");
+        let file = dir.join(DB_FILE);
         let db = Db::open_with_key(&dir, KEY).unwrap();
         db.with_conn(ensure_workspace).unwrap();
-        db.persist().unwrap();
         let device = db.with_conn(crate::oplog::device_id).unwrap();
-        db.persist().unwrap();
-        let copy = fs::read(&enc).unwrap();
-        db.persist().unwrap();
         drop(db);
-        // The mark holds only the count of saves.
-        let mark = fs::read_to_string(dir.join("pharos.db.enc.seq")).unwrap();
+        let copy = fs::read(&file).unwrap();
+        // The mark holds only the count of opens.
+        let mark = fs::read_to_string(dir.join("pharos.db.seq")).unwrap();
         assert!(mark.trim().parse::<u64>().is_ok(), "{mark}");
 
         let db = Db::open_with_key(&dir, KEY).unwrap();
         assert_eq!(db.with_conn(crate::oplog::device_id).unwrap(), device);
-        db.persist().unwrap();
         drop(db);
 
-        fs::write(&enc, &copy).unwrap();
+        fs::write(&file, &copy).unwrap();
         let db = Db::open_with_key(&dir, KEY).unwrap();
         let rotated = db.with_conn(crate::oplog::device_id).unwrap();
         assert_ne!(rotated, device);
@@ -1170,14 +1768,14 @@ mod tests {
             .unwrap()
             .is_some());
         drop(db);
-        // Saved at once and ahead of the mark again: the next open keeps it.
+        // Counted at once and ahead of the mark again: the next open keeps it.
         let db = Db::open_with_key(&dir, KEY).unwrap();
         assert_eq!(db.with_conn(crate::oplog::device_id).unwrap(), rotated);
         drop(db);
 
         // Without the mark nothing can be told, and nothing changes.
-        fs::write(&enc, &copy).unwrap();
-        fs::remove_file(dir.join("pharos.db.enc.seq")).unwrap();
+        fs::write(&file, &copy).unwrap();
+        fs::remove_file(dir.join("pharos.db.seq")).unwrap();
         let db = Db::open_with_key(&dir, KEY).unwrap();
         assert_eq!(db.with_conn(crate::oplog::device_id).unwrap(), device);
         drop(db);
@@ -1192,26 +1790,81 @@ mod tests {
         let dir = temp_dir();
         let db = Db::open_with_key(&dir, KEY).unwrap();
         db.with_conn(ensure_workspace).unwrap();
-        db.persist().unwrap();
-        let before = fs::read(dir.join("pharos.db.enc")).unwrap();
+        let before = file_names(&dir);
         let err = Db::open_with_key(&dir, KEY).err().unwrap();
         assert!(err.starts_with(DB_IN_USE_ERROR), "{err}");
-        assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), before);
+        assert!(!err.contains("  "), "{err}");
+        assert_eq!(file_names(&dir), before);
         drop(db);
-        Db::open_with_key(&dir, KEY).unwrap();
+        drop(Db::open_with_key(&dir, KEY).unwrap());
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// SEC-05: every file of the folder is encrypted, the WAL too, while the
+    /// database is open and after it is closed.
+    #[test]
+    fn no_plaintext_reaches_disk() {
+        const MARKER: &str = "PHAROS-MARKER-7f3a9c";
+        let dir = temp_dir();
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        db.with_conn(ensure_workspace).unwrap();
+        db.with_conn(|c| {
+            for _ in 0..200 {
+                c.execute("UPDATE workspaces SET name = ?1", [MARKER])
+                    .map_err(|e| e.to_string())?;
+            }
+            Ok(())
+        })
+        .unwrap();
+        let scan = |dir: &Path| {
+            for entry in fs::read_dir(dir).unwrap() {
+                let path = entry.unwrap().path();
+                let name = path.file_name().unwrap().to_string_lossy().into_owned();
+                // The lock is empty and held without sharing.
+                if !path.is_file() || name == LOCK_FILE {
+                    continue;
+                }
+                let Ok(bytes) = fs::read(&path) else {
+                    // The WAL index is mapped by SQLite while open (no row data).
+                    assert!(name.ends_with("-shm"), "cannot read {name}");
+                    continue;
+                };
+                {
+                    for needle in [MARKER.as_bytes(), b"SQLite format 3"] {
+                        assert!(
+                            !bytes.windows(needle.len()).any(|w| w == needle),
+                            "plaintext in {}",
+                            path.display()
+                        );
+                    }
+                }
+            }
+        };
+        assert!(dir.join("pharos.db-wal").exists());
+        scan(&dir);
+        drop(db);
+        scan(&dir);
+        assert_eq!(file_names(&dir), vec![DB_FILE]);
         fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]
-    fn persist_leaves_only_the_encrypted_file() {
+    fn a_new_database_is_wal_with_incremental_vacuum() {
         let dir = temp_dir();
         let db = Db::open_with_key(&dir, KEY).unwrap();
-        db.with_conn(ensure_workspace).unwrap();
-        db.persist().unwrap();
-        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
-        let blob = fs::read(dir.join("pharos.db.enc")).unwrap();
-        let header = b"SQLite format 3";
-        assert!(!blob.windows(header.len()).any(|w| w == header));
+        let (mode, vacuum): (String, i64) = db
+            .with_conn(|c| {
+                let mode = c
+                    .query_row("PRAGMA journal_mode", [], |r| r.get(0))
+                    .map_err(|e| e.to_string())?;
+                let vacuum = c
+                    .query_row("PRAGMA auto_vacuum", [], |r| r.get(0))
+                    .map_err(|e| e.to_string())?;
+                Ok((mode, vacuum))
+            })
+            .unwrap();
+        assert_eq!((mode.as_str(), vacuum), ("wal", 2));
+        drop(db);
         fs::remove_dir_all(&dir).unwrap();
     }
 
@@ -1219,54 +1872,146 @@ mod tests {
     fn open_wipes_legacy_plaintext_copy() {
         let dir = temp_dir();
         fs::write(dir.join("pharos.db.tmp"), b"SQLite format 3\0 plaintext").unwrap();
-        Db::open_with_key(&dir, KEY).unwrap();
+        drop(Db::open_with_key(&dir, KEY).unwrap());
         assert!(!dir.join("pharos.db.tmp").exists());
         fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// SEC-05, ADR-0050 §4: a `pharos.db.enc` of 0.5 is converted on the first
+    /// open: the data is in `pharos.db`, the original is kept byte for byte,
+    /// and `pharos.db.enc` is a witness a 0.5 refuses.
+    #[test]
+    fn a_legacy_database_is_converted_with_its_backup_and_a_witness() {
+        let dir = temp_dir();
+        let (blob, id) = write_legacy(&dir, LEGACY_FILE, "Converted");
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        assert_eq!(db.with_conn(ensure_workspace).unwrap(), id);
+        assert_eq!(workspace_name(&db), "Converted");
+        drop(db);
+        let last = MIGRATIONS.last().unwrap().0.trim_end_matches(".sql");
+        let backup = format!("pharos.db.enc.bak-{APP_VERSION}-{last}");
+        assert_eq!(
+            file_names(&dir),
+            vec![DB_FILE.to_string(), LEGACY_FILE.to_string(), backup.clone()]
+        );
+        assert_eq!(fs::read(dir.join(&backup)).unwrap(), blob);
+        // The witness: what a Pharos before 0.6 reads refuses with its message.
+        let witness = decrypt(&KEY, &fs::read(dir.join(LEGACY_FILE)).unwrap()).unwrap();
+        let mut old = Connection::open_in_memory().unwrap();
+        load_image(&mut old, &witness).unwrap();
+        assert_eq!(unknown_migrations(&old).unwrap(), vec![WITNESS_MIGRATION]);
+        assert_eq!(tables(&old).unwrap(), vec!["schema_migrations"]);
+        // Reopening converts nothing again.
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        assert_eq!(workspace_name(&db), "Converted");
+        drop(db);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// Stopped after `pharos.db` was renamed but before the witness: the next
+    /// open only writes the witness.
+    #[test]
+    fn a_conversion_stopped_before_the_witness_finishes_it() {
+        let dir = temp_dir();
+        let (blob, _) = write_legacy(&dir, LEGACY_FILE, "Once");
+        drop(Db::open_with_key(&dir, KEY).unwrap());
+        // As if the witness had not been written yet.
+        fs::write(dir.join(LEGACY_FILE), &blob).unwrap();
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        assert_eq!(workspace_name(&db), "Once");
+        drop(db);
+        let witness = decrypt(&KEY, &fs::read(dir.join(LEGACY_FILE)).unwrap()).unwrap();
+        let mut old = Connection::open_in_memory().unwrap();
+        load_image(&mut old, &witness).unwrap();
+        assert_eq!(unknown_migrations(&old).unwrap(), vec![WITNESS_MIGRATION]);
+        assert!(!file_names(&dir).iter().any(|n| n.contains("superseded")));
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// The user went back to 0.5 (restoring the backup) and kept working: the
+    /// newer `pharos.db.enc` is converted and the old `pharos.db` is kept aside.
+    #[test]
+    fn going_back_to_0_5_and_up_again_converts_the_newer_file_and_keeps_the_old_one() {
+        let dir = temp_dir();
+        write_legacy(&dir, LEGACY_FILE, "Before");
+        drop(Db::open_with_key(&dir, KEY).unwrap());
+        write_legacy(&dir, LEGACY_FILE, "Worked on in 0.5");
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        assert_eq!(workspace_name(&db), "Worked on in 0.5");
+        drop(db);
+        let aside = format!("pharos.db.bak-{APP_VERSION}-superseded");
+        assert!(file_names(&dir).contains(&aside), "{:?}", file_names(&dir));
+        let conn = open_disk(&dir.join(&aside), &KEY, false).unwrap();
+        let name: String = conn
+            .query_row("SELECT name FROM workspaces", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(name, "Before");
+        drop(conn);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn a_witness_without_its_database_is_reported_not_replaced() {
+        let dir = temp_dir();
+        write_legacy(&dir, LEGACY_FILE, "Moved");
+        drop(Db::open_with_key(&dir, KEY).unwrap());
+        fs::remove_file(dir.join(DB_FILE)).unwrap();
+        let err = Db::open_with_key(&dir, KEY).err().unwrap();
+        assert!(err.starts_with(DB_MISSING_ERROR), "{err}");
+        assert!(!dir.join(DB_FILE).exists());
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn a_full_disk_stops_the_conversion_before_anything_changes() {
+        let dir = temp_dir();
+        let err = check_space(&dir, 3 * 1024 * 1024, Some(1024 * 1024)).unwrap_err();
+        assert!(err.starts_with(CONVERT_NO_SPACE_ERROR), "{err}");
+        assert!(err.contains("need 3 MB, 1 MB free"), "{err}");
+        assert!(check_space(&dir, 10, Some(10)).is_ok());
+        assert!(check_space(&dir, 10, None).is_ok());
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn a_file_uri_escapes_what_sqlite_would_misread() {
+        assert_eq!(
+            file_uri(Path::new(r"C:\Users\Ana María\AppData\pharos.db.convert")),
+            "file:///C:/Users/Ana%20Mar%C3%ADa/AppData/pharos.db.convert"
+        );
+        assert_eq!(file_uri(Path::new("/tmp/a?b#c")), "file:///tmp/a%3Fb%23c");
     }
 
     #[test]
     fn open_promotes_complete_pending_save() {
         let dir = temp_dir();
-        let mut src = Connection::open_in_memory().unwrap();
-        src.execute_batch("CREATE TABLE marker (v TEXT); INSERT INTO marker VALUES ('newer');")
-            .unwrap();
-        let image = src.serialize(MAIN_DB).unwrap();
-        fs::write(dir.join("pharos.db.enc"), encrypt(&KEY, b"older").unwrap()).unwrap();
-        fs::write(
-            dir.join("pharos.db.enc.new"),
-            encrypt(&KEY, &image).unwrap(),
-        )
-        .unwrap();
+        fs::write(dir.join(LEGACY_FILE), encrypt(&KEY, b"older").unwrap()).unwrap();
+        write_legacy(&dir, "pharos.db.enc.new", "Newer");
 
         let db = Db::open_with_key(&dir, KEY).unwrap();
-        let v: String = db
-            .with_conn(|c| {
-                c.query_row("SELECT v FROM marker", [], |r| r.get(0))
-                    .map_err(|e| e.to_string())
-            })
-            .unwrap();
-        assert_eq!(v, "newer");
-        // The promoted image had no migrations yet, so it was backed up first.
-        let backup = format!("pharos.db.enc.bak-{APP_VERSION}-empty");
-        assert_eq!(file_names(&dir), vec!["pharos.db.enc".to_string(), backup]);
+        assert_eq!(workspace_name(&db), "Newer");
+        drop(db);
+        let last = MIGRATIONS.last().unwrap().0.trim_end_matches(".sql");
+        let backup = format!("pharos.db.enc.bak-{APP_VERSION}-{last}");
+        assert_eq!(
+            file_names(&dir),
+            vec![DB_FILE.to_string(), LEGACY_FILE.to_string(), backup]
+        );
         fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]
     fn open_discards_torn_pending_save() {
         let dir = temp_dir();
-        {
-            let db = Db::open_with_key(&dir, KEY).unwrap();
-            db.with_conn(ensure_workspace).unwrap();
-            db.persist().unwrap();
-        }
+        write_legacy(&dir, LEGACY_FILE, "Saved");
         let mut torn = encrypt(&KEY, b"partial").unwrap();
         torn.truncate(torn.len() - 4);
         fs::write(dir.join("pharos.db.enc.new"), torn).unwrap();
 
         let db = Db::open_with_key(&dir, KEY).unwrap();
-        db.with_conn(ensure_workspace).unwrap();
-        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        assert_eq!(workspace_name(&db), "Saved");
+        drop(db);
+        assert!(!dir.join("pharos.db.enc.new").exists());
         fs::remove_dir_all(&dir).unwrap();
     }
 
@@ -1309,7 +2054,7 @@ mod tests {
         let backup = format!("pharos.db.enc.bak-{APP_VERSION}-0011_sync_conflicts");
         assert_eq!(
             file_names(&dir),
-            vec!["pharos.db.enc".to_string(), backup.clone()]
+            vec![DB_FILE.to_string(), LEGACY_FILE.to_string(), backup.clone()]
         );
         // The backup is the untouched encrypted file from before the upgrade…
         let kept = fs::read(dir.join(&backup)).unwrap();
@@ -1320,10 +2065,43 @@ mod tests {
             pending_migrations(&old).unwrap().len(),
             MIGRATIONS.len() - 11
         );
-        // …and the migrated image was saved at once, so reopening migrates nothing.
+        // …and the migrated database is on disk, so reopening migrates nothing.
         let db = Db::open_with_key(&dir, KEY).unwrap();
         assert_eq!(db.with_conn(pending_migrations).unwrap().len(), 0);
         assert_eq!(fs::read(dir.join(&backup)).unwrap(), before);
+        drop(db);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// SEC-06 on the new format: before migrating `pharos.db` it is copied,
+    /// encrypted with the same key, and the copy opens as it was.
+    #[test]
+    fn migrating_the_disk_database_keeps_an_encrypted_backup() {
+        let dir = temp_dir();
+        // A pharos.db written by a build one migration behind.
+        let last = MIGRATIONS.last().unwrap().0;
+        {
+            let conn = open_disk(&dir.join(DB_FILE), &KEY, true).unwrap();
+            conn.execute_batch(
+                "CREATE TABLE schema_migrations (name TEXT PRIMARY KEY,                  applied_at TEXT NOT NULL DEFAULT (datetime('now')))",
+            )
+            .unwrap();
+            for (name, sql) in &MIGRATIONS[..MIGRATIONS.len() - 1] {
+                conn.execute_batch(sql).unwrap();
+                conn.execute("INSERT INTO schema_migrations (name) VALUES (?1)", [name])
+                    .unwrap();
+            }
+            ensure_workspace(&conn).unwrap();
+        }
+        let before = MIGRATIONS[MIGRATIONS.len() - 2].0.trim_end_matches(".sql");
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        assert_eq!(db.with_conn(pending_migrations).unwrap().len(), 0);
+        drop(db);
+        let backup = format!("pharos.db.bak-{APP_VERSION}-{before}");
+        assert!(file_names(&dir).contains(&backup), "{:?}", file_names(&dir));
+        let conn = open_disk(&dir.join(&backup), &KEY, false).unwrap();
+        assert_eq!(pending_migrations(&conn).unwrap(), vec![last]);
+        drop(conn);
         fs::remove_dir_all(&dir).unwrap();
     }
 
@@ -1332,15 +2110,14 @@ mod tests {
         let dir = temp_dir();
         let db = Db::open_with_key(&dir, KEY).unwrap();
         db.with_conn(ensure_workspace).unwrap();
-        db.persist().unwrap();
         drop(db);
-        Db::open_with_key(&dir, KEY).unwrap();
-        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        drop(Db::open_with_key(&dir, KEY).unwrap());
+        assert_eq!(file_names(&dir), vec![DB_FILE]);
         fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]
-    fn evidence_is_removed_only_after_the_save_that_released_it() {
+    fn evidence_is_removed_after_the_commit_that_released_it() {
         let dir = temp_dir();
         let db = Db::open_with_key(&dir, KEY).unwrap();
         let stored = db
@@ -1352,12 +2129,8 @@ mod tests {
             evidence::release(c, &stored.sha256)
         })
         .unwrap();
-        // A save that fails (its temp path is taken by a folder) removes nothing.
-        fs::create_dir(dir.join("pharos.db.enc.new")).unwrap();
-        assert!(db.persist_and_collect().is_err());
         assert!(db.evidence().exists(&stored.sha256));
-        fs::remove_dir(dir.join("pharos.db.enc.new")).unwrap();
-        // Once it is saved, the file goes, and so does its row (saved too).
+        // The release is committed: the file goes, and so does its row.
         db.persist_and_collect().unwrap();
         assert!(!db.evidence().exists(&stored.sha256));
         drop(db);
@@ -1369,6 +2142,35 @@ mod tests {
             })
             .unwrap();
         assert_eq!(rows, 0);
+        drop(db);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// DAT-03b on the new format: another connection's commit (a process from
+    /// before the folder lock, or any other writer) is seen until this process
+    /// saves again.
+    #[test]
+    fn a_commit_by_another_connection_is_seen_as_a_change_on_disk() {
+        let dir = temp_dir();
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        db.with_conn(ensure_workspace).unwrap();
+        db.persist().unwrap();
+        assert!(!db.with_conn(|c| Ok(db.changed_on_disk(c))).unwrap());
+        // Our own writes are not a change by someone else.
+        db.with_conn(|c| {
+            c.execute("UPDATE workspaces SET name = 'Mine'", [])
+                .map_err(|e| e.to_string())
+        })
+        .unwrap();
+        assert!(!db.with_conn(|c| Ok(db.changed_on_disk(c))).unwrap());
+        let other = open_disk(&dir.join(DB_FILE), &KEY, false).unwrap();
+        other
+            .execute("UPDATE workspaces SET name = 'Theirs'", [])
+            .unwrap();
+        drop(other);
+        assert!(db.with_conn(|c| Ok(db.changed_on_disk(c))).unwrap());
+        db.persist().unwrap();
+        assert!(!db.with_conn(|c| Ok(db.changed_on_disk(c))).unwrap());
         drop(db);
         fs::remove_dir_all(&dir).unwrap();
     }
@@ -1386,15 +2188,14 @@ mod tests {
                 .map_err(|e| e.to_string())
             })
             .unwrap();
-            db.persist().unwrap();
         }
-        let before = fs::read(dir.join("pharos.db.enc")).unwrap();
+        let before = fs::read(dir.join(DB_FILE)).unwrap();
 
         let err = Db::open_with_key(&dir, KEY).err().expect("must refuse");
         assert!(err.starts_with(NEWER_DB_ERROR), "{err}");
         assert!(err.contains("9999_from_the_future.sql"), "{err}");
-        assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), before);
-        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        assert_eq!(fs::read(dir.join(DB_FILE)).unwrap(), before);
+        assert_eq!(file_names(&dir), vec![DB_FILE]);
         fs::remove_dir_all(&dir).unwrap();
     }
 
@@ -1416,6 +2217,7 @@ mod tests {
         assert!(Db::open_with_key(&dir, KEY).is_err());
         assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), before);
         assert_eq!(fs::read(dir.join("pharos.db.enc.new")).unwrap(), newer);
+        assert!(!dir.join(DB_FILE).exists());
         fs::remove_dir_all(&dir).unwrap();
     }
 
@@ -1433,6 +2235,7 @@ mod tests {
         assert!(err.contains("pre-migration backup"), "{err}");
         assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), before);
         assert!(squatter.is_dir());
+        assert!(!dir.join(DB_FILE).exists());
         fs::remove_dir_all(&dir).unwrap();
     }
 
@@ -1457,27 +2260,6 @@ mod tests {
         let mut next = older.as_os_str().to_owned();
         next.push("-2");
         assert_eq!(fs::read(PathBuf::from(next)).unwrap(), current);
-        fs::remove_dir_all(&dir).unwrap();
-    }
-
-    #[test]
-    fn each_upgrade_within_one_version_gets_its_own_backup() {
-        let dir = temp_dir();
-        let first = write_db_migrated_until(&dir, "0011_sync_conflicts.sql");
-        drop(Db::open_with_key(&dir, KEY).unwrap());
-        // A later database of the same app version, one migration behind.
-        let second = write_db_migrated_until(&dir, "0015_audit_actor_repair.sql");
-        drop(Db::open_with_key(&dir, KEY).unwrap());
-
-        let enc = dir.join("pharos.db.enc");
-        assert_eq!(
-            fs::read(backup_path(&enc, Some("0011_sync_conflicts.sql"))).unwrap(),
-            first
-        );
-        assert_eq!(
-            fs::read(backup_path(&enc, Some("0015_audit_actor_repair.sql"))).unwrap(),
-            second
-        );
         fs::remove_dir_all(&dir).unwrap();
     }
 
@@ -1573,6 +2355,7 @@ mod tests {
         let store = MemStore::default();
         let db = Db::open_with_store(&dir, &store).unwrap();
         assert_eq!(store.key(), Some(db.key));
+        drop(db);
         fs::remove_dir_all(&dir).unwrap();
     }
 
@@ -1580,7 +2363,7 @@ mod tests {
     fn a_missing_key_with_a_saved_file_is_not_replaced() {
         let dir = temp_dir();
         saved_db(&dir);
-        let before = fs::read(dir.join("pharos.db.enc")).unwrap();
+        let before = fs::read(dir.join(DB_FILE)).unwrap();
 
         let store = MemStore::default();
         let err = Db::open_with_store(&dir, &store)
@@ -1588,11 +2371,16 @@ mod tests {
             .expect("must refuse");
         assert!(err.starts_with(KEY_MISSING_ERROR), "{err}");
         assert_eq!(store.key(), None, "no new key may be stored");
-        assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), before);
-        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        assert_eq!(fs::read(dir.join(DB_FILE)).unwrap(), before);
+        assert_eq!(file_names(&dir), vec![DB_FILE]);
 
-        // A first save that never got renamed counts as a saved file too.
-        fs::rename(dir.join("pharos.db.enc"), dir.join("pharos.db.enc.new")).unwrap();
+        // A pre-0.6 file, or a first save of it that never got renamed,
+        // counts as a saved file too.
+        fs::remove_file(dir.join(DB_FILE)).unwrap();
+        write_legacy(&dir, LEGACY_FILE, "Old");
+        let err = Db::open_with_store(&dir, &store).err().unwrap();
+        assert!(err.starts_with(KEY_MISSING_ERROR), "{err}");
+        fs::rename(dir.join(LEGACY_FILE), dir.join("pharos.db.enc.new")).unwrap();
         let err = Db::open_with_store(&dir, &store).err().unwrap();
         assert!(err.starts_with(KEY_MISSING_ERROR), "{err}");
         fs::remove_dir_all(&dir).unwrap();
@@ -1611,24 +2399,20 @@ mod tests {
         fs::remove_dir_all(&dir).unwrap();
     }
 
-    /// Acceptance of SEC-03: on another PC, with only the `.enc` file and the
-    /// recovery key, the data comes back and the key is in the keychain again.
+    /// Acceptance of SEC-03: on another PC, with only the database file and
+    /// the recovery key, the data comes back and the key is in the keychain
+    /// again.
     #[test]
-    fn the_enc_file_and_the_recovery_key_recover_the_data_on_another_pc() {
+    fn the_database_file_and_the_recovery_key_recover_the_data_on_another_pc() {
         let first_pc = temp_dir();
         let id = saved_db(&first_pc);
         let original = Db::open_with_store(&first_pc, &MemStore::with(KEY)).unwrap();
         let recovery_key = original.recovery_key();
         let first_device = original.with_conn(crate::oplog::device_id).unwrap();
-        original.persist().unwrap();
         drop(original);
 
         let other_pc = temp_dir();
-        fs::copy(
-            first_pc.join("pharos.db.enc"),
-            other_pc.join("pharos.db.enc"),
-        )
-        .unwrap();
+        fs::copy(first_pc.join(DB_FILE), other_pc.join(DB_FILE)).unwrap();
         let keychain = MemStore::default();
         let err = Db::open_with_store(&other_pc, &keychain).err().unwrap();
         assert!(err.starts_with(KEY_MISSING_ERROR), "{err}");
@@ -1636,20 +2420,14 @@ mod tests {
         let typed = recovery_key.to_lowercase().replace('-', " ");
         let db = Db::recover(&other_pc, &keychain, &typed).unwrap();
         assert_eq!(db.with_conn(ensure_workspace).unwrap(), id);
-        let name: String = db
-            .with_conn(|c| {
-                c.query_row("SELECT name FROM workspaces", [], |r| r.get(0))
-                    .map_err(|e| e.to_string())
-            })
-            .unwrap();
-        assert_eq!(name, "Recovered");
+        assert_eq!(workspace_name(&db), "Recovered");
         assert_eq!(keychain.key(), Some(KEY));
         // AUD-01: the copy gets its own device id, so its audit chain never forks.
         let device = db.with_conn(crate::oplog::device_id).unwrap();
         assert_ne!(device, first_device);
         drop(db);
         // The next start opens normally from the keychain.
-        Db::open_with_store(&other_pc, &keychain).unwrap();
+        drop(Db::open_with_store(&other_pc, &keychain).unwrap());
         fs::remove_dir_all(&first_pc).unwrap();
         fs::remove_dir_all(&other_pc).unwrap();
     }
@@ -1659,7 +2437,7 @@ mod tests {
         let dir = temp_dir();
         saved_db(&dir);
         let keychain = MemStore::with([3u8; 32]);
-        Db::recover(&dir, &keychain, &recovery::encode(&KEY)).unwrap();
+        drop(Db::recover(&dir, &keychain, &recovery::encode(&KEY)).unwrap());
         assert_eq!(keychain.key(), Some(KEY));
         // The replaced key is kept once: it may open another instance's data.
         assert_eq!(keychain.previous.get(), Some([3u8; 32]));
@@ -1671,8 +2449,7 @@ mod tests {
     #[test]
     fn a_wrong_recovery_key_never_deletes_a_lone_first_save() {
         let dir = temp_dir();
-        saved_db(&dir);
-        fs::rename(dir.join("pharos.db.enc"), dir.join("pharos.db.enc.new")).unwrap();
+        write_legacy(&dir, "pharos.db.enc.new", "Only copy");
         let before = fs::read(dir.join("pharos.db.enc.new")).unwrap();
         let keychain = MemStore::default();
 
@@ -1690,8 +2467,7 @@ mod tests {
     #[test]
     fn a_keychain_key_that_does_not_open_a_lone_first_save_is_a_mismatch() {
         let dir = temp_dir();
-        let id = saved_db(&dir);
-        fs::rename(dir.join("pharos.db.enc"), dir.join("pharos.db.enc.new")).unwrap();
+        let (_, id) = write_legacy(&dir, "pharos.db.enc.new", "Only copy");
         let before = fs::read(dir.join("pharos.db.enc.new")).unwrap();
         let keychain = MemStore::with([3u8; 32]);
 
@@ -1704,11 +2480,18 @@ mod tests {
         assert_eq!(err, DECRYPT_ERROR);
         assert_eq!(file_names(&dir), vec!["pharos.db.enc.new"]);
 
-        // The right recovery key promotes it and brings the data back.
+        // The right recovery key promotes it, converts it and brings the data back.
         let db = Db::recover(&dir, &keychain, &recovery::encode(&KEY)).unwrap();
         assert_eq!(db.with_conn(ensure_workspace).unwrap(), id);
         assert_eq!(keychain.key(), Some(KEY));
-        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        drop(db);
+        let names = file_names(&dir);
+        assert!(names.contains(&DB_FILE.to_string()), "{names:?}");
+        assert!(names.contains(&LEGACY_FILE.to_string()), "{names:?}");
+        assert!(
+            !names.contains(&"pharos.db.enc.new".to_string()),
+            "{names:?}"
+        );
         fs::remove_dir_all(&dir).unwrap();
     }
 
@@ -1717,26 +2500,14 @@ mod tests {
     #[test]
     fn a_wrong_key_never_deletes_a_complete_pending_save() {
         let dir = temp_dir();
-        saved_db(&dir);
-        let db = Db::open_with_store(&dir, &MemStore::with(KEY)).unwrap();
-        db.with_conn(|c| {
-            c.execute("UPDATE workspaces SET name = 'Newest'", [])
-                .map_err(|e| e.to_string())
-        })
-        .unwrap();
-        // serialize needs the connection mutably (rusqlite 0.41): read it here.
-        let image = db.conn.lock().unwrap().serialize(MAIN_DB).unwrap().to_vec();
-        drop(db);
-        fs::write(
-            dir.join("pharos.db.enc.new"),
-            encrypt(&KEY, &image).unwrap(),
-        )
-        .unwrap();
+        write_legacy(&dir, LEGACY_FILE, "Older");
+        write_legacy(&dir, "pharos.db.enc.new", "Newest");
         let enc = fs::read(dir.join("pharos.db.enc")).unwrap();
         let pending = fs::read(dir.join("pharos.db.enc.new")).unwrap();
         let unchanged = || {
             assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), enc);
             assert_eq!(fs::read(dir.join("pharos.db.enc.new")).unwrap(), pending);
+            assert!(!dir.join(DB_FILE).exists());
         };
 
         // The cleanup itself needs proof that the key opens `pharos.db.enc`.
@@ -1751,14 +2522,9 @@ mod tests {
 
         let keychain = MemStore::with([3u8; 32]);
         let db = Db::recover(&dir, &keychain, &recovery::encode(&KEY)).unwrap();
-        let name: String = db
-            .with_conn(|c| {
-                c.query_row("SELECT name FROM workspaces", [], |r| r.get(0))
-                    .map_err(|e| e.to_string())
-            })
-            .unwrap();
-        assert_eq!(name, "Newest");
-        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        assert_eq!(workspace_name(&db), "Newest");
+        drop(db);
+        assert!(!dir.join("pharos.db.enc.new").exists());
         fs::remove_dir_all(&dir).unwrap();
     }
 
@@ -1771,10 +2537,10 @@ mod tests {
         assert!(is_key_error(&err), "{err}");
         assert_eq!(keychain.key(), None, "a damaged entry is not overwritten");
 
-        Db::recover(&dir, &keychain, &recovery::encode(&KEY)).unwrap();
+        drop(Db::recover(&dir, &keychain, &recovery::encode(&KEY)).unwrap());
         assert_eq!(keychain.key(), Some(KEY));
         assert_eq!(keychain.previous.get(), None);
-        Db::open_with_store(&dir, &keychain).unwrap();
+        drop(Db::open_with_store(&dir, &keychain).unwrap());
         fs::remove_dir_all(&dir).unwrap();
     }
 
@@ -1784,6 +2550,7 @@ mod tests {
         let keychain = MemStore::damaged();
         let db = Db::open_with_store(&dir, &keychain).unwrap();
         assert_eq!(keychain.key(), Some(db.key));
+        drop(db);
         fs::remove_dir_all(&dir).unwrap();
     }
 
@@ -1791,7 +2558,7 @@ mod tests {
     fn a_wrong_recovery_key_changes_nothing() {
         let dir = temp_dir();
         saved_db(&dir);
-        let before = fs::read(dir.join("pharos.db.enc")).unwrap();
+        let before = fs::read(dir.join(DB_FILE)).unwrap();
         let keychain = MemStore::default();
 
         let other_key = recovery::encode(&[4u8; 32]);
@@ -1799,8 +2566,44 @@ mod tests {
         assert!(err.starts_with(WRONG_RECOVERY_KEY), "{err}");
         assert!(!err.contains(&other_key[..9]), "{err}");
         assert_eq!(keychain.key(), None);
-        assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), before);
-        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        assert_eq!(fs::read(dir.join(DB_FILE)).unwrap(), before);
+        assert_eq!(file_names(&dir), vec![DB_FILE]);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// SEC-05: `db_open_error` waits for an open running in the background
+    /// and gets its outcome; a retry waits again.
+    #[test]
+    fn the_open_status_waits_for_a_background_open() {
+        let status = std::sync::Arc::new(DbStatus::new(temp_dir()));
+        let waiting = status.clone();
+        let waiter = std::thread::spawn(move || waiting.wait());
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        assert!(!waiter.is_finished(), "must wait while opening");
+        status.finish(Some(format!("{DB_IN_USE_ERROR}: busy")));
+        assert_eq!(
+            waiter.join().unwrap(),
+            Some(format!("{DB_IN_USE_ERROR}: busy"))
+        );
+        // Finished: it answers at once, until a retry opens again.
+        assert!(status.wait().is_some());
+        *status.opening.lock().unwrap() = true;
+        let waiting = status.clone();
+        let waiter = std::thread::spawn(move || waiting.wait());
+        status.finish(None);
+        assert_eq!(waiter.join().unwrap(), None);
+        fs::remove_dir_all(&status.data_dir).unwrap();
+    }
+
+    #[test]
+    fn a_conversion_is_pending_only_for_a_real_legacy_file() {
+        let dir = temp_dir();
+        assert!(!conversion_pending(&dir));
+        write_legacy(&dir, LEGACY_FILE, "Pending");
+        assert!(conversion_pending(&dir));
+        drop(Db::open_with_key(&dir, KEY).unwrap());
+        // Converted: pharos.db is there and pharos.db.enc is a small witness.
+        assert!(!conversion_pending(&dir));
         fs::remove_dir_all(&dir).unwrap();
     }
 

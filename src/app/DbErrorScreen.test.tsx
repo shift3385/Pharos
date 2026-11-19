@@ -4,8 +4,10 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { invoke } from "@tauri-apps/api/core";
 import { renderWithProviders, i18n } from "@test/utils";
-import { DbErrorScreen } from "./DbErrorScreen";
+import { DbConvertingScreen, DbErrorScreen } from "./DbErrorScreen";
 import {
+  CONVERT_FAILED_ERROR,
+  CONVERT_NO_SPACE_ERROR,
   DB_IN_USE_ERROR,
   INVALID_RECOVERY_KEY,
   KEY_MISMATCH_ERROR,
@@ -36,6 +38,34 @@ describe("DbErrorScreen (SEC-06)", () => {
       screen.getByText("Otro Pharos está usando tus datos"),
     ).toBeInTheDocument();
     expect(screen.getByText(error)).toBeInTheDocument();
+  });
+
+  it("offers to try again when there was no space to convert the data", async () => {
+    const onRetry = vi.fn();
+    const user = userEvent.setup();
+    const error = `${CONVERT_NO_SPACE_ERROR}: need 1900 MB, 700 MB free in D:/data`;
+    renderWithProviders(<DbErrorScreen error={error} onRetry={onRetry} />);
+    expect(
+      screen.getByText("Falta espacio para actualizar tus datos"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(error)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("says the data is intact when the conversion failed and offers to try again", () => {
+    renderWithProviders(
+      <DbErrorScreen error={`${CONVERT_FAILED_ERROR}: row count differs`} onRetry={vi.fn()} />,
+    );
+    expect(screen.getByText(/Tus datos están intactos/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reintentar" })).toBeInTheDocument();
+  });
+
+  it("shows the conversion screen while the data is converted", () => {
+    renderWithProviders(<DbConvertingScreen />);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Actualizando el formato de tus datos",
+    );
   });
 
   it("falls back to a generic message for other open errors", async () => {

@@ -1,0 +1,23 @@
+[package]
+name = "pharos-sqlite3mc-sys"
+# Not the app version: only the C library it builds matters (sqlite3mc-src).
+version = "0.0.0"
+description = "SQLite3 Multiple Ciphers compiled for pharos-core: per-page encryption, SQLCipher 4 scheme (SEC-04/05, ADR-0050)"
+authors = ["Pharos"]
+edition = "2021"
+rust-version = "1.77.2"
+publish = false
+build = "build.rs"
+# rusqlite is built with `in_gecko`: libsqlite3-sys uses its bundled bindings
+# and emits no link directive, so this crate's static library is the SQLite the
+# whole process links (docs/spikes/SEC-04-cifrado-por-pagina.md).
+links = "sqlite3mc"
+
+[lib]
+path = "src/lib.rs"
+
+[build-dependencies]
+cc = "1"
+# The upstream amalgamation, byte for byte (SQLite3MC 2.6.1, SQLite 3.54.0).
+# Its SQLite must not be older than the bindings of libsqlite3-sys (3.54.x).
+sqlite3mc-src = "=206.1.0"

@@ -3,7 +3,7 @@
 //! which the CLI (INT-01) builds without Tauri. Kept in a library crate so the
 //! future mobile target (v0.0.4) can reuse the same entrypoint.
 
-use pharos_core::db::{Db, DbStatus};
+use pharos_core::db::DbStatus;
 // The core's modules by name, so the command list below reads as before.
 use pharos_core::*;
 use tauri::Manager;
@@ -78,33 +78,14 @@ pub fn run() {
                 .map(|dir| instance::scoped_dir(dir).join("server.json"));
             app.manage(server::ServerState::load(server_file));
             let data_dir = instance::scoped_dir(app.path().app_data_dir()?);
-            let started = std::time::Instant::now();
             // A database that cannot be opened (e.g. written by a newer Pharos,
             // SEC-06) does not abort startup: the UI asks `db_open_error` and
             // shows why instead of the app silently failing to start; a missing
             // or wrong key is answered with the recovery key (`db_recover`,
-            // SEC-03). The failure is logged so a diagnostics export can
-            // explain it.
-            let open_error = match Db::open(&data_dir) {
-                Ok(database) => {
-                    tracing::info!(
-                        elapsed_ms = started.elapsed().as_millis() as u64,
-                        e2e_profile = instance::e2e_profile().is_some(),
-                        "local database opened"
-                    );
-                    app.manage(database);
-                    None
-                }
-                Err(e) => {
-                    tracing::error!(error = %diag::redact(&e), "local database failed to open");
-                    app.state::<diag::DiagState>().record_db_open_error(&e);
-                    Some(e)
-                }
-            };
-            app.manage(DbStatus {
-                open_error: std::sync::Mutex::new(open_error),
-                data_dir,
-            });
+            // SEC-03). Converting a `pharos.db.enc` of 0.5 (SEC-05) runs in the
+            // background behind its own screen (`db_open_converting`).
+            app.manage(DbStatus::new(data_dir));
+            db::open_at_startup(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -118,6 +99,8 @@ pub fn run() {
             server::server_pending,
             server::server_request,
             db::db_open_error,
+            db::db_open_converting,
+            db::db_open_retry,
             db::db_recover,
             db::recovery_key_export,
             profile::profile_get,

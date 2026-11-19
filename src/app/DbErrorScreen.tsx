@@ -5,7 +5,11 @@ import { Logo } from "@shared/ui/Logo";
 import {
   INVALID_RECOVERY_KEY,
   KEY_MISMATCH_ERROR,
+  CONVERT_FAILED_ERROR,
+  CONVERT_NO_SPACE_ERROR,
   DB_IN_USE_ERROR,
+  DB_MISSING_ERROR,
+  isRetryable,
   NEWER_DB_ERROR,
   WRONG_RECOVERY_KEY,
   isKeyError,
@@ -20,9 +24,12 @@ import { TextArea } from "@shared/ui/TextArea";
 export function DbErrorScreen({
   error,
   onRecovered,
+  onRetry,
 }: {
   error: string;
   onRecovered?: () => void;
+  /** Opens again; offered for the errors `isRetryable` accepts. */
+  onRetry?: () => void;
 }) {
   const { t } = useTranslation();
   const newer = error.startsWith(NEWER_DB_ERROR);
@@ -31,7 +38,13 @@ export function DbErrorScreen({
     ? ["dbError.newerTitle", "dbError.newerBody"]
     : error.startsWith(DB_IN_USE_ERROR)
       ? ["dbError.inUseTitle", "dbError.inUseBody"]
-      : keyError
+      : error.startsWith(CONVERT_NO_SPACE_ERROR)
+        ? ["dbError.noSpaceTitle", "dbError.noSpaceBody"]
+        : error.startsWith(CONVERT_FAILED_ERROR)
+          ? ["dbError.convertFailedTitle", "dbError.convertFailedBody"]
+          : error.startsWith(DB_MISSING_ERROR)
+            ? ["dbError.missingTitle", "dbError.missingBody"]
+            : keyError
       ? error.startsWith(KEY_MISMATCH_ERROR)
         ? ["dbError.keyMismatchTitle", "dbError.keyBody"]
         : ["dbError.keyMissingTitle", "dbError.keyBody"]
@@ -42,6 +55,11 @@ export function DbErrorScreen({
       <h1 className="app-splash__title">{t(title)}</h1>
       <p className="app-splash__text">{t(body)}</p>
       {keyError && onRecovered && <RecoveryForm onRecovered={onRecovered} />}
+      {isRetryable(error) && onRetry && (
+        <button className="db-recovery__submit" type="button" onClick={onRetry}>
+          {t("dbError.retry")}
+        </button>
+      )}
       <code className="app-splash__detail">{error}</code>
     </div>
   );
@@ -111,5 +129,19 @@ function RecoveryForm({ onRecovered }: { onRecovered: () => void }) {
         {busy ? t("dbError.recovery.opening") : t("dbError.recovery.submit")}
       </button>
     </form>
+  );
+}
+
+/** Full-screen state while a `pharos.db.enc` of 0.5 is converted to the
+ *  database on disk (SEC-05): once, on the first start of 0.6. */
+export function DbConvertingScreen() {
+  const { t } = useTranslation();
+  return (
+    <div className="app-splash" role="status" aria-live="polite" data-testid="db-converting">
+      <Logo size={48} />
+      <h1 className="app-splash__title">{t("dbError.convertingTitle")}</h1>
+      <p className="app-splash__text">{t("dbError.convertingBody")}</p>
+      <p className="app-splash__text">{t("dbError.convertingKeepOpen")}</p>
+    </div>
   );
 }
