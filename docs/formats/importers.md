@@ -37,7 +37,12 @@ Comunes:
 - **Persistente:** `runs/findings.rs` los guarda en la transacción de la
   importación (tablas `findings` y `metrics`, migración 0048) y los
   sincroniza como `finding` y `metric`. Un Pharos Run JSON con un hallazgo
-  sin `fingerprint` recibe la derivada al leerse (`fingerprintOf`).
+  sin `fingerprint` recibe la derivada al leerse (`fingerprintOf`). El
+  `caseKey` de un hallazgo o una métrica se guarda como `attributes.caseKey`.
+- **Vínculo a un caso** (se deriva al leer): una etiqueta de caso en
+  `attributes.tags` o el `caseKey`. Una métrica **con umbral** vinculada es un
+  resultado de su caso en su run: si el umbral falla, el caso falla en la
+  matriz.
 - **Vectores para puertos** (el CLI): `fixtures/detection-vectors.json` (el
   formato o el error de cada muestra y de entradas en línea, por contenido) y
   `fixtures/schema-vectors.json` (documentos válidos e inválidos, con sus

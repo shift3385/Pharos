@@ -14,7 +14,13 @@ import type { TokenService } from "../auth/tokens";
 import type { RemoteDoc } from "../sync/sync.repository";
 import { requireSupportedVersion } from "../sync/sync.version";
 import type { DomainStore, DomainTx } from "./domain.store";
+import { supersededShards } from "./resultLink";
 import { isLiveRun } from "./run-live";
+
+/** The shards of a project a newer normalizer replaced: their findings and
+ *  metrics are left out, like results (`CURRENT_SHARD` on the desktop). */
+const supersededOf = async (tx: DomainTx, projectId: string) =>
+  supersededShards(await tx.list("run_shard", projectId));
 
 export const SEVERITIES = [
   "critical",
@@ -174,8 +180,9 @@ export function createFindingService(store: DomainStore) {
         const projectId = s(run.payload, "projectId") ?? "";
         const triage = await triageCurrent(tx, projectId);
         const previous = await previousFingerprints(tx, run, projectId);
+        const superseded = await supersededOf(tx, projectId);
         const docs = (await tx.list("finding", projectId)).filter(
-          (d) => s(d.payload, "runId") === runId,
+          (d) => s(d.payload, "runId") === runId && !superseded.has(s(d.payload, "shardId") ?? ""),
         );
         return docs
           .map((d): FindingView => {
@@ -223,8 +230,9 @@ export function createFindingService(store: DomainStore) {
             m.aggregation ?? "",
             m.id,
           ].join("\u0000");
+        const superseded = await supersededOf(tx, projectId);
         return (await tx.list("metric", projectId))
-          .filter((d) => s(d.payload, "runId") === runId)
+          .filter((d) => s(d.payload, "runId") === runId && !superseded.has(s(d.payload, "shardId") ?? ""))
           .map((d): MetricView => {
             const p = d.payload;
             return {

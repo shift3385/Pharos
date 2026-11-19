@@ -537,7 +537,17 @@ Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
   `/api/runs/:id/metrics` and `/api/finding-triage`, the twin of the same
   rules; a decision from the web is one more `finding_triage` event.
   `runsApi.findings`, `metrics`, `triage` and `triageHistory` pick the
-  side.
+  side. Findings and metrics of a superseded shard are left out, like
+  results.
+- **Case links and the matrix** (F5a): a finding or metric links to a case
+  by a case tag in `attributes.tags` or by the document's `caseKey`, kept as
+  `attributes.caseKey` (`findings::with_case_key`), resolved when read by the
+  results' resolver. A metric **with a threshold** linked to a case is an
+  attempt of that case in its run, at the run's time (test key
+  `metric:<name>|<aggregation>|<scope>`), added by the loaders
+  (`execution::load_attempts`, the server's `execution.ts`): a failed
+  threshold fails the case and a newer run decides as usual. The derivation
+  core and its vectors are untouched.
 - **Screens** (F4b): the run detail gains underline tabs (`?tab=`) «Casos»,
   «Hallazgos» and «Métricas», shown only when the run has findings or
   metrics. `FindingsPanel` filters by severity, standing (open, «A revisar»,

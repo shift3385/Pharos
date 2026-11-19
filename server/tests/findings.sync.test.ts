@@ -377,3 +377,59 @@ describe("findings, metrics and triage on the web (F4)", () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe("a linked threshold in the web's matrix (F5)", () => {
+  it("fails its case; an unlinked one changes nothing", async () => {
+    const token = await tokenFor();
+    const p = await projectOf(token);
+    const web = async (
+      method: "GET" | "POST",
+      url: string,
+      payload?: unknown,
+    ) => {
+      const res = await app.inject({
+        method,
+        url,
+        headers: headers(token, "key-conflicts,stable-steps"),
+        payload: payload as object,
+      });
+      return res.json();
+    };
+    const pay = await web("POST", "/api/test-cases", {
+      projectId: p,
+      title: "Pago",
+      data: { steps: ["pagar"] },
+    });
+    const key = pay.scenarioId as string;
+    const run = await web("POST", "/api/runs", {
+      input: {
+        projectId: p,
+        title: "k6",
+        sourceTool: "k6",
+        startedAt: "2026-11-10T09:00:00.000Z",
+      },
+    });
+    const m = (
+      id: string,
+      passed: boolean,
+      attributes: Record<string, unknown>,
+    ) => ({
+      ...metric(p),
+      entityId: id,
+      payload: { ...metric(p).payload, id, runId: run.id, passed, attributes },
+    });
+    expect(
+      (
+        await push(token, ALL, [
+          m("m-linked", false, { tags: [`@${key}`] }),
+          m("m-other", false, {}),
+        ])
+      ).statusCode,
+    ).toBe(200);
+    const s = await web("GET", `/api/execution/summary?projectId=${p}`);
+    const row = (s.cases as { caseId: string; status: string }[]).find(
+      (c) => c.caseId === pay.id,
+    )!;
+    expect(row.status).toBe("failed");
+  });
+});
