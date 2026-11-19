@@ -822,6 +822,15 @@ through `src-tauri/src/journal.rs`:
   is marked and never resent; the diagnostics count it as
   `rejectedAuditEvents`. A failed push of events is logged and never fails the
   sync. A pull stores events without checking their hash: `verify_chain` does.
+- **Synced oplog rows are compacted (SYNC-10, ADR-0051).** After a sync that
+  went through, at most once a day, `oplog::compact` deletes the rows the
+  server already has and that are older than a day, except the latest
+  `delete` of each entity (the restore of a project's children and of a
+  run's items reads it). Nothing later reads a synced row: the base is in
+  `sync_base`, the content in the entity and append-only tables. It never
+  runs a VACUUM. The diagnostics carry `syncStorage` (oplog rows pending and
+  synced by entity, audit events and the bytes of their `changes`, card
+  moves): counts only.
 - **A copy of the database forks nothing:** a database recovered with the
   recovery key gets a new `device_id`, so its events start a new chain. So
   does a copy put back by hand (AUD-01c, `restored_copy.rs`): each save

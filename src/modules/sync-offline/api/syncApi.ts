@@ -523,6 +523,10 @@ export async function syncNow(): Promise<SyncResult> {
     window.dispatchEvent(new CustomEvent("pharos:sync-merged", { detail: { count: merged.length } }));
   }
 
+  // A sync that went through compacts the oplog rows the server already
+  // has, at most once a day (SYNC-10). Never fatal: it only frees space.
+  await invoke("oplog_compact", { userId }).catch((e: unknown) => logSyncFailure(e, "compact"));
+
   return { pushed, pulled, conflicts, skipped };
 }
 
