@@ -4393,7 +4393,6 @@
       },
       "error": {
         "unknown-format": "No se reconoce el formato del archivo.",
-        "format-not-stored": "Pharos reconoce este informe ({{detail}}), pero esta versión todavía no guarda hallazgos ni métricas.",
         "cucumber-json": "Es un Cucumber JSON: no se importa. Usa Cucumber Messages (--format message), que conserva reintentos y filas.",
         "invalid-json": "El archivo no es un JSON válido.",
         "invalid-xml": "El archivo no es un XML válido.",

@@ -40,7 +40,7 @@
    - El servidor se construye desde la raíz y copia `server/` y `packages/formats/`.
    - Los snapshots `normalized/` de cada formato son el contrato de cualquier port (el CLI local, L).
 2. **Tablas.** `findings`, `finding_triage` y `metrics` llevan la forma de ADR-0012, con una migración local aditiva.
-   - `finding` y `metric` son `append_only`; `finding_triage` es LWW por `UUIDv5(project ‖ fingerprint)`.
+   - `finding` y `metric` son `append_only`. **`finding_triage` también** (enmienda del 2026-11-19, ver «Enmienda: el triaje como eventos»): una fila por decisión, con id aleatorio, y el estado actual de una huella es su evento más reciente.
    - En el servidor son documentos.
    - Ids: hallazgo `UUIDv5(shard ‖ fingerprint ‖ n)`; métrica `UUIDv5(shard ‖ name ‖ aggregation ‖ scope)`.
    - Límites: 20.000 hallazgos y 5.000 métricas por importación, con recorte determinista.
@@ -115,3 +115,40 @@
     llama siempre `rate`.
   - **Etiquetas de caso:** los parsers no vinculan. Las dejan en
     `attributes.tags` y el persistente las resuelve con el prefijo del proyecto.
+- **F2 (2026-11-19).** Migración local 0048 (`findings`, `metrics`) y entidades
+  `finding` y `metric` (append-only) detrás de la función de sync `findings`.
+  El persistente (`runs/findings.rs`) las escribe en la transacción de la
+  importación. Ids y huella derivada tienen gemelo en Rust (`runs/ids.rs`)
+  con vectores compartidos.
+  - Un Pharos Run JSON con un hallazgo sin huella recibe la derivada al
+    leerse (`fingerprintOf`), así que los persistentes siempre tienen una.
+  - El triaje (`finding_triage`) entra en F2 como eventos append-only (ver la
+    enmienda): `triage_add`, `triage_history` y `triage_current` en
+    `runs/findings.rs`, y la misma entidad en el servidor (`run.execute`).
+  - Vectores para puertos: `fixtures/detection-vectors.json` (formato o
+    error de cada muestra) y `fixtures/schema-vectors.json`.
+
+## Enmienda: el triaje como eventos (decisión del usuario, 2026-11-19)
+
+Cambia la parte de ADR-0012 que hacía de `finding_triage` una entidad LWW con
+id `UUIDv5(project ‖ fingerprint)`.
+
+- **Decisión.** Cada decisión de triaje es un evento `finding_triage`
+  _append-only_ con id aleatorio: huella, estado (`open`, `false_positive`,
+  `accepted_risk`, `fixed`), motivo (obligatorio salvo `open`), defecto
+  opcional, autor, fecha y HLC. El estado actual de una huella es su evento
+  más reciente por HLC, y después por id, el mismo orden en todos los
+  equipos. Los demás eventos son su historial.
+- **Por qué.**
+  - Reutiliza el camino _append-only_ de resultados y hallazgos. Una entidad
+    LWW nueva toca unos 25 sitios (aplicar, conflictos, papelera, diario).
+  - Nunca hay conflicto: dos decisiones simultáneas quedan ordenadas por su
+    HLC, que es lo que ya decía ADR-0012 («gana el último cambio»).
+  - Se conserva quién decidió qué, cuándo y por qué, sin depender del
+    registro de auditoría.
+- **Consecuencias.**
+  - Sale de la lista LWW, y la fusión por campo de SYNC-02 no le aplica (pista
+    S avisada).
+  - Va detrás de la función de sync `findings`, como hallazgos y métricas.
+  - Para escribirlo hace falta `run.execute`.
+  - Reabrir es otro evento (`open`). No se borra nada.

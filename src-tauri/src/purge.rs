@@ -208,6 +208,9 @@ const CHILDREN: [Child; 13] = [
                 AND owner_id IN (SELECT id FROM run_shards WHERE run_id = ?1)",
             "DELETE FROM step_results WHERE result_id IN (SELECT id FROM results WHERE run_id = ?1)",
             "DELETE FROM results WHERE run_id = ?1",
+            // Findings and metrics of the run (ING-06).
+            "DELETE FROM findings WHERE run_id = ?1",
+            "DELETE FROM metrics WHERE run_id = ?1",
             "DELETE FROM run_shards WHERE run_id = ?1",
         ],
     },
@@ -323,7 +326,8 @@ fn purge_children(
             continue;
         }
         if child.entity == "run" {
-            // Its shards and results leave their journal rows too.
+            // Its shards, results, findings and metrics leave their journal
+            // rows too.
             for (entity, child_id) in crate::runs::appended_rows(conn, &id)? {
                 forget(conn, entity, &child_id)?;
             }
@@ -356,7 +360,8 @@ fn purge_children(
     Ok(purged)
 }
 
-/// Shards and results (and their step results) without a run whose project is
+/// Shards, results (and their step results), findings and metrics without a
+/// run whose project is
 /// gone, or deleted and past the retention, and older than it themselves: a
 /// pull can bring a result before its run, so only stale ones go. Journal
 /// rows go with them. Returns how many results and shards were removed.
@@ -370,6 +375,8 @@ fn purge_orphan_results(conn: &Connection, user: &str, days: i64) -> Result<usiz
     for (entity, table, at) in [
         ("result", "results", "created_at"),
         ("run_shard", "run_shards", "imported_at"),
+        ("finding", "findings", "created_at"),
+        ("metric", "metrics", "created_at"),
     ] {
         let sql = format!(
             "SELECT x.id, x.project_id, NULL FROM {table} x
