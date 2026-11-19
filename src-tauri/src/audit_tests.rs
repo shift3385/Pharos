@@ -643,9 +643,10 @@ fn the_purge_never_touches_the_audit_log() {
     assert_eq!(chain_ok(&c, U) as i64, evs);
 }
 
-#[test]
-fn reordering_200_cards_stays_fast() {
-    let c = conn();
+/// Reorders 200 new cards in one transaction; returns how long it took and
+/// how many SQL statements it ran (200 events + 400 oplog rows).
+fn reorder_200_cards() -> (std::time::Duration, usize) {
+    let mut c = conn();
     let p = new_project(&c, U);
     let ids: Vec<String> = (0..200)
         .map(|i| {
@@ -658,16 +659,41 @@ fn reordering_200_cards_stays_fast() {
         .collect();
     let before = events(&c);
     let started = Instant::now();
-    in_tx(&c, |tx| planner::reorder(tx, U, "in_progress", &ids)).unwrap();
+    let (done, statements) = crate::db::statements_run(&mut c, |c| {
+        in_tx(c, |tx| planner::reorder(tx, U, "in_progress", &ids))
+    });
+    done.unwrap();
     let took = started.elapsed();
-    eprintln!("reorder of 200 cards (200 events + 400 oplog rows): {took:?}");
     assert_eq!(events(&c), before + 200);
     assert_eq!(
         last_changes(&c),
         json!({"status": ["backlog", "in_progress"]})
     );
-    assert!(took.as_secs() < 5, "{took:?}");
     assert_eq!(chain_ok(&c, U) as i64, events(&c));
+    (took, statements)
+}
+
+/// The reorder runs a fixed number of statements per card (about 30 today:
+/// event, chain link, oplog rows): a guard that holds under any load
+/// (BASE-25). One statement per card per earlier event would be thousands.
+#[test]
+fn reordering_200_cards_runs_a_bounded_number_of_statements() {
+    let (_, statements) = reorder_200_cards();
+    assert!(
+        statements <= 40 * 200,
+        "{statements} statements for 200 cards"
+    );
+}
+
+/// The same reorder in wall-clock time. A time bound only means something
+/// on a quiet machine, so it is not run with the parallel suite: CI runs
+/// the `timing_` tests alone (`-- --ignored --test-threads=1`, BASE-25).
+#[test]
+#[ignore]
+fn timing_reordering_200_cards_stays_fast() {
+    let (took, statements) = reorder_200_cards();
+    eprintln!("reorder of 200 cards: {took:?}, {statements} statements");
+    assert!(took.as_secs() < 5, "{took:?}");
 }
 
 // ---- sync: append_only ---------------------------------------------------

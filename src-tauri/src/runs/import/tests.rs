@@ -1531,16 +1531,22 @@ fn twenty_thousand_results_resolve_in_set_queries() {
         .collect();
     let out = import(&c, &new_run(&p, pharos_doc(json!(results)))).unwrap();
     assert_eq!(out.results, MAX_IMPORT_RESULTS);
+    let mut c = c;
     let t = std::time::Instant::now();
-    let counts = run_counts(&c, &p, U).unwrap();
+    let (counts, s1) = crate::db::statements_run(&mut c, |c| run_counts(c, &p, U).unwrap());
     let counted = t.elapsed();
     let t = std::time::Instant::now();
-    let views = list_results(&c, &out.run_id, U).unwrap();
+    let (views, s2) =
+        crate::db::statements_run(&mut c, |c| list_results(c, &out.run_id, U).unwrap());
     let listed = t.elapsed();
     let t = std::time::Instant::now();
-    let tray = unlinked_list(&c, &p, U).unwrap();
+    let (tray, s3) = crate::db::statements_run(&mut c, |c| unlinked_list(c, &p, U).unwrap());
     let trayed = t.elapsed();
-    eprintln!("20k results: counts {counted:?}, list {listed:?}, tray {trayed:?}");
+
+    eprintln!(
+        "20k results: counts {counted:?} ({s1} statements), list {listed:?} ({s2}), \
+         tray {trayed:?} ({s3})"
+    );
     // One tag in five names TC-201..250, which do not exist.
     let unknown = MAX_IMPORT_RESULTS / 250 * 50;
     assert_eq!(counts[0].unlinked, unknown as i64);
@@ -1549,10 +1555,12 @@ fn twenty_thousand_results_resolve_in_set_queries() {
         .iter()
         .filter(|v| v.effective_test_case_id.is_some())
         .all(|v| v.effective_step_ids.iter().all(Option::is_some)));
-    // Generous bounds for a debug build on CI: a query per result would take
-    // far longer.
-    for d in [counted, listed, trayed] {
-        assert!(d < std::time::Duration::from_secs(15), "{d:?}");
+    // Set queries, not one per result: a fixed number of statements however
+    // many results (9, 211 and 9 today; a query per result would be 20 000).
+    // Counting statements holds under any CPU load; a time bound did not
+    // (BASE-25).
+    for (what, n) in [("counts", s1), ("list", s2), ("tray", s3)] {
+        assert!(n < 500, "{what}: {n} statements for 20 000 results");
     }
 }
 

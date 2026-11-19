@@ -1304,6 +1304,40 @@ pub(crate) fn ensure_workspace(conn: &Connection) -> Result<String, String> {
     Ok(id)
 }
 
+/// Runs `f` and returns how many SQL statements it ran on `conn` (those of
+/// triggers not counted): a performance guard that does not depend on how
+/// busy the machine is (BASE-25). "A set query, not one per row" is a bound
+/// on this number; a wall-clock bound fails under parallel load.
+#[cfg(test)]
+pub(crate) fn statements_run<T>(
+    conn: &mut Connection,
+    f: impl FnOnce(&Connection) -> T,
+) -> (T, usize) {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+    let count = Arc::new(AtomicUsize::new(0));
+    let seen = count.clone();
+    conn.trace_v2(
+        rusqlite::trace::TraceEventCodes::SQLITE_TRACE_STMT,
+        Some(move |event: rusqlite::trace::TraceEvent<'_>| {
+            // Statements inside a trigger are reported with a "--" comment.
+            if let rusqlite::trace::TraceEvent::Stmt(_, sql) = event {
+                if !sql.starts_with("--") {
+                    seen.fetch_add(1, Ordering::Relaxed);
+                }
+            }
+        }),
+    )
+    .expect("trace on");
+    let out = f(conn);
+    conn.trace_v2(
+        rusqlite::trace::TraceEventCodes::empty(),
+        None::<fn(rusqlite::trace::TraceEvent<'_>)>,
+    )
+    .expect("trace off");
+    (out, count.load(Ordering::Relaxed))
+}
+
 /// Applies pending migrations to a connection without an evidence store
 /// (tests, fresh in-memory databases): it fails if planner attachments would
 /// have to be moved.
