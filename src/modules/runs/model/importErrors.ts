@@ -24,16 +24,6 @@ export function importErrorKey(e: unknown): { key: string; detail?: string } {
     "cycle-closed",
     "cycle-not-found",
   ];
-  // The parsers read SARIF, axe and k6 (ING-06) before the desktop stores
-  // findings and metrics (F2): say so instead of «unknown format».
-  if (
-    m?.[1] === "unknown-format" &&
-    ["sarif", "axe", "k6"].includes(m[2] ?? "")
-  )
-    return {
-      key: "runs.import.error.format-not-stored",
-      detail: { sarif: "SARIF", axe: "axe", k6: "k6" }[m[2]!],
-    };
   if (m && known.includes(m[1]))
     return { key: `runs.import.error.${m[1]}`, detail: m[2] };
   return { key: "runs.import.error.generic", detail: text };

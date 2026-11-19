@@ -77,7 +77,10 @@ export function capabilityFor(entity: string, isNew: boolean): Capability {
       return "cycle.edit";
     case "planner_card":
       return "planner.edit";
+    // Findings and metrics only come from an import (ING-06, ADR-0053).
     case "run_shard":
+    case "finding":
+    case "metric":
       return "result.import";
     case "run":
     case "run_item":

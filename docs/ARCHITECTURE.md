@@ -492,8 +492,21 @@ Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
   package; ADR-0053): zod schema,
   `parsePharosRun` and the generated JSON Schema
   `docs/formats/pharos-run-1.schema.json`. `results[]` is a superset of CTRF
-  `results.tests[]`; `findings[]`, `metrics[]` and `exploratorySession` are
-  validated only. The importers of step 9 produce it.
+  `results.tests[]`. `findings[]` and `metrics[]` are stored since ING-06
+  (below); `exploratorySession` is validated only. The importers of step 9
+  produce it.
+- **Findings and metrics** (ING-06, ADR-0053; migration 0048,
+  `runs/findings.rs`): append-only children of a shard like results, written
+  by the importer in its transaction (`findings::plan`/`write`; 20,000
+  findings and 5,000 metrics per import, long texts cut deterministically).
+  Ids are `findingId(shard, fingerprint, n)` and `metricId(shard, name,
+  aggregation, scope)` (`runs/ids.rs` and `ids.ts`, shared vectors). They sync
+  as `finding` and `metric` only with a server that lists `findings`
+  (`sync::server_takes_findings`, `APPLIED_SET_VERSION` 11); the server
+  checks their required fields, needs `result.import` to write them and
+  tombstones them with their project. Case links stay in `attributes.tags`,
+  resolved when read (F5). A finding without a fingerprint gets the derived
+  one when its Pharos Run JSON is read (`fingerprintOf`).
 
 **Manual execution (EJE-02; ADR-0013, ADR-0014).** `src-tauri/src/runs/manual.rs`
 and `src/modules/runs/` (`RunDetail`, `ExecutionPanel`), no migration:

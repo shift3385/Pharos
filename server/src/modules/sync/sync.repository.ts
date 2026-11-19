@@ -9,6 +9,7 @@ import {
   KEY_FIELD,
   APPEND_ONLY_ENTITIES,
   BASELINE_ENTITIES,
+  FINDING_ENTITIES,
   BLOB_ENTITIES,
   CYCLE_ENTITIES,
   DEFECT_ENTITIES,
@@ -654,6 +655,7 @@ export function createSyncRepository(pool: Pool) {
         auditIn?: string[];
         baselines?: boolean;
         blobs?: boolean;
+        findings?: boolean;
       } = { appendOnly: false },
     ): Promise<PullPage> {
       if (workspaceIds.length === 0) return { docs: [], hasMore: false };
@@ -663,6 +665,7 @@ export function createSyncRepository(pool: Pool) {
         ...(opts.cycles ? [] : CYCLE_ENTITIES),
         ...(opts.defects ? [] : DEFECT_ENTITIES),
         ...(opts.baselines ? [] : BASELINE_ENTITIES),
+        ...(opts.findings ? [] : FINDING_ENTITIES),
         ...(opts.blobs ? [] : BLOB_ENTITIES),
       ];
       const client = await pool.connect();

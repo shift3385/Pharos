@@ -702,6 +702,17 @@ pub(crate) fn server_takes_case_baselines(conn: &Connection, user: &str) -> Resu
     server_lists(conn, user, CASE_BASELINES)
 }
 
+/// The server feature that stores findings and metrics (ING-06, ADR-0053). A
+/// server without it would refuse the whole push for an entity it does not
+/// know.
+pub(crate) const FINDINGS: &str = "findings";
+
+/// True once the account's server has listed `findings`. Until then this
+/// build keeps its findings and metrics pending.
+pub(crate) fn server_takes_findings(conn: &Connection, user: &str) -> Result<bool, String> {
+    server_lists(conn, user, FINDINGS)
+}
+
 /// The server feature that stores attachments and templates by hash
 /// (SYNC-04b). Until the account's server lists it, they stay pending.
 pub(crate) fn server_takes_blobs(conn: &Connection, user: &str) -> Result<bool, String> {
@@ -973,6 +984,8 @@ pub(crate) fn build_pending_append(conn: &Connection, user: &str) -> Result<Pend
     let runs_too = server_takes_runs(conn, user)?;
     // Baselines wait for a server with `case-baselines` (CAS-02).
     let baselines_too = server_takes_case_baselines(conn, user)?;
+    // Findings and metrics wait for a server with `findings` (ING-06).
+    let findings_too = server_takes_findings(conn, user)?;
     let rows: Vec<(String, String, String, String, String)> = {
         let mut stmt = conn
             .prepare(&format!(
@@ -982,17 +995,20 @@ pub(crate) fn build_pending_append(conn: &Connection, user: &str) -> Result<Pend
                     AND (entity <> '{}' OR ?2)
                     AND (entity NOT IN ({}) OR ?3)
                     AND (entity <> '{}' OR ?4)
+                    AND (entity NOT IN ({}) OR ?5)
                   ORDER BY rowid",
                 sync_class::append_only_sql_list(),
                 revisions::ENTITY,
                 crate::runs::entities_sql_list(),
-                crate::case_baseline::ENTITY
+                crate::case_baseline::ENTITY,
+                crate::runs::findings::entities_sql_list()
             ))
             .map_err(|e| e.to_string())?;
         let rows = stmt
-            .query_map(params![user, revisions_too, runs_too, baselines_too], |r| {
-                Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?))
-            })
+            .query_map(
+                params![user, revisions_too, runs_too, baselines_too, findings_too],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
+            )
             .map_err(|e| e.to_string())?;
         rows.collect::<rusqlite::Result<_>>()
             .map_err(|e| e.to_string())?

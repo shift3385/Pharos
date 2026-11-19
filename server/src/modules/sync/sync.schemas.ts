@@ -47,6 +47,9 @@ export const APPEND_ONLY_ENTITIES = [
   "result",
   // Suite baselines (CAS-02, ADR-0047): frozen sets of case revisions.
   "case_baseline",
+  // Findings and metrics of a run (ING-06, ADR-0053).
+  "finding",
+  "metric",
 ] as const;
 
 /** Suite baselines (CAS-02, ADR-0047). Only clients that send the
@@ -55,6 +58,13 @@ export const BASELINE_ENTITIES = ["case_baseline"] as const;
 
 export const isBaselineEntity = (entity: string): boolean =>
   (BASELINE_ENTITIES as readonly string[]).includes(entity);
+
+/** Findings and metrics (ING-06, ADR-0053). Only clients that send the
+ *  `findings` feature pull or push them (VERSIONING §6.5). */
+export const FINDING_ENTITIES = ["finding", "metric"] as const;
+
+export const isFindingEntity = (entity: string): boolean =>
+  (FINDING_ENTITIES as readonly string[]).includes(entity);
 
 /** The execution entities (EJE-01, ADR-0013), of both classes. Only clients
  *  that send the `runs` feature pull them; the others never knew them and
@@ -127,6 +137,9 @@ export const NON_CONTENT_KEYS: Partial<
   result: ["createdAt", "createdBy", "hlc"],
   // The same baseline written by two devices is still the same document.
   case_baseline: ["createdAt", "createdBy", "hlc"],
+  // The same imported file gives the same findings and metrics (ADR-0053).
+  finding: ["createdAt", "createdBy", "hlc"],
+  metric: ["createdAt", "createdBy", "hlc"],
 };
 
 /** Every payload key of `entity` outside its immutable content. */
@@ -151,6 +164,8 @@ export const PROJECT_CHILDREN = [
   "unlinked_mapping",
   "run_shard",
   "result",
+  "finding",
+  "metric",
   "custom_field",
   "configuration",
   "test_cycle",
@@ -173,6 +188,30 @@ const IMPORTED_RESULT_DERIVED = [
   "configurationId",
 ] as const;
 const id = z.string().min(1).max(200);
+
+const SEVERITIES = ["critical", "high", "medium", "low", "info"] as const;
+
+/** What the server checks of a finding or a metric (ING-06, ADR-0053): the
+ *  fields the desktop requires to store one. Extra keys pass. */
+const FINDING_PAYLOADS: Partial<Record<string, z.ZodType>> = {
+  finding: z.looseObject({
+    projectId: id,
+    runId: id,
+    shardId: id,
+    ruleId: z.string().min(1).max(1000),
+    severity: z.enum(SEVERITIES),
+    message: z.string().min(1).max(8000),
+    fingerprint: z.string().min(1).max(1000),
+  }),
+  metric: z.looseObject({
+    projectId: id,
+    runId: id,
+    shardId: id,
+    name: z.string().min(1).max(1000),
+    value: z.number().refine(Number.isFinite, "A metric value is a finite number."),
+    passed: z.boolean().nullable().optional(),
+  }),
+};
 
 /** What the server checks of an execution document (design §3.11: it
  *  validates, it does not interpret). Extra keys pass. */
@@ -362,6 +401,7 @@ export const deltaSchema = z
       d.op === "delete"
         ? undefined
         : (EXECUTION_PAYLOADS[d.entity] ??
+          FINDING_PAYLOADS[d.entity] ??
           CYCLE_PAYLOADS[d.entity] ??
           DEFECT_PAYLOADS[d.entity] ??
           BLOB_PAYLOADS[d.entity]);

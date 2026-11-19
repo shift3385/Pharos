@@ -17,4 +17,9 @@ statuses: Record<string, number>,
  * A run of this project already holding this file (key), if any. Local
  * only: another device's import is not known until it syncs.
  */
-duplicateOf: string | null, warnings: Array<ReportImportWarning>, };
+duplicateOf: string | null, 
+/**
+ * Findings and metrics (ING-06): how many, findings by severity and
+ * metrics whose threshold failed.
+ */
+findings: number, findingSeverities: Record<string, number>, metrics: number, thresholdsFailed: number, warnings: Array<ReportImportWarning>, };

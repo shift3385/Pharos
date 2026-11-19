@@ -115,3 +115,14 @@
     llama siempre `rate`.
   - **Etiquetas de caso:** los parsers no vinculan. Las dejan en
     `attributes.tags` y el persistente las resuelve con el prefijo del proyecto.
+- **F2 (2026-11-19).** Migración local 0048 (`findings`, `metrics`) y entidades
+  `finding` y `metric` (append-only) detrás de la función de sync `findings`.
+  El persistente (`runs/findings.rs`) las escribe en la transacción de la
+  importación. Ids y huella derivada tienen gemelo en Rust (`runs/ids.rs`)
+  con vectores compartidos.
+  - Un Pharos Run JSON con un hallazgo sin huella recibe la derivada al
+    leerse (`fingerprintOf`), así que los persistentes siempre tienen una.
+  - El triaje (`finding_triage`) queda fuera de F2, a la espera de decidir si
+    es LWW (como dice ADR-0012) o una serie de eventos append-only.
+  - Vectores para puertos: `fixtures/detection-vectors.json` (formato o
+    error de cada muestra) y `fixtures/schema-vectors.json`.

@@ -6,4 +6,4 @@ export type ReportImportOutcome = { runId: string, runKey: string, shardId: stri
 /**
  * The file was already in that run: nothing was written.
  */
-alreadyImported: boolean, results: number, linked: number, unlinked: number, attachments: Array<AttachmentTarget>, warnings: Array<ReportImportWarning>, };
+alreadyImported: boolean, results: number, linked: number, unlinked: number, findings: number, metrics: number, attachments: Array<AttachmentTarget>, warnings: Array<ReportImportWarning>, };

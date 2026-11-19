@@ -21,6 +21,7 @@ import {
   isCycleEntity,
   isDefectEntity,
   isExecution,
+  isFindingEntity,
   keyBlocksSchema,
   pullSchema,
   pushSchema,
@@ -35,6 +36,7 @@ import {
   sendsCompletePayload,
   missingFeatures,
   understandsCaseBaselines,
+  understandsFindings,
   understandsBlobs,
   sendsStableSteps,
   understandsAppendOnly,
@@ -120,6 +122,12 @@ export function syncRoutes(
       return reply.code(400).send({
         code: "case_baselines_unsupported",
         message: "This client did not announce the case-baselines sync feature.",
+      });
+    }
+    if (!understandsFindings(req) && deltas.some((d) => isFindingEntity(d.entity))) {
+      return reply.code(400).send({
+        code: "findings_unsupported",
+        message: "This client did not announce the findings sync feature.",
       });
     }
     if (!understandsBlobs(req) && deltas.some((d) => isBlobEntity(d.entity))) {
@@ -213,6 +221,7 @@ export function syncRoutes(
         defects: understandsDefects(req),
         legacy: !understandsWorkspaces(req),
         baselines: understandsCaseBaselines(req),
+        findings: understandsFindings(req),
         blobs: understandsBlobs(req),
         auditIn: members.filter((m) => can(m.role, "audit.read")).map((m) => m.workspaceId),
       },
