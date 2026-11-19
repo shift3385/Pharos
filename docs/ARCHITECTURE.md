@@ -523,6 +523,15 @@ Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
   rules; a decision from the web is one more `finding_triage` event.
   `runsApi.findings`, `metrics`, `triage` and `triageHistory` pick the
   side.
+- **Screens** (F4b): the run detail gains underline tabs (`?tab=`) «Casos»,
+  «Hallazgos» and «Métricas», shown only when the run has findings or
+  metrics. `FindingsPanel` filters by severity, standing (open, «A revisar»,
+  triaged) and «Solo nuevos» and groups by rule; `TriageDialog` records a
+  decision (a reason unless it reopens) and lists the history;
+  `MetricsPanel` puts failed thresholds first, then each metric's summary
+  («Ver todas») and the k6 checks. «Importar informe» counts findings by
+  severity, metrics and failed thresholds. The derivations are in
+  `runs/model/findings.ts`.
 
 **Manual execution (EJE-02; ADR-0013, ADR-0014).** `src-tauri/src/runs/manual.rs`
 and `src/modules/runs/` (`RunDetail`, `ExecutionPanel`), no migration:

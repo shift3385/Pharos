@@ -5326,5 +5326,97 @@
       "done_one": "{{count}} token de {{name}} revocado",
       "done_other": "{{count}} tokens de {{name}} revocados"
     }
+  },
+  "findings": {
+    "tabs": {
+      "label": "Contenido del run",
+      "cases": "Casos",
+      "findings": "Hallazgos",
+      "metrics": "Métricas",
+      "openTitle_one": "{{count}} hallazgo abierto",
+      "openTitle_other": "{{count}} hallazgos abiertos",
+      "failedTitle_one": "{{count}} umbral incumplido",
+      "failedTitle_other": "{{count}} umbrales incumplidos"
+    },
+    "filter": {
+      "severity": "Filtrar por severidad",
+      "standing": "Filtrar por estado",
+      "all": "Todas",
+      "onlyNew_one": "Solo nuevos ({{count}})",
+      "onlyNew_other": "Solo nuevos ({{count}})"
+    },
+    "severity": {
+      "critical": "Crítica",
+      "high": "Alta",
+      "medium": "Media",
+      "low": "Baja",
+      "info": "Info"
+    },
+    "standing": {
+      "open": "Abiertos",
+      "review": "A revisar",
+      "triaged": "Triajados",
+      "all": "Todos"
+    },
+    "locations_one": "{{count}} ubicación",
+    "locations_other": "{{count}} ubicaciones",
+    "new": "Nuevo",
+    "suppressed": "Suprimido en origen",
+    "help": "Ayuda de la regla {{rule}} (se abre fuera de Pharos)",
+    "empty": "No hay hallazgos con estos filtros.",
+    "triageState": {
+      "open": "Abierto",
+      "false_positive": "Falso positivo",
+      "accepted_risk": "Riesgo aceptado",
+      "fixed": "Corregido"
+    },
+    "triage": {
+      "open": "Triaje",
+      "title": "Triaje · {{rule}}",
+      "state": "Estado",
+      "reason": "Motivo",
+      "scope": "Se aplica a esta huella en todos los runs del proyecto. Queda en el historial.",
+      "history": "Decisiones anteriores",
+      "save": "Guardar triaje",
+      "error": "No se pudo guardar el triaje. Revisa el motivo e inténtalo de nuevo.",
+      "help": {
+        "open": "Cuenta en la matriz, en el informe y en las gates.",
+        "false_positive": "La regla no aplica aquí.",
+        "accepted_risk": "Se conoce y se asume. Conviene enlazar una decisión o un defecto.",
+        "fixed": "Se espera que desaparezca en el próximo análisis."
+      }
+    },
+    "metric": {
+      "table": "Métricas del run",
+      "name": "Métrica",
+      "aggregation": "Agregación",
+      "scope": "Ámbito",
+      "value": "Valor",
+      "threshold": "Umbral",
+      "state": "Estado",
+      "noThreshold": "Sin umbral",
+      "passed": "Cumplido",
+      "failed": "Incumplido",
+      "thresholdsMet": "Umbrales cumplidos: {{passed}} de {{total}}.",
+      "failedList": "Incumplidos: {{list}}.",
+      "empty": "No hay métricas.",
+      "all": "Ver todas ({{shown}} de {{total}})",
+      "fewer": "Ver solo las principales"
+    },
+    "check": {
+      "title": "Checks",
+      "name": "Grupo › check",
+      "passes": "Correctos",
+      "fails": "Fallidos",
+      "rate": "Tasa"
+    },
+    "preview": {
+      "findings_one": "{{count}} hallazgo",
+      "findings_other": "{{count}} hallazgos",
+      "metrics_one": "{{count}} métrica",
+      "metrics_other": "{{count}} métricas",
+      "thresholdsFailed_one": "{{count}} umbral incumplido",
+      "thresholdsFailed_other": "{{count}} umbrales incumplidos"
+    }
   }
 }

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { ArrowLeft, Info, ListPlus, Lock, Pencil, Play, RotateCcw, Trash2 } from "lucide-react";
 import { useAuth } from "@modules/auth";
-import type { RunItemRow, RunOverview } from "@shared/contracts/contract";
+import type { FindingView, MetricView, RunItemRow, RunOverview } from "@shared/contracts/contract";
 import { isTauri } from "@shared/platform";
 import { DataTable, type DataColumn } from "@shared/ui/DataTable";
 import { Dialog } from "@shared/ui/Dialog";
@@ -11,6 +11,7 @@ import { FilterChips } from "@shared/ui/FilterChips";
 import { FormField } from "@shared/ui/FormField";
 import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
 import { StatusPill } from "@shared/ui/StatusPill";
+import { TabPanel, Tabs } from "@shared/ui/Tabs";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { useToast } from "@shared/ui/Toast";
 import { FormSkeleton } from "@shared/ui/Skeleton";
@@ -20,6 +21,9 @@ import { instantOf, statusTone, type LinkableCase } from "../model/types";
 import { CasePickerDialog } from "./CasePickerDialog";
 import { DeleteRunDialog } from "./DeleteRunDialog";
 import { ExecutionPanel } from "./ExecutionPanel";
+import { FindingsPanel } from "./FindingsPanel";
+import { MetricsPanel } from "./MetricsPanel";
+import { standingOf, thresholdsOf } from "../model/findings";
 import "@shared/ui/buttons.css";
 import "@shared/ui/ConfirmDialog.css";
 import "./Execution.css";
@@ -51,6 +55,10 @@ export function RunDetail({
   const [params, setParams] = useSearchParams();
   const itemId = params.get("item");
   const [data, setData] = useState<RunOverview | null | undefined>(undefined);
+  // Findings and metrics of the run (ING-06, F4): their tabs only show when
+  // the run has some.
+  const [findings, setFindings] = useState<FindingView[]>([]);
+  const [metrics, setMetrics] = useState<MetricView[]>([]);
   const [failed, setFailed] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
@@ -61,9 +69,15 @@ export function RunDetail({
   const refresh = useCallback(async () => {
     const request = ++latest.current;
     try {
-      const o = await runsApi.overview(runId, userId);
+      const [o, f, m] = await Promise.all([
+        runsApi.overview(runId, userId),
+        runsApi.findings(runId, userId).catch(() => [] as FindingView[]),
+        runsApi.metrics(runId, userId).catch(() => [] as MetricView[]),
+      ]);
       if (request !== latest.current) return;
       setData(o);
+      setFindings(f);
+      setMetrics(m);
       setFailed(false);
     } catch (e) {
       if (request !== latest.current) return;
@@ -80,6 +94,23 @@ export function RunDetail({
   const open = run?.status === "in_progress";
   const items = useMemo(() => data?.items ?? [], [data]);
   const shown = items.filter((i) => filter === "all" || i.status === filter);
+  const extra = findings.length > 0 || metrics.length > 0;
+  const tabParam = params.get("tab");
+  const tab =
+    tabParam === "findings" && findings.length > 0
+      ? "findings"
+      : tabParam === "metrics" && metrics.length > 0
+        ? "metrics"
+        : "cases";
+  const setTab = (next: string) => {
+    const p = new URLSearchParams(params);
+    if (next === "cases") p.delete("tab");
+    else p.set("tab", next);
+    p.delete("item");
+    setParams(p);
+  };
+  const openFindings = findings.filter((f) => standingOf(f) === "open").length;
+  const failedThresholds = thresholdsOf(metrics).failed.length;
 
   const openItem = (id: string | null) => {
     const next = new URLSearchParams(params);
@@ -397,7 +428,64 @@ export function RunDetail({
         </header>
       )}
 
-      <div className="ex-run__body">
+      {extra && (!itemId || split) && (
+        <Tabs
+          variant="underline"
+          idPrefix="run-"
+          label={t("findings.tabs.label")}
+          value={tab}
+          onChange={setTab}
+          items={[
+            { id: "cases", label: t("findings.tabs.cases"), badge: { count: items.length, tone: "muted" } },
+            ...(findings.length > 0
+              ? [
+                  {
+                    id: "findings",
+                    label: t("findings.tabs.findings"),
+                    badge: {
+                      count: openFindings,
+                      tone: openFindings > 0 ? ("danger" as const) : ("muted" as const),
+                      title: t("findings.tabs.openTitle", { count: openFindings }),
+                    },
+                  },
+                ]
+              : []),
+            ...(metrics.length > 0
+              ? [
+                  {
+                    id: "metrics",
+                    label: t("findings.tabs.metrics"),
+                    badge: {
+                      count: failedThresholds > 0 ? failedThresholds : metrics.length,
+                      tone: failedThresholds > 0 ? ("danger" as const) : ("muted" as const),
+                      title:
+                        failedThresholds > 0
+                          ? t("findings.tabs.failedTitle", { count: failedThresholds })
+                          : undefined,
+                    },
+                  },
+                ]
+              : []),
+          ]}
+        />
+      )}
+      {extra && tab === "findings" && (
+        <TabPanel id="findings" idPrefix="run-" className="ex-run__extra">
+          <FindingsPanel
+            projectId={projectId}
+            userId={userId}
+            findings={findings}
+            onChanged={() => void refresh()}
+          />
+        </TabPanel>
+      )}
+      {extra && tab === "metrics" && (
+        <TabPanel id="metrics" idPrefix="run-" className="ex-run__extra">
+          <MetricsPanel metrics={metrics} />
+        </TabPanel>
+      )}
+      {tab === "cases" && (
+      <div className="ex-run__body" {...(extra ? { id: "run-tabpanel-cases", role: "tabpanel", "aria-labelledby": "run-tab-cases" } : {})}>
         {(!itemId || split) && (
           <section className="ex-items" aria-label={t("execution.run.items")}>
             <FilterChips
@@ -448,6 +536,7 @@ export function RunDetail({
         )}
         {panel}
       </div>
+      )}
 
       {dialog === "close" && (
         <CloseRunDialog

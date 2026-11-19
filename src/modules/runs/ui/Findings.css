@@ -1,0 +1,196 @@
+/* «Hallazgos» and «Métricas» of a run (ING-06, F4): the tokens of the runs
+   screens, no new colours (severity uses the pill tones). */
+
+.fd {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.fd__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+}
+
+.fd__new {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--fs-ui);
+}
+
+.fd__groups {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.fd-mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  overflow-wrap: anywhere;
+}
+
+.fd-muted {
+  color: var(--color-text-secondary);
+}
+
+.fd-bad {
+  color: var(--color-error-text);
+}
+
+.fd-rule {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-1);
+  min-width: 0;
+}
+
+.fd-rule__summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+
+.fd-rule__summary:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.fd-rule[open] > .fd-rule__summary {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+}
+
+.fd-rule__name {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fd-refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  justify-content: flex-end;
+}
+
+.fd-ref {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-1);
+  color: var(--color-text-secondary);
+}
+
+.fd-rule__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fd-loc {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fd-loc:last-child {
+  border-bottom: 0;
+}
+
+.fd-loc__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.fd-loc__msg {
+  grid-column: 1 / -1;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-ui);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.fd-help {
+  display: inline-flex;
+  color: var(--color-accent);
+}
+
+.fd-help:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.fd-kpi {
+  margin: 0;
+}
+
+.fd-sub {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-ui);
+}
+
+.fd-more {
+  justify-self: start;
+}
+
+/* Triage dialog */
+.fd-triage__choice {
+  display: grid;
+  gap: var(--space-1);
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.fd-triage__legend {
+  font-weight: 600;
+  margin-bottom: var(--space-1);
+}
+
+.fd-triage__option {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+}
+
+.fd-triage__option small {
+  display: block;
+  color: var(--color-text-secondary);
+}
+
+.fd-triage__history h4 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-ui);
+}
+
+.fd-triage__history ol {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 599px) {
+  .fd-rule__summary {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .fd-refs {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+  .fd-loc {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
