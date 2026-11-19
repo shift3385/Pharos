@@ -222,11 +222,12 @@ pub fn find_cycle(
 
 /// True when `data_dir` holds a saved database: the CLI opens only an existing
 /// one and never creates a database (or a key) of its own. The file names are
-/// `Db::open`'s (`pharos.db.enc`, or a first save not yet renamed); SEC-05a
-/// (N4) moves this next to its new files.
+/// `Db::open`'s: `pharos.db` (SEC-05a, N4: on-disk SQLite), or before it
+/// `pharos.db.enc` or a first save not yet renamed. N5 may move this next to
+/// its files in `db.rs`.
 pub fn has_database(data_dir: &Path) -> Result<bool, String> {
     let exists = |name: &str| data_dir.join(name).try_exists().map_err(|e| e.to_string());
-    Ok(exists("pharos.db.enc")? || exists("pharos.db.enc.new")?)
+    Ok(exists("pharos.db")? || exists("pharos.db.enc")? || exists("pharos.db.enc.new")?)
 }
 
 /// Closes a run as `completed` (`run_close`), after the CLI imported several
