@@ -1,0 +1,366 @@
+<title>Biblioteca de pasos y datasets</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: one reading column of numbered bocetos (they follow the user's path: library → insert → data → run); app frames reuse the Pharos boceto token set shared with tracks A, F and L. */
+:root{
+  --bg:#f3f5f9; --surface:#ffffff; --sunken:#eef1f6; --fg:#14213a; --muted:#5a6680; --line:#d7dde8;
+  --navy:#1e3a6e; --accent:#2f6fd6; --accent-bg:#e6efff; --ok:#1d7a4a; --ok-bg:#e3f4ea; --warn:#9a5b00; --warn-bg:#fff1d6;
+  --err:#b42318; --err-bg:#fde8e6; --new:#7a3fd1; --new-bg:#f1e9fd; --param:#0b6b6b; --param-bg:#dff3f1; --on-accent:#ffffff;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:Inter,system-ui,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --accent-bg:#1c2b4a; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --new:#c39bff; --new-bg:#2c2246; --param:#6fd6cc; --param-bg:#123634; --on-accent:#0f1522; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --accent-bg:#1c2b4a; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --new:#c39bff; --new-bg:#2c2246; --param:#6fd6cc; --param-bg:#123634; --on-accent:#0f1522; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+main{max-width:1000px;margin:0 auto;display:grid;gap:48px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:1.9rem;color:var(--navy)} h2{font-size:1.3rem;color:var(--navy)} h3{font-size:1rem}
+p{margin:0}
+.lead{color:var(--muted);max-width:70ch;margin-top:6px}
+.eyebrow{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.block{display:grid;gap:14px;min-width:0}
+.note{max-width:74ch;margin:0;padding-left:1.2em;color:var(--fg)}
+.note li{margin-bottom:4px}
+nav.toc{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.88rem}
+nav.toc a{color:var(--accent);text-decoration:none} nav.toc a:hover{text-decoration:underline}
+code,.mono{font-family:var(--f-mono);font-size:.86em}
+/* app frame */
+.app{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--sunken);font-size:.85rem}
+.crumb{color:var(--muted)} .crumb b{color:var(--fg)}
+.tabs{display:flex;gap:4px;margin-left:auto}
+.tab{padding:4px 10px;border-radius:6px;font-size:.82rem;color:var(--muted)}
+.tab.on{background:var(--surface);color:var(--fg);font-weight:600;box-shadow:0 0 0 1px var(--line)}
+.body{padding:16px;display:grid;gap:14px}
+.split{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.split{grid-template-columns:1fr}}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:6px;padding:5px 10px;font:500 .82rem var(--f-body);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pill{display:inline-block;font-size:.72rem;font-weight:600;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.p-ok{background:var(--ok-bg);color:var(--ok)} .p-warn{background:var(--warn-bg);color:var(--warn)} .p-err{background:var(--err-bg);color:var(--err)}
+.p-mute{background:var(--sunken);color:var(--muted)} .p-new{background:var(--new-bg);color:var(--new)} .p-acc{background:var(--accent-bg);color:var(--accent)}
+.param{font-family:var(--f-mono);font-size:.84em;background:var(--param-bg);color:var(--param);border-radius:4px;padding:0 4px}
+.val{font-weight:600;background:var(--param-bg);color:var(--param);border-radius:4px;padding:0 4px}
+.scroll{overflow-x:auto;min-width:0}
+table{border-collapse:collapse;width:100%;font-size:.85rem}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--sunken)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.field{display:grid;gap:4px;font-size:.82rem}
+.field label{color:var(--muted);font-weight:500}
+.input{border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--surface);color:var(--fg);font:inherit;font-size:.86rem;min-width:0}
+.steps{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.step{display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;align-items:start;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:.86rem}
+.step .n{font-family:var(--f-mono);color:var(--muted);font-size:.78rem;padding-top:1px}
+.kw{font-weight:600;color:var(--navy)}
+.exp{color:var(--muted);font-size:.8rem;margin-top:2px}
+/* shared block inside a case */
+.shared{border:1px solid var(--new);border-radius:8px;background:var(--new-bg);padding:8px;display:grid;gap:6px}
+.shared-head{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:.82rem}
+.shared-head b{color:var(--new)}
+.shared .step{background:var(--surface);opacity:.95}
+.side{border-left:1px solid var(--line);padding-left:16px;display:grid;gap:12px;align-content:start;min-width:0}
+@media (max-width:760px){.side{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:12px}}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:.84rem}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+.callout{border:1px solid var(--warn);background:var(--warn-bg);color:var(--fg);border-radius:8px;padding:10px 12px;font-size:.85rem;display:grid;gap:6px}
+.callout.info{border-color:var(--accent);background:var(--accent-bg)}
+/* dialog */
+.dialog{max-width:560px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(10,20,40,.18);overflow:hidden}
+.dialog .dh{padding:14px 16px;border-bottom:1px solid var(--line);font-family:var(--f-display);font-weight:600}
+.dialog .db{padding:14px 16px;display:grid;gap:12px;font-size:.88rem}
+.dialog .df{padding:12px 16px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;background:var(--sunken)}
+.backdrop{background:color-mix(in srgb,var(--fg) 10%,var(--bg));border-radius:10px;padding:24px 12px}
+.counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.count{border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid;gap:2px}
+.count b{font-family:var(--f-display);font-size:1.25rem;font-variant-numeric:tabular-nums}
+.count span{font-size:.76rem;color:var(--muted)}
+.list{display:grid;gap:4px;max-height:none}
+.li{display:flex;justify-content:space-between;gap:10px;font-size:.84rem;padding:4px 0;border-bottom:1px dashed var(--line)}
+/* grid editor */
+.grid td{font-family:var(--f-mono);font-size:.82rem}
+.grid td.sel{outline:2px solid var(--accent);outline-offset:-2px;background:var(--accent-bg)}
+.grid th .t{font-family:var(--f-mono);text-transform:none;letter-spacing:0;font-size:.8rem;color:var(--fg)}
+.rid{color:var(--muted);font-family:var(--f-mono);font-size:.76rem}
+/* run */
+.target{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:.85rem;align-items:center}
+.target.on{border-color:var(--accent);background:var(--accent-bg)}
+.indent{padding-left:22px;display:grid;gap:6px}
+.annot{font-size:.82rem;color:var(--muted);max-width:74ch}
+.qs{display:grid;gap:12px}
+.q{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:12px 14px;display:grid;gap:6px;font-size:.9rem}
+.q h3{font-size:.98rem}
+.q .rec{color:var(--ok);font-weight:600}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<main>
+  <header class="block">
+    <p class="eyebrow">Pharos 0.6.0 · pista P · CAS-01 · bocetos para aprobar</p>
+    <h1>Pasos compartidos, parámetros y datasets</h1>
+    <p class="lead">Una biblioteca por proyecto. Cada caso guarda una copia del paso compartido o del dataset, y esa copia se actualiza cuando cambia la biblioteca. Un dataset de 3 filas da 3 resultados. Diseño completo en el ADR-0055 (propuesto).</p>
+    <nav class="toc" aria-label="Bocetos">
+      <a href="#b1">1 · Biblioteca</a><a href="#b2">2 · Editar un paso compartido</a><a href="#b3">3 · Aviso de impacto</a>
+      <a href="#b4">4 · Insertar en un caso</a><a href="#b5">5 · Dataset</a><a href="#b6">6 · Vincular al caso</a>
+      <a href="#b7">7 · Run con filas</a><a href="#preguntas">Preguntas</a>
+    </nav>
+  </header>
+
+  <!-- 1 -->
+  <section class="block" id="b1">
+    <p class="eyebrow">Boceto 1</p>
+    <h2>Biblioteca del proyecto · Pasos compartidos</h2>
+    <div class="app">
+      <div class="bar"><span class="crumb">Tienda web › <b>Biblioteca</b></span>
+        <div class="tabs" role="tablist"><span class="tab on">Pasos compartidos · 4</span><span class="tab">Datasets · 2</span></div></div>
+      <div class="body">
+        <div class="row"><input class="input" id="b1-buscar" aria-label="Buscar" placeholder="Buscar por nombre o texto del paso" style="flex:1 1 220px">
+          <button class="btn primary" type="button">Nuevo paso compartido</button><button class="btn" type="button">Mostrar obsoletos</button></div>
+        <div class="scroll"><table>
+          <thead><tr><th>Nombre</th><th>Parámetros</th><th class="num">Pasos</th><th class="num">Versión</th><th class="num">Usado en</th><th>Modificado</th></tr></thead>
+          <tbody>
+            <tr><td><b>Iniciar sesión</b></td><td><span class="param">&lt;usuario&gt;</span> <span class="param">&lt;clave&gt;</span></td><td class="num">3</td><td class="num">v4</td><td class="num">12 casos</td><td>Ana · hoy 10:42</td></tr>
+            <tr><td><b>Vaciar el carrito</b></td><td><span class="p-mute pill">sin parámetros</span></td><td class="num">2</td><td class="num">v1</td><td class="num">7 casos</td><td>Luis · 14 nov</td></tr>
+            <tr><td><b>Pagar con tarjeta</b></td><td><span class="param">&lt;tarjeta&gt;</span> <span class="param">&lt;cvv&gt;</span></td><td class="num">4</td><td class="num">v2</td><td class="num">5 casos</td><td>Ana · 12 nov</td></tr>
+            <tr><td><b>Cerrar sesión</b></td><td><span class="p-mute pill">sin parámetros</span></td><td class="num">1</td><td class="num">v1</td><td class="num">0 casos</td><td>Luis · 10 nov</td></tr>
+          </tbody></table></div>
+      </div>
+    </div>
+    <ul class="note">
+      <li>Nueva sección del proyecto, «Biblioteca» (<code>/projects/:id/library?tab=steps|datasets</code>). Dónde va es la pregunta 5.</li>
+      <li>«Usado en» cuenta los casos vivos. Un paso compartido sin uso se puede borrar; si tiene usos, solo se puede marcar obsoleto.</li>
+      <li>Un Viewer o un Product Owner la ven en solo lectura, porque cambiarla pide <code>case.edit</code>.</li>
+    </ul>
+  </section>
+
+  <!-- 2 -->
+  <section class="block" id="b2">
+    <p class="eyebrow">Boceto 2</p>
+    <h2>Editar un paso compartido, con sus parámetros y dónde se usa</h2>
+    <div class="app">
+      <div class="bar"><span class="crumb">Biblioteca › Pasos compartidos › <b>Iniciar sesión</b></span><span class="pill p-acc">v4</span>
+        <div class="tabs"><span class="tab on">Pasos</span><span class="tab">Usado en · 12</span><span class="tab">Versiones · 4</span></div></div>
+      <div class="body split">
+        <div class="block">
+          <div class="field"><label for="b2-nombre">Nombre</label><input class="input" id="b2-nombre" value="Iniciar sesión"></div>
+          <ol class="steps">
+            <li class="step"><span class="n">1</span><div><span class="kw">Dado</span> que estoy en la página de acceso</div></li>
+            <li class="step"><span class="n">2</span><div><span class="kw">Cuando</span> escribo <span class="param">&lt;usuario&gt;</span> y <span class="param">&lt;clave&gt;</span> y pulso «Entrar»
+              <div class="exp">Esperado: se abre «Mi cuenta» en menos de 2 s</div></div></li>
+            <li class="step"><span class="n">3</span><div><span class="kw">Entonces</span> veo mi nombre en la cabecera</div></li>
+          </ol>
+          <div class="row"><button class="btn" type="button">Añadir paso</button><span class="annot">Escribe <code>&lt;nombre&gt;</code> para crear un parámetro, como en un Scenario Outline.</span></div>
+        </div>
+        <aside class="side">
+          <h3>Parámetros</h3>
+          <div class="scroll"><table>
+            <thead><tr><th>Nombre</th><th>Valor al insertar</th></tr></thead>
+            <tbody><tr><td><span class="param">&lt;usuario&gt;</span></td><td class="mono">vacío</td></tr>
+              <tr><td><span class="param">&lt;clave&gt;</span></td><td class="mono">vacío</td></tr></tbody></table></div>
+          <p class="annot">Vacío: el parámetro pasa al caso y toma el valor de su tabla de datos o de su dataset.</p>
+          <h3>Usado en</h3>
+          <dl class="kv"><dt>Siguen la última</dt><dd>11 casos</dd><dt>Fijados</dt><dd>1 caso (ATS_014 en v3)</dd></dl>
+          <div class="row"><button class="btn" type="button">Descartar</button><button class="btn primary" type="button">Guardar…</button></div>
+        </aside>
+      </div>
+    </div>
+    <ul class="note">
+      <li>Guardar un cambio de contenido sube la versión (v4 → v5) y guarda una copia inmutable de cada versión. «Versiones» muestra las diferencias entre ellas.</li>
+      <li>Antes de guardar se abre el aviso del boceto 3.</li>
+    </ul>
+  </section>
+
+  <!-- 3 -->
+  <section class="block" id="b3">
+    <p class="eyebrow">Boceto 3</p>
+    <h2>Aviso de impacto antes de guardar</h2>
+    <div class="backdrop">
+      <div class="dialog" role="dialog" aria-labelledby="b3-t">
+        <div class="dh" id="b3-t">Guardar «Iniciar sesión» como v5</div>
+        <div class="db">
+          <p>Este cambio actualiza <b>11 casos</b> que siguen la última versión. Cada uno guarda una revisión nueva con la causa «Paso compartido Iniciar sesión v5».</p>
+          <div class="counts">
+            <div class="count"><b>3</b><span>En Borrador · siguen igual</span></div>
+            <div class="count"><b>3</b><span>En revisión · siguen en revisión</span></div>
+            <div class="count"><b style="color:var(--warn)">5</b><span>Aprobados · vuelven a En revisión</span></div>
+          </div>
+          <div class="callout"><b>5 casos aprobados volverán a «En revisión»</b>
+            <span>Es la regla de editar un caso aprobado (ADR-0049). Las baselines no cambian. Para dejar un caso como está, fíjalo en v4 desde su ficha.</span></div>
+          <div class="list">
+            <div class="li"><span>ATS_002 · Compra con usuario registrado</span><span class="pill p-ok">Aprobado → En revisión</span></div>
+            <div class="li"><span>ATS_007 · Cambiar la dirección de envío</span><span class="pill p-ok">Aprobado → En revisión</span></div>
+            <div class="li"><span>ATS_011 · Historial de pedidos</span><span class="pill p-warn">En revisión</span></div>
+            <div class="li"><span>… 8 más</span><button class="btn ghost" type="button">Ver todos</button></div>
+          </div>
+          <p class="annot">ATS_014 está fijado en v3 y no cambia.</p>
+        </div>
+        <div class="df"><button class="btn" type="button">Cancelar</button><button class="btn primary" type="button">Guardar y actualizar 11 casos</button></div>
+      </div>
+    </div>
+    <ul class="note"><li>Es la opción A de la pregunta 1. Con la B, los 5 aprobados no cambiarían solos y mostrarían «Hay una versión nueva».</li></ul>
+  </section>
+
+  <!-- 4 -->
+  <section class="block" id="b4">
+    <p class="eyebrow">Boceto 4</p>
+    <h2>Insertar un paso compartido en un caso</h2>
+    <div class="app">
+      <div class="bar"><span class="crumb">Casos › <b>ATS_002 · Compra con usuario registrado</b></span><span class="pill p-warn">En revisión</span>
+        <div class="tabs"><span class="tab">Dividido</span><span class="tab on">Editor</span><span class="tab">Gherkin</span></div></div>
+      <div class="body split">
+        <div class="block">
+          <h3>Pasos</h3>
+          <div class="shared" aria-label="Paso compartido Iniciar sesión, versión 5">
+            <div class="shared-head"><span class="pill p-new">Paso compartido</span><b>Iniciar sesión</b><span class="pill p-mute">v5 · sigue la última</span>
+              <span style="margin-left:auto" class="row"><button class="btn ghost" type="button">Abrir en la biblioteca</button><button class="btn ghost" type="button">Fijar en v5</button><button class="btn ghost" type="button">Desvincular</button></span></div>
+            <ol class="steps">
+              <li class="step"><span class="n">1</span><div><span class="kw">Dado</span> que estoy en la página de acceso</div></li>
+              <li class="step"><span class="n">2</span><div><span class="kw">Cuando</span> escribo <span class="param">&lt;usuario&gt;</span> y <span class="param">&lt;clave&gt;</span> y pulso «Entrar»</div></li>
+              <li class="step"><span class="n">3</span><div><span class="kw">Entonces</span> veo mi nombre en la cabecera</div></li>
+            </ol>
+          </div>
+          <ol class="steps" start="4">
+            <li class="step"><span class="n">4</span><div><span class="kw">Cuando</span> añado «Taza azul» al carrito y pago</div></li>
+            <li class="step"><span class="n">5</span><div><span class="kw">Entonces</span> veo el pedido con estado «Confirmado»</div></li>
+          </ol>
+          <div class="row"><button class="btn" type="button">Añadir paso</button><button class="btn" type="button">Insertar paso compartido…</button></div>
+        </div>
+        <aside class="side">
+          <h3>Argumentos de «Iniciar sesión»</h3>
+          <div class="field"><label for="b4-u"><span class="param">&lt;usuario&gt;</span></label><input class="input" id="b4-u" placeholder="Vacío: pasa al caso"></div>
+          <div class="field"><label for="b4-c"><span class="param">&lt;clave&gt;</span></label><input class="input" id="b4-c" placeholder="Vacío: pasa al caso"></div>
+          <p class="annot">Un literal (<code>ana@acme.test</code>) se escribe en la copia. Otro parámetro (<code>&lt;cliente&gt;</code>) lo renombra.</p>
+          <h3>Parámetros del caso</h3>
+          <p><span class="param">&lt;usuario&gt;</span> <span class="param">&lt;clave&gt;</span></p>
+          <div class="callout info"><span>El caso pasa a ser un Scenario Outline. Sus valores salen de la tabla de datos o de un dataset (boceto 6).</span></div>
+        </aside>
+      </div>
+    </div>
+    <div class="callout"><b>Si alguien edita la copia fuera de la biblioteca</b> (desde la pestaña Gherkin, o con una app anterior), el bloque muestra <span class="pill p-err">Modificado fuera de la biblioteca</span> con «Restaurar» y «Desvincular». La siguiente actualización desde la biblioteca la restaura.</div>
+    <ul class="note">
+      <li>Los pasos del bloque no se editan en el caso. Se editan en la biblioteca, o se desvinculan y pasan a ser pasos propios.</li>
+      <li>Sus ids son estables entre versiones, así que el historial de resultados de cada paso sigue apuntando al mismo paso.</li>
+      <li>En 0.6.0, solo en casos básicos y Outline; los avanzados son la pregunta 2.</li>
+    </ul>
+  </section>
+
+  <!-- 5 -->
+  <section class="block" id="b5">
+    <p class="eyebrow">Boceto 5</p>
+    <h2>Dataset: una rejilla con versiones</h2>
+    <div class="app">
+      <div class="bar"><span class="crumb">Biblioteca › Datasets › <b>Usuarios válidos</b></span><span class="pill p-acc">v2</span>
+        <div class="tabs"><span class="tab on">Datos</span><span class="tab">Usado en · 4</span><span class="tab">Versiones · 2</span></div></div>
+      <div class="body">
+        <div class="row"><button class="btn" type="button">Añadir fila</button><button class="btn" type="button">Añadir columna</button>
+          <button class="btn" type="button">Importar CSV o xlsx…</button><button class="btn" type="button">Exportar CSV</button>
+          <span class="annot" style="margin-left:auto">Pega desde Excel con Ctrl+V · 3 filas · 3 columnas</span></div>
+        <div class="scroll"><table class="grid">
+          <thead><tr><th style="width:44px">#</th><th><span class="t">usuario</span></th><th><span class="t">clave</span></th><th><span class="t">perfil</span></th></tr></thead>
+          <tbody>
+            <tr><td class="rid">1</td><td>ana@acme.test</td><td>Clave-2026!</td><td>cliente</td></tr>
+            <tr><td class="rid">2</td><td class="sel">luis@acme.test</td><td>Otra.Clave9</td><td>cliente</td></tr>
+            <tr><td class="rid">3</td><td>admin@acme.test</td><td>Adm1n#2026</td><td>administrador</td></tr>
+          </tbody></table></div>
+        <div class="callout"><b>Un dataset no es un almacén de secretos</b><span>Los valores se guardan y se sincronizan como el resto del caso, cifrados en disco. Usa cuentas de prueba, nunca contraseñas reales.</span></div>
+      </div>
+    </div>
+    <ul class="note">
+      <li>Cada fila y cada columna tiene un id estable. Si dos personas cambian celdas distintas a la vez, la sincronización junta los cambios sin preguntar.</li>
+      <li>Límites propuestos: 30 columnas, 500 filas y 4 KB por celda (pregunta 4).</li>
+      <li>Guardar un cambio sube la versión y abre el mismo aviso de impacto del boceto 3.</li>
+    </ul>
+  </section>
+
+  <!-- 6 -->
+  <section class="block" id="b6">
+    <p class="eyebrow">Boceto 6</p>
+    <h2>Vincular un dataset a la tabla de datos del caso</h2>
+    <div class="app">
+      <div class="bar"><span class="crumb">Casos › <b>ATS_002</b> › Datos de prueba</span></div>
+      <div class="body">
+        <div class="row"><span class="pill p-new">Dataset</span><b>Usuarios válidos</b><span class="pill p-mute">v2 · sigue la última</span>
+          <span class="row" style="margin-left:auto"><button class="btn ghost" type="button">Elegir filas…</button><button class="btn ghost" type="button">Fijar en v2</button><button class="btn ghost" type="button">Desvincular (copiar filas)</button></span></div>
+        <div class="scroll"><table>
+          <thead><tr><th>Fila</th><th><span class="param">&lt;usuario&gt;</span></th><th><span class="param">&lt;clave&gt;</span></th><th style="opacity:.6">perfil</th></tr></thead>
+          <tbody>
+            <tr><td class="rid">1</td><td>ana@acme.test</td><td>Clave-2026!</td><td style="opacity:.6">cliente</td></tr>
+            <tr><td class="rid">2</td><td>luis@acme.test</td><td>Otra.Clave9</td><td style="opacity:.6">cliente</td></tr>
+            <tr><td class="rid">3</td><td>admin@acme.test</td><td>Adm1n#2026</td><td style="opacity:.6">administrador</td></tr>
+          </tbody></table></div>
+        <p class="annot">Las columnas coinciden con los parámetros por nombre. <code>perfil</code> no es un parámetro del caso: se ve en gris y se exporta igual.</p>
+        <div class="callout"><b>Falta una columna</b><span>Si el caso usa <span class="param">&lt;tarjeta&gt;</span> y el dataset no la tiene: «Falta la columna &lt;tarjeta&gt; en Usuarios válidos». El caso no se puede enviar a revisión ni ejecutar hasta que se asigne una columna o se añada al dataset.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section class="block" id="b7">
+    <p class="eyebrow">Boceto 7</p>
+    <h2>Run: un caso con 3 filas da 3 resultados</h2>
+    <div class="app">
+      <div class="bar"><span class="crumb">Runs › <b>RUN-41 · Regresión de compra</b></span><span class="pill p-acc">En curso</span></div>
+      <div class="body split">
+        <div class="block">
+          <div class="target"><span><b>ATS_002</b> · Compra con usuario registrado · rev. 9 <span class="pill p-new">Usuarios válidos v2 · 3 filas</span></span><span class="pill p-err">Falla 1 de 3</span></div>
+          <div class="indent">
+            <div class="target"><span>Fila 1 · usuario = <span class="val">ana@acme.test</span></span><span class="pill p-ok">Pasa</span></div>
+            <div class="target on"><span>Fila 2 · usuario = <span class="val">luis@acme.test</span></span><span class="pill p-err">Falla</span></div>
+            <div class="target"><span>Fila 3 · usuario = <span class="val">admin@acme.test</span></span><span class="pill p-mute">Sin ejecutar</span></div>
+          </div>
+          <div class="target"><span><b>ATS_007</b> · Cambiar la dirección de envío · rev. 4</span><span class="pill p-ok">Pasa</span></div>
+        </div>
+        <aside class="side">
+          <h3>Ejecutando · Fila 2 de 3</h3>
+          <div class="shared">
+            <div class="shared-head"><span class="pill p-new">Paso compartido</span><b>Iniciar sesión</b><span class="pill p-mute">v5</span></div>
+            <ol class="steps">
+              <li class="step"><span class="n">1</span><div>Dado que estoy en la página de acceso</div></li>
+              <li class="step"><span class="n">2</span><div>Cuando escribo <span class="val">luis@acme.test</span> y <span class="val">Otra.Clave9</span> y pulso «Entrar»</div></li>
+              <li class="step"><span class="n">3</span><div>Entonces veo mi nombre en la cabecera <span class="pill p-err">Falla</span></div></li>
+            </ol>
+          </div>
+          <div class="field"><label for="b7-obt">Obtenido</label><textarea class="input" id="b7-obt" rows="2">La cabecera muestra «Hola, invitado».</textarea></div>
+          <div class="row"><button class="btn" type="button">Fila anterior</button><button class="btn primary" type="button">Guardar resultado</button></div>
+        </aside>
+      </div>
+    </div>
+    <ul class="note">
+      <li>No cambian el modelo de runs ni la matriz: cada fila ya es un objetivo, con su <code>test_key</code> y su resultado.</li>
+      <li>El caso resume el peor de sus objetivos («Falla 1 de 3»). La matriz muestra cada fila. El progreso cuenta 1 caso, o una celda si hay ciclo.</li>
+      <li>El resultado guarda los valores de la fila y, en sus atributos, el dataset y la versión del paso compartido.</li>
+      <li>Al exportar, el <code>.feature</code> lleva <code># Paso compartido: Iniciar sesión (v5)</code> y <code># Dataset: Usuarios válidos (v2)</code> sobre <code>Examples</code>. El PDF y el xlsx muestran los pasos expandidos y la tabla con su nombre.</li>
+    </ul>
+  </section>
+
+  <section class="block" id="preguntas">
+    <p class="eyebrow">Para decidir</p>
+    <h2>Preguntas</h2>
+    <div class="qs">
+      <div class="q"><h3>1 · Casos aprobados cuando cambia la biblioteca</h3>
+        <p><span class="rec">Recomendado (A):</span> se actualizan y vuelven a «En revisión», con el aviso del boceto 3; un caso que no deba moverse se fija en su versión.</p>
+        <p>B: los aprobados esperan a «Actualizar». C: el paso compartido tiene su propia aprobación, y aprobarlo no reabre los casos.</p></div>
+      <div class="q"><h3>2 · Casos avanzados (varios flujos)</h3>
+        <p><span class="rec">Recomendado:</span> fuera de 0.6.0; llegan con RUN-02 (Gherkin de ida y vuelta) en 0.7.0.</p>
+        <p>Alternativa: datasets por flujo ya en 0.6.0, sin pasos compartidos.</p></div>
+      <div class="q"><h3>3 · Fila explícita en informes JUnit, CTRF y Playwright</h3>
+        <p><span class="rec">Recomendado:</span> sí, en un PR aparte después de la pista F, porque toca sus parsers.</p></div>
+      <div class="q"><h3>4 · Límites</h3>
+        <p><span class="rec">Recomendado:</span> 50 pasos y 20 parámetros por paso compartido; 30 columnas, 500 filas y 4 KB por celda en un dataset.</p></div>
+      <div class="q"><h3>5 · Dónde vive la biblioteca</h3>
+        <p><span class="rec">Recomendado:</span> una sección del proyecto, «Biblioteca», con las pestañas «Pasos compartidos» y «Datasets».</p>
+        <p>Alternativa: dos entradas dentro de «Casos».</p></div>
+    </div>
+  </section>
+</main>

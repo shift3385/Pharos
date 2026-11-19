@@ -60,6 +60,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0052](0052-api-v1-tokens-y-webhooks.md) | API pública `/api/v1` con contrato OpenAPI, tokens de proyecto y personales con scopes que nunca pueden más que su dueño, webhooks firmados (Standard Webhooks) y backend compilado con `tsc` (INT-02, INT-03, DEU-01) | Aceptado | 2026-11-18 |
 | [0053](0053-hallazgos-metricas-y-paquete-de-formatos.md) | Hallazgos y métricas importados: parsers en el paquete `@pharos/formats`, tablas, severidad, huella y vínculos (ING-06, ING-07); completa el ADR-0012 | Aceptado | 2026-11-18 |
 | [0054](0054-cli-y-plantillas-de-github-actions.md) | CLI `pharos` (`upload`, `watch`) en modo local por `pharos-core` y en modo remoto por la API v1, tokens solo en el keychain o el entorno, y plantillas de GitHub Actions fijadas por SHA (INT-01, INT-04) | Aceptado | 2026-11-18 |
+| [0055](0055-pasos-compartidos-parametros-y-datasets.md) | Pasos compartidos y datasets en una biblioteca del proyecto con versiones inmutables; el caso guarda la referencia y una copia materializada, y cambiar la biblioteca actualiza los casos que la siguen (CAS-01) | Aceptado | 2026-11-19 |
 
 Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en
