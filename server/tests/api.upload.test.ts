@@ -119,7 +119,7 @@ describe("uploading a report", () => {
     const docs = (await pool.query("SELECT entity, payload FROM documents WHERE workspace_id = $1 AND entity <> 'audit_event'", [ws])).rows;
     const of = (e: string) => docs.filter((d) => d.entity === e).map((d) => d.payload);
     expect(of("run_shard")).toHaveLength(1);
-    expect(of("run_shard")[0]).toMatchObject({ sourceFormat: "junit", runId: body.run.id, normalizerVersion: 1 });
+    expect(of("run_shard")[0]).toMatchObject({ sourceFormat: "junit", runId: body.run.id, normalizerVersion: 2 });
     const results = of("result");
     expect(results).toHaveLength(2);
     for (const r of results) {

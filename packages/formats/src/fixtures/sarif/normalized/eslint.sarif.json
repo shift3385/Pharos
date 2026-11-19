@@ -21,7 +21,7 @@
       {
         "ref": "s1",
         "sourceFormat": "sarif",
-        "normalizerVersion": 1,
+        "normalizerVersion": 2,
         "formatVersion": "2.1.0"
       }
     ],

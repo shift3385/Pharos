@@ -16,6 +16,7 @@ import {
   kindOf,
   refMaker,
   relativizer,
+  explicitRow,
   rowOfTitle,
   testKey,
   uniqueTags,
@@ -93,6 +94,14 @@ const caseTags = (
     .filter((a) => a.type === "test_id" && a.description)
     .map((a) => atTag(a.description!));
 
+/** The explicit Outline row of an `example_row` annotation (CAS-01). */
+const annotatedRow = (
+  annotations: { type: string; description?: string }[] | undefined,
+) =>
+  explicitRow(
+    (annotations ?? []).find((a) => a.type === "example_row")?.description,
+  );
+
 export function parsePlaywright(report: PwReport): ParsedReport {
   const doc = emptyDoc("playwright_json");
   const inline = new Map<string, InlineBody>();
@@ -169,6 +178,10 @@ export function parsePlaywright(report: PwReport): ParsedReport {
         ...caseTags(test.annotations),
       ]);
       for (const r of test.results) {
+        // An `example_row` annotation (of the attempt or the test) names the
+        // row; otherwise the title may (`Example #n`).
+        const rowHere =
+          annotatedRow(r.annotations) ?? annotatedRow(test.annotations) ?? row;
         const err = r.error ?? r.errors?.[0];
         const refs = attach(r.attachments);
         const isLast = r === test.results[test.results.length - 1];
@@ -183,7 +196,7 @@ export function parsePlaywright(report: PwReport): ParsedReport {
           externalId: spec.id,
           attempt: r.retry,
           ...(label ? { configurationLabel: label } : {}),
-          ...(row !== undefined ? { exampleRow: row } : {}),
+          ...(rowHere !== undefined ? { exampleRow: rowHere } : {}),
           ...(r.duration !== undefined ? { duration: r.duration } : {}),
           startedAt: r.startTime,
           finishedAt:

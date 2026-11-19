@@ -14,7 +14,7 @@
       {
         "ref": "s1",
         "sourceFormat": "junit",
-        "normalizerVersion": 1
+        "normalizerVersion": 2
       }
     ],
     "results": [

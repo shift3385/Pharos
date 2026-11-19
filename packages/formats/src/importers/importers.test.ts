@@ -19,6 +19,7 @@ import {
   shardOf,
   testKey,
 } from "./index.js";
+import { explicitRow } from "./common.js";
 
 const DIR = resolve(process.cwd(), "packages/formats/src/fixtures/ing01");
 const read = (p: string) => readFileSync(join(DIR, p), "utf8");
@@ -318,5 +319,93 @@ describe("importers · helpers", () => {
     expect(shardOf("2-of-3")).toEqual({ shardIndex: 2, shardTotal: 3 });
     expect(shardOf("2/2")).toEqual({ shardIndex: 2, shardTotal: 2 });
     expect(shardOf("4-of-3")).toBeUndefined();
+  });
+});
+
+describe("importers · explicit Outline row (CAS-01, ADR-0055 decision 3)", () => {
+  it("reads a 1-based whole number and ignores anything else", () => {
+    expect(explicitRow("2")).toBe(1);
+    expect(explicitRow(3)).toBe(2);
+    for (const bad of ["0", "-1", "1.5", "dos", "", undefined, null, 0])
+      expect(explicitRow(bad)).toBeUndefined();
+  });
+
+  it("JUnit: the example_row property names the row and stays out of properties", () => {
+    const xml = `<testsuite name="s"><testcase classname="a.Login" name="login(ana)">
+      <properties><property name="test_id" value="ATS_002"/><property name="example_row" value="2"/>
+      <property name="team" value="qa"/></properties></testcase></testsuite>`;
+    const [r] = parseReportText(xml).doc.results;
+    expect(r.exampleRow).toBe(1);
+    expect(r.attributes?.properties).toEqual({ team: "qa" });
+  });
+
+  it("CTRF: extra.exampleRow names the row, before the title", () => {
+    const json = JSON.stringify({
+      reportFormat: "CTRF",
+      results: {
+        tool: { name: "jest" },
+        summary: { tests: 2 },
+        tests: [
+          {
+            name: "login Example #1",
+            status: "passed",
+            duration: 5,
+            extra: { exampleRow: 3 },
+          },
+          {
+            name: "login sin fila",
+            status: "passed",
+            duration: 5,
+            extra: { exampleRow: "x" },
+          },
+        ],
+      },
+    });
+    const r = parseReportText(json).doc.results;
+    expect(r.map((x) => x.exampleRow)).toEqual([2, undefined]);
+  });
+
+  it("Playwright: an example_row annotation of the test or of the attempt names the row", () => {
+    const json = JSON.stringify({
+      config: { rootDir: "/repo" },
+      suites: [
+        {
+          title: "login.spec.ts",
+          file: "login.spec.ts",
+          specs: [
+            {
+              title: "entra con luis",
+              id: "s1",
+              file: "login.spec.ts",
+              tests: [
+                {
+                  projectName: "chromium",
+                  annotations: [{ type: "example_row", description: "2" }],
+                  results: [
+                    {
+                      status: "failed",
+                      retry: 0,
+                      duration: 1,
+                      annotations: [],
+                    },
+                    {
+                      status: "passed",
+                      retry: 1,
+                      duration: 1,
+                      annotations: [{ type: "example_row", description: "3" }],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const r = parseReportText(json).doc.results;
+    expect(r.map((x) => [x.attempt, x.exampleRow])).toEqual([
+      [0, 1],
+      [1, 2],
+    ]);
   });
 });

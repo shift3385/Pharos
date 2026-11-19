@@ -29,7 +29,7 @@
       {
         "ref": "s1",
         "sourceFormat": "k6",
-        "normalizerVersion": 1
+        "normalizerVersion": 2
       }
     ],
     "results": [],

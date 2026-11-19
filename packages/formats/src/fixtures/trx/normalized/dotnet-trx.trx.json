@@ -17,7 +17,7 @@
       {
         "ref": "s1",
         "sourceFormat": "trx",
-        "normalizerVersion": 1
+        "normalizerVersion": 2
       }
     ],
     "results": [

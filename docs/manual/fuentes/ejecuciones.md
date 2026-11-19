@@ -77,6 +77,12 @@ aparece en él se dio por corregido):
 | Xcode (`.xcresult`) | Desde la bandeja «Sin vincular»: los tags de Swift Testing son identificadores y no admiten el guion de `PH-001`. La vinculación se recuerda en las siguientes importaciones |
 | Pharos Run JSON | Sus `tags` |
 
+Si el caso tiene un dataset (Biblioteca) y lo automatizas sin Cucumber, di qué
+fila ejecutó cada test: la propiedad `example_row` en JUnit
+(`<property name="example_row" value="2"/>`), `"extra": { "exampleRow": 2 }`
+en CTRF o la anotación `example_row` en Playwright. Cuenta desde 1, como la
+tabla de datos del caso, y el resultado queda en esa fila de la matriz.
+
 El detalle de cada formato está en [Formatos de importación](../formats/importers.md).
 
 Si exportas los `.feature` desde Pharos (capítulo 8), cada escenario ya lleva

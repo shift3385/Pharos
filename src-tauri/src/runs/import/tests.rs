@@ -203,7 +203,7 @@ fn a_ctrf_report_links_by_tag_rows_and_steps_into_a_new_closed_run() {
     assert!(one.effective_revision_id.is_some());
     assert!(one.executed_by.starts_with("tool:"));
     // Ids are deterministic: shard by run and file, steps by result and position.
-    assert_eq!(out.shard_id, ids::shard_id(&out.run_id, SHA, 1));
+    assert_eq!(out.shard_id, ids::shard_id(&out.run_id, SHA, 2));
     assert_eq!(
         one.id,
         ids::imported_result_id(&out.shard_id, &one.test_key, None, 0)

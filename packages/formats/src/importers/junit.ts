@@ -19,6 +19,7 @@ import {
   kindOf,
   refMaker,
   relativizer,
+  explicitRow,
   rowOfTitle,
   slashes,
   testKey,
@@ -132,7 +133,7 @@ export function parseJunit(text: string): ParsedReport {
     const skipped = children(el, "skipped")[0];
     const retries = children(el).filter((x) => RETRIES.includes(x.localName));
     const key = testKey(path || undefined, [name]);
-    const row = rowOfTitle(name);
+    const row = explicitRow(props.get("example_row")?.[0]) ?? rowOfTitle(name);
     const base = {
       name,
       testKey: key,
@@ -178,7 +179,8 @@ export function parseJunit(text: string): ParsedReport {
     if (flaky) attributes.flaky = true;
     if (requirementKeys?.length) attributes.requirementKeys = requirementKeys;
     const other = [...props].filter(
-      ([k]) => !["test_id", "requirement", "tag", "tags"].includes(k),
+      ([k]) =>
+        !["test_id", "requirement", "tag", "tags", "example_row"].includes(k),
     );
     if (other.length)
       attributes.properties = Object.fromEntries(

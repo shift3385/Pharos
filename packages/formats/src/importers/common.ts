@@ -90,7 +90,7 @@ export class ReportError extends Error {
  *  content and id (ADR-0013): **any change to what a parser produces bumps
  *  it** (VERSIONING §6.5), so two builds never write different content under
  *  one id, and readers prefer the shard of the highest version. */
-export const NORMALIZER_VERSION = 1;
+export const NORMALIZER_VERSION = 2;
 
 /** Largest report (the raw report is evidence: ADR-0014's 200 MB). NDJSON is
  *  read line by line; JSON and XML are parsed whole, so they stop earlier. */
@@ -179,6 +179,16 @@ export function rowOfTitle(title: string): number | undefined {
   const cuc = / - #(\d+)\.(\d+)(?::|$)/.exec(title);
   if (cuc && cuc[1] === "1") return Number(cuc[2]) - 1;
   return undefined;
+}
+
+/** An explicit Outline row from a report that is not Cucumber (CAS-01,
+ *  ADR-0055 decision 3): the JUnit property `example_row`, CTRF
+ *  `extra.exampleRow` or the Playwright annotation `example_row`, 1-based like
+ *  `Example #n` → 0-based. Anything but a whole number from 1 is ignored. */
+export function explicitRow(value: unknown): number | undefined {
+  const text = typeof value === "number" ? String(value) : typeof value === "string" ? value.trim() : "";
+  if (!/^[1-9]\d{0,5}$/.test(text)) return undefined;
+  return Number(text) - 1;
 }
 
 /** `@tag` for a tag written without `@` (Playwright JSON). */

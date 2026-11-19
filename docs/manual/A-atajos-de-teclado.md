@@ -11,6 +11,8 @@ Todos los atajos del manual, capítulo a capítulo. Las letras de una pantalla (
 | Tab / Mayús+Tab | Formulario de entrada | Pasa de un campo al siguiente o al anterior |
 | Intro | Formulario de entrada o de registro | Envía el formulario («Entrar» o «Registrarme») |
 | Intro | «Mi perfil» | Guarda el alias y el nombre |
+| Intro | «Recupera el acceso» y «Cambiar la contraseña» | Envía el formulario |
+| ← → | Pestañas «Con un código» / «Por correo» | Pasan de una pestaña a la otra (con Tab y Intro) |
 | ↑ ↓ e Intro | Selector de idioma y menú de usuario | Recorren las opciones y eligen una |
 | Esc | Selector de idioma y menú de usuario | Cierra el menú y devuelve el foco a su botón |
 
@@ -128,7 +130,7 @@ atajos siguen siendo los de tu navegador.
 | Tab | Editor Gherkin | Sangra la línea |
 | Esc y después Tab | Editor Gherkin | Sale del editor con el teclado |
 | ← → | Selector de vista (Editor · Gherkin · Vista dividida) | Cambia de vista |
-| ↑ ↓ e Intro | Menús de prioridad, estado y automatización, y «⋯» | Recorren y eligen una opción |
+| ↑ ↓ e Intro | Menús de prioridad y automatización, y «⋯» | Recorren y eligen una opción |
 
 ### 9. Ciclos de prueba
 
@@ -241,6 +243,14 @@ funcionan «?» y Ctrl+Mayús+N.
 | --- | --- | --- |
 | Tab, Intro | Botones de «Algo salió mal» | Llegan a «Reintentar», «Recargar» o «Exportar diagnóstico» y los pulsan |
 | Intro | Campo «Clave de recuperación» | Abre los datos con la clave |
+
+### 20. Integraciones
+
+| Tecla | Dónde | Qué hace |
+| --- | --- | --- |
+| Tab | Formulario de un token o de un webhook | Recorre el nombre, el proyecto, los permisos y la caducidad |
+| Espacio | Permisos y eventos | Marca o desmarca la casilla |
+| Esc | Token o secreto recién creado | No lo cierra: marca «Lo he guardado en un sitio seguro» y pulsa «Hecho» |
 
 ---
 
