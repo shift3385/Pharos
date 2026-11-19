@@ -169,7 +169,7 @@ Por PR: A1 tokens, A2 subida, A3 webhooks, A4 lecturas, A5 DEU-01.
 - **`projectId`** es el id o el prefijo de clave de los casos (`PAY`) cuando es único al alcance del token. Si no lo es, responde 409 `ambiguous_project`.
 - **El informe** es el cuerpo de la petición, un fichero por petición, en su propio ámbito de Fastify (cuerpo en bruto), sin multipart y sin dependencias nuevas.
   - `?format=` se compara con el formato que detecta `@pharos/formats`. Si no coincide, responde 400 `format_mismatch`; sin `format`, vale el detectado.
-  - `trx` y `allure` se leen desde la pista F (ING-07). `allure` es un `.zip` de la carpeta `allure-results`, leído por `api/zip.ts` sobre `zlib`, sin dependencias: entradas guardadas o deflate, sin cifrado ni ZIP64, como mucho 10 000 entradas y el límite del informe una vez descomprimido (cada entrada se infla con `maxOutputLength`, así que una bomba se para en el techo aunque mienta sobre su tamaño). Un zip ilegible responde 422 `invalid_report`.
+  - `trx` y `allure` se leen desde la pista F (ING-07). `allure` es un `.zip` de la carpeta `allure-results`, leído por `api/zip.ts` sobre `zlib`, sin dependencias: entradas guardadas o deflate, sin cifrado ni ZIP64, como mucho 10 000 entradas y el límite del informe una vez descomprimido (cada entrada se infla con `maxOutputLength`, así que una bomba se para en el techo aunque mienta sobre su tamaño). Un zip ilegible responde 422 `invalid_report`. `xcresult` (el JSON de `xcresulttool`, F7) sube el contrato a 1.3.0: un valor nuevo de `format`, un cambio aditivo.
   - Los hallazgos de SARIF y las métricas de k6 y axe se guardan desde A2b (ver abajo).
 - **El run de destino:**
   - `runKey`: un run abierto;
