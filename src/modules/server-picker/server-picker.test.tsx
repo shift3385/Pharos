@@ -147,7 +147,7 @@ describe("ServerPanel", () => {
 
   it("warns about unsent changes before switching (E8)", async () => {
     answer({
-      server_check: () => ({ origin: "https://otro.example.com", local: false, health: health() }),
+      server_check: () => ({ origin: "https://otro.example.com", local: false, health: sameMinor() }),
       server_pending: () => [{ email: "ana@example.com", count: 3 }],
       server_set: (args) => args.url,
     });
