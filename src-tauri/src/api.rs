@@ -292,6 +292,33 @@ mod tests {
         assert_eq!(parse_session(r#"{"user":{"id":""}}"#), None);
     }
 
+    /// Both layouts count: `pharos.db` (SEC-05a, N4) and `pharos.db.enc`
+    /// (before it, also as a first save not yet renamed). A folder with
+    /// neither, or with other files, has no database.
+    #[test]
+    fn a_database_is_found_in_either_layout() {
+        let base = std::env::temp_dir().join(format!("pharos-api-layout-{}", uuid::Uuid::new_v4()));
+        let check = |files: &[&str]| {
+            let dir = base.join(files.join("+").replace('.', "_"));
+            std::fs::create_dir_all(&dir).unwrap();
+            for f in files {
+                std::fs::write(dir.join(f), b"x").unwrap();
+            }
+            has_database(&dir).unwrap()
+        };
+        assert!(check(&["pharos.db"]), "SEC-05a layout");
+        assert!(check(&["pharos.db.enc"]), "0.5 layout");
+        assert!(check(&["pharos.db.enc.new"]), "first save not renamed");
+        assert!(
+            check(&["pharos.db", "pharos.db.enc"]),
+            "converted, with the witness"
+        );
+        assert!(!check(&[]), "empty folder");
+        assert!(!check(&["pharos.lock", "evidence"]), "other files only");
+        assert!(!has_database(&base.join("missing")).unwrap(), "no folder");
+        let _ = std::fs::remove_dir_all(base);
+    }
+
     #[test]
     fn lookups_see_only_the_accounts_projects_and_a_saved_database() {
         let (db, dir) = temp_db();
