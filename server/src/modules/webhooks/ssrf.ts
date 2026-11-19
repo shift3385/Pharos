@@ -20,6 +20,9 @@ export interface TargetPolicy {
   allowPrivate: boolean;
   /** Host names allowed whatever they resolve to (exact, lower case). */
   allowHosts: readonly string[];
+  /** The resolver behind the socket's lookup: node's DNS, or a fake in tests
+   *  so a rebinding is checked without the network. */
+  resolve?: typeof dnsLookup;
 }
 
 const blocked = new BlockList();
@@ -97,7 +100,7 @@ type LookupCallback = (err: NodeJS.ErrnoException | null, address: string | Look
 export function guardedLookup(policy: TargetPolicy, host: string) {
   const allowedHost = policy.allowHosts.includes(host.toLowerCase());
   return (hostname: string, options: { all?: boolean } & object, callback: LookupCallback) => {
-    dnsLookup(hostname, { ...options, all: true }, (err, addresses) => {
+    (policy.resolve ?? dnsLookup)(hostname, { ...options, all: true }, (err, addresses) => {
       if (err) return callback(err, []);
       const list = (addresses as LookupAddress[]).filter((a) => policy.allowPrivate || allowedHost || !isPrivateAddress(a.address));
       if (list.length === 0) {
