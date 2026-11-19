@@ -21,8 +21,9 @@ function run(args) {
 
 rmSync(dist, { recursive: true, force: true });
 
-// The package's own tsconfig, emitting, with zod and uuid taken from the
-// server's node_modules: the repo root's may not be installed (CI, Docker).
+// The package's own tsconfig, emitting, with its dependencies (zod, uuid,
+// @cucumber/messages) taken from the server's node_modules: the repo root's
+// may not be installed (CI, Docker).
 mkdirSync(dist, { recursive: true });
 const formatsConfig = join(dist, "formats.tsconfig.json");
 const modules = join(server, "node_modules");
@@ -36,7 +37,11 @@ writeFileSync(
       outDir: formatsOut,
       rootDir: join(server, "..", "packages", "formats", "src"),
       typeRoots: [join(modules, "@types")],
-      paths: { zod: [join(modules, "zod")], uuid: [join(modules, "uuid")] },
+      // Bundler resolution reads these package folders (their "exports");
+      // the emitted imports stay as written, already ending in .js.
+      module: "ESNext",
+      moduleResolution: "Bundler",
+      paths: Object.fromEntries(["zod", "uuid", "@cucumber/messages"].map((m) => [m, [join(modules, m)]])),
     },
   }),
 );
