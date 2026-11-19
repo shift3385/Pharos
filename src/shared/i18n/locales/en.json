@@ -5325,5 +5325,97 @@
       "done_one": "{{count}} token of {{name}} revoked",
       "done_other": "{{count}} tokens of {{name}} revoked"
     }
+  },
+  "findings": {
+    "tabs": {
+      "label": "Run content",
+      "cases": "Cases",
+      "findings": "Findings",
+      "metrics": "Metrics",
+      "openTitle_one": "{{count}} open finding",
+      "openTitle_other": "{{count}} open findings",
+      "failedTitle_one": "{{count}} failed threshold",
+      "failedTitle_other": "{{count}} failed thresholds"
+    },
+    "filter": {
+      "severity": "Filter by severity",
+      "standing": "Filter by state",
+      "all": "All",
+      "onlyNew_one": "Only new ({{count}})",
+      "onlyNew_other": "Only new ({{count}})"
+    },
+    "severity": {
+      "critical": "Critical",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low",
+      "info": "Info"
+    },
+    "standing": {
+      "open": "Open",
+      "review": "To review",
+      "triaged": "Triaged",
+      "all": "All"
+    },
+    "locations_one": "{{count}} location",
+    "locations_other": "{{count}} locations",
+    "new": "New",
+    "suppressed": "Suppressed at source",
+    "help": "Help for rule {{rule}} (opens outside Pharos)",
+    "empty": "No findings match these filters.",
+    "triageState": {
+      "open": "Open",
+      "false_positive": "False positive",
+      "accepted_risk": "Accepted risk",
+      "fixed": "Fixed"
+    },
+    "triage": {
+      "open": "Triage",
+      "title": "Triage · {{rule}}",
+      "state": "State",
+      "reason": "Reason",
+      "scope": "It applies to this fingerprint in every run of the project. It stays in the history.",
+      "history": "Earlier decisions",
+      "save": "Save triage",
+      "error": "The triage could not be saved. Check the reason and try again.",
+      "help": {
+        "open": "It counts in the matrix, the report and the gates.",
+        "false_positive": "The rule does not apply here.",
+        "accepted_risk": "Known and accepted. Link a decision or a defect.",
+        "fixed": "It should be gone in the next scan."
+      }
+    },
+    "metric": {
+      "table": "Run metrics",
+      "name": "Metric",
+      "aggregation": "Aggregation",
+      "scope": "Scope",
+      "value": "Value",
+      "threshold": "Threshold",
+      "state": "State",
+      "noThreshold": "No threshold",
+      "passed": "Met",
+      "failed": "Failed",
+      "thresholdsMet": "Thresholds met: {{passed}} of {{total}}.",
+      "failedList": "Failed: {{list}}.",
+      "empty": "No metrics.",
+      "all": "Show all ({{shown}} of {{total}})",
+      "fewer": "Show only the main ones"
+    },
+    "check": {
+      "title": "Checks",
+      "name": "Group › check",
+      "passes": "Passed",
+      "fails": "Failed",
+      "rate": "Rate"
+    },
+    "preview": {
+      "findings_one": "{{count}} finding",
+      "findings_other": "{{count}} findings",
+      "metrics_one": "{{count}} metric",
+      "metrics_other": "{{count}} metrics",
+      "thresholdsFailed_one": "{{count}} failed threshold",
+      "thresholdsFailed_other": "{{count}} failed thresholds"
+    }
   }
 }

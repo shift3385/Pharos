@@ -13,8 +13,8 @@ backend; data-compatibility rules for migrations and sync): `docs/VERSIONING.md`
   Tauri 2 is deliberate — its mobile support lets the 0.4.0 mobile build reuse this codebase.
   The Rust side builds with the **MSVC** toolchain (`src-tauri/rust-toolchain.toml`).
 - **Rust crates (CORE-01, [ADR-0050](adr/0050-pharos-core-y-sqlite-en-disco-cifrado.md)):**
-  `src-tauri/` is a Cargo workspace of two packages over the same sources in
-  `src-tauri/src`:
+  `src-tauri/` is a Cargo workspace of three packages; the first two share the
+  sources in `src-tauri/src`:
   - **`pharos-core`** (`src-tauri/core/Cargo.toml`, rooted at `src/lib.rs`):
     the whole library: local DB, migrations, repositories, oplog, journal,
     audit, sync, evidence, AI and server client. Tauri is its optional
@@ -26,14 +26,28 @@ backend; data-compatibility rules for migrations and sync): `docs/VERSIONING.md`
     (`run()`, setup, the cached-session commands and the
     `generate_handler!` list, which imports `pharos_core::*`) and
     `src/main.rs`. It enables the core's `tauri` feature.
+  - **`pharos-cli`** (`src-tauri/cli/`, INT-01,
+    [ADR-0054](adr/0054-cli-y-plantillas-de-github-actions.md)): the `pharos`
+    command line (Cargo bin `pharos-cli`, installed as `bin\pharos.exe` so it
+    never collides with the desktop's `Pharos.exe`). Its feature `local`
+    (default) brings `pharos-core` without Tauri; without it the binary is
+    remote-only. `run()` in `lib.rs` takes argv, environment, output streams
+    and a `Local` (how the desktop's data is reached), so its tests drive it
+    without a process and open their data folder with their own key (the
+    core's `test-support` feature), never the user's `db-key`. Command
+    reference: [`docs/cli.md`](cli.md).
 
   Other processes (the CLI) use `pharos_core::api` (`open`, `import_preview`,
   `import_report`, `import_attach`: the same code as the desktop import
-  commands) and `pharos_core::paths::default_data_dir()` (the app's data
-  folder without Tauri). Any number of processes open the
-  same folder and write (SEC-05b, ADR-0050 §5); `pharos.lock` is held only
-  while one opens it (converting or migrating), and another waits up to 10 s
-  for it before `db-in-use`.
+  commands; `signed_in_user`, `list_projects`, `find_run`, `find_cycle`, `close_run`
+  and `has_database` for the CLI, each delegating to an existing repository
+  function; the CLI writes as the
+  account signed in to the app, read from its cached session without the
+  tokens, and only opens a folder where `has_database` is true) and `pharos_core::paths::default_data_dir()` (the app's data
+  folder without Tauri). Any number of processes open the same folder and
+  write (SEC-05b, ADR-0050 §5); `pharos.lock` is held only while one opens it
+  (converting or migrating), and another waits up to 10 s for it before
+  `db-in-use`.
 
   `cargo test`, `clippy` and `fmt` in `src-tauri/` cover both
   (`default-members`). A new command is written in its module behind
@@ -514,6 +528,25 @@ Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
   it reopens), `triage_current` derives each fingerprint's state from its
   latest event (HLC, then id) and `triage_history` lists the rest. There
   is no LWW entity and no conflict to resolve.
+- **Reading them** (F4): `run_findings_list` (worst first, each with its
+  current triage and `isNew`: the fingerprint was not in the previous run of
+  the project from the same tool; nothing is new in the first one),
+  `run_metrics_list` (failed thresholds first), `finding_triage_set` and
+  `finding_triage_history` on the desktop. The web reads the same through
+  `server/src/modules/domain/findings.ts`: `/api/runs/:id/findings`,
+  `/api/runs/:id/metrics` and `/api/finding-triage`, the twin of the same
+  rules; a decision from the web is one more `finding_triage` event.
+  `runsApi.findings`, `metrics`, `triage` and `triageHistory` pick the
+  side.
+- **Screens** (F4b): the run detail gains underline tabs (`?tab=`) «Casos»,
+  «Hallazgos» and «Métricas», shown only when the run has findings or
+  metrics. `FindingsPanel` filters by severity, standing (open, «A revisar»,
+  triaged) and «Solo nuevos» and groups by rule; `TriageDialog` records a
+  decision (a reason unless it reopens) and lists the history;
+  `MetricsPanel` puts failed thresholds first, then each metric's summary
+  («Ver todas») and the k6 checks. «Importar informe» counts findings by
+  severity, metrics and failed thresholds. The derivations are in
+  `runs/model/findings.ts`.
 
 **Manual execution (EJE-02; ADR-0013, ADR-0014).** `src-tauri/src/runs/manual.rs`
 and `src/modules/runs/` (`RunDetail`, `ExecutionPanel`), no migration:
@@ -1641,6 +1674,24 @@ core Postgres lacks). Modules:
 
   Every token change is an `api_token` audit event, which never holds the
   secret.
+
+  Report uploads (A2, `v1.runs.ts`):
+  - `POST /api/v1/projects/{projectId}/results`: the report file is the
+    body, read in its own Fastify scope as raw bytes (gzip allowed).
+  - `reportParse.ts` inflates the body within `API_UPLOAD_MAX_BYTES` and
+    parses it with `@pharos/formats` in a child process killed after
+    `API_PARSE_TIMEOUT_MS`. Tests inject the in-process parser.
+  - `runImport.ts` picks the run: `runKey`; `externalId`, a deterministic
+    run so a CI matrix converges; or a new run, closed once imported.
+  - `importPlan.ts` is the twin of `import.rs::plan`, checked against
+    `src-tauri/tests/fixtures/api-import-interop.json`.
+  - The upload writes the `run_shard`, the `result` documents and a
+    `raw_report` attachment, with its blob in `BLOB_DIR`, in one
+    transaction of the token's owner. Links are derived when read.
+
+  Runs: `GET`/`POST …/runs`, `GET …/runs/{runKey}` (with counts) and
+  `…/results`, and `POST …/runs/{runKey}/close`, all on the web's run
+  service (`insertRun` is shared).
 - `blobs` (SYNC-04b, ADR-0042 §7) — attachment and template contents by
   hash, outside the oplog. Table `blobs (workspace_id, sha256, …)`
   (migration 0020) over a `BlobStore`; today `diskBlobStore(BLOB_DIR)`,
@@ -2329,9 +2380,9 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   and manual v2 (MAN-03/04). Part of it is in `main`; most of it still lives on
   the integration branch `local/app-completa` — see `docs/ROADMAP.md` §2.1 for
   where each piece is and §2.2 for the approved course (ADR-0039): autonomous execution as the axis up to 1.0.
-- **Known gaps (2026-11-18):** `pharos-core` and its CLI API exist (CORE-01,
-  ADR-0050) but no CLI uses them yet (INT-01), and no other process can write
-  while the app is open (SEC-05); no shared
+- **Known gaps (2026-11-18):** the `pharos` CLI imports Pharos Run JSON into
+  the local database (INT-01 L1) but has no remote mode, `watch` or installer
+  yet, and no other process can write while the app is open (SEC-05); no shared
   workspaces or roles (SYNC-07); exit criteria are recognised from free text and
   never gate closing a cycle; no SARIF/k6/axe/Allure ingest, CLI, public API or
   mobile app yet.

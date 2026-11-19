@@ -1814,3 +1814,243 @@ fn the_api_imports_a_report_file_as_the_desktop_does() {
     drop(db);
     std::fs::remove_dir_all(&dir).unwrap();
 }
+
+// ---- the server's twin (INT-02 A2, ADR-0052 §2) -----------------------------------
+
+/// A document full of the planner's corner cases: three tests with the same
+/// key, label and attempt, a key over the limit, keywords inside step texts,
+/// `pending` and unknown statuses, epoch-ms times, texts and attributes over
+/// their limits, unknown keys, a suite as text, `browser` as the label.
+fn edge_doc() -> Value {
+    let long_key = format!("very/long/{}", "k".repeat(2100));
+    let long_message = "m".repeat(9000);
+    let big_attr = "a".repeat(17_000);
+    json!({
+        "schemaVersion": "1.0.0",
+        "run": {"title": "Edge", "sourceTool": "edge-tool", "startedAt": 1_793_000_000_123_i64},
+        "shards": [{"ref": "s1", "sourceFormat": "pharos_run_json", "formatVersion": "9.9", "normalizerVersion": 1,
+                    "shardIndex": 2, "shardTotal": 3}],
+        "attachments": [{"ref": "a1", "name": "shot.png"}],
+        "results": [
+            {"name": "dup", "status": "passed", "testKey": "dup/key", "browser": "chromium"},
+            {"name": "dup", "status": "failed", "testKey": "dup/key", "browser": "chromium"},
+            {"name": "dup", "status": "pending", "testKey": "dup/key", "browser": "chromium"},
+            {"name": "long", "status": "broken", "testKey": long_key, "attempt": 2},
+            {"name": "steps", "status": "failed", "testKey": "steps/1", "configurationLabel": "Edge on Windows",
+             "message": long_message, "trace": "t", "duration": 12.6,
+             "startedAt": 1_793_000_000_500_i64, "stop": "2026-11-18T10:00:00Z",
+             "steps": [
+                {"name": "Given the user logs in", "status": "passed", "durationMs": 3.4},
+                {"text": "Cuando paga", "status": "failed", "actual": "402", "gherkinLine": 7, "attachments": ["a1", "zz"]},
+                {"text": "free text", "keyword": "  Then ", "status": "skipped"}
+             ],
+             "attachments": ["a1", "missing"]},
+            {"name": "attrs", "status": "passed", "testKey": "attrs/1", "tags": ["@TC-001", "@smoke"],
+             "suite": "Feature A > Scenario B", "filePath": "e2e/a.spec.ts", "flaky": true,
+             "attributes": {"tags": ["ignored"], "suite": "ignored", "own": 1},
+             "retries": 3, "custom": {"x": 1}, "caseKey": " TC-001 ", "externalId": "ext-1",
+             "exampleRow": 2, "exampleValues": {"email": "x@y"}},
+            {"name": "huge", "status": "passed", "testKey": "attrs/huge", "flaky": false,
+             "attributes": {"blob": big_attr}, "tags": ["@TC-002"]}
+        ]
+    })
+}
+
+/// `tests/fixtures/api-import-interop.json`: for each input document, the
+/// shard and the result documents this persister writes and syncs. The
+/// server's planner (`server/src/modules/api/importPlan.ts`) must write the
+/// same content (`server/tests/api.import-interop.test.ts`). Regenerate with
+/// `UPDATE_API_IMPORT_VECTORS=1 cargo test api_import_interop`.
+#[test]
+fn api_import_interop_vectors() {
+    let mut inputs: Vec<(String, Value)> = vec![
+        ("single/ctrf".into(), doc_of(snapshot!("single__ctrf.json"))),
+        (
+            "single/pw-junit".into(),
+            doc_of(snapshot!("single__pw-junit.xml")),
+        ),
+        (
+            "single/cucumber-junit".into(),
+            doc_of(snapshot!("single__cucumber-junit.xml")),
+        ),
+        (
+            "single/cucumber-messages".into(),
+            doc_of(snapshot!("single__cucumber-messages.ndjson")),
+        ),
+        ("ann/pw".into(), doc_of(snapshot!("ann__pw.json"))),
+        ("shard2/pw".into(), doc_of(snapshot!("shard2__pw.json"))),
+        ("merged/ctrf".into(), doc_of(snapshot!("merged__ctrf.json"))),
+    ];
+    inputs.push(("edge".into(), edge_doc()));
+    // ING-06 (A2b): findings and metrics.
+    let sample = |s: &str| serde_json::from_str::<Value>(s).unwrap()["doc"].clone();
+    inputs.push((
+        "sarif/trivy".into(),
+        sample(include_str!(
+            "../../../../packages/formats/src/fixtures/sarif/normalized/trivy-misconfig.sarif.json"
+        )),
+    ));
+    inputs.push((
+        "sarif/eslint".into(),
+        sample(include_str!(
+            "../../../../packages/formats/src/fixtures/sarif/normalized/eslint.sarif.json"
+        )),
+    ));
+    inputs.push((
+        "axe/checkout".into(),
+        sample(include_str!(
+            "../../../../packages/formats/src/fixtures/axe/normalized/checkout-broken.json"
+        )),
+    ));
+    inputs.push((
+        "k6/summary".into(),
+        sample(include_str!(
+            "../../../../packages/formats/src/fixtures/k6/normalized/summary-export.json"
+        )),
+    ));
+    let mut cases = Vec::new();
+    for (name, doc) in inputs {
+        let c = device();
+        let p = new_project(&c);
+        let out = import(&c, &new_run(&p, doc.clone())).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let shard = crate::runs::shard_payload(&c, &out.shard_id)
+            .unwrap()
+            .unwrap();
+        let mut ids: Vec<String> = c
+            .prepare("SELECT id FROM results WHERE shard_id = ?1 ORDER BY id")
+            .unwrap()
+            .query_map(params![out.shard_id], |r| r.get(0))
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        ids.sort();
+        let results: Vec<Value> = ids
+            .iter()
+            .map(|id| crate::runs::result_payload(&c, id).unwrap().unwrap())
+            .collect();
+        let of = |table: &str| -> Vec<String> {
+            c.prepare(&format!(
+                "SELECT id FROM {table} WHERE shard_id = ?1 ORDER BY id"
+            ))
+            .unwrap()
+            .query_map(params![out.shard_id], |r| r.get(0))
+            .unwrap()
+            .map(Result::unwrap)
+            .collect()
+        };
+        let findings: Vec<Value> = of("findings")
+            .iter()
+            .map(|id| {
+                crate::runs::findings::finding_payload(&c, id)
+                    .unwrap()
+                    .unwrap()
+            })
+            .collect();
+        let metrics: Vec<Value> = of("metrics")
+            .iter()
+            .map(|id| {
+                crate::runs::findings::metric_payload(&c, id)
+                    .unwrap()
+                    .unwrap()
+            })
+            .collect();
+        let warnings: Vec<Value> = out
+            .warnings
+            .iter()
+            .filter(|w| {
+                ![
+                    "unknown-case",
+                    "two-case-tags",
+                    "case-key-conflict",
+                    "row-not-found",
+                ]
+                .contains(&w.code.as_str())
+            })
+            .map(|w| json!({"code": w.code, "testKey": w.test_key}))
+            .collect();
+        cases.push(json!({
+            "name": name, "doc": doc, "sha256": SHA, "runId": out.run_id, "shardId": out.shard_id,
+            "shard": shard, "results": results, "findings": findings, "metrics": metrics,
+            "warnings": warnings,
+        }));
+    }
+    let got = json!({
+        "$comment": "Generated by src-tauri/src/runs/import/tests.rs::api_import_interop_vectors (UPDATE_API_IMPORT_VECTORS=1). The server's planner must write the same shard and result content (server/tests/api.import-interop.test.ts).",
+        "cases": cases,
+    });
+    // `src-tauri/tests/fixtures`, from the desktop crate or from `core`.
+    let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let root = if manifest.ends_with("core") {
+        manifest.parent().unwrap()
+    } else {
+        manifest
+    };
+    let path = root.join("tests/fixtures/api-import-interop.json");
+    if std::env::var("UPDATE_API_IMPORT_VECTORS").is_ok() {
+        std::fs::write(path, serde_json::to_string_pretty(&got).unwrap() + "\n").unwrap();
+        return;
+    }
+    let want: Value =
+        serde_json::from_str(&std::fs::read_to_string(&path).expect("api-import-interop.json"))
+            .unwrap();
+    // Ids of the run (random per import) and the clock differ per run: compare
+    // what the server compares, the content.
+    let content = |v: &Value| -> Value {
+        let mut out = Vec::new();
+        for c in v["cases"].as_array().unwrap() {
+            let strip = |p: &Value| {
+                let mut p = p.clone();
+                for k in [
+                    "id",
+                    "runId",
+                    "shardId",
+                    "workspaceId",
+                    "projectId",
+                    "createdBy",
+                    "createdAt",
+                    "hlc",
+                    "importedBy",
+                    "importedAt",
+                ] {
+                    p.as_object_mut().unwrap().remove(k);
+                }
+                if let Some(steps) = p.get_mut("steps").and_then(Value::as_array_mut) {
+                    for s in steps {
+                        s.as_object_mut().unwrap().remove("id");
+                    }
+                }
+                p
+            };
+            // By what each result is, not by its id (the run id is random).
+            let mut results: Vec<Value> =
+                c["results"].as_array().unwrap().iter().map(strip).collect();
+            results.sort_by_key(|r| {
+                (
+                    r["testKey"].to_string(),
+                    r["configurationLabel"].to_string(),
+                    r["attempt"].to_string(),
+                )
+            });
+            // Findings and metrics, by their whole content.
+            let sorted = |k: &str| -> Vec<Value> {
+                let mut v: Vec<Value> = c[k]
+                    .as_array()
+                    .map(|a| a.iter().map(strip).collect())
+                    .unwrap_or_default();
+                v.sort_by_key(|x| x.to_string());
+                v
+            };
+            out.push(json!({
+                "name": c["name"], "doc": c["doc"], "shard": strip(&c["shard"]),
+                "results": results, "findings": sorted("findings"), "metrics": sorted("metrics"),
+                "warnings": c["warnings"],
+            }));
+        }
+        Value::Array(out)
+    };
+    assert_eq!(
+        content(&got),
+        content(&want),
+        "regenerate with UPDATE_API_IMPORT_VECTORS=1"
+    );
+}

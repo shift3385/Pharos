@@ -17,8 +17,30 @@ describe("OpenAPI v1", () => {
 
   it("documents every route with its errors, and leaves objects open", () => {
     const doc = buildOpenApi();
-    expect(Object.keys(doc.paths)).toEqual(["/me", "/projects", "/projects/{projectId}"]);
+    expect(Object.keys(doc.paths)).toEqual([
+      "/me",
+      "/projects",
+      "/projects/{projectId}",
+      "/projects/{projectId}/results",
+      "/projects/{projectId}/runs",
+      "/projects/{projectId}/runs/{runKey}",
+      "/projects/{projectId}/runs/{runKey}/results",
+      "/projects/{projectId}/runs/{runKey}/close",
+    ]);
     expect(JSON.stringify(doc)).not.toContain('"additionalProperties":false');
-    for (const path of Object.values(doc.paths)) expect(Object.keys(path.get.responses)).toContain("401");
+    for (const path of Object.values(doc.paths) as Record<string, { responses: Record<string, unknown> }>[])
+      for (const op of Object.values(path)) expect(Object.keys(op.responses)).toContain("401");
+    const upload = doc.paths["/projects/{projectId}/results"].post;
+    expect(upload.parameters.map((x: { name: string }) => x.name)).toEqual([
+      "projectId",
+      "format",
+      "runKey",
+      "externalId",
+      "runName",
+      "cycleKey",
+      "configuration",
+      "caseKey",
+      "fileName",
+    ]);
   });
 });

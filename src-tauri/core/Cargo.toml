@@ -20,6 +20,9 @@ crate-type = ["rlib"]
 [features]
 # The #[tauri::command] wrappers and the few helpers that take Tauri types.
 tauri = ["dep:tauri", "dep:rfd"]
+# `api::open_with_key` for the CLI's tests (INT-01): a database opened with a
+# key of the test's own, never the user's `db-key`. Never in a release build.
+test-support = []
 
 [dependencies]
 # Optional: only the desktop shell enables it (feature `tauri`).

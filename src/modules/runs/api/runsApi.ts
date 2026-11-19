@@ -3,6 +3,8 @@ import { invoke, isTauri } from "@shared/platform";
 import type {
   Configuration,
   ExecutionAttachment,
+  FindingView,
+  MetricView,
   ReportImportOutcome,
   ReportImportPreview,
   ReportImportRequest,
@@ -16,6 +18,7 @@ import type {
   RunItemDetail,
   RunItemInput,
   RunOverview,
+  TriageEvent,
   UnlinkedTest,
 } from "@shared/contracts/contract";
 import type { SaveResult } from "@shared/export/saveFile";
@@ -30,8 +33,10 @@ import { webDrafts } from "../model/webDrafts";
 const enc = encodeURIComponent;
 /** The run of each item this page has read (web drafts are kept by run). */
 const runOfItem = new Map<string, string>();
-const targetKeyOf = (flowId: string | null | undefined, rowId: string | null | undefined) =>
-  `${flowId ?? "-"}/${rowId ?? "-"}`;
+const targetKeyOf = (
+  flowId: string | null | undefined,
+  rowId: string | null | undefined,
+) => `${flowId ?? "-"}/${rowId ?? "-"}`;
 
 /** Bytes per upload call: a file is sent in raw chunks, never whole (the
  *  same protocol as the planner's attachments, `evidence_upload_*`). */
@@ -67,6 +72,53 @@ export const runsApi = {
     isTauri()
       ? invoke("results_list", { runId, userId })
       : serverApi.get(`/api/runs/${enc(runId)}/results`),
+  /** Findings of a run, worst first, with their current triage and whether
+   *  they are new since the previous run of the tool (ING-06, F4). */
+  findings: (runId: string, userId: string): Promise<FindingView[]> =>
+    isTauri()
+      ? invoke("run_findings_list", { runId, userId })
+      : serverApi.get(`/api/runs/${enc(runId)}/findings`),
+  /** Metrics of a run, failed thresholds first. */
+  metrics: (runId: string, userId: string): Promise<MetricView[]> =>
+    isTauri()
+      ? invoke("run_metrics_list", { runId, userId })
+      : serverApi.get(`/api/runs/${enc(runId)}/metrics`),
+  /** One more triage decision on a fingerprint; returns it (the current one). */
+  triage: (input: {
+    projectId: string;
+    userId: string;
+    fingerprint: string;
+    state: "open" | "false_positive" | "accepted_risk" | "fixed";
+    reason?: string | null;
+    defectId?: string | null;
+  }): Promise<TriageEvent> =>
+    isTauri()
+      ? invoke("finding_triage_set", {
+          projectId: input.projectId,
+          userId: input.userId,
+          fingerprint: input.fingerprint,
+          state: input.state,
+          reason: input.reason ?? null,
+          defectId: input.defectId ?? null,
+        })
+      : serverApi.post("/api/finding-triage", {
+          projectId: input.projectId,
+          fingerprint: input.fingerprint,
+          state: input.state,
+          reason: input.reason ?? null,
+          defectId: input.defectId ?? null,
+        }),
+  /** The triage decisions on a fingerprint, newest first. */
+  triageHistory: (
+    projectId: string,
+    userId: string,
+    fingerprint: string,
+  ): Promise<TriageEvent[]> =>
+    isTauri()
+      ? invoke("finding_triage_history", { projectId, userId, fingerprint })
+      : serverApi.get(
+          `/api/finding-triage?projectId=${enc(projectId)}&fingerprint=${enc(fingerprint)}`,
+        ),
   /** Final results by status of every run of the project, in one call. */
   counts: (projectId: string, userId: string): Promise<RunCounts[]> =>
     isTauri()
@@ -133,14 +185,20 @@ export const runsApi = {
 
   /** The run screen in one call: header, items with progress, counts. On
    *  the web, `hasDraft` is this browser's. */
-  overview: async (runId: string, userId: string): Promise<RunOverview | null> => {
+  overview: async (
+    runId: string,
+    userId: string,
+  ): Promise<RunOverview | null> => {
     if (isTauri()) return invoke("run_overview", { runId, userId });
     let o: RunOverview | null;
     try {
-      o = await serverApi.get<RunOverview | null>(`/api/runs/${enc(runId)}/overview`);
+      o = await serverApi.get<RunOverview | null>(
+        `/api/runs/${enc(runId)}/overview`,
+      );
     } catch (e) {
       // Deleted elsewhere (EJE-07): its drafts go, and the screen says so.
-      if (e instanceof Error && e.message.startsWith("run-deleted")) webDrafts.dropRun(userId, runId);
+      if (e instanceof Error && e.message.startsWith("run-deleted"))
+        webDrafts.dropRun(userId, runId);
       throw e;
     }
     // A run gone or cancelled keeps no drafts here.
@@ -156,30 +214,54 @@ export const runsApi = {
   },
   /** One item for the executor: frozen revision, targets, attempts, draft.
    *  On the web the draft is this browser's and there are no files. */
-  itemDetail: async (runItemId: string, userId: string): Promise<RunItemDetail | null> => {
+  itemDetail: async (
+    runItemId: string,
+    userId: string,
+  ): Promise<RunItemDetail | null> => {
     if (isTauri()) return invoke("run_item_detail", { runItemId, userId });
-    const d = await serverApi.get<RunItemDetail | null>(`/api/run-items/${enc(runItemId)}`);
+    const d = await serverApi.get<RunItemDetail | null>(
+      `/api/run-items/${enc(runItemId)}`,
+    );
     if (!d) {
       webDrafts.forget(userId, runItemId);
       return d;
     }
     runOfItem.set(runItemId, d.item.runId);
     if (d.runStatus === "aborted") webDrafts.dropRun(userId, d.item.runId);
-    webDrafts.noteRecorded(runItemId, d.results.map((r) => r.id));
+    webDrafts.noteRecorded(
+      runItemId,
+      d.results.map((r) => r.id),
+    );
     return { ...d, draft: webDrafts.load(userId, runItemId) };
   },
   /** A manual run over the chosen cases (design §4, step 1): the run and
    *  its items in one transaction, so a refused case leaves no empty run. */
-  createManual: (input: RunInput, items: RunItemInput[]): Promise<Run | null> =>
+  createManual: (
+    input: RunInput,
+    items: RunItemInput[],
+  ): Promise<Run | null> =>
     isTauri()
-      ? reserveKeys(input.projectId ?? "", "run").then(() => invoke<Run | null>("run_create_manual", { input, items }))
+      ? reserveKeys(input.projectId ?? "", "run").then(() =>
+          invoke<Run | null>("run_create_manual", { input, items }),
+        )
       : serverApi.post("/api/runs", { input, items }),
   /** The project's live configurations, to give a manual run its context. */
-  configurations: (projectId: string, userId: string): Promise<Configuration[]> =>
+  configurations: (
+    projectId: string,
+    userId: string,
+  ): Promise<Configuration[]> =>
     isTauri()
-      ? invoke("configuration_list", { projectId, userId, includeArchived: false })
+      ? invoke("configuration_list", {
+          projectId,
+          userId,
+          includeArchived: false,
+        })
       : serverApi.get(`/api/configurations?projectId=${enc(projectId)}`),
-  addItems: (runId: string, userId: string, items: RunItemInput[]): Promise<RunItem[]> =>
+  addItems: (
+    runId: string,
+    userId: string,
+    items: RunItemInput[],
+  ): Promise<RunItem[]> =>
     isTauri()
       ? invoke("run_items_add", { runId, userId, items })
       : serverApi.post(`/api/runs/${enc(runId)}/items`, { items }),
@@ -200,8 +282,12 @@ export const runsApi = {
     discardDrafts: boolean,
     userId: string,
   ): Promise<Run | null> => {
-    if (isTauri()) return invoke("run_close", { runId, status, discardDrafts, userId });
-    const run = await serverApi.post<Run | null>(`/api/runs/${enc(runId)}/close`, { status });
+    if (isTauri())
+      return invoke("run_close", { runId, status, discardDrafts, userId });
+    const run = await serverApi.post<Run | null>(
+      `/api/runs/${enc(runId)}/close`,
+      { status },
+    );
     if (status === "aborted" || discardDrafts) webDrafts.dropRun(userId, runId);
     return run;
   },
@@ -213,24 +299,47 @@ export const runsApi = {
   /** Deletes a run (logically): it and its items become tombstones; its
    *  results stay until the purge takes them with the run. */
   delete: (runId: string, userId: string): Promise<void> =>
-    isTauri() ? invoke("run_delete", { runId, userId }) : desktopOnly("results"),
+    isTauri()
+      ? invoke("run_delete", { runId, userId })
+      : desktopOnly("results"),
   draftSave: (
     runItemId: string,
     targetKey: string,
     state: unknown,
     userId: string,
   ): Promise<void> => {
-    if (isTauri()) return invoke("execution_draft_save", { runItemId, targetKey, state, userId });
+    if (isTauri())
+      return invoke("execution_draft_save", {
+        runItemId,
+        targetKey,
+        state,
+        userId,
+      });
     // Synchronous: a refused save throws before anything else runs.
     try {
-      webDrafts.save(userId, runOfItem.get(runItemId) ?? "", runItemId, targetKey, state as Record<string, unknown>);
+      webDrafts.save(
+        userId,
+        runOfItem.get(runItemId) ?? "",
+        runItemId,
+        targetKey,
+        state as Record<string, unknown>,
+      );
       return Promise.resolve();
     } catch (e) {
       return Promise.reject(e);
     }
   },
-  draftDiscard: (runItemId: string, targetKey: string, userId: string): Promise<void> => {
-    if (isTauri()) return invoke("execution_draft_discard", { runItemId, targetKey, userId });
+  draftDiscard: (
+    runItemId: string,
+    targetKey: string,
+    userId: string,
+  ): Promise<void> => {
+    if (isTauri())
+      return invoke("execution_draft_discard", {
+        runItemId,
+        targetKey,
+        userId,
+      });
     webDrafts.discard(userId, runItemId, targetKey);
     return Promise.resolve();
   },
@@ -240,8 +349,15 @@ export const runsApi = {
   record: async (input: ResultInput): Promise<string> => {
     if (isTauri()) return invoke("execution_record", { input });
     const key = targetKeyOf(input.flowId, input.exampleRowId);
-    webDrafts.checkRecordable(input.userId, input.runItemId, key, input.attemptId ?? "");
-    const { id } = await serverApi.post<{ id: string }>("/api/results", { input });
+    webDrafts.checkRecordable(
+      input.userId,
+      input.runItemId,
+      key,
+      input.attemptId ?? "",
+    );
+    const { id } = await serverApi.post<{ id: string }>("/api/results", {
+      input,
+    });
     webDrafts.recorded(input.userId, input.runItemId, key, id);
     return id;
   },

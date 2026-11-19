@@ -153,6 +153,12 @@ const I = (chapter: ChapterId, kind: ItemKind, id: string, label: string, extra:
 });
 
 const WEB_ONLY = "Solo existe en la versión web; los tours recorren la app de escritorio.";
+/** ING-06 (track F, F4b): the tabs and the triage dialog are covered by unit
+ *  tests with axe (RunDetail.test.tsx); the tour step that imports a SARIF
+ *  and a k6 summary in chapter 10 comes in its own change. */
+const FINDINGS_TOUR_PENDING =
+  "Pestañas «Hallazgos» y «Métricas» y su triaje (ING-06): falta el paso del tour 10 que importe un SARIF y un resumen de k6; hoy las cubren las pruebas unitarias con axe.";
+
 const WORKSPACES_PENDING =
   "necesita una segunda cuenta y un servidor con workspaces: lo cubre la validación de 0.5.0 con dos personas (SYNC-07); el flujo lo prueban los tests de la UI y del servidor";
 
@@ -416,6 +422,8 @@ export const INVENTORY: Item[] = [
   I("ejecuciones", "action", "action:runs-filter", "Filtrar runs por origen"),
   I("ejecuciones", "screen", "screen:unlinked-tray", "Bandeja «Sin vincular»"),
   I("ejecuciones", "tab", "tabs:src/modules/runs/ui/RunsPage.tsx", "Pestañas de Ejecuciones (Runs / Sin vincular)"),
+  I("ejecuciones", "tab", "tabs:src/modules/runs/ui/RunDetail.tsx", "Pestañas de un run: Casos / Hallazgos / Métricas (ING-06)", { pending: FINDINGS_TOUR_PENDING }),
+  I("ejecuciones", "dialog", "dialogs:src/modules/runs/ui/TriageDialog.tsx", "Triaje de un hallazgo (ING-06)", { pending: FINDINGS_TOUR_PENDING }),
   I("ejecuciones", "dialog", "dialogs:src/modules/runs/ui/LinkCaseDialog.tsx", "Vincular un test a un caso"),
   I("ejecuciones", "action", "action:tray-unlink", "Desvincular un test"),
   I("ejecuciones", "action", "action:tray-filter", "Filtrar la bandeja"),

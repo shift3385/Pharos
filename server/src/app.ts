@@ -21,6 +21,7 @@ import { createDomainService } from "./modules/domain/domain.service";
 import { domainRoutes } from "./modules/domain/domain.routes";
 import { createCycleService, cycleRoutes } from "./modules/domain/cycles";
 import { createRunService, runRoutes } from "./modules/domain/runs";
+import { createFindingService, findingRoutes } from "./modules/domain/findings";
 import { createExecutionService, executionRoutes } from "./modules/domain/execution";
 import { homeMetricsRoutes } from "./modules/domain/home-metrics";
 import { createPreferenceStore, preferenceRoutes } from "./modules/preferences/preferences";
@@ -46,6 +47,8 @@ import { createApiTokenService } from "./modules/api/apiTokens";
 import { apiTokenRoutes } from "./modules/api/apiTokens.routes";
 import { API_V1, apiV1Routes } from "./modules/api/v1";
 import { hashToken, parseToken } from "./modules/api/tokenFormat";
+import { processParser, type ReportParser } from "./modules/api/reportParse";
+import { createRunImport } from "./modules/api/runImport";
 
 /** Routes limited per client IP: guessing passwords on login, and burning
  *  Argon2 CPU on register; guessing passwords, recovery codes or reset links,
@@ -94,6 +97,9 @@ export function buildApp(deps: {
   mailer?: Mailer | null;
   /** The AI providers' fetch (IA-12); tests pass a fake one. */
   aiFetch?: Fetch;
+  /** How an uploaded report is read (INT-02 A2): tests pass the in-process
+   *  parser; the server reads each one in a child process with a deadline. */
+  reportParser?: ReportParser;
   /** Where logs go instead of stdout (tests read it). */
   logStream?: { write(line: string): void };
 }) {
@@ -185,6 +191,8 @@ export function buildApp(deps: {
 
   const syncRepo = createSyncRepository(pool);
   const domainStore = createDomainStore(pool, clock);
+  // SYNC-04b contents by hash; the API keeps uploaded reports there too.
+  const blobStore = diskBlobStore(env.BLOB_DIR);
   // Notifications go between members of the event's workspace (RED-W2),
   // and the workspaces' own events (invitation, join, removal) become
   // notifications inside their transaction (ADR-0042 §8, ADR-0048).
@@ -197,6 +205,7 @@ export function buildApp(deps: {
   const domain = createDomainService(domainStore);
   const cycles = createCycleService(domainStore);
   const runs = createRunService(domainStore);
+  const findings = createFindingService(domainStore);
   const execution = createExecutionService(domainStore);
 
   // The app checks a server with this before signing in to it (SEC-10): it
@@ -222,6 +231,16 @@ export function buildApp(deps: {
     apiV1Routes(instance, {
       pool,
       service: apiTokens,
+      store: domainStore,
+      runs,
+      runImport: createRunImport({ pool, store: domainStore, runs, blobs: blobStore, publicUrl: env.APP_PUBLIC_URL }),
+      parser: deps.reportParser ?? processParser(env.API_PARSE_TIMEOUT_MS),
+      limits: {
+        bodyBytes: env.API_UPLOAD_LIMIT_BYTES,
+        fileBytes: env.API_UPLOAD_MAX_BYTES,
+        rateMax: env.API_UPLOAD_RATE_LIMIT_MAX,
+        rateWindow: env.API_UPLOAD_RATE_LIMIT_WINDOW,
+      },
       rateLimit: {
         max: env.API_RATE_LIMIT_MAX,
         timeWindow: env.API_RATE_LIMIT_WINDOW,
@@ -241,7 +260,7 @@ export function buildApp(deps: {
   });
   void app.register(async (instance) => {
     // SYNC-04b: attachment and template contents by hash, outside the oplog.
-    blobRoutes(instance, { pool, tokens, store: diskBlobStore(env.BLOB_DIR), maxBytes: env.BLOB_MAX_BYTES });
+    blobRoutes(instance, { pool, tokens, store: blobStore, maxBytes: env.BLOB_MAX_BYTES });
   });
   void app.register(async (instance) => {
     domainRoutes(instance, { domain, tokens });
@@ -251,6 +270,7 @@ export function buildApp(deps: {
   });
   void app.register(async (instance) => {
     runRoutes(instance, { runs, tokens });
+    findingRoutes(instance, { findings, tokens });
     executionRoutes(instance, { execution, tokens });
   });
   void app.register(async (instance) => {

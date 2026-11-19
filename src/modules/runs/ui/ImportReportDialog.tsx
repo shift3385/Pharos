@@ -12,6 +12,7 @@ import { Select } from "@shared/ui/Select";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { cycleApi } from "@modules/cycles";
 import { runsApi } from "../api/runsApi";
+import { SEVERITIES } from "../model/findings";
 import {
   type AttachResult,
   attachAll,
@@ -422,14 +423,32 @@ export function ImportReportDialog({
               className="rn-preview"
               aria-label={t("runs.import.preview")}
             >
-              <p className="cd__msg">
-                {t("runs.import.previewSummary", {
-                  tests: preview.tests,
-                  results: preview.results,
-                  linked: preview.linked,
-                  unlinked: preview.unlinked,
-                })}
-              </p>
+              {(preview.results > 0 || (preview.findings === 0 && preview.metrics === 0)) && (
+                <p className="cd__msg">
+                  {t("runs.import.previewSummary", {
+                    tests: preview.tests,
+                    results: preview.results,
+                    linked: preview.linked,
+                    unlinked: preview.unlinked,
+                  })}
+                </p>
+              )}
+              {preview.findings > 0 && (
+                <p className="cd__msg" data-testid="import-preview-findings">
+                  {t("findings.preview.findings", { count: preview.findings })}
+                  {" · "}
+                  {SEVERITIES.filter((sv) => (preview.findingSeverities[sv] ?? 0) > 0)
+                    .map((sv) => `${t(`findings.severity.${sv}`)}: ${preview.findingSeverities[sv]}`)
+                    .join(" · ")}
+                </p>
+              )}
+              {preview.metrics > 0 && (
+                <p className="cd__msg" data-testid="import-preview-metrics">
+                  {t("findings.preview.metrics", { count: preview.metrics })}
+                  {preview.thresholdsFailed > 0 &&
+                    ` · ${t("findings.preview.thresholdsFailed", { count: preview.thresholdsFailed })}`}
+                </p>
+              )}
               <p className="tp-field__hint">
                 {Object.entries(preview.statuses)
                   .map(([s, n]) => `${t(`runs.status.${s}`)}: ${n}`)

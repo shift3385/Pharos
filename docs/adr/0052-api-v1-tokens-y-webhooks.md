@@ -107,8 +107,11 @@ Además, el único código que convierte un Pharos Run JSON en documentos es Rus
 
 - `tsconfig.build.json` emite `dist/` con `module: NodeNext`. Los imports relativos llevan `.js` (codemod único).
 - Producción arranca con `node dist/server.js`. `tsx` queda solo para `dev` y tests, en `devDependencies`.
-- Dockerfile multietapa con usuario no root.
+- Dockerfile multietapa. Corrige los dos avisos que Trivy dio sobre `server/Dockerfile` (escaneo de la pista F, 2026-11-18):
+  - **DS002** (alto): la imagen corre como root. Pasa a correr como `USER node`.
+  - **DS026**: no tiene `HEALTHCHECK`. Se añade uno contra `GET /health` con el `fetch` de node, porque la imagen Alpine no trae curl.
 - `migrate.ts` encuentra `migrations/` igual desde `dist/db/`, porque está a la misma profundidad que `src/db/`.
+- `tsc` no reescribe el alias `@pharos/formats` (ADR-0053). La imagen compila también el paquete, o el servidor depende de su salida compilada.
 
 ## Alternativas descartadas
 
@@ -156,3 +159,62 @@ Por PR: A1 tokens, A2 subida, A3 webhooks, A4 lecturas, A5 DEU-01.
 - **SEC-12** (pista S, ya en `main`): `authenticate` comprueba con `isDisabled` que la cuenta del dueño no esté desactivada. Si lo está, responde 403 `account_disabled`, igual que sus sesiones. Los tokens quedan suspendidos, no revocados: la lista los muestra «Inactivo» con el motivo `owner_disabled`, y vuelven a funcionar al reactivar la cuenta.
 - **Pendiente** en otras pistas o PRs:
   - **Avisos (A3):** el aviso de caducidad a 7 días y el aviso a los Test Manager cuando un token queda inactivo llegan con el repartidor de A3.
+
+### A2 · Subida de resultados (2026-11-18)
+
+- **Rutas** (`server/src/modules/api/v1.runs.ts`, contrato 1.1.0 en `docs/formats/openapi-v1.json`):
+  - `POST /api/v1/projects/{projectId}/results` sube un informe;
+  - `GET` y `POST /projects/{projectId}/runs` listan o crean un run;
+  - `GET /runs/{runKey}`, `GET /runs/{runKey}/results` y `POST /runs/{runKey}/close`.
+- **`projectId`** es el id o el prefijo de clave de los casos (`PAY`) cuando es único al alcance del token. Si no lo es, responde 409 `ambiguous_project`.
+- **El informe** es el cuerpo de la petición, un fichero por petición, en su propio ámbito de Fastify (cuerpo en bruto), sin multipart y sin dependencias nuevas.
+  - `?format=` se compara con el formato que detecta `@pharos/formats`. Si no coincide, responde 400 `format_mismatch`; sin `format`, vale el detectado.
+  - `allure` y `trx` responden 422 `unsupported_format` hasta que la pista F publique sus parsers. Por eso todavía no hay lectura de zip ni sus límites.
+  - Los hallazgos de SARIF y las métricas de k6 y axe se guardan desde A2b (ver abajo).
+- **El run de destino:**
+  - `runKey`: un run abierto;
+  - `externalId`: el run `UUIDv5(NS_API_RUN, [projectId, externalId])`, que crea la primera subida y queda abierto hasta `close`;
+  - ninguno: un run nuevo que se cierra como `completed` al importar, como en el escritorio. El mismo fichero otra vez devuelve ese run (200).
+
+  Los runs que crea la API llevan `trigger: "ci"` y el `externalId` en `context`.
+- **El persistente** (`importPlan.ts`, `runImport.ts`) es la copia de `import.rs::plan` y `commit` sin el vínculo, que se deriva al leer:
+  - ids `UUIDv5` del paquete;
+  - recorte de textos, separación de la palabra clave, atributos y límites de tamaño;
+  - el mismo documento de shard y de resultado.
+
+  `src-tauri/tests/fixtures/api-import-interop.json` lo comprueba. Lo genera `import/tests.rs::api_import_interop_vectors` a partir de las instantáneas de ING-01 y un documento de casos límite, y lo comprueba también `server/tests/api.import-interop.test.ts`: mismos ids y mismo contenido.
+  - El servidor no importa `@pharos/formats` al arrancar. La subida lo carga cuando se ejecuta y pasa sus funciones de ids al planificador. Los imports del propio paquete (`uuid`, `zod`) solo se resuelven donde están instaladas sus dependencias:
+    - en el repo, el `node_modules` de la raíz;
+    - en la imagen, el enlace `/app/node_modules`;
+    - en el job `server` de la CI no están, y un servidor que las cargara al arrancar no llegaría a arrancar (el test de entorno lo vio).
+  - `insertRun` sale del cierre de `createRunService` para que la API reutilice la creación de runs de la web (clave `RUN-nnn`, ciclo y configuración).
+- **El informe crudo** se guarda como blob por hash en el workspace (SYNC-04b) y como `attachment` (`raw_report`) del shard, igual que en el escritorio.
+  - Los adjuntos que trae el propio informe (Playwright, Cucumber Messages) todavía no se guardan aparte. Quedan dentro del informe crudo, un aviso `attachments-in-raw-report` dice cuántos son, y se guardarán como evidencia junto con F2.
+- **Auditoría:** un evento `import` de `run_shard` con `summary.via`, que dice el token.
+- **Defensas:**
+  - **Límite del cuerpo:** `API_UPLOAD_LIMIT_BYTES`, 25 MiB por defecto (413).
+  - **Gzip:** se descomprime con tope en `API_UPLOAD_MAX_BYTES`, 100 MiB (413, y así una bomba gzip se corta en el tope). Otro `Content-Encoding` responde 415.
+  - **DTD:** lo rechaza el paquete (422 `invalid_report`, `reason: "doctype"`).
+  - **Tiempo:** la lectura se hace en un **proceso hijo** que se mata a los `API_PARSE_TIMEOUT_MS`, 30 s por defecto (422 `report_timeout`).
+    - No es un worker thread porque, con tsx, un worker no resuelve los imports TypeScript (Node 24). Cuando A5 compile con `tsc`, puede pasar a worker.
+  - **Errores:** solo dicen el código del parser, nunca un trozo del fichero, ni en la respuesta ni en el log.
+  - **Ritmo:** `API_UPLOAD_RATE_LIMIT_MAX`, 60 subidas por minuto y token.
+- **Reintentos:** la subida es idempotente, así que reintentar tras un timeout es seguro. Solo se reintentan errores de red, 429, 502, 503 y 504 (acordado con la pista L).
+
+### A2b · Hallazgos y métricas (2026-11-18)
+
+Con F2 en `main` (ADR-0053: entidades `finding` y `metric`), la subida guarda los hallazgos y las métricas de SARIF, axe y k6 junto con su shard, como el escritorio.
+
+- **El planificador:** `importPlan.ts::planFindings` es la copia de `findings.rs::plan`:
+  - mismos ids (`findingId`, `metricId` del paquete);
+  - mismas comprobaciones (regla, severidad, mensaje y huella en un hallazgo; nombre y valor finito en una métrica; si no, 422 `invalid_report` antes de escribir nada);
+  - mismos recortes (mensaje, `html` de axe, ubicación y atributos);
+  - mismo aviso `duplicate-metric`.
+- **Los documentos** se añaden en la misma transacción que el shard.
+  - Solo los reciben los clientes con la funcionalidad `findings` (VERSIONING §6.5).
+  - El evento `import` lleva `findings`, `findingSeverities`, `metrics` y `thresholdsFailed`, como en el escritorio.
+- **La respuesta** cuenta `counts.findings` y `counts.metrics`. El contrato pasa a 1.1.1: cambia el texto, no las formas.
+- **Vectores:** `api_import_interop_vectors` incluye las muestras de SARIF (trivy, eslint), axe y k6, con sus documentos `finding` y `metric`. El servidor da los mismos ids y el mismo contenido.
+- **Sigue fuera:**
+  - los adjuntos que trae el propio informe (aviso `attachments-in-raw-report`);
+  - `caseKey` en los hallazgos: F2 no lo guarda todavía y el vínculo se deriva de las etiquetas, como dice ADR-0053 §5.

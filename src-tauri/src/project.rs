@@ -18,9 +18,9 @@ use crate::runs::derive::{RiskBands, DEFAULT_RISK_BANDS};
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectSummary {
-    id: String,
-    name: String,
-    case_id_prefix: String,
+    pub(crate) id: String,
+    pub(crate) name: String,
+    pub(crate) case_id_prefix: String,
     case_id_digits: i64,
     plan_export_history: String,
     /// Risk bands (TRZ-04), for «Copiar ajustes de…».
@@ -101,7 +101,10 @@ fn map_project(row: &rusqlite::Row) -> rusqlite::Result<Project> {
 }
 
 /// Only the owner sees a project (collaboration roles arrive with sync, Fase 8).
-fn list_projects(conn: &Connection, owner_id: &str) -> Result<Vec<ProjectSummary>, String> {
+pub(crate) fn list_projects(
+    conn: &Connection,
+    owner_id: &str,
+) -> Result<Vec<ProjectSummary>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, name, case_id_prefix, case_id_digits, plan_export_history, \

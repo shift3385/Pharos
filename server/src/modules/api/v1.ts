@@ -10,6 +10,11 @@ import { TokenErrors, type ApiPrincipal, type ApiTokenService } from "./apiToken
 import type { ApiScope } from "./scopes";
 import { meSchema, projectListSchema, projectSchema } from "./v1.schemas";
 import { buildOpenApi } from "./openapi";
+import { apiV1RunRoutes, type UploadLimits } from "./v1.runs";
+import type { RunImport } from "./runImport";
+import type { ReportParser } from "./reportParse";
+import type { DomainStore } from "../domain/domain.store";
+import type { RunService } from "../domain/runs";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -75,18 +80,32 @@ async function reach(pool: Pool, p: ApiPrincipal): Promise<string[]> {
   return (await memberships(pool, p.ownerId)).map((m) => m.workspaceId);
 }
 
+/** A case-ID prefix as people write it: `PHR`, `phr`, `PHR-`. */
+const prefixKey = (v: string) => v.trim().toLowerCase().replace(/[-_s]+$/, "");
+
 /** The project of a request, within the token's reach and its project (a
- *  project token), with `scope` authorized there. Anything else: 404. */
+ *  project token), with `scope` authorized there. `ref` is the project's
+ *  id or its case-ID prefix (`PHR`) when that is unique within the reach
+ *  (409 `ambiguous_project` otherwise). Anything else: 404, like a project
+ *  that does not exist. */
 export async function resolveProject(
   pool: Pool,
   service: ApiTokenService,
   p: ApiPrincipal,
-  projectId: string,
+  ref: string,
   scope: ApiScope,
 ): Promise<ReturnType<typeof toProject>> {
   if (!p.scopes.includes(scope)) throw TokenErrors.scope(scope);
-  if (p.projectId && p.projectId !== projectId) throw TokenErrors.projectScope();
-  const [row] = await projectsIn(pool, await reach(pool, p), projectId);
+  const all = await projectsIn(pool, await reach(pool, p), p.projectId ?? undefined);
+  let row = all.find((r) => r.id === ref);
+  if (!row) {
+    const matches = all.filter((r) => r.case_id_prefix && prefixKey(r.case_id_prefix) === prefixKey(ref));
+    if (matches.length > 1)
+      throw new AppError(409, "ambiguous_project", "More than one project has that case-ID prefix: use its id.", {
+        candidates: matches.map(toProject),
+      });
+    row = matches[0];
+  }
   if (!row) throw TokenErrors.projectScope();
   await service.authorize(p, scope, row.workspace_id);
   return toProject(row);
@@ -97,6 +116,11 @@ export function apiV1Routes(
   deps: {
     pool: Pool;
     service: ApiTokenService;
+    store: DomainStore;
+    runs: RunService;
+    runImport: RunImport;
+    parser: ReportParser;
+    limits: UploadLimits;
     rateLimit: { max: number; timeWindow: number; keyGenerator: (req: FastifyRequest) => string };
   },
 ) {
@@ -149,4 +173,6 @@ export function apiV1Routes(
     const { projectId } = req.params as { projectId: string };
     return projectSchema.parse(await resolveProject(pool, service, principal(req), projectId, "projects:read"));
   });
+
+  apiV1RunRoutes(app, { ...deps, preHandler });
 }
