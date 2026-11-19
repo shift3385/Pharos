@@ -133,9 +133,7 @@ pub fn doctor(
     }
 
     if matches!(chosen, Ok(Mode::Remote(_))) {
-        r.heading("doc.remote");
-        let text = r.p.t("doc.remote-later", &[]);
-        r.check("server", Status::Warn, text, None);
+        remote_checks(&mut r, opts, &cfg, env);
     }
 
     let summary = r.p.t(
@@ -151,6 +149,37 @@ pub fn doctor(
     let line = json!({"doctor": {"version": env!("CARGO_PKG_VERSION"), "checks": r.checks, "exit": r.exit.code()}});
     r.p.json_line(&line);
     r.exit
+}
+
+/// The server checks: its address, a token, and `GET /api/v1/me` (who the
+/// token belongs to, its permissions and expiry).
+fn remote_checks(r: &mut Report, opts: &Opts, cfg: &Config, env: &Env) {
+    use crate::remote;
+    r.heading("doc.remote");
+    let origin = match remote::server(opts, env, cfg) {
+        Ok(o) => o,
+        Err(f) => return r.failure("server", &f, false),
+    };
+    let token = match remote::token(opts, env, &origin) {
+        Ok(t) => t,
+        Err(f) => return r.failure("token", &f, false),
+    };
+    let client = match remote::Client::new(&origin, &token, env) {
+        Ok(c) => c,
+        Err(f) => return r.failure("server", &f, false),
+    };
+    match client.me() {
+        Ok(me) => {
+            let text = r.p.t("doc.server-ok", std::slice::from_ref(&origin));
+            r.check("server", Status::Ok, text, None);
+            let (line, warn) = remote::describe_me(r.p, &me);
+            r.check("token", Status::Ok, line, None);
+            if let Some(w) = warn {
+                r.check("token-expiry", Status::Warn, w, None);
+            }
+        }
+        Err(e) => r.failure("server", &remote::failure(&e, &origin), false),
+    }
 }
 
 /// The local checks. When the mode is remote they are only informative: an

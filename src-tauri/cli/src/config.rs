@@ -21,6 +21,9 @@ pub struct Env {
     pub user_config_dir: Option<PathBuf>,
     /// stdout is a terminal (colors).
     pub tty: bool,
+    /// What stdin holds, for `--token-stdin` in tests; `None` reads the real
+    /// stdin when asked.
+    pub stdin: Option<String>,
 }
 
 impl Env {
@@ -34,6 +37,7 @@ impl Env {
             cwd,
             user_config_dir,
             tty: std::io::stdout().is_terminal(),
+            stdin: None,
         }
     }
 
@@ -238,6 +242,7 @@ mod tests {
             cwd: dir.to_path_buf(),
             user_config_dir: None,
             tty: false,
+            stdin: None,
         }
     }
 
