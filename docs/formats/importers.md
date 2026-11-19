@@ -13,7 +13,7 @@ los parsers (el CLI de INT-01) tiene que reproducirla.
 
 SARIF, axe y k6 (hallazgos y métricas), Allure y TRX (resultados) y `.xcresult`
 están aprobados en [ADR-0053](../adr/0053-hallazgos-metricas-y-paquete-de-formatos.md).
-SARIF, axe y k6 ya tienen parser (abajo); Allure, TRX y `.xcresult` siguen en el
+SARIF, axe, k6 y TRX ya tienen parser (abajo); Allure y `.xcresult` siguen en el
 [plan de la pista F](../design/f-formatos-plan.md) §7 hasta que se implementen.
 Los tres dan `findings[]` y `metrics[]` sin `results[]`, así que no cambian
 Pharos Run JSON 1.0.0. No suben `NORMALIZER_VERSION`: antes nadie podía
@@ -96,6 +96,26 @@ Se detecta por `metrics` y `root_group`. Lee el `data` de `handleSummary` y el
 | checks | uno por check: `checks`, `rate`, ámbito = ruta del grupo y el nombre, `attributes {passes, fails}` |
 | etiquetas | el tag `case` de una submétrica (`{case:TC-1}`) y `@TC-1` en el nombre de un check |
 
+### TRX (VSTest) → resultados
+
+`dotnet test --logger trx` (MSTest, xUnit, NUnit). Es el primer formato de
+**Pharos Run JSON 1.1.0**: su documento dice `schemaVersion: "1.1.0"` porque
+`sourceFormat: "trx"` no existe en 1.0.0; los demás formatos siguen escribiendo
+1.0.0, así que sus instantáneas e ids no cambian y `NORMALIZER_VERSION` no
+sube. Muestras: `fixtures/trx/` (dorny/test-reporter, MIT).
+
+| Pharos | TRX |
+| --- | --- |
+| `testKey` | la clase de `TestMethod` (`.` → `/`) y el `testName` sin el prefijo de clase que pone xUnit; sin clase, el nombre del ensamblado (nunca su ruta) |
+| intentos | varios `UnitTestResult` del mismo `testId`, por `startTime`: el último es el final |
+| filas | `InnerResults` (MSTest `DataRow`, xUnit `Theory`): una fila `[n]` por resultado interior, con su nombre en `attributes.dataRow` |
+| `status` / `rawStatus` | `Passed`; `Failed`, `Error`, `Timeout`, `Aborted` → `failed`; `NotExecuted` → `skipped`; `Inconclusive` y el resto → `other` / el `outcome` |
+| tiempos | `startTime`, `endTime`, `duration` (`hh:mm:ss.fffffff` → ms) |
+| `message` / `trace` | `Output/ErrorInfo/Message` / `StackTrace` |
+| etiquetas | `[TestCategory("TC-12")]` (y `[Category]` de NUnit) → `@TC-12`: así se vincula |
+| adjuntos | `ResultFiles/ResultFile@path`, bajo la carpeta del resultado |
+| `run` | `sourceTool` = `mstest`, `xunit` o `nunit` (del adaptador o del ensamblado; si no, `vstest`); `Times@start`; `context.runName` y `context.finishedAt` |
+
 ## Detección
 
 Se detecta por el **contenido**, nunca por la extensión:
@@ -104,6 +124,7 @@ Se detecta por el **contenido**, nunca por la extensión:
 | ------------------------------------------------------- | ------------------------------------------------------------- |
 | La primera línea es un sobre de Messages (`{"meta":…}`) | `cucumber_messages` (se lee línea a línea)                    |
 | XML con `<testsuites>` o `<testsuite>`                  | `junit`                                                       |
+| XML con `<TestRun>` (VSTest)                           | `trx`                                                         |
 | JSON con `reportFormat: "CTRF"`                         | `ctrf`                                                        |
 | JSON con `testEngine.name: "axe-core"` y `violations`, o un arreglo de ellos | `axe` |
 | JSON con `version` `2.x` y `runs[]`                     | `sarif`                                                       |

@@ -17,7 +17,7 @@
 import { z } from "zod";
 
 /** The version this build writes. */
-export const PHAROS_RUN_SCHEMA_VERSION = "1.0.0";
+export const PHAROS_RUN_SCHEMA_VERSION = "1.1.0";
 
 /** Result and step statuses: Pharos's (`passed | failed | blocked | skipped |
  *  other`, ADR-0013) plus CTRF's `pending`, which the persister stores as
@@ -130,6 +130,9 @@ export const shardSchema = z.looseObject({
     "sarif",
     "k6",
     "axe",
+    // 1.1.0 (ING-07).
+    "allure",
+    "trx",
   ]),
   sourceFileSha256: z
     .string()

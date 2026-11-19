@@ -29,6 +29,7 @@ import { parseCtrf } from "./ctrf.js";
 import { isK6Summary, parseK6 } from "./k6.js";
 import { isSarif, parseSarif } from "./sarif.js";
 import { parseJunit } from "./junit.js";
+import { isTrx, parseTrx } from "./trx.js";
 import { MessagesCollector, parseMessages } from "./messages.js";
 import { parsePlaywright } from "./playwright.js";
 
@@ -40,6 +41,7 @@ export { type K6Summary, isK6Summary, parseK6 } from "./k6.js";
 export { type SarifLog, isSarif, parseSarif } from "./sarif.js";
 export { parseCtrf } from "./ctrf.js";
 export { parseJunit } from "./junit.js";
+export { TRX_NAMESPACE, isTrx, parseTrx, trxDuration } from "./trx.js";
 export { parsePlaywright } from "./playwright.js";
 
 const ENVELOPE_KEYS = new Set([
@@ -121,7 +123,7 @@ export function parsePharosRunFile(input: unknown): ParsedReport {
 /** A whole JSON or XML report, by content. */
 export function parseReportText(text: string): ParsedReport {
   const body = text.replace(/^\uFEFF/, "").trimStart();
-  if (body.startsWith("<")) return checked(parseJunit(body));
+  if (body.startsWith("<")) return checked(isTrx(body) ? parseTrx(body) : parseJunit(body));
   const firstLine = body.split(/\r?\n/, 1)[0];
   try {
     if (isEnvelope(JSON.parse(firstLine))) return checked(parseMessages(body));

@@ -1,0 +1,213 @@
+{
+  "format": "trx",
+  "warnings": [],
+  "inline": {},
+  "doc": {
+    "schemaVersion": "1.1.0",
+    "run": {
+      "trigger": "import",
+      "sourceTool": "xunit",
+      "startedAt": "2021-04-20T08:31:31.9866971+02:00",
+      "context": {
+        "runName": "ci@BUILD-PC 2021-04-20 08:31:33",
+        "finishedAt": "2021-04-20T08:31:33.1023832+02:00"
+      }
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "trx",
+        "normalizerVersion": 1
+      }
+    ],
+    "results": [
+      {
+        "name": "Timeout_Test",
+        "testKey": "DotnetTests/XUnitTests/CalculatorTests::Timeout_Test",
+        "suite": [
+          "DotnetTests.XUnitTests.CalculatorTests"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "startedAt": "2021-04-20T08:31:32.9669698+02:00",
+        "finishedAt": "2021-04-20T08:31:32.9669721+02:00",
+        "duration": 108,
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "Passing_Test",
+        "testKey": "DotnetTests/XUnitTests/CalculatorTests::Passing_Test",
+        "suite": [
+          "DotnetTests.XUnitTests.CalculatorTests"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "startedAt": "2021-04-20T08:31:33.0065641+02:00",
+        "finishedAt": "2021-04-20T08:31:33.0065647+02:00",
+        "duration": 0,
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "Should be even number(i: 3)",
+        "testKey": "DotnetTests/XUnitTests/CalculatorTests::Should be even number(i: 3)",
+        "suite": [
+          "DotnetTests.XUnitTests.CalculatorTests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "startedAt": "2021-04-20T08:31:32.9750302+02:00",
+        "finishedAt": "2021-04-20T08:31:32.9750321+02:00",
+        "duration": 1,
+        "message": "Assert.True() Failure\r\nExpected: True\r\nActual:   False",
+        "trace": "at DotnetTests.XUnitTests.CalculatorTests.Theory_With_Custom_Name(Int32 i) in C:\\src\\test-reporter\\reports\\dotnet\\DotnetTests.XUnitTests\\CalculatorTests.cs:line 67",
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "Skipped_Test",
+        "testKey": "DotnetTests/XUnitTests/CalculatorTests::Skipped_Test",
+        "suite": [
+          "DotnetTests.XUnitTests.CalculatorTests"
+        ],
+        "tags": [],
+        "status": "skipped",
+        "rawStatus": "NotExecuted",
+        "attempt": 0,
+        "startedAt": "2021-04-20T08:31:33.0075607+02:00",
+        "finishedAt": "2021-04-20T08:31:33.0075624+02:00",
+        "duration": 1,
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "Custom Name",
+        "testKey": "DotnetTests/XUnitTests/CalculatorTests::Custom Name",
+        "suite": [
+          "DotnetTests.XUnitTests.CalculatorTests"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "startedAt": "2021-04-20T08:31:32.9751544+02:00",
+        "finishedAt": "2021-04-20T08:31:32.9751546+02:00",
+        "duration": 0,
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "Should be even number(i: 2)",
+        "testKey": "DotnetTests/XUnitTests/CalculatorTests::Should be even number(i: 2)",
+        "suite": [
+          "DotnetTests.XUnitTests.CalculatorTests"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "startedAt": "2021-04-20T08:31:32.9751012+02:00",
+        "finishedAt": "2021-04-20T08:31:32.9751014+02:00",
+        "duration": 0,
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "Exception_In_TargetTest",
+        "testKey": "DotnetTests/XUnitTests/CalculatorTests::Exception_In_TargetTest",
+        "suite": [
+          "DotnetTests.XUnitTests.CalculatorTests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "startedAt": "2021-04-20T08:31:32.9767893+02:00",
+        "finishedAt": "2021-04-20T08:31:32.9767912+02:00",
+        "duration": 1,
+        "message": "System.DivideByZeroException : Attempted to divide by zero.",
+        "trace": "at DotnetTests.Unit.Calculator.Div(Int32 a, Int32 b) in C:\\src\\test-reporter\\reports\\dotnet\\DotnetTests.Unit\\Calculator.cs:line 9\r\n   at DotnetTests.XUnitTests.CalculatorTests.Exception_In_TargetTest() in C:\\src\\test-reporter\\reports\\dotnet\\DotnetTests.XUnitTests\\CalculatorTests.cs:line 33",
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "Exception_In_Test",
+        "testKey": "DotnetTests/XUnitTests/CalculatorTests::Exception_In_Test",
+        "suite": [
+          "DotnetTests.XUnitTests.CalculatorTests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "startedAt": "2021-04-20T08:31:32.8646547+02:00",
+        "finishedAt": "2021-04-20T08:31:32.8647418+02:00",
+        "duration": 3,
+        "message": "System.Exception : Test",
+        "trace": "at DotnetTests.XUnitTests.CalculatorTests.Exception_In_Test() in C:\\src\\test-reporter\\reports\\dotnet\\DotnetTests.XUnitTests\\CalculatorTests.cs:line 39",
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "Failing_Test",
+        "testKey": "DotnetTests/XUnitTests/CalculatorTests::Failing_Test",
+        "suite": [
+          "DotnetTests.XUnitTests.CalculatorTests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "startedAt": "2021-04-20T08:31:32.9742636+02:00",
+        "finishedAt": "2021-04-20T08:31:32.9742658+02:00",
+        "duration": 4,
+        "message": "Assert.Equal() Failure\r\nExpected: 3\r\nActual:   2",
+        "trace": "at DotnetTests.XUnitTests.CalculatorTests.Failing_Test() in C:\\src\\test-reporter\\reports\\dotnet\\DotnetTests.XUnitTests\\CalculatorTests.cs:line 27",
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "Is_Even_Number(i: 2)",
+        "testKey": "DotnetTests/XUnitTests/CalculatorTests::Is_Even_Number(i: 2)",
+        "suite": [
+          "DotnetTests.XUnitTests.CalculatorTests"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "startedAt": "2021-04-20T08:31:32.9775134+02:00",
+        "finishedAt": "2021-04-20T08:31:32.9775138+02:00",
+        "duration": 0,
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "Is_Even_Number(i: 3)",
+        "testKey": "DotnetTests/XUnitTests/CalculatorTests::Is_Even_Number(i: 3)",
+        "suite": [
+          "DotnetTests.XUnitTests.CalculatorTests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "startedAt": "2021-04-20T08:31:32.9773980+02:00",
+        "finishedAt": "2021-04-20T08:31:32.9773999+02:00",
+        "duration": 0,
+        "message": "Assert.True() Failure\r\nExpected: True\r\nActual:   False",
+        "trace": "at DotnetTests.XUnitTests.CalculatorTests.Is_Even_Number(Int32 i) in C:\\src\\test-reporter\\reports\\dotnet\\DotnetTests.XUnitTests\\CalculatorTests.cs:line 59",
+        "shardRef": "s1",
+        "attributes": {}
+      }
+    ],
+    "attachments": []
+  }
+}

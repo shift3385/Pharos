@@ -141,6 +141,14 @@
     {
       "file": "sarif/trivy-misconfig.sarif",
       "format": "sarif"
+    },
+    {
+      "file": "trx/dotnet-trx.trx",
+      "format": "trx"
+    },
+    {
+      "file": "trx/dotnet-xunitv3.trx",
+      "format": "trx"
     }
   ],
   "inline": [

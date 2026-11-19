@@ -30,6 +30,9 @@ export const IMPORT_FORMATS = [
   "sarif",
   "axe",
   "k6",
+  // ING-07 (Pharos Run JSON 1.1.0).
+  "allure",
+  "trx",
 ] as const;
 
 export const MAX_IMPORT_RESULTS = 20_000;

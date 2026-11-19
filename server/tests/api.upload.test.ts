@@ -129,6 +129,31 @@ describe("uploading a report", () => {
     expect(Number(blob.rows[0].size)).toBe(Buffer.byteLength(FILE_A));
   });
 
+  it("imports a TRX (ING-07): a [TestCategory] links like a tag", async () => {
+    const { token, ws } = await setup();
+    const trx = `<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="r" name="ci" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times start="2026-11-19T10:00:00Z" finish="2026-11-19T10:01:00Z" />
+  <Results>
+    <UnitTestResult testId="t1" testName="Pays" outcome="Passed" startTime="2026-11-19T10:00:01Z" duration="00:00:00.25" />
+    <UnitTestResult testId="t2" testName="Refunds" outcome="Failed" startTime="2026-11-19T10:00:02Z" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest id="t1" name="Pays"><TestCategory><TestCategoryItem TestCategory="PAY-001" /></TestCategory>
+      <TestMethod className="Shop.PayTests" name="Pays" adapterTypeName="executor://mstestadapter/v2" /></UnitTest>
+    <UnitTest id="t2" name="Refunds"><TestMethod className="Shop.PayTests" name="Refunds" adapterTypeName="executor://mstestadapter/v2" /></UnitTest>
+  </TestDefinitions>
+</TestRun>`;
+    const res = await upload(token, trx, "format=trx&fileName=results.trx");
+    expect(res.statusCode).toBe(201);
+    expect(res.json()).toMatchObject({
+      shard: { created: true, format: "trx" },
+      counts: { results: 2, linked: 1, unlinked: 1, byStatus: { passed: 1, failed: 1 } },
+    });
+    const shard = (await pool.query("SELECT payload FROM documents WHERE workspace_id = $1 AND entity = 'run_shard'", [ws])).rows[0];
+    expect(shard.payload).toMatchObject({ sourceFormat: "trx" });
+  });
+
   it("the same file again is a no-op that answers the same run", async () => {
     const { token } = await setup();
     const first = (await upload(token, FILE_A)).json();
@@ -215,7 +240,7 @@ describe("uploading a report", () => {
 });
 
 describe("refusals", () => {
-  it("checks the format it was told against the one it found; allure and trx are not there yet", async () => {
+  it("checks the format it was told against the one it found; allure is not there yet", async () => {
     const { token } = await setup();
     const res = await upload(token, FILE_A, "format=ctrf");
     expect(res.statusCode).toBe(400);
