@@ -214,3 +214,23 @@ Hecho en `src-tauri/src/shared_library.rs` y `shared_library/materialize.rs`, co
   - Permiso: `case.edit`.
 - **Comandos Tauri:** `library_list`, `library_get`, `library_create`, `library_update`, `library_impact`, `library_set_status`, `library_delete`, `library_versions`, `library_case_status` y `library_preview` (la vista previa de una inserción en el editor).
 - **Vectores comunes:** `src-tauri/tests/fixtures/shared-steps-vectors.json` (materializar e ids derivados). `PHAROS_WRITE_VECTORS=1 cargo test vectors_match` los regenera.
+
+## Implementación: servidor y web (P2, 2026-11-19)
+
+- **Mismas reglas en el servidor.** Están en `server/src/modules/domain/shared-library.ts` (reglas puras) y `shared-library.service.ts` (API web), con los mismos vectores que el núcleo (`tests/shared-library.vectors.test.ts`).
+- **Guardar un caso desde la web** (`casePayload`) rehace la copia, igual que el escritorio. Un caso avanzado con referencias recibe 400 `shared_library.advanced_unsupported`.
+- **Rutas web** (una para los dos tipos):
+  - `GET /api/library?projectId&kind`, `GET /api/library/:id`, `POST /api/library` y `PUT /api/library/:id` (con `revision`, 409 si cambió);
+  - `GET /api/library/:id/impact`, `GET /api/library/:id/versions`, `POST /api/library/:id/status`, `DELETE /api/library/:id` (409 `shared_library.in_use` si se usa) y `POST /api/library/preview`;
+  - `GET /api/test-cases/:id/library-status`.
+
+  Un cambio de contenido reescribe en la misma transacción los casos que siguen el elemento. Cada caso pasa por el guardado normal (`afterSave`, revisión del caso) y su evento de auditoría lleva `summary.cause`.
+- **Sync:**
+  - funcionalidad `shared-steps` en `SERVER_FEATURES`;
+  - `shared_step` y `dataset` son `lww`; `shared_step_revision` y `dataset_revision` son `append_only`, con `createdAt`, `createdBy` y `hlc` fuera del contenido;
+  - las cuatro van en `PROJECT_CHILDREN`;
+  - un cliente sin la funcionalidad no las recibe en el pull, y si las envía recibe 400 `shared_steps_unsupported`;
+  - `FEATURE_DATA_KEYS` conserva `data.sharedRefs` y `data.datasetRefs` del caso que guarda un cliente sin la funcionalidad;
+  - los payloads se validan con los límites del §1, y el id de una versión tiene que corresponder a su contenido;
+  - permiso: `case.edit`.
+- **El cliente anuncia `shared-steps`** (`transport.ts`).

@@ -211,6 +211,33 @@ export const reorderSchema = z.object({
 export const updateOf = <T extends z.ZodType>(input: T) =>
   z.object({ input, revision: z.number().int().nonnegative().optional() });
 
+/** The project library (CAS-01, ADR-0055). `definition` and `body` are
+ *  checked by the library rules (`shared-library.ts`). */
+export const libraryInputSchema = z.object({
+  projectId: text(200).min(1),
+  kind: z.enum(["shared_step", "dataset"]),
+  name: text(500),
+  description: z.string().max(20_000).optional(),
+  definition: z.array(z.unknown()).max(1000).default([]),
+  body: z.array(z.unknown()).max(1000).default([]),
+});
+
+export const libraryQuerySchema = z.object({
+  projectId: text(200).min(1),
+  kind: z.enum(["shared_step", "dataset"]),
+});
+
+export const libraryStatusSchema = z.object({
+  status: z.enum(["active", "obsolete"]),
+  revision: z.number().int().nonnegative().optional(),
+});
+
+export const libraryPreviewSchema = z.object({
+  projectId: text(200).min(1),
+  caseId: text(200).optional(),
+  data: z.record(z.string(), z.unknown()),
+});
+
 export const deleteQuerySchema = z.object({
   revision: z.coerce.number().int().nonnegative().optional(),
 });

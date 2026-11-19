@@ -21,7 +21,7 @@ const isObject = (v: unknown): v is JsonObject =>
   v !== null && typeof v === "object" && !Array.isArray(v);
 
 /** 8 Crockford base32 characters from the first 40 bits of `sha256(input)`. */
-function shortHash(input: string): string {
+export function shortHash(input: string): string {
   const digest = createHash("sha256").update(input, "utf8").digest();
   let acc = 0n;
   for (let i = 0; i < 5; i++) acc = (acc << 8n) | BigInt(digest[i]);

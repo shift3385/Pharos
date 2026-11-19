@@ -24,6 +24,10 @@ import {
   customFieldInputSchema,
   customFieldQuerySchema,
   customFieldReorderSchema,
+  libraryInputSchema,
+  libraryPreviewSchema,
+  libraryQuerySchema,
+  libraryStatusSchema,
 } from "./domain.schemas";
 
 /** The web's domain API (BASE-10, ADR-0004): the browser reads and writes
@@ -104,6 +108,34 @@ export function domainRoutes(app: FastifyInstance, deps: { domain: DomainService
   app.get("/api/case-baselines/:id", { preHandler }, (req) => domain.caseBaselines.get(user(req), id(req)));
   app.post("/api/case-baselines", { preHandler }, (req) =>
     domain.caseBaselines.create(user(req), caseBaselineInputSchema.parse(req.body)),
+  );
+  // The project library (CAS-01, ADR-0055): shared steps and datasets.
+  app.get("/api/library", { preHandler }, (req) => {
+    const q = libraryQuerySchema.parse(req.query);
+    return domain.library.list(user(req), q.projectId, q.kind);
+  });
+  app.post("/api/library/preview", { preHandler }, (req) => {
+    const b = libraryPreviewSchema.parse(req.body);
+    return domain.library.preview(user(req), b.projectId, b.caseId, b.data);
+  });
+  app.get("/api/library/:id", { preHandler }, (req) => domain.library.get(user(req), id(req)));
+  app.get("/api/library/:id/impact", { preHandler }, (req) => domain.library.impact(user(req), id(req)));
+  app.get("/api/library/:id/versions", { preHandler }, (req) => domain.library.versions(user(req), id(req)));
+  app.post("/api/library", { preHandler }, (req) => domain.library.create(user(req), libraryInputSchema.parse(req.body)));
+  app.put("/api/library/:id", { preHandler }, (req) => {
+    const { input, revision } = updateOf(libraryInputSchema).parse(req.body);
+    return domain.library.update(user(req), id(req), input, revision);
+  });
+  app.post("/api/library/:id/status", { preHandler }, (req) => {
+    const { status, revision } = libraryStatusSchema.parse(req.body);
+    return domain.library.setStatus(user(req), id(req), status, revision);
+  });
+  app.delete("/api/library/:id", { preHandler }, async (req, reply) => {
+    await domain.library.remove(user(req), id(req), revisionOf(req));
+    return reply.code(204).send();
+  });
+  app.get("/api/test-cases/:id/library-status", { preHandler }, (req) =>
+    domain.library.caseStatus(user(req), id(req)),
   );
   app.delete("/api/test-cases/:id", { preHandler }, async (req, reply) => {
     await domain.testCases.remove(user(req), id(req), revisionOf(req));
