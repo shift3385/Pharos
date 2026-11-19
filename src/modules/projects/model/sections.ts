@@ -2,13 +2,15 @@
  *  (ADR-0029), so the sidebar, the breadcrumbs, "back" and a reload all know
  *  which project and section are open. In the menu's order (UX-21): the
  *  main flow of the test process, from the plan and the requirements (the
- *  test basis) to the cases, their execution, the defects and, last, the
- *  traceability matrix that measures the coverage. */
+ *  test basis) to the cases and their library of shared steps and datasets
+ *  (CAS-01), their execution, the defects and, last, the traceability matrix
+ *  that measures the coverage. */
 export const PROJECT_SECTIONS = [
   "plan",
   "planner",
   "requirements",
   "cases",
+  "library",
   "cycles",
   "runs",
   "defects",

@@ -341,6 +341,11 @@
   flex-direction: column;
   gap: var(--space-2);
 }
+.tc-steps-field__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
 .tc-steps {
   display: flex;
   flex-direction: column;

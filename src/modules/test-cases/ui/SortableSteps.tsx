@@ -15,7 +15,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { DeleteButton } from "@shared/ui/fields";
 import type { Step } from "../model/types";
@@ -25,6 +25,7 @@ function SortableStep({
   id,
   inputId,
   index,
+  start,
   value,
   onChange,
   onRemove,
@@ -32,6 +33,8 @@ function SortableStep({
   id: string;
   inputId: string;
   index: number;
+  /** Steps shown before this list (a shared step's block, CAS-01). */
+  start: number;
   value: string;
   onChange: (v: string) => void;
   onRemove: () => void;
@@ -44,7 +47,7 @@ function SortableStep({
     transition,
     opacity: isDragging ? 0.6 : 1,
   };
-  const name = t("testCase.stepN", { n: index + 1 });
+  const name = t("testCase.stepN", { n: start + index + 1 });
   return (
     <div ref={setNodeRef} style={style}>
       <div className="tc-step">
@@ -58,7 +61,7 @@ function SortableStep({
           ⠿
         </button>
         <span className="tc-step__n" aria-hidden="true">
-          {index + 1}
+          {start + index + 1}
         </span>
         <input
           id={inputId}
@@ -82,10 +85,19 @@ export function SortableSteps({
   steps,
   onChange,
   label,
+  start = 0,
+  addable = true,
+  actions,
 }: {
   steps: Step[];
   onChange: (next: Step[]) => void;
   label: string;
+  /** Numbering offset: steps shown before this list (CAS-01 blocks). */
+  start?: number;
+  /** False: no «Añadir paso» (a run of steps between two blocks). */
+  addable?: boolean;
+  /** More buttons next to «Añadir paso» («Insertar paso compartido…»). */
+  actions?: ReactNode;
 }) {
   const { t } = useTranslation();
   const baseId = useId();
@@ -136,6 +148,7 @@ export function SortableSteps({
                 id={step.id}
                 inputId={`${baseId}-${i}`}
                 index={i}
+                start={start}
                 value={step.text}
                 onChange={(v) => {
                   const next = [...steps];
@@ -148,15 +161,20 @@ export function SortableSteps({
           </div>
         </SortableContext>
       </DndContext>
-      <button
-        type="button"
-        className="tp-list-field__add"
-        onClick={() =>
-          onChange([...steps, { id: newStepId(new Set(ids)), text: "" }])
-        }
-      >
-        + {t("testCase.addStep")}
-      </button>
+      {addable && (
+        <div className="tc-steps-field__actions">
+          <button
+            type="button"
+            className="tp-list-field__add"
+            onClick={() =>
+              onChange([...steps, { id: newStepId(new Set(ids)), text: "" }])
+            }
+          >
+            + {t("testCase.addStep")}
+          </button>
+          {actions}
+        </div>
+      )}
     </div>
   );
 }

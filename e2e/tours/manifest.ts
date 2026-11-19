@@ -157,6 +157,9 @@ const WEB_ONLY = "Solo existe en la versión web; los tours recorren la app de e
 const WORKSPACES_PENDING =
   "necesita una segunda cuenta y un servidor con workspaces: lo cubre la validación de 0.5.0 con dos personas (SYNC-07); el flujo lo prueban los tests de la UI y del servidor";
 
+const LIBRARY_PENDING =
+  "la biblioteca (CAS-01) llega a los tours y al manual en P4; la cubren src/modules/library/ui/LibraryPage.test.tsx y src/modules/test-cases/ui/TestCaseEditor.library.test.tsx";
+
 const TOKENS_PENDING =
   "el capítulo «Integraciones» llega con la subida de resultados (INT-02, pista A, A4); lo cubren server/tests/api.tokens.test.ts y src/modules/integrations/ui/integrations.test.tsx";
 
@@ -354,6 +357,18 @@ export const INVENTORY: Item[] = [
   I("casos", "dialog", "dialogs:src/modules/test-cases/ui/BaselinesView.tsx", "Nueva baseline de suite"),
   I("casos", "action", "action:case-baseline-create", "Congelar una baseline (todos, filtro o selección; solo aprobados)"),
   I("casos", "action", "action:case-baseline-compare", "Comparar una baseline con el estado actual o con otra"),
+
+  // CAS-01 (ADR-0055): the library section and its use in a case. The tours
+  // and the manual chapter come with P4.
+  I("casos", "section", "section:library", "Biblioteca del proyecto: pasos compartidos y datasets", { pending: LIBRARY_PENDING }),
+  I("casos", "tab", "tabs:src/modules/library/ui/LibraryPage.tsx", "Pestañas de la Biblioteca (Pasos compartidos / Datasets)", { pending: LIBRARY_PENDING }),
+  I("casos", "tab", "tabs:src/modules/library/ui/ItemEditorFrame.tsx", "Pestañas de un elemento (Pasos o Datos / Usado en / Versiones)", { pending: LIBRARY_PENDING }),
+  I("casos", "dialog", "dialogs:src/modules/library/ui/useItemEditor.tsx", "Eliminar un elemento de la biblioteca y descartar cambios", { pending: LIBRARY_PENDING }),
+  I("casos", "dialog", "dialogs:src/modules/library/ui/ImpactDialog.tsx", "Aviso de impacto antes de guardar un cambio", { pending: LIBRARY_PENDING }),
+  I("casos", "dialog", "dialogs:src/modules/library/ui/DatasetEditor.tsx", "Reemplazar los datos de un dataset al importar", { pending: LIBRARY_PENDING }),
+  I("casos", "upload", "upload:src/modules/library/ui/DatasetEditor.tsx", "Importar un dataset desde CSV o xlsx", { pending: LIBRARY_PENDING }),
+  I("casos", "dialog", "dialogs:src/modules/library/ui/case/InsertSharedStepDialog.tsx", "Insertar un paso compartido en un caso y editar sus argumentos", { pending: LIBRARY_PENDING }),
+  I("casos", "dialog", "dialogs:src/modules/library/ui/case/DatasetDialogs.tsx", "Vincular un dataset al caso y elegir sus filas", { pending: LIBRARY_PENDING }),
 
   // ---- 5 · Requisitos y trazabilidad (UX-21: two sections) -----------------------------
   I("requisitos", "section", "section:requirements", "Requisitos"),

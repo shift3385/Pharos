@@ -3,6 +3,7 @@
 
 import type { Assert, Contract, Covers } from "@shared/contracts";
 import type { ProvenanceMap } from "@modules/ai";
+import type { DatasetRef, SharedRef } from "@modules/library";
 import type {
   AutomationStatus,
   CaseType,
@@ -91,6 +92,11 @@ export interface TestCaseData {
   // a save or an import never sets them (`model/review.ts`).
   review?: unknown;
   approval?: unknown;
+  // The project library (CAS-01, ADR-0055): calls of shared steps (their
+  // copies are steps of `preconditions`/`steps`) and the dataset bound to
+  // `examples`. The core rebuilds the copies on every save.
+  sharedRefs?: SharedRef[];
+  datasetRefs?: DatasetRef[];
   // Values of the project's custom fields, by field key (FLD-01, ADR-0018).
   // Keys without a definition here (another device's, an archived field's)
   // are kept as they are.

@@ -17,6 +17,7 @@ import {
   type RequirementOption,
 } from "@modules/test-cases";
 import { PlannerBoard } from "@modules/planner";
+import { LibraryPage } from "@modules/library";
 import { CyclesPage } from "@modules/cycles";
 import { DefectsPage, type LinkableItem } from "@modules/defects";
 import { REQUIREMENTS_CHANGED_EVENT, RequirementsPage, TraceabilityPage, requirementApi } from "@modules/traceability";
@@ -196,6 +197,7 @@ export function ProjectDetail({
             loadResults={loadResults}
           />
         )}
+        {tab === "library" && <LibraryPage projectId={projectId} />}
         {tab === "cycles" && (
           <CyclesPage
             projectId={projectId}
