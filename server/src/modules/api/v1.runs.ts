@@ -104,7 +104,7 @@ export function apiV1RunRoutes(
         const project = await resolveProject(pool, service, p, projectRef(req), "runs:write");
         const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
         const file = inflate(body, req.headers["content-encoding"], limits.fileBytes);
-        const parsed = await parseUpload(deps.parser, file, options.format);
+        const parsed = await parseUpload(deps.parser, file, options.format, limits.fileBytes);
         const mime = String(req.headers["content-type"] ?? "application/octet-stream").split(";")[0].trim();
         const out = await deps.runImport.upload({ principal: p, project, file, mime, parsed, options });
         return reply.code(out.shard.created ? 201 : 200).send(uploadResponseSchema.parse(out));

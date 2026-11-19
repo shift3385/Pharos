@@ -43,7 +43,7 @@ export { type SarifLog, isSarif, parseSarif } from "./sarif.js";
 export { parseCtrf } from "./ctrf.js";
 export { parseJunit } from "./junit.js";
 export { TRX_NAMESPACE, isTrx, parseTrx, trxDuration } from "./trx.js";
-export { type AllureFile, isAllureResults, parseAllure } from "./allure.js";
+export { type AllureFile, isAllureResults, isAllureTextFile, parseAllure } from "./allure.js";
 export { parsePlaywright } from "./playwright.js";
 
 const ENVELOPE_KEYS = new Set([

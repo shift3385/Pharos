@@ -104,6 +104,11 @@ const SEP = " › ";
 
 const base = (name: string) => slashes(name).split("/").pop() ?? name;
 
+/** Files of a folder read as text (the rest, as base64): the results,
+ *  containers and properties, and text attachments. */
+export const isAllureTextFile = (name: string) =>
+  /\.(?:json|properties|txt|md|csv|xml|html?|log|ya?ml)$/i.test(name);
+
 /** True when the files look like an `allure-results` folder. */
 export function isAllureResults(files: AllureFile[]): boolean {
   return files.some((f) => base(f.name).endsWith("-result.json"));
