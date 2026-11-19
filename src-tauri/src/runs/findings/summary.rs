@@ -104,6 +104,19 @@ pub struct FindingsSummary {
     pub failed_thresholds: Vec<FailedThreshold>,
 }
 
+/// A metric with a threshold, as read: name, aggregation, scope, value,
+/// unit, threshold, passed and attributes.
+type MetricRow = (
+    String,
+    Option<String>,
+    Option<String>,
+    f64,
+    Option<String>,
+    Option<String>,
+    bool,
+    Option<String>,
+);
+
 fn rank(severity: &str) -> usize {
     SEVERITIES
         .iter()
@@ -215,16 +228,7 @@ pub fn of(
             out.tools.push(tool);
         }
 
-        let metrics: Vec<(
-            String,
-            Option<String>,
-            Option<String>,
-            f64,
-            Option<String>,
-            Option<String>,
-            bool,
-            Option<String>,
-        )> = conn
+        let metrics: Vec<MetricRow> = conn
             .prepare(&format!(
                 "SELECT x.name, x.aggregation, x.scope, x.value, x.unit, x.threshold, x.passed,
                         x.attributes
