@@ -179,6 +179,19 @@ No hay que activar nada: funciona con un token.
 - **Límite:** 300 peticiones por minuto por token (`API_RATE_LIMIT_MAX`,
   `API_RATE_LIMIT_WINDOW`). Sin un token bien formado, el límite cuenta por
   IP, así que detrás de un proxy hace falta `TRUST_PROXY=true`.
+- **Subir un informe** (JUnit, CTRF, Playwright, Cucumber Messages, SARIF, axe, k6 o Pharos Run JSON): el fichero va tal cual en el cuerpo. Las subidas de los jobs de una matriz se juntan en un run con `externalId`:
+
+  ```bash
+  curl -H "Authorization: Bearer $PHAROS_TOKEN" -H "Content-Type: application/xml"     --data-binary @junit.xml "https://<servidor>/api/v1/projects/PAY/results?externalId=gh-1234"
+  ```
+
+- **Límites de las subidas:**
+  - 25 MiB tal como llegan (`API_UPLOAD_LIMIT_BYTES`; con gzip, comprimidos);
+  - 100 MiB descomprimidos (`API_UPLOAD_MAX_BYTES`);
+  - 30 s para leer el informe (`API_PARSE_TIMEOUT_MS`);
+  - 60 subidas por minuto y token (`API_UPLOAD_RATE_LIMIT_MAX`).
+
+  El informe se guarda como evidencia en `BLOB_DIR`, así que hay que contar con su espacio.
 - **Ante una fuga:** el administrador del servidor revoca todos los tokens de
   una cuenta desde «Administración › Usuarios» › «Revocar sus tokens…».
 

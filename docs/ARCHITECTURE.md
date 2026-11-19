@@ -1640,6 +1640,24 @@ core Postgres lacks). Modules:
 
   Every token change is an `api_token` audit event, which never holds the
   secret.
+
+  Report uploads (A2, `v1.runs.ts`):
+  - `POST /api/v1/projects/{projectId}/results`: the report file is the
+    body, read in its own Fastify scope as raw bytes (gzip allowed).
+  - `reportParse.ts` inflates the body within `API_UPLOAD_MAX_BYTES` and
+    parses it with `@pharos/formats` in a child process killed after
+    `API_PARSE_TIMEOUT_MS`. Tests inject the in-process parser.
+  - `runImport.ts` picks the run: `runKey`; `externalId`, a deterministic
+    run so a CI matrix converges; or a new run, closed once imported.
+  - `importPlan.ts` is the twin of `import.rs::plan`, checked against
+    `src-tauri/tests/fixtures/api-import-interop.json`.
+  - The upload writes the `run_shard`, the `result` documents and a
+    `raw_report` attachment, with its blob in `BLOB_DIR`, in one
+    transaction of the token's owner. Links are derived when read.
+
+  Runs: `GET`/`POST …/runs`, `GET …/runs/{runKey}` (with counts) and
+  `…/results`, and `POST …/runs/{runKey}/close`, all on the web's run
+  service (`insertRun` is shared).
 - `blobs` (SYNC-04b, ADR-0042 §7) — attachment and template contents by
   hash, outside the oplog. Table `blobs (workspace_id, sha256, …)`
   (migration 0020) over a `BlobStore`; today `diskBlobStore(BLOB_DIR)`,
