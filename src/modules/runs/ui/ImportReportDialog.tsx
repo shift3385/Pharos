@@ -249,7 +249,7 @@ export function ImportReportDialog({
                 <input
                   {...p}
                   type="file"
-                  accept=".json,.ndjson,.jsonl,.xml,.sarif,.trx,application/json,application/xml,text/xml"
+                  accept=".json,.ndjson,.jsonl,.xml,.sarif,.trx,.zip,application/json,application/xml,text/xml,application/zip"
                   disabled={step !== "form"}
                   onChange={(e) => void pick(e.target.files?.[0])}
                 />

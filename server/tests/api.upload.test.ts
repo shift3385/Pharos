@@ -10,6 +10,7 @@ import type { Pool } from "pg";
 import { setupTestApp, truncateAll } from "./helpers";
 import { FEATURES_HEADER, SERVER_FEATURES, SERVER_VERSION, VERSION_HEADER } from "../src/modules/sync/sync.version";
 import { inProcessParser } from "../src/modules/api/reportParse";
+import { zipOf } from "./zipOf.js";
 
 let app: FastifyInstance;
 let pool: Pool;
@@ -154,6 +155,34 @@ describe("uploading a report", () => {
     expect(shard.payload).toMatchObject({ sourceFormat: "trx" });
   });
 
+  it("imports a zipped allure-results folder (ING-07): a tag label links, a retry is an attempt", async () => {
+    const { token, ws } = await setup();
+    const result = (uuid: string, status: string, start: number, labels: { name: string; value: string }[]) => ({
+      uuid,
+      historyId: "h-pay",
+      testCaseId: "t-pay",
+      name: "paga con tarjeta",
+      fullName: "pagos.spec.ts › paga con tarjeta",
+      status,
+      start,
+      stop: start + 100,
+      labels: [{ name: "framework", value: "playwright" }, ...labels],
+    });
+    const zip = zipOf([
+      { name: "allure-results/a-result.json", data: JSON.stringify(result("a", "failed", 1_795_000_000_000, [{ name: "tag", value: "PAY-001" }])), deflate: true },
+      { name: "allure-results/b-result.json", data: JSON.stringify(result("b", "passed", 1_795_000_001_000, [{ name: "tag", value: "PAY-001" }])), deflate: true },
+      { name: "allure-results/environment.properties", data: "os=ci" },
+    ]);
+    const res = await upload(token, zip, "format=allure&fileName=allure-results.zip", { "content-type": "application/zip" });
+    expect(res.statusCode).toBe(201);
+    expect(res.json()).toMatchObject({ shard: { created: true, format: "allure" }, counts: { results: 2, linked: 2 } });
+    const shard = (await pool.query("SELECT payload FROM documents WHERE workspace_id = $1 AND entity = 'run_shard'", [ws])).rows[0];
+    expect(shard.payload).toMatchObject({ sourceFormat: "allure" });
+    const bad = await upload(token, Buffer.from("PK\u0003\u0004 broken"), "format=allure", { "content-type": "application/zip" });
+    expect(bad.statusCode).toBe(422);
+    expect(bad.json()).toMatchObject({ code: "invalid_report" });
+  });
+
   it("the same file again is a no-op that answers the same run", async () => {
     const { token } = await setup();
     const first = (await upload(token, FILE_A)).json();
@@ -240,13 +269,13 @@ describe("uploading a report", () => {
 });
 
 describe("refusals", () => {
-  it("checks the format it was told against the one it found; allure is not there yet", async () => {
+  it("checks the format it was told against the one it found", async () => {
     const { token } = await setup();
     const res = await upload(token, FILE_A, "format=ctrf");
     expect(res.statusCode).toBe(400);
     expect(res.json()).toMatchObject({ code: "format_mismatch", expected: "ctrf", detected: "junit" });
     expect((await upload(token, FILE_A, "format=junit")).statusCode).toBe(201);
-    expect((await upload(token, FILE_A, "format=allure")).json()).toMatchObject({ code: "unsupported_format", format: "allure" });
+    expect((await upload(token, FILE_A, "format=allure")).json()).toMatchObject({ code: "format_mismatch", expected: "allure", detected: "junit" });
     expect((await upload(token, FILE_A, "format=nope")).statusCode).toBe(400);
   });
 

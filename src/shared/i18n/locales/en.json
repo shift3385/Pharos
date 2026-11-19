@@ -4348,7 +4348,9 @@
       "pharos_run_json": "Pharos Run JSON",
       "sarif": "SARIF",
       "k6": "k6 summary",
-      "axe": "axe-core"
+      "axe": "axe-core",
+      "trx": "TRX (.NET)",
+      "allure": "Allure"
     },
     "field": {
       "title": "Run title",
@@ -4428,6 +4430,7 @@
         "invalid-pharos-run": "The Pharos Run JSON is not valid.",
         "too-large": "The report is too large.",
         "unsupported-version": "Unsupported Pharos Run JSON version: update Pharos.",
+        "invalid-zip": "The .zip cannot be read: zip the allure-results folder as it is.",
         "invalid-report": "The report does not have the expected shape.",
         "steps-too-many": "A result has more than 5000 steps.",
         "already-imported": "This file was already imported in {{detail}}.",
