@@ -63,6 +63,14 @@ export function reportDocDefinition(
     dataTable(report.exit.headers, report.exit.rows, labels.noData, ["*", 70, 60, 80]),
     sectionHeader(s.issues),
     dataTable(report.issues.headers, report.issues.rows, labels.noIssues, [60, "*", 110, 60]),
+    ...(report.findings
+      ? ([
+          sectionHeader(s.findings),
+          field([report.findings.findingsLine, report.findings.thresholdsLine].filter(Boolean).join(" · ")),
+          dataTable(report.findings.tools.headers, report.findings.tools.rows, labels.noData),
+          dataTable(report.findings.failed.headers, report.findings.failed.rows, labels.noFailedThresholds, [60, "*", 70, 60, 60]),
+        ] as Content[])
+      : []),
     sectionHeader(s.summary),
     field(report.summary),
     sectionHeader(s.recommendations),

@@ -3261,6 +3261,9 @@
       "linkedCases_one": "Casos vinculados · {{count}}",
       "linkedCases_other": "Casos vinculados · {{count}}",
       "onlyGapsHint": "Oculta los requisitos cubiertos y deja solo los que no tienen ningún caso de prueba",
+      "onlyFindings_one": "Con hallazgos abiertos ({{count}})",
+      "onlyFindings_other": "Con hallazgos abiertos ({{count}})",
+      "onlyFindingsHint": "Deja solo los requisitos con algún caso que tiene hallazgos abiertos en el último escaneo de cada herramienta",
       "noGaps": "Todos los requisitos tienen al menos un caso. No hay huecos.",
       "summary": "Mostrando <b>{{from}}–{{to}}</b> de <b>{{total}}</b> requisitos",
       "kpi": {
@@ -3297,12 +3300,18 @@
       "covered": "Cubierto",
       "not_covered": "Sin cubrir"
     },
+    "findings": {
+      "badge_one": "{{count}} hallazgo",
+      "badge_other": "{{count}} hallazgos",
+      "badgeTitle": "Hallazgos abiertos en el último escaneo; peor severidad: {{severity}}"
+    },
     "note": {
       "obsoleteCase": "Caso obsoleto (no cubre)",
       "openDefect": "Defecto abierto",
       "retest": "Por confirmar (defecto corregido)",
       "flaky": "Flaky: pasó tras fallar",
-      "stale": "Se ejecutó una revisión anterior del caso"
+      "stale": "Se ejecutó una revisión anterior del caso",
+      "openFindings": "Hallazgos abiertos"
     },
     "gaps": {
       "title": "Huecos de trazabilidad",
@@ -4298,6 +4307,11 @@
       "empty": "Aún no hay runs. Crea uno con «Nuevo run manual», importa un informe con «Importar informe» o ejecuta un ciclo.",
       "emptyWeb": "Aún no hay runs. Crea uno con «Nuevo run manual» o ejecuta un ciclo; los informes se importan desde la app de escritorio.",
       "noResults": "Sin resultados",
+      "findings_one": "{{count}} hallazgo",
+      "findings_other": "{{count}} hallazgos",
+      "findingsTitle": "Hallazgos abiertos; peor severidad: {{severity}}",
+      "thresholdsFailed_one": "{{count}} umbral incumplido",
+      "thresholdsFailed_other": "{{count}} umbrales incumplidos",
       "build": "build {{build}}",
       "unlinked_one": "{{count}} sin vincular",
       "unlinked_other": "{{count}} sin vincular",
@@ -4682,7 +4696,8 @@
       "exit": "6. Criterios de salida",
       "issues": "7. Bloqueos e incidencias",
       "summary": "8. Resumen",
-      "recommendations": "9. Recomendaciones"
+      "recommendations": "9. Recomendaciones",
+      "findings": "7.1 Hallazgos y rendimiento"
     },
     "field": {
       "project": "Proyecto",
@@ -4728,7 +4743,19 @@
       "issue": "Incidencia",
       "requirement": "Requisito",
       "risk": "Riesgo",
-      "defects": "Defectos"
+      "defects": "Defectos",
+      "tool": "Herramienta",
+      "new": "Nuevos",
+      "triaged": "Triados",
+      "metric": "Métrica",
+      "threshold": "Umbral",
+      "value": "Valor"
+    },
+    "findings": {
+      "line_one": "{{count}} hallazgo abierto ({{bySeverity}}) · {{new}} nuevos · {{triaged}} triados · {{review}} a revisar",
+      "line_other": "{{count}} hallazgos abiertos ({{bySeverity}}) · {{new}} nuevos · {{triaged}} triados · {{review}} a revisar",
+      "thresholds": "Umbrales: {{passed}} de {{total}} cumplidos",
+      "noFailed": "Todos los umbrales se cumplen."
     },
     "exit": {
       "met": "Cumple",
@@ -4896,6 +4923,7 @@
     "uncovered": "Sin cubrir",
     "openDefects": "Defectos abiertos del ciclo (a fecha de hoy)",
     "riskyRequirements": "Requisitos sin cubrir o sin pasar, por riesgo",
+    "findings": "Hallazgos y umbrales",
     "noDefects": "No queda ningún defecto abierto del ciclo.",
     "noRisky": "Todos los requisitos del alcance están cubiertos y pasan.",
     "deliverable": {

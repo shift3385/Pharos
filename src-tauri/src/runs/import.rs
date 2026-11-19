@@ -1548,7 +1548,9 @@ pub(crate) fn unlinked_list(
 // ---- counts per run --------------------------------------------------------------
 
 /// What the runs list shows of each run: its final results by status, and
-/// how many of them have no case (not even by a later link).
+/// how many of them have no case (not even by a later link); and its open
+/// findings with the worst severity and its failed thresholds (ING-06, F5b),
+/// so a run with findings only is not shown as empty.
 #[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize, Debug, Clone, Default, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -1558,6 +1560,11 @@ pub struct RunCounts {
     pub(crate) failed: i64,
     pub(crate) other: i64,
     pub(crate) unlinked: i64,
+    /// Open findings: neither triaged nor «A revisar».
+    pub(crate) findings: i64,
+    /// `critical` | `high` | `medium` | `low` | `info`; None without open ones.
+    pub(crate) findings_worst: Option<String>,
+    pub(crate) thresholds_failed: i64,
 }
 
 /// The counts of every live run of the project, in one read (the list would
@@ -1680,8 +1687,82 @@ pub(crate) fn run_counts(
         }
     }
     let mut out: Vec<RunCounts> = by_run.into_values().collect();
+    add_finding_counts(conn, project_id, &mut out)?;
     out.sort_by(|a, b| a.run_id.cmp(&b.run_id));
     Ok(out)
+}
+
+/// The open findings and failed thresholds of every live run (F5b), into
+/// `out`: a run with findings or thresholds only gets its own entry.
+fn add_finding_counts(
+    conn: &Connection,
+    project_id: &str,
+    out: &mut Vec<RunCounts>,
+) -> Result<(), String> {
+    let triage = findings::triage_current(conn, project_id)?;
+    let rank = |s: &str| {
+        findings::SEVERITIES
+            .iter()
+            .position(|x| *x == s)
+            .unwrap_or(findings::SEVERITIES.len())
+    };
+    let rows: Vec<(String, String, String, bool)> = conn
+        .prepare(&format!(
+            "SELECT x.run_id, x.fingerprint, x.severity,
+                    coalesce(json_extract(x.attributes, '$.needsReview') = 1, 0)
+               FROM findings x JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL
+              WHERE x.project_id = ?1 AND {CURRENT_SHARD}"
+        ))
+        .map_err(err)?
+        .query_map(params![project_id], |r| {
+            Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
+        })
+        .map_err(err)?
+        .collect::<rusqlite::Result<_>>()
+        .map_err(err)?;
+    let failed: Vec<String> = conn
+        .prepare(&format!(
+            "SELECT x.run_id FROM metrics x JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL
+              WHERE x.project_id = ?1 AND x.passed = 0 AND {CURRENT_SHARD}"
+        ))
+        .map_err(err)?
+        .query_map(params![project_id], |r| r.get(0))
+        .map_err(err)?
+        .collect::<rusqlite::Result<_>>()
+        .map_err(err)?;
+    let mut index: HashMap<String, usize> = out
+        .iter()
+        .enumerate()
+        .map(|(i, c)| (c.run_id.clone(), i))
+        .collect();
+    let mut entry = |out: &mut Vec<RunCounts>, run_id: &str| -> usize {
+        *index.entry(run_id.to_string()).or_insert_with(|| {
+            out.push(RunCounts {
+                run_id: run_id.to_string(),
+                ..Default::default()
+            });
+            out.len() - 1
+        })
+    };
+    for (run_id, fingerprint, severity, review) in rows {
+        let i = entry(out, &run_id);
+        if review || triage.get(&fingerprint).is_some_and(|t| t.state != "open") {
+            continue;
+        }
+        let c = &mut out[i];
+        c.findings += 1;
+        if c.findings_worst
+            .as_deref()
+            .map_or(true, |w| rank(&severity) < rank(w))
+        {
+            c.findings_worst = Some(severity);
+        }
+    }
+    for run_id in failed {
+        let i = entry(out, &run_id);
+        out[i].thresholds_failed += 1;
+    }
+    Ok(())
 }
 
 // ---- shared by the commands and the Tauri-free API (api.rs, CORE-01) ----------

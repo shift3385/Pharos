@@ -32,6 +32,7 @@ const labels = (): ReportLabels => ({
     coverage: t("statusReport.section.coverage"),
     exit: t("statusReport.section.exit"),
     issues: t("statusReport.section.issues"),
+    findings: t("statusReport.section.findings"),
     summary: t("statusReport.section.summary"),
     recommendations: t("statusReport.section.recommendations"),
   },
@@ -40,6 +41,7 @@ const labels = (): ReportLabels => ({
   noRisky: t("statusReport.noRisky"),
   noIssues: t("statusReport.noIssues"),
   noData: t("common.noData"),
+  noFailedThresholds: t("statusReport.findings.noFailed"),
 });
 
 beforeEach(async () => {
@@ -117,6 +119,15 @@ describe("status report model (EJE-03)", () => {
     expect(unreadable[0].state).toBe("manual");
     expect(criterionValue(SUMMARY.exitCriteria[0])).toBe("75 %");
     expect(criterionValue(SUMMARY.exitCriteria[1])).toBe("1");
+  });
+
+  it("adds «Hallazgos y rendimiento» only when there are findings or thresholds (ING-06)", () => {
+    expect(buildStatusReport(SUMMARY, ctx, t).findings).toBeNull();
+    const f = buildStatusReport(CLOSED, ctx, t).findings!;
+    expect(f.findingsLine).toBe("3 hallazgos abiertos (Crítica: 1, Alta: 2) · 1 nuevos · 1 triados · 2 a revisar");
+    expect(f.thresholdsLine).toBe("Umbrales: 2 de 3 cumplidos");
+    expect(f.tools.rows).toEqual([["axe-core", "RUN-003", "1", "2", "0", "0", "0", "1", "1"]]);
+    expect(f.failed.rows).toEqual([["RUN-004", "http_req_duration · p(95)", "p(95)<500", "812 ms", "TC-002"]]);
   });
 
   it("names the files by project and day", () => {

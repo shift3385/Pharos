@@ -3261,6 +3261,9 @@
       "linkedCases_one": "Linked cases · {{count}}",
       "linkedCases_other": "Linked cases · {{count}}",
       "onlyGapsHint": "Hides the covered requirements and leaves only those without any test case",
+      "onlyFindings_one": "With open findings ({{count}})",
+      "onlyFindings_other": "With open findings ({{count}})",
+      "onlyFindingsHint": "Leaves only the requirements with a case that has open findings in the latest scan of each tool",
       "noGaps": "Every requirement has at least one case. No gaps.",
       "summary": "Showing <b>{{from}}–{{to}}</b> of <b>{{total}}</b> requirements",
       "kpi": {
@@ -3297,12 +3300,18 @@
       "covered": "Covered",
       "not_covered": "Not covered"
     },
+    "findings": {
+      "badge_one": "{{count}} finding",
+      "badge_other": "{{count}} findings",
+      "badgeTitle": "Open findings in the latest scan; worst severity: {{severity}}"
+    },
     "note": {
       "obsoleteCase": "Obsolete case (does not cover)",
       "openDefect": "Open defect",
       "retest": "To confirm (defect fixed)",
       "flaky": "Flaky: passed after failing",
-      "stale": "An earlier revision of the case was executed"
+      "stale": "An earlier revision of the case was executed",
+      "openFindings": "Open findings"
     },
     "gaps": {
       "title": "Traceability gaps",
@@ -4298,6 +4307,11 @@
       "empty": "No runs yet. Create one with “New manual run”, import a report with “Import report” or execute a cycle.",
       "emptyWeb": "No runs yet. Create one with “New manual run” or execute a cycle; reports are imported from the desktop app.",
       "noResults": "No results",
+      "findings_one": "{{count}} finding",
+      "findings_other": "{{count}} findings",
+      "findingsTitle": "Open findings; worst severity: {{severity}}",
+      "thresholdsFailed_one": "{{count}} failed threshold",
+      "thresholdsFailed_other": "{{count}} failed thresholds",
       "build": "build {{build}}",
       "unlinked_one": "{{count}} unlinked",
       "unlinked_other": "{{count}} unlinked",
@@ -4682,7 +4696,8 @@
       "exit": "6. Exit criteria",
       "issues": "7. Blockers and issues",
       "summary": "8. Summary",
-      "recommendations": "9. Recommendations"
+      "recommendations": "9. Recommendations",
+      "findings": "7.1 Findings and performance"
     },
     "field": {
       "project": "Project",
@@ -4728,7 +4743,19 @@
       "issue": "Issue",
       "requirement": "Requirement",
       "risk": "Risk",
-      "defects": "Defects"
+      "defects": "Defects",
+      "tool": "Tool",
+      "new": "New",
+      "triaged": "Triaged",
+      "metric": "Metric",
+      "threshold": "Threshold",
+      "value": "Value"
+    },
+    "findings": {
+      "line_one": "{{count}} open finding ({{bySeverity}}) · {{new}} new · {{triaged}} triaged · {{review}} to review",
+      "line_other": "{{count}} open findings ({{bySeverity}}) · {{new}} new · {{triaged}} triaged · {{review}} to review",
+      "thresholds": "Thresholds: {{passed}} of {{total}} met",
+      "noFailed": "Every threshold is met."
     },
     "exit": {
       "met": "Met",
@@ -4896,6 +4923,7 @@
     "uncovered": "Not covered",
     "openDefects": "Open defects of the cycle (as of today)",
     "riskyRequirements": "Requirements not covered or not passed, by risk",
+    "findings": "Findings and thresholds",
     "noDefects": "No defect of the cycle is still open.",
     "noRisky": "Every requirement in scope is covered and passes.",
     "deliverable": {

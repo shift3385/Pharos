@@ -204,6 +204,7 @@ export function StatusReportDialog({
       coverage: t("statusReport.section.coverage"),
       exit: t("statusReport.section.exit"),
       issues: t("statusReport.section.issues"),
+      findings: t("statusReport.section.findings"),
       summary: t("statusReport.section.summary"),
       recommendations: t("statusReport.section.recommendations"),
     },
@@ -218,6 +219,7 @@ export function StatusReportDialog({
     noRisky: t("statusReport.noRisky"),
     noIssues: t("statusReport.noIssues"),
     noData: t("common.noData"),
+    noFailedThresholds: t("statusReport.findings.noFailed"),
   });
 
   async function exportAs(ext: "xlsx" | "pdf") {
@@ -403,6 +405,15 @@ export function StatusReportDialog({
               <h4>{t("statusReport.section.issues")}</h4>
               {preview(report.issues, t("statusReport.noIssues"))}
             </section>
+            {report.findings && (
+              <section data-testid="report-findings">
+                <h4>{t("statusReport.section.findings")}</h4>
+                <p>{report.findings.findingsLine}</p>
+                {report.findings.thresholdsLine && <p>{report.findings.thresholdsLine}</p>}
+                {preview(report.findings.tools, t("common.noData"))}
+                {preview(report.findings.failed, t("statusReport.findings.noFailed"))}
+              </section>
+            )}
             <section>
               <h4>{t("statusReport.section.summary")}</h4>
               <FormField label={t("statusReport.summaryLabel")} hint={t("statusReport.summaryHint")}>
