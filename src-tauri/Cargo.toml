@@ -14,8 +14,8 @@ publish = false
 # - this package, `pharos`: the desktop shell (src/app.rs and src/main.rs),
 #   which builds the Tauri app and registers the core's commands.
 [workspace]
-members = [".", "core"]
-default-members = [".", "core"]
+members = [".", "core", "cli"]
+default-members = [".", "core", "cli"]
 
 # The library is what the desktop and (future) mobile entrypoints call into.
 # Desktop only needs the rlib: the binary (main.rs) links it.

@@ -1,0 +1,45 @@
+[package]
+name = "pharos-cli"
+version = "0.5.0-beta.1"
+description = "Pharos command line: upload test reports and wrap test commands (INT-01, ADR-0054)"
+authors = ["Pharos"]
+edition = "2021"
+rust-version = "1.77.2"
+publish = false
+
+# The binary is `pharos-cli` here and `bin\pharos.exe` once installed: a Cargo
+# bin named `pharos` would collide with the desktop's in `target/` and, on
+# Windows (case-insensitive), with `Pharos.exe` in the install folder.
+[[bin]]
+name = "pharos-cli"
+path = "src/main.rs"
+
+[lib]
+name = "pharos_cli"
+path = "src/lib.rs"
+
+[features]
+default = ["local"]
+# Local mode: write into the desktop's database through pharos-core. Without
+# it the binary is remote-only (Linux and macOS CI runners).
+local = ["dep:pharos-core"]
+
+[dependencies]
+# Without the `tauri` feature: the CLI never compiles Tauri (ADR-0050).
+pharos-core = { path = "../core", optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# pharos.toml and the user config. Already in the tree (through Tauri).
+toml = "0.9"
+# File patterns: PowerShell and cmd do not expand `*`, so the CLI does.
+glob = "0.3"
+sha2 = "0.10"
+
+# The user's display language when no PHAROS_LANG / --lang is given.
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Globalization"] }
+
+[dev-dependencies]
+# A database opened with the test's own key, never the user's `db-key`.
+pharos-core = { path = "../core", features = ["test-support"] }
+uuid = { version = "1", features = ["v4"] }

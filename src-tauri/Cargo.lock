@@ -2516,6 +2516,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "pharos-cli"
+version = "0.5.0-beta.1"
+dependencies = [
+ "glob",
+ "pharos-core",
+ "serde",
+ "serde_json",
+ "sha2",
+ "toml 0.9.12+spec-1.1.0",
+ "uuid",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "pharos-core"
 version = "0.5.0-beta.1"
 dependencies = [

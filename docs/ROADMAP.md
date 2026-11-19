@@ -389,7 +389,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | ID     | Ítem                                                                                          | P   | Versión | Depende de       |
 | ------ | --------------------------------------------------------------------------------------------- | --- | ------- | ---------------- |
 | MOB-01 | Móvil Android: ejecución manual con cámara (sin automatización: el sandbox no lanza procesos) | P0  | 0.10.0  | EJE-02, SYNC-04b |
-| INT-01 | CLI `pharos upload` y `pharos watch -- <cmd>` (mismo crate)                                   | P1  | 0.6.0   | CORE-01, ING-02  |
+| INT-01 | CLI `pharos upload` y `pharos watch -- <cmd>` (mismo crate). En curso (pista L, [ADR-0054](adr/0054-cli-y-plantillas-de-github-actions.md)): L1 hecho, `upload` local de Pharos Run JSON, `projects` y `doctor`; faltan el modo remoto (L2), `watch` (L3), JUnit local (L4), el instalador (L5) y escribir con la app abierta (L7, tras SEC-05b) | P1  | 0.6.0   | CORE-01, ING-02  |
 | INT-02 | API REST `/api/v1` (OpenAPI), tokens de proyecto y PAT con scopes ([ADR-0052](adr/0052-api-v1-tokens-y-webhooks.md)). En curso: A1 hecho (tokens, `/api/v1/me`, `/projects`, contrato `docs/formats/openapi-v1.json`); falta la subida de resultados (A2) y las lecturas (A4) | P1  | 0.6.0   | SYNC-07          |
 | INT-03 | Webhooks salientes firmados con HMAC                                                          | P1  | 0.6.0   | INT-02           |
 | INT-04 | Plantillas de GitHub Actions con acciones fijadas por SHA                                     | P1  | 0.6.0   | INT-01           |
