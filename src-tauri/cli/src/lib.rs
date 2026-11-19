@@ -10,12 +10,14 @@ pub mod args;
 pub mod config;
 pub mod doctor;
 pub mod exit;
+pub mod files;
 pub mod i18n;
 pub mod junit;
 #[cfg(feature = "local")]
 pub mod local;
 pub mod output;
 pub mod path_env;
+pub mod remote;
 pub mod runjson;
 
 use std::io::Write;
@@ -93,6 +95,24 @@ pub fn run(
             p.always(&text);
             Exit::Ok.code()
         }
+        Command::Login | Command::Logout | Command::RunClose(_) => {
+            let cfg = match cfg {
+                Ok(cfg) => cfg,
+                Err(f) => {
+                    p.failure(&f);
+                    return f.exit.code();
+                }
+            };
+            match &parsed.command {
+                Command::Login => remote::login(opts, &cfg, env, &mut p),
+                Command::Logout => remote::logout(opts, &cfg, env, &mut p),
+                Command::RunClose(key) => {
+                    remote::run_close(key.as_deref(), opts, &cfg, env, &mut p)
+                }
+                _ => unreachable!("matched above"),
+            }
+            .code()
+        }
         Command::Later(name) => {
             let f = Failure::usage("not-available", "err.command-later").arg(name.as_str());
             p.failure(&f);
@@ -120,11 +140,10 @@ pub fn run(
                     p.failure(&f);
                     f.exit.code()
                 }
-                Ok(Mode::Remote(_)) => {
-                    let f = Failure::usage("not-available", "err.remote-later");
-                    p.failure(&f);
-                    f.exit.code()
-                }
+                Ok(Mode::Remote(_)) => match parsed.command {
+                    Command::Upload => remote::upload(opts, &cfg, env, &mut p).code(),
+                    _ => remote::projects(opts, &cfg, env, &mut p).code(),
+                },
                 #[cfg(feature = "local")]
                 Ok(Mode::Local) => match parsed.command {
                     Command::Upload => local::upload(opts, &cfg, env, local, &mut p).code(),

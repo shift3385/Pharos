@@ -149,8 +149,15 @@
   - el modo local lee JUnit e informes de hasta 50 MB (`MAX_WHOLE_REPORT_BYTES`).
 - **L5 · Distribución:**
   - `build:installer` compila el CLI y lo deja en `src-tauri/bin/pharos.exe`. `tauri.installer.conf.json` (fusionado con `--config`) lo declara como recurso `bin/pharos.exe` y añade los *hooks* de NSIS. En `tauri.conf.json` no puede ir, porque tauri-build copia los recursos en cada `cargo build`;
-  - **cambio respecto del plan:** los *hooks* no editan el PATH en NSIS, porque su NSIS trabaja con textos de 1024 caracteres y muchos PATH son más largos. Llaman a `pharos setup-path add|remove`, que lo edita en Rust (`HKCUEnvironmentPath` sin expandir, `REG_EXPAND_SZ`, solo esa entrada, aviso `WM_SETTINGCHANGE`). Si falla, el instalador sigue y lo anota;
+  - **cambio respecto del plan:** los *hooks* no editan el PATH en NSIS, porque su NSIS trabaja con textos de 1024 caracteres y muchos PATH son más largos. Llaman a `pharos setup-path add|remove`, que lo edita en Rust (`HKCU\Environment\Path` sin expandir, `REG_EXPAND_SZ`, solo esa entrada, aviso `WM_SETTINGCHANGE`). Si falla, el instalador sigue y lo anota;
   - el MSI de las versiones estables lleva el CLI, pero no toca el PATH;
   - `installer.yml` publica `pharos-cli-<versión>-windows-x64.zip` y, en un job de `ubuntu-latest` (solo en `main` y en tags), `pharos-cli-<versión>-linux-x64.tar.gz` solo remoto, cada uno con `SHA256SUMS`;
   - `version:set` ya escribe la versión del CLI (L1).
-- **L2, L3, L6, L7:** pendientes.
+- **L2 · Modo remoto:**
+  - `remote.rs`, un cliente de la API v1 (contrato `openapi-v1.json` 1.1.x): `reqwest` bloqueante con rustls, sin redirecciones, gzip a partir de 64 KB y tres intentos en red, 429 (con `Retry-After`), 502, 503 y 504;
+  - errores del servidor convertidos en los códigos de salida de §2, con el código y el motivo del servidor en el detalle;
+  - comandos: `upload`, `projects`, `doctor` (`GET /me`: dueño, permisos y caducidad, con aviso a menos de 7 días), `login`/`logout` (Credential Manager, servicio `Pharos CLI`, cuenta = origen; sin keychain, `login` se niega) y `run close` (por clave o por `externalId` vía `createRun`);
+  - GitHub Actions: `externalId` y nombre del run automáticos, `$GITHUB_STEP_SUMMARY`, `$GITHUB_OUTPUT` y anotaciones;
+  - **ajuste respecto del plan:** el servidor cierra al momento el run que crea una subida, así que para varios ficheros el CLI crea antes el run vacío (`createRun`), sube a él y lo cierra al final. Con `externalId` no se cierra: lo cierra el último job;
+  - **prueba de punta a punta** contra un servidor real en el puerto 3120 (BD `pharos_test_db_trackl`, borrada al terminar), con 23 comprobaciones: JUnit, SARIF, k6 y axe en un mismo run, con sus hallazgos y métricas guardados; una matriz de GitHub que converge y se cierra por `externalId`; los códigos 3, 4 y 5. El token nunca aparece en la salida. El script pasa a `scripts/int04-smoke.mjs` con L6.
+- **L3, L6, L7:** pendientes.

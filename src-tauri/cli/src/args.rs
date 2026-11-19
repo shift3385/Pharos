@@ -11,7 +11,13 @@ pub enum Command {
     /// `help [command]`, `--help`, or no arguments.
     Help(Option<String>),
     Version,
-    /// A command of a later PR (`watch`, `login`, `logout`, `run`).
+    /// `login`: stores a token for a server in the OS keychain.
+    Login,
+    /// `logout`: removes it.
+    Logout,
+    /// `run close [RUN-n]` (or `--external-id`).
+    RunClose(Option<String>),
+    /// A command of a later PR (`watch`).
     Later(String),
 }
 
@@ -35,6 +41,10 @@ pub struct Opts {
     pub quiet: bool,
     pub no_color: bool,
     pub token_stdin: bool,
+    /// `run close --status completed|aborted`.
+    pub status: Option<String>,
+    /// `upload --close`: close the run after the last file.
+    pub close: bool,
     /// The files and patterns of `upload`.
     pub files: Vec<String>,
 }
@@ -127,6 +137,8 @@ pub fn parse(argv: &[String]) -> Result<Parsed, Failure> {
                 "-q" | "--quiet" => opts.quiet = true,
                 "--no-color" => opts.no_color = true,
                 "--token-stdin" => opts.token_stdin = true,
+                "--status" => opts.status = Some(value("--status")?),
+                "--close" => opts.close = true,
                 // Never a token on the command line (ADR-0054 §3).
                 "--token" => return Err(Failure::usage("token-flag", "err.token-flag")),
                 other => {
@@ -164,6 +176,17 @@ pub fn parse(argv: &[String]) -> Result<Parsed, Failure> {
                 Command::Doctor
             }
         }
+        Some("login") => Command::Login,
+        Some("logout") => Command::Logout,
+        Some("run") => match positional.as_slice() {
+            [verb] if verb == "close" => Command::RunClose(None),
+            [verb, key] if verb == "close" => Command::RunClose(Some(key.clone())),
+            _ => {
+                let got = positional.join(" ");
+                return Err(Failure::usage("unknown-command", "err.unknown-command")
+                    .arg(format!("run {got}")));
+            }
+        },
         Some(c) if COMMANDS.contains(&c) => Command::Later(c.to_string()),
         Some(other) => {
             return Err(Failure::usage("unknown-command", "err.unknown-command").arg(other))
@@ -207,6 +230,26 @@ mod tests {
             p(&["upload", "--token=phr_prj_x"]).unwrap_err().code,
             "token-flag"
         );
+    }
+
+    #[test]
+    fn login_logout_and_run_close() {
+        assert_eq!(
+            p(&["login", "--server", "https://x"]).unwrap().command,
+            Command::Login
+        );
+        assert_eq!(p(&["logout"]).unwrap().command, Command::Logout);
+        let got = p(&["run", "close", "RUN-7", "-p", "PAG", "--status", "aborted"]).unwrap();
+        assert_eq!(got.command, Command::RunClose(Some("RUN-7".into())));
+        assert_eq!(got.opts.status.as_deref(), Some("aborted"));
+        assert_eq!(
+            p(&["run", "close", "--external-id", "gh:1"])
+                .unwrap()
+                .command,
+            Command::RunClose(None)
+        );
+        assert_eq!(p(&["run", "open"]).unwrap_err().code, "unknown-command");
+        assert!(p(&["upload", "a.xml", "--close"]).unwrap().opts.close);
     }
 
     #[test]
