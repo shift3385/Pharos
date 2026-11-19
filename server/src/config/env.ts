@@ -148,6 +148,13 @@ const schema = z
     // well-formed token, per IP).
     API_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
     API_RATE_LIMIT_WINDOW: duration.prefault("1 minute"),
+    // INT-02 A2: report uploads. The body as received (gzip compressed), the
+    // report once decompressed, the time to read it, and uploads per token.
+    API_UPLOAD_LIMIT_BYTES: z.coerce.number().int().positive().default(26_214_400),
+    API_UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(104_857_600),
+    API_PARSE_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+    API_UPLOAD_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(60),
+    API_UPLOAD_RATE_LIMIT_WINDOW: duration.prefault("1 minute"),
     AI_CHAT_RATE_LIMIT_WINDOW: duration.prefault("1 minute"),
     AI_VAULT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
     AI_VAULT_RATE_LIMIT_WINDOW: duration.prefault("1 hour"),

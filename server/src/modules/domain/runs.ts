@@ -447,65 +447,67 @@ function worst(statuses: string[]): string | null {
 
 // ---- service ---------------------------------------------------------------------
 
+// ---- the run itself (shared with the API import, ADR-0052) -----------------------
+
+async function liveProject(tx: DomainTx, projectId: string) {
+  const doc = await tx.get("project", projectId);
+  if (!doc || doc.deleted) throw bad("project not found");
+}
+
+/** A cycle and a configuration of this project (`cycles::check_run_links`). */
+export async function checkRunLinks(tx: DomainTx, projectId: string, cycleId: string | null, configurationId: string | null) {
+  if (cycleId) {
+    const c = await tx.get("test_cycle", cycleId);
+    if (!c || c.deleted || str(c.payload, "projectId") !== projectId) throw bad(`cycle-not-found: ${cycleId}`);
+    if (str(c.payload, "status") === "closed") throw conflict("cycle_closed", "cycle-closed");
+  }
+  if (configurationId) {
+    const c = await tx.get("configuration", configurationId);
+    if (!c || c.deleted || str(c.payload, "projectId") !== projectId)
+      throw bad(`configuration-not-found: ${configurationId}`);
+  }
+}
+
+/** `runs::insert_run`: a new open run with its key. `id`: a deterministic
+ *  id (an API upload with `externalId`, ADR-0052); a random one otherwise. */
+export async function insertRun(tx: DomainTx, input: RunInput, id: string = randomUUID()): Promise<RemoteDoc> {
+  const projectId = text(input.projectId);
+  if (!projectId) throw bad("projectId is required");
+  await liveProject(tx, projectId);
+  const title = text(input.title);
+  if (!title) throw bad("title is required");
+  within("title", title, MAX_TITLE);
+  const trigger = text(input.trigger) ?? "manual";
+  if (!["manual", "local", "agent", "ci", "cloud", "import"].includes(trigger)) throw bad(`unknown trigger: ${trigger}`);
+  await checkRunLinks(tx, projectId, text(input.cycleId), text(input.configurationId));
+  const n = await tx.nextNumber(projectId, "run", KEY_PREFIX);
+  const at = timestamp();
+  const payload: Payload = {
+    id,
+    workspaceId: WORKSPACE,
+    projectId,
+    runKey: `${KEY_PREFIX}${String(n).padStart(KEY_DIGITS, "0")}`,
+    title,
+    trigger,
+  };
+  for (const k of RUN_TEXT) payload[k] = text(input[k]);
+  Object.assign(payload, {
+    context: obj(input.context),
+    status: "in_progress",
+    startedAt: text(input.startedAt) ?? instant(),
+    finishedAt: null,
+    summary: {},
+    data: {},
+    createdAt: at,
+    updatedAt: at,
+  });
+  return tx.put("run", id, payload, null);
+}
+
 export function createRunService(store: DomainStore) {
   const run = store.tx.bind(store);
   /** Reads: a read-only transaction, without the user's write lock. */
   const read = store.readTx.bind(store);
-
-  async function liveProject(tx: DomainTx, projectId: string) {
-    const doc = await tx.get("project", projectId);
-    if (!doc || doc.deleted) throw bad("project not found");
-  }
-
-  /** A cycle and a configuration of this project (`cycles::check_run_links`). */
-  async function checkRunLinks(tx: DomainTx, projectId: string, cycleId: string | null, configurationId: string | null) {
-    if (cycleId) {
-      const c = await tx.get("test_cycle", cycleId);
-      if (!c || c.deleted || str(c.payload, "projectId") !== projectId) throw bad(`cycle-not-found: ${cycleId}`);
-      if (str(c.payload, "status") === "closed") throw conflict("cycle_closed", "cycle-closed");
-    }
-    if (configurationId) {
-      const c = await tx.get("configuration", configurationId);
-      if (!c || c.deleted || str(c.payload, "projectId") !== projectId)
-        throw bad(`configuration-not-found: ${configurationId}`);
-    }
-  }
-
-  /** `runs::insert_run`: a new open run with its key. */
-  async function insertRun(tx: DomainTx, input: RunInput): Promise<RemoteDoc> {
-    const projectId = text(input.projectId);
-    if (!projectId) throw bad("projectId is required");
-    await liveProject(tx, projectId);
-    const title = text(input.title);
-    if (!title) throw bad("title is required");
-    within("title", title, MAX_TITLE);
-    const trigger = text(input.trigger) ?? "manual";
-    if (!["manual", "local", "agent", "ci", "cloud", "import"].includes(trigger)) throw bad(`unknown trigger: ${trigger}`);
-    await checkRunLinks(tx, projectId, text(input.cycleId), text(input.configurationId));
-    const id = randomUUID();
-    const n = await tx.nextNumber(projectId, "run", KEY_PREFIX);
-    const at = timestamp();
-    const payload: Payload = {
-      id,
-      workspaceId: WORKSPACE,
-      projectId,
-      runKey: `${KEY_PREFIX}${String(n).padStart(KEY_DIGITS, "0")}`,
-      title,
-      trigger,
-    };
-    for (const k of RUN_TEXT) payload[k] = text(input[k]);
-    Object.assign(payload, {
-      context: obj(input.context),
-      status: "in_progress",
-      startedAt: text(input.startedAt) ?? instant(),
-      finishedAt: null,
-      summary: {},
-      data: {},
-      createdAt: at,
-      updatedAt: at,
-    });
-    return tx.put("run", id, payload, null);
-  }
 
   /** `runs::add_items`: each item freezes its case's current revision. One
    *  folded write per item and one summary event for the run. */
