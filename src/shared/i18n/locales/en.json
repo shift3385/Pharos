@@ -5268,8 +5268,8 @@
       "copied": "Token copied",
       "ciTitle": "In CI (for example, GitHub Actions)",
       "cliTitle": "On your computer",
-      "ciExample": "Save it as a repository secret: PHAROS_TOKEN\n\ncurl -H \"Authorization: Bearer $PHAROS_TOKEN\" \\\n  {{url}}/api/v1/me",
-      "cliExample": "export PHAROS_TOKEN=<the token>\n\ncurl -H \"Authorization: Bearer $PHAROS_TOKEN\" \\\n  {{url}}/api/v1/projects",
+      "ciExample": "Save it in GitHub as a repository secret: PHAROS_TOKEN.\nThe GitHub Actions step, ready to copy, is in «Connect CI», on this same tab.",
+      "cliExample": "pharos login --server {{url}}\n\nIt asks for this token and stores it in the credential store.",
       "saved": "I have saved it somewhere safe",
       "done": "Done",
       "owner": "Owner",
@@ -5402,6 +5402,33 @@
         "defect_status_changed": "Defect changes status",
         "review_decided": "Case or plan approved or returned"
       }
+    },
+    "ci": {
+      "title": "Connect CI",
+      "hint": "The GitHub Actions step that uploads your test reports to a project on every PR. It goes at the end of the job that runs the tests.",
+      "noProjects": "This workspace has no projects yet.",
+      "project": "Project",
+      "formats": "Reports your CI produces",
+      "format": {
+        "junit": "JUnit",
+        "sarif": "SARIF (static analysis)",
+        "k6": "k6 (performance)",
+        "axe": "axe (accessibility)",
+        "ctrf": "CTRF",
+        "playwright_json": "Playwright JSON",
+        "cucumber_messages": "Cucumber Messages"
+      },
+      "yamlTitle": "Step for .github/workflows/",
+      "copy": "Copy",
+      "copied": "Copied",
+      "placeholder": "This Pharos build does not know which GitHub commit has the action: replace {{placeholder}} with the full SHA of the commit of the Pharos version you use. Pinning by SHA stops anyone changing the action under you.",
+      "stepsTitle": "In GitHub, once per repository (Settings › Secrets and variables › Actions)",
+      "stepSecret": "Secret PHAROS_TOKEN: a project token, from the section above. It only shows when created.",
+      "stepSecretAsk": "Ask a Test Manager of the workspace for it.",
+      "stepVariable": "Variable PHAROS_URL:",
+      "stepPaste": "Paste the step at the end of your tests' job, adjust the report paths and open a PR.",
+      "cliTitle": "Use in the CLI",
+      "cliHint": "It asks for the token and stores it in the Windows Credential Manager. If you no longer have it, create a new one: Pharos can't show it again."
     }
   },
   "findings": {

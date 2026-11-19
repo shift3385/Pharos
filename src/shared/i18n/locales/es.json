@@ -5268,8 +5268,8 @@
       "copied": "Token copiado",
       "ciTitle": "En CI (por ejemplo, GitHub Actions)",
       "cliTitle": "En tu equipo",
-      "ciExample": "Guárdalo como secreto del repositorio: PHAROS_TOKEN\n\ncurl -H \"Authorization: Bearer $PHAROS_TOKEN\" \\\n  {{url}}/api/v1/me",
-      "cliExample": "export PHAROS_TOKEN=<el token>\n\ncurl -H \"Authorization: Bearer $PHAROS_TOKEN\" \\\n  {{url}}/api/v1/projects",
+      "ciExample": "Guárdalo en GitHub como secreto del repositorio: PHAROS_TOKEN.\nEl paso de GitHub Actions, listo para copiar, está en «Conectar CI», en esta misma pestaña.",
+      "cliExample": "pharos login --server {{url}}\n\nTe pedirá este token y lo guardará en el Administrador de credenciales.",
       "saved": "Lo he guardado en un sitio seguro",
       "done": "Hecho",
       "owner": "Dueño",
@@ -5402,6 +5402,33 @@
         "defect_status_changed": "Defecto cambia de estado",
         "review_decided": "Caso o plan aprobado o devuelto"
       }
+    },
+    "ci": {
+      "title": "Conectar CI",
+      "hint": "El paso de GitHub Actions que sube los informes de tus pruebas a un proyecto en cada PR. Va al final del job que ejecuta las pruebas.",
+      "noProjects": "Este workspace aún no tiene proyectos.",
+      "project": "Proyecto",
+      "formats": "Informes que genera tu CI",
+      "format": {
+        "junit": "JUnit",
+        "sarif": "SARIF (análisis estático)",
+        "k6": "k6 (rendimiento)",
+        "axe": "axe (accesibilidad)",
+        "ctrf": "CTRF",
+        "playwright_json": "Playwright JSON",
+        "cucumber_messages": "Cucumber Messages"
+      },
+      "yamlTitle": "Paso para .github/workflows/",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "placeholder": "Esta compilación de Pharos no sabe qué commit de GitHub tiene la acción: cambia {{placeholder}} por el SHA completo del commit de la versión de Pharos que uses. Fijar por SHA impide que alguien cambie la acción debajo de ti.",
+      "stepsTitle": "En GitHub, una vez por repositorio (Settings › Secrets and variables › Actions)",
+      "stepSecret": "Secreto PHAROS_TOKEN: un token de proyecto, el de la sección de arriba. Solo se ve al crearlo.",
+      "stepSecretAsk": "Pídeselo a un Test Manager del workspace.",
+      "stepVariable": "Variable PHAROS_URL:",
+      "stepPaste": "Pega el paso al final del job de tus pruebas, ajusta las rutas de los informes y abre un PR.",
+      "cliTitle": "Usar en el CLI",
+      "cliHint": "Te pedirá el token y lo guardará en el Administrador de credenciales de Windows. Si ya no lo tienes, crea uno nuevo: Pharos no puede volver a enseñarlo."
     }
   },
   "findings": {

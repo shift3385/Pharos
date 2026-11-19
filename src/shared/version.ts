@@ -19,6 +19,9 @@ export interface StackItem {
  *  src-tauri/Cargo.toml. */
 export interface AppBuild {
   commit: string;
+  /** The full SHA GitHub can serve the `pharos-report` action from (built
+   *  from main or a release tag), or empty: «Conectar CI» (INT-04). */
+  actionSha?: string;
   date: string;
   stack: StackItem[];
 }
