@@ -30,7 +30,7 @@
     "findings": [
       {
         "ruleId": "DS002",
-        "ruleName": "Misconfiguration",
+        "ruleName": "Image user should not be 'root'",
         "severity": "high",
         "rawSeverity": "error · security-severity 8",
         "message": "Artifact: server/Dockerfile\nType: dockerfile\nVulnerability DS002\nSeverity: HIGH\nMessage: Specify at least 1 USER command in Dockerfile with non-root user as argument\nLink: [DS002](https://avd.aquasec.com/misconfig/ds002)",
@@ -56,7 +56,7 @@
       },
       {
         "ruleId": "DS026",
-        "ruleName": "Misconfiguration",
+        "ruleName": "No HEALTHCHECK defined",
         "severity": "low",
         "rawSeverity": "note · security-severity 2",
         "message": "Artifact: server/Dockerfile\nType: dockerfile\nVulnerability DS026\nSeverity: LOW\nMessage: Add HEALTHCHECK instruction in your Dockerfile\nLink: [DS026](https://avd.aquasec.com/misconfig/ds026)",

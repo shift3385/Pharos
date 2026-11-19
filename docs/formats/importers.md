@@ -50,7 +50,7 @@ Se detecta por `version` `2.x` y `runs[]`.
 | Pharos | SARIF |
 | --- | --- |
 | uno por | resultado con `kind` `fail` (por defecto), `open` o `review`, y sin `baselineState: absent`. Los demás se cuentan en el aviso `sarif-skipped` |
-| `ruleId` / `ruleName` | `ruleId` (o `rule.id`) / `rule.name` o `shortDescription`. La regla se busca por `rule.index`/`ruleIndex` en el `toolComponent` del resultado o en `extensions`, y si no por id |
+| `ruleId` / `ruleName` | `ruleId` (o `rule.id`) / `shortDescription` o, si no hay, `rule.name` (que suele ser un id o una palabra genérica: «Misconfiguration» en Trivy). La regla se busca por `rule.index`/`ruleIndex` en el `toolComponent` del resultado o en `extensions`, y si no por id |
 | `severity` | `security-severity` del resultado o de la regla (≥9 crítica, ≥7 alta, ≥4 media, >0 baja); si no, `level` del resultado o `defaultConfiguration.level`: `error` alta, `warning` media (también por defecto), `note` baja, `none` info |
 | `rawSeverity` | `level` y `security-severity n`, unidos con ` · ` |
 | `message` | `message.text`, `markdown`, o el `messageStrings` de la regla con `{n}` sustituidos |
