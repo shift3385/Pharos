@@ -202,6 +202,50 @@ describe("suite baselines on the web (CAS-02)", () => {
   });
 });
 
+describe("suite baselines in a shared workspace (CAS-02 with ADR-0042)", () => {
+  // The same capability as the desktop (`workspaces.rs`): `case.edit`.
+  async function teamCall(token: string, method: string, url: string, payload?: unknown) {
+    const res = await app.inject({
+      method: method as "GET",
+      url,
+      headers: {
+        authorization: `Bearer ${token}`,
+        [VERSION_HEADER]: SERVER_VERSION,
+        [FEATURES_HEADER]: SERVER_FEATURES.join(","),
+      },
+      payload: payload as object,
+    });
+    return { status: res.statusCode, body: res.body ? res.json() : undefined };
+  }
+
+  it("a Test Analyst creates a baseline on the web; a Viewer cannot", async () => {
+    const ana = await tokenFor("ana@pharos.dev"); // Test Manager
+    const sara = await tokenFor("sara@pharos.dev"); // Test Analyst
+    const vera = await tokenFor("vera@pharos.dev"); // Viewer
+    const ws = (await teamCall(ana, "POST", "/workspaces", { name: "QA Tienda" })).body.id as string;
+    for (const [who, role] of [
+      [sara, "test_analyst"],
+      [vera, "viewer"],
+    ] as const) {
+      const inv = await teamCall(ana, "POST", `/workspaces/${ws}/invitations`, { role });
+      expect((await teamCall(who, "POST", "/invitations/accept", { code: inv.body.code })).status).toBe(200);
+    }
+    const { projectId, c } = await newCase(ana);
+    expect((await teamCall(ana, "POST", `/workspaces/${ws}/move-project`, { projectId })).status).toBe(200);
+
+    const created = await teamCall(sara, "POST", "/api/case-baselines", { projectId, name: "R1", caseIds: [c.id] });
+    expect(created.status).toBe(200);
+    expect(created.body).toMatchObject({ name: "R1", itemCount: 1 });
+    const stored = await pool.query(
+      "SELECT workspace_id FROM documents WHERE entity = 'case_baseline' AND entity_id = $1",
+      [created.body.id],
+    );
+    expect(stored.rows[0]?.workspace_id).toBe(ws);
+
+    expect((await teamCall(vera, "POST", "/api/case-baselines", { projectId, name: "R2", caseIds: [c.id] })).status).toBe(403);
+  });
+});
+
 describe("the save rules", () => {
   it("what counts as content and the next version", () => {
     expect(contentChanged("T", { steps: [1], custom: { a: 1 } }, "T ", { steps: [1], custom: { a: 2 }, notes: "" })).toBe(false);
