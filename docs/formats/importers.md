@@ -13,8 +13,8 @@ los parsers (el CLI de INT-01) tiene que reproducirla.
 
 SARIF, axe y k6 (hallazgos y métricas), Allure y TRX (resultados) y `.xcresult`
 están aprobados en [ADR-0053](../adr/0053-hallazgos-metricas-y-paquete-de-formatos.md).
-SARIF, axe, k6, TRX y Allure ya tienen parser (abajo); `.xcresult` sigue en el
-[plan de la pista F](../design/f-formatos-plan.md) §7 hasta que se implementen.
+Todos tienen parser (abajo), según el
+[plan de la pista F](../design/f-formatos-plan.md) §7.
 Los tres dan `findings[]` y `metrics[]` sin `results[]`, así que no cambian
 Pharos Run JSON 1.0.0. No suben `NORMALIZER_VERSION`: antes nadie podía
 importar esos archivos, así que ningún contenido cambia bajo un id ya escrito.
@@ -139,6 +139,29 @@ allure-playwright 3.15.0 sobre tres specs propias.
 | `*-container.json` | un `befores`/`afters` fallido hace fallar a sus hijos (`attributes.failedFixture`) |
 | `run` | `sourceTool` = la etiqueta `framework` (si no, `allure`); `environment.properties` → `context.environment`; `executor.json` → `context.executor*` |
 
+### `.xcresult` (Xcode) → resultados
+
+Un `.xcresult` es un paquete de macOS que solo lee `xcresulttool`, así que se
+importa **su JSON documentado** (Xcode 16 o posterior):
+
+```
+xcrun xcresulttool get test-results tests --path Resultados.xcresult > tests.json
+```
+
+Pharos Run JSON 1.1.0, como TRX y Allure. Muestras: `fixtures/xcresult/` (las
+de fastlane trainer, MIT: Xcode 16 y Xcode 26, XCTest y Swift Testing).
+
+| Pharos | xcresulttool |
+| --- | --- |
+| `testKey` | el bundle de pruebas como ruta; títulos: las `Test Suite` y el nombre del `Test Case` (una suite que repite el bundle no cuenta). El `nodeIdentifier` va a `externalId` |
+| intentos | los `Repetition` (`Retry n`, `First Run`…), en orden: el último es el final; uno que pasa tras fallar es `flaky` |
+| filas | los `Arguments` de una prueba parametrizada, en orden (`attributes.arguments`) |
+| `status` / `rawStatus` | `Passed` y `Expected Failure` → `passed`; `Failed`; `Skipped`; el resto → `other` / el original |
+| duración | `durationInSeconds` (Xcode 26) o `duration` (`5s`, `0,011s` con coma decimal, `1m 3s`) |
+| `message` | los `Failure Message` del intento (o del caso sin repeticiones), uno por línea; en un `Skipped`, su motivo |
+| etiquetas | los `tags` de Swift Testing → `@…` (son identificadores de Swift, sin guion: una clave como `PH-001` no cabe, así que el vínculo suele hacerse en «Sin vincular», que se recuerda) |
+| `run` | `sourceTool: xcode`; `context.devices` (nombre, plataforma y versión) y `context.testPlanConfigurations` |
+
 ## Detección
 
 Se detecta por el **contenido**, nunca por la extensión:
@@ -149,6 +172,7 @@ Se detecta por el **contenido**, nunca por la extensión:
 | XML con `<testsuites>` o `<testsuite>`                  | `junit`                                                       |
 | XML con `<TestRun>` (VSTest)                           | `trx`                                                         |
 | Un `.zip` (empieza por `PK`) con `*-result.json`         | `allure` (la carpeta `allure-results`)                         |
+| JSON con `testNodes` (de `xcresulttool`)                 | `xcresult`                                                    |
 | JSON con `reportFormat: "CTRF"`                         | `ctrf`                                                        |
 | JSON con `testEngine.name: "axe-core"` y `violations`, o un arreglo de ellos | `axe` |
 | JSON con `version` `2.x` y `runs[]`                     | `sarif`                                                       |

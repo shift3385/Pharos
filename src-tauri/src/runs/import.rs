@@ -54,8 +54,8 @@ use crate::project;
 
 /// Formats a shard may come from through this importer. SARIF, k6 and axe
 /// bring findings and metrics instead of results (ING-06, ADR-0053); Allure
-/// and TRX bring results (ING-07, Pharos Run JSON 1.1.0).
-const FORMATS: [&str; 10] = [
+/// TRX and `.xcresult` bring results (ING-07, Pharos Run JSON 1.1.0).
+const FORMATS: [&str; 11] = [
     "cucumber_messages",
     "ctrf",
     "junit",
@@ -66,6 +66,7 @@ const FORMATS: [&str; 10] = [
     "axe",
     "allure",
     "trx",
+    "xcresult",
 ];
 
 /// Results per import (one transaction, one call), as the TS side checks.

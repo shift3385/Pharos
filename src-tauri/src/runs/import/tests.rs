@@ -2160,3 +2160,24 @@ fn an_allure_document_keeps_its_retries_as_attempts() {
         .unwrap();
     assert_eq!(format, "allure");
 }
+
+#[test]
+fn an_xcresult_document_keeps_its_rows_and_retries() {
+    let c = device();
+    let p = new_project(&c);
+    let doc = doc_of(include_str!(
+        "../../../../packages/formats/src/fixtures/xcresult/normalized/Xcode16-Mixed-XCTest-SwiftTesting.json"
+    ));
+    assert_eq!(doc["schemaVersion"], "1.1.0");
+    let out = import(&c, &new_run(&p, doc)).unwrap();
+    let results = list_results(&c, &out.run_id, U).unwrap();
+    assert_eq!(results.len(), 112);
+    let format: String = c
+        .query_row(
+            "SELECT source_format FROM run_shards WHERE run_id = ?1",
+            params![out.run_id],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(format, "xcresult");
+}

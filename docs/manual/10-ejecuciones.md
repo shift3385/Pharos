@@ -11,7 +11,8 @@ concreta de pruebas, y puede salir de tres sitios:
 - **A mano:** «Nuevo run manual», con los casos que elijas (capítulo 11).
 - **De tu automatización:** «Importar informe» lee los resultados de
   Playwright, Cucumber, JUnit, CTRF, .NET (TRX) o Allure (la carpeta
-  `allure-results` comprimida en `.zip`), los hallazgos de un SARIF (Semgrep,
+  `allure-results` comprimida en `.zip`) o Xcode (el JSON de
+  `xcrun xcresulttool get test-results tests`), los hallazgos de un SARIF (Semgrep,
   Trivy, ZAP, CodeQL, ESLint…) o de axe, y las métricas del resumen de k6.
 
 Al importar, Pharos enlaza cada test con su caso por la clave del caso. Los
@@ -135,6 +136,7 @@ aparece en él se dio por corregido):
 | JUnit XML | Propiedad `test_id` del `<testcase>` (`<property name="test_id" value="PH-001"/>`) o las propiedades `tag` / `tags`. JUnit no tiene tags propios, así que `@PH-001` en el nombre del test no basta |
 | TRX (.NET) | La categoría del test: `[TestCategory("PH-001")]` (NUnit `[Category]`) |
 | Allure | La etiqueta `tag` (`@PH-001` en el título con allure-playwright), `AS_ID` o un enlace `tms` |
+| Xcode (`.xcresult`) | Desde la bandeja «Sin vincular»: los tags de Swift Testing son identificadores y no admiten el guion de `PH-001`. La vinculación se recuerda en las siguientes importaciones |
 | Pharos Run JSON | Sus `tags` |
 
 El detalle de cada formato está en [Formatos de importación](../formats/importers.md).

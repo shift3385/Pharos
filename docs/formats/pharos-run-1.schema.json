@@ -121,7 +121,8 @@
               "k6",
               "axe",
               "allure",
-              "trx"
+              "trx",
+              "xcresult"
             ]
           },
           "sourceFileSha256": {

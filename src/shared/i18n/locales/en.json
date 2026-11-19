@@ -4350,7 +4350,8 @@
       "k6": "k6 summary",
       "axe": "axe-core",
       "trx": "TRX (.NET)",
-      "allure": "Allure"
+      "allure": "Allure",
+      "xcresult": "Xcode (.xcresult)"
     },
     "field": {
       "title": "Run title",

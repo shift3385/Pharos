@@ -353,7 +353,7 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      builds nunca escriben contenido distinto bajo un mismo id (ADR-0013).
 6. **Formatos exportados** (`.feature`, `.xlsx`, Pharos Run JSON): solo cambian
    de forma incompatible en una MENOR, con nota en el CHANGELOG.
-   - **Pharos Run JSON** lleva `schemaVersion` SemVer propio (hoy `1.1.0`, que añade los orígenes `allure` y `trx` de ING-07;
+   - **Pharos Run JSON** lleva `schemaVersion` SemVer propio (hoy `1.1.0`, que añade los orígenes `allure`, `trx` y `xcresult` de ING-07;
      `packages/formats/src/`, JSON Schema en
      `docs/formats/pharos-run-1.schema.json`). Un campo nuevo opcional sube la
      MENOR del formato; un cambio incompatible sube su MAYOR, y un lector

@@ -109,8 +109,8 @@ const NOT_FOUND = json("Error", "`not_found` or `run_not_found`: not in the toke
 
 /** The version of the v1 contract (VERSIONING §6.6): the minor grows with
  *  each additive change, the patch with corrections of the text. A new
- *  major is a new path (`/api/v2`). 1.1.0: runs and report uploads (A2). 1.1.1: findings and metrics are stored (A2b); the text changes, not the shapes. 1.2.0: read-only cases, cycles, defects and requirements with a cursor (A4). */
-export const API_V1_CONTRACT_VERSION = "1.2.0";
+ *  major is a new path (`/api/v2`). 1.1.0: runs and report uploads (A2). 1.1.1: findings and metrics are stored (A2b); the text changes, not the shapes. 1.2.0: read-only cases, cycles, defects and requirements with a cursor (A4). 1.3.0: `format=xcresult` for uploads (ING-07, F7). */
+export const API_V1_CONTRACT_VERSION = "1.3.0";
 
 /** The read paths of A4 (`v1.reads.ts`): a list and an item each. */
 function readPaths(): Record<string, unknown> {

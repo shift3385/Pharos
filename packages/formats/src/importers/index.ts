@@ -31,6 +31,7 @@ import { isSarif, parseSarif } from "./sarif.js";
 import { parseJunit } from "./junit.js";
 import { isTrx, parseTrx } from "./trx.js";
 import { type AllureFile, parseAllure } from "./allure.js";
+import { isXcTestResults, parseXcresult } from "./xcresult.js";
 import { MessagesCollector, parseMessages } from "./messages.js";
 import { parsePlaywright } from "./playwright.js";
 
@@ -43,6 +44,7 @@ export { type SarifLog, isSarif, parseSarif } from "./sarif.js";
 export { parseCtrf } from "./ctrf.js";
 export { parseJunit } from "./junit.js";
 export { TRX_NAMESPACE, isTrx, parseTrx, trxDuration } from "./trx.js";
+export { type XcTestNode, type XcTestResults, isXcTestResults, parseXcresult, xcDuration } from "./xcresult.js";
 export { type AllureFile, isAllureResults, isAllureTextFile, parseAllure } from "./allure.js";
 export { parsePlaywright } from "./playwright.js";
 
@@ -163,6 +165,7 @@ function parseJson(json: unknown): ParsedReport {
   if (isAxeResults(o)) return parseAxe(o);
   if (isSarif(o)) return parseSarif(o);
   if (isK6Summary(o)) return parseK6(o);
+  if (isXcTestResults(o)) return parseXcresult(o);
   if (typeof o.schemaVersion === "string") return parsePharosRunFile(o);
   if (o.config && Array.isArray(o.suites))
     return parsePlaywright(

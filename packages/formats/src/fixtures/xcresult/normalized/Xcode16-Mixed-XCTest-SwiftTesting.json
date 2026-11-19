@@ -1,0 +1,2327 @@
+{
+  "format": "xcresult",
+  "warnings": [],
+  "inline": {},
+  "doc": {
+    "schemaVersion": "1.1.0",
+    "run": {
+      "trigger": "import",
+      "sourceTool": "xcode",
+      "context": {
+        "devices": [
+          "iPhone 16 Pro · iOS Simulator 18.2"
+        ],
+        "testPlanConfigurations": [
+          "MyTestPlanConfig"
+        ]
+      }
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "xcresult",
+        "normalizerVersion": 1
+      }
+    ],
+    "results": [
+      {
+        "name": "testAccessibilityAndScreenshots()",
+        "testKey": "FastlaneTrainerExampleUITests::testAccessibilityAndScreenshots()",
+        "suite": [
+          "FastlaneTrainerExampleUITests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleUITests/testAccessibilityAndScreenshots()",
+        "duration": 6000,
+        "message": "FastlaneTrainerExampleUITests.swift:129: XCTAssertTrue failed",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "testAccessibilityAndScreenshots()",
+        "testKey": "FastlaneTrainerExampleUITests::testAccessibilityAndScreenshots()",
+        "suite": [
+          "FastlaneTrainerExampleUITests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerExampleUITests/testAccessibilityAndScreenshots()",
+        "duration": 4000,
+        "message": "FastlaneTrainerExampleUITests.swift:129: XCTAssertTrue failed",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "testAlertHandling()",
+        "testKey": "FastlaneTrainerExampleUITests::testAlertHandling()",
+        "suite": [
+          "FastlaneTrainerExampleUITests"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleUITests/testAlertHandling()",
+        "duration": 6000,
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "testBasicNavigation()",
+        "testKey": "FastlaneTrainerExampleUITests::testBasicNavigation()",
+        "suite": [
+          "FastlaneTrainerExampleUITests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleUITests/testBasicNavigation()",
+        "duration": 8000,
+        "message": "FastlaneTrainerExampleUITests.swift:43: Failed to tap \"Details\" Button: No matches found for first query match sequence: `Descendants matching type Button` -> `Elements matching predicate '\"Details\" IN identifiers'`, given input App element pid: 44723",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "testBasicNavigation()",
+        "testKey": "FastlaneTrainerExampleUITests::testBasicNavigation()",
+        "suite": [
+          "FastlaneTrainerExampleUITests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerExampleUITests/testBasicNavigation()",
+        "duration": 8000,
+        "message": "FastlaneTrainerExampleUITests.swift:43: Failed to tap \"Details\" Button: No matches found for first query match sequence: `Descendants matching type Button` -> `Elements matching predicate '\"Details\" IN identifiers'`, given input App element pid: 44787",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "testGesturesAndInteractions()",
+        "testKey": "FastlaneTrainerExampleUITests::testGesturesAndInteractions()",
+        "suite": [
+          "FastlaneTrainerExampleUITests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleUITests/testGesturesAndInteractions()",
+        "duration": 4000,
+        "message": "FastlaneTrainerExampleUITests.swift:108: XCTAssertTrue failed",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "testGesturesAndInteractions()",
+        "testKey": "FastlaneTrainerExampleUITests::testGesturesAndInteractions()",
+        "suite": [
+          "FastlaneTrainerExampleUITests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerExampleUITests/testGesturesAndInteractions()",
+        "duration": 4000,
+        "message": "FastlaneTrainerExampleUITests.swift:108: XCTAssertTrue failed",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "testLaunchPerformance()",
+        "testKey": "FastlaneTrainerExampleUITests::testLaunchPerformance()",
+        "suite": [
+          "FastlaneTrainerExampleUITests"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleUITests/testLaunchPerformance()",
+        "duration": 22000,
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "testTextInputAndValidation()",
+        "testKey": "FastlaneTrainerExampleUITests::testTextInputAndValidation()",
+        "suite": [
+          "FastlaneTrainerExampleUITests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleUITests/testTextInputAndValidation()",
+        "duration": 6000,
+        "message": "FastlaneTrainerExampleUITests.swift:68: XCTAssertEqual failed: (\"Optional(\"Search\")\") is not equal to (\"Optional(\"\")\")",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "testTextInputAndValidation()",
+        "testKey": "FastlaneTrainerExampleUITests::testTextInputAndValidation()",
+        "suite": [
+          "FastlaneTrainerExampleUITests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerExampleUITests/testTextInputAndValidation()",
+        "duration": 6000,
+        "message": "FastlaneTrainerExampleUITests.swift:68: XCTAssertEqual failed: (\"Optional(\"Search\")\") is not equal to (\"Optional(\"\")\")",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "testLaunch()",
+        "testKey": "FastlaneTrainerExampleUITests::FastlaneTrainerExampleUITestsLaunchTests › testLaunch()[1]",
+        "suite": [
+          "FastlaneTrainerExampleUITests",
+          "FastlaneTrainerExampleUITestsLaunchTests"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleUITestsLaunchTests/testLaunch",
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "1, 1"
+        }
+      },
+      {
+        "name": "testLaunch()",
+        "testKey": "FastlaneTrainerExampleUITests::FastlaneTrainerExampleUITestsLaunchTests › testLaunch()[2]",
+        "suite": [
+          "FastlaneTrainerExampleUITests",
+          "FastlaneTrainerExampleUITestsLaunchTests"
+        ],
+        "tags": [],
+        "exampleRow": 1,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleUITestsLaunchTests/testLaunch",
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "1, 4"
+        }
+      },
+      {
+        "name": "testLaunch()",
+        "testKey": "FastlaneTrainerExampleUITests::FastlaneTrainerExampleUITestsLaunchTests › testLaunch()[3]",
+        "suite": [
+          "FastlaneTrainerExampleUITests",
+          "FastlaneTrainerExampleUITestsLaunchTests"
+        ],
+        "tags": [],
+        "exampleRow": 2,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleUITestsLaunchTests/testLaunch",
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "2, 1"
+        }
+      },
+      {
+        "name": "testLaunch()",
+        "testKey": "FastlaneTrainerExampleUITests::FastlaneTrainerExampleUITestsLaunchTests › testLaunch()[4]",
+        "suite": [
+          "FastlaneTrainerExampleUITests",
+          "FastlaneTrainerExampleUITestsLaunchTests"
+        ],
+        "tags": [],
+        "exampleRow": 3,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleUITestsLaunchTests/testLaunch",
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "4, 2"
+        }
+      },
+      {
+        "name": "Password complexity",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Registration › Password Validation › Password complexity",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Registration",
+          "Password Validation"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/UserTests/RegistrationTests/PasswordTests/testPasswordComplexity()",
+        "duration": 12,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Password complexity",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Registration › Password Validation › Password complexity",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Registration",
+          "Password Validation"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/UserTests/RegistrationTests/PasswordTests/testPasswordComplexity()",
+        "duration": 10,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Password length requirements",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Registration › Password Validation › Password length requirements",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Registration",
+          "Password Validation"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/UserTests/RegistrationTests/PasswordTests/testPasswordLength()",
+        "duration": 13,
+        "message": "FastlaneTrainerExampleTests.swift:156: Expectation failed: (password.count → 11) < 8\nPassword 'justbarely8' is too short\nFastlaneTrainerExampleTests.swift:156: Expectation failed: (password.count → 16) < 8\nPassword 'thisislongenough' is too short",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "Password length requirements",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Registration › Password Validation › Password length requirements",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Registration",
+          "Password Validation"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/UserTests/RegistrationTests/PasswordTests/testPasswordLength()",
+        "duration": 11,
+        "message": "FastlaneTrainerExampleTests.swift:156: Expectation failed: (password.count → 11) < 8\nPassword 'justbarely8' is too short\nFastlaneTrainerExampleTests.swift:156: Expectation failed: (password.count → 16) < 8\nPassword 'thisislongenough' is too short",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "Valid email formats",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Registration › Email Validation › Valid email formats",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Registration",
+          "Email Validation"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/UserTests/RegistrationTests/EmailTests/testValidEmails()",
+        "duration": 12,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Valid email formats",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Registration › Email Validation › Valid email formats",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Registration",
+          "Email Validation"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/UserTests/RegistrationTests/EmailTests/testValidEmails()",
+        "duration": 10,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Basic registration",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Registration › Basic registration",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Registration"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/UserTests/RegistrationTests/testBasicRegistration()",
+        "duration": 5,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Basic registration",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Registration › Basic registration",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Registration"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/UserTests/RegistrationTests/testBasicRegistration()",
+        "duration": 13,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Privacy settings",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Profile Management › Settings › Privacy settings[1]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Profile Management",
+          "Settings"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/UserTests/ProfileTests/SettingsTests/testPrivacySettings(_:)",
+        "duration": 3,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "(setting: \"email\", isPrivate: true)",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Privacy settings",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Profile Management › Settings › Privacy settings[1]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Profile Management",
+          "Settings"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/UserTests/ProfileTests/SettingsTests/testPrivacySettings(_:)",
+        "duration": 6,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "(setting: \"email\", isPrivate: true)",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Privacy settings",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Profile Management › Settings › Privacy settings[2]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Profile Management",
+          "Settings"
+        ],
+        "tags": [],
+        "exampleRow": 1,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/UserTests/ProfileTests/SettingsTests/testPrivacySettings(_:)",
+        "duration": 2,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "(setting: \"name\", isPrivate: false)",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Privacy settings",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Profile Management › Settings › Privacy settings[2]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Profile Management",
+          "Settings"
+        ],
+        "tags": [],
+        "exampleRow": 1,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/UserTests/ProfileTests/SettingsTests/testPrivacySettings(_:)",
+        "duration": 6,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "(setting: \"name\", isPrivate: false)",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Privacy settings",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Profile Management › Settings › Privacy settings[3]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Profile Management",
+          "Settings"
+        ],
+        "tags": [],
+        "exampleRow": 2,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/UserTests/ProfileTests/SettingsTests/testPrivacySettings(_:)",
+        "duration": 2,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "(setting: \"profile\", isPrivate: true)",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Privacy settings",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Profile Management › Settings › Privacy settings[3]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Profile Management",
+          "Settings"
+        ],
+        "tags": [],
+        "exampleRow": 2,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/UserTests/ProfileTests/SettingsTests/testPrivacySettings(_:)",
+        "duration": 7,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "(setting: \"profile\", isPrivate: true)",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Avatar dimensions",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Profile Management › Avatar › Avatar dimensions",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Profile Management",
+          "Avatar"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/UserTests/ProfileTests/AvatarTests/testAvatarDimensions()",
+        "duration": 14,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Avatar dimensions",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Profile Management › Avatar › Avatar dimensions",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Profile Management",
+          "Avatar"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/UserTests/ProfileTests/AvatarTests/testAvatarDimensions()",
+        "duration": 9,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Avatar file types",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Profile Management › Avatar › Avatar file types[1]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Profile Management",
+          "Avatar"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/UserTests/ProfileTests/AvatarTests/testAvatarFileTypes(_:)",
+        "duration": 3,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"gif\"",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Avatar file types",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Profile Management › Avatar › Avatar file types[1]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Profile Management",
+          "Avatar"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/UserTests/ProfileTests/AvatarTests/testAvatarFileTypes(_:)",
+        "duration": 6,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"gif\"",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Avatar file types",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Profile Management › Avatar › Avatar file types[2]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Profile Management",
+          "Avatar"
+        ],
+        "tags": [],
+        "exampleRow": 1,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/UserTests/ProfileTests/AvatarTests/testAvatarFileTypes(_:)",
+        "duration": 3,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"jpg\"",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Avatar file types",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Profile Management › Avatar › Avatar file types[2]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Profile Management",
+          "Avatar"
+        ],
+        "tags": [],
+        "exampleRow": 1,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/UserTests/ProfileTests/AvatarTests/testAvatarFileTypes(_:)",
+        "duration": 6,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"jpg\"",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Avatar file types",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Profile Management › Avatar › Avatar file types[3]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Profile Management",
+          "Avatar"
+        ],
+        "tags": [],
+        "exampleRow": 2,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/UserTests/ProfileTests/AvatarTests/testAvatarFileTypes(_:)",
+        "duration": 3,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"png\"",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Avatar file types",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › User Management › Profile Management › Avatar › Avatar file types[3]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "User Management",
+          "Profile Management",
+          "Avatar"
+        ],
+        "tags": [],
+        "exampleRow": 2,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/UserTests/ProfileTests/AvatarTests/testAvatarFileTypes(_:)",
+        "duration": 6,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"png\"",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Content filtering",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Content Management › Posts › Moderation › Content filtering[1]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Content Management",
+          "Posts",
+          "Moderation"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/ContentTests/PostTests/ModerationTests/testContentFiltering(_:)",
+        "duration": 3,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"normal post\"",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Content filtering",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Content Management › Posts › Moderation › Content filtering[1]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Content Management",
+          "Posts",
+          "Moderation"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/ContentTests/PostTests/ModerationTests/testContentFiltering(_:)",
+        "duration": 5,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"normal post\"",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Content filtering",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Content Management › Posts › Moderation › Content filtering[2]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Content Management",
+          "Posts",
+          "Moderation"
+        ],
+        "tags": [],
+        "exampleRow": 1,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/ContentTests/PostTests/ModerationTests/testContentFiltering(_:)",
+        "duration": 12,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"post with @mention\"",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Content filtering",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Content Management › Posts › Moderation › Content filtering[2]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Content Management",
+          "Posts",
+          "Moderation"
+        ],
+        "tags": [],
+        "exampleRow": 1,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/ContentTests/PostTests/ModerationTests/testContentFiltering(_:)",
+        "duration": 5,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"post with @mention\"",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Content filtering",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Content Management › Posts › Moderation › Content filtering[3]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Content Management",
+          "Posts",
+          "Moderation"
+        ],
+        "tags": [],
+        "exampleRow": 2,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/ContentTests/PostTests/ModerationTests/testContentFiltering(_:)",
+        "duration": 12,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"post with #hashtag\"",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Content filtering",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Content Management › Posts › Moderation › Content filtering[3]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Content Management",
+          "Posts",
+          "Moderation"
+        ],
+        "tags": [],
+        "exampleRow": 2,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/ContentTests/PostTests/ModerationTests/testContentFiltering(_:)",
+        "duration": 5,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"post with #hashtag\"",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Post length validation",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Content Management › Posts › Creation › Post length validation",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Content Management",
+          "Posts",
+          "Creation"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/ContentTests/PostTests/CreationTests/testPostLength()",
+        "duration": 12,
+        "message": "FastlaneTrainerExampleTests.swift:226: Expectation failed: (longPost.count → 1000) <= 500",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "Post length validation",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Content Management › Posts › Creation › Post length validation",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Content Management",
+          "Posts",
+          "Creation"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/ContentTests/PostTests/CreationTests/testPostLength()",
+        "duration": 11,
+        "message": "FastlaneTrainerExampleTests.swift:226: Expectation failed: (longPost.count → 1000) <= 500",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "Network-dependent test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Resource-Dependent Tests › Network-dependent test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations",
+          "Resource-Dependent Tests"
+        ],
+        "tags": [
+          "@network"
+        ],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/SkipTests/ResourceTests/testWithNetworkRequirement()",
+        "duration": 5,
+        "message": "FastlaneTrainerExampleTests.swift:291: Caught error: TestError(message: \"Test requires network access\")",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "Network-dependent test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Resource-Dependent Tests › Network-dependent test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations",
+          "Resource-Dependent Tests"
+        ],
+        "tags": [
+          "@network"
+        ],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/SkipTests/ResourceTests/testWithNetworkRequirement()",
+        "duration": 14,
+        "message": "FastlaneTrainerExampleTests.swift:291: Caught error: TestError(message: \"Test requires network access\")",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "Database test with cleanup",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Resource-Dependent Tests › Database test with cleanup",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations",
+          "Resource-Dependent Tests"
+        ],
+        "tags": [
+          "@database"
+        ],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/SkipTests/ResourceTests/testWithDatabaseCleanup()",
+        "duration": 5,
+        "message": "FastlaneTrainerExampleTests.swift:301: Caught error: TestError(message: \"Database not available\")",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "Database test with cleanup",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Resource-Dependent Tests › Database test with cleanup",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations",
+          "Resource-Dependent Tests"
+        ],
+        "tags": [
+          "@database"
+        ],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/SkipTests/ResourceTests/testWithDatabaseCleanup()",
+        "duration": 13,
+        "message": "FastlaneTrainerExampleTests.swift:301: Caught error: TestError(message: \"Database not available\")",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "Premium feature test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Feature Flag Tests › Premium feature test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations",
+          "Feature Flag Tests"
+        ],
+        "tags": [
+          "@validation"
+        ],
+        "status": "skipped",
+        "rawStatus": "Skipped",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/SkipTests/FeatureFlagTests/testPremiumFeature()",
+        "duration": 2,
+        "message": "Test 'Premium feature test' skipped: Premium features not available",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Premium feature test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Feature Flag Tests › Premium feature test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations",
+          "Feature Flag Tests"
+        ],
+        "tags": [
+          "@validation"
+        ],
+        "status": "skipped",
+        "rawStatus": "Skipped",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/SkipTests/FeatureFlagTests/testPremiumFeature()",
+        "duration": 4,
+        "message": "Test 'Premium feature test' skipped: Premium features not available",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Feature flag dependent tests",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Feature Flag Tests › Feature flag dependent tests[1]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations",
+          "Feature Flag Tests"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/SkipTests/FeatureFlagTests/testFeatureFlag(_:)",
+        "duration": 3,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"basic_feature\"",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Feature flag dependent tests",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Feature Flag Tests › Feature flag dependent tests[1]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations",
+          "Feature Flag Tests"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/SkipTests/FeatureFlagTests/testFeatureFlag(_:)",
+        "duration": 4,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"basic_feature\"",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Feature flag dependent tests",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Feature Flag Tests › Feature flag dependent tests[2]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations",
+          "Feature Flag Tests"
+        ],
+        "tags": [],
+        "exampleRow": 1,
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/SkipTests/FeatureFlagTests/testFeatureFlag(_:)",
+        "duration": 5,
+        "message": "FastlaneTrainerExampleTests.swift:334: Caught error: TestError(message: \"Feature \\'experimental_feature\\' is not enabled\")",
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"experimental_feature\"",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Feature flag dependent tests",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Feature Flag Tests › Feature flag dependent tests[2]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations",
+          "Feature Flag Tests"
+        ],
+        "tags": [],
+        "exampleRow": 1,
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/SkipTests/FeatureFlagTests/testFeatureFlag(_:)",
+        "duration": 6,
+        "message": "FastlaneTrainerExampleTests.swift:334: Caught error: TestError(message: \"Feature \\'experimental_feature\\' is not enabled\")",
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"experimental_feature\"",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Feature flag dependent tests",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Feature Flag Tests › Feature flag dependent tests[3]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations",
+          "Feature Flag Tests"
+        ],
+        "tags": [],
+        "exampleRow": 2,
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/SkipTests/FeatureFlagTests/testFeatureFlag(_:)",
+        "duration": 5,
+        "message": "FastlaneTrainerExampleTests.swift:334: Caught error: TestError(message: \"Feature \\'premium_feature\\' is not enabled\")",
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"premium_feature\"",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Feature flag dependent tests",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Feature Flag Tests › Feature flag dependent tests[3]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations",
+          "Feature Flag Tests"
+        ],
+        "tags": [],
+        "exampleRow": 2,
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/SkipTests/FeatureFlagTests/testFeatureFlag(_:)",
+        "duration": 6,
+        "message": "FastlaneTrainerExampleTests.swift:334: Caught error: TestError(message: \"Feature \\'premium_feature\\' is not enabled\")",
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"premium_feature\"",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Production config test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Environment-Dependent Tests › Production config test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations",
+          "Environment-Dependent Tests"
+        ],
+        "tags": [],
+        "status": "skipped",
+        "rawStatus": "Skipped",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/SkipTests/EnvironmentTests/testProductionConfig()",
+        "duration": 2,
+        "message": "Test 'Production config test' skipped: Test only runs in production",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Production config test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Environment-Dependent Tests › Production config test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations",
+          "Environment-Dependent Tests"
+        ],
+        "tags": [],
+        "status": "skipped",
+        "rawStatus": "Skipped",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/SkipTests/EnvironmentTests/testProductionConfig()",
+        "duration": 0,
+        "message": "Test 'Production config test' skipped: Test only runs in production",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "CI environment test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Environment-Dependent Tests › CI environment test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations",
+          "Environment-Dependent Tests"
+        ],
+        "tags": [],
+        "status": "skipped",
+        "rawStatus": "Skipped",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/SkipTests/EnvironmentTests/testCIOnly()",
+        "duration": 0,
+        "message": "Test 'CI environment test' skipped: Test only runs in CI environment",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "CI environment test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Environment-Dependent Tests › CI environment test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations",
+          "Environment-Dependent Tests"
+        ],
+        "tags": [],
+        "status": "skipped",
+        "rawStatus": "Skipped",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/SkipTests/EnvironmentTests/testCIOnly()",
+        "duration": 3,
+        "message": "Test 'CI environment test' skipped: Test only runs in CI environment",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Version-dependent test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Version-dependent test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/SkipTests/testNewOSFeature()",
+        "duration": 5,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Version-dependent test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Version-dependent test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/SkipTests/testNewOSFeature()",
+        "duration": 14,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Unconditionally skipped test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Unconditionally skipped test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations"
+        ],
+        "tags": [],
+        "status": "skipped",
+        "rawStatus": "Skipped",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/SkipTests/testSkippedFeature()",
+        "duration": 0,
+        "message": "Test 'Unconditionally skipped test' skipped: Feature pending implementation",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Unconditionally skipped test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Unconditionally skipped test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations"
+        ],
+        "tags": [],
+        "status": "skipped",
+        "rawStatus": "Skipped",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/SkipTests/testSkippedFeature()",
+        "duration": 1,
+        "message": "Test 'Unconditionally skipped test' skipped: Feature pending implementation",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Platform-specific test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Platform-specific test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations"
+        ],
+        "tags": [],
+        "status": "skipped",
+        "rawStatus": "Skipped",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/SkipTests/testCatalystOnly()",
+        "duration": 0,
+        "message": "Test 'Platform-specific test' skipped: Test only runs in Catalyst",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Platform-specific test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test Skipping Demonstrations › Platform-specific test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Test Skipping Demonstrations"
+        ],
+        "tags": [],
+        "status": "skipped",
+        "rawStatus": "Skipped",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/SkipTests/testCatalystOnly()",
+        "duration": 4,
+        "message": "Test 'Platform-specific test' skipped: Test only runs in Catalyst",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Basic arithmetic",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Math Operations › Basic arithmetic",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Math Operations"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/MathTests/testArithmetic()",
+        "duration": 5,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Basic arithmetic",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Math Operations › Basic arithmetic",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "Math Operations"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/MathTests/testArithmetic()",
+        "duration": 12,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "String transformations",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › String Operations › String transformations",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "String Operations"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/StringTests/testTransformations()",
+        "duration": 4,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "String transformations",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › String Operations › String transformations",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "String Operations"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/StringTests/testTransformations()",
+        "duration": 12,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "String concatenation",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › String Operations › String concatenation",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "String Operations"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/StringTests/testConcatenation()",
+        "duration": 5,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "String concatenation",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › String Operations › String concatenation",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests",
+          "String Operations"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/StringTests/testConcatenation()",
+        "duration": 12,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Simple string validation",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Simple string validation",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [
+          "@basic",
+          "@string",
+          "@validation"
+        ],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/testBasicString()",
+        "duration": 7,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Simple string validation",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Simple string validation",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [
+          "@basic",
+          "@string",
+          "@validation"
+        ],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/testBasicString()",
+        "duration": 18,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Skipped test with condition",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Skipped test with condition",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [],
+        "status": "skipped",
+        "rawStatus": "Skipped",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/testSkippedFeature()",
+        "duration": 2,
+        "message": "Test 'Skipped test with condition' skipped: Feature not yet implemented",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Skipped test with condition",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Skipped test with condition",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [],
+        "status": "skipped",
+        "rawStatus": "Skipped",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/testSkippedFeature()",
+        "duration": 8,
+        "message": "Test 'Skipped test with condition' skipped: Feature not yet implemented",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Simple number validation",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Simple number validation",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [
+          "@number",
+          "@basic",
+          "@validation"
+        ],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/testBasicNumber()",
+        "duration": 6,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Simple number validation",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Simple number validation",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [
+          "@number",
+          "@basic",
+          "@validation"
+        ],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/testBasicNumber()",
+        "duration": 20,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Conditionally skipped test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Conditionally skipped test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/testConditionalSkip()",
+        "duration": 17,
+        "message": "FastlaneTrainerExampleTests.swift:116: Caught error: TestError(message: \"Experimental features not enabled\")",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "Conditionally skipped test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Conditionally skipped test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/testConditionalSkip()",
+        "duration": 19,
+        "message": "FastlaneTrainerExampleTests.swift:116: Caught error: TestError(message: \"Experimental features not enabled\")",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "Async operation test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Async operation test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [
+          "@async"
+        ],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/testAsyncOperation()",
+        "duration": 1000,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Async operation test",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Async operation test",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [
+          "@async"
+        ],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/testAsyncOperation()",
+        "duration": 1000,
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Validate multiple strings",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Validate multiple strings[1]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/testMultipleStrings(_:)",
+        "duration": 4,
+        "message": "FastlaneTrainerExampleTests.swift:50: Expectation failed: (input.count → 15) < 8",
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"FastlaneTrainer\"",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Validate multiple strings",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Validate multiple strings[1]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/testMultipleStrings(_:)",
+        "duration": 9,
+        "message": "FastlaneTrainerExampleTests.swift:50: Expectation failed: (input.count → 15) < 8",
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"FastlaneTrainer\"",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Validate multiple strings",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Validate multiple strings[2]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [],
+        "exampleRow": 1,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/testMultipleStrings(_:)",
+        "duration": 3,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"Hello\"",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Validate multiple strings",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Validate multiple strings[2]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [],
+        "exampleRow": 1,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/testMultipleStrings(_:)",
+        "duration": 10,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"Hello\"",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Validate multiple strings",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Validate multiple strings[3]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [],
+        "exampleRow": 2,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/testMultipleStrings(_:)",
+        "duration": 3,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"World\"",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Validate multiple strings",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Validate multiple strings[3]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [],
+        "exampleRow": 2,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/testMultipleStrings(_:)",
+        "duration": 7,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "\"World\"",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Test number ranges",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test number ranges[1]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/testNumberRanges(range:)",
+        "duration": 3,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "(min: 0, max: 10)",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Test number ranges",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test number ranges[1]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/testNumberRanges(range:)",
+        "duration": 9,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "(min: 0, max: 10)",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Test number ranges",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test number ranges[2]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [],
+        "exampleRow": 1,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/testNumberRanges(range:)",
+        "duration": 3,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "(min: 10, max: 20)",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Test number ranges",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test number ranges[2]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [],
+        "exampleRow": 1,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/testNumberRanges(range:)",
+        "duration": 10,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "(min: 10, max: 20)",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Test number ranges",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test number ranges[3]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [],
+        "exampleRow": 2,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/testNumberRanges(range:)",
+        "duration": 3,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "(min: 20, max: 30)",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Test number ranges",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Test number ranges[3]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [],
+        "exampleRow": 2,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/testNumberRanges(range:)",
+        "duration": 9,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "(min: 20, max: 30)",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Multiple async operations",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Multiple async operations[1]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [
+          "@async",
+          "@performance"
+        ],
+        "exampleRow": 0,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/testMultipleAsyncOperations(_:)",
+        "duration": 1000,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "1",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Multiple async operations",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Multiple async operations[1]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [
+          "@async",
+          "@performance"
+        ],
+        "exampleRow": 0,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/testMultipleAsyncOperations(_:)",
+        "duration": 1000,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "1",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Multiple async operations",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Multiple async operations[2]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [
+          "@async",
+          "@performance"
+        ],
+        "exampleRow": 1,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/testMultipleAsyncOperations(_:)",
+        "duration": 2000,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "2",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Multiple async operations",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Multiple async operations[2]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [
+          "@async",
+          "@performance"
+        ],
+        "exampleRow": 1,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/testMultipleAsyncOperations(_:)",
+        "duration": 2000,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "2",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "Multiple async operations",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Multiple async operations[3]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [
+          "@async",
+          "@performance"
+        ],
+        "exampleRow": 2,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerTests/testMultipleAsyncOperations(_:)",
+        "duration": 3000,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "3",
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "Multiple async operations",
+        "testKey": "FastlaneTrainerExampleTests::FastlaneTrainer Tests › Multiple async operations[3]",
+        "suite": [
+          "FastlaneTrainerExampleTests",
+          "FastlaneTrainer Tests"
+        ],
+        "tags": [
+          "@async",
+          "@performance"
+        ],
+        "exampleRow": 2,
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerTests/testMultipleAsyncOperations(_:)",
+        "duration": 3000,
+        "shardRef": "s1",
+        "attributes": {
+          "arguments": "3",
+          "repetition": "Retry 2"
+        }
+      },
+      {
+        "name": "testA_FirstTest()",
+        "testKey": "FastlaneTrainerExampleXCTests::testA_FirstTest()",
+        "suite": [
+          "FastlaneTrainerExampleXCTests"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleXCTests/testA_FirstTest()",
+        "duration": 1,
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "testAsyncOperation()",
+        "testKey": "FastlaneTrainerExampleXCTests::testAsyncOperation()",
+        "suite": [
+          "FastlaneTrainerExampleXCTests"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleXCTests/testAsyncOperation()",
+        "duration": 110,
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "testAsyncOperationWithExpectation()",
+        "testKey": "FastlaneTrainerExampleXCTests::testAsyncOperationWithExpectation()",
+        "suite": [
+          "FastlaneTrainerExampleXCTests"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleXCTests/testAsyncOperationWithExpectation()",
+        "duration": 100,
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "testB_SecondTest()",
+        "testKey": "FastlaneTrainerExampleXCTests::testB_SecondTest()",
+        "suite": [
+          "FastlaneTrainerExampleXCTests"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleXCTests/testB_SecondTest()",
+        "duration": 1,
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "testBasicAssertions()",
+        "testKey": "FastlaneTrainerExampleXCTests::testBasicAssertions()",
+        "suite": [
+          "FastlaneTrainerExampleXCTests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleXCTests/testBasicAssertions()",
+        "duration": 32,
+        "message": "FastlaneTrainerExampleXCTests.swift:53: XCTAssertFalse failed - False should be false",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "testBasicAssertions()",
+        "testKey": "FastlaneTrainerExampleXCTests::testBasicAssertions()",
+        "suite": [
+          "FastlaneTrainerExampleXCTests"
+        ],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "Failed",
+        "attempt": 1,
+        "externalId": "FastlaneTrainerExampleXCTests/testBasicAssertions()",
+        "duration": 2,
+        "message": "FastlaneTrainerExampleXCTests.swift:53: XCTAssertFalse failed - False should be false",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 2",
+          "details": "Failed after 2 retries"
+        }
+      },
+      {
+        "name": "testConditionalExecution()",
+        "testKey": "FastlaneTrainerExampleXCTests::testConditionalExecution()",
+        "suite": [
+          "FastlaneTrainerExampleXCTests"
+        ],
+        "tags": [],
+        "status": "skipped",
+        "rawStatus": "Skipped",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleXCTests/testConditionalExecution()",
+        "duration": 6,
+        "message": "Test skipped - Skipping slow tests",
+        "shardRef": "s1",
+        "attributes": {
+          "repetition": "Retry 1"
+        }
+      },
+      {
+        "name": "testMultipleExpectations()",
+        "testKey": "FastlaneTrainerExampleXCTests::testMultipleExpectations()",
+        "suite": [
+          "FastlaneTrainerExampleXCTests"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleXCTests/testMultipleExpectations()",
+        "duration": 210,
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "testPerformance()",
+        "testKey": "FastlaneTrainerExampleXCTests::testPerformance()",
+        "suite": [
+          "FastlaneTrainerExampleXCTests"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleXCTests/testPerformance()",
+        "duration": 270,
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "testPerformanceWithMetrics()",
+        "testKey": "FastlaneTrainerExampleXCTests::testPerformanceWithMetrics()",
+        "suite": [
+          "FastlaneTrainerExampleXCTests"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleXCTests/testPerformanceWithMetrics()",
+        "duration": 49,
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "testPlatformSpecific()",
+        "testKey": "FastlaneTrainerExampleXCTests::testPlatformSpecific()",
+        "suite": [
+          "FastlaneTrainerExampleXCTests"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleXCTests/testPlatformSpecific()",
+        "duration": 1,
+        "shardRef": "s1",
+        "attributes": {}
+      },
+      {
+        "name": "testThrowingOperation()",
+        "testKey": "FastlaneTrainerExampleXCTests::testThrowingOperation()",
+        "suite": [
+          "FastlaneTrainerExampleXCTests"
+        ],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "Passed",
+        "attempt": 0,
+        "externalId": "FastlaneTrainerExampleXCTests/testThrowingOperation()",
+        "duration": 1,
+        "shardRef": "s1",
+        "attributes": {}
+      }
+    ],
+    "attachments": []
+  }
+}

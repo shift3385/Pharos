@@ -16,7 +16,8 @@ export type SourceFormat =
   | "k6"
   | "axe"
   | "allure"
-  | "trx";
+  | "trx"
+  | "xcresult";
 
 export type ResultStatus = PharosRunResult["status"];
 /** The document a parser builds: Pharos Run JSON without the parts the four
@@ -232,7 +233,7 @@ export function uniqueTags(tags: Iterable<string>): string[] {
 
 /** Formats the 1.0.0 document cannot name (ING-07): their documents say
  *  1.1.0; the others keep 1.0.0, so their snapshots and ids do not move. */
-const SINCE_1_1: readonly SourceFormat[] = ["allure", "trx"];
+const SINCE_1_1: readonly SourceFormat[] = ["allure", "trx", "xcresult"];
 
 export function emptyDoc(format: SourceFormat): ImportDoc {
   return {
