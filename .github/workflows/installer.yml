@@ -1,6 +1,8 @@
 # Windows installer as a CI artifact (BASE-09). NSIS for pre-releases, NSIS +
 # MSI for stable versions (scripts/build-installer.mjs, VERSIONING §5), with
-# the user manual PDF (MAN-01) in the same artifact.
+# the user manual PDF (MAN-01) in the same artifact. The installer carries the
+# `pharos` command line (INT-01 L5, ADR-0054 §4), which is also published on
+# its own: a Windows zip and a remote-only Linux build, each with SHA256SUMS.
 # No caches here: a release artifact must not be built from a cache that
 # another run could have written (cache poisoning).
 name: Installer
@@ -45,6 +47,27 @@ jobs:
         id: meta
         shell: bash
         run: echo "name=pharos-$(node -p "require('./package.json').version")-${GITHUB_SHA::7}-windows" >> "$GITHUB_OUTPUT"
+      # The CLI the installer staged (src-tauri/bin/pharos.exe), on its own
+      # for CI runners and machines without the app.
+      - name: Package the CLI
+        id: cli
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          dir="pharos-cli-${version}-windows-x64"
+          mkdir -p "dist-cli/${dir}"
+          cp src-tauri/bin/pharos.exe "dist-cli/${dir}/pharos.exe"
+          (cd dist-cli && pwsh -NoProfile -Command "Compress-Archive -Path '${dir}/*' -DestinationPath '${dir}.zip'" && sha256sum "${dir}.zip" > SHA256SUMS)
+          echo "name=${dir}" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ steps.cli.outputs.name }}
+          path: |
+            dist-cli/*.zip
+            dist-cli/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 30
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ steps.meta.outputs.name }}
@@ -52,5 +75,43 @@ jobs:
             src-tauri/target/release/bundle/nsis/*.exe
             src-tauri/target/release/bundle/msi/*.msi
             docs/manual/Pharos-manual-de-usuario.pdf
+          if-no-files-found: error
+          retention-days: 30
+
+  # The command line without local mode (no pharos-core, SQLite or keychain):
+  # remote uploads from Linux CI runners (ADR-0054 §4). Only here, on main and
+  # tags, so it costs no minutes on pull requests.
+  cli-linux:
+    name: cli (linux, remote only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the toolchain pinned in rust-toolchain.toml
+        working-directory: src-tauri
+        run: rustup toolchain install
+      - name: Build
+        working-directory: src-tauri
+        run: cargo build --release --locked -p pharos-cli --no-default-features
+      - name: Package
+        id: cli
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(grep -m1 '^version' src-tauri/cli/Cargo.toml | cut -d'"' -f2)"
+          dir="pharos-cli-${version}-linux-x64"
+          mkdir -p "dist-cli/${dir}"
+          cp src-tauri/target/release/pharos-cli "dist-cli/${dir}/pharos"
+          tar -C dist-cli -czf "dist-cli/${dir}.tar.gz" "${dir}"
+          (cd dist-cli && sha256sum "${dir}.tar.gz" > SHA256SUMS)
+          echo "name=${dir}" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ steps.cli.outputs.name }}
+          path: |
+            dist-cli/*.tar.gz
+            dist-cli/SHA256SUMS
           if-no-files-found: error
           retention-days: 30

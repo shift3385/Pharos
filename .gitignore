@@ -13,6 +13,8 @@ dist-ssr/
 
 # Tauri / Rust
 src-tauri/target/
+# The CLI staged for the installer (scripts/build-installer.mjs, INT-01 L5).
+src-tauri/bin/
 src-tauri/gen/
 
 # Local machine-specific cargo config (space-free target-dir override). The

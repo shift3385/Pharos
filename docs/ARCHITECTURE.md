@@ -2300,6 +2300,19 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   `main` and on `v*` tags and uploads `pharos-<version>-<sha7>-windows` (30
   days). The NSIS bundle installs for the current user and downloads WebView2
   only if it is missing.
+- **The CLI in the installer (INT-01 L5, ADR-0054 §4):** `build:installer`
+  first builds `pharos-cli` (release) and stages it as
+  `src-tauri/bin/pharos.exe` (ignored by git), then runs `tauri build --config
+  src-tauri/tauri.installer.conf.json`. That config adds the resource
+  `bin/pharos.exe` and the NSIS hooks `src-tauri/windows/installer-hooks.nsh`.
+  The resource is not in `tauri.conf.json` because tauri-build copies
+  resources on every cargo build, which would fail without a staged CLI. The
+  hooks call `pharos setup-path add|remove <install>in`, which edits
+  `HKCUEnvironmentPath` in Rust: the NSIS strings top out at 1024
+  characters. The MSI (stable versions) ships the file without touching the
+  PATH. The workflow also uploads `pharos-cli-<version>-windows-x64`
+  (zip + SHA256SUMS) and, from an `ubuntu-latest` job, the remote-only
+  `pharos-cli-<version>-linux-x64`.
 - **Not code-signed:** no certificate is configured, so SmartScreen warns on
   install. Signing is out of scope for 0.1.0 and listed as a known limitation.
 - **API address:** the desktop starts with the build's `VITE_API_URL`

@@ -15,6 +15,7 @@ pub mod junit;
 #[cfg(feature = "local")]
 pub mod local;
 pub mod output;
+pub mod path_env;
 pub mod runjson;
 
 use std::io::Write;
@@ -44,6 +45,20 @@ pub fn run(
     if let Some(bad) = wanted.filter(|w| Lang::parse(w).is_none()) {
         p.failure(&Failure::usage("bad-lang", "err.bad-lang").arg(bad));
         return Exit::Usage.code();
+    }
+
+    // The installer's hooks (L5): not a user command, so not in the help.
+    if argv.first().map(String::as_str) == Some("setup-path") {
+        return match path_env::command(&argv[1..]) {
+            Ok(done) => {
+                p.always(&done);
+                Exit::Ok.code()
+            }
+            Err(f) => {
+                p.failure(&f);
+                f.exit.code()
+            }
+        };
     }
 
     let parsed = match args::parse(argv) {

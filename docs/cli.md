@@ -4,20 +4,36 @@ Referencia de la línea de comandos de Pharos (INT-01, [ADR-0054](adr/0054-cli-y
 
 El plan completo y los bocetos están en [`design/l-int01-plan.md`](design/l-int01-plan.md). El capítulo del manual de usuario llega con «Conectar CI» (L6).
 
-> **Estado (L1).**
+> **Estado (L1, L4, L5).**
 >
 > - **Funciona:** `upload` en modo local (Pharos Run JSON y JUnit), `projects` y `doctor`.
 > - **Llega más adelante:**
 >   - el modo remoto y `login`/`logout`/`run close` (L2);
 >   - `watch` (L3);
->   - el CLI dentro del instalador (L5);
 >   - escribir con la app abierta (L7, tras SEC-05b).
 >
 > Mientras tanto, esos comandos responden «llega en una versión próxima» y salen con el código 2.
 
+## Instalarlo
+
+- **Con la app:** el instalador de Pharos deja el CLI en `<carpeta de instalación>inpharos.exe` y añade esa carpeta al PATH del usuario. Funciona en cualquier terminal que se abra después de instalar. Al desinstalar, la carpeta sale del PATH.
+- **Si el PATH no se pudo tocar** (lo dice el detalle del instalador), el CLI se llama por su ruta completa. `pharos doctor` dice dónde está.
+- **El MSI de las versiones estables** también lleva `binpharos.exe`, pero no toca el PATH: la ruta va a mano.
+- **Sin la app:** la CI publica, junto al instalador, `pharos-cli-<versión>-windows-x64.zip` y `pharos-cli-<versión>-linux-x64.tar.gz`, cada uno con su `SHA256SUMS`.
+  - Comprueba el hash antes de usarlo: `sha256sum -c SHA256SUMS`.
+  - El de Linux es **solo remoto**: no lleva el modo local.
+
+## Comando interno del instalador
+
+`pharos setup-path add|remove <carpeta>` añade o quita una carpeta del PATH del usuario (`HKCUEnvironmentPath`).
+
+- Lo usan los *hooks* del instalador y no aparece en la ayuda.
+- Lee el PATH sin expandir (`%USERPROFILE%…` se queda así) y lo vuelve a escribir como `REG_EXPAND_SZ`. Solo toca esa entrada y avisa a Windows del cambio.
+- El NSIS que usa Tauri trabaja con textos de 1024 caracteres como mucho, y muchos PATH son más largos: editarlo desde el instalador podría cortarlo.
+
 ## Compilarlo
 
-El binario es `pharos-cli` en Cargo y `pharos.exe` una vez instalado (L5). Desde `src-tauri/`:
+El binario es `pharos-cli` en Cargo y `pharos.exe` una vez instalado. Desde `src-tauri/`:
 
 ```bash
 cargo build --release -p pharos-cli

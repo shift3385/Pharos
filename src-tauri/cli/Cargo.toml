@@ -39,9 +39,15 @@ sha2 = "0.10"
 quick-xml = "0.41"
 regex = "1"
 
-# The user's display language when no PHAROS_LANG / --lang is given.
+# The user's display language when no PHAROS_LANG / --lang is given, and the
+# user PATH the installer's hooks edit through `pharos setup-path` (L5).
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.61", features = ["Win32_Globalization"] }
+windows-sys = { version = "0.61", features = [
+  "Win32_Foundation",
+  "Win32_Globalization",
+  "Win32_System_Registry",
+  "Win32_UI_WindowsAndMessaging",
+] }
 
 [dev-dependencies]
 # A database opened with the test's own key, never the user's `db-key`.
