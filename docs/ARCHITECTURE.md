@@ -13,8 +13,8 @@ backend; data-compatibility rules for migrations and sync): `docs/VERSIONING.md`
   Tauri 2 is deliberate — its mobile support lets the 0.4.0 mobile build reuse this codebase.
   The Rust side builds with the **MSVC** toolchain (`src-tauri/rust-toolchain.toml`).
 - **Rust crates (CORE-01, [ADR-0050](adr/0050-pharos-core-y-sqlite-en-disco-cifrado.md)):**
-  `src-tauri/` is a Cargo workspace of two packages over the same sources in
-  `src-tauri/src`:
+  `src-tauri/` is a Cargo workspace of three packages; the first two share the
+  sources in `src-tauri/src`:
   - **`pharos-core`** (`src-tauri/core/Cargo.toml`, rooted at `src/lib.rs`):
     the whole library: local DB, migrations, repositories, oplog, journal,
     audit, sync, evidence, AI and server client. Tauri is its optional
@@ -26,10 +26,24 @@ backend; data-compatibility rules for migrations and sync): `docs/VERSIONING.md`
     (`run()`, setup, the cached-session commands and the
     `generate_handler!` list, which imports `pharos_core::*`) and
     `src/main.rs`. It enables the core's `tauri` feature.
+  - **`pharos-cli`** (`src-tauri/cli/`, INT-01,
+    [ADR-0054](adr/0054-cli-y-plantillas-de-github-actions.md)): the `pharos`
+    command line (Cargo bin `pharos-cli`, installed as `bin\pharos.exe` so it
+    never collides with the desktop's `Pharos.exe`). Its feature `local`
+    (default) brings `pharos-core` without Tauri; without it the binary is
+    remote-only. `run()` in `lib.rs` takes argv, environment, output streams
+    and a `Local` (how the desktop's data is reached), so its tests drive it
+    without a process and open their data folder with their own key (the
+    core's `test-support` feature), never the user's `db-key`. Command
+    reference: [`docs/cli.md`](cli.md).
 
   Other processes (the CLI) use `pharos_core::api` (`open`, `import_preview`,
   `import_report`, `import_attach`: the same code as the desktop import
-  commands) and `pharos_core::paths::default_data_dir()` (the app's data
+  commands; `signed_in_user`, `list_projects`, `find_run`, `find_cycle`, `close_run`
+  and `has_database` for the CLI, each delegating to an existing repository
+  function; the CLI writes as the
+  account signed in to the app, read from its cached session without the
+  tokens, and only opens a folder where `has_database` is true) and `pharos_core::paths::default_data_dir()` (the app's data
   folder without Tauri). Until SEC-05b a `Db` holds `pharos.lock` open
   sharing nothing but deletion: a second process (another app, the CLI) gets `db-in-use`
   and reads or writes nothing (ADR-0050 §7).
@@ -2345,9 +2359,9 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   and manual v2 (MAN-03/04). Part of it is in `main`; most of it still lives on
   the integration branch `local/app-completa` — see `docs/ROADMAP.md` §2.1 for
   where each piece is and §2.2 for the approved course (ADR-0039): autonomous execution as the axis up to 1.0.
-- **Known gaps (2026-11-18):** `pharos-core` and its CLI API exist (CORE-01,
-  ADR-0050) but no CLI uses them yet (INT-01), and no other process can write
-  while the app is open (SEC-05); no shared
+- **Known gaps (2026-11-18):** the `pharos` CLI imports Pharos Run JSON into
+  the local database (INT-01 L1) but has no remote mode, `watch` or installer
+  yet, and no other process can write while the app is open (SEC-05); no shared
   workspaces or roles (SYNC-07); exit criteria are recognised from free text and
   never gate closing a cycle; no SARIF/k6/axe/Allure ingest, CLI, public API or
   mobile app yet.

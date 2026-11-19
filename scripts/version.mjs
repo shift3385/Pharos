@@ -21,6 +21,8 @@ const lockPharosVersion = /(\r?\nname = "pharos"\r?\nversion = ")([^"]*)(")/;
 
 const lockCoreVersion = /(\r?\nname = "pharos-core"\r?\nversion = ")([^"]*)(")/;
 
+const lockCliVersion = /(\r?\nname = "pharos-cli"\r?\nversion = ")([^"]*)(")/;
+
 // Each target: a file and how to read/write its version. Lockfiles hold the
 // root package version twice (top level and packages[""]).
 const TARGETS = [
@@ -33,7 +35,9 @@ const TARGETS = [
   // The core crate shares the desktop sources and stamps its version on backups
   // and sync requests (CORE-01, ADR-0050).
   { file: "src-tauri/core/Cargo.toml", patterns: [tomlPackageVersion] },
-  { file: "src-tauri/Cargo.lock", patterns: [lockPharosVersion, lockCoreVersion] },
+  // The CLI ships with the app and carries its version (INT-01, ADR-0054).
+  { file: "src-tauri/cli/Cargo.toml", patterns: [tomlPackageVersion] },
+  { file: "src-tauri/Cargo.lock", patterns: [lockPharosVersion, lockCoreVersion, lockCliVersion] },
 ];
 
 function read(file) {
