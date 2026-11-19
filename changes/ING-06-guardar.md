@@ -1,7 +1,0 @@
----
-section: Añadido
----
-
-- **«Importar informe» acepta SARIF, axe y el resumen de k6**: guarda sus
-  hallazgos y métricas en el run y los sincroniza con el servidor. La vista
-  previa cuenta los hallazgos por severidad y los umbrales incumplidos.

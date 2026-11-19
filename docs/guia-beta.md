@@ -1,6 +1,6 @@
 # Guía de pruebas de Pharos
 
-Esta guía es para quien prueba **Pharos 0.5.0-beta.1** en Windows 11: todo lo
+Esta guía es para quien prueba **Pharos 0.6.0-beta.1** en Windows 11: todo lo
 de la beta `0.1.0-beta.1` con la interfaz rediseñada (apartado 1.1). Explica
 qué trae la versión, cómo instalarla, qué comprobar (con casillas para ir
 marcando) y cómo informar de un problema. Los detalles técnicos están en el
@@ -97,6 +97,27 @@ la elección del servidor desde la app y la IA en la web. El detalle está en el
 - **La primera cuenta** que se registra en un servidor nuevo es su
   administradora (en un servidor que ya existía, la más antigua).
 
+### 1.4 Qué trae la 0.6.0-beta.1: núcleo y automatización conectada
+
+La 0.6.0 guarda los datos del escritorio en un `pharos.db` en disco cifrado
+por página, que la app, otra ventana y el CLI `pharos` usan a la vez. Suma el
+CLI (`pharos upload`, `pharos watch -- <comando>`), la API `/api/v1` con tokens,
+los webhooks firmados, el paso de GitHub Actions de «Workspace › Integraciones ›
+Conectar CI», la importación de SARIF, k6, axe, Allure, TRX y `.xcresult`
+(pestañas «Hallazgos» y «Métricas» del run), la fusión de conflictos campo a
+campo y la «Biblioteca» de pasos compartidos y datasets. El detalle está en el
+[CHANGELOG](../CHANGELOG.md) y en el capítulo 20 del manual, «Integraciones».
+
+- **El primer arranque convierte tus datos** («Actualizando el formato de tus
+  datos») y antes guarda una copia `pharos.db.enc.bak-…`. Para volver a la 0.5
+  restaura esa copia.
+- **El instalador añade el CLI al PATH:** abre una terminal nueva y prueba
+  `pharos doctor`.
+- **Para su criterio de salida necesitas un repositorio de GitHub** con el paso
+  de «Conectar CI». El workflow `pharos-selftest.yml` del repo ya lo prueba con
+  un Pharos dentro del runner; para reportar a tu propio servidor, GitHub
+  Actions tiene que poder alcanzarlo.
+
 ## 2. Antes de empezar
 
 La app instalada inicia sesión y sincroniza contra la API de Pharos en
@@ -107,7 +128,7 @@ La app instalada inicia sesión y sincroniza contra la API de Pharos en
 - [ ] Git y Node.js ≥ 22.18 con npm, para ejecutar la API.
 - [ ] La API de Pharos en la misma versión que la app: clona el repositorio
       (`git clone https://github.com/shift3385/Pharos.git`) y, dentro,
-      `git checkout v0.5.0-beta.1`. Después, `npm install` en la raíz y en
+      `git checkout v0.6.0-beta.1`. Después, `npm install` en la raíz y en
       `server/`, un `.env` y las bases `pharos_db` / `pharos_test_db`
       (README → "First-time setup"). Cada vez que pruebes:
       `cd server && npm start`. **Al cambiar de versión, vuelve a ejecutar
@@ -124,12 +145,12 @@ compilarla.
 ## 3. Instalar
 
 1. En GitHub, **Actions → Installer**, filtra por la rama o etiqueta
-   **`v0.5.0-beta.1`** y abre esa ejecución (en verde). En **Artifacts**,
-   descarga `pharos-0.5.0-beta.1-<commit>-windows`. Usa solo la ejecución de
+   **`v0.6.0-beta.1`** y abre esa ejecución (en verde). En **Artifacts**,
+   descarga `pharos-0.6.0-beta.1-<commit>-windows`. Usa solo la ejecución de
    la etiqueta: los cambios posteriores en `main` generan artefactos con el
    mismo nombre de versión, pero con código aún no publicado. Hace falta haber
    iniciado sesión en GitHub y el artefacto caduca a los 30 días.
-2. Descomprime el `.zip`: contiene `Pharos_0.5.0-beta.1_x64-setup.exe`.
+2. Descomprime el `.zip`: contiene `Pharos_0.6.0-beta.1_x64-setup.exe`.
 3. Ejecútalo. **El instalador no está firmado**, así que Windows SmartScreen
    muestra "Windows protegió tu PC": pulsa **Más información → Ejecutar de
    todas formas**.
@@ -150,7 +171,7 @@ seguir.
 - [ ] El primer arranque abre la pantalla de inicio de sesión (WebView2
       funciona: no hay ventana en blanco).
 - [ ] Al pie del menú lateral y en Administración → Diagnóstico la versión
-      es `0.5.0-beta.1`.
+      es `0.6.0-beta.1`.
 - [ ] Tras iniciar sesión existe `%APPDATA%\com.pharos.desktop\pharos.db`
       (con la app abierta, también `pharos.db-wal` y `pharos.db-shm`; al
       cerrarla desaparecen) y no queda ningún `.tmp` (SEC-05).
