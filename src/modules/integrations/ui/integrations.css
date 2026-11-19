@@ -171,3 +171,33 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* «Conectar CI» (INT-04): the form beside the YAML; one column when narrow. */
+.int-ci {
+  display: grid;
+  grid-template-columns: minmax(0, 18rem) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+@media (max-width: 760px) {
+  .int-ci {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.int-ci__form,
+.int-ci__out {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.int-ci__steps {
+  margin: 0;
+  padding-left: 1.3em;
+  display: grid;
+  gap: 6px;
+}
+.int-cli {
+  display: grid;
+  gap: 6px;
+  margin: var(--space-2) 0;
+}

@@ -118,7 +118,10 @@ describe("Workspace › Integraciones › Tokens de proyecto", () => {
     expect(Math.round(days)).toBe(90);
 
     expect(await screen.findByTestId("token-secret")).toHaveTextContent(SECRET);
-    expect(screen.getByText(/PHAROS_TOKEN/)).toBeInTheDocument();
+    const created = screen.getByRole("dialog");
+    expect(within(created).getByText(/PHAROS_TOKEN/)).toBeInTheDocument();
+    // The full step is in «Conectar CI», not repeated in the dialog.
+    expect(within(created).getByText(/Conectar CI/)).toBeInTheDocument();
     const done = screen.getByTestId("token-done");
     expect(done).toBeDisabled();
     await userEvent.click(screen.getByTestId("token-saved"));
@@ -182,6 +185,45 @@ describe("Mi perfil › Tokens personales", () => {
     await userEvent.click(screen.getByTestId("token-create"));
     await waitFor(() => expect(requests.find((r) => r.method === "POST")?.body).toMatchObject({ name: "Portátil", workspaceId: null }));
     expect(await screen.findByTestId("token-secret")).toHaveTextContent("phr_pat_x");
+    // The command for the CLI, without the token.
+    expect(screen.getByTestId("use-in-cli")).toHaveTextContent(/pharos login --server /);
+    expect(screen.getByTestId("use-in-cli")).not.toHaveTextContent("phr_pat_x");
+  });
+});
+
+describe("Workspace › Integraciones › Conectar CI", () => {
+  it("builds the GitHub Actions step for a project and the formats chosen, without a token", async () => {
+    serve({
+      "GET /workspaces": { body: { workspaces: [team("viewer")] } },
+      "GET /workspaces/ws-t/tokens": {
+        body: { tokens: [token()], projects: [{ id: "p1", name: "Pagos Web" }, { id: "p2", name: "Móvil" }] },
+      },
+      "GET /workspaces/ws-t/webhooks": { body: { webhooks: [], available: true } },
+    });
+    const { container } = integrationsTab();
+    const yaml = await screen.findByTestId("ci-yaml");
+    expect(yaml).toHaveTextContent("uses: shift3385/Pharos/.github/actions/pharos-report@");
+    expect(yaml).toHaveTextContent("project: p1 # Pagos Web");
+    for (const path of ["test-results/*.xml", "reports/*.sarif", "reports/k6-summary.json", "reports/axe.json"]) {
+      expect(yaml).toHaveTextContent(path);
+    }
+    expect(yaml).not.toHaveTextContent("phr_");
+    expect(yaml).toHaveTextContent("${{ secrets.PHAROS_TOKEN }}");
+    await expectNoAxeViolations(container);
+
+    // Fewer formats, more formats.
+    await userEvent.click(screen.getByTestId("ci-format-k6"));
+    await userEvent.click(screen.getByTestId("ci-format-ctrf"));
+    expect(yaml).not.toHaveTextContent("reports/k6-summary.json");
+    expect(yaml).toHaveTextContent("ctrf/*.json");
+
+    // A viewer is told who creates the token.
+    expect(screen.getByTestId("connect-ci")).toHaveTextContent("Pídeselo a un Test Manager");
+
+    const writeText = vi.fn(async () => {});
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    await userEvent.click(screen.getByTestId("ci-copy"));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("- name: Subir a Pharos"));
   });
 });
 

@@ -5,6 +5,7 @@ import { useToast } from "@shared/ui/Toast";
 import { useConfirm } from "@shared/ui/useConfirm";
 import { tokensApi, type ApiToken, type IssuedToken } from "../api/tokensApi";
 import { tokenFailure } from "./failure";
+import { UseInCliHint } from "./ConnectCiSection";
 import { NewTokenDialog, TokenCreatedDialog, type TokenTarget } from "./TokenDialogs";
 import { TokensTable } from "./TokensTable";
 import "./integrations.css";
@@ -65,6 +66,7 @@ export function PersonalTokensSection({ workspaces }: { workspaces: TokenTarget[
         </button>
       </div>
       <p className="tp__muted">{t("integrations.tokens.personalHint")}</p>
+      <UseInCliHint />
       {error && <Alert kind="error">{error}</Alert>}
       {tokens && tokens.length === 0 && <p className="tp__muted">{t("integrations.tokens.nonePersonal")}</p>}
       {tokens && tokens.length > 0 && (

@@ -36,8 +36,31 @@ try {
 } catch {
   // Not a git checkout (e.g. a source archive): keep "dev".
 }
+// The commit GitHub can serve Pharos' own `pharos-report` action from, for
+// the CI snippet of «Conectar CI» (INT-04): the full SHA, only when this build
+// comes from main or a release tag (GitHub Actions), or when HEAD is already
+// in origin/main. A local integration branch has commits GitHub does not
+// know: the snippet then shows a placeholder to fill in.
+let actionSha = "";
+try {
+  const full = execSync("git rev-parse HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+  const ref = process.env.GITHUB_REF ?? "";
+  let onMain = ref === "refs/heads/main" || ref.startsWith("refs/tags/v");
+  if (!onMain) {
+    try {
+      execSync("git merge-base --is-ancestor HEAD origin/main", { stdio: "ignore" });
+      onMain = true;
+    } catch {
+      // Not in origin/main (or no such ref): no SHA.
+    }
+  }
+  if (onMain && /^[0-9a-f]{40}$/.test(full)) actionSha = full;
+} catch {
+  // Not a git checkout.
+}
 const build = {
   commit,
+  actionSha,
   date: new Date().toISOString().slice(0, 10),
   stack: [
     { name: "Tauri", version: major(tauri) },
