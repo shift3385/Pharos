@@ -70,6 +70,10 @@ const FORMAT_VERSION: u8 = 1;
 const NONCE_PREFIX: usize = 7;
 const DIR: &str = "evidence";
 const TMP: &str = "tmp";
+/// How long an unfinished write's temp file must sit untouched before an
+/// open removes it (`clean_tmp`): far longer than any live write between two
+/// blocks, short enough that leftovers of a crash go the same day.
+pub(crate) const STALE_TMP: std::time::Duration = std::time::Duration::from_secs(60 * 60);
 
 /// Error kinds the UI translates (prefixes of the error strings).
 pub const EVIDENCE_MISSING: &str = "evidence-missing";
@@ -282,14 +286,29 @@ impl EvidenceStore {
         Ok(())
     }
 
-    /// Deletes what unfinished writes left in `tmp/` (ciphertext only).
+    /// Deletes what unfinished writes left in `tmp/` (ciphertext only): the
+    /// files untouched for `STALE_TMP` or longer. Since SEC-05b another
+    /// process (the app, the CLI) may be writing evidence while this one
+    /// opens the database, and deleting its live temp file made its final
+    /// `rename` fail (INT-01 L7). A write in progress touches its file at
+    /// least every block, so a file this old has no writer.
     pub(crate) fn clean_tmp(&self) {
+        self.clean_tmp_older_than(STALE_TMP);
+    }
+
+    pub(crate) fn clean_tmp_older_than(&self, age: std::time::Duration) {
         let Ok(entries) = fs::read_dir(self.tmp_dir()) else {
             return;
         };
+        let now = std::time::SystemTime::now();
         let mut removed = 0;
         for entry in entries.filter_map(Result::ok) {
-            if fs::remove_file(entry.path()).is_ok() {
+            let modified = entry.metadata().and_then(|m| m.modified()).ok();
+            // A time in the future (a clock change) is not "old".
+            let old = modified
+                .and_then(|m| now.duration_since(m).ok())
+                .is_some_and(|elapsed| elapsed >= age);
+            if old && fs::remove_file(entry.path()).is_ok() {
                 removed += 1;
             }
         }

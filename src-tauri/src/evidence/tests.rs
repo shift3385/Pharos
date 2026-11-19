@@ -272,9 +272,41 @@ fn leftovers_of_an_unfinished_write_are_removed_at_open() {
     let dir = temp_dir();
     let store = EvidenceStore::new(&dir, &KEY);
     fs::create_dir_all(dir.join(DIR).join(TMP)).unwrap();
-    fs::write(dir.join(DIR).join(TMP).join("x.pev.new"), b"ciphertext").unwrap();
+    let leftover = dir.join(DIR).join(TMP).join("x.pev.new");
+    fs::write(&leftover, b"ciphertext").unwrap();
+    // Untouched for longer than STALE_TMP: a crash left it.
+    let old = std::time::SystemTime::now() - STALE_TMP - std::time::Duration::from_secs(60);
+    fs::File::options()
+        .write(true)
+        .open(&leftover)
+        .unwrap()
+        .set_modified(old)
+        .unwrap();
     store.clean_tmp();
     assert!(files(&dir.join(DIR)).is_empty());
+    fs::remove_dir_all(dir).unwrap();
+}
+
+/// SEC-05b: another process opening the database must not delete a write in
+/// progress here (its rename would then fail, INT-01 L7).
+#[test]
+fn an_open_elsewhere_leaves_a_write_in_progress_alone() {
+    let dir = temp_dir();
+    let store = EvidenceStore::new(&dir, &KEY);
+    let mut writer = store.writer(MAX_FILE_BYTES).unwrap();
+    writer.write(b"half of a report").unwrap();
+    // Another process opens the same folder meanwhile.
+    EvidenceStore::new(&dir, &KEY).clean_tmp();
+    writer.write(b" and the rest").unwrap();
+    writer.seal().unwrap();
+    let stored = writer.commit(&store).unwrap().stored;
+    let mut back = String::new();
+    store
+        .open(&stored.sha256)
+        .unwrap()
+        .read_to_string(&mut back)
+        .unwrap();
+    assert_eq!(back, "half of a report and the rest");
     fs::remove_dir_all(dir).unwrap();
 }
 
