@@ -435,7 +435,7 @@ fn a_pulled_case_behind_the_library_is_rewritten() {
         case_status(&c, &case, USER).unwrap()[0].latest_version,
         Some(2)
     );
-    reconcile(&c, USER, &[p.clone()]).unwrap();
+    reconcile(&c, USER, std::slice::from_ref(&p)).unwrap();
     let d = data_of(&c, &case);
     assert_eq!(d["sharedRefs"][0]["version"], 2);
     assert_eq!(
