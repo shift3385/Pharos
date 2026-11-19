@@ -619,11 +619,12 @@ fn opening_the_alpha_1_fixture_with_head_keeps_every_row() {
     let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
     assert_eq!(db.with_conn(pending_migrations).unwrap().len(), 0);
     assert_attachments_moved(&old, &db);
+    drop(db);
     let mut names: Vec<String> = fs::read_dir(&dir)
         .unwrap()
         .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
-        // The save count next to the file (AUD-01c).
-        .filter(|n| n != "pharos.db.enc.seq")
+        // The open counts next to the files (AUD-01c).
+        .filter(|n| n != "pharos.db.enc.seq" && n != "pharos.db.seq")
         // The folder lock (ADR-0050).
         .filter(|n| n != LOCK_FILE)
         .collect();
@@ -632,6 +633,7 @@ fn opening_the_alpha_1_fixture_with_head_keeps_every_row() {
         names,
         [
             "evidence".to_string(),
+            "pharos.db".to_string(),
             "pharos.db.enc".to_string(),
             format!("pharos.db.enc.bak-{APP_VERSION}-0011_sync_conflicts"),
         ]
@@ -990,6 +992,7 @@ fn opening_the_0_2_0_alpha_1_fixture_with_head_keeps_every_row_and_starts_the_au
     let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
     assert_eq!(db.with_conn(pending_migrations).unwrap().len(), 0);
     assert_attachments_moved(&old, &db);
+    drop(db);
     fs::remove_dir_all(&dir).unwrap();
 }
 
@@ -1424,9 +1427,9 @@ fn the_recovery_key_opens_the_evidence_on_another_pc_and_a_missing_folder_is_rep
         .unwrap()
         .recovery_key();
 
-    // A full backup (pharos.db.enc + evidence/) restored elsewhere.
+    // A full backup (pharos.db + evidence/, SEC-05) restored elsewhere.
     let there = temp_dir();
-    fs::copy(here.join("pharos.db.enc"), there.join("pharos.db.enc")).unwrap();
+    fs::copy(here.join("pharos.db"), there.join("pharos.db")).unwrap();
     copy_dir(&here.join("evidence"), &there.join("evidence"));
     let keychain = EmptyStore(std::cell::RefCell::new(None));
     let db = Db::recover(&there, &keychain, &recovery).unwrap();
@@ -1435,7 +1438,7 @@ fn the_recovery_key_opens_the_evidence_on_another_pc_and_a_missing_folder_is_rep
 
     // Only the database copied: it opens, and the file is reported missing.
     let bare = temp_dir();
-    fs::copy(here.join("pharos.db.enc"), bare.join("pharos.db.enc")).unwrap();
+    fs::copy(here.join("pharos.db"), bare.join("pharos.db")).unwrap();
     let db = Db::open_with_key(&bare, FIXTURE_KEY).unwrap();
     let sha: String = db
         .with_conn(|c| {

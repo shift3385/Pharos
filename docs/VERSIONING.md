@@ -166,12 +166,18 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
    pista que añade migraciones incluye una prueba de esa actualización.
 3. **Copia de seguridad antes de migrar (SEC-06).** Antes de aplicar
    migraciones pendientes, la app guarda la base cifrada como
-   `pharos.db.enc.bak-<versión>-<última migración>`. Conserva las 3 más
+   `pharos.db.bak-<versión>-<última migración>` (antes de 0.6,
+   `pharos.db.enc.bak-…`; la conversión de SEC-05 guarda así el original). Conserva las 3 más
    recientes. Si no puede guardarla, no migra.
 4. **Sin vuelta atrás silenciosa (SEC-06).** Una versión antigua que encuentra
    migraciones desconocidas en la base se niega a abrirla y lo explica. Nunca la
    modifica. Rige desde la primera versión posterior a `0.1.0-alpha.1`, que no
    tiene esa comprobación: para volver a ella hay que restaurar la copia `.bak`.
+   - **Conversión de 0.6 (SEC-05).** Al pasar `pharos.db.enc` a `pharos.db`,
+     el `pharos.db.enc` queda como **testigo**: una imagen con solo
+     `schema_migrations` y la migración desconocida `disk-format-v2`. Así una
+     0.5 o anterior se niega a abrirlo con su mensaje de siempre en lugar de
+     empezar vacía ([ADR-0050](adr/0050-pharos-core-y-sqlite-en-disco-cifrado.md)).
 5. **Compatibilidad entre app y servidor (SYNC-08).** Cada petición de sync
    lleva la versión de la app. El servidor declara qué versiones acepta (como
    mínimo, su misma MENOR y la anterior) y rechaza las demás con un mensaje
@@ -339,6 +345,11 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      `docs/formats/pharos-run-1.schema.json`). Un campo nuevo opcional sube la
      MENOR del formato; un cambio incompatible sube su MAYOR, y un lector
      rechaza una MAYOR que no conoce con un mensaje claro.
+7. **Formato en disco** (desde 0.6, SEC-05): `pharos.db` cifrado por página
+   con SQLite3 Multiple Ciphers en el esquema SQLCipher 4, páginas de 4096
+   bytes, clave en bruto `HKDF-SHA256(db_key, "pharos-page-v1")`, WAL. Es un
+   formato de datos: cambiar la cifra, la KDF o el tamaño de página exige otra
+   conversión con su copia y su testigo, en una MENOR.
 
 ## 7. CHANGELOG
 

@@ -196,7 +196,7 @@ Si ya hay una clave guardada y guardas otra sin probarla, Pharos pide confirmaci
 ## Consejos
 
 - Guarda la **clave de recuperación** el primer día: si cambias de equipo o
-  reinstalas Windows, solo ella y una copia de `pharos.db.enc` devuelven tus
+  reinstalas Windows, solo ella y una copia de `pharos.db` (antes de 0.6, `pharos.db.enc`) devuelven tus
   datos. Pharos no puede recuperarla por ti.
 - Pulsa **«Probar conexión»** antes de guardar una clave nueva: si responde, se
   guarda sin preguntar y sabes que funciona.

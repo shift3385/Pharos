@@ -1274,6 +1274,8 @@ const EXEMPT: &[(&str, &str)] = &[
         "the session token lives in the keychain, not in the data",
     ),
     ("db::db_open_error", "read"),
+    ("db::db_open_converting", "read"),
+    ("db::db_open_retry", "opens the database again; no record changes"),
     ("db::db_recover", "re-keys the file; no record changes"),
     ("db::recovery_key_export", "read"),
     ("profile::profile_get", "read"),

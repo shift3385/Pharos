@@ -764,7 +764,7 @@ fn require_user(user_id: &str) -> Result<(), String> {
 
 /// Refreshes the mirror from `GET /workspaces` and moves the account's local
 /// rows into its personal workspace. The first time it moves anything, the
-/// database is backed up before (SEC-06 style: `pharos.db.enc.bak-…-workspaces`).
+/// database is backed up before (SEC-06 style: `pharos.db.bak-…-workspaces`).
 #[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn workspaces_apply(

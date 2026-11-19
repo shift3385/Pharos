@@ -10,12 +10,19 @@
     (`docs/spikes/SEC-04-cifrado-por-pagina.md`).
   - Implementado:
     - **decisión 1** (CORE-01a, PR N1);
-    - **decisión 7** y la API para el CLI (CORE-01b, PR N2).
-  - Pendientes:
-    - **decisiones 2 a 6** (SEC-05, PRs N4 y N5).
+    - **decisión 7** y la API para el CLI (CORE-01b, PR N2);
+    - **decisiones 2, 3, 4 y 6** (SEC-05a, PR N4), con lo que el spike
+      corrigió, en «Implementación (N4)».
+  - Pendientes (SEC-05b, PR N5):
+    - **decisión 5**: quitar el cerrojo provisional, `BEGIN IMMEDIATE` y
+      el vigía de `PRAGMA data_version`;
+    - borrar las llamadas a `persist()`.
+  - **Licencia.** El 2026-11-18 el usuario aprobó la Unlicense de una parte de
+    sqlite3mc (miniz). Va como excepción solo para el crate `sqlite3mc-src`
+    en `deny.toml`, con sus avisos en `THIRD-PARTY-NOTICES.md`.
 - **Sustituye en parte a:**
   - la sección «Local data» de `ARCHITECTURE.md`: la BD en memoria y la
-    imagen `pharos.db.enc` (cuando llegue SEC-05);
+    imagen `pharos.db.enc`;
   - la vía de rotación abierta en el
     [ADR-0014](0014-evidencias-cifradas-por-hash.md), que se cierra: se
     conserva la clave maestra;
@@ -141,7 +148,8 @@
 6. **Copias.**
    - Nuevas: `pharos.db.bak-<ver>-<etiqueta>`, hechas con la API de backup
      de SQLite. Siguen cifradas, con la misma clave. Se conservan 3.
-   - Las `pharos.db.enc.bak-…` no se podan automáticamente.
+   - Las `pharos.db.enc.bak-…` se podan aparte, por su prefijo: las copias
+     nuevas nunca se llevan la de la conversión.
    - `restored_copy` cuenta aperturas y copias, y la marca pasa a
      `pharos.db.seq`.
 7. **Cerrojo provisional (D4).** Hasta que llegue SEC-05b, abrir la BD toma
@@ -167,6 +175,44 @@
      la app sin Tauri. Es la carpeta de datos del sistema más el
      identificador de `tauri.conf.json`; un test comprueba que el
      identificador coincide.
+
+## Implementación (N4, SEC-05a)
+
+- **Enlace (SEC-04).** `src-tauri/sqlite3mc-sys` compila la amalgama de
+  `sqlite3mc-src` 206.1.0 (SQLite3MC 2.6.1 sobre SQLite 3.54.0) con las
+  mismas opciones que `bundled` de libsqlite3-sys, más:
+  - `SQLITE_TEMP_STORE=2`;
+  - el esquema SQLCipher 4 por defecto (`CODEC_TYPE_SQLCIPHER`,
+    `SQLITE3MC_USE_SQLCIPHER_LEGACY`): `PRAGMA key` solo escribe siempre ese
+    esquema, también desde otro proceso.
+
+  rusqlite usa `in_gecko` (sin `bundled`) y `pharos-core` nombra el crate
+  (`extern crate`) para que se enlace.
+- **Clave.** `PRAGMA key = "x'<64 hex>'"` (clave en bruto; con otra longitud
+  sería una contraseña y pasaría por PBKDF2). Una clave errónea solo falla al
+  leer, así que `open_disk` lee `sqlite_master` y traduce
+  `SQLITE_NOTADB` al error de clave.
+- **Conversión con `VACUUM INTO`, no con la API de backup.** El spike
+  comprobó que la API de backup no copia una BD en claro a una cifrada. La
+  clave va en la URI (`?cipher=sqlcipher&legacy=4&key=x%27…%27`), así que
+  los mensajes de SQLite de ese paso no se propagan: solo el código de error.
+- **Espacio y páginas.** `auto_vacuum=INCREMENTAL` se fija en la imagen
+  antes del `VACUUM INTO` y en cada BD nueva. Las páginas son de 4096 bytes,
+  con 80 reservados (IV y HMAC): compatibles con SQLCipher 4.
+- **`persist()`** ya no escribe nada; solo anota `PRAGMA data_version`.
+  `changed_on_disk` lo compara: cambia solo cuando confirma otra conexión.
+  Las llamadas se borran en N5.
+- **Recuento de aperturas (AUD-01c).** Cada apertura y cada copia suben
+  `save_seq` y la marca `pharos.db.seq`. Una copia hecha a mano después de
+  la última apertura no se distingue: es el límite aceptado.
+- **En la app:**
+  - la conversión corre en un hilo, tras la pantalla «Actualizando el formato
+    de tus datos» (`db_open_converting`); `db_open_error` espera a que
+    termine la apertura;
+  - `db_open_retry` reabre tras `db-in-use`, `db-convert-no-space` o
+    `db-convert-failed`;
+  - no hay porcentaje: `VACUUM INTO` no informa de su avance, así que la
+    pantalla dice qué pasa y que no hay que cerrar la app.
 
 ## Alternativas
 

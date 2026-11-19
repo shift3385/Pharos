@@ -4,7 +4,7 @@ import { ErrorBoundary } from "@shared/ui/ErrorBoundary";
 import { useAuth, AuthScreen, RESET_PATH } from "@modules/auth";
 import { AppShell } from "./layout/AppShell";
 import { AppSplash } from "./AppSplash";
-import { DbErrorScreen } from "./DbErrorScreen";
+import { DbConvertingScreen, DbErrorScreen } from "./DbErrorScreen";
 import { useDbOpenError } from "./dbStatus";
 import { DashboardPage } from "./dashboard/DashboardPage";
 import { ProjectDetailPage, ProjectsPage } from "@modules/projects";
@@ -14,7 +14,7 @@ import { JoinWorkspacePage, WorkspaceMembersPage } from "@modules/workspaces";
 
 export function App() {
   const { status } = useAuth();
-  const [dbError, markDbOpened] = useDbOpenError();
+  const db = useDbOpenError();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   // Signing in always opens Inicio (UX-27), wherever the last session ended
@@ -27,9 +27,12 @@ export function App() {
     previous.current = status;
   }, [status, pathname, navigate]);
 
-  if (dbError)
-    return <DbErrorScreen error={dbError} onRecovered={markDbOpened} />;
-  if (status === "loading" || dbError === undefined) return <AppSplash />;
+  if (db.error)
+    return (
+      <DbErrorScreen error={db.error} onRecovered={db.markOpened} onRetry={db.retry} />
+    );
+  if (db.error === undefined && db.converting) return <DbConvertingScreen />;
+  if (status === "loading" || db.error === undefined) return <AppSplash />;
   // The reset link opens its page even in a signed-in browser (ADR-0045).
   if (status === "unauthenticated" || pathname === RESET_PATH) return <AuthScreen />;
 

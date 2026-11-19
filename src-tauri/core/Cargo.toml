@@ -30,11 +30,15 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 # Secure session cache in the Windows Credential Manager (spec §4).
 keyring = { version = "3", features = ["windows-native"] }
-# Local encrypted SQLite: plain SQLite (compiles with gcc, no OpenSSL) + pure-Rust
-# AES-256-GCM encryption at rest, key kept in the OS keychain (spec §16 Phase 2).
-# `serialize` moves the database image to/from memory so plaintext never hits disk;
-# `blob` reads the old planner attachment BLOBs in blocks while moving them out.
-rusqlite = { version = "0.41.1", features = ["bundled", "serialize", "blob"] }
+# Local SQLite on disk, encrypted per page (SEC-05, ADR-0050): SQLite3 Multiple
+# Ciphers in the SQLCipher 4 scheme, compiled by pharos-sqlite3mc-sys. With
+# `in_gecko`, libsqlite3-sys uses its bundled bindings and links nothing, so
+# that static library is the SQLite of the process (SEC-04 spike).
+# `serialize` reads the image of a pre-0.6 `pharos.db.enc` to convert it;
+# `backup` copies the encrypted database to its backups; `blob` reads the old
+# planner attachment BLOBs in blocks while moving them out.
+rusqlite = { version = "0.41.1", features = ["in_gecko", "serialize", "blob", "backup"] }
+pharos-sqlite3mc-sys = { path = "../sqlite3mc-sys" }
 # `stream`: the evidence files (`evidence/*.pev`, ADR-0014) are encrypted and
 # decrypted in 64 KiB blocks (STREAM construction), never whole in memory.
 aes-gcm = { version = "0.10", features = ["stream"] }

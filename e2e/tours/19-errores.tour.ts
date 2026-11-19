@@ -1,13 +1,14 @@
 // Chapter 19 — Si algo sale mal (manual v2, MAN-03): the screens a user sees when something goes
 // wrong, produced for real inside the isolated tour profile.
 //
-// - The database screen: the app is closed, the profile's encrypted database
-//   is replaced by garbage (the original is kept aside), and the app starts
-//   again. Afterwards the original is put back and the app restarts normally.
-//   Only the tour profile's own file is touched (PHAROS_E2E_PROFILE).
+// - The database screen: the app is closed and the tour holds the profile's
+//   `pharos.lock` open, as a second Pharos (or the CLI) would, so the app
+//   starts again on «Otro Pharos está usando tus datos» (ADR-0050 §7). Once
+//   the tour lets go, «Reintentar» opens the data without a restart. Only the
+//   tour profile's own folder is touched (PHAROS_E2E_PROFILE).
 // - The «Algo salió mal» screen: a route whose project id is not valid URL
 //   encoding makes the view throw, and the error boundary catches it.
-import { copyFileSync, existsSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, openSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { $, browser, expect } from "@wdio/globals";
@@ -31,39 +32,46 @@ async function whenFree(what: string, op: () => void) {
   throw new Error(`could not ${what}: ${last}`);
 }
 
-function profileDb() {
+/** A file of the tour profile's data folder (never the user's). */
+function profileFile(name: string) {
   const profile = process.env.PHAROS_E2E_PROFILE;
-  if (!profile || !profile.startsWith("tours-")) throw new Error("not a tour profile: refusing to touch its database");
+  if (!profile || !profile.startsWith("tours-")) throw new Error("not a tour profile: refusing to touch its data");
   const appData = process.env.APPDATA ?? join(homedir(), "AppData", "Roaming");
-  return join(appData, "com.pharos.desktop", "e2e", profile, "pharos.db.enc");
+  return join(appData, "com.pharos.desktop", "e2e", profile, name);
 }
+
+/** The tour's handle on `pharos.lock` while it plays the other Pharos. */
+let heldLock: number | null = null;
 
 chapter("errores", () => {
   step("base-de-datos", {
     title: "Si la base de datos local no abre",
-    caption: "Si los datos locales no se pueden abrir, Pharos lo dice al arrancar y no modifica ningún archivo. La pantalla cambia según la causa: «No se pudo abrir la base de datos local» (un archivo dañado, como en este ejemplo), «Estos datos son de una versión más nueva de Pharos» (instala esa versión o una posterior) o «Falta la clave de la base de datos local» (un equipo nuevo o Windows reinstalado), que ofrece escribir la clave de recuperación (56 caracteres en grupos de 4) para abrirlos.",
+    caption: "Si los datos locales no se pueden abrir, Pharos lo dice al arrancar y no modifica ningún archivo. La pantalla cambia según la causa: «Otro Pharos está usando tus datos» (otra ventana de Pharos o el CLI los tiene abiertos, como en este ejemplo), «Estos datos son de una versión más nueva de Pharos» (instala esa versión o una posterior), «Falta la clave de la base de datos local» (un equipo nuevo o Windows reinstalado), que ofrece escribir la clave de recuperación (56 caracteres en grupos de 4), o, al actualizar desde la 0.5, «Falta espacio para actualizar tus datos». Cuando la causa puede pasar sola, ofrece «Reintentar».",
     covers: ["state:db-error"],
     run: async () => {
-      const db = profileDb();
+      const db = profileFile("pharos.db");
       if (!existsSync(db)) throw new Error(`no database at ${db}`);
       await browser.deleteSession();
-      await whenFree("back up the database", () => copyFileSync(db, `${db}.tour-backup`));
-      await whenFree("replace the database", () => writeFileSync(db, Buffer.from("this is not a Pharos database")));
+      // The closed app releases the lock; the tour takes it, as a second
+      // Pharos would, before the app starts again.
+      await whenFree("hold the data folder", () => {
+        heldLock = openSync(profileFile("pharos.lock"), "r+");
+      });
       await browser.reloadSession();
       await expect(byTestId("db-error")).toBeDisplayed();
+      await expect(byTestId("db-error")).toHaveText(expect.stringContaining("Otro Pharos está usando tus datos"));
     },
   });
 
   step("restaurar", {
     title: "Restaurar la copia",
     caption:
-      "Con el archivo original de vuelta (o una copia de pharos.db.enc), Pharos abre como siempre y Liomar vuelve a su Inicio: por eso conviene guardar la clave de recuperación y hacer copias (capítulo 15).",
+      "En cuanto se cierra el otro Pharos, «Reintentar» abre los datos sin reiniciar y Liomar vuelve a su Inicio. Si el archivo está dañado, se restaura una copia (pharos.db o pharos.db.bak-…): por eso conviene guardar la clave de recuperación y hacer copias (capítulo 15).",
     shot: false,
     run: async () => {
-      const db = profileDb();
-      await browser.deleteSession();
-      await whenFree("restore the database", () => copyFileSync(`${db}.tour-backup`, db));
-      await browser.reloadSession();
+      if (heldLock !== null) closeSync(heldLock);
+      heldLock = null;
+      await $("button=Reintentar").click();
       await setViewport(DESKTOP);
       await expect(userMenuTrigger()).toBeDisplayed();
     },
