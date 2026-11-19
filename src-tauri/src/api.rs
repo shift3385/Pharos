@@ -97,7 +97,6 @@ pub fn create_project_for_tests(
     }))
     .map_err(|e| e.to_string())?;
     let id = db.with_conn(|c| crate::project::insert_project(c, &input))?;
-    db.persist()?;
     Ok(id)
 }
 
@@ -332,7 +331,6 @@ mod tests {
             (mine[0].id.as_str(), mine[0].case_id_prefix.as_str()),
             (pag.as_str(), "PAG-")
         );
-        db.persist().unwrap();
         assert!(has_database(&dir).unwrap());
         assert_eq!(find_run(&db, &pag, U, "RUN-1").unwrap(), None);
         assert_eq!(find_cycle(&db, &pag, U, "CYC-1").unwrap(), None);

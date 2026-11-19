@@ -190,18 +190,18 @@ fn a_dry_run_writes_nothing() {
     assert_eq!(api::find_run(&db, &p.id, U, "RUN-001").unwrap(), None);
 }
 
-#[cfg(windows)]
+/// SEC-05b: the CLI writes while the app has the database open, and the
+/// app's own connection sees the run at once.
 #[test]
-fn with_the_app_open_it_fails_cleanly_with_db_in_use() {
+fn with_the_app_open_it_writes_and_the_app_sees_it() {
     let f = Fixture::new();
     f.write("ctrf.json", &report("single__ctrf.json"));
-    let app = f.db(); // the app holds the data folder
+    let app = f.db(); // the app has the data folder open
     let (code, _, err) = f.run(&["upload", "ctrf.json", "-p", "TC", "--lang", "es"], &[]);
-    assert_eq!(code, 6);
-    assert!(err.contains("Pharos está abierto"), "{err}");
-    assert!(err.contains("[db-in-use]"), "{err}");
+    assert_eq!(code, 0, "{err}");
+    let p = &api::list_projects(&app, U).unwrap()[0];
+    assert!(api::find_run(&app, &p.id, U, "RUN-001").unwrap().is_some());
     drop(app);
-    assert_eq!(f.run(&["upload", "ctrf.json", "-p", "TC"], &[]).0, 0);
 }
 
 #[test]
