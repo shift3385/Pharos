@@ -34,6 +34,14 @@ Comunes:
   (`@TC-1`) en `attributes.tags`, y el persistente las resuelve con el prefijo
   del proyecto, como con los resultados.
 - **Límites:** 20.000 hallazgos y 5.000 métricas por importación.
+- **Persistente:** `runs/findings.rs` los guarda en la transacción de la
+  importación (tablas `findings` y `metrics`, migración 0048) y los
+  sincroniza como `finding` y `metric`. Un Pharos Run JSON con un hallazgo
+  sin `fingerprint` recibe la derivada al leerse (`fingerprintOf`).
+- **Vectores para puertos** (el CLI): `fixtures/detection-vectors.json` (el
+  formato o el error de cada muestra y de entradas en línea, por contenido) y
+  `fixtures/schema-vectors.json` (documentos válidos e inválidos, con sus
+  errores). Los genera y comprueba `vectors.test.ts`.
 
 ### SARIF 2.x → hallazgos
 

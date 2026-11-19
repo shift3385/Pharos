@@ -77,6 +77,8 @@ export const SERVER_FEATURES = [
   "workspaces",
   // SYNC-04b (ADR-0042 §7): attachments and templates, their content by hash.
   "blobs",
+  // ING-06 (ADR-0053): findings and metrics of a run (append-only).
+  "findings",
 ] as const;
 
 /** Features the client sent. Inside one minor the version string does not
@@ -147,6 +149,12 @@ export function understandsDefects(req: FastifyRequest): boolean {
  *  a client never sees them on pull, and may not push them. */
 export function understandsCaseBaselines(req: FastifyRequest): boolean {
   return clientFeatures(req).includes("case-baselines");
+}
+
+/** True if the client knows findings and metrics (ING-06, ADR-0053). Without
+ *  it a client never sees them on pull, and may not push them. */
+export function understandsFindings(req: FastifyRequest): boolean {
+  return clientFeatures(req).includes("findings");
 }
 
 /** True if the client knows workspaces with roles (SYNC-07, ADR-0042 §2):

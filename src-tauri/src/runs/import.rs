@@ -41,6 +41,7 @@ use tauri::State;
 use ts_rs::TS;
 use uuid::Uuid;
 
+use super::findings;
 use super::link::{Link, Resolver, StoredFacts, CURRENT_SHARD};
 use super::{
     err, ids, insert_run, insert_steps, owned_run, require_open, text, update_run, within,
@@ -51,13 +52,17 @@ use crate::evidence::{self, EvidenceStore, Stored};
 use crate::journal::{self, Action, Actor};
 use crate::project;
 
-/// Formats a shard may come from through this importer.
-const FORMATS: [&str; 5] = [
+/// Formats a shard may come from through this importer. SARIF, k6 and axe
+/// bring findings and metrics instead of results (ING-06, ADR-0053).
+const FORMATS: [&str; 8] = [
     "cucumber_messages",
     "ctrf",
     "junit",
     "playwright_json",
     "pharos_run_json",
+    "sarif",
+    "k6",
+    "axe",
 ];
 
 /// Results per import (one transaction, one call), as the TS side checks.
@@ -246,6 +251,13 @@ pub struct ReportImportPreview {
     /// A run of this project already holding this file (key), if any. Local
     /// only: another device's import is not known until it syncs.
     pub(crate) duplicate_of: Option<String>,
+    /// Findings and metrics (ING-06): how many, findings by severity and
+    /// metrics whose threshold failed.
+    pub(crate) findings: usize,
+    #[cfg_attr(test, ts(type = "Record<string, number>"))]
+    pub(crate) finding_severities: Value,
+    pub(crate) metrics: usize,
+    pub(crate) thresholds_failed: usize,
     pub(crate) warnings: Vec<ReportImportWarning>,
 }
 
@@ -274,6 +286,8 @@ pub struct ReportImportOutcome {
     pub(crate) results: usize,
     pub(crate) linked: usize,
     pub(crate) unlinked: usize,
+    pub(crate) findings: usize,
+    pub(crate) metrics: usize,
     pub(crate) attachments: Vec<AttachmentTarget>,
     pub(crate) warnings: Vec<ReportImportWarning>,
 }
@@ -896,6 +910,9 @@ pub(crate) fn preview(
             .map_err(err)?,
         None => duplicate_of(conn, &req.project_id, &sha)?,
     };
+    let fm = findings::plan(&req.doc, &shard_id)?;
+    let mut warnings = p.warnings.clone();
+    warnings.extend(warnings_of(&fm));
     Ok(ReportImportPreview {
         format: p.format.clone(),
         tests: tests_of(&p),
@@ -905,7 +922,11 @@ pub(crate) fn preview(
         attachments: p.attachments,
         statuses: statuses_of(&p),
         duplicate_of: duplicate,
-        warnings: p.warnings,
+        findings: fm.findings.len(),
+        finding_severities: fm.severities(),
+        metrics: fm.metrics.len(),
+        thresholds_failed: fm.thresholds_failed(),
+        warnings,
     })
 }
 
@@ -1021,6 +1042,8 @@ pub(crate) fn commit(
                     results: 0,
                     linked: 0,
                     unlinked: 0,
+                    findings: 0,
+                    metrics: 0,
                     attachments: targets(conn, &shard_id, &p)?,
                     warnings: Vec::new(),
                 });
@@ -1077,6 +1100,8 @@ pub(crate) fn commit(
         &shard_id,
         true,
     )?;
+    // Findings and metrics are checked before anything is written (ING-06).
+    let fm = findings::plan(&req.doc, &shard_id)?;
     let workspace = ensure_workspace(conn)?;
     let hlc = crate::oplog::next_hlc(conn)?;
     conn.execute(
@@ -1128,6 +1153,7 @@ pub(crate) fn commit(
             user,
         )?;
     }
+    findings::write(conn, &req.project_id, &run_id, &shard_id, user, &fm)?;
     let linked = p.linked();
     let unlinked = p.results.len() - linked;
     let mut changes = Map::new();
@@ -1149,7 +1175,11 @@ pub(crate) fn commit(
             "unlinked": unlinked,
             "ambiguous": p.warnings.iter().filter(|w| w.code == "two-case-tags").count(),
             "attachments": p.attachments,
-            "warnings": p.warnings.len(),
+            "findings": fm.findings.len(),
+            "findingSeverities": fm.severities(),
+            "metrics": fm.metrics.len(),
+            "thresholdsFailed": fm.thresholds_failed(),
+            "warnings": p.warnings.len() + fm.warnings.len(),
         })),
     )?;
     if created && req.new_run.as_ref().and_then(|n| n.keep_open) != Some(true) {
@@ -1173,9 +1203,23 @@ pub(crate) fn commit(
         results: p.results.len(),
         linked,
         unlinked,
+        findings: fm.findings.len(),
+        metrics: fm.metrics.len(),
         attachments,
-        warnings: p.warnings,
+        warnings: p.warnings.into_iter().chain(warnings_of(&fm)).collect(),
     })
+}
+
+/// The findings and metrics warnings as import warnings (no test key).
+fn warnings_of(fm: &findings::Planned) -> Vec<ReportImportWarning> {
+    fm.warnings
+        .iter()
+        .map(|(code, detail)| ReportImportWarning {
+            code: (*code).into(),
+            test_key: None,
+            detail: Some(detail.clone()),
+        })
+        .collect()
 }
 
 #[allow(clippy::too_many_arguments)]

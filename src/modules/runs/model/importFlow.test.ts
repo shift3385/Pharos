@@ -104,6 +104,8 @@ describe("import flow", () => {
       results: 6,
       linked: 6,
       unlinked: 0,
+      findings: 0,
+      metrics: 0,
       warnings: [],
       attachments: [...msg.parsed.inline.keys()].map((ref) => ({
         ref,
@@ -157,11 +159,6 @@ describe("import flow", () => {
     expect(importErrorKey("already-imported: RUN-004")).toEqual({
       key: "runs.import.error.already-imported",
       detail: "RUN-004",
-    });
-    // ING-06: recognised by the parsers, not stored yet by the desktop (F2).
-    expect(importErrorKey("unknown-format: sarif")).toEqual({
-      key: "runs.import.error.format-not-stored",
-      detail: "SARIF",
     });
     expect(importErrorKey(new Error("run-closed"))).toEqual({
       key: "runs.import.error.run-closed",

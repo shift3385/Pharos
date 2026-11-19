@@ -126,6 +126,10 @@ const preview: ReportImportPreview = {
   attachments: 2,
   statuses: { passed: 1, failed: 1 },
   duplicateOf: null,
+  findings: 0,
+  findingSeverities: {},
+  metrics: 0,
+  thresholdsFailed: 0,
   warnings: [{ code: "unknown-case", testKey: "k", detail: "TC-009" }],
 };
 

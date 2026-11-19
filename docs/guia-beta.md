@@ -8,7 +8,7 @@ marcando) y cómo informar de un problema. Los detalles técnicos están en el
 [`ROADMAP.md`](ROADMAP.md).
 
 > Una beta puede tener fallos. Antes de usarla con datos que te importen, guarda
-> la clave de recuperación (paso 4.6) y una copia de `pharos.db.enc`.
+> la clave de recuperación (paso 4.6) y una copia de `pharos.db` (antes de 0.6, `pharos.db.enc`).
 
 **¿Cómo se usa cada pantalla?** El [manual de usuario](manual/README.md)
 (`docs/manual/`) lo explica paso a paso, con capturas de la aplicación real:
@@ -151,8 +151,9 @@ seguir.
       funciona: no hay ventana en blanco).
 - [ ] Al pie del menú lateral y en Administración → Diagnóstico la versión
       es `0.5.0-beta.1`.
-- [ ] Tras iniciar sesión existe `%APPDATA%\com.pharos.desktop\pharos.db.enc`
-      y no quedan archivos `.tmp` ni `.new` al guardar (SEC-01/02).
+- [ ] Tras iniciar sesión existe `%APPDATA%\com.pharos.desktop\pharos.db`
+      (con la app abierta, también `pharos.db-wal` y `pharos.db-shm`; al
+      cerrarla desaparecen) y no queda ningún `.tmp` (SEC-05).
 - [ ] Hay un log del día en `%LOCALAPPDATA%\com.pharos.desktop\logs`.
 - [ ] Cerrar y abrir sin la API en marcha: la app abre con la sesión guardada.
 - [ ] Desinstalar desde Configuración → Aplicaciones → Aplicaciones instaladas.
@@ -169,6 +170,19 @@ seguir.
 - [ ] Desde `0.1.0-alpha.1`: además aparece
       `pharos.db.enc.bak-<versión>-0011_sync_conflicts`, la copia previa a
       la actualización (SEC-06).
+- [ ] Desde `0.5.x` a `0.6`: el primer arranque muestra «Actualizando el
+      formato de tus datos» (si tarda más de un instante) y abre con todo
+      igual. En la carpeta aparecen `pharos.db` y
+      `pharos.db.enc.bak-0.6…`; `pharos.db.enc` queda como un archivo
+      pequeño. Abrir esa carpeta con la `0.5` muestra «Estos datos son de una
+      versión más nueva de Pharos» y no la modifica (SEC-05).
+- [ ] Con dos Pharos abiertos a la vez, el segundo dice «Otro Pharos está
+      usando tus datos» y no abre nada; «Reintentar» abre en cuanto se
+      cierra el primero.
+- [ ] **Roaming.** `%APPDATA%` es la carpeta itinerante de Windows. Si tu
+      equipo usa perfiles itinerantes o redirige carpetas (equipos de
+      empresa), anota si Pharos abre bien al iniciar sesión en otro equipo:
+      copiar un `pharos.db-wal` a medio escribir puede dañar los datos.
 
 ### 4.3 Plan, casos y exportaciones
 
@@ -393,8 +407,9 @@ en la misma matriz.
 
 - [ ] Administración → Seguridad → **Mostrar clave de recuperación**:
       guárdala en papel o en un gestor de contraseñas.
-- [ ] Copiar `pharos.db.enc` a otro equipo (o, tras guardar una copia del
-      `.enc`, borrar la entrada `db-key` del Administrador de credenciales),
+- [ ] Con Pharos cerrado, copiar `pharos.db` a otro equipo (o, tras
+      guardar una copia de `pharos.db`, borrar la entrada `db-key` del
+      Administrador de credenciales),
       abrir Pharos y recuperar los datos con la clave.
 - [ ] Una errata en la clave se avisa antes de tocar nada; una clave de otro
       equipo se rechaza.
@@ -491,7 +506,7 @@ Los puntos abiertos de la auditoría están en
    - los pasos para reproducirlo, lo que esperabas y lo que pasó;
    - una captura, si ayuda;
    - el ZIP de diagnóstico (o, si la base no abrió, el log del paso 2).
-4. **Nunca adjuntes** `pharos.db.enc`, las copias `.bak-…`, tu clave de
+4. **Nunca adjuntes** `pharos.db` (ni `-wal`/`-shm`), `pharos.db.enc`, las copias `.bak-…`, tu clave de
    recuperación, claves de IA ni contraseñas.
 
 Cada corrección se publica como una nueva versión de prueba
@@ -502,8 +517,11 @@ faltan para cerrar la `0.1.0`, que se publicaría desde la etiqueta
 ## 6. Si algo sale mal con los datos
 
 - **Volver a los datos de antes de actualizar:** cierra Pharos, renombra
-  `pharos.db.enc`, copia la `.bak-…` que quieras como `pharos.db.enc` y abre la
+  `pharos.db`, copia la `pharos.db.bak-…` que quieras como `pharos.db` y abre la
   versión que escribió esa copia (README → "Local data backups").
+- **Volver a la 0.5 desde la 0.6:** cierra Pharos, copia
+  `pharos.db.enc.bak-0.6…` sobre `pharos.db.enc` e instala la 0.5. Lo que
+  cambiaste en la 0.6 sin sincronizar se queda solo en `pharos.db`.
   `0.1.0-alpha.1` no detecta datos de una versión más nueva: no abras con ella
   datos ya actualizados sin restaurar antes la copia.
 - **"Falta la clave de la base de datos local":** escribe la clave de

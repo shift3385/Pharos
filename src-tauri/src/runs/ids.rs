@@ -15,6 +15,10 @@ pub const NS_RUN_SHARD: Uuid = Uuid::from_u128(0x3b6d_1f0a_8c2e_5d47_a913_6e0f_2
 pub const NS_RESULT: Uuid = Uuid::from_u128(0x9a4e_7c21_0b5f_5e83_b6d2_1c9a_3f70_e845);
 pub const NS_UNLINKED_MAPPING: Uuid = Uuid::from_u128(0x5c8f_2d93_e1a4_5b06_8f37_d4b2_6a10_c9e2);
 pub const NS_STEP_RESULT: Uuid = Uuid::from_u128(0xe2b7_4c18_6d3a_5f91_b0c5_8a1d_4e6f_2b37);
+// Findings and metrics (ING-06, ADR-0053).
+pub const NS_FINDING: Uuid = Uuid::from_u128(0xda79_8b6f_8ada_5d20_a2e3_0561_5f2b_ee74);
+pub const NS_METRIC: Uuid = Uuid::from_u128(0x0d20_6a05_0b02_540b_822e_1f25_92aa_6a40);
+pub const NS_FINDING_FINGERPRINT: Uuid = Uuid::from_u128(0x65eb_100e_b26d_5f57_9997_6ea9_e5b4_2fcd);
 
 fn v5(ns: &Uuid, parts: Value) -> String {
     Uuid::new_v5(ns, crate::steps::jcs(&parts).as_bytes()).to_string()
@@ -59,6 +63,45 @@ pub fn imported_result_id(
 /// (ADR-0013, step 9 note).
 pub fn imported_step_result_id(result_id: &str, position: i64) -> String {
     v5(&NS_STEP_RESULT, json!([result_id, position]))
+}
+
+/// `UUIDv5(NS_FINDING, [shard_id, fingerprint, occurrence])`: the n-th
+/// (0-based, document order) finding with that fingerprint in the shard, so
+/// the same file gives the same findings on every device (ADR-0053).
+pub fn finding_id(shard_id: &str, fingerprint: &str, occurrence: i64) -> String {
+    v5(&NS_FINDING, json!([shard_id, fingerprint, occurrence]))
+}
+
+/// `UUIDv5(NS_METRIC, [shard_id, name, aggregation, scope])`, with a missing
+/// aggregation or scope as "" (ADR-0053).
+pub fn metric_id(
+    shard_id: &str,
+    name: &str,
+    aggregation: Option<&str>,
+    scope: Option<&str>,
+) -> String {
+    v5(
+        &NS_METRIC,
+        json!([
+            shard_id,
+            name,
+            aggregation.unwrap_or(""),
+            scope.unwrap_or("")
+        ]),
+    )
+}
+
+/// The fingerprint of a finding whose tool gives none: `pharos:` + UUIDv5 of
+/// the lowercased tool, the rule and the normalized location (ADR-0053; the
+/// TS twin is `derivedFingerprint`).
+pub fn derived_fingerprint(tool: &str, rule_id: &str, location_key: &str) -> String {
+    format!(
+        "pharos:{}",
+        v5(
+            &NS_FINDING_FINGERPRINT,
+            json!([tool.to_lowercase(), rule_id, location_key])
+        )
+    )
 }
 
 /// `UUIDv5(NS_UNLINKED_MAPPING, [project_id, test_key])`: one rule per key on
@@ -112,6 +155,31 @@ mod tests {
             assert_eq!(
                 imported_step_result_id(&s(x, "resultId"), position),
                 s(x, "id")
+            );
+        }
+        // ING-06 (ADR-0053).
+        for x in v["findings"].as_array().unwrap() {
+            let n = x["occurrence"].as_i64().unwrap();
+            assert_eq!(
+                finding_id(&s(x, "shardId"), &s(x, "fingerprint"), n),
+                s(x, "id")
+            );
+        }
+        for x in v["metrics"].as_array().unwrap() {
+            assert_eq!(
+                metric_id(
+                    &s(x, "shardId"),
+                    &s(x, "name"),
+                    x["aggregation"].as_str(),
+                    x["scope"].as_str()
+                ),
+                s(x, "id")
+            );
+        }
+        for x in v["fingerprints"].as_array().unwrap() {
+            assert_eq!(
+                derived_fingerprint(&s(x, "tool"), &s(x, "ruleId"), &s(x, "locationKey")),
+                s(x, "fingerprint")
             );
         }
         for x in v["manualKeys"].as_array().unwrap() {

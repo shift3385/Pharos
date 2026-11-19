@@ -7,6 +7,10 @@
 // unused; the desktop build (feature `tauri`) still checks them under clippy.
 #![cfg_attr(not(feature = "tauri"), allow(unused_imports, dead_code))]
 
+// The SQLite of the process: sqlite3mc, encrypted per page (SEC-05). Named so
+// its static library is linked; rusqlite (`in_gecko`) links none of its own.
+extern crate pharos_sqlite3mc_sys;
+
 pub mod ai;
 // Entry points without Tauri for the CLI (INT-01, ADR-0050).
 pub mod api;

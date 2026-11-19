@@ -4,9 +4,7 @@
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
     "inOrder": true,
-    "reserved": {
-      "0048": "0.6.0 track F (ING-06): findings, finding_triage and metrics tables (ADR-0053)"
-    },
+    "reserved": {},
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013",
       "0025": "E3 step 4 spare, never used: step 4 shipped as the single 0024",

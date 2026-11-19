@@ -24,6 +24,7 @@ import {
   testKey,
 } from "./common.js";
 import { isAxeResults, parseAxe } from "./axe.js";
+import { fingerprintOf } from "./findings.js";
 import { parseCtrf } from "./ctrf.js";
 import { isK6Summary, parseK6 } from "./k6.js";
 import { isSarif, parseSarif } from "./sarif.js";
@@ -95,9 +96,25 @@ export function parsePharosRunFile(input: unknown): ParsedReport {
       ]),
     };
   });
-  if (!doc.shards.length) doc.shards = [{ ref: "s1", sourceFormat: "pharos_run_json" }];
+  // A finding without a fingerprint gets the derived one (ADR-0053): both
+  // persisters key findings and their triage by it.
+  if (doc.findings?.length) {
+    const tool = doc.run.sourceTool ?? "pharos_run_json";
+    doc.findings = doc.findings.map((f) =>
+      f.fingerprint?.trim()
+        ? f
+        : {
+            ...f,
+            fingerprint: fingerprintOf(f, String(f.attributes?.tool ?? tool)),
+          },
+    );
+  }
+  if (!doc.shards.length)
+    doc.shards = [{ ref: "s1", sourceFormat: "pharos_run_json" }];
   // This normalizer read it (ADR-0013): its version goes with the shard.
-  doc.shards = doc.shards.map((s, i) => (i === 0 ? { ...s, normalizerVersion: NORMALIZER_VERSION } : s));
+  doc.shards = doc.shards.map((s, i) =>
+    i === 0 ? { ...s, normalizerVersion: NORMALIZER_VERSION } : s,
+  );
   return { format: "pharos_run_json", doc, inline: new Map(), warnings: [] };
 }
 
