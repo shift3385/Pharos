@@ -270,3 +270,15 @@ Sigue el boceto 7 y los §5 y §8. Precisiones, sin cambiar la decisión:
   - Un caso sin referencias exporta lo mismo que antes (los golden de `ATS_001` a `ATS_005` no cambian). El nuevo `ATS_006` cubre una llamada y un dataset.
   - En B31 del `.xlsx`, la línea «Dataset: nombre (vN)» va al final.
 - **Manual:** sección «Biblioteca: pasos compartidos y datasets» en `docs/manual/fuentes/casos.md`. Los pasos con captura de la biblioteca siguen pendientes en `e2e/tours/manifest.ts` hasta que un tour la recorra.
+
+## Implementación: fila explícita en informes no Cucumber (P5, 2026-11-19)
+
+Decisión del usuario 3. En `packages/formats` (`common.ts` `explicitRow`), con `NORMALIZER_VERSION` 2: los shards nuevos tienen otro id y los lectores prefieren el de versión más alta (ADR-0013).
+
+- **Dónde va la fila:**
+  - JUnit: la propiedad `example_row`, que ya no se copia a `attributes.properties`;
+  - CTRF: `extra.exampleRow`;
+  - Playwright: la anotación `example_row`. La del intento gana a la del test.
+- **Valor:** un entero desde 1, como `Example #n`, que se pasa a la base 0 de `exampleRow`. Otro valor se ignora y queda la fila que diga el título.
+- **Vínculo:** la fila se resuelve como siempre, contra las filas de la revisión ejecutada (`link.rs`). El `test_key` no cambia: los tests parametrizados ya tienen títulos distintos.
+- **Documentado** en `docs/formats/importers.md` (nota ²) y en el capítulo «Ejecuciones» del manual.

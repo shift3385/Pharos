@@ -2,7 +2,7 @@
 
 # Manual de usuario de Pharos
 
-Versión **0.5.0-beta.1** · generado el 13 de noviembre de 2026 a partir de las pruebas guiadas (`e2e/tours/`).
+Versión **0.5.0-beta.1** · generado el 19 de noviembre de 2026 a partir de las pruebas guiadas (`e2e/tours/`).
 
 Este manual explica, pantalla a pantalla, cómo se usa Pharos. Cada paso es también una prueba automática: si la aplicación cambia, `npm run manual` vuelve a recorrerla, rehace las capturas y regenera el manual (Markdown y PDF).
 
@@ -19,7 +19,7 @@ Este manual explica, pantalla a pantalla, cómo se usa Pharos. Cada paso es tamb
 5. [Plan de pruebas](05-plan.md) (31 pasos)
 6. [Tablero](06-tablero.md) (11 pasos)
 7. [Requisitos](07-requisitos.md) (11 pasos)
-8. [Casos de prueba](08-casos.md) (25 pasos)
+8. [Casos de prueba](08-casos.md) (46 pasos)
 9. [Ciclos de prueba](09-ciclos.md) (19 pasos)
 10. [Ejecuciones e importación de resultados](10-ejecuciones.md) (11 pasos)
 11. [Ejecución manual](11-ejecucion-manual.md) (19 pasos)
@@ -31,5 +31,6 @@ Este manual explica, pantalla a pantalla, cómo se usa Pharos. Cada paso es tamb
 17. [Asistente de IA](17-ia.md) (19 pasos)
 18. [Pantallas estrechas y móvil](18-movil.md) (6 pasos)
 19. [Si algo sale mal](19-errores.md) (4 pasos)
+20. [Integraciones](20-integraciones.md) (0 pasos)
 
 - [Apéndice. Atajos de teclado](A-atajos-de-teclado.md)

@@ -16,25 +16,6 @@ modifica tus datos.
   - **«Estos datos son de una versión más nueva de Pharos»:** los guardó una
     versión más reciente. Instala esa versión o una posterior; esta no los
     abre para no estropearlos.
-  - **«Actualizando el formato de tus datos»** (no es un error): pasa una
-    sola vez, al abrir la 0.6 por primera vez con datos de una versión
-    anterior. Pharos guarda antes una copia del archivo original. No lo
-    cierres; si se cierra, sigue donde se quedó.
-  - **«Falta espacio para actualizar tus datos»:** la conversión necesita
-    sitio para la copia y para la base nueva. El detalle dice cuánto falta.
-    Libera espacio y pulsa «Reintentar»; no se ha tocado nada.
-  - **«No se pudieron actualizar tus datos»:** el archivo original sigue
-    intacto y hay copia. Pulsa «Reintentar»; si se repite, exporta el
-    diagnóstico e informa del fallo.
-  - **«Falta el archivo de tus datos»:** tus datos están en `pharos.db` y no
-    está en la carpeta de datos. Vuelve a ponerlo (o una copia
-    `pharos.db.bak-…`); Pharos no crea una base vacía en su lugar.
-  - **«Otro Pharos está actualizando tus datos»:** otra ventana de Pharos, o
-    el CLI de Pharos, está convirtiendo o actualizando la base de datos de este
-    equipo (por ejemplo, tras instalar una versión nueva). Pharos espera unos
-    segundos; si no termina, lo dice. Espera y pulsa «Reintentar». Varias
-    ventanas de Pharos y el CLI pueden usar los mismos datos a la vez: lo que
-    escribe uno aparece en los demás.
   - **«Falta la clave de la base de datos local»** o **«La clave guardada no
     abre la base de datos local»:** pasa en un equipo nuevo o tras reinstalar
     Windows. Escribe la clave de recuperación (56 caracteres en grupos de 4;
@@ -43,20 +24,20 @@ modifica tus datos.
   abierta y tus datos, a salvo. Ofrece «Reintentar», «Recargar» y «Exportar
   diagnóstico»; «Detalles técnicos» enseña el error para el informe.
 
-En este manual, el tour hace de «otro Pharos» que está actualizando los datos de
+En este manual, el tour daña a propósito una copia de la base de datos de
 Liomar y simula un fallo de una vista; después todo vuelve a la normalidad.
 
 ## Paso a paso
 
 ### 19.1. Si la base de datos local no abre
 
-Si los datos locales no se pueden abrir, Pharos lo dice al arrancar y no modifica ningún archivo. La pantalla cambia según la causa: «Otro Pharos está actualizando tus datos» (otra ventana de Pharos o el CLI los está actualizando, como en este ejemplo), «Estos datos son de una versión más nueva de Pharos» (instala esa versión o una posterior), «Falta la clave de la base de datos local» (un equipo nuevo o Windows reinstalado), que ofrece escribir la clave de recuperación (56 caracteres en grupos de 4), o, al actualizar desde la 0.5, «Falta espacio para actualizar tus datos». Cuando la causa puede pasar sola, ofrece «Reintentar».
+Si los datos locales no se pueden abrir, Pharos lo dice al arrancar y no modifica ningún archivo. La pantalla cambia según la causa: «No se pudo abrir la base de datos local» (un archivo dañado, como en este ejemplo), «Estos datos son de una versión más nueva de Pharos» (instala esa versión o una posterior) o «Falta la clave de la base de datos local» (un equipo nuevo o Windows reinstalado), que ofrece escribir la clave de recuperación (56 caracteres en grupos de 4) para abrirlos.
 
 ![Si la base de datos local no abre](img/errores/01-base-de-datos.png)
 
 ### 19.2. Restaurar la copia
 
-En cuanto el otro Pharos termina, «Reintentar» abre los datos sin reiniciar y Liomar vuelve a su Inicio. Si el archivo está dañado, se restaura una copia (pharos.db o pharos.db.bak-…): por eso conviene guardar la clave de recuperación y hacer copias (capítulo 15).
+Con el archivo original de vuelta (o una copia de pharos.db.enc), Pharos abre como siempre y Liomar vuelve a su Inicio: por eso conviene guardar la clave de recuperación y hacer copias (capítulo 15).
 
 ### 19.3. «Algo salió mal»
 
@@ -81,11 +62,7 @@ Si una vista falla, Pharos no se cierra: muestra «Algo salió mal» con «Reint
   caracteres y vuelve a intentarlo.
 - **«La clave es válida, pero no abre esta base de datos…».** Es la clave de
   otro equipo, o el archivo está dañado. Comprueba que sea la de este equipo;
-  si lo es, prueba con una copia `pharos.db.bak-…`.
-- **«Otro Pharos está actualizando tus datos» y no ves otra ventana.**
-  Puede que el CLI de Pharos esté actualizando la base tras instalar una
-  versión nueva, o que haya un proceso `pharos.exe` sin ventana atascado.
-  Espera a que termine o ciérralo en el Administrador de tareas.
+  si lo es, prueba con una copia `pharos.db.enc.bak-…`.
 - **«Algo salió mal» vuelve a salir tras «Reintentar».** Pulsa «Recargar»; si
   se repite, exporta el diagnóstico e informa del fallo.
 
@@ -96,9 +73,9 @@ Si una vista falla, Pharos no se cierra: muestra «Algo salió mal» con «Reint
   la pantalla de entrada o en «Acerca de Pharos» (un clic en el logotipo del
   menú lateral).
 - Guarda la clave de recuperación el primer día (capítulo 15) y haz copias de
-  `pharos.db` y de su carpeta `evidence`: son lo único que devuelve tus
+  `pharos.db.enc` y de su carpeta `evidence`: son lo único que devuelve tus
   datos en otro equipo.
-- Nunca adjuntes a un informe `pharos.db` (ni sus `-wal`/`-shm`), tu clave de recuperación ni
+- Nunca adjuntes a un informe `pharos.db.enc`, tu clave de recuperación ni
   claves de IA. El diagnóstico ya los excluye.
 
 ## Véase también
@@ -110,4 +87,4 @@ Si una vista falla, Pharos no se cierra: muestra «Algo salió mal» con «Reint
 
 ---
 
-← [Pantallas estrechas y móvil](18-movil.md) · [Índice](README.md)
+← [Pantallas estrechas y móvil](18-movil.md) · [Índice](README.md) · [Integraciones](20-integraciones.md) →

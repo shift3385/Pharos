@@ -26,7 +26,7 @@
       {
         "ref": "s1",
         "sourceFormat": "axe",
-        "normalizerVersion": 1,
+        "normalizerVersion": 2,
         "formatVersion": "4.14.0"
       }
     ],

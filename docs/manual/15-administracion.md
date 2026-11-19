@@ -11,12 +11,17 @@ agrupadas:
   - **Motor de IA:** cómo se usa la IA (automático, solo online o solo
     local), el proveedor online (Gemini, OpenAI, Claude, OpenRouter o uno
     compatible), su clave y su modelo, o un modelo local con Ollama para
-    trabajar sin internet.
+    trabajar sin internet. En el escritorio, «Usar esta clave también en la
+    web» sube una copia cifrada de la clave a tu servidor para usar la IA en
+    la web (capítulo 17).
   - **Plantillas:** las de plan y de caso, las incluidas con Pharos y las
     tuyas.
 - **Aplicación**
   - **General:** tema, idioma, fondo, sombra de las tarjetas, carpeta de
-    descarga y retención de lo borrado.
+    descarga, retención de lo borrado y la papelera.
+  - **Usuarios** (solo si eres administrador del servidor): las cuentas del
+    servidor, restablecer contraseñas, nombrar o quitar administradores y
+    desactivar o reactivar cuentas.
 - **Cuenta y datos**
   - **Sincronización:** estado, cuenta, conflictos, «Sincronizar ahora» y la
     sincronización automática.
@@ -145,6 +150,137 @@ Pulsa un elemento de la lista para ver el cambio campo a campo: lo que había, t
 
 Si ya hay una clave guardada y guardas otra sin probarla, Pharos pide confirmación, porque la anterior no se puede recuperar. «Probar conexión» comprueba la nueva sin reemplazar nada; si responde, se guarda sin preguntar.
 
+## La papelera
+
+- Está al final de «General», solo en la app de escritorio: la web no guarda
+  lo borrado.
+- Muestra cuántos elementos hay, su desglose por tipo y, en cada fila, cuándo
+  se borró y en cuántos días se eliminará para siempre según la retención.
+- **Restaurar** devuelve lo marcado a su sitio, con su clave y su historial, y
+  lo sincroniza como cualquier cambio. Un proyecto vuelve con lo que se borró
+  con él; lo de un proyecto que está en la papelera espera a su proyecto. Un
+  defecto vuelve sin sus adjuntos.
+- **Eliminar para siempre** y **Vaciar papelera** piden confirmación. Lo que
+  tiene cambios sin sincronizar o un conflicto se conserva hasta que se envíe
+  («Pendiente de sincronizar»). Las claves eliminadas no se reutilizan.
+
+## Workspaces y miembros
+
+Con un servidor que tiene workspaces compartidos (desde 0.5.0), el
+**selector de workspace** aparece arriba del menú lateral. Muestra el
+workspace en el que trabajas y, debajo, tu rol en él. La lista
+«Proyectos» solo enseña los proyectos de ese workspace.
+
+- **Personal.** Es tu workspace. Todos tus proyectos empiezan aquí, y en la
+  primera sincronización con un servidor que tiene workspaces, los proyectos
+  de este equipo pasan a él. Antes, Pharos guarda una copia de seguridad de
+  tus datos (`pharos.db.enc.bak-…-workspaces`).
+- **Crear workspace.** Abre el selector y elige «Crear workspace». Tú serás
+  su Test Manager.
+- **Invitar.** En «Miembros y roles», «Invitar» crea un código de un solo
+  uso con el rol de la persona: Test Manager, Test Analyst, Automation
+  Engineer, Product Owner o Viewer (solo lectura). Copia el texto de la
+  invitación, que lleva también la dirección del servidor, y envíaselo por
+  el canal que uséis. El código solo se muestra una vez y caduca en 1, 7
+  o 30 días.
+- **Unirse.** Quien recibe la invitación elige «Unirse con un código…»,
+  pega el código, comprueba a qué workspace entra y con qué rol, y pulsa
+  «Unirme». Los proyectos llegan con la siguiente sincronización.
+- **Compartir un proyecto.** En «Proyectos», el menú «⋯» de un proyecto de
+  tu workspace Personal tiene «Compartir con un workspace…». Lo mueve
+  entero, con su plan, casos, requisitos, ciclos, ejecuciones, defectos,
+  adjuntos y auditoría, a un workspace compartido del que eres Test Manager.
+- **Roles.** Solo el Test Manager cambia roles, quita a personas, gestiona
+  invitaciones y ve la auditoría. El workspace nunca se queda sin Test
+  Manager. Un Viewer ve y exporta todo, pero no cambia nada: Pharos se lo
+  recuerda con un aviso de solo lectura, y el servidor rechaza cualquier
+  cambio suyo. «¿Qué puede hacer cada rol?», al pie de «Miembros y roles»,
+  resume los permisos.
+- **Reglas: «Aprobación independiente».** En «Miembros y roles», la sección
+  «Reglas» dice quién aprueba planes y casos (capítulos 5 y 8). Activada, que
+  es lo normal en un workspace compartido, aprueba quien tiene el rol (Test
+  Manager para planes; Test Manager o Test Analyst para casos) y no es el
+  autor. Desactivada, aprueba cualquiera que pueda editar, también el autor,
+  y queda como «aprobación propia». Solo un Test Manager la cambia; apagarla
+  pide confirmación y queda en la auditoría. En tu workspace Personal está
+  siempre desactivada, porque trabajas solo. Las aprobaciones que ya existen
+  no cambian.
+- **Cambios de dos sitios a la vez.** Si tú y otra persona (u otro equipo
+  tuyo) cambiáis el mismo elemento sin sincronizar entre medias, Pharos los
+  combina campo a campo: si cambiasteis campos distintos (tú el título, ella
+  la prioridad; tú un paso, ella otro), se queda con los dos y no pregunta.
+  Un aviso dice cuántos elementos se combinaron, y cada uno queda en la
+  auditoría como «Conflicto resuelto · Combinado».
+  - Solo pregunta por lo que choca: el mismo campo cambiado de dos formas,
+    un paso que uno borró y el otro editó, o los pasos reordenados de dos
+    maneras distintas. En el panel de conflictos eliges, campo a campo, «Mi
+    versión» o «Versión del servidor», y «Aplicar». «La mía en todo» y «La
+    del servidor en todo» siguen ahí.
+  - Un texto largo (una descripción) no se mezcla por líneas: si los dos lo
+    cambiasteis, eliges uno.
+  - Si uno aprobó o revisó el elemento y el otro cambió su contenido, eliges
+    una versión entera: una aprobación no puede cubrir un contenido que no
+    vio. Lo mismo al cerrar un ciclo que otro editaba.
+  - En la web pasa igual al guardar: si alguien cambió otros campos mientras
+    editabas, se combina y se guarda («Alguien cambió este elemento…»); si
+    cambió los mismos, un diálogo te deja elegir qué queda en cada uno, o
+    volver al formulario sin guardar.
+- **Rechazado por permisos.** Si cambias algo que tu rol ya no permite (por
+  ejemplo, te cambiaron el rol mientras no tenías conexión), el servidor no
+  lo guarda. El cambio espera en el panel de conflictos hasta que lo
+  descartas, y entonces vuelve la versión del servidor.
+- **Si te quitan de un workspace,** un aviso lo dice y ofrece eliminar su
+  copia de este equipo. No se borra nada hasta que lo confirmas.
+
+## Usuarios del servidor
+
+El **administrador del servidor** es un rol de todo el servidor, no de un
+workspace: un Test Manager no lo es por serlo, y ser administrador no da
+acceso a los proyectos de nadie.
+
+- **Quién lo es.** La primera cuenta que se registró en el servidor (en un
+  servidor que ya existía, la más antigua), las que nombre otro administrador
+  y las que configure quien gestiona el servidor con `PHAROS_ADMINS`. «Mi
+  perfil» lo indica con «Administrador del servidor».
+- **La lista.** Todas las cuentas del servidor, con su correo, su alta y si
+  tienen códigos de recuperación. «Sin códigos» quiere decir que, si esa
+  persona olvida la contraseña, solo un administrador puede ayudarla.
+- **Restablecer contraseña…** Genera un enlace de un solo uso que dura 24
+  horas. Tú nunca ves ni pones la contraseña de la otra persona.
+  - Si el servidor envía correo, «Enviar por correo» se lo manda y tú no lo
+    ves. Si no, o si eliges «Prefiero entregarlo yo», el enlace se muestra
+    una sola vez: cópialo y dáselo por un canal privado.
+  - Al usarlo se cierran todas sus sesiones y se borra su clave de IA de la
+    web. Recibe un aviso, y el cambio queda en tu auditoría y en la suya.
+  - Tu propia contraseña no se cambia aquí, sino en «Mi perfil».
+- **Hacer administrador / Quitar administrador.** Piden confirmación y
+  avisan a la persona. Siempre tiene que quedar un administrador: el del
+  último sale deshabilitado.
+- **Activas, Desactivadas, Todas.** La lista muestra primero las cuentas
+  activas. Una desactivada lleva «Desactivada · fecha»; al pasar el ratón,
+  quién la desactivó y por qué.
+- **Desactivar cuenta…** Para alguien que deja el equipo, sin borrar nada.
+  - Se cierran todas sus sesiones al momento (web, escritorio y API), y ya no
+    puede entrar ni sincronizar. Lo que tenga en su equipo se queda allí.
+  - Sus datos, su autoría y su auditoría se conservan.
+  - Si es el único Test Manager activo de un workspace compartido, eliges
+    quién pasa a serlo entre los demás miembros activos. Si no hay nadie
+    más, el workspace queda sin Test Manager activo hasta que la reactives.
+  - Puedes escribir un motivo (lo ven los administradores) y confirmas
+    escribiendo su correo. Los Test Manager de sus workspaces reciben un
+    aviso, y queda en tu auditoría y en la suya.
+  - No puedes desactivarte a ti ni al último administrador activo.
+- **Reactivar cuenta.** La persona vuelve a entrar con su contraseña y
+  conserva sus roles; si nombraste un sucesor, también lo sigue siendo.
+
+## Lo que viaja con tu cuenta
+
+- El idioma, el tema, la sombra de las tarjetas, la opacidad del fondo y el
+  fondo predeterminado o ninguno se aplican en todos tus equipos: en Perfil
+  lo indica «Se aplica en todos tus equipos». Gana el cambio más reciente.
+- Una imagen de fondo propia, la retención, la sincronización automática y la
+  carpeta de descarga dependen del equipo y se quedan en él.
+
 ## Atajos de teclado
 
 | Tecla | Dónde | Qué hace |
@@ -156,6 +292,21 @@ Si ya hay una clave guardada y guardas otra sin probarla, Pharos pide confirmaci
 | Esc | Detalle de un evento de auditoría | Lo cierra |
 
 ## Si algo no sale
+
+- **No veo «Usuarios».** Solo la ve un administrador del servidor. Pide a uno
+  que te nombre, o a quien gestiona el servidor que añada tu correo a
+  `PHAROS_ADMINS`.
+- **«Ya no eres administrador de este servidor.»** Otro administrador te
+  quitó el rol mientras tenías la pestaña abierta.
+- **«Tiene que haber al menos un administrador.»** No se puede quitar el rol
+  al último. Nombra antes a otra persona.
+- **«Este servidor no envía correos. Entrega tú el enlace.»** Elige
+  «Prefiero entregarlo yo».
+- **«Esta cuenta está desactivada…» al entrar.** Un administrador del
+  servidor la desactivó. Pídele que la reactive; tus datos siguen en tu
+  equipo y en el servidor.
+- **«Tu cuenta está desactivada en el servidor» al sincronizar.** Lo mismo:
+  la sincronización se para y tus cambios pendientes esperan en el equipo.
 
 - **«No detectado (¿está en ejecución?)» en Ollama.** Ollama no está
   instalado o no está abierto en este equipo. Ábrelo y pulsa «Reintentar», o
@@ -171,8 +322,9 @@ Si ya hay una clave guardada y guardas otra sin probarla, Pharos pide confirmaci
   web, escribe el nombre del modelo.
 - **Al cambiar de pestaña pregunta «¿Descartar los cambios?».** Hay ajustes
   sin guardar en la pestaña actual: guárdalos o descártalos.
-- **«Conflictos (N)» en el menú lateral.** El mismo dato cambió en dos
-  equipos. «Revisar conflictos» te deja elegir qué versión conservar.
+- **«Conflictos (N)» en el menú lateral.** El mismo campo cambió en dos
+  equipos (lo que no choca ya está combinado). «Revisar conflictos» te deja
+  elegir qué queda en cada campo, o una versión entera.
 - **«No se pudo leer la clave de recuperación.»** Pasa si el almacén de
   credenciales de Windows no está disponible. Vuelve a intentarlo; en la web
   no existe esta opción.
@@ -196,7 +348,7 @@ Si ya hay una clave guardada y guardas otra sin probarla, Pharos pide confirmaci
 ## Consejos
 
 - Guarda la **clave de recuperación** el primer día: si cambias de equipo o
-  reinstalas Windows, solo ella y una copia de `pharos.db` (antes de 0.6, `pharos.db.enc`) devuelven tus
+  reinstalas Windows, solo ella y una copia de `pharos.db.enc` devuelven tus
   datos. Pharos no puede recuperarla por ti.
 - Pulsa **«Probar conexión»** antes de guardar una clave nueva: si responde, se
   guarda sin preguntar y sabes que funciona.

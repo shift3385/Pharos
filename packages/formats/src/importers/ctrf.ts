@@ -15,6 +15,7 @@ import {
   kindOf,
   refMaker,
   relativizer,
+  explicitRow,
   rowOfTitle,
   shardOf,
   slashes,
@@ -127,7 +128,11 @@ export function parseCtrf(report: Ctrf): ParsedReport {
     const { path, titles } = pathOf(t);
     const p = path ? rel(path) : undefined;
     const key = testKey(p, [...titles, t.name]);
-    const row = rowOfTitle(t.name);
+    const extra =
+      t.extra !== null && typeof t.extra === "object"
+        ? (t.extra as Record<string, unknown>)
+        : {};
+    const row = explicitRow(extra.exampleRow) ?? rowOfTitle(t.name);
     const label = t.browser ?? t.device;
     const common: Partial<ImportResult> = {
       testKey: key,

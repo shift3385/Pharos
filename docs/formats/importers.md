@@ -218,7 +218,7 @@ de un Outline de Cucumber comparten nombre).
 | `status`                      | peor paso **sin hooks**; un hook FAILED falla el intento                         | `status` (`pending` → `skipped` + raw)   | `passed`, `failed`/`timedOut` → failed | `failure`/`error` → failed, `skipped`, passed  |
 | `rawStatus`                   | estado del paso que decide                                                       | `rawStatus`                              | `status`                               | nombre del elemento                            |
 | etiquetas (`tags`)            | `pickle.tags[].name`                                                             | `tags`                                   | `spec.tags` + `@`, anotación `test_id` | propiedad `test_id` (receta), `tag`/`tags`     |
-| `exampleRow`                  | posición de `astNodeIds[1]` en las filas del Outline                             | `Example #n`                             | `Example #n`                           | `Example #n`; `- #1.f` de cucumber-js          |
+| `exampleRow`                  | posición de `astNodeIds[1]` en las filas del Outline                             | `extra.exampleRow`²; si no, `Example #n` | anotación `example_row`²; si no, `Example #n` | propiedad `example_row`²; si no, `Example #n` o `- #1.f` de cucumber-js |
 | `startedAt` / `finishedAt`    | `testCaseStarted` / `testCaseFinished`                                           | `start`/`stop` (ms)¹                     | `startTime` + `duration`               | —                                              |
 | `duration`                    | suma de los pasos                                                                | `duration`                               | `duration`                             | `time` (s → ms)                                |
 | `message` / `trace`           | `exception.message` / `message` del paso fallido                                 | `message` / `trace`                      | `error.message` / `error.stack`        | `@message` / texto                             |
@@ -231,6 +231,16 @@ de un Outline de Cucumber comparten nombre).
 ¹ CTRF no da tiempos a `retryAttempts`. Se toma `finishedAt` = inicio del
 intento final (`attributes.finishedAtInferred`) para que el intento final
 derivado no caiga en la hora de importación.
+
+² **Fila explícita** (CAS-01, [ADR-0055](../adr/0055-pasos-compartidos-parametros-y-datasets.md),
+normalizador 2): un número entero desde 1, como `Example #n`. Sirve para un
+caso con dataset que se automatiza fuera de Cucumber: la fila es la n-ésima de
+la tabla de ejemplos de la revisión ejecutada (la que exporta el `.feature`).
+En JUnit, `<property name="example_row" value="2"/>`; en CTRF,
+`"extra": { "exampleRow": 2 }`; en Playwright,
+`test.info().annotations.push({ type: "example_row", description: "2" })` (la
+anotación del intento gana a la del test). Un valor que no es un entero desde 1
+se ignora y se mira el título.
 
 Cada shard lleva `normalizerVersion`, la versión de estos parsers: todo cambio
 en lo que producen la sube (ADR-0013).
