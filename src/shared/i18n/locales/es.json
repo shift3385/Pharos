@@ -26,7 +26,7 @@
     "title": "No se pudo abrir la base de datos local",
     "body": "Pharos no ha modificado ningún archivo. Cierra la app y vuelve a intentarlo; si el problema sigue, comparte este detalle con soporte.",
     "inUseTitle": "Otro Pharos está usando tus datos",
-    "inUseBody": "Otra ventana de Pharos o el CLI de Pharos tiene abierta la base de datos de este equipo. Ciérralo y vuelve a abrir Pharos. No se ha modificado ningún archivo.",
+    "inUseBody": "Otra ventana de Pharos o el CLI de Pharos tiene abierta la base de datos de este equipo. Ciérralo y pulsa «Reintentar». No se ha modificado ningún archivo.",
     "noSpaceTitle": "Falta espacio para actualizar tus datos",
     "noSpaceBody": "Para convertirlos de forma segura, Pharos necesita espacio para una copia de seguridad y para la base nueva. Tus datos no se han tocado. Libera espacio en el disco (abajo, cuánto) y vuelve a intentarlo.",
     "convertFailedTitle": "No se pudieron actualizar tus datos",

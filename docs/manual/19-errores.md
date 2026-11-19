@@ -31,7 +31,7 @@ modifica tus datos.
     `pharos.db.bak-…`); Pharos no crea una base vacía en su lugar.
   - **«Otro Pharos está usando tus datos»:** otra ventana de Pharos, o el CLI
     de Pharos, tiene abierta la base de datos de este equipo. Ciérrala y
-    vuelve a abrir Pharos. Hasta ahora, la segunda ventana pisaba en silencio
+    pulsa «Reintentar». Hasta ahora, la segunda ventana pisaba en silencio
     lo que guardaba la primera.
   - **«Falta la clave de la base de datos local»** o **«La clave guardada no
     abre la base de datos local»:** pasa en un equipo nuevo o tras reinstalar
@@ -41,20 +41,20 @@ modifica tus datos.
   abierta y tus datos, a salvo. Ofrece «Reintentar», «Recargar» y «Exportar
   diagnóstico»; «Detalles técnicos» enseña el error para el informe.
 
-En este manual, el tour daña a propósito una copia de la base de datos de
+En este manual, el tour hace de «otro Pharos» que tiene abiertos los datos de
 Liomar y simula un fallo de una vista; después todo vuelve a la normalidad.
 
 ## Paso a paso
 
 ### 19.1. Si la base de datos local no abre
 
-Si los datos locales no se pueden abrir, Pharos lo dice al arrancar y no modifica ningún archivo. La pantalla cambia según la causa: «No se pudo abrir la base de datos local» (un archivo dañado, como en este ejemplo), «Estos datos son de una versión más nueva de Pharos» (instala esa versión o una posterior) o «Falta la clave de la base de datos local» (un equipo nuevo o Windows reinstalado), que ofrece escribir la clave de recuperación (56 caracteres en grupos de 4) para abrirlos.
+Si los datos locales no se pueden abrir, Pharos lo dice al arrancar y no modifica ningún archivo. La pantalla cambia según la causa: «Otro Pharos está usando tus datos» (otra ventana de Pharos o el CLI los tiene abiertos, como en este ejemplo), «Estos datos son de una versión más nueva de Pharos» (instala esa versión o una posterior), «Falta la clave de la base de datos local» (un equipo nuevo o Windows reinstalado), que ofrece escribir la clave de recuperación (56 caracteres en grupos de 4), o, al actualizar desde la 0.5, «Falta espacio para actualizar tus datos». Cuando la causa puede pasar sola, ofrece «Reintentar».
 
 ![Si la base de datos local no abre](img/errores/01-base-de-datos.png)
 
 ### 19.2. Restaurar la copia
 
-Con el archivo original de vuelta (o una copia de pharos.db), Pharos abre como siempre y Liomar vuelve a su Inicio: por eso conviene guardar la clave de recuperación y hacer copias (capítulo 15).
+En cuanto se cierra el otro Pharos, «Reintentar» abre los datos sin reiniciar y Liomar vuelve a su Inicio. Si el archivo está dañado, se restaura una copia (pharos.db o pharos.db.bak-…): por eso conviene guardar la clave de recuperación y hacer copias (capítulo 15).
 
 ### 19.3. «Algo salió mal»
 

@@ -126,6 +126,12 @@
   font-size: 15px;
 }
 
+/* «Reintentar» on the database error screen (SEC-05): the same button,
+   centred under the message instead of under a form. */
+.db-retry {
+  align-self: center;
+}
+
 .db-recovery__submit:disabled {
   opacity: 0.6;
   cursor: progress;

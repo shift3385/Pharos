@@ -56,7 +56,7 @@ export function DbErrorScreen({
       <p className="app-splash__text">{t(body)}</p>
       {keyError && onRecovered && <RecoveryForm onRecovered={onRecovered} />}
       {isRetryable(error) && onRetry && (
-        <button className="db-recovery__submit" type="button" onClick={onRetry}>
+        <button className="db-recovery__submit db-retry" type="button" onClick={onRetry}>
           {t("dbError.retry")}
         </button>
       )}

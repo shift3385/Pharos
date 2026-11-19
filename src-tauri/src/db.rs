@@ -448,7 +448,7 @@ impl Db {
     /// Opens `pharos.db` in `app_data_dir` with `key`, converting a
     /// `pharos.db.enc` of an earlier version first. Nothing is written before
     /// the key is known to open the database and its migrations are known.
-    pub fn open_with_key(app_data_dir: &Path, key: [u8; 32]) -> Result<Self, String> {
+    pub(crate) fn open_with_key(app_data_dir: &Path, key: [u8; 32]) -> Result<Self, String> {
         fs::create_dir_all(app_data_dir).map_err(|e| e.to_string())?;
         // Before anything is read: another process may be writing (D4, ADR-0050).
         let lock = lock_data_dir(app_data_dir)?;
