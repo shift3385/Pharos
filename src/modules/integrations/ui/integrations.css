@@ -1,0 +1,111 @@
+/* Integraciones (INT-02): API tokens of a workspace and of a person. */
+.int-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.int-chip {
+  display: inline-block;
+  margin: 1px 4px 1px 0;
+  padding: 0 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.int-prefix {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+.int-num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.int-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.int-pill {
+  display: inline-block;
+  border-radius: var(--radius-pill);
+  padding: 2px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.int-pill--ok {
+  background: color-mix(in oklab, var(--color-success) 14%, transparent);
+  color: var(--color-success-text);
+}
+.int-pill--warn {
+  background: color-mix(in oklab, var(--color-warning) 16%, transparent);
+  color: var(--color-warning-text);
+}
+.int-pill--err {
+  background: color-mix(in oklab, var(--color-error) 14%, transparent);
+  color: var(--color-error-text);
+}
+.int-pill--mute {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+.int-scopes {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.int-scopes legend {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.int-scope {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.int-issue {
+  color: var(--color-error-text);
+  margin: 0;
+}
+.int-secret {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-2);
+  min-width: 0;
+}
+.int-secret code {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  word-break: break-all;
+}
+.int-subtitle {
+  font-weight: 600;
+  margin: 0;
+}
+.int-snippet {
+  margin: 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border-radius: 8px;
+  background: var(--color-surface-2);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  white-space: pre;
+}
+.int-personal {
+  display: grid;
+  gap: var(--space-2);
+}

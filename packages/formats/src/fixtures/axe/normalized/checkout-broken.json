@@ -1,0 +1,383 @@
+{
+  "format": "axe",
+  "warnings": [],
+  "inline": {},
+  "doc": {
+    "schemaVersion": "1.0.0",
+    "run": {
+      "trigger": "import",
+      "sourceTool": "axe-core",
+      "sourceToolVersion": "4.14.0",
+      "startedAt": "2026-11-18T22:35:30.509Z",
+      "finishedAt": "2026-11-18T22:35:30.509Z",
+      "context": {
+        "pages": [
+          "http://localhost:3000/"
+        ],
+        "testRunner": "axe",
+        "testEnvironment": {
+          "userAgent": "Mozilla/5.0 (win32) AppleWebKit/537.36 (KHTML, like Gecko) jsdom/25.0.1",
+          "windowWidth": 1024,
+          "windowHeight": 768
+        }
+      }
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "axe",
+        "normalizerVersion": 1,
+        "formatVersion": "4.14.0"
+      }
+    ],
+    "results": [],
+    "attachments": [],
+    "findings": [
+      {
+        "ruleId": "button-name",
+        "ruleName": "Buttons must have discernible text",
+        "severity": "critical",
+        "rawSeverity": "critical",
+        "message": "Fix any of the following:\n  Element does not have inner text that is visible to screen readers\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\"",
+        "location": {
+          "url": "http://localhost:3000/",
+          "selector": "button",
+          "html": "<button></button>"
+        },
+        "fingerprint": "pharos:a22bad9f-682e-5835-9e10-05a5c9c2a211",
+        "standardRefs": [
+          "WCAG2:4.1.2",
+          "S508:22.a",
+          "EN301549:9.4.1.2"
+        ],
+        "helpUri": "https://dequeuniversity.com/rules/axe/4.14/button-name?application=axeAPI",
+        "attributes": {
+          "tool": "axe-core",
+          "axeResult": "violation",
+          "tags": [
+            "cat.name-role-value",
+            "wcag2a",
+            "wcag412",
+            "section508",
+            "section508.22.a",
+            "TTv5",
+            "TT6.a",
+            "EN-301-549",
+            "EN-9.4.1.2",
+            "ACT",
+            "RGAAv4",
+            "RGAA-11.9.1"
+          ],
+          "wcagLevel": "A"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "document-title",
+        "ruleName": "Documents must have <title> element to aid in navigation",
+        "severity": "high",
+        "rawSeverity": "serious",
+        "message": "Fix any of the following:\n  Document does not have a non-empty <title> element",
+        "location": {
+          "url": "http://localhost:3000/",
+          "selector": "html",
+          "html": "<html lang=\"es\" data-theme=\"light\">"
+        },
+        "fingerprint": "pharos:e8d5bc15-c89f-5bd2-8864-9b8ed082a9e0",
+        "standardRefs": [
+          "WCAG2:2.4.2",
+          "EN301549:9.2.4.2"
+        ],
+        "helpUri": "https://dequeuniversity.com/rules/axe/4.14/document-title?application=axeAPI",
+        "attributes": {
+          "tool": "axe-core",
+          "axeResult": "violation",
+          "tags": [
+            "cat.text-alternatives",
+            "wcag2a",
+            "wcag242",
+            "TTv5",
+            "TT12.a",
+            "EN-301-549",
+            "EN-9.2.4.2",
+            "ACT",
+            "RGAAv4",
+            "RGAA-8.5.1"
+          ],
+          "wcagLevel": "A"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "image-alt",
+        "ruleName": "Images must have alternative text",
+        "severity": "critical",
+        "rawSeverity": "critical",
+        "message": "Fix any of the following:\n  Element does not have an alt attribute\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\"",
+        "location": {
+          "url": "http://localhost:3000/",
+          "selector": "img",
+          "html": "<img src=\"logo.png\">"
+        },
+        "fingerprint": "pharos:eeae370c-678f-555d-adc4-65070e88eac6",
+        "standardRefs": [
+          "WCAG2:1.1.1",
+          "S508:22.a",
+          "EN301549:9.1.1.1"
+        ],
+        "helpUri": "https://dequeuniversity.com/rules/axe/4.14/image-alt?application=axeAPI",
+        "attributes": {
+          "tool": "axe-core",
+          "axeResult": "violation",
+          "tags": [
+            "cat.text-alternatives",
+            "wcag2a",
+            "wcag111",
+            "section508",
+            "section508.22.a",
+            "TTv5",
+            "TT7.a",
+            "TT7.b",
+            "EN-301-549",
+            "EN-9.1.1.1",
+            "ACT",
+            "RGAAv4",
+            "RGAA-1.1.1"
+          ],
+          "wcagLevel": "A"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "label",
+        "ruleName": "Form elements must have labels",
+        "severity": "critical",
+        "rawSeverity": "critical",
+        "message": "Fix any of the following:\n  Element does not have an implicit (wrapped) <label>\n  Element does not have an explicit <label>\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element has no placeholder attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\"",
+        "location": {
+          "url": "http://localhost:3000/",
+          "selector": "#q",
+          "html": "<input type=\"text\" id=\"q\">"
+        },
+        "fingerprint": "pharos:f34e41fd-962e-53cd-bb30-2597c78cdaa5",
+        "standardRefs": [
+          "WCAG2:4.1.2",
+          "S508:22.n",
+          "EN301549:9.4.1.2"
+        ],
+        "helpUri": "https://dequeuniversity.com/rules/axe/4.14/label?application=axeAPI",
+        "attributes": {
+          "tool": "axe-core",
+          "axeResult": "violation",
+          "tags": [
+            "cat.forms",
+            "wcag2a",
+            "wcag412",
+            "section508",
+            "section508.22.n",
+            "TTv5",
+            "TT5.c",
+            "EN-301-549",
+            "EN-9.4.1.2",
+            "ACT",
+            "RGAAv4",
+            "RGAA-11.1.1"
+          ],
+          "wcagLevel": "A"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "link-name",
+        "ruleName": "Links must have discernible text",
+        "severity": "high",
+        "rawSeverity": "serious",
+        "message": "Fix all of the following:\n  Element is in tab order and does not have accessible text\n\nFix any of the following:\n  Element does not have text that is visible to screen readers\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute",
+        "location": {
+          "url": "http://localhost:3000/",
+          "selector": "a",
+          "html": "<a href=\"/cart\"></a>"
+        },
+        "fingerprint": "pharos:51a9ccc2-5246-513a-bf17-4221bed9c074",
+        "standardRefs": [
+          "WCAG2:2.4.4",
+          "WCAG2:4.1.2",
+          "S508:22.a",
+          "EN301549:9.2.4.4",
+          "EN301549:9.4.1.2"
+        ],
+        "helpUri": "https://dequeuniversity.com/rules/axe/4.14/link-name?application=axeAPI",
+        "attributes": {
+          "tool": "axe-core",
+          "axeResult": "violation",
+          "tags": [
+            "cat.name-role-value",
+            "wcag2a",
+            "wcag244",
+            "wcag412",
+            "section508",
+            "section508.22.a",
+            "TTv5",
+            "TT6.a",
+            "EN-301-549",
+            "EN-9.2.4.4",
+            "EN-9.4.1.2",
+            "ACT",
+            "RGAAv4",
+            "RGAA-6.2.1"
+          ],
+          "wcagLevel": "A"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "list",
+        "ruleName": "<ul> and <ol> must only directly contain <li>, <script> or <template> elements",
+        "severity": "high",
+        "rawSeverity": "serious",
+        "message": "Fix all of the following:\n  List element has direct children that are not allowed: div",
+        "location": {
+          "url": "http://localhost:3000/",
+          "selector": "ul",
+          "html": "<ul><div>no es li</div></ul>"
+        },
+        "fingerprint": "pharos:7456b180-510b-5e1c-aba4-3901904420b8",
+        "standardRefs": [
+          "WCAG2:1.3.1",
+          "EN301549:9.1.3.1"
+        ],
+        "helpUri": "https://dequeuniversity.com/rules/axe/4.14/list?application=axeAPI",
+        "attributes": {
+          "tool": "axe-core",
+          "axeResult": "violation",
+          "tags": [
+            "cat.structure",
+            "wcag2a",
+            "wcag131",
+            "EN-301-549",
+            "EN-9.1.3.1",
+            "RGAAv4",
+            "RGAA-9.3.1"
+          ],
+          "wcagLevel": "A"
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "color-contrast",
+        "ruleName": "Elements must meet minimum color contrast ratio thresholds",
+        "severity": "info",
+        "rawSeverity": "serious",
+        "message": "Fix all of the following:\n  Axe encountered an error; test the page for this type of problem manually",
+        "location": {
+          "url": "http://localhost:3000/",
+          "selector": "div[role=\"button\"]",
+          "html": "<div role=\"button\">Pagar</div>"
+        },
+        "fingerprint": "pharos:bec3d2fa-6b78-5ea1-adde-f3c42db213e6",
+        "standardRefs": [
+          "WCAG2:1.4.3",
+          "EN301549:9.1.4.3"
+        ],
+        "helpUri": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=axeAPI",
+        "attributes": {
+          "tool": "axe-core",
+          "axeResult": "incomplete",
+          "tags": [
+            "cat.color",
+            "wcag2aa",
+            "wcag143",
+            "TTv5",
+            "TT13.c",
+            "EN-301-549",
+            "EN-9.1.4.3",
+            "ACT",
+            "RGAAv4",
+            "RGAA-3.2.1"
+          ],
+          "wcagLevel": "AA",
+          "needsReview": true
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "landmark-one-main",
+        "ruleName": "Document should have one main landmark",
+        "severity": "info",
+        "rawSeverity": "moderate",
+        "message": "Fix all of the following:\n  Axe encountered an error; test the page for this type of problem manually",
+        "location": {
+          "url": "http://localhost:3000/",
+          "selector": "html",
+          "html": "<html lang=\"es\" data-theme=\"light\">"
+        },
+        "fingerprint": "pharos:0ec68a16-90aa-572d-884e-a459ac1d7824",
+        "standardRefs": [],
+        "helpUri": "https://dequeuniversity.com/rules/axe/4.14/landmark-one-main?application=axeAPI",
+        "attributes": {
+          "tool": "axe-core",
+          "axeResult": "incomplete",
+          "tags": [
+            "cat.semantics",
+            "best-practice"
+          ],
+          "bestPractice": true,
+          "needsReview": true
+        },
+        "shardRef": "s1"
+      },
+      {
+        "ruleId": "page-has-heading-one",
+        "ruleName": "Page should contain a level-one heading",
+        "severity": "info",
+        "rawSeverity": "moderate",
+        "message": "Fix all of the following:\n  Axe encountered an error; test the page for this type of problem manually",
+        "location": {
+          "url": "http://localhost:3000/",
+          "selector": "html",
+          "html": "<html lang=\"es\" data-theme=\"light\">"
+        },
+        "fingerprint": "pharos:11a0a317-01b0-5c6b-907d-f12f5c17736c",
+        "standardRefs": [],
+        "helpUri": "https://dequeuniversity.com/rules/axe/4.14/page-has-heading-one?application=axeAPI",
+        "attributes": {
+          "tool": "axe-core",
+          "axeResult": "incomplete",
+          "tags": [
+            "cat.semantics",
+            "best-practice"
+          ],
+          "bestPractice": true,
+          "needsReview": true
+        },
+        "shardRef": "s1"
+      }
+    ],
+    "metrics": [
+      {
+        "name": "axe.rules_violated",
+        "aggregation": "count",
+        "scope": "http://localhost:3000/",
+        "value": 6,
+        "unit": "count",
+        "shardRef": "s1"
+      },
+      {
+        "name": "axe.rules_incomplete",
+        "aggregation": "count",
+        "scope": "http://localhost:3000/",
+        "value": 3,
+        "unit": "count",
+        "shardRef": "s1"
+      },
+      {
+        "name": "axe.rules_passed",
+        "aggregation": "count",
+        "scope": "http://localhost:3000/",
+        "value": 18,
+        "unit": "count",
+        "shardRef": "s1"
+      }
+    ]
+  }
+}

@@ -159,6 +159,29 @@ Debe responder algo como
 Al arrancar, la API avisa en el log de dos errores típicos de despliegue:
 `TRUST_PROXY` apagado y una API que escucha fuera de `127.0.0.1`.
 
+## API para CI y scripts
+
+El servidor ofrece una API pública en `/api/v1` para que CI y los scripts
+reporten a Pharos ([ADR-0052](adr/0052-api-v1-tokens-y-webhooks.md)).
+No hay que activar nada: funciona con un token.
+
+- **Tokens:**
+  - un Test Manager crea los tokens de proyecto en la página del workspace,
+    pestaña «Integraciones»;
+  - cada persona crea los suyos en «Mi perfil».
+- **El contrato** está en `https://<servidor>/api/v1/openapi.json`.
+- **Comprobar un token:**
+
+  ```bash
+  curl -H "Authorization: Bearer $PHAROS_TOKEN" https://<servidor>/api/v1/me
+  ```
+
+- **Límite:** 300 peticiones por minuto por token (`API_RATE_LIMIT_MAX`,
+  `API_RATE_LIMIT_WINDOW`). Sin un token bien formado, el límite cuenta por
+  IP, así que detrás de un proxy hace falta `TRUST_PROXY=true`.
+- **Ante una fuga:** el administrador del servidor revoca todos los tokens de
+  una cuenta desde «Administración › Usuarios» › «Revocar sus tokens…».
+
 ## IA en la web (opcional)
 
 Quien tiene su clave de IA en la app de escritorio puede usarla también en la

@@ -21,6 +21,7 @@
     "defect.create": ["test_manager", "test_analyst", "automation_engineer", "product_owner"],
     "attachment.add": ["test_manager", "test_analyst", "automation_engineer", "product_owner"],
     "template.edit": ["test_manager", "test_analyst"],
-    "audit.read": ["test_manager"]
+    "audit.read": ["test_manager"],
+    "token.manage": ["test_manager"]
   }
 }

@@ -1577,6 +1577,41 @@ core Postgres lacks). Modules:
   `req.workspace` or answers 403 `forbidden` / `workspace_revoked`, 404
   `workspace_not_found`), `membership`, `isMember`, `listMembers`,
   `managedMembers` and `workspaceApproverCheck` (CAS-02).
+- `api` (INT-02, ADR-0052) — the public API `/api/v1` for CI and scripts,
+  authenticated with an API token (`Authorization: Bearer phr_…`), never a
+  session. Two kinds:
+  - **Project tokens** (`phr_prj_`) are bound to one project. A Test Manager
+    creates them (capability `token.manage`).
+  - **Personal access tokens** (`phr_pat_`) belong to one person, optionally
+    limited to one workspace.
+
+  Storage and life:
+  - Table `api_tokens` (migration 0029), holding only the SHA-256 of the
+    token. The token is shown once.
+  - Expiry is mandatory and at most a year away.
+  - Rotation can keep the old secret working for up to 24 h.
+  - Another Test Manager can reassign a token to themselves.
+
+  Every request checks, in the database, that the token is live, that its
+  scope covers the route and that the owner's *current* role has the
+  capability (`authorize`): a token never does more than its owner today. A
+  former member's tokens answer 401 `token_inactive`.
+
+  Management routes (session only):
+  - `/workspaces/:id/tokens` (list, create, rotate, reassign, revoke);
+  - `/me/tokens`;
+  - for the server administrator, `/admin/users/:id/tokens` and
+    `/admin/tokens/:token` (list and revoke, never create).
+
+  The `/api/v1` routes:
+  - `/me`, `/projects` and `/projects/{projectId}`, rate-limited per token
+    (`API_RATE_LIMIT_MAX`), with no CORS;
+  - `/openapi.json`, the contract, built from the zod schemas of
+    `v1.schemas.ts` and versioned as `docs/formats/openapi-v1.json` (a test
+    holds them equal).
+
+  Every token change is an `api_token` audit event, which never holds the
+  secret.
 - `blobs` (SYNC-04b, ADR-0042 §7) — attachment and template contents by
   hash, outside the oplog. Table `blobs (workspace_id, sha256, …)`
   (migration 0020) over a `BlobStore`; today `diskBlobStore(BLOB_DIR)`,

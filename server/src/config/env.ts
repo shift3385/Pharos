@@ -144,6 +144,10 @@ const schema = z
     AI_VAULT_KEY: vaultKey,
     // Per account: AI requests from the web, and uploads/removals of the key.
     AI_CHAT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
+    // INT-02 (ADR-0052): requests to /api/v1 per API token (or, without a
+    // well-formed token, per IP).
+    API_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
+    API_RATE_LIMIT_WINDOW: duration.prefault("1 minute"),
     AI_CHAT_RATE_LIMIT_WINDOW: duration.prefault("1 minute"),
     AI_VAULT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
     AI_VAULT_RATE_LIMIT_WINDOW: duration.prefault("1 hour"),

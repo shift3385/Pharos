@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { Check, Cloud, LogOut, Monitor, Moon, Sun } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { SyncIndicator } from "@modules/sync-offline";
+import { PersonalTokensSection } from "@modules/integrations";
+import { useWorkspace } from "@modules/workspaces";
 import { SUPPORTED_LANGUAGES, type Language } from "@shared/i18n";
 import { useTheme } from "@shared/theme/useTheme";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
@@ -231,10 +233,20 @@ export function ProfilePage() {
 
         <AccountSecuritySection />
 
+        <PersonalTokens />
+
         <Preferences />
       </div>
     </section>
   );
+}
+
+/** «Tokens personales» (INT-02, ADR-0052): for the CLI; needs the server. */
+function PersonalTokens() {
+  const { workspaces } = useWorkspace();
+  const { offline } = useAuth();
+  if (offline) return null;
+  return <PersonalTokensSection workspaces={workspaces.map((w) => ({ id: w.id, name: w.name }))} />;
 }
 
 function Field({

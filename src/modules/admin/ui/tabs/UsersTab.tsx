@@ -10,6 +10,7 @@ import {
   type AdminUser,
   type AdminUserStatus,
 } from "@modules/auth";
+import { AdminRevokeTokensButton } from "@modules/integrations";
 import { Alert } from "@shared/ui/Alert";
 import { Dialog } from "@shared/ui/Dialog";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
@@ -343,6 +344,11 @@ export function UsersTab() {
                               {t("admin.users.enable")}
                             </button>
                           )}
+                          <AdminRevokeTokensButton
+                            userId={u.id}
+                            name={u.displayName}
+                            disabled={busy}
+                          />
                         </div>
                       </td>
                     </tr>

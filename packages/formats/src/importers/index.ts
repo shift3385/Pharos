@@ -11,6 +11,8 @@ import { parsePharosRun } from "../schema.js";
 import {
   type ImportDoc,
   type ParsedReport,
+  MAX_IMPORT_FINDINGS,
+  MAX_IMPORT_METRICS,
   MAX_IMPORT_RESULTS,
   NORMALIZER_VERSION,
   MAX_REPORT_BYTES,
@@ -21,13 +23,20 @@ import {
   slashes,
   testKey,
 } from "./common.js";
+import { isAxeResults, parseAxe } from "./axe.js";
 import { parseCtrf } from "./ctrf.js";
+import { isK6Summary, parseK6 } from "./k6.js";
+import { isSarif, parseSarif } from "./sarif.js";
 import { parseJunit } from "./junit.js";
 import { MessagesCollector, parseMessages } from "./messages.js";
 import { parsePlaywright } from "./playwright.js";
 
 export * from "./common.js";
 export { MessagesCollector, parseMessages } from "./messages.js";
+export { type AxeResults, isAxeResults, parseAxe } from "./axe.js";
+export * from "./findings.js";
+export { type K6Summary, isK6Summary, parseK6 } from "./k6.js";
+export { type SarifLog, isSarif, parseSarif } from "./sarif.js";
 export { parseCtrf } from "./ctrf.js";
 export { parseJunit } from "./junit.js";
 export { parsePlaywright } from "./playwright.js";
@@ -116,6 +125,8 @@ export function parseReportText(text: string): ParsedReport {
 
 function parseJson(json: unknown): ParsedReport {
   if (Array.isArray(json)) {
+    // One axe-core result per page (@axe-core/cli).
+    if (json.length > 0 && json.every(isAxeResults)) return parseAxe(json);
     // Cucumber JSON (features with `elements`): out of scope (ADR-0005).
     if (
       json.length === 0 ||
@@ -128,6 +139,9 @@ function parseJson(json: unknown): ParsedReport {
   const o = (json ?? {}) as Record<string, unknown>;
   if (o.reportFormat === "CTRF" && o.results)
     return parseCtrf(o as unknown as Parameters<typeof parseCtrf>[0]);
+  if (isAxeResults(o)) return parseAxe(o);
+  if (isSarif(o)) return parseSarif(o);
+  if (isK6Summary(o)) return parseK6(o);
   if (typeof o.schemaVersion === "string") return parsePharosRunFile(o);
   if (o.config && Array.isArray(o.suites))
     return parsePlaywright(
@@ -142,6 +156,18 @@ function checked(report: ParsedReport): ParsedReport {
     throw new ReportError(
       "too-large",
       `at most ${MAX_IMPORT_RESULTS} results per import`,
+    );
+  }
+  if ((report.doc.findings?.length ?? 0) > MAX_IMPORT_FINDINGS) {
+    throw new ReportError(
+      "too-large",
+      `at most ${MAX_IMPORT_FINDINGS} findings per import`,
+    );
+  }
+  if ((report.doc.metrics?.length ?? 0) > MAX_IMPORT_METRICS) {
+    throw new ReportError(
+      "too-large",
+      `at most ${MAX_IMPORT_METRICS} metrics per import`,
     );
   }
   if (report.format !== "pharos_run_json") {
