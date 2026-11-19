@@ -9,6 +9,147 @@ publicar cada versión ([ADR-0032](docs/adr/0032-fragmentos-del-changelog.md)).
 
 ## [Sin publicar]
 
+## [0.6.0-beta.1] - 2026-11-19
+
+Núcleo y automatización conectada (ADR-0039): los datos del escritorio pasan a un
+`pharos.db` en disco cifrado por página (`pharos-core`, SQLite con WAL), y la app,
+otra ventana y el CLI `pharos` escriben a la vez sin pisarse. Llegan el CLI
+(`upload`, `watch`), la API `/api/v1` con tokens, los webhooks firmados y la acción
+de GitHub Actions `pharos-report` («Conectar CI»). Se importan SARIF, k6, axe,
+Allure, TRX y `.xcresult` (hallazgos y métricas en cada run), se fusionan los
+conflictos campo a campo y la «Biblioteca» trae pasos compartidos y datasets. Beta
+para la validación del usuario con el criterio de salida de 0.6.0
+(`docs/ROADMAP.md` §3): un PR de GitHub reporta JUnit, SARIF, k6 y axe a Pharos, y
+el CLI escribe con la app abierta.
+
+Trae migraciones del servidor (0027 a 0031) y locales (0047 a 0049). El primer
+arranque convierte los datos locales al nuevo formato después de guardar una copia
+(ver «Cambiado»).
+
+### Añadido
+
+- **Biblioteca del proyecto: pasos compartidos y datasets.** Una sección nueva, «Biblioteca», guarda los pasos que se repiten en muchos casos (por ejemplo «Iniciar sesión») y las tablas de datos de prueba. Cada cambio crea una versión nueva, y antes de guardarlo se ve cuántos casos se actualizarán y cuáles aprobados volverán a «En revisión».
+- **Pasos compartidos en un caso.** Con «Insertar paso compartido…» el paso entra en el caso como un bloque que no se edita allí. Se puede fijar en una versión, seguir la última, cambiar sus argumentos o desvincularlo para quedarse con los pasos. Los parámetros se escriben como en un Scenario Outline: `<usuario>`.
+- **Datasets en la tabla de datos.** Un dataset se crea pegando desde Excel o importando un CSV o un `.xlsx`, y se exporta a CSV. Con «Vincular dataset…» sus filas pasan a ser la tabla de datos del caso: una fila, un resultado. Si falta una columna para un parámetro, el caso lo dice y deja elegir otra.
+- Por ahora no está disponible en los casos con varios flujos.
+- **Ejecutar casos con pasos compartidos y datasets.** En un run, un caso con un dataset muestra «Usuarios válidos v2 · 3 filas», y cada fila es una ejecución («Fila 2 de 3 · usuario = luis»). Los pasos insertados aparecen bajo «Paso compartido · Iniciar sesión · v5», con los valores de la fila resaltados. Cada resultado recuerda el dataset y la versión de cada paso compartido. «Añadir casos» muestra «3 filas · Usuarios válidos (v2)» junto a cada caso con dataset.
+- **Los exportes nombran la biblioteca.** El `.feature` lleva `# Paso compartido: Iniciar sesión (v4)` antes de cada bloque y `# Dataset: Usuarios válidos (v2)` antes de `Examples`. El PDF titula cada bloque y la tabla de datos, y el `.xlsx` añade la línea «Dataset: …» en los datos de prueba. Los casos que no usan la biblioteca se exportan igual que antes.
+- **Manual:** nueva sección «Biblioteca: pasos compartidos y datasets» en el capítulo de casos.
+- **Los informes de JUnit, CTRF y Playwright pueden decir qué fila del dataset ejecutaron.** Si un caso tiene un dataset y lo automatizas sin Cucumber, añade a cada test la fila (contando desde 1): la propiedad `example_row` en JUnit, `extra.exampleRow` en CTRF o la anotación `example_row` en Playwright. Al importar el informe, cada resultado va a su fila del caso en la matriz.
+- **«Importar informe» acepta SARIF, axe y el resumen de k6**: guarda sus
+  hallazgos y métricas en el run y los sincroniza con el servidor. La vista
+  previa cuenta los hallazgos por severidad y los umbrales incumplidos.
+- **Los hallazgos llegan a la matriz, los informes y la lista de runs**: un
+  caso con hallazgos abiertos en el último escaneo de cada herramienta lleva
+  una insignia en la matriz (cuántos y el color del peor) y se puede filtrar
+  con «Con hallazgos abiertos»; el informe de estado añade «7.1 Hallazgos y
+  rendimiento» y el de cierre los lista entre los riesgos residuales; la lista
+  de runs muestra los hallazgos abiertos y los umbrales incumplidos de cada
+  run, y un run de solo hallazgos ya no aparece como «Sin resultados».
+- **Un umbral de rendimiento vinculado a un caso cuenta en la matriz**: si una
+  métrica de k6 lleva la clave de un caso (en el nombre de un *check*, en una
+  submétrica `{case:TC-12}` o como `caseKey`) y su umbral falla, el caso
+  figura como fallido en ese run; un run más reciente decide, como siempre.
+- Los hallazgos de un SARIF se agrupan por el título de la regla (su
+  descripción corta), no por un nombre genérico como «Misconfiguration».
+- **Pestañas «Hallazgos» y «Métricas» en el detalle de un run**, en el
+  escritorio y en la web. Los hallazgos se agrupan por regla, con su
+  severidad, sus referencias (WCAG, CWE…) y la marca «Nuevo» si no estaban en
+  el run anterior de la herramienta. Las métricas ponen primero los umbrales
+  incumplidos.
+- **Triaje de hallazgos**: falso positivo, riesgo aceptado o corregido (con
+  motivo), o reabrirlo. Vale para ese hallazgo en todos los runs del proyecto
+  y deja historial.
+- **Importar resultados de Allure**: comprime la carpeta `allure-results` en
+  un `.zip` y súbela en «Importar informe», por la API (`format=allure`) o
+  con el CLI. Los reintentos son intentos (uno que pasa tras fallar queda como
+  *flaky*), la etiqueta `tag` o un enlace `tms` vinculan el test a su caso,
+  los parámetros distintos de un mismo test son filas y los adjuntos se
+  guardan como evidencias.
+- **Importar resultados de .NET (TRX)**: el archivo de `dotnet test --logger trx`
+  (MSTest, xUnit, NUnit) se importa en «Importar informe», por la API y con el
+  CLI. `[TestCategory("TC-12")]` vincula el test a su caso, los datos de un
+  `DataRow` o `Theory` son filas y los reintentos, intentos. El formato
+  Pharos Run JSON pasa a 1.1.0 para nombrar el origen `trx`.
+- **Importar resultados de Xcode**: exporta el `.xcresult` con
+  `xcrun xcresulttool get test-results tests --path X.xcresult > tests.json`
+  e importa ese JSON en «Importar informe», por la API (`format=xcresult`) o
+  con el CLI. XCTest y Swift Testing: los reintentos son intentos, los
+  argumentos de una prueba parametrizada son filas, el motivo de un *skip* se
+  conserva y los tests se vinculan desde «Sin vincular», que lo recuerda.
+- **API v1, contrato 1.3.0**: `format=xcresult` en la subida de informes.
+- **`pharos upload` sube resultados a tu servidor de Pharos.** Con `--server` (o `PHAROS_URL`) y un token de proyecto o personal, sube cualquier informe que lea el servidor: JUnit, SARIF, k6, axe, CTRF, Playwright y Cucumber. Con varios ficheros, todos van a un mismo run. `pharos login` guarda el token en el Administrador de credenciales de Windows y `pharos doctor` comprueba el servidor y el token. En GitHub Actions, los jobs de una matriz suben a un único run, y la página del job muestra una tabla con lo subido.
+- **`pharos watch` ejecuta tus pruebas y sube sus informes.** Por ejemplo, `pharos watch -p PAG --report "test-results/*.xml" -- npm test`:
+  - antes de empezar, comprueba el proyecto y el token (o la sesión), así que un problema sale en segundos y no después de las pruebas;
+  - después sube solo los informes que las pruebas escribieron, nunca uno viejo que ya estaba;
+  - sale con el código de las pruebas, así que tu CI sigue fallando cuando fallan.
+- **El CLI `pharos` viene con la app.** El instalador lo deja en la carpeta de Pharos y lo añade al PATH, así que en una terminal nueva `pharos upload informe.json --project PAG` sube los resultados al Pharos de este equipo, también con la app abierta: el run aparece en ella en unos segundos. `pharos doctor` comprueba que todo está bien y `pharos help` explica el resto. También se puede descargar suelto para Windows y para Linux.
+- **Los hallazgos y métricas que sube CI se guardan.** Un informe SARIF, axe o k6 subido por la API deja sus hallazgos y sus métricas en el run, igual que al importarlo desde el escritorio, y la respuesta dice cuántos hay.
+- **Un script o un CI puede leer casos, ciclos, defectos y requisitos** con un token, sin abrir la app.
+  - Cada lista devuelve solo lo que cambió desde la última lectura, borrados incluidos, así que sirve para mantener una copia al día.
+  - Los ciclos llevan su progreso, como en la web.
+  - La guía `docs/api-v1.md` trae ejemplos con `curl` y cómo comprobar la firma de un webhook.
+- **Avisos de tokens:** tu token te avisa 7 días antes de caducar. Si un token de proyecto deja de funcionar porque su dueño salió del workspace o se desactivó su cuenta, se avisa a los Test Manager para que lo reasignen o lo revoquen.
+- **Nuevo capítulo del manual, «Integraciones»**, paso a paso:
+  - tokens de proyecto y personales;
+  - «Conectar CI» con GitHub Actions;
+  - webhooks y sus entregas;
+  - la línea de comandos `pharos`.
+- **Tokens de la API para CI y para el CLI.**
+  - En la página del workspace, la pestaña nueva «Integraciones» lista los tokens de proyecto. Un Test Manager los crea, rota, reasigna y revoca.
+  - En «Mi perfil», «Tokens personales» deja crear y revocar los tuyos.
+  - Cada token se enseña una sola vez, caduca como mucho en un año y nunca puede hacer más que la persona dueña de él.
+  - En «Administración › Usuarios», el administrador del servidor puede revocar todos los tokens de una cuenta.
+- **API pública `/api/v1`**, con su contrato OpenAPI en `/api/v1/openapi.json`. Por ahora dice quién es el token y lista los proyectos; la subida de resultados llega en el siguiente paso.
+- **CI puede subir sus informes a Pharos** con un token de proyecto, sin abrir la app.
+  - Formatos: JUnit, CTRF, Playwright, Cucumber Messages, SARIF, axe, k6 y Pharos Run JSON. Allure y TRX llegarán más adelante.
+  - Cada fichero crea su run, o se suma a uno abierto.
+  - Los jobs de una misma ejecución de CI se juntan en un único run, que se cierra al terminar.
+  - Los resultados se vinculan a los casos por su etiqueta, igual que al importar desde el escritorio, y el informe original se guarda como evidencia.
+  - Subir el mismo fichero dos veces no duplica nada.
+- **Webhooks: Pharos avisa a otras herramientas.** En la pestaña «Integraciones» del workspace, un Test Manager crea webhooks que reciben eventos firmados cuando:
+  - se crea un run, se suben resultados o se cierra un run;
+  - se cierra un ciclo;
+  - se crea un defecto o cambia de estado;
+  - se aprueba o se devuelve un caso o un plan.
+- Los avisos salen también por lo que se hace en el escritorio, al sincronizar.
+- «Entregas» enseña qué se envió y qué respondió el destino, y permite reintentar.
+- Si un destino falla 50 veces seguidas, el webhook se desactiva y los Test Manager reciben un aviso.
+- Quien administra el servidor activa los webhooks con `WEBHOOK_SECRETS_KEY`.
+- **«Conectar CI» en Workspace › Integraciones.** Elige el proyecto y los informes que genera tu CI (JUnit, SARIF, k6, axe…) y copia el paso de GitHub Actions que los sube a Pharos en cada PR. Ya lleva tu servidor y tu proyecto, y nunca el token: eso va en un secreto de GitHub, y la pantalla explica los dos ajustes que hay que hacer allí. En **Mi perfil › Tokens personales**, «Usar en el CLI» da el comando `pharos login` para este servidor.
+- **Tus PR de GitHub reportan sus pruebas a Pharos.** La acción `pharos-report` y las plantillas de `docs/integraciones/github-actions/` suben en cada PR los informes JUnit, SARIF, k6 y axe (y CTRF, Playwright y Cucumber) a un mismo run de tu proyecto. Con una matriz, todos los jobs van a ese run. La página del job enseña una tabla con lo subido, y un PR desde un fork, que no tiene el token, no falla por ello.
+- **Lo que llega de otro Pharos aparece solo.** Si otra ventana de Pharos o el CLI de Pharos guarda datos mientras tienes la app abierta (por ejemplo, resultados importados desde la línea de comandos), la vista se actualiza en unos segundos, como tras sincronizar, sin tocar lo que estés escribiendo.
+- **«Otro Pharos está actualizando tus datos».** Si otro Pharos está actualizando la base de datos al abrir (tras instalar una versión nueva), Pharos espera unos segundos; si no termina, lo dice y ofrece «Reintentar».
+- **Desactivar una cuenta** (Administración › Usuarios, solo administradores del servidor). La cuenta deja de entrar, sincronizar y usar la API al momento, sin borrar nada: sus datos, sus roles y su auditoría se conservan, y «Reactivar cuenta» la devuelve. Si era el único Test Manager activo de un workspace compartido, eliges quién la sustituye en el mismo diálogo. La lista se filtra por «Activas», «Desactivadas» o «Todas», y los miembros de un workspace muestran «Desactivada».
+- **Los cambios de dos sitios a la vez se combinan campo a campo.** Si tú y otra persona (u otro equipo tuyo) cambiáis el mismo elemento sin sincronizar entre medias, Pharos se queda con los dos cambios cuando tocan campos distintos (el título y la prioridad, un paso y otro) y no pregunta. Un aviso dice cuántos elementos se combinaron, y quedan en la auditoría. El panel de conflictos solo pregunta por lo que choca, campo a campo, y conserva «La mía en todo» y «La del servidor en todo». Una aprobación frente a un cambio de contenido, o un ciclo cerrado frente a una edición, siguen pidiendo una versión entera. En la web, al guardar, pasa lo mismo cuando alguien cambió otros campos.
+
+### Cambiado
+
+- **Tus datos se guardan al instante y ocupan menos memoria.** La base de datos local pasa a un archivo en disco, `pharos.db`, cifrado página a página. Antes, cada cambio volvía a cifrar y escribir la base entera.
+  - **El primer arranque de esta versión la convierte** y muestra «Actualizando el formato de tus datos» si tarda algo. Antes guarda una copia del archivo de siempre (`pharos.db.enc.bak-…`). Si no hay espacio en disco, lo dice y no cambia nada.
+  - **La copia de seguridad completa** son ahora `pharos.db` (con Pharos cerrado), la carpeta `evidence` y tu clave de recuperación.
+  - **Tu clave de recuperación sigue valiendo.**
+  - **Volver a la versión 0.5:** restaura la copia `pharos.db.enc.bak-…` (README → «Local data backups»). Lo que cambiaste aquí sin sincronizar no viaja con ella. Una 0.5 que abra la carpeta convertida dice que los datos son de una versión más nueva y no los toca.
+- **La base de datos del escritorio crece menos.** Después de sincronizar, una vez al día, Pharos borra de su registro interno los cambios que el servidor ya tiene (en una prueba con 40 000 cambios eran 80 000 filas). No se pierde nada: tus datos, su historial y la auditoría siguen igual. El diagnóstico exportado incluye ahora cuánto ocupan el registro de cambios y la auditoría, solo como números.
+
+### Corregido
+
+- **Dos Pharos ya no se pisan los datos.** Antes, dos ventanas de Pharos abiertas a la vez guardaban sobre el mismo archivo y la última borraba en silencio lo que había guardado la otra. Ahora las dos (y el CLI de Pharos) usan los mismos datos a la vez sin perder nada.
+- **Un Test Analyst ya puede crear una baseline de suite** en un workspace compartido, desde la web y desde el escritorio. Hasta ahora el servidor solo se lo permitía a un Test Manager, y la baseline creada en el escritorio no llegaba a sincronizarse. Un Viewer sigue sin poder crearla.
+- **Un workspace recién creado aparece en el selector** y queda elegido en cuanto llega. En el escritorio, hasta ahora, no salía hasta la siguiente sincronización.
+- **Compartir un proyecto que aún no se ha enviado al servidor** ya no dice «No se pudo completar». Pharos lo envía en ese momento y te pide volver a pulsar «Mover y compartir» en unos segundos.
+- **Borrar un proyecto también retira del servidor las versiones guardadas de sus casos.** Antes se quedaban allí aunque el proyecto ya no existiera; ahora se borran con él (y se vacían al purgarse), salvo las que use un resultado de otro proyecto. Si el proyecto vuelve, vuelven con él. Al actualizar el servidor se corrigen también los proyectos que ya estaban borrados.
+
+### Seguridad
+
+- **La imagen Docker del servidor ya no corre como root** y Docker sabe si la API está viva.
+  - Arranca el servidor compilado, sin herramientas de desarrollo dentro.
+  - `docker compose ps` muestra `healthy` cuando la API responde.
+- **Un informe XML con DTD (`<!DOCTYPE`) ya no se importa** («El archivo no es
+  un XML válido»): es la vía de los ataques XXE y de las bombas de entidades, y
+  ningún formato de resultados lo necesita. Vale igual en la app y en el
+  servidor.
+
 ## [0.5.0-beta.1] - 2026-11-18
 
 Equipo (ADR-0039): workspaces compartidos con roles (Test Manager, Test Analyst,

@@ -64,7 +64,7 @@ final se da por superada: sus validaciones nativas pasan a la salida de 0.3.0.
 | **0.3.0**   | Diseño asistido y experiencia (lo hecho desde 0.2.0; `v0.3.0-beta.1` el 2026-11-12, `v0.3.0` el 2026-11-17) | —                             |
 | **0.4.0**   | Estrategia medible: plan ISO completo, métricas, gates (`v0.4.0-beta.1` el 2026-11-12) | Parte de 0.8.0 y 0.9.x        |
 | **0.5.0**   | Equipo: workspaces con roles, aprobaciones (`v0.5.0-beta.1` el 2026-11-18) | 0.3.0                         |
-| **0.6.0**   | Núcleo y automatización conectada (escalón a)           | 0.3.0 y 0.5.0                 |
+| **0.6.0**   | Núcleo y automatización conectada (escalón a; `v0.6.0-beta.1` el 2026-11-19) | 0.3.0 y 0.5.0                 |
 | **0.7.0**   | Ejecutar con una orden (escalón b)                      | 0.6.0                         |
 | **0.8.0**   | Scripts generados por IA (escalón c)                    | 0.7.0                         |
 | **0.9.0**   | Agente supervisado (escalón d)                          | 0.9.x                         |
