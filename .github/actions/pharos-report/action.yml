@@ -1,0 +1,92 @@
+# Uploads test reports to Pharos from GitHub Actions (INT-04, ADR-0054 §5).
+# Bash and curl only: no binary to download and no third-party action, so it
+# runs on Linux, macOS and Windows (Git Bash) runners. The server reads and
+# detects each report (JUnit, SARIF, k6, axe, CTRF, Playwright JSON, Cucumber
+# Messages, Pharos Run JSON): the API v1 upload (ADR-0052).
+#
+# The token goes in through `env` and reaches curl on stdin, never as an
+# argument; it is masked in the log. A pull request from a fork gets no
+# secrets: the action then says so and does nothing, without failing the job.
+name: Pharos report
+description: Upload test reports (JUnit, SARIF, k6, axe…) to a Pharos server
+author: Pharos
+
+inputs:
+  server:
+    description: Pharos server, https://… (http:// only for localhost)
+    required: true
+  token:
+    description: Project token (phr_prj_…), from a secret
+    required: true
+  project:
+    description: Project case-ID prefix (PAG) or id
+    required: true
+  files:
+    description: Report files or patterns, one per line (`**` allowed)
+    required: true
+  format:
+    description: Format to check (junit, sarif, k6, axe…); empty lets the server detect it
+    required: false
+    default: ""
+  run-name:
+    description: Name of the run (default «<workflow> · <branch> · <sha7>»)
+    required: false
+    default: ""
+  external-id:
+    description: Run identity shared by the jobs of a matrix (default github:<repo>:<run_id>:<attempt>)
+    required: false
+    default: ""
+  cycle:
+    description: Cycle key for a new run
+    required: false
+    default: ""
+  configuration:
+    description: Configuration of the results that have none
+    required: false
+    default: ""
+  case:
+    description: Case key to link results that have none
+    required: false
+    default: ""
+  close:
+    description: Close the run after uploading (the last job of a matrix)
+    required: false
+    default: "false"
+  fail-on-error:
+    description: Fail the step when an upload fails
+    required: false
+    default: "true"
+
+outputs:
+  run-key:
+    description: Key of the run (RUN-n)
+    value: ${{ steps.upload.outputs.run-key }}
+  run-url:
+    description: Link to the run in Pharos, when the server has one
+    value: ${{ steps.upload.outputs.run-url }}
+  uploaded:
+    description: Files uploaded
+    value: ${{ steps.upload.outputs.uploaded }}
+  failed:
+    description: Files that failed
+    value: ${{ steps.upload.outputs.failed }}
+
+runs:
+  using: composite
+  steps:
+    - id: upload
+      shell: bash
+      env:
+        PHAROS_SERVER: ${{ inputs.server }}
+        PHAROS_TOKEN: ${{ inputs.token }}
+        PHAROS_PROJECT: ${{ inputs.project }}
+        PHAROS_FILES: ${{ inputs.files }}
+        PHAROS_FORMAT: ${{ inputs.format }}
+        PHAROS_RUN_NAME: ${{ inputs.run-name }}
+        PHAROS_EXTERNAL_ID: ${{ inputs.external-id }}
+        PHAROS_CYCLE: ${{ inputs.cycle }}
+        PHAROS_CONFIGURATION: ${{ inputs.configuration }}
+        PHAROS_CASE: ${{ inputs.case }}
+        PHAROS_CLOSE: ${{ inputs.close }}
+        PHAROS_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
+      run: bash "$GITHUB_ACTION_PATH/upload.sh"

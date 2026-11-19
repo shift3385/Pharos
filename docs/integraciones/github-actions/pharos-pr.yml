@@ -1,0 +1,74 @@
+# Pharos · cada PR reporta sus pruebas: JUnit, SARIF, k6 y axe en un mismo run
+# (INT-04, ADR-0054 §5). Copia este fichero a .github/workflows/ de tu
+# repositorio y cambia las rutas y los comandos por los tuyos.
+#
+# En GitHub, una vez por repositorio (Settings › Secrets and variables › Actions):
+#   - secreto  PHAROS_TOKEN: un token de proyecto de Pharos (Workspace › Integraciones);
+#   - variable PHAROS_URL:   la dirección de tu servidor, https://…
+#
+# Reglas que sigue (y que conviene mantener):
+#   - toda acción va fijada por el SHA completo de un commit, con la versión en
+#     un comentario; las herramientas de npm, con su versión exacta;
+#   - solo `pull_request`, nunca `pull_request_target`: un PR desde un fork no
+#     recibe el token y la acción de Pharos lo dice sin romper el job;
+#   - `permissions: contents: read`: el token de Pharos va aparte.
+name: Pruebas y Pharos
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - run: npm ci
+
+      # 1. Pruebas funcionales → JUnit (aquí, Playwright).
+      - name: Playwright
+        run: npx playwright test --reporter=junit
+        env:
+          PLAYWRIGHT_JUNIT_OUTPUT_NAME: reports/junit.xml
+        continue-on-error: true
+
+      # 2. Análisis estático → SARIF (aquí, ESLint, con el formateador
+      #    @microsoft/eslint-formatter-sarif en las devDependencies a una
+      #    versión exacta, p. ej. 3.1.0).
+      - name: ESLint
+        run: npx eslint . --format @microsoft/eslint-formatter-sarif --output-file reports/eslint.sarif
+        continue-on-error: true
+
+      # 3. Rendimiento → resumen de k6.
+      - uses: grafana/setup-k6-action@c47136d33d365efbeb9ae7266908b5dcf98cdece # v1.3.0
+      - name: k6
+        run: k6 run --summary-export reports/k6-summary.json perf/smoke.js
+        continue-on-error: true
+
+      # 4. Accesibilidad → axe (con la app ya servida en el puerto 4173).
+      - name: axe
+        run: npx @axe-core/cli@4.14.0 http://localhost:4173 --save reports/axe.json
+        continue-on-error: true
+
+      # Sube los cuatro informes, aunque haya fallado algún paso anterior: el
+      # job sigue en rojo por las pruebas, no por Pharos.
+      - name: Subir a Pharos
+        if: always()
+        uses: shift3385/Pharos/.github/actions/pharos-report@<SHA-de-40-caracteres> # v0.6.0
+        with:
+          server: ${{ vars.PHAROS_URL }}
+          token: ${{ secrets.PHAROS_TOKEN }}
+          project: PAG
+          close: true
+          files: |
+            reports/junit.xml
+            reports/eslint.sarif
+            reports/k6-summary.json
+            reports/axe.json

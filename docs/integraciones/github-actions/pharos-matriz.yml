@@ -1,0 +1,58 @@
+# Pharos · una matriz de navegadores sube a un único run (INT-04, ADR-0054 §5).
+# Cada job sube su informe con el mismo externalId, que la acción toma del
+# workflow (github:<repo>:<run_id>:<intento>), así que todos convergen en un
+# run. El último job, que espera a los demás, lo cierra.
+#
+# En GitHub: secreto PHAROS_TOKEN (token de proyecto) y variable PHAROS_URL.
+name: Matriz y Pharos
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        navegador: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: Playwright (${{ matrix.navegador }})
+        run: npx playwright test --project="$NAVEGADOR" --reporter=junit
+        env:
+          NAVEGADOR: ${{ matrix.navegador }}
+          PLAYWRIGHT_JUNIT_OUTPUT_NAME: reports/junit-${{ matrix.navegador }}.xml
+        continue-on-error: true
+      - name: Subir a Pharos
+        if: always()
+        uses: shift3385/Pharos/.github/actions/pharos-report@<SHA-de-40-caracteres> # v0.6.0
+        with:
+          server: ${{ vars.PHAROS_URL }}
+          token: ${{ secrets.PHAROS_TOKEN }}
+          project: PAG
+          configuration: ${{ matrix.navegador }}
+          files: reports/junit-${{ matrix.navegador }}.xml
+
+  cerrar-run:
+    needs: pruebas
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cerrar el run en Pharos
+        uses: shift3385/Pharos/.github/actions/pharos-report@<SHA-de-40-caracteres> # v0.6.0
+        with:
+          server: ${{ vars.PHAROS_URL }}
+          token: ${{ secrets.PHAROS_TOKEN }}
+          project: PAG
+          files: ""
+          close: true
