@@ -1,0 +1,705 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Línea base de Pharos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (≈ 64rem) with full-width figures; tokens = Pharos "Faro Nocturno" design system. */
+:root {
+  --bg: #F7F8FA; --surface: #FFFFFF; --border: #E2E6EB; --border-strong: #C5CDD6;
+  --fg: #1C2530; --muted: #5F6B7A;
+  --navy: #0B1F33; --navy-500: #1F4E79; --navy-100: #E3EEF7;
+  --amber: #F2A33C; --on-amber: #4A2E05;
+  --ok: #1D9E75; --ok-bg: #E4F4EE; --warn: #B8860B; --warn-bg: #FBF1DC;
+  --bad: #D64545; --bad-bg: #FBE6E6; --info: #378ADD; --info-bg: #E5F0FB;
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0D1620; --surface: #14202E; --border: #24344A; --border-strong: #35496A;
+  --fg: #E8EDF2; --muted: #93A3B5; --navy: #0B1F33; --navy-500: #6FA3CC; --navy-100: #17304A;
+  --amber: #F2A33C; --on-amber: #4A2E05;
+  --ok: #5DCAA5; --ok-bg: #12302A; --warn: #E2B04A; --warn-bg: #352B12;
+  --bad: #F09595; --bad-bg: #3A1D22; --info: #7FB2EA; --info-bg: #162C45; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0D1620; --surface: #14202E; --border: #24344A; --border-strong: #35496A;
+  --fg: #E8EDF2; --muted: #93A3B5; --navy: #0B1F33; --navy-500: #6FA3CC; --navy-100: #17304A;
+  --amber: #F2A33C; --on-amber: #4A2E05;
+  --ok: #5DCAA5; --ok-bg: #12302A; --warn: #E2B04A; --warn-bg: #352B12;
+  --bad: #F09595; --bad-bg: #3A1D22; --info: #7FB2EA; --info-bg: #162C45; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 68rem; margin: 0 auto; padding-block: 0 4rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.band { background: var(--navy); color: #E8EDF2; }
+.band .wrap { padding-block: 2.4rem 2rem; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #93A3B5; }
+h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); line-height: 1.15; margin: .35rem 0 .8rem; font-weight: 700; text-wrap: balance; }
+h1 .lamp { color: var(--amber); }
+.lede { max-width: 46rem; color: #C9D3DE; font-size: 1.05rem; margin: 0; }
+.facts { display: flex; flex-wrap: wrap; gap: .5rem 1.4rem; margin-top: 1.4rem; font-family: var(--font-mono); font-size: 12.5px; color: #C9D3DE; }
+.facts b { color: #fff; font-weight: 500; }
+h2 { font-size: 1.45rem; margin: 3rem 0 .4rem; text-wrap: balance; }
+h3 { font-size: 1.05rem; margin: 0 0 .5rem; }
+p { max-width: 46rem; }
+.muted { color: var(--muted); }
+.mono, code { font-family: var(--font-mono); font-size: .86em; }
+code { background: var(--navy-100); padding: .05em .35em; border-radius: 4px; }
+figure { margin: 1.2rem 0 0; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
+.scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; height: auto; min-width: 640px; }
+figcaption { font-size: 13.5px; color: var(--muted); margin-top: .7rem; max-width: 52rem; }
+.legend { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; font-size: 12.5px; color: var(--muted); margin-top: .6rem; }
+.sw { display: inline-block; width: 18px; height: 11px; border-radius: 3px; vertical-align: -1px; margin-right: .35rem; border: 1.5px solid; }
+.sw.done { background: var(--ok-bg); border-color: var(--ok); }
+.sw.part { background: var(--warn-bg); border-color: var(--warn); }
+.sw.miss { background: var(--surface); border-color: var(--info); border-style: dashed; }
+.sw.ext { background: var(--surface); border-color: var(--border-strong); }
+
+/* SVG paint classes (page CSS styles inline SVG through tokens) */
+.d-box-done { fill: var(--ok-bg); stroke: var(--ok); stroke-width: 1.5; }
+.d-box-part { fill: var(--warn-bg); stroke: var(--warn); stroke-width: 1.5; }
+.d-box-miss { fill: var(--surface); stroke: var(--info); stroke-width: 1.5; stroke-dasharray: 6 4; }
+.d-box-ext { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1.5; }
+.d-row { fill: var(--bg); stroke: var(--border); }
+.d-title { fill: var(--fg); font: 600 13px var(--font-ui); }
+.d-sub { fill: var(--muted); font: 400 11px var(--font-ui); }
+.d-lab { fill: var(--muted); font: 500 11px var(--font-mono); }
+.d-yes { fill: var(--ok); font: 600 11px var(--font-mono); }
+.d-no { fill: var(--bad); font: 600 11px var(--font-mono); }
+.d-edge { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.d-edge-miss { fill: none; stroke: var(--info); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.d-edge-part { fill: none; stroke: var(--warn); stroke-width: 1.5; }
+.d-fault { fill: var(--bad); }
+.d-fault-n { fill: var(--surface); font: 700 11px var(--font-ui); }
+.d-grid { stroke: var(--border); stroke-width: 1; }
+.d-old { fill: var(--surface); stroke: var(--muted); stroke-width: 1.5; }
+.d-new { fill: var(--amber); stroke: var(--on-amber); stroke-width: 1; }
+.d-move { stroke: var(--navy-500); stroke-width: 1.5; fill: none; }
+.d-axis { fill: var(--fg); font: 600 12px var(--font-mono); }
+.d-rowlab { fill: var(--fg); font: 400 12.5px var(--font-ui); }
+svg .arrowhead { fill: var(--muted); }
+svg .arrowhead-info { fill: var(--info); }
+svg .arrowhead-nav { fill: var(--navy-500); }
+
+/* Chips encode status */
+.chip { display: inline-block; font: 500 11.5px/1.6 var(--font-mono); padding: 0 .5em; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+.chip.ok { color: var(--ok); background: var(--ok-bg); border-color: var(--ok); }
+.chip.part { color: var(--warn); background: var(--warn-bg); border-color: var(--warn); }
+.chip.miss { color: var(--info); background: var(--info-bg); border-color: var(--info); }
+.chip.none { color: var(--muted); background: transparent; border-color: var(--border-strong); }
+.chip.bad { color: var(--bad); background: var(--bad-bg); border-color: var(--bad); }
+
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; background: var(--surface); }
+th, td { text-align: left; vertical-align: top; padding: .55rem .7rem; border-bottom: 1px solid var(--border); }
+th { font: 600 11.5px var(--font-mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--bg); }
+td:first-child { font-weight: 600; }
+.tablebox { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; margin-top: 1rem; }
+.tablebox table { min-width: 720px; }
+
+.gates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1.2rem; }
+.gate { background: var(--surface); border: 1px solid var(--border); border-top: 4px solid var(--g); border-radius: 10px; padding: 1rem 1.1rem; min-width: 0; }
+.gate.a { --g: var(--bad); } .gate.b { --g: var(--navy-500); } .gate.c { --g: var(--amber); }
+.gate .blocks { font: 500 12px var(--font-mono); color: var(--muted); margin: 0 0 .7rem; }
+.gate ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; font-size: 13.5px; }
+.gate li { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr); gap: .5rem; }
+.gate li .id { font: 500 12px var(--font-mono); color: var(--navy-500); padding-top: .1em; }
+.gate li .new { color: var(--muted); font: 400 11px var(--font-mono); }
+@media (max-width: 900px) { .gates { grid-template-columns: 1fr; } }
+
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
+@media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.1rem; min-width: 0; }
+.panel ul { margin: .2rem 0 0; padding-left: 1.1rem; display: grid; gap: .4rem; font-size: 14px; }
+
+.sev { margin-top: 1rem; display: grid; gap: .8rem; }
+.sev-row { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: .8rem 1rem; }
+.sev-row ul { margin: 0; padding-left: 1.1rem; display: grid; gap: .3rem; font-size: 14px; }
+@media (max-width: 600px) { .sev-row { grid-template-columns: 1fr; gap: .4rem; } }
+
+.decisions { counter-reset: d; list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: .7rem; }
+.decisions li { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: .85rem 1rem; display: grid; grid-template-columns: 2.6rem minmax(0, 1fr); gap: .6rem; }
+.decisions .did { font: 600 13px var(--font-mono); color: var(--on-amber); background: var(--amber); border-radius: 6px; height: 1.7rem; display: grid; place-items: center; }
+.decisions p { margin: .2rem 0 0; font-size: 14px; color: var(--muted); }
+.rec { color: var(--fg); font-weight: 500; }
+a { color: var(--navy-500); }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.progress-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1.2rem; }
+@media (max-width: 900px) { .progress-grid { grid-template-columns: 1fr; } }
+.pcard { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.1rem; min-width: 0; }
+.pcard h3 { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; }
+.pcard .tally { font: 500 12.5px var(--font-mono); color: var(--muted); }
+.bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--border); margin: .6rem 0 .8rem; }
+.bar .b-done { background: var(--ok); } .bar .b-part { background: var(--warn); } .bar .b-pend { background: var(--border-strong); }
+.pcard dl { margin: 0; display: grid; gap: .55rem; font-size: 13.5px; }
+.pcard dt { font: 600 11.5px var(--font-mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.pcard dd { margin: .15rem 0 0; }
+.blockers { margin-top: 1rem; }
+.blockers td:first-child { white-space: nowrap; }
+.where { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
+@media (max-width: 760px) { .where { grid-template-columns: 1fr; } }
+</style>
+
+<header class="band">
+  <div class="wrap">
+    <div class="eyebrow">Pharos · 0.2.0 publicada · auditoría inicial del 28 oct 2026 · avance al 7 nov · una rama pendiente de fusión</div>
+    <h1>Línea base de <span class="lamp">Pharos</span></h1>
+    <p class="lede">Pharos diseña pruebas como una herramienta profesional y, desde 0.2.0, también cierra el ciclo: ejecución manual, importación de resultados, ciclos, defectos y una matriz con el estado real. Las tres compuertas de la línea base están cerradas. Lo abierto ahora son correcciones y mejoras de IA y de interfaz tras 0.2.0, y las validaciones nativas con claves reales. Las secciones marcadas como «foto del 28 de octubre» conservan la auditoría inicial, para ver de dónde se partió.</p>
+    <div class="facts">
+      <span><b>≈1.100</b> tests cliente</span><span><b>≈550</b> tests Rust</span><span><b>≈240</b> tests servidor</span>
+      <span><b>8</b> checks obligatorios en cada PR, E2E incluido</span>
+      <span><b>41 de 41</b> puntos de las compuertas A, B y C</span><span><b>0</b> PRs abiertos y <b>1</b> rama sin PR</span>
+    </div>
+    <p style="margin-top:.8rem;font-size:.85em;opacity:.8">Al inicio, el 28 de octubre: 128, 62 y 22 tests, ningún pipeline de CI, ninguna prueba E2E del binario y 3 de 6 entidades sincronizando.</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <h2>Avance de la línea base</h2>
+  <p>Estado al 7 de noviembre de 2026. Las tres compuertas se cerraron en <code>main</code> y no han cambiado desde entonces; lo nuevo está en «Después de 0.2.0», más abajo. Fuente: <code>docs/ROADMAP.md</code>. Las barras cuentan solo lo que ya está en <code>main</code>.</p>
+  <div class="progress-grid">
+    <section class="pcard" aria-label="Avance de la compuerta A">
+      <h3>A · Corrección <span class="tally">13 / 13</span></h3>
+      <div class="bar" role="img" aria-label="13 de 13 hechos"><span class="b-done" style="width:100%"></span></div>
+      <dl>
+        <div><dt>Hecho · en main</dt><dd>FIX-01 a FIX-09 y SYNC-04a: contador, paginación, envío por lotes, conflictos en la web, cascada de borrado, autor real, datos por usuario, comprobación de dueño, clave de Gemini y sync de requisitos y defectos.</dd></div>
+        <div><dt>Cerrada con A3 · <code>b969824</code></dt><dd>DAT-01 claves únicas entre equipos (índices y bloques de claves en el servidor) · SYNC-06 purga real de eliminados · FIX-08b plantillas por usuario, con las heredadas compartidas de solo lectura.</dd></div>
+      </dl>
+    </section>
+    <section class="pcard" aria-label="Avance de la compuerta B">
+      <h3>B · Ingeniería <span class="tally">18 / 18</span></h3>
+      <div class="bar" role="img" aria-label="18 de 18 hechos"><span class="b-done" style="width:100%"></span></div>
+      <dl>
+        <div><dt>Hecho</dt><dd>Cerrada en main: BASE-01 CI (8 checks obligatorios), BASE-02 main protegida (todo entra por PR), BASE-03 auditoría de dependencias, BASE-04 test de actualización, BASE-06 servidor endurecido, BASE-08 logs, diagnóstico y fallos de sync al log, BASE-09 instalador NSIS, BASE-11 ADRs y reglas, BASE-12 registro de migraciones, BASE-16 hooks, BASE-17 cuenta de test, BASE-18 zod 4, BASE-19 fmt y clippy sin excepciones, BASE-14 smoke E2E del binario real en local y en el CI. Ola 3: BASE-20 react-router 7 y uuid 11, BASE-13 cobertura en cada PR (D1), BASE-10 la web es cliente del servidor y BASE-05 contratos generados (W1).</dd></div>
+        <div><dt>Qué significa</dt><dd>La ingeniería de base está completa: con la compuerta A cerrada, 0.1.0 solo espera la Fase 9 (UX-06) y tus validaciones nativas.</dd></div>
+      </dl>
+    </section>
+    <section class="pcard" aria-label="Avance de la compuerta C">
+      <h3>C · Decisiones de modelo <span class="tally">10 / 10</span></h3>
+      <div class="bar" role="img" aria-label="10 de 10 cerradas"><span class="b-done" style="width:100%"></span></div>
+      <dl>
+        <div><dt>Cerrada</dt><dd>ADR-0011 a ADR-0019 aceptados, con la revisión independiente incorporada, más SYNC-02 decidido (ADR-0002). El diseño de conjunto está en <code>docs/design/0.2.0-modelo-ejecucion.md</code>.</dd></div>
+        <div><dt>Qué significa</dt><dd>El esquema de la ejecución ya está decidido: esta compuerta ya no bloquea empezar 0.2.0.</dd></div>
+      </dl>
+    </section>
+  </div>
+
+  <div class="tablebox blockers">
+    <table>
+      <thead><tr><th>También bloquea 0.1.0</th><th>Estado</th><th>Detalle</th></tr></thead>
+      <tbody>
+        <tr><td>SEC-06</td><td><span class="chip ok">hecho</span></td><td>Copia cifrada antes de migrar y bloqueo de datos de una versión más nueva (A2)</td></tr>
+        <tr><td>SYNC-08</td><td><span class="chip ok">hecho</span></td><td>Cada sincronización lleva la versión de la app; el servidor rechaza las no soportadas (A1)</td></tr>
+        <tr><td>SEC-03</td><td><span class="chip ok">hecho</span></td><td>Clave de recuperación exportable e importable (S1); falta probarla en un segundo PC</td></tr>
+        <tr><td>IA-05</td><td><span class="chip ok">hecho</span></td><td>Gherkin y casos desde un requisito (I1); falta probarlo con claves reales</td></tr>
+        <tr><td>UX-05</td><td><span class="chip ok">hecho</span></td><td>WCAG 2.1 AA con axe en cada PR y en el E2E; informe en <code>docs/accesibilidad/</code> (X1)</td></tr>
+        <tr><td>UX-06</td><td><span class="chip part">en curso</span></td><td>Instalador limpio: el CI ya lo construye (BASE-09); falta probarlo en un Windows 11 limpio</td></tr>
+        <tr><td>Validaciones nativas</td><td><span class="chip part">tuyas</span></td><td>Fases 4, 6, 7, 8 y 9A, trazabilidad, <code>db.rs</code>, IA-08 con claves reales y lo fusionado ahora</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:1.6rem">Después de 0.2.0 · estado al 7 de noviembre</h3>
+  <p>Correcciones y mejoras hechas en sesiones aparte, tras la publicación. <code>main</code> está en <code>4195836</code>, con versión <code>0.2.0</code>. Las filas marcadas como «fusionada» están en <code>main</code>; el resto, no.</p>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>Trabajo</th><th>Qué entra</th><th>Dónde</th><th>Estado</th><th>Qué le falta</th></tr></thead>
+      <tbody>
+        <tr><td>SEC-08, SEC-09</td><td>Solo la planificación: cambiar y recuperar la contraseña de la cuenta</td><td><a href="https://github.com/shift3385/Pharos/pull/55">#55</a></td><td><span class="chip ok">fusionada</span></td><td>Implementarlas (0.3.0 y 0.5.0)</td></tr>
+        <tr><td>Sesión en la web</td><td>Renueva la sesión caducada y reintenta una vez; Proyectos avisa si falla la carga</td><td><a href="https://github.com/shift3385/Pharos/pull/56">#56</a></td><td><span class="chip ok">fusionada</span></td><td>Nada</td></tr>
+        <tr><td>FIX-16</td><td>Las pantallas web avisan de una carga fallida y ofrecen reintentar</td><td><a href="https://github.com/shift3385/Pharos/pull/57">#57</a></td><td><span class="chip ok">fusionada</span></td><td>Nada</td></tr>
+        <tr><td>Sesión en escritorio</td><td>Renueva la sesión caducada durante la sincronización</td><td><a href="https://github.com/shift3385/Pharos/pull/58">#58</a></td><td><span class="chip ok">fusionada</span></td><td>Nada</td></tr>
+        <tr><td>FIX-19</td><td>Recargar ya no pierde un borrador de ejecución que aún se está guardando</td><td><a href="https://github.com/shift3385/Pharos/pull/59">#59</a></td><td><span class="chip ok">fusionada</span></td><td>Nada</td></tr>
+        <tr><td>IA-11, IA-13 a IA-15</td><td>Probar una clave antes de guardarla (ADR-0033); IA en roles, criterios de cierre y más pasos del plan, con textos breves según ISTQB</td><td>Rama <code>fix/ai-key-save-and-test</code></td><td><span class="chip part">sin PR</span></td><td>Abrir PR y resolver los conflictos con <code>main</code>; probar con una clave real</td></tr>
+        <tr><td>UX-11 a UX-17, FIX-18</td><td>Administración, selector de proyecto único, botón de IA, paginación, pasos del plan, cronograma, skeletons de carga y rebote de la ventana</td><td>Misma rama</td><td><span class="chip part">sin PR</span></td><td>Lo mismo; capturas del manual sin regenerar</td></tr>
+        <tr><td>IA-16</td><td>Revisión crítica con IA de las listas de un caso: añadir, reformular o eliminar, con motivo</td><td>Misma rama, en commits locales sin subir</td><td><span class="chip part">sin PR</span></td><td>Subir la rama, abrir PR y probar con una clave real</td></tr>
+        <tr><td>UX-18, UX-19</td><td>Mensajes de IA sin proveedor ni modelo; formulario del caso por bloques, con la IA junto al título</td><td>Misma rama, en commits locales sin subir</td><td><span class="chip part">sin PR</span></td><td>Subir la rama y abrir PR</td></tr>
+        <tr><td>IA-12</td><td>Usar en la web la clave de escritorio mediante una bóveda en el servidor (ADR-0034)</td><td>Sin empezar</td><td><span class="chip none">pendiente</span></td><td>Aclarar su estado: PROGRESO lo da por aceptado y el ROADMAP dice «Por decidir»</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Conflictos, según una fusión de prueba que no toca archivos: la rama <code>fix/ai-key-save-and-test</code> choca con <code>main</code> en 8 pantallas y en <code>docs/ROADMAP.md</code>. Coinciden con las que tocó FIX-16 y habrá que combinar los cambios a mano.</p>
+
+  <h3 style="margin-top:1.6rem">Ola de ejecución de 0.2.0 · E5 y E6 → <code>v0.2.0</code></h3>
+  <p>4 y 5 de noviembre. Se completa el modelo de ejecución y se publica <code>0.2.0</code> (<code>966a61d</code>, etiqueta <code>v0.2.0</code>). También entran los seguimientos previstos para 0.3.0, por decisión del usuario. Criterio de salida cumplido: un run manual y uno de Playwright aparecen en la misma matriz, y editar un caso ejecutado no altera sus resultados.</p>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>Pista</th><th>Qué entra</th><th>PR</th><th>Estado</th><th>Lo principal de la revisión</th></tr></thead>
+      <tbody>
+        <tr><td>E5 · DAT-03b</td><td>Verificar y reparar evidencias en Administración</td><td><a href="https://github.com/shift3385/Pharos/pull/42">#42</a></td><td><span class="chip ok">fusionada</span></td><td>Regla de 24 h falseable al copiar archivos; un segundo Pharos podía perder evidencias</td></tr>
+        <tr><td>E5 · paso 7</td><td>Ejecución manual por pasos con evidencias</td><td><a href="https://github.com/shift3385/Pharos/pull/43">#43</a></td><td><span class="chip ok">fusionada</span></td><td>Bloqueo: Ctrl+Enter registraba dos veces un intento inmutable</td></tr>
+        <tr><td>MAN-01 y MAN-02</td><td>Recorridos automáticos de toda la app y manual de usuario en PDF</td><td><a href="https://github.com/shift3385/Pharos/pull/44">#44</a> <a href="https://github.com/shift3385/Pharos/pull/53">#53</a></td><td><span class="chip ok">fusionadas</span></td><td>La clave de IA podía acabar en un artefacto; carrera del arrastre por teclado en CI</td></tr>
+        <tr><td>E6 · paso 10</td><td>Matriz extendida, informe de estado y derivación común de métricas</td><td><a href="https://github.com/shift3385/Pharos/pull/49">#49</a></td><td><span class="chip ok">fusionada</span></td><td>Consultas por proyecto en la web; «Desactualizado» saltaba con cualquier edición</td></tr>
+        <tr><td>E6 · RED-W6</td><td>Métricas reales en Inicio</td><td><a href="https://github.com/shift3385/Pharos/pull/51">#51</a></td><td><span class="chip ok">fusionada</span></td><td>Tras sincronizar, las gráficas de periodo no contaban los runs nuevos</td></tr>
+        <tr><td>E6+ · retención y borrar runs</td><td>DAT-03c, EJE-07</td><td><a href="https://github.com/shift3385/Pharos/pull/47">#47</a></td><td><span class="chip ok">fusionada</span></td><td>Al actualizar habría caducado de golpe la evidencia antigua: periodo de gracia</td></tr>
+        <tr><td>E6+ · web</td><td>EJE-06: ejecutar y ejecución manual desde la web</td><td><a href="https://github.com/shift3385/Pharos/pull/48">#48</a></td><td><span class="chip ok">fusionada</span></td><td>Lecturas bajo el cerrojo del usuario; borradores web sin limpiar al salir</td></tr>
+        <tr><td>E6+ · seguimientos</td><td>FLD-03, CYC-02, EXP-03, BASE-21</td><td><a href="https://github.com/shift3385/Pharos/pull/46">#46</a></td><td><span class="chip ok">fusionada</span></td><td>Un defecto guardaba campos personalizados inválidos</td></tr>
+        <tr><td>Arreglos e interfaz</td><td>FIX-11..15 y UX-10: avisos con color semántico, ayuda [?], papelera, «Mi perfil»</td><td><a href="https://github.com/shift3385/Pharos/pull/45">#45</a> <a href="https://github.com/shift3385/Pharos/pull/50">#50</a> <a href="https://github.com/shift3385/Pharos/pull/52">#52</a></td><td><span class="chip ok">fusionadas</span></td><td>El aviso de cambios sin guardar podía tumbar toda la ventana</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Quedan fuera de 0.2.0 los adjuntos de defectos en la web (EJE-06b): necesitan sincronizar evidencias con el servidor (SYNC-04b, 0.4.0).</p>
+
+  <h3 style="margin-top:1.6rem">Ola de ejecución de 0.2.0 · E1 a E4</h3>
+  <p>31 de octubre y 1 de noviembre. Se implementan los pasos 1 a 6, 8 y 9 de <code>docs/design/0.2.0-modelo-ejecucion.md</code> §5, sin recortes (decisión del usuario), más AUD-01b y la pista de diseño del Cronograma. Cada pista entregó su plan antes de implementar, pasó al menos una revisión independiente, corrigió sus hallazgos y se fusionó con CI 8/8 y el OK del usuario. Todo está en <code>main</code> (<code>3671e46</code>), todavía sin etiqueta.</p>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>Ola · paso</th><th>Qué entra</th><th>PR</th><th>Estado</th><th>Lo principal de la revisión</th></tr></thead>
+      <tbody>
+        <tr><td>E1 · paso 1</td><td><code>journal::record</code>: puerta única de oplog y auditoría encadenada; clase de sync <code>append_only</code></td><td><a href="https://github.com/shift3385/Pharos/pull/32">#32</a></td><td><span class="chip ok">fusionada</span></td><td>Completar campos que faltan resucitaba lo que un cliente borraba por omisión: nace la funcionalidad <code>complete-payload</code></td></tr>
+        <tr><td>E2 · AUD-01b</td><td>Cadena de auditoría de las ediciones web en el servidor</td><td><a href="https://github.com/shift3385/Pharos/pull/33">#33</a></td><td><span class="chip ok">fusionada</span></td><td>Vectores JCS compartidos Rust/TS; cadenas reservadas protegidas</td></tr>
+        <tr><td>E2 · paso 3</td><td>Almacén de evidencias cifrado (<code>.pev</code>) y migración de adjuntos del Planificador</td><td><a href="https://github.com/shift3385/Pharos/pull/34">#34</a></td><td><span class="chip ok">fusionada</span></td><td>Recolección fuera del cerrojo; deduplicación que confiaba en copias dañadas</td></tr>
+        <tr><td>E2 · paso 2</td><td>Revisiones inmutables y sincronizadas; pasos y filas con ID estable</td><td><a href="https://github.com/shift3385/Pharos/pull/35">#35</a></td><td><span class="chip ok">fusionada</span></td><td>Un cliente viejo recibía pasos sin ID y creaba revisiones fantasma; las apps 0.1.x y alpha.1 pasan a solo lectura (aceptado)</td></tr>
+        <tr><td>Diseño · paso 14</td><td>Cronograma del plan y registro con un solo scroll</td><td><a href="https://github.com/shift3385/Pharos/pull/36">#36</a></td><td><span class="chip ok">fusionada</span></td><td>Fechas antiguas dd/mm marcadas como inválidas; arrastre táctil</td></tr>
+        <tr><td>E3 · paso 4</td><td>Runs, shards, resultados y pasos ejecutados; Pharos Run JSON 1.0</td><td><a href="https://github.com/shift3385/Pharos/pull/37">#37</a></td><td><span class="chip ok">fusionada</span></td><td>IDs validados por tipo; purga de resultados huérfanos</td></tr>
+        <tr><td>E3 · paso 5</td><td>Tipo de caso, estado de automatización y campos personalizados</td><td><a href="https://github.com/shift3385/Pharos/pull/38">#38</a></td><td><span class="chip ok">fusionada</span></td><td>Un cliente alpha.1 perdía el tipo de caso al editar sin conexión</td></tr>
+        <tr><td>E4 · paso 6</td><td>Ciclos <code>CYC-</code> y configuraciones; «Ejecutar» crea un run por configuración</td><td><a href="https://github.com/shift3385/Pharos/pull/39">#39</a></td><td><span class="chip ok">fusionada</span></td><td>Empates del progreso distintos entre escritorio y web; etiquetas repetidas bloqueaban la edición</td></tr>
+        <tr><td>E4 · paso 8</td><td>Módulo Defectos; las tarjetas de defecto del Planificador se convierten solas (escritorio y servidor)</td><td><a href="https://github.com/shift3385/Pharos/pull/40">#40</a></td><td><span class="chip ok">fusionada</span></td><td>Una descripción larga podía bloquear la sync de la cuenta; vínculos de tarjetas viejas sin reconciliar</td></tr>
+        <tr><td>E4 · paso 9</td><td>Importadores JUnit, Cucumber, CTRF y Playwright; sección «Ejecuciones» y bandeja «Sin vincular»</td><td><a href="https://github.com/shift3385/Pharos/pull/41">#41</a></td><td><span class="chip ok">fusionada</span></td><td>Bloqueo: el vínculo al caso divergía entre equipos. Ahora se deriva al leer, igual en todos, y sobrevive a un cambio de prefijo</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Verificado en las ramas finales de esta ola: Rust 530, servidor 217 y cliente unos 900 tests, más E2E en el CI. El paso 7, DAT-03b, el paso 10 y RED-W6, que quedaban por hacer, entraron en las olas E5 y E6.</p>
+
+  <h3 style="margin-top:1.6rem">Ola 4 · rediseño de la interfaz → <code>0.2.0-alpha.1</code></h3>
+  <p>30 de octubre. El paquete de diseño del usuario (<code>docs/rediseno/</code>, SPEC obligatoria, ADR-0028) se aplicó en una pista de fundamentos y cuatro de pantallas en paralelo. Las piezas compartidas entraron antes en PRs pequeños para no duplicarlas. Cada pista pasó revisión de diseño y de código, corrigió sus hallazgos y tuvo la revisión visual del usuario antes de fusionar. Todo está en <code>main</code> y publicado como <code>v0.2.0-alpha.1</code> (<code>f7dcd62</code>).</p>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>Pista</th><th>Pantallas o piezas</th><th>PR</th><th>Estado</th><th>Lo principal de la revisión</th></tr></thead>
+      <tbody>
+        <tr><td>F1 · Fundamentos</td><td>Logo, Lucide, tipografía, menús y hojas, shell 248/84 px, vista por ancho del contenedor (600/1280), rutas por sección (ADR-0029)</td><td><a href="https://github.com/shift3385/Pharos/pull/18">#18</a></td><td><span class="chip ok">fusionada</span></td><td>Cambiar de proyecto en Ajustes guardaba los datos del anterior; menús sin foco de teclado en el navegador real</td></tr>
+        <tr><td>Compartidas</td><td>Tabla, paginación, filtros y pastillas (V3a) · interruptor, selector y pestañas (V1a) · orden y cabecera del proyecto (V2a)</td><td><a href="https://github.com/shift3385/Pharos/pull/19">#19</a> <a href="https://github.com/shift3385/Pharos/pull/21">#21</a> <a href="https://github.com/shift3385/Pharos/pull/20">#20</a></td><td><span class="chip ok">fusionadas</span></td><td>Pestañas inalcanzables por teclado; fecha de cierre con formatos no ISO; pastilla de estado duplicada</td></tr>
+        <tr><td>V3k · Router</td><td>Router de datos y aviso de cambios sin guardar compartido</td><td><a href="https://github.com/shift3385/Pharos/pull/23">#23</a></td><td><span class="chip ok">fusionada</span></td><td>Un fallo del shell perdía la pantalla de error propia; el aviso quedaba apagado si fallaba el guardado</td></tr>
+        <tr><td>V1 · Entrada y cuenta</td><td>Login, Inicio con datos reales, Perfil</td><td><a href="https://github.com/shift3385/Pharos/pull/24">#24</a></td><td><span class="chip ok">fusionada</span></td><td>Login sin scroll también con error; regla de defectos abiertos sin test</td></tr>
+        <tr><td>V2 · Proyectos y plan</td><td>Proyectos, Ajustes, Plan de 19 pasos (ADR-0030)</td><td><a href="https://github.com/shift3385/Pharos/pull/25">#25</a></td><td><span class="chip ok">fusionada</span></td><td>Cambiar de idioma podía sobrescribir un plan nuevo; la importación partía entregables por comas</td></tr>
+        <tr><td>V4 · Administración</td><td>Pestañas, Motor de IA con capacidades, tema del sistema (ADR-0031)</td><td><a href="https://github.com/shift3385/Pharos/pull/26">#26</a></td><td><span class="chip ok">fusionada</span></td><td>La clave de API se perdía al guardar; contraste insuficiente hallado por el E2E</td></tr>
+        <tr><td>V3 · Casos y trazas</td><td>Casos (lista y editor), Planificador, Trazabilidad</td><td><a href="https://github.com/shift3385/Pharos/pull/27">#27</a></td><td><span class="chip ok">fusionada</span></td><td>Un enlace a un caso borrado creaba uno nuevo; el borrado en lote incluía casos ocultos</td></tr>
+        <tr><td>Fuera de pista</td><td>FIX-10 «Datos de prueba» en la web · reintento del driver E2E · fragmentos del CHANGELOG (ADR-0032) · release</td><td><a href="https://github.com/shift3385/Pharos/pull/22">#22</a> <a href="https://github.com/shift3385/Pharos/pull/28">#28</a> <a href="https://github.com/shift3385/Pharos/pull/29">#29</a> <a href="https://github.com/shift3385/Pharos/pull/30">#30</a></td><td><span class="chip ok">fusionadas</span></td><td>La web rechazaba tarjetas de datos de prueba; un corte de red tumbaba el E2E</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Compilación final sobre <code>f7dcd62</code>: CI 8/8 con cliente 710, servidor 92, Rust 245 y E2E 13 tests; instalador <code>pharos-0.2.0-alpha.1-f7dcd62-windows</code> desde la etiqueta. Seguimientos registrados: RED-V1b (fechas del Perfil), RED-V3b…j, RED-W1…W7 (búsqueda, notificaciones, papelera, comparar periodos, sprints, métricas, razonamiento de la IA).</p>
+
+  <h3 style="margin-top:1.6rem">Ola 2 · cinco pistas en paralelo</h3>
+  <p>Arrancó el 29 de octubre. Cada pista abrió su PR a <code>main</code>, pasó una revisión independiente (las cinco: "fusionar tras corregir") corrigió sus hallazgos y el coordinador los verificó, hizo QA y fusionó con el CI en verde. Las cinco están en <code>main</code>.</p>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>Pista</th><th>Ítems</th><th>PR</th><th>Estado</th><th>Lo principal de la revisión</th></tr></thead>
+      <tbody>
+        <tr><td>A3 · Datos y sync</td><td>DAT-01, SYNC-06, FIX-08b, tests de oplog y plantillas</td><td><a href="https://github.com/shift3385/Pharos/pull/5">#5</a></td><td><span class="chip ok">fusionada</span></td><td>Un escritorio en alpha.1 daría por sincronizado un caso con la clave rechazada; purga y conflictos de clave</td></tr>
+        <tr><td>S1 · Clave de recuperación</td><td>SEC-03</td><td><a href="https://github.com/shift3385/Pharos/pull/4">#4</a></td><td><span class="chip ok">fusionada</span></td><td>Una clave válida de otra BD borraba un <code>.enc.new</code> huérfano: ahora se conserva</td></tr>
+        <tr><td>I1 · IA desde requisitos</td><td>IA-05, IA-10</td><td><a href="https://github.com/shift3385/Pharos/pull/3">#3</a></td><td><span class="chip ok">fusionada</span></td><td>Prioridades en español rechazadas; propuestas perdidas si fallaba un guardado</td></tr>
+        <tr><td>U1 · Huecos de la spec</td><td>UX-08, UX-02, PLN-01, EXP-02</td><td><a href="https://github.com/shift3385/Pharos/pull/6">#6</a></td><td><span class="chip ok">fusionada</span></td><td>Errores de guardado invisibles; un PDF fallido colgaba la exportación ZIP</td></tr>
+        <tr><td>Q1 · Calidad</td><td>BASE-08, CORE-02, BASE-18 (y BASE-14 en CI aparte)</td><td><a href="https://github.com/shift3385/Pharos/pull/2">#2</a></td><td><span class="chip ok">fusionada</span></td><td>El job E2E del CI nunca pasó (WebView2 en el runner): se separa a un PR propio</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Compuerta A cerrada. En la B quedan BASE-05, BASE-10, BASE-20, la cobertura por PR y el E2E en CI; además, la QA del instalador en un Windows 11 limpio.</p>
+
+  <div class="where">
+    <div class="panel"><h3>Dónde está el código</h3><ul>
+      <li><b>main en GitHub y protegida:</b> en <code>4195836</code>. La publicación <code>v0.2.0</code> es <code>966a61d</code>; después entraron #55 a #59. Todo entra por PR con los 8 checks en verde, E2E incluido.</li>
+      <li><b>Instalador y manual:</b> compilados desde <code>966a61d</code>, en <code>pharos/build/</code>. No incluyen nada de «Después de 0.2.0».</li>
+      <li><b>Sin fusionar:</b> la rama <code>fix/ai-key-save-and-test</code> (sin PR, con IA-16, UX-18 y UX-19 en commits locales sin subir).</li>
+    </ul></div>
+    <div class="panel"><h3>Lo siguiente</h3><ul>
+      <li>Abrir el PR de <code>fix/ai-key-save-and-test</code>, resolviendo sus conflictos con <code>main</code>.</li>
+      <li>Probar con una clave real IA-11, IA-13, IA-14, IA-15 e IA-16, y aclarar el estado de IA-12.</li>
+      <li>Revisión del usuario de <code>0.2.0</code> con el instalador y el manual nuevos.</li>
+      <li>Tus validaciones nativas (ROADMAP §6 y la guía de pruebas): clave de recuperación en otro PC y sync entre dos equipos, además de ejecución manual, ciclos, defectos e importación de informes.</li>
+      <li>Empezar 0.3.0: <code>main</code> pasa a <code>0.3.0-alpha.1</code> (VERSIONING §5).</li>
+      <li>Tus dudas anotadas en PROGRESO: actualizar sin desinstalar, servidor configurable, viabilidad de la BD del servidor y el cambio de prefijo de ID de caso.</li>
+      <li>Ola 5 del rediseño: búsqueda global, notificaciones, papelera, comparar periodos, sprints desde un rango y métricas de ejecución.</li>
+      <li>Una <code>0.1.0</code> final, si hace falta, se publicaría desde la etiqueta <code>v0.1.0-beta.1</code>.</li>
+
+    </ul></div>
+  </div>
+
+  <h2>El ciclo que Pharos quiere cerrar</h2>
+  <p><b>Foto del 28 de octubre.</b> El estudio del arte concluye que Pharos debe ser el plano de control de las pruebas: diseña los casos, las herramientas externas los ejecutan y los resultados vuelven vinculados por su ID. El diagrama muestra cómo estaba el ciclo ese día, con solo el primer tramo hecho. Desde 0.2.0 ya existen la ingesta de informes, los runs y resultados, y la matriz con el estado real.</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 1000 360" role="img" aria-label="Ciclo de plano de control: la autoría está hecha y exporta .feature con @TC; ingesta y Run/Result faltan; la matriz es parcial; el núcleo de datos es parcial.">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M0 0 L10 5 L0 10 z"/></marker>
+        <marker id="ahi" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead-info" d="M0 0 L10 5 L0 10 z"/></marker>
+      </defs>
+      <!-- manual execution arc -->
+      <path class="d-edge-miss" d="M88 110 C 88 40, 706 40, 706 106" marker-end="url(#ahi)"/>
+      <text class="d-lab" x="397" y="52" text-anchor="middle">ejecución manual por pasos · 0.2.0</text>
+      <!-- boxes -->
+      <rect class="d-box-done" x="20" y="110" width="136" height="96" rx="8"/>
+      <text class="d-title" x="88" y="145" text-anchor="middle">Autoría</text>
+      <text class="d-sub" x="88" y="165" text-anchor="middle">plan · casos</text>
+      <text class="d-sub" x="88" y="181" text-anchor="middle">requisitos · IA</text>
+
+      <rect class="d-box-ext" x="226" y="110" width="136" height="96" rx="8"/>
+      <text class="d-title" x="294" y="145" text-anchor="middle">Herramientas</text>
+      <text class="d-sub" x="294" y="165" text-anchor="middle">Playwright · Karate</text>
+      <text class="d-sub" x="294" y="181" text-anchor="middle">Appium · k6 · ZAP</text>
+
+      <rect class="d-box-miss" x="432" y="110" width="136" height="96" rx="8"/>
+      <text class="d-title" x="500" y="145" text-anchor="middle">Ingesta</text>
+      <text class="d-sub" x="500" y="165" text-anchor="middle">JUnit · Messages</text>
+      <text class="d-sub" x="500" y="181" text-anchor="middle">CTRF · SARIF</text>
+
+      <rect class="d-box-miss" x="638" y="110" width="136" height="96" rx="8"/>
+      <text class="d-title" x="706" y="145" text-anchor="middle">Run / Result</text>
+      <text class="d-sub" x="706" y="165" text-anchor="middle">manual y</text>
+      <text class="d-sub" x="706" y="181" text-anchor="middle">automatizado</text>
+
+      <rect class="d-box-part" x="844" y="110" width="136" height="96" rx="8"/>
+      <text class="d-title" x="912" y="145" text-anchor="middle">Matriz y gates</text>
+      <text class="d-sub" x="912" y="165" text-anchor="middle">requisito → caso</text>
+      <text class="d-sub" x="912" y="181" text-anchor="middle">→ resultado → defecto</text>
+      <!-- edges -->
+      <line class="d-edge" x1="156" y1="158" x2="224" y2="158" marker-end="url(#ah)"/>
+      <text class="d-lab" x="191" y="140" text-anchor="middle">.feature</text>
+      <text class="d-lab" x="191" y="178" text-anchor="middle">@TC</text>
+      <line class="d-edge-miss" x1="362" y1="158" x2="430" y2="158" marker-end="url(#ahi)"/>
+      <text class="d-lab" x="397" y="140" text-anchor="middle">informes</text>
+      <text class="d-lab" x="397" y="178" text-anchor="middle">de CI</text>
+      <line class="d-edge-miss" x1="568" y1="158" x2="636" y2="158" marker-end="url(#ahi)"/>
+      <text class="d-lab" x="603" y="140" text-anchor="middle">vincula</text>
+      <text class="d-lab" x="603" y="178" text-anchor="middle">por @TC</text>
+      <line class="d-edge-miss" x1="774" y1="158" x2="842" y2="158" marker-end="url(#ahi)"/>
+      <text class="d-lab" x="809" y="140" text-anchor="middle">estado</text>
+      <text class="d-lab" x="809" y="178" text-anchor="middle">real</text>
+      <!-- return loop -->
+      <path class="d-edge-part" d="M912 206 V 238 H 88 V 210" marker-end="url(#ah)"/>
+      <text class="d-lab" x="500" y="256" text-anchor="middle">huecos de cobertura → nuevos casos (la matriz ya los muestra; sin resultados reales)</text>
+      <!-- core -->
+      <rect class="d-box-part" x="20" y="276" width="960" height="66" rx="8"/>
+      <text class="d-title" x="40" y="302">Núcleo de datos</text>
+      <text class="d-sub" x="40" y="322">BD SQLite cifrada en memoria · registro de cambios (oplog) con HLC · sincronización con servidor Fastify + Postgres · solo 3 de 6 entidades se sincronizan</text>
+    </svg>
+    </div>
+    <figcaption>Lo hecho está en verde; lo parcial o con fallos, en ámbar; lo que está en el backlog y aún no existe, discontinuo en azul. La única flecha que funciona hoy es la exportación del <code>.feature</code> con tags <code>@TC</code>. Cerrar el ciclo es el trabajo de 0.2.0.</figcaption>
+    <div class="legend"><span><i class="sw done"></i>hecho</span><span><i class="sw part"></i>parcial o con fallos</span><span><i class="sw miss"></i>en backlog, no existe</span><span><i class="sw ext"></i>herramienta externa</span></div>
+  </figure>
+
+  <h2>Lo que está hecho</h2>
+  <p><b>Foto del 28 de octubre, sin actualizar.</b> Gran parte de la columna «Qué le falta» ya se resolvió con las compuertas y con 0.2.0; para el estado actual, consulta <code>docs/ROADMAP.md</code>. Era un inventario contrastado en el código, no en los documentos: los 56 comandos que tenía entonces el núcleo Rust se usaban desde la interfaz, sin comandos huérfanos.</p>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>Módulo</th><th>Estado</th><th>Qué hay</th><th>Qué le falta</th></tr></thead>
+      <tbody>
+        <tr><td>Proyectos</td><td><span class="chip ok">completo</span></td><td>CRUD por dueño, borrado en cascada, ZIP por proyecto</td><td>El borrado en cascada no se sincroniza; Inicio sin búsqueda ni progreso (spec §5)</td></tr>
+        <tr><td>Plan de pruebas</td><td><span class="chip ok">completo</span></td><td>Asistente de 21 campos ISO 29119, revisiones, xlsx/pdf, importación</td><td>Frecuencia de ceremonias; IA en riesgos y automatización (spec §5.1)</td></tr>
+        <tr><td>Casos y Gherkin</td><td><span class="chip ok">completo</span></td><td>3 niveles, flujos, tags <code>@REQ</code>/<code>@TC</code>, import/export</td><td>Pasos sin ID estable; IA en precondiciones; IDs pueden duplicarse entre equipos</td></tr>
+        <tr><td>Requisitos y matriz</td><td><span class="chip part">parcial</span></td><td>Requisitos <code>REQ-xxx</code>, CSV, matriz con huecos, xlsx</td><td>Estado de ejecución fijo en "no ejecutado"; no se sincronizan</td></tr>
+        <tr><td>Planificador</td><td><span class="chip part">solo local</span></td><td>Kanban, defectos <code>DEF-xxx</code>, adjuntos cifrados</td><td>No sincroniza; adjuntos dentro de la BD en memoria; el defecto es una tarjeta, no una entidad</td></tr>
+        <tr><td>Plantillas</td><td><span class="chip part">solo local</span></td><td>Repositorio, importación, edición</td><td>No sincroniza; la IA no usa el "prompt de uso" (spec §6)</td></tr>
+        <tr><td>IA</td><td><span class="chip ok">completo</span></td><td>Un proveedor online activo con tu clave (Gemini, OpenAI, Claude, OpenRouter o compatible) y Ollama; asistir, sugerir pruebas, procedencia</td><td>Validar con claves reales; ayudas en riesgos, automatización y precondiciones (IA-10)</td></tr>
+        <tr><td>Sincronización</td><td><span class="chip bad">con fallos</span></td><td>Oplog, HLC, push/pull, panel de conflictos</td><td>6 fallos verificados (diagrama siguiente)</td></tr>
+        <tr><td>Administración</td><td><span class="chip part">parcial</span></td><td>Fondo personalizado</td><td>Retención y carpeta de descarga se guardan pero nada las usa; el texto promete una purga que no existe</td></tr>
+        <tr><td>Cuentas</td><td><span class="chip ok">completo</span></td><td>Argon2id, JWT con rotación, sesión en el keychain, cuenta de test reproducible</td><td>Sin límite de intentos de login</td></tr>
+        <tr><td>Perfil</td><td><span class="chip part">raro</span></td><td>Alias y nombre oficial</td><td>Uno por equipo, no por usuario; no se sincroniza</td></tr>
+        <tr><td>Integraciones</td><td><span class="chip none">reservado</span></td><td>Frontera del módulo</td><td>Jira en 0.8.0</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Dónde se rompe la sincronización</h2>
+  <p><b>Foto del 28 de octubre.</b> Es la parte más delicada, porque todo lo que viene (ejecuciones, móvil, equipo) viaja por aquí. Los seis fallos se verificaron en el código y se corrigieron en la compuerta A, cerrada el 29 de octubre. Sigue pendiente SYNC-04b: las evidencias no llegan todavía al servidor.</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 1080 320" role="img" aria-label="Flujo de sincronización con seis puntos de fallo: datos no separados por usuario, contador que cuenta todo, filtro que solo envía tres entidades, envío en una sola petición, recepción limitada a 500 y web que descarta ediciones.">
+      <defs>
+        <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M0 0 L10 5 L0 10 z"/></marker>
+      </defs>
+      <rect class="d-box-ext" x="20" y="30" width="210" height="270" rx="8"/>
+      <text class="d-title" x="36" y="56">Escritorio</text>
+      <text class="d-sub" x="36" y="74">entidad · ¿se sincroniza?</text>
+      <rect class="d-row" x="32" y="86" width="186" height="28" rx="5"/><text class="d-sub" x="44" y="104">proyecto</text><text class="d-yes" x="206" y="104" text-anchor="end">sí</text>
+      <rect class="d-row" x="32" y="120" width="186" height="28" rx="5"/><text class="d-sub" x="44" y="138">plan</text><text class="d-yes" x="206" y="138" text-anchor="end">sí</text>
+      <rect class="d-row" x="32" y="154" width="186" height="28" rx="5"/><text class="d-sub" x="44" y="172">caso</text><text class="d-yes" x="206" y="172" text-anchor="end">sí</text>
+      <rect class="d-row" x="32" y="188" width="186" height="28" rx="5"/><text class="d-sub" x="44" y="206">requisito</text><text class="d-no" x="206" y="206" text-anchor="end">no</text>
+      <rect class="d-row" x="32" y="222" width="186" height="28" rx="5"/><text class="d-sub" x="44" y="240">tarjeta / defecto</text><text class="d-no" x="206" y="240" text-anchor="end">no</text>
+      <rect class="d-row" x="32" y="256" width="186" height="28" rx="5"/><text class="d-sub" x="44" y="274">plantilla</text><text class="d-no" x="206" y="274" text-anchor="end">no</text>
+
+      <rect class="d-box-ext" x="290" y="110" width="150" height="110" rx="8"/>
+      <text class="d-title" x="365" y="146" text-anchor="middle">Oplog</text>
+      <text class="d-sub" x="365" y="166" text-anchor="middle">registra las 6</text>
+      <text class="d-sub" x="365" y="182" text-anchor="middle">entidades</text>
+
+      <rect class="d-box-ext" x="500" y="110" width="150" height="110" rx="8"/>
+      <text class="d-title" x="575" y="146" text-anchor="middle">Filtro de envío</text>
+      <text class="d-sub" x="575" y="166" text-anchor="middle">solo proyecto,</text>
+      <text class="d-sub" x="575" y="182" text-anchor="middle">plan y caso</text>
+
+      <rect class="d-box-ext" x="710" y="110" width="150" height="110" rx="8"/>
+      <text class="d-title" x="785" y="146" text-anchor="middle">Servidor</text>
+      <text class="d-sub" x="785" y="166" text-anchor="middle">documentos</text>
+      <text class="d-sub" x="785" y="182" text-anchor="middle">por usuario</text>
+
+      <rect class="d-box-ext" x="920" y="110" width="140" height="110" rx="8"/>
+      <text class="d-title" x="990" y="146" text-anchor="middle">Web u otro equipo</text>
+      <text class="d-sub" x="990" y="166" text-anchor="middle">recibe y edita</text>
+      <text class="d-sub" x="990" y="182" text-anchor="middle">los documentos</text>
+
+      <line class="d-edge" x1="230" y1="165" x2="288" y2="165" marker-end="url(#ah2)"/>
+      <text class="d-lab" x="260" y="156" text-anchor="middle">registra</text>
+      <line class="d-edge" x1="440" y1="165" x2="498" y2="165" marker-end="url(#ah2)"/>
+      <text class="d-lab" x="470" y="98" text-anchor="middle">pendientes</text>
+      <line class="d-edge" x1="650" y1="165" x2="708" y2="165" marker-end="url(#ah2)"/>
+      <text class="d-lab" x="680" y="98" text-anchor="middle">push</text>
+      <line class="d-edge" x1="860" y1="165" x2="918" y2="165" marker-end="url(#ah2)"/>
+      <text class="d-lab" x="890" y="98" text-anchor="middle">pull</text>
+
+      <g><circle class="d-fault" cx="230" cy="30" r="12"/><text class="d-fault-n" x="230" y="34" text-anchor="middle">1</text></g>
+      <g><circle class="d-fault" cx="440" cy="110" r="12"/><text class="d-fault-n" x="440" y="114" text-anchor="middle">2</text></g>
+      <g><circle class="d-fault" cx="650" cy="110" r="12"/><text class="d-fault-n" x="650" y="114" text-anchor="middle">3</text></g>
+      <g><circle class="d-fault" cx="680" cy="196" r="12"/><text class="d-fault-n" x="680" y="200" text-anchor="middle">4</text></g>
+      <g><circle class="d-fault" cx="890" cy="196" r="12"/><text class="d-fault-n" x="890" y="200" text-anchor="middle">5</text></g>
+      <g><circle class="d-fault" cx="1060" cy="110" r="12"/><text class="d-fault-n" x="1060" y="114" text-anchor="middle">6</text></g>
+    </svg>
+    </div>
+    <figcaption>
+      <b>1.</b> El oplog y el cursor no están separados por usuario, y cerrar sesión no los limpia: los cambios pendientes de un usuario se enviarían con la cuenta del siguiente.
+      <b>2.</b> El contador de pendientes cuenta las 6 entidades, pero solo 3 se marcan como enviadas: tras editar un requisito, el indicador se queda en "Pendiente" para siempre.
+      <b>3.</b> Requisitos, defectos y plantillas nunca salen del equipo, así que en otro dispositivo los casos apuntan a requisitos que no existen.
+      <b>4.</b> Todo se envía en una sola petición; con muchos cambios puede superar el límite de 1 MiB del servidor (no comprobado en ejecución).
+      <b>5.</b> La recepción trae como máximo 500 documentos y no repite; la web pide siempre desde el principio, así que nunca ve más de 500.
+      <b>6.</b> Si la web pierde un conflicto, recarga la copia del servidor y descarta la edición sin avisar; un envío fallido no se reintenta.
+    </figcaption>
+  </figure>
+
+  <h2>Línea base: tres compuertas</h2>
+  <p>"Sólido" significa que lo construido después no se apoya en datos que pueden cruzarse, perderse o duplicarse, y que una regresión no puede entrar en <code>main</code> sin que nada falle. Las compuertas A y B bloquean publicar 0.1.0; la C bloquea empezar 0.2.0, porque fija el esquema que la ejecución va a usar durante años. Los IDs nuevos son propuestas.</p>
+  <div class="gates">
+    <section class="gate a" aria-label="Compuerta A">
+      <h3>A · Corrección</h3>
+      <p class="blocks">bloquea publicar 0.1.0</p>
+      <ul>
+        <li><span class="id">FIX-01</span><span>Contador de pendientes correcto</span></li>
+        <li><span class="id">FIX-02</span><span>Pull paginado en escritorio y web</span></li>
+        <li><span class="id">FIX-03</span><span>Push troceado y con reintento</span></li>
+        <li><span class="id">FIX-04</span><span>La web avisa del conflicto y no pierde la edición</span></li>
+        <li><span class="id">FIX-05</span><span>El borrado en cascada se sincroniza</span></li>
+        <li><span class="id">FIX-06</span><span><code>created_by</code>/<code>updated_by</code> con el usuario real</span></li>
+        <li><span class="id">FIX-07</span><span>Datos separados por usuario en el mismo equipo</span></li>
+        <li><span class="id">FIX-08</span><span>Todos los comandos comprueban el dueño</span></li>
+        <li><span class="id">FIX-09</span><span>Clave de Gemini en cabecera, con timeout <span class="new">(hecho con IA-08)</span></span></li>
+        <li><span class="id">SYNC-04a</span><span>Sincronizar requisitos y defectos <span class="new">(sale de SYNC-04)</span></span></li>
+        <li><span class="id">DAT-01</span><span>IDs de caso, requisito y defecto únicos entre equipos</span></li>
+        <li><span class="id">SYNC-06</span><span>Purga real o quitar el texto que la promete</span></li>
+        <li><span class="id">ya</span><span>SEC-03, SEC-06, SYNC-08, WCAG, instalador y validaciones nativas</span></li>
+      </ul>
+    </section>
+    <section class="gate b" aria-label="Compuerta B">
+      <h3>B · Ingeniería</h3>
+      <p class="blocks">bloquea publicar 0.1.0</p>
+      <ul>
+        <li><span class="id">BASE-01</span><span>CI en GitHub: verify, fmt, clippy, cargo test y servidor con Postgres</span></li>
+        <li><span class="id">BASE-02</span><span><code>main</code> protegida: solo por PR con checks en verde</span></li>
+        <li><span class="id">BASE-03</span><span>Auditoría de dependencias npm y Cargo, licencias Rust incluidas</span></li>
+        <li><span class="id">BASE-04</span><span>Test de actualización desde una BD 0.1.0</span></li>
+        <li><span class="id">BASE-05</span><span>Contratos TS ↔ Rust ↔ servidor generados y comprobados</span></li>
+        <li><span class="id">BASE-06</span><span>Servidor endurecido: secreto, CORS, límite de intentos y de tamaño</span></li>
+        <li><span class="id">BASE-08</span><span>Logs, captura de errores y "exportar diagnóstico" con la versión</span></li>
+        <li><span class="id">BASE-09</span><span>Instalador NSIS en pre-versiones, construido en CI</span></li>
+        <li><span class="id">BASE-10</span><span>Una sola capa de plataforma; decidir qué es el modo navegador</span></li>
+        <li><span class="id">BASE-11</span><span>ADRs y reglas de trabajo dentro del repo <span class="new">(hecho)</span></span></li>
+        <li><span class="id">BASE-12</span><span>Registro de números de migración con test</span></li>
+        <li><span class="id">BASE-14</span><span>Smoke E2E del binario real (WDIO + tauri-driver)</span></li>
+        <li><span class="id">BASE-17</span><span>Cuenta de test reproducible <span class="new">(hecho)</span></span></li>
+      </ul>
+    </section>
+    <section class="gate c" aria-label="Compuerta C">
+      <h3>C · Decisiones de modelo</h3>
+      <p class="blocks">bloquea empezar 0.2.0 · se cierran con ADR</p>
+      <ul>
+        <li><span class="id">DAT-02</span><span>Un resultado apunta a la revisión del caso y a pasos con ID estable</span></li>
+        <li><span class="id">DAT-03</span><span>Evidencias cifradas fuera de la BD, por hash</span></li>
+        <li><span class="id">AUD-01</span><span>Registro de auditoría append-only desde 0.2.0</span></li>
+        <li><span class="id">KND-01</span><span>Tipos de resultado genéricos: Result, Finding, Metric, Session</span></li>
+        <li><span class="id">RUN-00</span><span>Entorno, build, commit y riesgo dentro del Run desde el inicio</span></li>
+        <li><span class="id">DEF-01</span><span>El defecto como entidad propia (severidad, estado, clave externa)</span></li>
+        <li><span class="id">CYC-01</span><span>Ciclo o conjunto de pruebas y configuración</span></li>
+        <li><span class="id">FLD-01</span><span>Campos personalizados tipados por proyecto</span></li>
+        <li><span class="id">TEN-01</span><span>Equipo: workspace compartido o documentos por usuario</span></li>
+        <li><span class="id">SYNC-02</span><span>Conflictos por entidad o por campo (y enmendar la spec)</span></li>
+      </ul>
+    </section>
+  </div>
+
+  <h2>Hoja de ruta: qué se mueve</h2>
+  <p>El orden aprobado deja para tarde varias cosas que salen caras de añadir con datos ya creados. Esta propuesta las adelanta; el resto del roadmap no cambia.</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 1000 420" role="img" aria-label="Diez ítems con su versión actual y la propuesta: la mayoría se adelantan a 0.1.0, 0.2.0 o 0.3.0; la ingesta de SARIF, k6 y axe pasa de 0.9 a 0.5.">
+      <defs>
+        <marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead-nav" d="M0 0 L10 5 L0 10 z"/></marker>
+      </defs>
+      <g>
+        <text class="d-axis" x="330" y="26" text-anchor="middle">0.1</text><text class="d-axis" x="410" y="26" text-anchor="middle">0.2</text><text class="d-axis" x="490" y="26" text-anchor="middle">0.3</text><text class="d-axis" x="570" y="26" text-anchor="middle">0.4</text><text class="d-axis" x="650" y="26" text-anchor="middle">0.5</text><text class="d-axis" x="730" y="26" text-anchor="middle">0.6</text><text class="d-axis" x="810" y="26" text-anchor="middle">0.7</text><text class="d-axis" x="890" y="26" text-anchor="middle">0.8</text><text class="d-axis" x="970" y="26" text-anchor="middle">0.9+</text>
+        <line class="d-grid" x1="330" y1="38" x2="330" y2="400"/><line class="d-grid" x1="410" y1="38" x2="410" y2="400"/><line class="d-grid" x1="490" y1="38" x2="490" y2="400"/><line class="d-grid" x1="570" y1="38" x2="570" y2="400"/><line class="d-grid" x1="650" y1="38" x2="650" y2="400"/><line class="d-grid" x1="730" y1="38" x2="730" y2="400"/><line class="d-grid" x1="810" y1="38" x2="810" y2="400"/><line class="d-grid" x1="890" y1="38" x2="890" y2="400"/><line class="d-grid" x1="970" y1="38" x2="970" y2="400"/>
+      </g>
+      <!-- rows: y = 64 + k*34 -->
+      <text class="d-rowlab" x="300" y="68" text-anchor="end">Sincronizar requisitos y defectos</text>
+      <line class="d-move" x1="561" y1="64" x2="342" y2="64" marker-end="url(#ah3)"/><circle class="d-old" cx="570" cy="64" r="7"/><circle class="d-new" cx="330" cy="64" r="7"/>
+
+      <text class="d-rowlab" x="300" y="102" text-anchor="end">Smoke E2E del binario de Pharos</text>
+      <line class="d-move" x1="721" y1="98" x2="342" y2="98" marker-end="url(#ah3)"/><circle class="d-old" cx="730" cy="98" r="7"/><circle class="d-new" cx="330" cy="98" r="7"/>
+
+      <text class="d-rowlab" x="300" y="136" text-anchor="end">IDs únicos entre equipos (nuevo)</text>
+      <circle class="d-new" cx="330" cy="132" r="7"/>
+
+      <text class="d-rowlab" x="300" y="170" text-anchor="end">Registro de auditoría</text>
+      <line class="d-move" x1="641" y1="166" x2="422" y2="166" marker-end="url(#ah3)"/><circle class="d-old" cx="650" cy="166" r="7"/><circle class="d-new" cx="410" cy="166" r="7"/>
+
+      <text class="d-rowlab" x="300" y="204" text-anchor="end">Entorno, build y riesgo en el Run</text>
+      <line class="d-move" x1="961" y1="200" x2="422" y2="200" marker-end="url(#ah3)"/><circle class="d-old" cx="970" cy="200" r="7"/><circle class="d-new" cx="410" cy="200" r="7"/>
+
+      <text class="d-rowlab" x="300" y="238" text-anchor="end">Evidencias fuera de la BD</text>
+      <line class="d-move" x1="481" y1="234" x2="422" y2="234" marker-end="url(#ah3)"/><circle class="d-old" cx="490" cy="234" r="7"/><circle class="d-new" cx="410" cy="234" r="7"/>
+
+      <text class="d-rowlab" x="300" y="272" text-anchor="end">Workspaces y permisos (SYNC-07)</text>
+      <line class="d-move" x1="641" y1="268" x2="502" y2="268" marker-end="url(#ah3)"/><circle class="d-old" cx="650" cy="268" r="7"/><circle class="d-new" cx="490" cy="268" r="7"/>
+
+      <text class="d-rowlab" x="300" y="306" text-anchor="end">Pasos compartidos, datasets, revisión (nuevo)</text>
+      <circle class="d-new" cx="490" cy="302" r="7"/>
+
+      <text class="d-rowlab" x="300" y="340" text-anchor="end">Sesiones exploratorias (nuevo)</text>
+      <circle class="d-new" cx="570" cy="336" r="7"/>
+
+      <text class="d-rowlab" x="300" y="374" text-anchor="end">Ingesta SARIF, k6 y axe (ING-06)</text>
+      <line class="d-move" x1="961" y1="370" x2="662" y2="370" marker-end="url(#ah3)"/><circle class="d-old" cx="970" cy="370" r="7"/><circle class="d-new" cx="650" cy="370" r="7"/>
+    </svg>
+    </div>
+    <figcaption>Círculo hueco: versión en el ROADMAP actual. Círculo ámbar: versión propuesta. Los adelantos a 0.1.0 y 0.2.0 evitan migrar datos reales más tarde; la ingesta de seguridad, rendimiento y accesibilidad llega con el CLI (0.5.0) porque, con tipos de resultado genéricos desde 0.2.0, ya no exige rediseñar el modelo.</figcaption>
+  </figure>
+
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>Versión</th><th>Tema propuesto</th><th>Contenido principal</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">0.1.0</td><td>MVP consolidado</td><td>Compuertas A y B, cierre de Fase 9, validaciones nativas</td></tr>
+        <tr><td class="mono">0.2.0</td><td>Ejecución</td><td>Modelo decidido en la compuerta C, ejecución manual, ingesta JUnit, Cucumber Messages, CTRF y JSON de Playwright, informe de estado 29119-3</td></tr>
+        <tr><td class="mono">0.3.0</td><td>Núcleo y equipo</td><td><code>pharos-core</code>, SQLite en disco con cifrado por página, workspaces y permisos, pasos compartidos, flujo de revisión y baselines</td></tr>
+        <tr><td class="mono">0.4.0</td><td>Campo</td><td>Móvil Android para ejecución manual, sesiones exploratorias, sync de planificador y plantillas</td></tr>
+        <tr><td class="mono">0.5.0</td><td>Automatización conectada</td><td>CLI <code>upload</code>/<code>watch</code>, API REST, webhooks, plantillas de CI fijadas por SHA, SARIF/k6/axe</td></tr>
+        <tr><td class="mono">0.6.0</td><td>Runner local</td><td>Runner con "doctor", Gherkin de ida y vuelta con playwright-bdd y Karate</td></tr>
+        <tr><td class="mono">0.7.0</td><td>IA de calidad</td><td>MCP local, duplicados, lint de oráculos</td></tr>
+        <tr><td class="mono">0.8.0</td><td>Ecosistema</td><td>Jira bidireccional, dashboards, disparo de CI, MCP remoto</td></tr>
+        <tr><td class="mono">0.9.x → 1.0.0</td><td>Normativo y escala</td><td>Quality gates, informe de cierre, paquetes EAA y ASVS, nubes de dispositivos, evaluaciones de LLM</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Cobertura por tipo de QA</h2>
+  <p>Para ser una suite para cualquier QA, Pharos no necesita un adaptador por herramienta, sino tipos de resultado genéricos y unos pocos formatos. Esta tabla aplica la reordenación propuesta. Modos: <b>A</b> autoría, <b>T</b> disparo, <b>I</b> ingesta, <b>E</b> evidencia.</p>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>Disciplina</th><th>Hoy</th><th>Planificado</th><th>Sin planificar</th><th>Modo</th></tr></thead>
+      <tbody>
+        <tr><td>Funcional manual</td><td><span class="chip part">solo diseño</span></td><td>Ejecución 0.2.0 · móvil 0.4.0</td><td>—</td><td class="mono">A E</td></tr>
+        <tr><td>Exploratorio</td><td><span class="chip none">nada</span></td><td>Sesiones 0.4.0 (nuevo)</td><td>—</td><td class="mono">E</td></tr>
+        <tr><td>Regresión y smoke</td><td><span class="chip part">tags</span></td><td>Ciclos 0.2.0 · disparo de CI 0.8.0</td><td>Selección por riesgo o impacto</td><td class="mono">T I</td></tr>
+        <tr><td>BDD</td><td><span class="chip ok">.feature + tags</span></td><td>Ida y vuelta 0.6.0</td><td>Sincronizar el repo por PR</td><td class="mono">A T I</td></tr>
+        <tr><td>Web E2E</td><td><span class="chip none">nada</span></td><td>Ingesta 0.2.0 · runner 0.6.0</td><td>Enlace a trazas de Playwright</td><td class="mono">T I</td></tr>
+        <tr><td>API y contrato</td><td><span class="chip none">nada</span></td><td>JUnit de Bruno, Karate o REST Assured 0.2.0</td><td>Pact, importar OpenAPI</td><td class="mono">I</td></tr>
+        <tr><td>Móvil Android</td><td><span class="chip none">nada</span></td><td>Manual 0.4.0 · nubes 0.9+</td><td>Pasos nativos adb</td><td class="mono">T I E</td></tr>
+        <tr><td>Móvil iOS</td><td><span class="chip none">nada</span></td><td>Agente Mac y nubes 0.9+</td><td><code>.xcresult</code>, pasos simctl</td><td class="mono">T I</td></tr>
+        <tr><td>Escritorio</td><td><span class="chip none">nada</span></td><td>JUnit 0.2.0</td><td>TRX de .NET</td><td class="mono">I</td></tr>
+        <tr><td>Rendimiento</td><td><span class="chip none">nada</span></td><td>k6 como métrica 0.5.0</td><td>JTL de JMeter, Gatling</td><td class="mono">T I</td></tr>
+        <tr><td>Seguridad</td><td><span class="chip none">nada</span></td><td>SARIF 0.5.0 · paquete ASVS 0.9+</td><td>Deduplicar hallazgos entre runs</td><td class="mono">I E</td></tr>
+        <tr><td>Accesibilidad</td><td><span class="chip none">nada</span></td><td>axe 0.5.0 · paquete EAA 0.9+</td><td>Checklists WCAG 2.2 y EN 301 549</td><td class="mono">A I E</td></tr>
+        <tr><td>Regresión visual</td><td><span class="chip none">nada</span></td><td>—</td><td>Enlace a baselines y aprobación</td><td class="mono">I E</td></tr>
+        <tr><td>Datos y BD</td><td><span class="chip none">nada</span></td><td>Vía JUnit 0.2.0</td><td>—</td><td class="mono">I</td></tr>
+        <tr><td>Unitarias e integración</td><td><span class="chip none">nada</span></td><td>Vía JUnit 0.2.0</td><td>Cobertura de código por módulo</td><td class="mono">I</td></tr>
+        <tr><td>Mutación</td><td><span class="chip none">nada</span></td><td>—</td><td>Puntuación por módulo</td><td class="mono">I</td></tr>
+        <tr><td>Evaluación de LLM</td><td><span class="chip none">nada</span></td><td>—</td><td>Run de evaluación (promptfoo, DeepEval)</td><td class="mono">I</td></tr>
+        <tr><td>UAT</td><td><span class="chip part">plan y casos</span></td><td>Ejecución 0.2.0</td><td>Firma de aceptación</td><td class="mono">E</td></tr>
+        <tr><td>Regulado (Part 11)</td><td><span class="chip part">revisiones</span></td><td>Auditoría 0.2.0 · permisos 0.3.0</td><td>Firma electrónica</td><td class="mono">E</td></tr>
+        <tr><td>Gestión e informes</td><td><span class="chip ok">matriz xlsx</span></td><td>Estado 0.2.0 · dashboards 0.8.0 · cierre 0.9+</td><td>Medición ISO 25010</td><td class="mono">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Cabos sueltos</h2>
+  <p>De la auditoría de documentos y backlog, ya verificados. Los que no tienen ID hay que darlos de alta o descartarlos de forma explícita.</p>
+  <div class="sev">
+    <div class="sev-row"><div><span class="chip bad">críticos</span></div><ul>
+      <li>La web descarta ediciones al perder un conflicto, sin aviso.</li>
+      <li>Sin clave de recuperación (SEC-03): un backup no sirve si se pierde el PC.</li>
+      <li>Los criterios de salida de 0.1.0 no verifican SEC-03, SEC-06, SYNC-08 ni WCAG.</li>
+    </ul></div>
+    <div class="sev-row"><div><span class="chip part">altos</span></div><ul>
+      <li>Requisitos, defectos, plantillas, perfil y preferencias no se sincronizan, aunque la spec §9–§10 lo pide.</li>
+      <li>Validaciones nativas pendientes en 7 frentes: fases 4, 6, 7, 8 y 9A, trazabilidad y el arreglo de <code>db.rs</code>.</li>
+      <li>TRZ-03 figura como hecho, pero el filtrado con playwright-bdd nunca se probó.</li>
+      <li>La spec pide conflictos por campo; el código y el backlog dicen por entidad, sin enmienda.</li>
+    </ul></div>
+    <div class="sev-row"><div><span class="chip miss">medios</span></div><ul>
+      <li>Inicio sin búsqueda, último acceso ni progreso (spec §5); el panel aún dice "Fase 0".</li>
+      <li>Faltan ayudas de IA en riesgos, automatización y precondiciones; frecuencia de ceremonias.</li>
+      <li>Los ZIP solo llevan <code>.xlsx</code>, sin PDF (spec §5.4).</li>
+      <li>La IA no usa el "prompt de uso" de las plantillas (spec §6).</li>
+      <li>Desviaciones sin anotar de la spec §4: claves de IA solo en keychain, API sin TLS.</li>
+      <li><code>docs/referencias/</code> tiene las plantillas PHAROS y no las originales que cita la spec.</li>
+    </ul></div>
+    <div class="sev-row"><div><span class="chip none">bajos</span></div><ul>
+      <li>PROGRESO se contradice (8B validado y no validado, toolchain antiguo, commits que existen marcados como pendientes).</li>
+      <li>GLOSARIO con entradas duplicadas y sin <code>owner_id</code> ni <code>usage_prompt</code>.</li>
+      <li>Código muerto: <code>TestPlanList</code>, <code>EmptySection</code>, textos de "versión futura".</li>
+      <li>El ejemplo de <code>TC_Excamples.MD</code> pone <code>Examples:</code> bajo un <code>Scenario</code> simple, que no es Gherkin válido.</li>
+    </ul></div>
+  </div>
+
+  <h2>Lo que no hay que tocar</h2>
+  <div class="two">
+    <div class="panel"><h3>Está bien como está</h3><ul>
+      <li>Monolito modular con fronteras vigiladas por ESLint.</li>
+      <li>Política de versiones y una sola fuente de versión.</li>
+      <li>Guardado atómico actual, hasta que llegue SQLite en disco.</li>
+      <li>Conflictos por entidad con HLC: suficiente con un usuario y pocos equipos.</li>
+      <li>Tests contra SQLite y Postgres reales, sin mocks.</li>
+      <li>Migraciones SQL propias, sin ORM.</li>
+      <li>Guardias de colores e i18n como tests.</li>
+    </ul></div>
+    <div class="panel"><h3>Recortes al estudio del arte</h3><ul>
+      <li>Sin SaaS hasta después de 1.0: modo aislado y autoalojado.</li>
+      <li>MCP solo por stdio al principio.</li>
+      <li>Formatos primero: Cucumber Messages, CTRF, JUnit y JSON de Playwright.</li>
+      <li>iOS solo vía nubes o agente Mac, nunca local.</li>
+      <li>Sin CRDT de texto, auto-updater ni observabilidad remota por ahora.</li>
+      <li>Modo aprendizaje sin reproducir el syllabus ISTQB (derechos de autor).</li>
+      <li>Un spike antes de cada supuesto: el de tags en JUnit resultó falso.</li>
+    </ul></div>
+  </div>
+
+  <h2>Decisiones tomadas</h2>
+  <p>Las seis se decidieron el 28 de octubre con la opción recomendada y están registradas como ADR en <code>docs/adr/</code>.</p>
+  <ol class="decisions">
+    <li><span class="did">D1</span><div><b>Tres compuertas y reordenación: adoptadas.</b><p><span class="rec">ADR-0001.</span> 0.1.0 se publica cuando cierran A y B; 0.2.0 empieza cuando cierra C.</p></div></li>
+    <li><span class="did">D2</span><div><b>Conflictos por entidad hasta 0.5.0.</b><p><span class="rec">ADR-0002.</span> Spec §9 enmendada; la fusión por campo llega en 0.5.0 sin cambiar el esquema.</p></div></li>
+    <li><span class="did">D3</span><div><b>Workspaces compartidos en 0.3.0.</b><p><span class="rec">ADR-0003.</span> El servidor indexará por workspace; los permisos por rol suben de 0.5.0 a 0.3.0, antes del móvil.</p></div></li>
+    <li><span class="did">D4</span><div><b>La web es un cliente del servidor.</b><p><span class="rec">ADR-0004.</span> Se elimina la segunda implementación del dominio en <code>localStorage</code> (BASE-10); el trabajo sin conexión es del escritorio.</p></div></li>
+    <li><span class="did">D5</span><div><b>Recortes de alcance aceptados.</b><p><span class="rec">ADR-0005.</span> Sin SaaS ni MCP remoto antes de 1.0; pocos formatos primero; sin CRDT ni auto-updater.</p></div></li>
+    <li><span class="did">D6</span><div><b>Claves de IA en el keychain; TLS al desplegar.</b><p><span class="rec">ADR-0006.</span> Spec §4 enmendada; TLS obligatorio en el despliegue autoalojado (SEC-07, 0.5.0).</p></div></li>
+  </ol>
+
+  <h2>Cómo se trabaja desde ahora</h2>
+  <div class="two">
+    <div class="panel"><h3>Ley de documentación</h3><ul>
+      <li>Un cambio no está terminado hasta que actualiza en el mismo commit cada documento que afecta: README, ARCHITECTURE, ROADMAP, CHANGELOG, GLOSARIO, ADR, spec y PROGRESO.</li>
+      <li>Un documento que contradice al código es un defecto y se corrige en ese mismo cambio.</li>
+      <li>Escrita en <code>CONTRIBUTING.md</code>, en la regla 6 de <code>CLAUDE.md</code> y en la lista de cada PR.</li>
+    </ul></div>
+    <div class="panel"><h3>Un equipo pequeño de agentes</h3><ul>
+      <li><b>Coordinación:</b> reparte pistas, revisa cada entrega contra el código, fusiona y mantiene el backlog.</li>
+      <li><b>Desarrollo:</b> una sesión por pista, en su worktree, con plan aprobado antes de código.</li>
+      <li><b>Revisión:</b> un agente independiente revisa cada rama antes de fusionarla.</li>
+      <li><b>QA:</b> un agente prueba en la app con la cuenta de test y aporta evidencias.</li>
+      <li>Primeras pistas: A1 sync, A2 datos y permisos, B1 CI y seguridad, B2 diagnóstico y E2E, C decisiones de modelo.</li>
+    </ul></div>
+  </div>
+
+  <p class="muted" style="margin-top:2.5rem;font-size:13px">Fuentes: cuatro auditorías independientes (código, documentos, brechas frente al estudio del arte, solidez de ingeniería) sobre <code>main</code> en <code>ead222f</code>, con los hallazgos graves comprobados uno a uno en el código. Documentos base: <code>Pharos QA estado del arte.md</code>, <code>docs/ROADMAP.md</code>, <code>docs/VERSIONING.md</code>, <code>files/PROGRESO.md</code>.</p>
+</main>
+
+</body></html>

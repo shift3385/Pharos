@@ -1,0 +1,267 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SEC-08 Recuperación de cuenta</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one reading column; each boceto is a framed 1:1 mock of the Pharos screen, with its notes underneath. Same token set as the other Pharos bocetos. */
+:root{
+  --bg:#f3f5f9; --surface:#ffffff; --sunken:#eef1f6; --fg:#14213a; --muted:#5a6680; --line:#d7dde8;
+  --navy:#1e3a6e; --accent:#2f6fd6; --ok:#1d7a4a; --ok-bg:#e3f4ea; --warn:#9a5b00; --warn-bg:#fff1d6;
+  --err:#b42318; --err-bg:#fde8e6; --new:#7a3fd1; --new-bg:#f1e9fd; --on-accent:#ffffff;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:Inter,system-ui,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --new:#c39bff; --new-bg:#2c2246; --on-accent:#0f1522; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --new:#c39bff; --new-bg:#2c2246; --on-accent:#0f1522; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+main{max-width:980px;margin:0 auto;display:grid;gap:44px}
+h1,h2,h3,h4{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:1.9rem;color:var(--navy)} h2{font-size:1.3rem;color:var(--navy)}
+.lead{color:var(--muted);max-width:68ch;margin:6px 0 0}
+.eyebrow{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.block{display:grid;gap:14px}
+.note{max-width:72ch;margin:0;padding-left:1.2em}
+.note li{margin-bottom:4px}
+.frame{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.frame-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:var(--sunken);border-bottom:1px solid var(--line);font-size:.8rem;color:var(--muted)}
+.tag-new{background:var(--new-bg);color:var(--new);font-size:.7rem;font-weight:700;border-radius:4px;padding:1px 6px;letter-spacing:.04em}
+.pad{padding:20px;display:grid;gap:16px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.card{border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:14px;min-width:0}
+.card h3{font-size:1.05rem}
+.card .sub{color:var(--muted);font-size:.85rem;margin:-8px 0 0}
+.field{display:grid;gap:4px;font-size:.84rem}
+.field label{font-weight:600}
+.input{border:1px solid var(--line);border-radius:7px;padding:8px 10px;background:var(--surface);color:var(--fg);font:inherit;font-size:.9rem;display:flex;justify-content:space-between;gap:8px;min-width:0}
+.input.dots{letter-spacing:.2em}
+.input .eye{color:var(--muted);letter-spacing:0;font-size:.78rem}
+.input.bad{border-color:var(--err)}
+.help{color:var(--muted);font-size:.78rem}
+.errtxt{color:var(--err);font-size:.8rem}
+.meter{height:6px;border-radius:3px;background:var(--sunken);overflow:hidden}
+.meter i{display:block;height:100%;width:70%;background:var(--ok)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:7px;padding:7px 14px;font:500 .86rem var(--f-body);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.link{color:var(--accent);font-size:.84rem;font-weight:500;cursor:pointer;background:none;border:0;padding:0;font-family:inherit}
+.banner{display:flex;gap:10px;align-items:flex-start;border-radius:8px;padding:10px 12px;font-size:.85rem}
+.banner.ok{background:var(--ok-bg);color:var(--ok)} .banner.warn{background:var(--warn-bg);color:var(--warn)} .banner.err{background:var(--err-bg);color:var(--err)}
+.banner.info{background:var(--sunken);color:var(--fg)}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.75rem;font-weight:600}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.85rem;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+.codes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 18px;background:var(--sunken);border-radius:8px;padding:16px 18px;font-family:var(--f-mono);font-size:1rem;font-variant-numeric:tabular-nums;counter-reset:c}
+.codes span{counter-increment:c;white-space:nowrap}
+.codes span::before{content:counter(c,decimal-leading-zero) "  ";color:var(--muted);font-size:.78rem}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:.88rem}
+.check input{margin-top:3px}
+.auth{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.8fr);min-height:420px}
+.auth-form{padding:28px 28px;display:grid;gap:14px;align-content:start;max-width:420px}
+.auth-photo{background:linear-gradient(160deg,var(--navy),#0b1630);position:relative}
+.auth-photo::after{content:"Pharos";position:absolute;left:22px;bottom:18px;color:#e6ebf5;font-family:var(--f-display);font-size:1.2rem;opacity:.85}
+.auth-title{font-size:1.45rem;color:var(--fg)}
+.tabs{display:flex;gap:18px;border-bottom:1px solid var(--line);font-size:.86rem;color:var(--muted)}
+.tabs span{padding:8px 0}.tabs .on{color:var(--fg);border-bottom:2px solid var(--accent);font-weight:600}
+.mail{border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:10px;font-size:.88rem;max-width:560px}
+.mail .from{color:var(--muted);font-size:.8rem}
+.mono{font-family:var(--f-mono);font-size:.8rem;word-break:break-all}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.82rem}
+th{text-align:left;background:var(--sunken);color:var(--muted);font-weight:600;padding:6px 8px;white-space:nowrap}
+td{padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
+.state{display:grid;gap:10px}
+.state h4{font-size:.95rem}
+@media (max-width:640px){.auth{grid-template-columns:1fr}.auth-photo{min-height:90px;order:-1}.codes{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<main>
+  <header class="block">
+    <span class="eyebrow">Pharos 0.5.0 «Equipo» · pista C · bocetos para aprobar</span>
+    <h1>Cambiar y recuperar la contraseña</h1>
+    <p class="lead">SEC-08 (cambiar la contraseña en «Mi perfil» y códigos de recuperación al registrarse) y SEC-09 por correo (enlace de un solo uso). El restablecimiento por un administrador llega en la ola 2, cuando existan los roles. Nada de esto toca los datos locales ni la «Clave de recuperación» de la base local (SEC-03).</p>
+  </header>
+
+  <!-- 1 -->
+  <section class="block" aria-labelledby="b1">
+    <span class="eyebrow">Boceto 1 · Mi perfil</span>
+    <h2 id="b1">Seguridad de la cuenta</h2>
+    <div class="frame">
+      <div class="frame-head">Mi perfil · bajo «Datos personales» y antes de «Preferencias» <span class="tag-new">NUEVO</span></div>
+      <div class="pad">
+        <div class="cols">
+          <div class="card">
+            <h3>Cambiar la contraseña</h3>
+            <p class="sub">Al guardarla se cierra la sesión en tus otros dispositivos. Este sigue abierto.</p>
+            <div class="field"><label for="cp1">Contraseña actual</label><div class="input dots" id="cp1">••••••••••<span class="eye">Mostrar</span></div></div>
+            <div class="field"><label for="cp2">Contraseña nueva</label><div class="input dots" id="cp2">••••••••••••••<span class="eye">Mostrar</span></div>
+              <div class="meter" aria-hidden="true"><i></i></div><span class="help">Mínimo 8 caracteres. Una frase larga es más segura que una palabra rara.</span></div>
+            <div class="field"><label for="cp3">Repite la contraseña nueva</label><div class="input dots bad" id="cp3">•••••••••••••<span class="eye">Mostrar</span></div><span class="errtxt">No coincide con la contraseña nueva.</span></div>
+            <div class="row"><button class="btn primary" disabled>Cambiar la contraseña</button></div>
+          </div>
+          <div class="card">
+            <h3>Códigos de recuperación de la cuenta</h3>
+            <p class="sub">Sirven para entrar si olvidas la contraseña. Cada código vale una vez.</p>
+            <dl class="kv"><dt>Estado</dt><dd><span class="pill ok">Te quedan 7 de 10</span></dd><dt>Generados</dt><dd>12 nov 2026, 10:42</dd><dt>Último uso</dt><dd>15 nov 2026, 18:03</dd></dl>
+            <div class="banner info">Generar códigos nuevos invalida los que tienes. Te pediremos la contraseña actual.</div>
+            <div class="row"><button class="btn">Generar códigos nuevos</button></div>
+          </div>
+        </div>
+        <div class="state"><h4>Después de guardar</h4>
+          <div class="banner ok">Contraseña cambiada. Se cerró la sesión en 2 dispositivos. Queda en Auditoría.</div></div>
+        <div class="state"><h4>Cuenta creada antes de 0.5.0 (sin códigos)</h4>
+          <div class="banner warn">Aún no tienes códigos de recuperación. Si olvidas la contraseña no podrás entrar sin ellos. <button class="link">Generarlos ahora</button></div></div>
+        <div class="state"><h4>Escritorio sin conexión</h4>
+          <div class="banner info">Para cambiar la contraseña hace falta conexión con el servidor. Tus datos locales siguen disponibles.</div></div>
+      </div>
+    </div>
+    <ul class="note">
+      <li>Nombre distinto a propósito: la tarjeta existente «Clave de recuperación» (base de datos local, SEC-03) se queda como está y en su sitio.</li>
+      <li>Errores: «La contraseña actual no es correcta», «La nueva no puede ser igual a la actual», «Demasiados intentos, prueba en 1 minuto».</li>
+      <li>La contraseña nunca se muestra salvo con «Mostrar», nunca se guarda en local ni se registra.</li>
+    </ul>
+  </section>
+
+  <!-- 2 -->
+  <section class="block" aria-labelledby="b2">
+    <span class="eyebrow">Boceto 2 · Al registrarse (y al generar nuevos)</span>
+    <h2 id="b2">Los códigos se muestran una sola vez</h2>
+    <div class="frame">
+      <div class="frame-head">Paso que aparece justo después de «Crear cuenta», antes de entrar a la app <span class="tag-new">NUEVO</span></div>
+      <div class="pad" style="max-width:620px">
+        <h3 class="auth-title">Guarda tus códigos de recuperación</h3>
+        <p style="margin:0;font-size:.9rem">Si olvidas la contraseña, entra con tu correo y uno de estos códigos. Cada código vale una vez. No volveremos a mostrarlos.</p>
+        <div class="codes" aria-label="Códigos de recuperación (ejemplo)">
+          <span>7K2QD-M9XRT</span><span>H4V8N-2CPWE</span><span>QZ3JF-T6B1A</span><span>P8WMX-4KD7R</span><span>C1N5G-Y9HQV</span>
+          <span>R6TEB-3MZ8K</span><span>W2FQA-7JX4N</span><span>D9KVC-5RP2M</span><span>Y3HBT-8GW6E</span><span>M5XZR-1QN9F</span>
+        </div>
+        <div class="row"><button class="btn">Copiar</button><button class="btn">Descargar .txt</button></div>
+        <div class="banner info">Guárdalos en un gestor de contraseñas o en papel, nunca junto a la contraseña.</div>
+        <label class="check"><input type="checkbox" id="saved"> He guardado los códigos en un lugar seguro</label>
+        <div class="row"><button class="btn primary" disabled>Continuar</button></div>
+      </div>
+    </div>
+    <ul class="note">
+      <li>Códigos de ejemplo. Formato real: 10 grupos de <code>XXXXX-XXXXX</code>, sin letras confusas (I, L, O, U).</li>
+      <li>«Continuar» se habilita con la casilla. Al continuar, los códigos se borran de memoria; en el servidor solo queda su hash.</li>
+      <li>El .txt lleva el correo de la cuenta, la fecha y el servidor, para saber de qué cuenta son.</li>
+    </ul>
+  </section>
+
+  <!-- 3 -->
+  <section class="block" aria-labelledby="b3">
+    <span class="eyebrow">Boceto 3 · Inicio de sesión</span>
+    <h2 id="b3">¿Olvidaste tu contraseña?</h2>
+    <div class="frame">
+      <div class="frame-head">Enlace nuevo bajo el campo de contraseña del inicio de sesión <span class="tag-new">NUEVO</span></div>
+      <div class="auth">
+        <div class="auth-form">
+          <h3 class="auth-title">Recupera el acceso</h3>
+          <div class="tabs" role="tablist"><span class="on">Con un código</span><span>Por correo</span></div>
+          <div class="field"><label>Correo</label><div class="input">ana.perez@empresa.test</div></div>
+          <div class="field"><label>Código de recuperación</label><div class="input" style="font-family:var(--f-mono)">7K2QD-M9XRT</div><span class="help">Uno de los 10 códigos que guardaste al registrarte.</span></div>
+          <div class="field"><label>Contraseña nueva</label><div class="input dots">••••••••••••<span class="eye">Mostrar</span></div></div>
+          <div class="field"><label>Repite la contraseña nueva</label><div class="input dots">••••••••••••<span class="eye">Mostrar</span></div></div>
+          <button class="btn primary">Cambiar la contraseña y entrar</button>
+          <button class="link" style="justify-self:start">Volver a iniciar sesión</button>
+        </div>
+        <div class="auth-photo" aria-hidden="true"></div>
+      </div>
+    </div>
+    <div class="cols">
+      <div class="frame"><div class="frame-head">Pestaña «Por correo»</div><div class="pad">
+        <div class="field"><label>Correo</label><div class="input">ana.perez@empresa.test</div></div>
+        <button class="btn primary" style="justify-self:start">Enviar enlace</button>
+        <div class="banner ok">Si hay una cuenta con ese correo, te hemos enviado un enlace. Caduca en 30 minutos y sirve una vez.</div>
+      </div></div>
+      <div class="frame"><div class="frame-head">Servidor sin correo configurado (por defecto)</div><div class="pad">
+        <div class="banner info">Este servidor no envía correos. Usa un código de recuperación o pide ayuda a quien administra Pharos.</div>
+        <button class="btn" disabled style="justify-self:start">Enviar enlace</button>
+      </div></div>
+    </div>
+    <div class="cols">
+      <div class="frame"><div class="frame-head">Código incorrecto</div><div class="pad">
+        <div class="banner err">El correo o el código no son válidos.</div></div></div>
+      <div class="frame"><div class="frame-head">Entró con un código y le quedan pocos</div><div class="pad">
+        <div class="banner warn">Contraseña cambiada. Te quedan 2 códigos. <button class="link">Genera códigos nuevos en Mi perfil</button></div></div></div>
+    </div>
+    <ul class="note">
+      <li>Mensajes genéricos: nunca dicen si el correo existe.</li>
+      <li>5 códigos fallidos en 15 minutos bloquean la recuperación por código de esa cuenta 15 minutos, además del límite por IP.</li>
+      <li>Al cambiarla así se cierran <strong>todas</strong> las sesiones y se abre una nueva en este dispositivo.</li>
+    </ul>
+  </section>
+
+  <!-- 4 -->
+  <section class="block" aria-labelledby="b4">
+    <span class="eyebrow">Boceto 4 · Desde el enlace del correo</span>
+    <h2 id="b4">Restablecer la contraseña</h2>
+    <div class="cols">
+      <div class="frame"><div class="frame-head">El correo (texto plano y HTML)</div><div class="pad">
+        <div class="mail">
+          <span class="from">De: Pharos &lt;no-reply@qa.empresa.test&gt; · Asunto: Restablecer tu contraseña de Pharos</span>
+          <p style="margin:0">Alguien pidió restablecer la contraseña de la cuenta ana.perez@empresa.test en el servidor qa.empresa.com.</p>
+          <button class="btn primary" style="justify-self:start">Elegir una contraseña nueva</button>
+          <p style="margin:0">El enlace caduca en 30 minutos y sirve una vez. Si no lo pediste, ignora este correo: tu contraseña no cambia.</p>
+          <span class="help">En el escritorio, pega este enlace en «Restablecer»:</span>
+          <span class="mono">https://qa.empresa.com/#/restablecer?token=Vb3r…kQ</span>
+        </div>
+      </div></div>
+      <div class="frame"><div class="frame-head">Página de restablecer <span class="tag-new">NUEVO</span></div>
+        <div class="pad">
+          <h3 class="auth-title">Elige una contraseña nueva</h3>
+          <p class="help" style="margin:0">Cuenta: ana.perez@empresa.test</p>
+          <div class="field"><label>Contraseña nueva</label><div class="input dots">••••••••••••••<span class="eye">Mostrar</span></div><div class="meter" aria-hidden="true"><i></i></div></div>
+          <div class="field"><label>Repite la contraseña nueva</label><div class="input dots">••••••••••••••<span class="eye">Mostrar</span></div></div>
+          <button class="btn primary" style="justify-self:start">Guardar la contraseña</button>
+        </div>
+      </div>
+    </div>
+    <div class="cols">
+      <div class="frame"><div class="frame-head">Hecho</div><div class="pad">
+        <div class="banner ok">Contraseña cambiada. Se cerró la sesión en todos tus dispositivos.</div>
+        <button class="btn primary" style="justify-self:start">Iniciar sesión</button></div></div>
+      <div class="frame"><div class="frame-head">Enlace caducado o ya usado</div><div class="pad">
+        <div class="banner err">Este enlace no es válido o ha caducado. Los enlaces duran 30 minutos y sirven una vez.</div>
+        <button class="btn" style="justify-self:start">Pedir otro enlace</button></div></div>
+      <div class="frame"><div class="frame-head">Escritorio: pegar el enlace</div><div class="pad">
+        <div class="field"><label>Enlace o token del correo</label><div class="input mono">https://qa.empresa.com/#/restablecer?token=Vb3r…</div></div>
+        <button class="btn primary" style="justify-self:start">Continuar</button></div></div>
+    </div>
+    <ul class="note">
+      <li>El enlace apunta a la web (<code>APP_PUBLIC_URL</code>). Sin web desplegada, el usuario pega el enlace en la pantalla «Recupera el acceso» del escritorio.</li>
+      <li>Pedir un enlace nuevo invalida los anteriores sin usar. Solo se guarda el hash del token.</li>
+      <li>El correo sale solo si están <code>SMTP_HOST</code>, <code>SMTP_FROM</code> y <code>APP_PUBLIC_URL</code>; si no, la opción no aparece activa.</li>
+    </ul>
+  </section>
+
+  <!-- 5 -->
+  <section class="block" aria-labelledby="b5">
+    <span class="eyebrow">Boceto 5 · Administración › Auditoría</span>
+    <h2 id="b5">Cómo queda en la auditoría</h2>
+    <div class="frame"><div class="tw"><table>
+      <thead><tr><th>Fecha</th><th>Quién</th><th>Acción</th><th>Elemento</th><th>Detalle</th></tr></thead>
+      <tbody>
+        <tr><td>17 nov 2026, 09:14</td><td>Ana Pérez</td><td>Actualizar</td><td>Cuenta</td><td>Contraseña cambiada desde Mi perfil · 2 sesiones cerradas</td></tr>
+        <tr><td>16 nov 2026, 22:40</td><td>Ana Pérez</td><td>Actualizar</td><td>Cuenta</td><td>Contraseña restablecida con un código de recuperación · quedan 6</td></tr>
+        <tr><td>16 nov 2026, 22:31</td><td>Ana Pérez</td><td>Actualizar</td><td>Cuenta</td><td>Enlace de restablecimiento pedido por correo</td></tr>
+        <tr><td>12 nov 2026, 10:42</td><td>Ana Pérez</td><td>Actualizar</td><td>Cuenta</td><td>Códigos de recuperación generados (10)</td></tr>
+      </tbody></table></div></div>
+    <ul class="note">
+      <li>Van en la cadena de auditoría web del usuario (AUD-01b), así que el escritorio los verifica como cualquier otro evento.</li>
+      <li>Nunca contienen la contraseña, los códigos ni el token; ni siquiera su hash.</li>
+      <li>Ola 2: «Contraseña restablecida por un administrador (Luis Gómez)», con el administrador como actor y la persona como afectada.</li>
+    </ul>
+  </section>
+</main>
+
+</body></html>

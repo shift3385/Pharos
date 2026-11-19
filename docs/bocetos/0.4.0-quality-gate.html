@@ -1,0 +1,379 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Quality gate y tendencia de ciclos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column for the plan; each boceto is a framed Pharos screen built from the app's own tokens (src/shared/theme/tokens.css). */
+:root {
+  --navy-900:#0b1f33; --navy-500:#1f4e79; --navy-100:#e3eef7; --accent:#f2a33c; --accent-contrast:#4a2e05;
+  --ok:#1d9e75; --ok-text:#167859; --err:#d64545; --err-text:#bc3d3d; --warn:#b8860b; --warn-text:#886308; --info:#378add;
+  --page:#f7f8fa; --s1:#ffffff; --s2:#f1f4f8; --border:#e2e6eb; --input:#828c9a; --overlay:rgba(16,24,40,.45);
+  --fg:#1c2530; --fg2:#5f6b7a; --muted:#616973; --ok-bg:#e3f4ee; --err-bg:#fbe9e9; --warn-bg:#f8f0dc;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,"Cascadia Code",monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --navy-500:#6fa3cc; --navy-100:#193651; --ok:#5dcaa5; --ok-text:#5dcaa5; --err:#f09595; --err-text:#f09595; --warn:#e0b341; --warn-text:#e0b341; --info:#6fb1ec;
+  --page:#0f1722; --s1:#162231; --s2:#1c2a3b; --border:#2a3a4e; --input:#7d8ba0; --overlay:rgba(0,0,0,.55);
+  --fg:#e6ebf1; --fg2:#a9b5c4; --muted:#9aa6b5; --ok-bg:#163a31; --err-bg:#3d2224; --warn-bg:#3a3118; color-scheme:dark } }
+:root[data-theme="dark"] {
+  --navy-500:#6fa3cc; --navy-100:#193651; --ok:#5dcaa5; --ok-text:#5dcaa5; --err:#f09595; --err-text:#f09595; --warn:#e0b341; --warn-text:#e0b341; --info:#6fb1ec;
+  --page:#0f1722; --s1:#162231; --s2:#1c2a3b; --border:#2a3a4e; --input:#7d8ba0; --overlay:rgba(0,0,0,.55);
+  --fg:#e6ebf1; --fg2:#a9b5c4; --muted:#9aa6b5; --ok-bg:#163a31; --err-bg:#3d2224; --warn-bg:#3a3118; color-scheme:dark }
+body { background:var(--page); color:var(--fg); font-family:var(--sans); font-size:15px; line-height:1.55; }
+.wrap { max-width:1040px; margin:0 auto; padding-block:32px 64px; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); display:grid; gap:40px; }
+h1 { font-size:30px; line-height:1.2; margin:0; text-wrap:balance; }
+h2 { font-size:22px; margin:0 0 6px; text-wrap:balance; }
+h3 { font-size:16px; margin:0; }
+p { margin:0; max-width:68ch; }
+.eyebrow { font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--fg2); font-weight:600; }
+.lede { color:var(--fg2); font-size:16px; }
+section { display:grid; gap:14px; min-width:0; }
+.decide { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; }
+.decide div { border:1px solid var(--border); border-radius:8px; padding:14px; background:var(--s1); display:grid; gap:4px; }
+.decide b { font-size:14px; }
+.decide span { color:var(--fg2); font-size:14px; }
+code, pre { font-family:var(--mono); font-size:12.5px; }
+pre { background:var(--s2); border:1px solid var(--border); border-radius:8px; padding:14px; overflow-x:auto; margin:0; line-height:1.5; }
+.note { font-size:13px; color:var(--fg2); }
+ul.tight { margin:0; padding-left:20px; display:grid; gap:4px; max-width:75ch; }
+
+/* --- screen frame --- */
+.screen { background:var(--s2); border:1px solid var(--border); border-radius:12px; padding:20px; overflow-x:auto; }
+.screen-cap { font-size:12px; color:var(--muted); margin-top:-4px; }
+.dialog { background:var(--s1); border-radius:12px; box-shadow:0 4px 12px rgba(16,24,40,.12); max-width:760px; margin:0 auto; min-width:560px; }
+.dlg-h { padding:18px 22px 10px; display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+.dlg-h small { display:block; color:var(--fg2); font-size:13px; font-weight:400; }
+.x { color:var(--muted); font-size:18px; line-height:1; }
+.dlg-b { padding:0 22px 6px; display:grid; gap:14px; }
+.dlg-f { padding:14px 22px 18px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--border); align-items:center; }
+.dlg-f .who { margin-right:auto; font-size:12px; color:var(--muted); }
+.btn { font:inherit; font-size:14px; border-radius:6px; padding:7px 14px; border:1px solid var(--input); background:var(--s1); color:var(--fg); }
+.btn.primary { background:var(--navy-500); border-color:var(--navy-500); color:#fff; font-weight:600; }
+.banner { display:flex; gap:12px; align-items:center; border-radius:8px; padding:10px 14px; font-size:14px; }
+.banner.err { background:var(--err-bg); color:var(--err-text); }
+.banner.ok { background:var(--ok-bg); color:var(--ok-text); }
+.banner.warn { background:var(--warn-bg); color:var(--warn-text); }
+.banner b { font-size:15px; }
+.pill { display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
+.pill::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; }
+.pill.ok { background:var(--ok-bg); color:var(--ok-text); }
+.pill.err { background:var(--err-bg); color:var(--err-text); }
+.pill.warn { background:var(--warn-bg); color:var(--warn-text); }
+.pill.nd { background:var(--s2); color:var(--fg2); }
+table.crit { width:100%; border-collapse:collapse; font-size:13.5px; }
+table.crit th { text-align:left; font-size:12px; color:var(--fg2); font-weight:600; padding:6px 8px; border-bottom:1px solid var(--border); }
+table.crit td { padding:8px; border-bottom:1px solid var(--border); vertical-align:top; }
+table.crit td.num { font-variant-numeric:tabular-nums; font-family:var(--mono); font-size:12.5px; white-space:nowrap; }
+.tag { font-size:11px; color:var(--fg2); border:1px solid var(--border); border-radius:4px; padding:0 5px; margin-left:6px; }
+.just { grid-column:1/-1; }
+tr.jrow td { background:var(--err-bg); border-bottom:1px solid var(--border); padding:8px 10px 12px; }
+.ta { width:100%; box-sizing:border-box; min-height:56px; border:1px solid var(--input); border-radius:6px; padding:8px; font:inherit; font-size:13.5px; background:var(--s1); color:var(--fg); }
+.ta.empty { color:var(--muted); }
+.lbl { font-size:12.5px; font-weight:600; color:var(--err-text); display:block; margin-bottom:4px; }
+.count { font-size:11.5px; color:var(--muted); text-align:right; }
+.seg { display:inline-flex; border:1px solid var(--input); border-radius:6px; overflow:hidden; }
+.seg span { padding:3px 10px; font-size:12.5px; }
+.seg span.on { background:var(--navy-500); color:#fff; }
+.verdict { display:grid; gap:8px; border:1px solid var(--border); border-radius:8px; padding:12px 14px; }
+.radio { display:flex; gap:10px; align-items:flex-start; font-size:14px; }
+.radio i { width:14px; height:14px; border-radius:50%; border:1.5px solid var(--input); margin-top:3px; flex:none; }
+.radio i.on { border:4.5px solid var(--navy-500); }
+.radio small { display:block; color:var(--fg2); font-size:12.5px; }
+
+/* --- report --- */
+.report { background:var(--s1); border-radius:8px; box-shadow:0 1px 3px rgba(16,24,40,.1); max-width:820px; margin:0 auto; min-width:600px; padding:26px 30px; display:grid; gap:18px; }
+.rep-top { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; border-bottom:2px solid var(--navy-500); padding-bottom:12px; }
+.rep-top .doc { font-family:var(--mono); font-size:11.5px; color:var(--fg2); text-align:right; }
+.go-box { display:grid; grid-template-columns:auto 1fr; gap:6px 18px; align-items:center; border:1.5px solid var(--warn); border-radius:8px; padding:14px 18px; }
+.go-big { font-size:26px; font-weight:600; color:var(--warn-text); grid-row:span 2; }
+.go-box p { font-size:13.5px; color:var(--fg2); }
+.kv { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.kv div { background:var(--s2); border-radius:6px; padding:8px 10px; }
+.kv span { display:block; font-size:11.5px; color:var(--fg2); }
+.kv b { font-variant-numeric:tabular-nums; font-size:17px; }
+.kv em { font-style:normal; font-size:12px; margin-left:4px; }
+.up { color:var(--ok-text); } .down { color:var(--err-text); }
+.rep-sec { font-size:13px; font-weight:600; color:var(--navy-500); text-transform:uppercase; letter-spacing:.05em; }
+
+/* --- home board --- */
+.board { display:grid; grid-template-columns:repeat(24,1fr); gap:10px; min-width:860px; }
+.gad { background:var(--s1); border-radius:12px; box-shadow:0 1px 2px rgba(16,24,40,.06); padding:14px 16px; display:grid; gap:8px; align-content:start; min-width:0; }
+.gad.ghost { opacity:.45; min-height:46px; display:flex; align-items:center; font-size:13px; color:var(--fg2); }
+.g-h { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.g-h h3 { font-size:15px; }
+.help { width:16px; height:16px; border-radius:50%; border:1px solid var(--input); font-size:10.5px; display:inline-grid; place-items:center; color:var(--fg2); }
+.sel { border:1px solid var(--input); border-radius:6px; padding:3px 10px; font-size:13px; display:inline-flex; gap:6px; align-items:center; background:var(--s1); }
+.sel::after { content:"▾"; font-size:11px; color:var(--fg2); }
+.g-h .sp { margin-left:auto; }
+.trend-body { display:grid; grid-template-columns:minmax(0,1fr) 240px; gap:16px; }
+.chart svg { width:100%; height:auto; display:block; }
+.ax { fill:var(--muted); font-size:11px; font-family:var(--sans); }
+.grid-l { stroke:var(--border); stroke-width:1; }
+.side { display:grid; gap:10px; align-content:start; }
+.big { font-size:30px; font-weight:600; font-variant-numeric:tabular-nums; line-height:1; }
+.alert { background:var(--warn-bg); color:var(--warn-text); border-radius:8px; padding:8px 10px; font-size:13px; }
+.alert b { display:block; }
+.minis { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; border-top:1px solid var(--border); padding-top:10px; }
+.mini { border-radius:8px; padding:6px 8px; display:grid; gap:2px; border:1px solid transparent; }
+.mini.on { border-color:var(--navy-500); background:var(--navy-100); }
+.mini span { font-size:11.5px; color:var(--fg2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mini b { font-size:14px; font-variant-numeric:tabular-nums; }
+.mini svg { width:100%; height:22px; }
+.legend { display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--fg2); }
+.legend i { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:-1px; }
+.decisions { display:grid; gap:10px; }
+.decisions div { border-left:3px solid var(--accent); background:var(--s1); padding:10px 14px; border-radius:0 8px 8px 0; }
+.decisions b { display:block; font-size:14px; }
+.decisions span { font-size:14px; color:var(--fg2); }
+@media (max-width:640px) { .trend-body { grid-template-columns:1fr; } h1 { font-size:24px; } }
+</style>
+
+<div class="wrap">
+<header style="display:grid;gap:10px">
+  <div class="eyebrow">Pharos 0.4.0 «Estrategia medible» · DOC-02 y DOC-06 · propuesta para aprobar</div>
+  <h1>Quality gate al cerrar un ciclo y tendencia entre ciclos</h1>
+  <p class="lede">Respuesta a «¿las métricas solo se usan para bonito?»: no. Con esta propuesta cada métrica alimenta una decisión. Nada de esto está programado todavía; son bocetos.</p>
+</header>
+
+<section>
+  <h2>Tres decisiones que pasan a depender de las métricas</h2>
+  <div class="decide">
+    <div><b>¿Cerramos el ciclo? ¿Sale la versión?</b><span>El gate evalúa los criterios del plan. Un «No cumple» bloquea el cierre hasta que alguien lo justifica, y la justificación queda firmada en el informe.</span></div>
+    <div><b>¿Dónde miramos primero?</b><span>La tendencia en Inicio avisa cuando una métrica empeora varios ciclos seguidos o se sale del objetivo del plan.</span></div>
+    <div><b>¿Puede decidir una ejecución sola? (1.0)</b><span>El mismo gate, con el mismo registro, es el que AUT-05 usará para decidir las ejecuciones desatendidas.</span></div>
+  </div>
+</section>
+
+<!-- ============ BOCETO A ============ -->
+<section>
+  <div class="eyebrow">Boceto A · DOC-02</div>
+  <h2>«Cerrar ciclo», con justificación obligatoria</h2>
+  <p>En el detalle del ciclo, un botón nuevo «Cerrar ciclo…» sustituye a elegir «Cerrado» en el diálogo de edición. El diálogo calcula el gate en el núcleo (el mismo cálculo en escritorio y web) con los resultados del ciclo.</p>
+  <div class="screen">
+    <div class="dialog" role="img" aria-label="Boceto del diálogo Cerrar ciclo">
+      <div class="dlg-h"><h3>Cerrar CYC-007 · Regresión sprint 12<small>Portal Clientes · plan «Plan de pruebas v1.3» (Aprobado) · 6 criterios de salida</small></h3><span class="x">×</span></div>
+      <div class="dlg-b">
+        <div class="banner err"><b>No-go</b> 2 criterios obligatorios no se cumplen. Para cerrar, justifica cada uno.</div>
+        <table class="crit">
+          <thead><tr><th>Criterio</th><th>Objetivo</th><th>Valor</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td>% de casos ejecutados</td><td class="num">≥ 95 %</td><td class="num">97,4 %</td><td><span class="pill ok">Cumple</span></td></tr>
+            <tr><td>Tasa de éxito</td><td class="num">≥ 90 %</td><td class="num">86,1 %</td><td><span class="pill err">No cumple</span></td></tr>
+            <tr class="jrow"><td colspan="4"><label class="lbl">Justificación · obligatoria</label><div class="ta">Los 5 fallos son del módulo de facturas, aislado detrás de un feature flag apagado en producción. Se corrigen en el sprint 13 (DEF-118, DEF-121).</div><div class="count">142 / mín. 20 caracteres</div></td></tr>
+            <tr><td>Defectos críticos abiertos</td><td class="num">= 0</td><td class="num">1</td><td><span class="pill err">No cumple</span></td></tr>
+            <tr class="jrow"><td colspan="4"><label class="lbl">Justificación · obligatoria</label><div class="ta empty">Por qué se acepta este riesgo, quién lo asume y cuándo se resuelve…</div><div class="count">0 / mín. 20 caracteres</div></td></tr>
+            <tr><td>Cobertura de requisitos</td><td class="num">≥ 90 %</td><td class="num">92,0 %</td><td><span class="pill ok">Cumple</span></td></tr>
+            <tr><td>Tasa de reapertura<span class="tag">orientativo</span></td><td class="num">≤ 10 %</td><td class="num">14,3 %</td><td><span class="pill warn">No cumple</span></td></tr>
+            <tr><td>Visto bueno del Product Owner<span class="tag">manual</span></td><td class="num">—</td><td class="num">—</td><td><span class="seg"><span class="on">Cumple</span><span>No cumple</span></span></td></tr>
+          </tbody>
+        </table>
+        <div class="verdict">
+          <b style="font-size:14px">Decisión de salida</b>
+          <div class="radio"><i class="on"></i><div>Go con riesgos aceptados<small>El ciclo se cierra y la versión puede salir; los riesgos justificados constan en el informe.</small></div></div>
+          <div class="radio"><i></i><div>No-go<small>El ciclo se cierra, pero la versión no sale. Abre otro ciclo para el re-test.</small></div></div>
+        </div>
+      </div>
+      <div class="dlg-f"><span class="who">Firmará: Liomar R. · hoy 17:42 · queda en Auditoría</span><span class="btn">Cancelar</span><span class="btn primary" style="opacity:.5">Cerrar ciclo</span></div>
+    </div>
+  </div>
+  <p class="screen-cap">«Cerrar ciclo» está deshabilitado mientras falte una justificación (aquí la de defectos críticos) o un criterio manual sin marcar. Con todo en «Cumple», el aviso es verde («Go») y no se pide nada.</p>
+  <ul class="tight">
+    <li><b>Obligatorio</b> (por defecto) cuenta para el veredicto y pide justificación. <b>Orientativo</b> se muestra y queda en el informe, pero ni bloquea ni la pide.</li>
+    <li><b>Manual</b>: un criterio que no es una métrica («Visto bueno del PO») se marca a mano en el cierre.</li>
+    <li><b>«Sin datos»</b> (no hay nada que medir) cuenta como «No cumple» en el gate: no se puede cerrar con un criterio sin evidencia sin justificarlo.</li>
+    <li>Las cifras se congelan al cerrar. Reabrir el ciclo conserva el cierre anterior en el historial; volver a cerrarlo crea un cierre nuevo.</li>
+  </ul>
+</section>
+
+<!-- ============ BOCETO B ============ -->
+<section>
+  <div class="eyebrow">Boceto B · DOC-02</div>
+  <h2>Informe go/no-go del ciclo</h2>
+  <p>Es la primera sección del informe de estado cuando el alcance es un ciclo cerrado: en la vista previa, en el .xlsx (hoja «Decisión») y en el PDF. El detalle del ciclo muestra el veredicto como una etiqueta junto a «Cerrado».</p>
+  <div class="screen">
+    <div class="report" role="img" aria-label="Boceto del informe go/no-go">
+      <div class="rep-top"><div><div class="eyebrow">Informe de estado de pruebas · ISO/IEC/IEEE 29119-3</div><h3 style="font-size:19px;margin-top:4px">Portal Clientes · Ciclo CYC-007 · Regresión sprint 12</h3><div class="note">Build 4.12.0 · staging · 03/11/2026 – 14/11/2026</div></div><div class="doc">Cerrado 14/11/2026 17:42<br>por Liomar R.<br>Plan v1.3 (Aprobado)</div></div>
+      <div class="rep-sec">1 · Decisión de salida</div>
+      <div class="go-box"><div class="go-big">Go con riesgos</div><p><b style="color:var(--fg)">4 de 6 criterios se cumplen.</b> Los 2 obligatorios que no se cumplen tienen justificación firmada. 1 orientativo fuera de objetivo.</p><p>Comparado con el ciclo anterior (CYC-006, Go): la tasa de éxito baja 5,9 puntos y la reapertura sube por tercer ciclo seguido.</p></div>
+      <table class="crit">
+        <thead><tr><th>Criterio</th><th>Objetivo</th><th>Valor</th><th>Estado</th><th>Justificación</th></tr></thead>
+        <tbody>
+          <tr><td>% de casos ejecutados</td><td class="num">≥ 95 %</td><td class="num">97,4 %</td><td><span class="pill ok">Cumple</span></td><td>—</td></tr>
+          <tr><td>Tasa de éxito</td><td class="num">≥ 90 %</td><td class="num">86,1 %</td><td><span class="pill err">No cumple</span></td><td>Los 5 fallos son del módulo de facturas, aislado detrás de un feature flag…</td></tr>
+          <tr><td>Defectos críticos abiertos</td><td class="num">= 0</td><td class="num">1</td><td><span class="pill err">No cumple</span></td><td>DEF-130 solo afecta a IE11, fuera de soporte desde 4.10…</td></tr>
+          <tr><td>Cobertura de requisitos</td><td class="num">≥ 90 %</td><td class="num">92,0 %</td><td><span class="pill ok">Cumple</span></td><td>—</td></tr>
+          <tr><td>Tasa de reapertura <span class="tag">orientativo</span></td><td class="num">≤ 10 %</td><td class="num">14,3 %</td><td><span class="pill warn">No cumple</span></td><td>—</td></tr>
+          <tr><td>Visto bueno del PO <span class="tag">manual</span></td><td class="num">—</td><td class="num">—</td><td><span class="pill ok">Cumple</span></td><td>Marcado a mano</td></tr>
+        </tbody>
+      </table>
+      <div class="rep-sec">2 · Métricas del ciclo frente al anterior</div>
+      <div class="kv">
+        <div><span>Tasa de éxito</span><b>86,1 %</b><em class="down">▼ 5,9</em></div>
+        <div><span>Densidad de defectos</span><b>4,2</b><em class="down">▲ 0,8</em><span>por cada 100 casos ejecutados</span></div>
+        <div><span>Escapes</span><b>2</b><em class="up">▼ 1</em><span>del ciclo anterior, en producción</span></div>
+        <div><span>Tiempo de corrección</span><b>3 d</b><em class="up">▼ 1 d</em><span>mediana, alta → corregido</span></div>
+        <div><span>Reapertura</span><b>14,3 %</b><em class="down">▲ 2,3</em></div>
+        <div><span>Flaky</span><b>3,1 %</b><em class="up">▼ 0,4</em></div>
+        <div><span>Casos ejecutados</span><b>148 / 152</b></div>
+        <div><span>Defectos encontrados</span><b>6</b><span>2 críticos, 3 mayores, 1 menor</span></div>
+      </div>
+      <div class="note">Siguen las secciones actuales del informe: progreso, resultados, defectos, cobertura por riesgo, casos con riesgo e incidencias.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BOCETO C ============ -->
+<section>
+  <div class="eyebrow">Boceto C · DOC-06</div>
+  <h2>Gadget «Tendencia de ciclos» en Inicio</h2>
+  <p>Un gadget nuevo, <code>trend</code>, en la pizarra (ADR-0038). Muestra los últimos 6 ciclos cerrados del proyecto elegido, con sus cifras congeladas al cerrar, más el ciclo activo en vivo (punteado). La línea de objetivo sale del plan. El punto bajo cada ciclo es su veredicto.</p>
+  <div class="screen">
+    <div class="board" role="img" aria-label="Boceto del gadget Tendencia de ciclos en la pizarra de Inicio">
+      <div class="gad ghost" style="grid-column:span 9">Ejecución por proyecto</div>
+      <div class="gad ghost" style="grid-column:span 7">Próximas pruebas</div>
+      <div class="gad ghost" style="grid-column:span 8">Criterios de salida</div>
+      <div class="gad" style="grid-column:span 24">
+        <div class="g-h"><h3>Tendencia de ciclos</h3><span class="help">?</span><span class="sel">Portal Clientes</span><span class="sel sp">Tasa de éxito</span></div>
+        <div class="trend-body">
+          <div class="chart">
+            <svg viewBox="0 0 580 210" aria-hidden="true">
+              <g class="ax" text-anchor="end">
+                <text x="32" y="174">0</text><text x="32" y="136.5">25</text><text x="32" y="99">50</text><text x="32" y="61.5">75</text><text x="32" y="24">100</text>
+              </g>
+              <line class="grid-l" x1="40" x2="560" y1="170" y2="170"/><line class="grid-l" x1="40" x2="560" y1="132.5" y2="132.5"/><line class="grid-l" x1="40" x2="560" y1="95" y2="95"/><line class="grid-l" x1="40" x2="560" y1="57.5" y2="57.5"/><line class="grid-l" x1="40" x2="560" y1="20" y2="20"/>
+              <line x1="40" x2="560" y1="35" y2="35" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="6 4"/>
+              <text x="558" y="31" text-anchor="end" class="ax" style="fill:var(--ok-text)">objetivo ≥ 90 %</text>
+              <path d="M75 57.6 L80 57.6" stroke="none"/>
+              <polyline points="75,53 150,44 225,48.5 300,38 375,35 450,32" fill="none" stroke="var(--navy-500)" stroke-width="2.25"/>
+              <polyline points="450,32 525,40.8" fill="none" stroke="var(--navy-500)" stroke-width="2" stroke-dasharray="4 4"/>
+              <g fill="var(--navy-500)" stroke="var(--s1)" stroke-width="2"><circle cx="75" cy="53" r="4.5"/><circle cx="150" cy="44" r="4.5"/><circle cx="225" cy="48.5" r="4.5"/><circle cx="300" cy="38" r="4.5"/><circle cx="375" cy="35" r="4.5"/><circle cx="450" cy="32" r="5.5"/></g>
+              <circle cx="525" cy="40.8" r="4.5" fill="var(--s1)" stroke="var(--navy-500)" stroke-width="2"/>
+              <g class="ax" text-anchor="middle"><text x="75" y="188">CYC-001</text><text x="150" y="188">CYC-002</text><text x="225" y="188">CYC-003</text><text x="300" y="188">CYC-004</text><text x="375" y="188">CYC-005</text><text x="450" y="188">CYC-006</text><text x="525" y="188">CYC-007 · activo</text></g>
+              <g><circle cx="75" cy="201" r="4" fill="var(--err)"/><circle cx="150" cy="201" r="4" fill="var(--warn)"/><circle cx="225" cy="201" r="4" fill="var(--warn)"/><circle cx="300" cy="201" r="4" fill="var(--warn)"/><circle cx="375" cy="201" r="4" fill="var(--ok)"/><circle cx="450" cy="201" r="4" fill="var(--ok)"/><circle cx="525" cy="201" r="4" fill="none" stroke="var(--muted)" stroke-width="1.5"/></g>
+            </svg>
+            <div class="legend"><span><i style="background:var(--ok)"></i>Go</span><span><i style="background:var(--warn)"></i>Go con riesgos</span><span><i style="background:var(--err)"></i>No-go</span><span><i style="border:1.5px solid var(--muted)"></i>Sin cerrar</span></div>
+          </div>
+          <div class="side">
+            <div><div class="eyebrow">Último cerrado · CYC-006</div><div class="big">92,0 %</div><div class="note"><span class="up">▲ 2,0 puntos</span> frente a CYC-005 · en objetivo</div></div>
+            <div class="alert"><b>Reapertura: empeora 3 ciclos seguidos</b>8 % → 11 % → 12 % → 14 %, fuera del objetivo (≤ 10 %).</div>
+            <div class="note">Al pulsar un ciclo se abre su informe go/no-go.</div>
+          </div>
+        </div>
+        <div class="minis" id="minis"></div>
+      </div>
+    </div>
+  </div>
+  <p class="screen-cap">La fila inferior tiene las seis métricas clásicas. Cada una muestra su último valor y su minigráfica, y al pulsarla se convierte en la principal. Las que están fuera de objetivo salen en ámbar. En tamaños pequeños desaparece primero la fila inferior y después la columna lateral, así que nunca hay scroll dentro del gadget (UX-28). El eje Y siempre lleva números enteros.</p>
+</section>
+
+<section>
+  <h2>Qué mide cada métrica</h2>
+  <table class="crit" style="background:var(--s1);border-radius:8px">
+    <thead><tr><th>Métrica</th><th>Cálculo, por ciclo</th><th>Unidad</th></tr></thead>
+    <tbody>
+      <tr><td>Tasa de éxito</td><td>Resultados finales «Pasa» / casos ejecutados del ciclo (la regla actual de la derivación)</td><td>%</td></tr>
+      <tr><td>Densidad de defectos</td><td>Defectos encontrados en el ciclo (su ejecución de origen es del ciclo) por cada 100 casos ejecutados</td><td>def. / 100 casos</td></tr>
+      <tr><td>Escapes</td><td>Defectos marcados «Encontrado fuera de las pruebas» creados después del cierre, atribuidos al último ciclo cerrado antes de su alta. También como tasa: escapes / (escapes + encontrados en el ciclo)</td><td>número y %</td></tr>
+      <tr><td>Tiempo de corrección</td><td>Mediana en días de alta → «Corregido» de los defectos del ciclo que ya se corrigieron. Los pendientes se cuentan aparte</td><td>días</td></tr>
+      <tr><td>Reapertura</td><td>Defectos del ciclo que volvieron a «Abierto» desde «Re-test» o «Cerrado» / defectos del ciclo que llegaron a corregirse</td><td>%</td></tr>
+      <tr><td>Flaky</td><td>Casos del ciclo cuyo resultado final está marcado flaky, o que pasan y fallan en la misma configuración dentro del ciclo / casos ejecutados</td><td>%</td></tr>
+    </tbody>
+  </table>
+  <p class="note">Hoy los defectos no guardan cuándo se corrigieron ni cuántas veces se reabrieron. El núcleo lo apuntará en cada cambio de estado (<code>data.lifecycle</code>), y los defectos que ya existen se rellenan una vez desde el registro de auditoría, que guarda el antes y el después de cada estado.</p>
+</section>
+
+<section>
+  <h2>Forma de los datos (a acordar con «plan-iso»)</h2>
+  <div class="banner ok"><b>Acordado con plan-iso</b>Se adopta su forma: <code>data.metrics: PlanMetric[]</code> en el plan, y los criterios apuntan a una métrica con <code>metricId</code>. Nombres: <code>escapedDefects</code> (número) y <code>fixTime</code> (días). La densidad es por cada 100 casos ejecutados. <code>blocking?</code> va en el criterio. Una métrica sin criterio es un objetivo, y la tendencia la dibuja como línea de objetivo. El bloque de abajo es la versión anterior a este acuerdo.</div>
+  <p>El catálogo de métricas vive en un sitio neutral que es de este track (<code>src/shared/metrics/</code> y su gemelo en Rust). PLN-06 lo importa para que el plan elija métricas de una lista y no escriba texto libre.</p>
+<pre>// src/shared/metrics/catalog.ts (este track)
+export const METRIC_KINDS = ["executed", "passRate", "coverage", "criticalDefects",
+  "defectDensity", "escapeRate", "timeToFix", "reopenRate", "flakyRate"] as const;
+export type MetricKind = (typeof METRIC_KINDS)[number];
+export type MetricOp = "&gt;=" | "&gt;" | "&lt;=" | "&lt;" | "=";
+/** La unidad sale del tipo: % en las tasas, número en defectos, días en timeToFix. */
+export interface MetricTarget { kind: MetricKind; op: MetricOp; target: number }
+
+// Plan (test-plan, lo escribe plan-iso): campos OPCIONALES, los planes viejos siguen valiendo
+export interface ClosureCriterion {
+  criterion: string;              // texto que se muestra (igual que hoy)
+  metric: string;                 // «≥ 95%»: se sigue escribiendo para exportar y lectores viejos
+  measure?: MetricTarget | null;  // estructurado; ausente o null → criterio manual
+  blocking?: boolean;             // por defecto true (obligatorio); false = orientativo
+}
+// PLN-06, «Métricas y objetivos medibles» (objetivos que no son criterio de salida)
+metricObjectives?: (MetricTarget &amp; { note?: string })[];  // la tendencia los dibuja como línea de objetivo
+
+// Ciclo: test_cycles.data.closures[] (JSON ya sincronizado, SIN migración)
+interface CycleClosure {
+  closedAt: string; closedBy: string;
+  verdict: "go" | "goWithRisks" | "noGo";
+  planId: string | null; planVersion: string | null;
+  criteria: (ExitCriterion &amp; { blocking: boolean; manualMet?: boolean; justification?: string })[];
+  metrics: CycleMetrics;          // cifras congeladas: tasa, densidad, escapes, tiempo, reapertura, flaky, conteos
+}
+// Defecto: data.lifecycle = { fixedAt?, closedAt?, reopens } y data.escaped (casilla en el formulario)</pre>
+  <ul class="tight">
+    <li>Si <code>measure</code> existe, la derivación (<code>derive.rs</code> y su gemelo <code>execution-summary.ts</code>) deja de adivinar por el texto. Con planes viejos se mantiene la lectura actual del texto.</li>
+    <li>Contrato v1: <code>ExitCriterion</code> gana <code>blocking</code> y los tipos nuevos. <code>HomeProject</code> gana <code>trend: CycleTrendPoint[]</code>, así que sigue habiendo una sola lectura para Inicio (RED-W6).</li>
+    <li>Órdenes nuevas: <code>cycle_gate_preview</code> y <code>cycle_close</code> (escritorio), y <code>GET /api/cycles/:id/gate</code> y <code>POST /api/cycles/:id/close</code> (web). El cierre se registra en la auditoría con el actor y las justificaciones.</li>
+    <li>No espero migraciones. Si alguna hiciera falta, comprobaré los números libres con <code>check:migrations</code> y lo hablaré con plan-iso. El ADR se numera de la misma forma.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Decisiones que necesito del usuario</h2>
+  <div class="decisions">
+    <div><b>D1 · Tres veredictos: Go, Go con riesgos y No-go</b><span>El veredicto lo calcula el gate. Con criterios obligatorios incumplidos y justificados, la persona que cierra elige entre «Go con riesgos» y «No-go».</span></div>
+    <div><b>D2 · Criterios obligatorios u orientativos</b><span>Todos son obligatorios por defecto. El plan puede marcar uno como orientativo: se muestra, pero no bloquea.</span></div>
+    <div><b>D3 · «Sin datos» cuenta como «No cumple» en el gate</b><span>Así no se cierra sin evidencia sin dejar una justificación.</span></div>
+    <div><b>D4 · Los escapes se marcan a mano en el defecto</b><span>Una casilla «Encontrado fuera de las pruebas (escape)». La alternativa sería deducirlo del entorno «producción», pero es frágil porque el entorno es texto libre.</span></div>
+    <div><b>D5 · «Cerrado» deja de estar en el diálogo de edición</b><span>Solo se cierra con «Cerrar ciclo…», que pasa por el gate. Reabrir se sigue haciendo editando el estado.</span></div>
+    <div><b>D6 · Dónde va el gadget, sin scroll en Inicio (UX-27/28)</b><span><b>A (recomendada)</b>: «Próximas pruebas» y «Criterios de salida» bajan de 19 a 11 filas (siguen por encima de su mínimo) y la tendencia ocupa debajo de ellas 15 × 8. Siguen las 24 filas y se ven los 9 gadgets. <b>B</b>: la tendencia sustituye a «Ejecuciones diarias» en la distribución por defecto (9 × 9), y las diarias pasan a «Gadgets ocultos». <b>C</b>: la tendencia empieza oculta y se añade a mano desde «Gadgets ocultos». En los tres casos, una distribución guardada solo recibe el gadget si cabe en las 24 filas. Si no cabe, el gadget queda oculto y aparece un aviso único: «Nuevo gadget: Tendencia de ciclos». Con A y B, una distribución guardada idéntica a la de ahora pasa a la nueva.</span></div>
+    <div class="board" style="min-width:0;grid-template-columns:repeat(24,1fr);grid-auto-rows:9px;gap:3px;max-width:520px" role="img" aria-label="Opción A de distribución">
+      <div class="gad ghost" style="grid-column:1/7;grid-row:1/5;padding:2px 6px;font-size:10px;min-height:0">KPI</div><div class="gad ghost" style="grid-column:7/13;grid-row:1/5;padding:2px 6px;font-size:10px;min-height:0">KPI</div><div class="gad ghost" style="grid-column:13/19;grid-row:1/5;padding:2px 6px;font-size:10px;min-height:0">KPI</div><div class="gad ghost" style="grid-column:19/25;grid-row:1/5;padding:2px 6px;font-size:10px;min-height:0">KPI</div>
+      <div class="gad ghost" style="grid-column:1/10;grid-row:5/15;padding:2px 6px;font-size:10px;min-height:0">Por proyecto 9×10</div>
+      <div class="gad ghost" style="grid-column:10/17;grid-row:5/16;padding:2px 6px;font-size:10px;min-height:0">Próximas 7×11</div>
+      <div class="gad ghost" style="grid-column:17/25;grid-row:5/16;padding:2px 6px;font-size:10px;min-height:0">Criterios 8×11</div>
+      <div class="gad ghost" style="grid-column:1/10;grid-row:15/24;padding:2px 6px;font-size:10px;min-height:0">Diarias 9×9</div>
+      <div class="gad" style="grid-column:10/25;grid-row:16/24;padding:2px 6px;font-size:10px;border:1.5px solid var(--navy-500)">Tendencia de ciclos 15×8</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Orden de trabajo, una vez aprobado</h2>
+  <ul class="tight">
+    <li>Catálogo de métricas, criterios estructurados y métricas por ciclo en la derivación (Rust y TS), con vectores compartidos. Sellos de ciclo de vida del defecto y su relleno desde la auditoría.</li>
+    <li>Gate y cierre: las órdenes y endpoints, el diálogo «Cerrar ciclo» y la etiqueta del veredicto en el detalle.</li>
+    <li>Informe go/no-go: la sección del informe de estado, la hoja .xlsx y el PDF.</li>
+    <li>Tendencia: <code>trend</code> en las métricas de Inicio, el gadget, su mínimo y su sitio en <code>board.ts</code>.</li>
+    <li>En el mismo cambio: ADR, fila de ROADMAP para DOC-02 y DOC-06, <code>changes/DOC-02.md</code> y <code>changes/DOC-06.md</code>, fuentes del manual, README de dashboard y cycles, GLOSARIO, i18n es/en, pruebas, <code>verify:static</code> y el tour 03-inicio. Después, la PR a <code>main</code>.</li>
+  </ul>
+  <p class="note">Fuera de este track: <code>src/modules/test-plan/**</code> (plan-iso), RED-W4 y DOC-01. El informe de cierre 29119-3 completo podría reutilizar esta sección de decisión: ¿lo hago yo o queda aparte?</p>
+</section>
+</div>
+
+<script>
+(function(){
+  var m=[
+    ["Tasa de éxito","92,0 %",[78,84,81,88,90,92],false,true],
+    ["Densidad","3,4",[5.1,4.6,4.9,3.8,3.6,3.4],false,false],
+    ["Escapes","3",[5,4,4,3,2,3],false,false],
+    ["T. corrección","4 d",[6,5,5,4,4,4],false,false],
+    ["Reapertura","14 %",[6,8,11,12,12,14],true,false],
+    ["Flaky","3,5 %",[5.2,4.8,4.1,3.9,3.6,3.5],false,false]
+  ];
+  var box=document.getElementById("minis"); if(!box) return;
+  m.forEach(function(r){
+    var v=r[2],mx=Math.max.apply(null,v),mn=Math.min.apply(null,v),rg=(mx-mn)||1;
+    var pts=v.map(function(x,i){return (4+i*(92/(v.length-1))).toFixed(1)+","+(19-(x-mn)/rg*15).toFixed(1);}).join(" ");
+    var col=r[3]?"var(--warn)":"var(--navy-500)";
+    var d=document.createElement("div"); d.className="mini"+(r[4]?" on":"");
+    d.innerHTML='<span>'+r[0]+'</span><b style="color:'+(r[3]?"var(--warn-text)":"var(--fg)")+'">'+r[1]+'</b><svg viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.8" vector-effect="non-scaling-stroke"/></svg>';
+    box.appendChild(d);
+  });
+})();
+</script>
+
+</body></html>

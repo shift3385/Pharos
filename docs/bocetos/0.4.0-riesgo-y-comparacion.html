@@ -1,0 +1,295 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Riesgo y comparación</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: documento de propuesta; cada boceto imita la tarjeta central del asistente de Pharos (marino + tarjetas blancas). */
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --fg:#1b2433; --muted:#5d6878; --line:#d6dce5;
+  --navy:#13233b; --accent:#1f5fae; --accent-soft:#e3edf9;
+  --ok:#1f7a4d; --ok-soft:#e1f3ea; --warn:#9a5b00; --warn-soft:#fdf0d9; --bad:#b3261e; --bad-soft:#fbe4e2;
+  --code-bg:#f5f7fa;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1522; --surface:#172234; --fg:#e4e9f1; --muted:#9aa6b8; --line:#2c3a50;
+  --navy:#0a1220; --accent:#6aa5ee; --accent-soft:#1d3352;
+  --ok:#5fcf97; --ok-soft:#163a2a; --warn:#f0b75a; --warn-soft:#3b2c12; --bad:#f08a82; --bad-soft:#3d1c1a;
+  --code-bg:#111a29; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1522; --surface:#172234; --fg:#e4e9f1; --muted:#9aa6b8; --line:#2c3a50;
+  --navy:#0a1220; --accent:#6aa5ee; --accent-soft:#1d3352;
+  --ok:#5fcf97; --ok-soft:#163a2a; --warn:#f0b75a; --warn-soft:#3b2c12; --bad:#f08a82; --bad-soft:#3d1c1a;
+  --code-bg:#111a29; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.55}
+.wrap{max-width:1040px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:36px}
+header.top{display:grid;gap:8px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:30px;margin:0;text-wrap:balance;line-height:1.2}
+h2{font-size:21px;margin:0 0 4px;text-wrap:balance}
+p{margin:0;max-width:72ch}
+.lead{color:var(--muted);max-width:75ch}
+section{display:grid;gap:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;align-items:start}
+.note{font-size:13.5px;color:var(--muted)}
+ul.tight{margin:0;padding-left:20px;display:grid;gap:4px}
+.ids{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:grid;gap:14px;min-width:0;box-shadow:0 1px 2px rgba(10,20,40,.05)}
+.card h4{font-size:17px;margin:0;display:flex;gap:8px;align-items:center}
+.help{width:16px;height:16px;border-radius:50%;border:1.3px solid var(--muted);font-size:10px;display:inline-grid;place-items:center;color:var(--muted);font-weight:600}
+.lbl{font-size:13px;color:var(--muted);font-weight:500}
+.field{border:1px solid var(--line);border-radius:6px;padding:7px 11px;font-size:14px;background:var(--surface);font-variant-numeric:tabular-nums}
+.btn{border:1px solid var(--line);border-radius:6px;padding:7px 12px;font-size:13.5px;text-align:center;font-weight:500;background:var(--surface);color:var(--fg)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.small{font-size:12.5px;color:var(--muted)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bands{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:12px}
+.band{display:grid;gap:6px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.L{background:var(--ok-soft);color:var(--ok)}.M{background:var(--warn-soft);color:var(--warn)}.H{background:var(--bad-soft);color:var(--bad)}
+.dot.L{background:var(--ok)}.dot.M{background:var(--warn)}.dot.H{background:var(--bad)}
+.heat{display:grid;grid-template-columns:auto repeat(5,1fr);gap:3px;font-size:12px;font-variant-numeric:tabular-nums;max-width:360px}
+.heat span{display:grid;place-items:center;height:30px;border-radius:4px;font-weight:600}
+.heat .ax{color:var(--muted);font-weight:500;background:none}
+.heatwrap{display:grid;gap:4px}
+.heatcap{font-size:12px;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));gap:10px;margin:0}
+.kpi{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:2px;background:var(--surface)}
+.kpi dt{font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.kpi dd{margin:0}.kpi .v{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi .h{font-size:12px;color:var(--muted)}
+.kpi.new,.tile.new,.gadget.new{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.tip{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 12px;font-size:12.5px;max-width:330px;box-shadow:0 6px 18px rgba(10,20,40,.12);display:grid;gap:4px}
+.calc{font-family:var(--mono);font-size:12.5px;background:var(--code-bg);border-radius:6px;padding:6px 9px;font-variant-numeric:tabular-nums}
+.bars{display:grid;gap:6px}
+.bar{display:grid;grid-template-columns:90px 1fr 48px;gap:8px;align-items:center;font-size:12.5px}
+.bar .t{height:8px;border-radius:4px;background:var(--code-bg);overflow:hidden}
+.bar .t i{display:block;height:100%}
+.doc{background:#fff;color:#1b2433;border:1px solid var(--line);border-radius:6px;padding:22px 26px;display:grid;gap:10px;font-size:13px}
+.doc h5{font-size:14px;margin:0;border-bottom:2px solid #1f5fae;padding-bottom:4px;color:#13233b}
+.doc table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+.doc th,.doc td{border:1px solid #d6dce5;padding:4px 8px;text-align:right}
+.doc th:first-child,.doc td:first-child{text-align:left}
+.doc th{background:#eef1f5;font-weight:600}
+.doc .newline{background:#e3edf9;border-left:3px solid #1f5fae;padding:6px 10px;border-radius:3px;max-width:none}
+.doc .muted{color:#5d6878;font-size:12px}
+.home{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:10px}
+.homebar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.pbtn{border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:13px;background:var(--surface);display:inline-flex;gap:6px;align-items:center}
+.pbtn .cmp{font-size:11px;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:1px 7px;font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:2px;min-height:94px;align-content:start}
+.tile .l{font-size:12.5px;color:var(--muted)}
+.tile .val{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.tile .num{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.delta{font-size:11.5px;font-weight:600;border-radius:999px;padding:1px 7px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.delta.up{background:var(--ok-soft);color:var(--ok)}.delta.down{background:var(--bad-soft);color:var(--bad)}.delta.flat{background:var(--code-bg);color:var(--muted)}
+.tile .n{font-size:12px;color:var(--muted)}
+.gadget{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:6px}
+.ghead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13.5px}
+.legend{display:flex;gap:12px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:0;border-top:2px solid;vertical-align:middle;margin-right:4px}
+.menu{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px;max-width:290px;box-shadow:0 8px 22px rgba(10,20,40,.14);font-size:13.5px;display:grid;gap:1px}
+.menu .mi{padding:6px 10px;border-radius:5px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.menu .mi.sel{background:var(--accent-soft);color:var(--accent);font-weight:500}
+.menu .mi.dis{color:var(--muted);opacity:.6}
+.menu .ml{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:6px 10px 2px;font-weight:600}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 0;width:100%}
+.menu .hint{font-size:11.5px;color:var(--muted);padding:0 10px 6px 48px}
+.toggle{display:inline-block;width:28px;height:16px;border-radius:999px;background:var(--line);position:relative;flex:none}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--surface)}
+.toggle.on{background:var(--accent)}.toggle.on::after{left:14px}
+.decisions{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:grid;gap:8px}
+.decisions ol{margin:0;padding-left:20px;display:grid;gap:6px;font-size:14px}
+code{font-family:var(--mono);font-size:12.5px}
+</style>
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">Pharos 0.4.0 · bocetos para aprobar · TRZ-04 y RED-W4</div>
+  <h1>Bandas de riesgo por proyecto, cobertura ponderada y comparación con el periodo anterior</h1>
+  <p class="lead">Cuatro pantallas: Ajustes del proyecto (bandas), Trazabilidad (cobertura ponderada), el informe de estado (cobertura por banda y ponderada) e Inicio con «Comparar con el periodo anterior». Lo nuevo va con borde azul. Datos de ejemplo.</p>
+</header>
+
+<section>
+  <h2>1 · Ajustes del proyecto › Bandas de riesgo <span class="ids">TRZ-04</span></h2>
+  <p class="note">Una tarjeta nueva entre «General» y «Exportación del plan». Dos umbrales sobre el nivel de riesgo (probabilidad × impacto, 1–25); «Alto» es el resto. El mapa 5×5 se repinta al escribir. Cambiar las bandas no toca ningún dato: recolorea la matriz, el orden por riesgo, el informe y la cobertura por banda. Se sincroniza con el proyecto, como «Exportación del plan». En el ejemplo, bandas cambiadas a 6 y 14.</p>
+  <div class="grid2">
+    <div class="card">
+      <h4>Bandas de riesgo <span class="help">?</span></h4>
+      <p class="small">El nivel de riesgo de un requisito es probabilidad × impacto (1–25), según ISTQB. Elige hasta qué nivel es bajo y hasta cuál es medio.</p>
+      <div class="bands">
+        <div class="band"><span class="lbl"><span class="dot L"></span>Bajo: hasta</span><span class="field">6</span></div>
+        <div class="band"><span class="lbl"><span class="dot M"></span>Medio: hasta</span><span class="field">14</span></div>
+        <div class="band"><span class="lbl"><span class="dot H"></span>Alto</span><span class="field" style="color:var(--muted)">15 a 25</span></div>
+      </div>
+      <div class="heatwrap">
+        <div class="heat">
+          <span class="ax">I 5</span><span class="L">5</span><span class="M">10</span><span class="H">15</span><span class="H">20</span><span class="H">25</span>
+          <span class="ax">4</span><span class="L">4</span><span class="M">8</span><span class="M">12</span><span class="H">16</span><span class="H">20</span>
+          <span class="ax">3</span><span class="L">3</span><span class="L">6</span><span class="M">9</span><span class="M">12</span><span class="H">15</span>
+          <span class="ax">2</span><span class="L">2</span><span class="L">4</span><span class="L">6</span><span class="M">8</span><span class="M">10</span>
+          <span class="ax">1</span><span class="L">1</span><span class="L">2</span><span class="L">3</span><span class="L">4</span><span class="L">5</span>
+          <span class="ax"></span><span class="ax">P 1</span><span class="ax">2</span><span class="ax">3</span><span class="ax">4</span><span class="ax">5</span>
+        </div>
+        <span class="heatcap">Impacto (I) por probabilidad (P). Con estas bandas: 13 celdas bajas, 7 medias, 5 altas.</span>
+      </div>
+      <div class="row" style="justify-content:space-between">
+        <span class="btn">Restablecer (4 y 12)</span>
+        <span class="btn primary">Guardar</span>
+      </div>
+    </div>
+    <div class="card">
+      <h4>Reglas</h4>
+      <ul class="tight note">
+        <li>Enteros con 1 ≤ bajo &lt; medio ≤ 24, para que cada banda tenga al menos un nivel. Fuera de eso, error en línea y «Guardar» desactivado.</li>
+        <li>Por defecto 4 y 12 (ADR-0013). Un proyecto sin bandas guardadas, o que llega por sync de un Pharos anterior, usa los valores por defecto.</li>
+        <li>Al crear un proyecto copiando los ajustes de otro, las bandas se copian también.</li>
+        <li>Queda en la auditoría como un cambio del proyecto.</li>
+        <li>Escritorio y web con el mismo formulario; en móvil, los campos en columna y el mapa debajo.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>2 · Trazabilidad › Cobertura ponderada por riesgo <span class="ids">TRZ-04</span></h2>
+  <p class="note">Un quinto indicador en la fila de la matriz. Cada requisito evaluado pesa su nivel de riesgo (1–25): cubrir uno de nivel 20 cuenta cinco veces más que uno de nivel 4. Los requisitos sin evaluar quedan fuera y se cuentan aparte. «Aprobada» pondera los requisitos con todos sus casos ejecutados y en Pasa, con los filtros de ciclo, build y entorno de la matriz.</p>
+  <div class="card">
+    <dl class="kpis">
+      <div class="kpi"><dt>Requisitos</dt><dd class="v">24</dd><dd class="h">6 de prioridad alta</dd></div>
+      <div class="kpi"><dt>Cubiertos</dt><dd class="v">19</dd><dd class="h">con al menos un caso</dd></div>
+      <div class="kpi"><dt>Sin cubrir</dt><dd class="v">5</dd><dd class="h">1 de prioridad alta</dd></div>
+      <div class="kpi"><dt>Cobertura</dt><dd class="v">79 %</dd></div>
+      <div class="kpi new"><dt>Cobertura ponderada <span class="help">i</span></dt><dd class="v">88 %</dd><dd class="h">aprobada 61 % · 3 sin evaluar</dd></div>
+    </dl>
+    <div class="grid2">
+      <div class="tip">
+        <b>Cobertura ponderada por riesgo</b>
+        <span>Suma del nivel de riesgo de los requisitos cubiertos entre la suma del nivel de todos los requisitos evaluados.</span>
+        <span class="calc">cubierta = 186 / 211 = 88 %<br>aprobada = 129 / 211 = 61 %</span>
+        <span class="small">3 requisitos sin evaluar no entran. Bandas del proyecto: bajo hasta 6, medio hasta 14.</span>
+      </div>
+      <div class="bars">
+        <span class="lbl">Opcional: bajo los indicadores, la cobertura por banda en barras finas (hoy solo está en el informe)</span>
+        <div class="bar"><span><span class="dot H"></span>Alto</span><span class="t"><i style="width:100%;background:var(--bad)"></i></span><span>5 / 5</span></div>
+        <div class="bar"><span><span class="dot M"></span>Medio</span><span class="t"><i style="width:78%;background:var(--warn)"></i></span><span>7 / 9</span></div>
+        <div class="bar"><span><span class="dot L"></span>Bajo</span><span class="t"><i style="width:57%;background:var(--ok)"></i></span><span>4 / 7</span></div>
+        <div class="bar"><span><span class="dot" style="background:var(--muted)"></span>Sin evaluar</span><span class="t"><i style="width:100%;background:var(--muted)"></i></span><span>3 / 3</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>3 · Informe de estado › Cobertura por riesgo <span class="ids">TRZ-04</span></h2>
+  <p class="note">Solo cambia este apartado (PDF y .xlsx): la tabla por banda que ya existe dice qué bandas usa el proyecto y debajo va la cobertura ponderada. Ningún otro apartado del informe se toca.</p>
+  <div class="doc">
+    <h5>Cobertura por riesgo</h5>
+    <p class="muted">Bandas del proyecto: bajo 1–6, medio 7–14, alto 15–25 (probabilidad × impacto).</p>
+    <table>
+      <tr><th>Banda</th><th>Requisitos</th><th>Cubiertos</th><th>Ejecutados</th><th>Pasa</th><th>Falla</th></tr>
+      <tr><td>Alto</td><td>5</td><td>5</td><td>5</td><td>3</td><td>2</td></tr>
+      <tr><td>Medio</td><td>9</td><td>7</td><td>6</td><td>5</td><td>1</td></tr>
+      <tr><td>Bajo</td><td>7</td><td>4</td><td>4</td><td>4</td><td>0</td></tr>
+      <tr><td>Sin evaluar</td><td>3</td><td>3</td><td>2</td><td>2</td><td>0</td></tr>
+    </table>
+    <p class="newline"><b>Cobertura ponderada por riesgo: 88 %</b> (aprobada: 61 %). Cada requisito evaluado pesa su nivel de riesgo; los 3 sin evaluar no entran.</p>
+    <p class="muted">En el .xlsx: dos filas más bajo la tabla («Cobertura ponderada», «Aprobada ponderada») con formato de porcentaje.</p>
+  </div>
+</section>
+
+<section>
+  <h2>4 · Inicio › Comparar con el periodo anterior <span class="ids">RED-W4</span></h2>
+  <p class="note">El interruptor del menú «Periodo» deja de estar desactivado. Encendido, compara con el periodo de la misma duración justo antes: 7 días con los 7 anteriores, «Hoy» con ayer, «Este mes» (del 1 a hoy, N días) con los N días previos. Se recuerda como el periodo, en este equipo. Solo llevan diferencia los números que dependen del periodo: <b>Tasa de éxito</b> y <b>Ejecuciones diarias</b>. Proyectos, Pruebas pendientes, Defectos, Ejecución por proyecto y la Tendencia de ciclos son el estado de ahora (o por ciclo) y no cambian. Nada añade filas: la diferencia va en la línea del número, así la pizarra sigue sin scroll.</p>
+  <div class="grid2">
+    <div class="menu" aria-label="Menú Periodo">
+      <div class="ml">Periodo</div>
+      <div class="mi">Hoy</div>
+      <div class="mi sel">Últimos 7 días <span>✓</span></div>
+      <div class="mi">Últimos 14 días</div>
+      <div class="mi">Últimos 30 días</div>
+      <div class="mi">Este mes</div>
+      <hr>
+      <div class="ml">Ciclos de prueba</div>
+      <div class="mi dis">Ciclo actual</div>
+      <div class="mi dis">Ciclo anterior</div>
+      <hr>
+      <div class="mi dis">Rango personalizado</div>
+      <hr>
+      <div class="mi"><span class="row" style="gap:10px;flex-wrap:nowrap"><span class="toggle on"></span>Comparar con el periodo anterior</span></div>
+      <div class="hint">Con los 7 días anteriores (30 oct – 5 nov)</div>
+    </div>
+    <div class="note" style="display:grid;gap:8px;align-content:start">
+      <p>El interruptor pasa a ser un <code>menuitemcheckbox</code> con <code>aria-checked</code> y no cierra el menú al pulsarlo. Debajo, las fechas exactas del periodo anterior.</p>
+      <p>«Ciclo actual / anterior» y «Rango personalizado» siguen en «Próximamente» (fuera de este alcance).</p>
+      <p>El botón «Periodo» lleva una marca corta «vs anterior» mientras la comparación está encendida.</p>
+    </div>
+  </div>
+
+  <div class="home">
+    <div class="homebar">
+      <b>Buenos días</b>
+      <span class="pbtn">📅 Últimos 7 días <span class="cmp">vs anterior</span> ▾</span>
+    </div>
+    <div class="tiles">
+      <div class="tile"><span class="l">Proyectos</span><span class="val"><span class="num">4</span></span><span class="n">1 cierra este mes</span></div>
+      <div class="tile"><span class="l">Pruebas pendientes</span><span class="val"><span class="num">37</span><span class="n">de 210</span></span><span class="n">2 bloqueadas</span></div>
+      <div class="tile new"><span class="l">Tasa de éxito</span><span class="val"><span class="num">87,3 %</span><span class="delta up" title="Antes 83,1 % (30 oct – 5 nov)">▲ 4,2 pp</span></span><span class="n">de 142 casos ejecutados · antes 83,1 %</span></div>
+      <div class="tile"><span class="l">Defectos abiertos</span><span class="val"><span class="num">9</span></span><span class="n">2 críticos</span></div>
+    </div>
+    <div class="gadget new">
+      <div class="ghead"><b>Ejecuciones diarias</b><span>312 ejecuciones <span class="delta flat" title="Antes 264">▲ 18 % vs anterior</span></span></div>
+      <svg viewBox="0 0 560 150" role="img" aria-label="Ejecuciones por día, periodo actual y anterior" style="width:100%;height:auto">
+        <g stroke="var(--line)" stroke-width="1">
+          <line x1="34" y1="20" x2="550" y2="20"/><line x1="34" y1="56.7" x2="550" y2="56.7"/><line x1="34" y1="93.3" x2="550" y2="93.3"/><line x1="34" y1="130" x2="550" y2="130"/>
+        </g>
+        <g font-size="10" fill="var(--muted)" text-anchor="end" font-family="Inter,sans-serif">
+          <text x="28" y="23">60</text><text x="28" y="60">40</text><text x="28" y="96">20</text><text x="28" y="133">0</text>
+        </g>
+        <polyline fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-dasharray="5 4" points="50,75 130,49.3 210,58.5 290,42 370,56.7 450,111.7 530,32.8"/>
+        <polyline fill="none" stroke="var(--ok)" stroke-width="2.2" points="50,73.2 130,49.3 210,67.7 290,33.2 370,56.7 450,111.7 530,25.5"/>
+        <polyline fill="none" stroke="var(--bad)" stroke-width="2.2" points="50,119 130,115.3 210,121.7 290,113.5 370,117.2 450,126.3 530,122.7"/>
+        <g font-size="10" fill="var(--muted)" text-anchor="middle" font-family="Inter,sans-serif">
+          <text x="50" y="146">6 nov</text><text x="130" y="146">7</text><text x="210" y="146">8</text><text x="290" y="146">9</text><text x="370" y="146">10</text><text x="450" y="146">11</text><text x="530" y="146">12</text>
+        </g>
+      </svg>
+      <div class="legend"><span><i style="border-color:var(--ok)"></i>Pasa</span><span><i style="border-color:var(--bad)"></i>Falla</span><span><i style="border-color:var(--muted);border-top-style:dashed"></i>Total del periodo anterior (por posición: día 1 con día 1)</span></div>
+      <p class="small">El periodo anterior va como una sola línea gris discontinua con el total por día. «Ver los datos» añade la columna «Anterior» a la tabla. Eje Y en enteros. Con «Hoy» la gráfica tiene un punto: solo el total con su diferencia.</p>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h4>Cómo se ve la diferencia</h4>
+      <ul class="tight note">
+        <li>Tasa de éxito: en puntos porcentuales (pp), con un decimal. ▲ verde si sube, ▼ roja si baja, «= 0,0 pp» gris.</li>
+        <li>Ejecuciones: en %, sin decimales, en color neutro (más ejecuciones no es «mejor»).</li>
+        <li>Sin datos en el periodo anterior: «sin datos antes» en gris, nunca «▲ ∞».</li>
+        <li>Tooltip y texto para lector de pantalla con el valor anterior y sus fechas.</li>
+        <li>En la pizarra compacta (UX-27) la etiqueta va en la fila del número; si no cabe, solo la flecha y la cifra.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Datos</h4>
+      <ul class="tight note">
+        <li>La petición de Inicio pide el doble de días (hasta 62; el límite es 400) y una ventana «anterior» por periodo.</li>
+        <li>El contrato v1 añade a la ventana un campo opcional <code>toIndex</code>: hoy una ventana va de su día hasta «ahora»; con <code>toIndex</code> acaba antes de ese día. Rust, el gemelo del servidor y los vectores, juntos. Aditivo: la versión del contrato no cambia.</li>
+        <li>Las ejecuciones diarias del periodo anterior salen de los mismos cubos diarios.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="decisions">
+  <h2>Decisiones para aprobar</h2>
+  <ol>
+    <li><b>Peso = nivel de riesgo</b> (P × I, 1–25); los requisitos sin evaluar quedan fuera y se cuentan aparte. Dos cifras: cubierta y aprobada.</li>
+    <li><b>Bandas = dos umbrales</b> por proyecto (bajo hasta, medio hasta), por defecto 4 y 12. Migración local 0039 (dos columnas en <code>projects</code>); en la web van en el documento del proyecto, sin migración de servidor.</li>
+    <li><b>Comparación solo en Tasa de éxito y Ejecuciones diarias</b>; lo demás es el estado de ahora.</li>
+    <li><b>Ventana con fin opcional</b> (<code>toIndex</code>) en el contrato v1, aditiva.</li>
+    <li>¿Barras por banda bajo los indicadores de Trazabilidad? Sí / no.</li>
+  </ol>
+</section>
+</div>
+
+</body></html>

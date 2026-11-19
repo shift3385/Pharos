@@ -1,0 +1,144 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Capturas del rediseño</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: screen picker on top, then one screen at a time as a strip of its nine widths, smallest to largest. */
+:root {
+  --bg: #f5f7f8; --surface: #ffffff; --fg: #17222a; --muted: #5a6872; --line: #dbe2e6;
+  --accent: #0f6e7a; --accent-soft: #e2f1f2; --scrim: rgba(10, 16, 19, .86);
+  --f-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1619; --surface: #162126; --fg: #e4ecef; --muted: #98a7af; --line: #26343b;
+  --accent: #5cc3cf; --accent-soft: #15353a; --scrim: rgba(4, 8, 10, .9); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1619; --surface: #162126; --fg: #e4ecef; --muted: #98a7af; --line: #26343b;
+  --accent: #5cc3cf; --accent-soft: #15353a; --scrim: rgba(4, 8, 10, .9); color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px }
+.wrap { max-width: 1280px; margin: 0 auto; display: grid; gap: 22px }
+h1 { font: 600 clamp(26px, 4vw, 34px)/1.15 var(--f-display); margin: 0; letter-spacing: -0.01em }
+.lede { color: var(--muted); max-width: 70ch; margin: 8px 0 0 }
+.lede a { color: var(--accent) }
+.picker { display: grid; gap: 10px }
+.row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.row .lbl { font: 500 12px var(--f-mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; min-width: 64px }
+.chip { font: 500 13px var(--f-body); border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 5px 11px; border-radius: 999px; cursor: pointer }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent) }
+.chip:focus-visible, .shot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.what { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; display: grid; gap: 4px }
+.what h2 { font: 600 19px/1.3 var(--f-display); margin: 0 }
+.what p { margin: 0; color: var(--muted); max-width: 75ch }
+.ids { font: 500 12px var(--f-mono); color: var(--accent); background: var(--accent-soft); padding: 2px 7px; border-radius: 4px; margin-right: 8px }
+.strip { overflow-x: auto; padding-bottom: 8px }
+.strip-in { display: flex; gap: 18px; align-items: flex-start; width: max-content }
+figure { margin: 0; display: grid; gap: 6px; justify-items: start }
+figcaption { font: 500 12px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums }
+.shot { display: block; padding: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); cursor: zoom-in }
+.shot img { display: block; height: 420px; width: auto; max-width: none }
+.none { height: 420px; width: 150px; display: grid; place-items: center; text-align: center; color: var(--muted); font-size: 13px; border: 1px dashed var(--line); border-radius: 6px; padding: 10px }
+.viewer { position: fixed; inset: 0; background: var(--scrim); z-index: 20; display: grid; grid-template-rows: auto 1fr; padding: calc(12px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)) }
+.viewer[hidden] { display: none }
+.vbar { display: flex; justify-content: space-between; align-items: center; color: #e4ecef; gap: 12px; padding-bottom: 10px; font: 500 13px var(--f-mono) }
+.vbar button { font: 500 14px var(--f-body); background: #e4ecef; color: #0f1619; border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer }
+.vimg { overflow: auto; text-align: center }
+.vimg img { max-width: none; display: inline-block; border-radius: 4px }
+footer { color: var(--muted); font-size: 13px }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Capturas del rediseño</h1>
+    <p class="lede">Cada pantalla a los nueve anchos de la revisión (de 320 a 1440 px), en claro y oscuro, sobre la versión web de <code>main</code> con datos de ejemplo. Mira que nada se corte, se solape o desborde; pulsa una captura para verla a tamaño real. Lo que veas, márcalo en el grupo «Revisar capturas» de la <a href="https://claude.ai/artifact/CXPbM9rzgzzra5Un4YgpfY" target="_blank" rel="noopener">lista de validaciones</a>.</p>
+  </header>
+
+  <div class="picker">
+    <div class="row" role="group" aria-label="Pantalla"><span class="lbl">Pantalla</span><span id="screens" class="row"></span></div>
+    <div class="row" role="group" aria-label="Tema"><span class="lbl">Tema</span>
+      <button class="chip" type="button" id="t-light" aria-pressed="true">Claro</button>
+      <button class="chip" type="button" id="t-dark" aria-pressed="false">Oscuro</button>
+    </div>
+  </div>
+
+  <div class="what"><div><span class="ids" id="w-ids"></span><h2 id="w-title" style="display:inline"></h2></div><p id="w-desc"></p></div>
+  <div class="strip"><div class="strip-in" id="strip"></div></div>
+
+  <footer>Generadas el 2026-11-11 con Edge sin interfaz, sobre <code>local/app-completa</code> (main 8c04c13 más el PR #67), cuenta de prueba de Liomar QA y proyecto Billetera SafeGuard. Por debajo de 500 px el ancho se emula.</footer>
+</div>
+
+<div class="viewer" id="viewer" hidden role="dialog" aria-modal="true" aria-label="Captura a tamaño real">
+  <div class="vbar"><span id="v-cap"></span><button type="button" id="v-close">Cerrar</button></div>
+  <div class="vimg"><img id="v-img" alt=""></div>
+</div>
+
+<script>
+const WIDTHS = [320, 390, 599, 600, 820, 1180, 1279, 1280, 1440];
+const SCREENS = [
+  { id: "f1-proyectos", ids: "RED-F1", t: "El marco de la app", d: "Menú lateral, cabecera y migas en Proyectos: a iconos por debajo de 1280 px y vista móvil por debajo de 600 px." },
+  { id: "v1-login", ids: "RED-V1", t: "Iniciar sesión", d: "Sin scroll en ventanas bajas; el formulario no se corta." },
+  { id: "v1-inicio", ids: "RED-V1", t: "Inicio", d: "Saludo, periodo, tarjetas de cifras, ejecución por proyecto y próximas pruebas." },
+  { id: "v1-perfil", ids: "RED-V1", t: "Perfil", d: "Datos de la cuenta y preferencias." },
+  { id: "v3-casos-lista", ids: "RED-V3", t: "Casos: la lista", d: "Siete casos con prioridad, estado y requisitos." },
+  { id: "v3-caso-editor", ids: "RED-V3", t: "Caso: vista Editor", d: "El formulario del caso por bloques." },
+  { id: "v3-caso-gherkin", ids: "RED-V3", t: "Caso: vista Gherkin", d: "El .feature editable con la barra de palabras clave (en móvil, la edición Gherkin)." },
+  { id: "v3-caso-dividida", ids: "RED-V3", t: "Caso: vista dividida", d: "Editor y Gherkin lado a lado; en anchos de móvil no existe." },
+  { id: "v3-menu-prioridad", ids: "RED-V3", t: "Menú de Prioridad", d: "Desplegable en escritorio; hoja inferior en el móvil." },
+  { id: "v3-menu-estado", ids: "RED-V3", t: "Menú de Estado", d: "Desplegable en escritorio; hoja inferior en el móvil." },
+  { id: "v3-tablero", ids: "RED-V3", t: "Tablero (planificador)", d: "Las columnas del tablero con cinco tarjetas." },
+  { id: "v3-trazabilidad-todo", ids: "RED-V3", t: "Trazabilidad: todo", d: "La matriz completa con cifras de cobertura." },
+  { id: "v3-trazabilidad-huecos", ids: "RED-V3", t: "Trazabilidad: solo huecos", d: "«Mostrar solo huecos» activo: dos requisitos sin caso." },
+];
+let cur = SCREENS[0].id, theme = "light";
+try { const s = localStorage.getItem("caps.screen"); if (SCREENS.some(x => x.id === s)) cur = s; theme = localStorage.getItem("caps.theme") || theme; } catch {}
+const $ = (s) => document.querySelector(s);
+const src = (id, w, th) => `img/${id}/${String(w).padStart(4, "0")}-${th}.jpg`;
+
+function renderPicker() {
+  const box = $("#screens"); box.textContent = "";
+  for (const s of SCREENS) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = s.t; b.setAttribute("aria-pressed", String(s.id === cur));
+    b.addEventListener("click", () => { cur = s.id; save(); render(); });
+    box.appendChild(b);
+  }
+  $("#t-light").setAttribute("aria-pressed", String(theme === "light"));
+  $("#t-dark").setAttribute("aria-pressed", String(theme === "dark"));
+}
+function render() {
+  renderPicker();
+  const s = SCREENS.find(x => x.id === cur);
+  $("#w-ids").textContent = s.ids; $("#w-title").textContent = s.t; $("#w-desc").textContent = s.d;
+  const strip = $("#strip"); strip.textContent = "";
+  for (const w of WIDTHS) {
+    const fig = document.createElement("figure");
+    const cap = document.createElement("figcaption"); cap.textContent = `${w} px · ${theme === "light" ? "claro" : "oscuro"}`;
+    const btn = document.createElement("button"); btn.type = "button"; btn.className = "shot";
+    btn.setAttribute("aria-label", `Ver ${s.t} a ${w} px a tamaño real`);
+    const img = document.createElement("img"); img.loading = "lazy"; img.alt = `${s.t} a ${w} px, tema ${theme === "light" ? "claro" : "oscuro"}`;
+    img.src = src(s.id, w, theme);
+    img.addEventListener("error", () => { const n = document.createElement("div"); n.className = "none"; n.textContent = "No existe en este ancho"; btn.replaceWith(n); });
+    btn.appendChild(img);
+    btn.addEventListener("click", () => open(s, w));
+    fig.append(cap, btn); strip.appendChild(fig);
+  }
+}
+function open(s, w) {
+  $("#v-img").src = src(s.id, w, theme); $("#v-img").alt = `${s.t} a ${w} px`;
+  $("#v-cap").textContent = `${s.t} · ${w} px · ${theme === "light" ? "claro" : "oscuro"}`;
+  $("#viewer").hidden = false; $("#v-close").focus();
+}
+function close() { $("#viewer").hidden = true; }
+function save() { try { localStorage.setItem("caps.screen", cur); localStorage.setItem("caps.theme", theme); } catch {} }
+$("#v-close").addEventListener("click", close);
+$("#viewer").addEventListener("click", (e) => { if (e.target.id === "viewer") close(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+$("#t-light").addEventListener("click", () => { theme = "light"; save(); render(); });
+$("#t-dark").addEventListener("click", () => { theme = "dark"; save(); render(); });
+render();
+</script>
+
+</body></html>

@@ -1,0 +1,398 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Riesgos legibles en Pharos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: informe de una columna con la maqueta en vivo como pieza central. Colores y medidas de los tokens de Pharos. */
+:root {
+  --bg: #eef2f6; --surface: #ffffff; --surface-2: #f1f4f8; --border: #e2e6eb; --border-input: #828c9a;
+  --fg: #1c2530; --fg-2: #5f6b7a; --accent: #1f4e79; --focus: #1f4e79; --on-accent: #ffffff;
+  --crit: #a32f2f; --crit-bg: #fbeaea; --high: #8a5206; --high-bg: #fdf1dd; --mid: #1f4e79; --mid-bg: #e6eef6;
+  --low: #5f6b7a; --low-bg: #eef1f4; --good: #1c6b4a; --good-bg: #e3f3ec; --danger: #bc3d3d;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1721; --surface: #14202e; --surface-2: #1a2837; --border: #24344a; --border-input: #64758a;
+  --fg: #e8edf2; --fg-2: #93a3b5; --accent: #6fa3cc; --focus: #f2a33c; --on-accent: #0e1721;
+  --crit: #f09595; --crit-bg: #3a1f22; --high: #f2c078; --high-bg: #35291a; --mid: #9cc3e2; --mid-bg: #1a2c3e;
+  --low: #a8b5c4; --low-bg: #202c3a; --good: #7fd1ad; --good-bg: #16302a; --danger: #f09595; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1721; --surface: #14202e; --surface-2: #1a2837; --border: #24344a; --border-input: #64758a;
+  --fg: #e8edf2; --fg-2: #93a3b5; --accent: #6fa3cc; --focus: #f2a33c; --on-accent: #0e1721;
+  --crit: #f09595; --crit-bg: #3a1f22; --high: #f2c078; --high-bg: #35291a; --mid: #9cc3e2; --mid-bg: #1a2c3e;
+  --low: #a8b5c4; --low-bg: #202c3a; --good: #7fd1ad; --good-bg: #16302a; --danger: #f09595; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--sans); }
+.page { max-width: 1020px; margin: 0 auto; padding-block: 32px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 40px; }
+section { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+h1 { font-size: 30px; line-height: 1.2; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+h2 { font-size: 20px; line-height: 1.3; margin: 0; text-wrap: balance; }
+h3 { font-size: 15px; margin: 0; }
+p { margin: 0; max-width: 72ch; }
+ul, ol { margin: 0; padding-left: 20px; max-width: 76ch; display: flex; flex-direction: column; gap: 6px; }
+code { font: 13px var(--mono); overflow-wrap: anywhere; }
+.eyebrow { font: 500 12px var(--mono); color: var(--fg-2); }
+.lead { font-size: 17px; line-height: 1.55; }
+.answer { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.note { font-size: 14px; color: var(--fg-2); }
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.45; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+tr:last-child td { border-bottom: 0; }
+th { font-weight: 600; font-size: 13px; color: var(--fg-2); white-space: nowrap; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.pick td { background: var(--good-bg); }
+.sev { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.sev.crit { color: var(--crit); background: var(--crit-bg); } .sev.high { color: var(--high); background: var(--high-bg); }
+.sev.mid { color: var(--mid); background: var(--mid-bg); } .sev.low { color: var(--low); background: var(--low-bg); }
+.ev { font-size: 12px; color: var(--fg-2); }
+.compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 16px; align-items: start; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+figure img { width: 100%; border-radius: 10px; border: 1px solid var(--border); display: block; }
+figcaption { font-size: 13px; color: var(--fg-2); }
+
+/* Controles de la maqueta */
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; border: 0; padding: 0; margin: 0; align-items: center; }
+.seg legend { float: left; font-size: 13px; color: var(--fg-2); margin-right: 8px; padding: 0; line-height: 34px; }
+.seg label { cursor: pointer; }
+.seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.seg span { display: block; padding: 5px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font-size: 13px; }
+.seg input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+.seg input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 2px; }
+.stage { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; overflow: hidden; }
+.card { max-width: 100%; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px; transition: width .15s ease-out; }
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } }
+.card h3 { font-size: 20px; }
+
+/* Propuesta de PairListField */
+.pf { container-type: inline-size; display: flex; flex-direction: column; gap: 8px; --del: 38px; }
+.pf-head, .pf-row { display: grid; grid-template-columns: var(--cols, 1fr 1fr) var(--del); gap: 8px; }
+.pf-head { font-size: 13px; font-weight: 500; color: var(--fg-2); padding-inline: 1px; }
+.pf-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-width: none; }
+.pf-row { position: relative; align-items: stretch; }
+.pf-cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pf-lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.pf textarea { flex: 1; display: block; width: 100%; min-block-size: 38px; max-block-size: 270px; padding: 8px 12px; font: 14px/21px var(--sans); color: var(--fg); background: var(--surface-2); border: 1px solid var(--border-input); border-radius: 8px; resize: none; overflow: auto; field-sizing: content; overflow-wrap: break-word; hyphens: auto; }
+@supports not (field-sizing: content) { .pf textarea { min-block-size: 81px; resize: vertical; } }
+.pf textarea:focus { outline: 2px solid var(--focus); outline-offset: 0; border-color: var(--focus); }
+.pf-del { width: var(--del); height: var(--del); align-self: start; display: grid; place-items: center; color: var(--fg-2); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
+.pf-del:hover { color: var(--danger); border-color: var(--danger); }
+.pf-del:focus-visible, .pf-add:focus-visible, .pf-confirm button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pf-confirm { grid-column: 1 / -1; justify-self: end; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-2); }
+.pf-confirm button { min-height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--fg); font: inherit; cursor: pointer; }
+.pf-confirm .yes { color: var(--danger); border-color: var(--danger); font-weight: 600; }
+.pf-add { align-self: flex-start; min-height: 32px; padding: 4px 12px; font: 14px var(--sans); color: var(--accent); background: none; border: 1px dashed var(--border-input); border-radius: 8px; cursor: pointer; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@container (max-width: 479.98px) {
+  .pf-head { display: none; }
+  .pf-list { gap: 12px; }
+  .pf-row { grid-template-columns: minmax(0, 1fr); gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); --del: 44px; }
+  .pf-list > li:first-child .pf-row { border-top: 0; padding-top: 0; }
+  .pf-lbl { position: static; width: auto; height: auto; overflow: visible; clip-path: none; white-space: normal; font-size: 13px; font-weight: 500; color: var(--fg-2); }
+  .pf-cell:first-child .pf-lbl { min-height: 44px; display: flex; align-items: center; padding-right: 52px; }
+  .pf-del { position: absolute; right: 0; top: 12px; }
+  .pf-list > li:first-child .pf-del { top: 0; }
+  .pf-add { min-height: 44px; }
+  .pf-confirm { justify-self: stretch; }
+  .pf-confirm button { min-height: 44px; }
+  .pf textarea { min-block-size: 44px; padding-block: 11px; }
+}
+</style>
+
+<div class="page">
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <div class="eyebrow">Pharos · plan de pruebas · paso 15 de 19</div>
+    <h1>Riesgos y mitigación: que cada texto se lea entero</h1>
+  </header>
+
+  <section class="answer">
+    <h2>Recomendación</h2>
+    <p class="lead">Mantener la lista de pares, pero con <strong>campos que crecen con su contenido</strong> y una sola cabecera «Riesgo | Mitigación». Si el campo mide menos de 480 px, cada par se apila con su etiqueta. Un solo cambio en <code>PairListField</code> arregla también «Roles» y «Criterios de cierre».</p>
+    <p>Los tres revisores llegaron por separado a esta misma solución y descartaron las filas plegables. Plegar vuelve a esconder justo lo que hay que revisar antes de pulsar «Marcar revisado».</p>
+    <p class="note"><strong>Interpretación:</strong> el pedido decía que los contenidos «pueden ser poco extenso». Por la captura entendí que el problema es el texto <em>extenso</em>. La propuesta sirve para los dos casos: una fila corta sigue ocupando una sola línea, 38 px, como hoy.</p>
+    <p class="note"><strong>Coste:</strong> la lista ocupa más. Con 6 filas en tu pantalla pasa de 268 px a unos 526 px. Es el precio de leer todo sin abrir ni desplazar nada.</p>
+  </section>
+
+  <section>
+    <h2>Maqueta: pruébala</h2>
+    <p>Son campos reales con la anchura y los colores de Pharos, y textos de ejemplo. Escribe, usa Tab, añade y quita filas. No está conectada a la app ni guarda nada.</p>
+    <div class="controls">
+      <fieldset class="seg" id="seg-width"><legend>Ancho del campo</legend>
+        <label><input type="radio" name="w" id="w-905" value="905" checked><span>905 px · tu captura</span></label>
+        <label><input type="radio" name="w" id="w-606" value="606"><span>606 · tableta</span></label>
+        <label><input type="radio" name="w" id="w-498" value="498"><span>498 · ventana 940</span></label>
+        <label><input type="radio" name="w" id="w-302" value="302"><span>302 · móvil</span></label>
+      </fieldset>
+      <fieldset class="seg" id="seg-step"><legend>Paso</legend>
+        <label><input type="radio" name="s" id="s-risks" value="risks" checked><span>Riesgos</span></label>
+        <label><input type="radio" name="s" id="s-closure" value="closure"><span>Cierre</span></label>
+        <label><input type="radio" name="s" id="s-roles" value="roles"><span>Roles</span></label>
+      </fieldset>
+    </div>
+    <div class="stage">
+      <div class="card" id="card" style="width:calc(905px + 42px)">
+        <h3 id="step-title">Riesgos y mitigación</h3>
+        <div class="pf" id="pf"></div>
+      </div>
+    </div>
+    <div class="compare">
+      <figure>
+        <img src="hoy-6-filas.jpg" alt="Paso 15 actual en Pharos con seis filas: los textos largos quedan cortados en cada campo." width="800" height="720">
+        <figcaption><strong>Hoy, en la app.</strong> Las mismas 6 filas de ejemplo en una ventana de 940 px, sin guardar. Solo se lee completa la fila corta.</figcaption>
+      </figure>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <h3>Texto visible por campo, medido</h3>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Ventana</th><th class="num">Caja del campo</th><th class="num">Se ve de 141 caracteres</th></tr></thead>
+          <tbody>
+            <tr><td>940 px</td><td class="num">220 px</td><td class="num">21 %</td></tr>
+            <tr><td>768 px</td><td class="num">276 px</td><td class="num">27–29 %</td></tr>
+            <tr><td>375 px</td><td class="num">124 px</td><td class="num">10–11 %</td></tr>
+            <tr><td>940 px, confirmando borrar</td><td class="num">158 px</td><td class="num">menos aún</td></tr>
+          </tbody>
+        </table></div>
+        <p class="note">Por la fila más larga, de 224 caracteres, a 940 px solo se ve el 13 %.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Problemas encontrados</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Gravedad</th><th>Problema</th><th>Comprobación</th></tr></thead>
+      <tbody>
+        <tr><td><span class="sev crit">Crítica</span></td><td>«Marcar revisado» da por revisado un texto del que se ve entre el 10 % y el 29 %. La propuesta de la IA se lee entera y, al aceptarla, queda cortada.<div class="ev"><code>fields.tsx:170-190</code> · <code>ProvenanceBadge.tsx:34</code> · <code>StepBody.tsx:291-296</code></div></td><td>Medido en la app</td></tr>
+        <tr><td><span class="sev high">Alta</span></td><td>La confirmación de borrado cambia de fila. Pedí borrar «Los entornos…», quité otra fila antes y la confirmación pasó a «Retraso en la entrega». Al pulsar «Sí, eliminar» se borraría la fila equivocada.<div class="ev"><code>fields.tsx:22,168</code> (<code>key={i}</code>)</div></td><td>Reproducido en la app</td></tr>
+        <tr><td><span class="sev high">Alta</span></td><td>Al pulsar la papelera, el foco cae en <code>BODY</code>: quien usa teclado o lector de pantalla pierde su sitio. WCAG 2.4.3.<div class="ev"><code>fields.tsx:41-75</code></div></td><td>Reproducido en la app</td></tr>
+        <tr><td><span class="sev high">Alta</span></td><td>La única etiqueta visible es el placeholder, y desaparece al escribir. Con la lista llena nada dice qué columna es cuál. WCAG 3.3.2.<div class="ev"><code>fields.tsx:174,184</code></div></td><td>Visto en la app</td></tr>
+        <tr><td><span class="sev mid">Media</span></td><td>En móvil se mantienen dos columnas de 124 px. El texto no se puede revisar.<div class="ev"><code>fields.css:151-160</code></div></td><td>Medido en la app</td></tr>
+        <tr><td><span class="sev mid">Media</span></td><td>Al confirmar un borrado, los campos encogen de 220 a 158 px: el texto que vas a borrar se ve aún menos.<div class="ev"><code>fields.css:289</code></div></td><td>Medido en la app</td></tr>
+        <tr><td><span class="sev mid">Media</span></td><td>«Añadir fila» deja el foco en el botón, y hay que retroceder para escribir en la fila nueva. Además no se anuncia.<div class="ev"><code>fields.tsx:201-207</code></div></td><td>Reproducido en la app</td></tr>
+        <tr><td><span class="sev mid">Media</span></td><td>El aviso de duplicado solo se asocia al primer campo de la fila.<div class="ev"><code>fields.tsx:171,181</code></div></td><td>Leído en el código</td></tr>
+        <tr><td><span class="sev low">Baja</span></td><td>Tamaños táctiles por debajo de la SPEC: papelera de 38 px y «Añadir fila» de 27 px, frente a 44 px en móvil.<div class="ev"><code>SPEC.md:102-103</code></div></td><td>Medido en la app</td></tr>
+        <tr><td><span class="sev low">Baja</span></td><td>Las reglas de estos campos están duplicadas en dos hojas de estilos.<div class="ev"><code>TestPlan.css:150-206</code> · <code>fields.css:144-196</code></div></td><td>Leído en el código</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Alternativas comparadas</h2>
+    <p>Altura de la lista con las mismas 6 filas, de textos cortos y largos. La opción D está medida en la maqueta. Las demás salen de contar líneas con la fuente real y aplicar una fórmula, así que son aproximadas.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Alternativa</th><th class="num">905 px</th><th class="num">606 px</th><th class="num">498 px</th><th class="num">302 px</th><th>Lee todo sin acciones</th><th>Compara el par</th><th>Veredicto</th></tr></thead>
+      <tbody>
+        <tr><td>Hoy: inputs de una línea</td><td class="num">268</td><td class="num">268</td><td class="num">268</td><td class="num">268</td><td>No</td><td>No</td><td>Compacta pero no se puede revisar</td></tr>
+        <tr><td>A. Dos columnas que crecen</td><td class="num">526</td><td class="num">715</td><td class="num">883</td><td class="num">1681</td><td>Sí</td><td>Muy bien</td><td>En móvil, hasta 20 líneas por campo: inviable</td></tr>
+        <tr><td>B. Tarjetas apiladas</td><td class="num">1300+</td><td class="num">1340+</td><td class="num">1490+</td><td class="num">1760+</td><td>Sí</td><td>Regular</td><td>Una fila corta como «0» ocupa casi 4 veces más</td></tr>
+        <tr><td>C. Filas plegables</td><td class="num">280*</td><td class="num">280*</td><td class="num">280*</td><td class="num">280*</td><td>No</td><td>Solo abierta</td><td>Revisar 6 riesgos cuesta 6 clics y Ctrl+F no los alcanza</td></tr>
+        <tr class="pick"><td><strong>D. A que se apila bajo 480 px (recomendada)</strong></td><td class="num"><strong>526</strong></td><td class="num"><strong>715</strong></td><td class="num"><strong>≈883</strong></td><td class="num"><strong>1759</strong></td><td>Sí</td><td>Muy bien; bien apilada</td><td>Lo mejor de A y B con un solo HTML</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">Altura en px. * Todas plegadas; cada fila abierta suma entre 180 y 300 px. «+»: las tarjetas añaden su marco y relleno a esa cifra. Elegí 480 px por lo medido: a 498 px, apilar costaba 1486 px frente a 883 en dos columnas. A ese ancho quedan unos 29 caracteres por línea, el mínimo razonable; por debajo conviene apilar. En móvil, D ocupa algo más que A (1759 frente a 1681), pero con 6 líneas por campo como máximo en vez de 20.</p>
+  </section>
+
+  <section>
+    <h2>Cómo se comporta</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Situación</th><th>Comportamiento propuesto</th></tr></thead>
+      <tbody>
+        <tr><td>Texto corto</td><td>Una línea: 38 px en escritorio y 44 px en móvil. Casi igual que hoy.</td></tr>
+        <tr><td>Texto largo</td><td>El campo crece y el texto se ajusta. Los dos campos del par miden lo mismo, con el texto arriba, y la papelera queda arriba a la derecha.</td></tr>
+        <tr><td>Texto muy largo</td><td>Tope de 12 líneas (270 px), con barra de desplazamiento solo a partir de ahí. Cubre unos 300 caracteres en cualquier ancho y evita que un texto pegado rompa el paso.</td></tr>
+        <tr><td>Etiquetas</td><td>Dos columnas: una cabecera visible, sin placeholder. Apilado: etiqueta sobre cada campo. Siempre hay un <code>&lt;label&gt;</code> real, con «Fila N» solo para lector de pantalla.</td></tr>
+        <tr><td>Teclado</td><td>Tab va de Riesgo a Mitigación y a la papelera, en ese orden, en los dos diseños. Enter inserta un salto de línea. Tab nunca queda atrapado y no hay atajos nuevos.</td></tr>
+        <tr><td>Añadir fila</td><td>El foco pasa al primer campo de la fila nueva, solo cuando la añade la persona. Las filas que añade la IA no mueven el foco.</td></tr>
+        <tr><td>Borrar</td><td>La confirmación aparece bajo la fila, sin encoger los campos, y el foco va a «Cancelar». Cancelar devuelve el foco a la papelera. Al confirmar, va al primer campo de la fila que ocupa ese lugar y se anuncia «Fila N eliminada».</td></tr>
+        <tr><td>Móvil y zoom 200 %</td><td>Se decide por el ancho del campo con <code>@container</code>, no por el de la ventana, como pide la SPEC. Así funciona también con el panel lateral abierto. Objetivos táctiles de 44 px.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Impacto en «Roles» y «Criterios de cierre»</h2>
+    <p>Comparten el componente, así que mejoran con el mismo cambio y sin código propio. Elige «Cierre» o «Roles» en la maqueta para verlo.</p>
+    <ul>
+      <li><strong>Criterios de cierre:</strong> sus valores reales son cortos («% de casos ejecutados», «≥ 95%»), así que siguen en una línea. Propongo columnas 2:1, porque la métrica casi nunca necesita la mitad del ancho. Es una mejora modesta.</li>
+      <li><strong>Roles:</strong> se quedan en 1:1. No tengo datos reales suficientes para justificar otro reparto.</li>
+      <li><strong>Lista simple (<code>ListField</code>):</strong> tiene el mismo corte y el mismo fallo de confirmación. El arreglo de la confirmación también le sirve; hacerla crecer queda para otro cambio.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Pasos de implementación</h2>
+    <ol>
+      <li><strong><code>src/shared/ui/fields.tsx</code>:</strong> cambiar <code>input</code> por <code>textarea rows={1}</code> con <code>label</code> real, cabecera única, <code>ol/li</code> dentro del grupo y prop opcional de columnas. Quitar los placeholders. Asociar el duplicado a los dos campos.</li>
+      <li><strong>Foco:</strong> mover el foco al añadir y al confirmar, y añadir un <code>role="status"</code> para los borrados.</li>
+      <li><strong>Confirmación:</strong> poner <code>key={`${i}-${items.length}`}</code> en <code>DeleteButton</code>. Al cambiar el número de filas, cualquier confirmación abierta se cierra. Sirve también para <code>ListField</code>, sin ids nuevos ni cambios de datos.</li>
+      <li><strong><code>src/shared/ui/fields.css</code>:</strong> añadir <code>field-sizing: content</code>, el tope, <code>@container</code> a 480 px y la papelera con <code>align-self: start</code>. Sin soporte, usar 3 líneas y <code>resize: vertical</code>. Quitar las reglas duplicadas de <code>TestPlan.css</code>.</li>
+      <li><strong><code>TestPlanWizard.css</code>:</strong> añadir <code>scroll-padding-bottom</code> para que el pie fijo no tape el cursor.</li>
+      <li><strong><code>StepBody.tsx:325</code>:</strong> pasar las columnas 2:1 en cierre.</li>
+      <li><strong>Exportación:</strong> la plantilla de Excel ya ajusta el texto, pero el alto de fila era fijo y cortaba los textos largos. <code>planXlsx.ts</code> ahora hace crecer esas filas. Una prueba cubre el viaje de ida y vuelta con saltos de línea en Excel; el PDF no se probó con ellos.</li>
+      <li><strong>Tests:</strong> ampliar <code>src/test/a11y.test.tsx</code> con foco al añadir, cancelar y borrar, duplicado en los dos campos y la regresión de la confirmación. Añadir pruebas de <code>ListField</code>.</li>
+      <li><strong>E2E:</strong> en <code>e2e/tours/03-plan.tour.ts:53</code>, <code>fillPairs</code> busca <code>input</code> y hay que cambiarlo a <code>textarea</code>. Revisar también el tour de IA.</li>
+      <li><strong>Documentos, en el mismo cambio:</strong> <code>docs/rediseno/SPEC.md</code>, <code>docs/manual/03-plan.md</code> y las capturas afectadas, como <code>img/plan/15-riesgos.png</code>.</li>
+    </ol>
+    <p class="note"><strong>Estado:</strong> implementado como UX-15 en la rama <code>fix/ai-key-save-and-test</code>, sin commit. En la app real, 6 filas miden 667 px con un campo de 640 px y 1846 px en móvil, sin texto cortado. La regla de <code>scroll-padding</code> se resolvió con <code>scroll-margin</code> en el campo, sin tocar <code>TestPlanWizard.css</code>.</p>
+  </section>
+
+  <section>
+    <h2>Fuera de esta propuesta</h2>
+    <ul>
+      <li>Un riesgo sin mitigación marca el paso como completado, sin aviso (<code>steps.ts:62</code>).</li>
+      <li>La revisión de la IA se marca por lista, no por fila. Cambiarlo toca el modelo de datos.</li>
+      <li>Con muchas filas, «Sugerir riesgos con IA» queda lejos, porque va debajo de la lista. Propongo decidir si subirlo cuando se vea en uso real.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Verificado y supuesto</h2>
+    <div class="compare">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h3>Verificado</h3>
+        <ul>
+          <li>En el navegador integrado, con la sesión ya iniciada: anchos, porcentajes, foco, cambio de fila de la confirmación y líneas de texto con la fuente real.</li>
+          <li>En la maqueta: alturas de 526 y 715 px en dos columnas, 1759 px apilada, sin campos con texto oculto, y foco al añadir y al cancelar. La medida a 498 px se tomó con el umbral anterior, así que el ≈883 de ese ancho es calculado.</li>
+          <li><code>field-sizing</code> funciona en el navegador usado (Chrome 152).</li>
+          <li>Código citado con archivo y línea, y el escritorio se empaqueta solo para Windows (<code>tauri.conf.json:31</code>).</li>
+          <li>No se guardó nada: las filas de ejemplo se descartaron y el plan sigue «Guardado · 3 nov 2026».</li>
+        </ul>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h3>Supuesto o pendiente</h3>
+        <ul>
+          <li><strong>«Banca Móvil» no aparece en esta cuenta.</strong> Probé en «Prueba» (ATS) con textos escritos por mí, a partir de tu captura. Abrir ese proyecto pudo actualizar su último acceso.</li>
+          <li>El umbral de 480 px es una propuesta: los revisores sugerían 460 y 520, y lo ajusté por las alturas medidas. Hay que validarlo con zoom al 200 %.</li>
+          <li>Soporte de <code>field-sizing</code> en otros navegadores: un revisor lo consultó en caniuse (Chrome 123+, Firefox 152+, Safari 26.2+); yo no lo repetí. Sin soporte, el texto sigue siendo accesible.</li>
+          <li>No se probó con lector de pantalla ni en móvil real. Hay que comprobar que el teclado táctil y el pie fijo no tapen el cursor.</li>
+          <li>La tarea principal, revisar y corregir pares, es una deducción: no se observó a personas usándolo.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var DATA = {
+    risks: { title: "Riesgos y mitigación", labels: ["Riesgo", "Mitigación"], cols: "1fr 1fr", rows: [
+      ["Playwright, Selenium y Cypress están orientadas a aplicaciones web, por lo que no cubren los flujos nativos de iOS y Android de la app móvil.", "Realizar en el primer sprint una prueba de concepto con Appium para validar la cobertura de los flujos críticos en dispositivos reales."],
+      ["Los entornos de integración de servicios externos pueden no estar disponibles durante las ventanas de prueba acordadas con los proveedores.", "Implementar virtualización de servicios o mocks para las dependencias inestables y mantener un calendario compartido de disponibilidad."],
+      ["Retraso en la entrega", "Replanificar"],
+      ["Datos reales en pruebas", "Generar conjuntos de datos sintéticos y cuentas de prueba dedicadas, y enmascarar cualquier copia de producción antes de cargarla en el entorno."],
+      ["No hay umbrales de rendimiento definidos (tiempos de respuesta, concurrencia y consumo de batería), de modo que los resultados no se pueden evaluar.", "Acordar SLA"],
+      ["Con la metodología ágil, los cambios frecuentes por sprint aumentan el riesgo de regresión en funcionalidades ya validadas y dejan obsoletos parte de los casos automatizados, sobre todo en los flujos de pago y autenticación.", "Priorizar la automatización de los flujos críticos de regresión y ejecutarlos en cada integración, revisando al cierre de cada sprint qué casos deben actualizarse o retirarse."]
+    ] },
+    closure: { title: "Criterios de cierre", labels: ["Criterio", "Métrica"], cols: "2fr 1fr", rows: [
+      ["% de casos ejecutados", "≥ 95%"], ["Defectos críticos abiertos", "0"], ["Cobertura de requisitos", "≥ 90%"]
+    ] },
+    roles: { title: "Roles y responsabilidades", labels: ["Rol", "Responsabilidad"], cols: "1fr 1fr", rows: [
+      ["Líder de QA", "Planifica las pruebas, coordina al equipo e informa del avance y de los riesgos a negocio en cada cierre de sprint."],
+      ["Analista de QA", "Diseña y ejecuta los casos, y registra los defectos con su evidencia."],
+      ["Desarrollo", "Corrige defectos"]
+    ] }
+  };
+  var step = "risks";
+  var pf = document.getElementById("pf");
+  var card = document.getElementById("card");
+  var title = document.getElementById("step-title");
+  var seq = 0;
+  var TRASH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6l-1 14H6L5 6"/><path d="M8 6V4h8v2"/><path d="M10 11v6M14 11v6"/></svg>';
+  var state = {};
+  Object.keys(DATA).forEach(function (k) {
+    state[k] = DATA[k].rows.map(function (r) { return { id: ++seq, a: r[0], b: r[1], confirming: false }; });
+  });
+
+  function el(tag, attrs, text) {
+    var e = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function focusSel(sel) { var t = pf.querySelector(sel); if (t) t.focus(); }
+
+  function render(focus) {
+    var d = DATA[step], rows = state[step];
+    pf.style.setProperty("--cols", d.cols);
+    title.textContent = d.title;
+    pf.textContent = "";
+    var group = el("div", { role: "group", "aria-label": d.title, style: "display:contents" });
+    var head = el("div", { class: "pf-head", "aria-hidden": "true" });
+    head.append(el("span", {}, d.labels[0]), el("span", {}, d.labels[1]), el("span"));
+    group.append(head);
+    var list = el("ol", { class: "pf-list" });
+    rows.forEach(function (r, i) {
+      var li = el("li"), row = el("div", { class: "pf-row" });
+      ["a", "b"].forEach(function (k, c) {
+        var id = "pf-" + r.id + "-" + k;
+        var cell = el("div", { class: "pf-cell" });
+        var lab = el("label", { class: "pf-lbl", for: id }, d.labels[c]);
+        lab.append(el("span", { class: "sr" }, " · Fila " + (i + 1)));
+        var ta = el("textarea", { id: id, rows: "1", lang: "es" });
+        ta.value = r[k];
+        ta.addEventListener("input", function () { r[k] = ta.value; });
+        cell.append(lab, ta);
+        row.append(cell);
+      });
+      if (r.confirming) {
+        row.append(el("span"));
+        var conf = el("div", { class: "pf-confirm", role: "group", "aria-label": "Quitar fila " + (i + 1) });
+        var yes = el("button", { type: "button", class: "yes", "data-yes": r.id }, "Sí, eliminar");
+        var no = el("button", { type: "button", "data-no": r.id }, "Cancelar");
+        yes.addEventListener("click", function () {
+          state[step] = state[step].filter(function (x) { return x !== r; });
+          state[step].forEach(function (x) { x.confirming = false; });
+          var next = state[step][i] || state[step][i - 1];
+          render(next ? "#pf-" + next.id + "-a" : ".pf-add");
+          status("Fila " + (i + 1) + " eliminada");
+        });
+        no.addEventListener("click", function () { r.confirming = false; render('[data-del="' + r.id + '"]'); });
+        conf.append(yes, no);
+        row.append(conf);
+      } else {
+        var del = el("button", { type: "button", class: "pf-del", "data-del": r.id, "aria-label": "Quitar: " + d.title + " · Fila " + (i + 1), title: "Quitar fila " + (i + 1) });
+        del.innerHTML = TRASH;
+        del.addEventListener("click", function () {
+          var empty = !r.a.trim() && !r.b.trim();
+          if (empty) {
+            state[step] = state[step].filter(function (x) { return x !== r; });
+            var next = state[step][i] || state[step][i - 1];
+            render(next ? "#pf-" + next.id + "-a" : ".pf-add");
+            status("Fila " + (i + 1) + " eliminada");
+            return;
+          }
+          state[step].forEach(function (x) { x.confirming = false; });
+          r.confirming = true;
+          render('[data-no="' + r.id + '"]');
+        });
+        row.append(del);
+      }
+      li.append(row);
+      list.append(li);
+    });
+    group.append(list);
+    var add = el("button", { type: "button", class: "pf-add" }, "+ Añadir fila");
+    add.addEventListener("click", function () {
+      var r = { id: ++seq, a: "", b: "", confirming: false };
+      state[step].push(r);
+      render("#pf-" + r.id + "-a");
+    });
+    group.append(add);
+    var live = el("div", { class: "sr", role: "status", id: "pf-live" });
+    pf.append(group, live);
+    if (focus) focusSel(focus);
+  }
+  function status(msg) { var l = document.getElementById("pf-live"); if (l) l.textContent = msg; }
+
+  document.getElementById("seg-width").addEventListener("change", function (e) {
+    card.style.width = "calc(" + e.target.value + "px + 42px)";
+  });
+  document.getElementById("seg-step").addEventListener("change", function (e) {
+    step = e.target.value; render();
+  });
+  render();
+})();
+</script>
+
+</body></html>

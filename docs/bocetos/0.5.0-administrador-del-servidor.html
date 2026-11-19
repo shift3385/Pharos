@@ -1,0 +1,207 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SEC-09 Restablecer por administrador</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one reading column; each boceto is a framed 1:1 mock of the Pharos screen, with its notes underneath. Same token set as the other Pharos bocetos. */
+:root{
+  --bg:#f3f5f9; --surface:#ffffff; --sunken:#eef1f6; --fg:#14213a; --muted:#5a6680; --line:#d7dde8;
+  --navy:#1e3a6e; --accent:#2f6fd6; --ok:#1d7a4a; --ok-bg:#e3f4ea; --warn:#9a5b00; --warn-bg:#fff1d6;
+  --err:#b42318; --err-bg:#fde8e6; --new:#7a3fd1; --new-bg:#f1e9fd; --on-accent:#ffffff;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:Inter,system-ui,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --new:#c39bff; --new-bg:#2c2246; --on-accent:#0f1522; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --new:#c39bff; --new-bg:#2c2246; --on-accent:#0f1522; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+main{max-width:980px;margin:0 auto;display:grid;gap:44px}
+h1,h2,h3,h4{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:1.9rem;color:var(--navy)} h2{font-size:1.3rem;color:var(--navy)}
+.lead{color:var(--muted);max-width:68ch;margin:6px 0 0}
+.eyebrow{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.block{display:grid;gap:14px}
+.note{max-width:72ch;margin:0;padding-left:1.2em}
+.note li{margin-bottom:4px}
+.frame{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.frame-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:var(--sunken);border-bottom:1px solid var(--line);font-size:.8rem;color:var(--muted)}
+.tag-new{background:var(--new-bg);color:var(--new);font-size:.7rem;font-weight:700;border-radius:4px;padding:1px 6px;letter-spacing:.04em}
+.pad{padding:20px;display:grid;gap:16px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.card{border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:14px;min-width:0}
+.card h3{font-size:1.05rem}
+.card .sub{color:var(--muted);font-size:.85rem;margin:-8px 0 0}
+.field{display:grid;gap:4px;font-size:.84rem}
+.field label{font-weight:600}
+.input{border:1px solid var(--line);border-radius:7px;padding:8px 10px;background:var(--surface);color:var(--fg);font:inherit;font-size:.9rem;display:flex;justify-content:space-between;gap:8px;min-width:0}
+.input.dots{letter-spacing:.2em}
+.input .eye{color:var(--muted);letter-spacing:0;font-size:.78rem}
+.input.bad{border-color:var(--err)}
+.help{color:var(--muted);font-size:.78rem}
+.errtxt{color:var(--err);font-size:.8rem}
+.meter{height:6px;border-radius:3px;background:var(--sunken);overflow:hidden}
+.meter i{display:block;height:100%;width:70%;background:var(--ok)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:7px;padding:7px 14px;font:500 .86rem var(--f-body);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.link{color:var(--accent);font-size:.84rem;font-weight:500;cursor:pointer;background:none;border:0;padding:0;font-family:inherit}
+.banner{display:flex;gap:10px;align-items:flex-start;border-radius:8px;padding:10px 12px;font-size:.85rem}
+.banner.ok{background:var(--ok-bg);color:var(--ok)} .banner.warn{background:var(--warn-bg);color:var(--warn)} .banner.err{background:var(--err-bg);color:var(--err)}
+.banner.info{background:var(--sunken);color:var(--fg)}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.75rem;font-weight:600}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.85rem;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+.codes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 18px;background:var(--sunken);border-radius:8px;padding:16px 18px;font-family:var(--f-mono);font-size:1rem;font-variant-numeric:tabular-nums;counter-reset:c}
+.codes span{counter-increment:c;white-space:nowrap}
+.codes span::before{content:counter(c,decimal-leading-zero) "  ";color:var(--muted);font-size:.78rem}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:.88rem}
+.check input{margin-top:3px}
+.auth{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.8fr);min-height:420px}
+.auth-form{padding:28px 28px;display:grid;gap:14px;align-content:start;max-width:420px}
+.auth-photo{background:linear-gradient(160deg,var(--navy),#0b1630);position:relative}
+.auth-photo::after{content:"Pharos";position:absolute;left:22px;bottom:18px;color:#e6ebf5;font-family:var(--f-display);font-size:1.2rem;opacity:.85}
+.auth-title{font-size:1.45rem;color:var(--fg)}
+.tabs{display:flex;gap:18px;border-bottom:1px solid var(--line);font-size:.86rem;color:var(--muted)}
+.tabs span{padding:8px 0}.tabs .on{color:var(--fg);border-bottom:2px solid var(--accent);font-weight:600}
+.mail{border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:10px;font-size:.88rem;max-width:560px}
+.mail .from{color:var(--muted);font-size:.8rem}
+.mono{font-family:var(--f-mono);font-size:.8rem;word-break:break-all}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.82rem}
+th{text-align:left;background:var(--sunken);color:var(--muted);font-weight:600;padding:6px 8px;white-space:nowrap}
+td{padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
+.state{display:grid;gap:10px}
+.state h4{font-size:.95rem}
+@media (max-width:640px){.auth{grid-template-columns:1fr}.auth-photo{min-height:90px;order:-1}.codes{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<main>
+  <header class="block">
+    <span class="eyebrow">Pharos 0.5.0 «Equipo» · pista C · ola 2 · bocetos revisados (2026-11-18)</span>
+    <h1>Administrador del servidor y restablecer contraseñas</h1>
+    <p class="lead">Hay un administrador del servidor (SEC-11), separado de los roles de workspace: un Test Manager no restablece contraseñas. El administrador nunca ve ni pone una contraseña: genera un enlace de un solo uso que dura 24 horas y que la persona abre para elegir la suya (SEC-09).</p>
+  </header>
+
+  <section class="block" aria-labelledby="a1">
+    <span class="eyebrow">Boceto 1 · Administración › Usuarios</span>
+    <h2 id="a1">Una pestaña que solo ve un administrador</h2>
+    <div class="frame">
+      <div class="frame-head">Administración · grupo «Aplicación» · vista de Luis Gómez (administrador) <span class="tag-new">NUEVO</span></div>
+      <div class="pad">
+        <div class="row"><strong>Usuarios del servidor</strong><span class="pill ok">Administradores: 2</span><span class="help">pharos.empresa.com · 14 cuentas</span></div>
+        <div class="input" style="max-width:360px">Buscar por nombre o correo…</div>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>Persona</th><th>Correo</th><th>Alta</th><th>Códigos</th><th>Acciones</th></tr></thead>
+        <tbody>
+          <tr><td>Luis Gómez <span class="pill ok">Tú</span> <span class="pill warn">Administrador</span></td><td>luis@empresa.test</td><td>2 nov 2026</td><td>8 de 10</td><td class="row"><button class="btn">Quitar administrador</button></td></tr>
+          <tr><td>Ana Pérez</td><td>ana.perez@empresa.test</td><td>5 nov 2026</td><td>Sin códigos</td><td class="row"><button class="btn">Restablecer contraseña…</button><button class="btn">Hacer administrador</button></td></tr>
+          <tr><td>Carlos Díaz <span class="pill warn">Administrador</span></td><td>carlos@empresa.test</td><td>7 nov 2026</td><td>10 de 10</td><td class="row"><button class="btn">Restablecer contraseña…</button><button class="btn">Quitar administrador</button></td></tr>
+        </tbody></table></div>
+    </div>
+    <ul class="note">
+      <li>Quien no es administrador no ve la pestaña. El servidor comprueba el rol en cada petición; lo que muestra la app no autoriza nada.</li>
+      <li>En la propia fila no aparece «Restablecer»: la contraseña propia se cambia en «Mi perfil».</li>
+      <li>Si solo queda un administrador, su «Quitar administrador» sale deshabilitado: «Tiene que haber al menos un administrador».</li>
+      <li>«Códigos» dice si la cuenta tiene códigos de recuperación. Con «Sin códigos», el restablecimiento del administrador es la única salida si la persona olvida la contraseña.</li>
+    </ul>
+  </section>
+
+  <section class="block" aria-labelledby="a2">
+    <span class="eyebrow">Boceto 2 · Restablecer: confirmación</span>
+    <h2 id="a2">Qué va a pasar</h2>
+    <div class="frame"><div class="pad" style="max-width:560px">
+      <h3>¿Restablecer la contraseña de Ana Pérez?</h3>
+      <p style="margin:0">Pharos genera un enlace de un solo uso para que Ana elija una contraseña nueva. Tú no verás ni pondrás su contraseña.</p>
+      <ul class="note">
+        <li>El enlace dura 24 horas y sirve una vez. Anula cualquier otro enlace que Ana tuviera abierto.</li>
+        <li>Al usarlo se cierra la sesión de Ana en todos sus equipos y se borra su clave de IA guardada en la web.</li>
+        <li>Ana recibe un aviso, y el cambio queda en tu auditoría y en la suya.</li>
+      </ul>
+      <div class="row"><button class="btn">Cancelar</button><button class="btn primary">Generar enlace</button></div>
+    </div></div>
+  </section>
+
+  <section class="block" aria-labelledby="a3">
+    <span class="eyebrow">Boceto 3 · Restablecer: el enlace</span>
+    <h2 id="a3">Dos variantes, según el servidor</h2>
+    <div class="cols">
+      <div class="frame"><div class="frame-head">Servidor con correo (recomendado)</div><div class="pad">
+        <h3>Enviar el enlace a Ana</h3>
+        <p style="margin:0">Pharos se lo manda a <strong>ana.perez@empresa.test</strong>. Tú no lo verás.</p>
+        <div class="row"><button class="btn primary">Enviar por correo</button><button class="link">Prefiero entregarlo yo</button></div>
+        <div class="banner ok">Enlace enviado a ana.perez@empresa.test. Caduca el 19 nov 2026, 10:42.</div>
+      </div></div>
+      <div class="frame"><div class="frame-head">Sin correo, o «Prefiero entregarlo yo»</div><div class="pad">
+        <h3>Enlace para Ana Pérez</h3>
+        <span class="mono" style="background:var(--sunken);padding:10px;border-radius:8px">https://pharos.empresa.com/#/restablecer?token=Vb3r…kQ</span>
+        <div class="banner warn">Solo se muestra ahora. Dáselo a Ana por un canal privado: quien lo tenga puede cambiar su contraseña hasta que caduque, el 19 nov 2026 a las 10:42.</div>
+        <div class="row"><button class="btn primary">Copiar</button><button class="btn">Listo</button></div>
+      </div></div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="a4">
+    <span class="eyebrow">Boceto 4 · Nombrar o quitar administrador</span>
+    <h2 id="a4">Un rol de todo el servidor</h2>
+    <div class="cols">
+      <div class="frame"><div class="pad">
+        <h3>¿Hacer administradora a Ana Pérez?</h3>
+        <p style="margin:0">Podrá ver todas las cuentas de este servidor, restablecer sus contraseñas y nombrar o quitar administradores. No le da acceso a los proyectos de ningún workspace.</p>
+        <div class="row"><button class="btn">Cancelar</button><button class="btn primary">Hacer administradora</button></div>
+      </div></div>
+      <div class="frame"><div class="pad">
+        <h3>¿Quitarte el rol de administrador?</h3>
+        <p style="margin:0">Dejarás de ver «Usuarios». Carlos Díaz sigue siendo administrador.</p>
+        <div class="row"><button class="btn">Cancelar</button><button class="btn primary">Quitar el rol</button></div>
+        <div class="banner info">Si se pierden todos los administradores, quien gestiona el servidor puede recuperar el acceso con la variable PHAROS_ADMINS.</div>
+      </div></div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="a5">
+    <span class="eyebrow">Boceto 5 · Lo que ve la persona</span>
+    <h2 id="a5">Aviso, página de restablecer y perfil</h2>
+    <div class="cols">
+      <div class="frame"><div class="frame-head">Notificaciones (RED-W2)</div><div class="pad">
+        <div class="banner info"><span><strong>Luis Gómez</strong> (administrador del servidor) generó un enlace para restablecer tu contraseña. Si no lo pediste, avísale.</span></div>
+        <div class="banner info"><span><strong>Luis Gómez</strong> te nombró administradora del servidor.</span></div>
+      </div></div>
+      <div class="frame"><div class="frame-head">Página de restablecer</div><div class="pad">
+        <h3>Elige una contraseña nueva</h3>
+        <p class="help" style="margin:0">Cuenta: ana.perez@empresa.test · Enlace generado por Luis Gómez (administrador del servidor)</p>
+        <div class="field"><label>Contraseña nueva</label><div class="input dots">••••••••••••<span class="eye">Mostrar</span></div></div>
+        <button class="btn primary" style="justify-self:start">Guardar la contraseña</button>
+      </div></div>
+      <div class="frame"><div class="frame-head">Mi perfil</div><div class="pad">
+        <div class="row"><strong>Ana Pérez</strong><span class="pill warn">Administradora del servidor</span></div>
+        <p class="help" style="margin:0">ana.perez@empresa.test</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="a6">
+    <span class="eyebrow">Boceto 6 · Auditoría</span>
+    <h2 id="a6">En las dos cadenas personales</h2>
+    <div class="frame"><div class="tw"><table>
+      <thead><tr><th>Cadena</th><th>Quién</th><th>Elemento</th><th>Detalle</th></tr></thead>
+      <tbody>
+        <tr><td>La de Luis</td><td>Luis Gómez</td><td>Cuenta de Ana Pérez</td><td>Enlace de restablecimiento generado · Por correo</td></tr>
+        <tr><td>La de Ana</td><td>Luis Gómez</td><td>Cuenta</td><td>Enlace de restablecimiento generado por un administrador</td></tr>
+        <tr><td>La de Ana</td><td>Ana Pérez</td><td>Cuenta</td><td>Contraseña cambiada · Por un administrador (Luis Gómez) · 2 sesiones cerradas</td></tr>
+        <tr><td>Las dos</td><td>Luis Gómez</td><td>Cuenta de Ana Pérez</td><td>Rol de administrador concedido</td></tr>
+      </tbody></table></div></div>
+    <ul class="note"><li>No hay un «workspace del servidor», así que cada acción queda en la cadena de quien la hace y en la de la persona afectada. Nunca guarda el enlace ni su hash.</li></ul>
+  </section>
+</main>
+
+</body></html>

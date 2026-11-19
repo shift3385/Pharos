@@ -12,7 +12,8 @@ Syllabus v4.0.1.
 > [beta guide](docs/guia-beta.md) (Spanish). Roadmap and backlog:
 > [`docs/ROADMAP.md`](docs/ROADMAP.md) · changes:
 > [`CHANGELOG.md`](CHANGELOG.md) · versioning policy:
-> [`docs/VERSIONING.md`](docs/VERSIONING.md).
+> [`docs/VERSIONING.md`](docs/VERSIONING.md) · design sketches and tracking pages:
+> [`docs/artefactos.md`](docs/artefactos.md).
 
 ## How Pharos runs
 

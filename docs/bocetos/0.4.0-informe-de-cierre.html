@@ -1,0 +1,266 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>DOC-01 Informe de cierre</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: one reading column of bocetos; each boceto is a framed mock of the app at 1:1 scale, notes beside it in the column flow. */
+:root{
+  --bg:#f3f5f9; --surface:#ffffff; --sunken:#eef1f6; --fg:#14213a; --muted:#5a6680; --line:#d7dde8;
+  --navy:#1e3a6e; --accent:#2f6fd6; --ok:#1d7a4a; --ok-bg:#e3f4ea; --warn:#9a5b00; --warn-bg:#fff1d6;
+  --err:#b42318; --err-bg:#fde8e6; --neutral-bg:#e9edf3; --new:#7a3fd1; --new-bg:#f1e9fd;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:Inter,system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --neutral-bg:#24304a; --new:#c39bff; --new-bg:#2c2246; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --neutral-bg:#24304a; --new:#c39bff; --new-bg:#2c2246; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+main{max-width:980px;margin:0 auto;display:grid;gap:40px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:1.9rem;color:var(--navy)}
+h2{font-size:1.3rem;color:var(--navy)}
+.lead{color:var(--muted);max-width:68ch;margin:6px 0 0}
+.eyebrow{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.block{display:grid;gap:14px}
+.note{max-width:72ch;color:var(--fg);margin:0}
+.note li{margin-bottom:4px}
+.frame{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.bar h3{font-size:1.05rem;flex:1;min-width:200px}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);
+  border-radius:7px;padding:6px 12px;font:500 .85rem var(--f-body)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.new{outline:2px dashed var(--new);outline-offset:2px}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.75rem;font-weight:600;white-space:nowrap}
+.ok{background:var(--ok-bg);color:var(--ok)} .warn{background:var(--warn-bg);color:var(--warn)}
+.err{background:var(--err-bg);color:var(--err)} .neu{background:var(--neutral-bg);color:var(--muted)}
+.tag-new{background:var(--new-bg);color:var(--new);font-size:.7rem;font-weight:700;border-radius:4px;padding:1px 6px;letter-spacing:.04em}
+.tabs{display:flex;gap:18px;padding:0 18px;border-bottom:1px solid var(--line);font-size:.85rem;color:var(--muted);overflow-x:auto}
+.tabs span{padding:10px 0}.tabs .on{color:var(--fg);border-bottom:2px solid var(--accent);font-weight:600}
+.pad{padding:16px 18px;display:grid;gap:14px}
+.toast{display:flex;flex-wrap:wrap;gap:12px;align-items:center;background:var(--sunken);border-radius:8px;padding:12px 14px;font-size:.88rem}
+/* report */
+.rep{display:grid;gap:22px;padding:18px}
+.rep section{display:grid;gap:8px;min-width:0}
+.rep h4{font-family:var(--f-display);font-size:1rem;margin:0;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.rep h4 .n{color:var(--muted);font-variant-numeric:tabular-nums;font-weight:500}
+.src{font-size:.75rem;color:var(--muted)}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 18px;margin:0;font-size:.86rem}
+.kv div{display:flex;gap:8px}.kv dt{color:var(--muted);min-width:110px}.kv dd{margin:0;font-weight:500}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.84rem;font-variant-numeric:tabular-nums}
+th{text-align:left;background:var(--sunken);color:var(--muted);font-weight:600;padding:6px 8px;white-space:nowrap}
+td{padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
+.better{color:var(--ok)} .worse{color:var(--err)}
+.verdict{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:8px;padding:10px 12px;font-size:.88rem}
+textarea{width:100%;min-height:64px;box-sizing:border-box;border:1px solid var(--line);border-radius:7px;padding:8px;font:inherit;font-size:.86rem;background:var(--surface);color:var(--fg);resize:vertical}
+.approve{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;background:var(--sunken);border-radius:8px;padding:12px 14px;font-size:.88rem}
+.foot{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--line)}
+.sheets{display:flex;flex-wrap:wrap;gap:6px;padding:12px 18px;background:var(--sunken)}
+.sheets span{background:var(--surface);border:1px solid var(--line);border-radius:5px 5px 0 0;padding:4px 10px;font-size:.8rem}
+.sheets .reuse{border-style:dashed}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.cols>div{min-width:0}
+ol.pdf{margin:0;padding-left:20px;font-size:.86rem}
+.dec{display:grid;gap:10px}
+.dec article{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.dec h3{font-size:.95rem;margin-bottom:4px}
+.dec p{margin:0;font-size:.88rem}
+code{font-size:.82em;background:var(--sunken);padding:1px 4px;border-radius:4px}
+</style>
+
+<main>
+<header>
+  <div class="eyebrow">Pharos 0.4.0 · DOC-01 · Bocetos para aprobación</div>
+  <h1>Informe de cierre de pruebas (ISO/IEC/IEEE 29119-3)</h1>
+  <p class="lead">El «Test Completion Report» de un ciclo cerrado: once apartados, vista previa en la app, exportación a PDF y .xlsx. Lo que se calcula sale del cierre congelado (<code>data.closures</code>, DOC-02) y del plan del ciclo; lo que se escribe a mano se guarda en el propio ciclo y se sincroniza. Los datos de ejemplo son ficticios.</p>
+</header>
+
+<!-- A -->
+<section class="block">
+  <div class="eyebrow">Boceto A</div>
+  <h2>Dónde se abre</h2>
+  <div class="frame">
+    <div class="bar">
+      <h3>CYC-007 · Regresión sprint 12 <span class="pill ok" style="margin-left:6px">Cerrado</span> <span class="pill warn">Go con riesgos</span></h3>
+      <span class="btn">Informe de estado</span>
+      <span class="btn primary new">Informe de cierre</span>
+      <span class="btn">Editar</span>
+    </div>
+    <div class="tabs"><span class="on">Casos</span><span>Progreso</span><span>Ejecuciones</span><span>Configuraciones</span></div>
+    <div class="pad">
+      <div class="src">Cabecera de un ciclo cerrado: «Cerrar ciclo…» ya no se muestra; en su lugar aparece «Informe de cierre» (botón principal). En un ciclo abierto el botón no existe.</div>
+      <div class="toast"><span class="pill warn">Go con riesgos</span> CYC-007 cerrado. La decisión queda en el informe de cierre. <span class="btn new">Abrir informe de cierre</span></div>
+      <div class="src">Al confirmar «Cerrar ciclo…», el aviso de éxito ofrece abrir el informe directamente.</div>
+    </div>
+  </div>
+</section>
+
+<!-- B -->
+<section class="block">
+  <div class="eyebrow">Boceto B</div>
+  <h2>El informe (vista previa)</h2>
+  <div class="frame">
+    <div class="bar"><h3>Informe de cierre de pruebas</h3><span class="src">ISO/IEC/IEEE 29119-3 · TCR-PHX-CYC-007</span></div>
+    <div class="rep">
+
+      <section>
+        <h4><span class="n">1</span> Identificación</h4>
+        <dl class="kv">
+          <div><dt>Proyecto</dt><dd>Phoenix Web</dd></div>
+          <div><dt>Ciclo</dt><dd>CYC-007 · Regresión sprint 12</dd></div>
+          <div><dt>Plan</dt><dd>TP-PHX-3fa21c · v4 (aprobado)</dd></div>
+          <div><dt>Periodo</dt><dd>03/11/2026 – 14/11/2026</dd></div>
+          <div><dt>Cerrado por</dt><dd>Ana Ruiz · 14/11/2026 17:42</dd></div>
+          <div><dt>Build / entorno</dt><dd>2.12.0 · Staging</dd></div>
+        </dl>
+      </section>
+
+      <section>
+        <h4><span class="n">2</span> Resumen <span class="src">· editable, empieza con las cifras</span></h4>
+        <textarea>Se ejecutaron 182 de 190 casos (95,8 %) con una tasa de éxito del 91,2 %. Quedan 3 defectos abiertos, 1 crítico. 4 de 6 criterios se cumplen; el ciclo se cerró «Go con riesgos».</textarea>
+      </section>
+
+      <section>
+        <h4><span class="n">3</span> Desviaciones respecto al plan</h4>
+        <div class="tw"><table>
+          <tr><th>Aspecto</th><th>Planificado</th><th>Real</th><th>Desviación</th></tr>
+          <tr><td>Fin del ciclo</td><td>12/11/2026</td><td>14/11/2026</td><td><span class="pill warn">+2 días</span></td></tr>
+          <tr><td>Casos ejecutados</td><td>190</td><td>182</td><td><span class="pill warn">8 sin ejecutar</span></td></tr>
+          <tr><td>Criterios obligatorios</td><td>5 cumplidos</td><td>3 cumplidos</td><td><span class="pill err">2 con justificación</span></td></tr>
+        </table></div>
+        <textarea placeholder="Otras desviaciones: cambios de alcance, de entorno o de enfoque y su motivo."></textarea>
+      </section>
+
+      <section>
+        <h4><span class="n">4</span> Evaluación frente a los criterios de salida <span class="src">· la «Decisión de salida» de DOC-02, tal cual</span></h4>
+        <div class="verdict"><span class="pill warn">Go con riesgos</span><b>4 de 6 criterios se cumplen; 2 obligatorios no, con justificación.</b> Cerrado el 14/11/2026 17:42 · Frente a CYC-006 (Go)</div>
+        <div class="tw"><table>
+          <tr><th>Criterio</th><th>Objetivo</th><th>Valor</th><th>Resultado</th><th>Justificación</th></tr>
+          <tr><td>Casos ejecutados</td><td>≥ 100 %</td><td>95,8 %</td><td><span class="pill err">No cumple</span></td><td>8 casos de pagos dependen del proveedor externo, caído hasta el 20/11.</td></tr>
+          <tr><td>Defectos críticos abiertos</td><td>= 0</td><td>1</td><td><span class="pill err">No cumple</span></td><td>DEF-114 tiene parche validado en el entorno de pre-producción.</td></tr>
+          <tr><td>Tasa de éxito</td><td>≥ 90 %</td><td>91,2 %</td><td><span class="pill ok">Cumple</span></td><td>—</td></tr>
+        </table></div>
+      </section>
+
+      <section>
+        <h4><span class="n">5</span> Factores que bloquearon el avance</h4>
+        <div class="tw"><table>
+          <tr><th>Caso</th><th>Título</th><th>Incidencia</th><th>Ejecución</th></tr>
+          <tr><td>TC-0412</td><td>Pago con tarjeta 3DS</td><td>Bloqueado</td><td>RUN-031</td></tr>
+          <tr><td>TC-0377</td><td>Carrito persistente</td><td>Flaky</td><td>RUN-030</td></tr>
+        </table></div>
+        <textarea placeholder="Causas: entornos, datos, dependencias, personas…">Caída del sandbox del proveedor de pagos del 10 al 14/11.</textarea>
+      </section>
+
+      <section>
+        <h4><span class="n">6</span> Medidas de prueba <span class="src">· seis métricas clásicas + las de los criterios</span></h4>
+        <div class="tw"><table>
+          <tr><th>Métrica</th><th>CYC-007</th><th>CYC-006</th><th>Cambio</th><th>Objetivo del plan</th><th>¿Lo alcanza?</th></tr>
+          <tr><td>Tasa de éxito</td><td>91,2 %</td><td>88,0 %</td><td class="better">+3,2 pt</td><td>≥ 90 %</td><td><span class="pill ok">Sí</span></td></tr>
+          <tr><td>Densidad de defectos</td><td>4,4 / 100</td><td>3,1 / 100</td><td class="worse">+1,3</td><td>≤ 5 / 100</td><td><span class="pill ok">Sí</span></td></tr>
+          <tr><td>Escapes</td><td>1</td><td>0</td><td class="worse">+1</td><td>—</td><td><span class="pill neu">Sin objetivo</span></td></tr>
+          <tr><td>Tiempo de corrección</td><td>2,5 d</td><td>3,0 d</td><td class="better">−0,5 d</td><td>≤ 3 d</td><td><span class="pill ok">Sí</span></td></tr>
+          <tr><td>Reapertura</td><td>12,5 %</td><td>5,0 %</td><td class="worse">+7,5 pt</td><td>≤ 10 %</td><td><span class="pill err">No</span></td></tr>
+          <tr><td>Flaky</td><td>1,1 %</td><td>1,6 %</td><td class="better">−0,5 pt</td><td>—</td><td><span class="pill neu">Sin objetivo</span></td></tr>
+        </table></div>
+        <div class="src">Valores congelados al cerrar (no cambian aunque luego se corrijan defectos). El objetivo sale de las métricas del plan del cierre (<code>data.metrics</code>, PLN-06).</div>
+      </section>
+
+      <section>
+        <h4><span class="n">7</span> Riesgos residuales</h4>
+        <div class="cols">
+          <div>
+            <div class="src" style="margin-bottom:4px">Defectos abiertos del ciclo (hoy)</div>
+            <div class="tw"><table>
+              <tr><th>Defecto</th><th>Severidad</th><th>Estado</th></tr>
+              <tr><td>DEF-114 · Doble cargo al reintentar</td><td><span class="pill err">Crítica</span></td><td>Re-test</td></tr>
+              <tr><td>DEF-120 · Fecha mal en factura</td><td>Mayor</td><td>Abierto</td></tr>
+            </table></div>
+          </div>
+          <div>
+            <div class="src" style="margin-bottom:4px">Requisitos sin cubrir o sin pasar, por riesgo</div>
+            <div class="tw"><table>
+              <tr><th>Requisito</th><th>Riesgo</th><th>Situación</th></tr>
+              <tr><td>REQ-031 · Pago 3DS</td><td><span class="pill err">Alto · 20</span></td><td>Bloqueado</td></tr>
+              <tr><td>REQ-044 · Exportar factura</td><td><span class="pill warn">Medio · 9</span></td><td>Sin cubrir</td></tr>
+            </table></div>
+          </div>
+        </div>
+        <textarea placeholder="Valoración del riesgo que se acepta y su mitigación."></textarea>
+      </section>
+
+      <section>
+        <h4><span class="n">8</span> Entregables de prueba</h4>
+        <div class="tw"><table>
+          <tr><th>Entregable</th><th>Origen</th><th>Entregado</th></tr>
+          <tr><td>Plan de pruebas TP-PHX-3fa21c v4</td><td>Pharos</td><td><span class="pill ok">Sí</span></td></tr>
+          <tr><td>Ejecuciones RUN-028 … RUN-031 (4)</td><td>Pharos</td><td><span class="pill ok">Sí</span></td></tr>
+          <tr><td>Defectos registrados (11)</td><td>Pharos</td><td><span class="pill ok">Sí</span></td></tr>
+          <tr><td>Informe de rendimiento</td><td>Plan · Entregables</td><td>☐ marcar</td></tr>
+        </table></div>
+        <div class="src">Las filas «Plan · Entregables» son las del paso Entregables del plan; se marcan a mano.</div>
+      </section>
+
+      <section>
+        <h4><span class="n">9</span> Activos de prueba reutilizables</h4>
+        <dl class="kv">
+          <div><dt>Casos del ciclo</dt><dd>190 (hoja «Casos»)</dd></div>
+          <div><dt>Configuraciones</dt><dd>Chrome · Windows, Safari · iOS</dd></div>
+          <div><dt>Datos de prueba</dt><dd>según el plan</dd></div>
+        </dl>
+        <textarea placeholder="Scripts, juegos de datos, entornos o herramientas que se pueden reutilizar y dónde están."></textarea>
+      </section>
+
+      <section>
+        <h4><span class="n">10</span> Lecciones aprendidas</h4>
+        <textarea>Acordar con el proveedor de pagos una ventana de sandbox estable antes de cada regresión.</textarea>
+      </section>
+
+      <section>
+        <h4><span class="n">11</span> Aprobación</h4>
+        <div class="approve"><span>Sin aprobar. Guarda los cambios para poder aprobar.</span><span class="btn primary new">Aprobar informe</span></div>
+        <div class="approve"><span><span class="pill ok">Aprobado</span> por Ana Ruiz el 15/11/2026 09:10</span><span class="src">Cambiar un texto quita la aprobación.</span></div>
+      </section>
+    </div>
+    <div class="foot"><span class="btn">Cerrar</span><span class="btn">Guardar</span><span class="btn">Exportar .xlsx</span><span class="btn primary">Exportar PDF</span></div>
+  </div>
+</section>
+
+<!-- C -->
+<section class="block">
+  <div class="eyebrow">Boceto C</div>
+  <h2>Exportaciones</h2>
+  <div class="cols">
+    <div class="frame">
+      <div class="bar"><h3>.xlsx</h3><span class="src">Informe_cierre_Phoenix_Web_CYC-007_2026-11-15.xlsx</span></div>
+      <div class="sheets"><span>Informe</span><span class="reuse">Decisión</span><span>Medidas</span><span>Riesgos residuales</span><span>Entregables</span><span class="reuse">Casos</span></div>
+      <div class="pad src">«Informe» lleva los once apartados en orden. Las hojas con borde discontinuo reutilizan las del informe de estado («Decisión» de DOC-02 y la de resultados por caso). Mismos colores y cabeceras que el resto de exportaciones.</div>
+    </div>
+    <div class="frame">
+      <div class="bar"><h3>PDF</h3><span class="src">Informe_cierre_Phoenix_Web_CYC-007_2026-11-15.pdf</span></div>
+      <div class="pad">
+        <ol class="pdf"><li>Identificación (con el ID TCR del documento en la cabecera)</li><li>Resumen</li><li>Desviaciones</li><li>Evaluación frente a criterios (veredicto grande, como DOC-02)</li><li>Factores de bloqueo</li><li>Medidas de prueba</li><li>Riesgos residuales</li><li>Entregables</li><li>Activos reutilizables</li><li>Lecciones aprendidas</li><li>Aprobación (o «Borrador sin aprobar» en la cabecera)</li></ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="eyebrow">Decisiones que necesitan respuesta</div>
+  <h2>D1–D4</h2>
+  <div class="dec">
+    <article><h3>D1 · Alcance: solo ciclo cerrado en 0.4.0</h3><p>Recomendado: el informe es de un ciclo cerrado. El informe de cierre del plan o del proyecto (que agregaría varios ciclos) queda como DOC-01b para más adelante. Alternativa: incluirlo ahora como un alcance más del diálogo, con los textos guardados en el plan.</p></article>
+    <article><h3>D2 · Dónde se guardan los textos y la aprobación</h3><p>Recomendado: en el ciclo, <code>test_cycles.data.completionReport</code> (sincronizado y auditado, sin migración), unido al cierre por su fecha. A diferencia del informe de estado, no en el equipo: la aprobación tiene que verse en todos los equipos y en la web.</p></article>
+    <article><h3>D3 · Reabrir y volver a cerrar</h3><p>Recomendado: el informe sigue al último cierre. Si se reabre y se vuelve a cerrar, los textos se conservan como punto de partida, la aprobación se borra y un aviso dice «Informe del cierre anterior; revísalo y apruébalo de nuevo».</p></article>
+    <article><h3>D4 · Aprobación</h3><p>Recomendado: como el plan (PLN-07): «Aprobar informe» con confirmación, solo con todo guardado; guarda quién y cuándo; editar cualquier texto la quita. Con roles (0.5.0) aprobará otra persona.</p></article>
+  </div>
+</section>
+</main>
+
+</body></html>
