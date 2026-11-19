@@ -87,6 +87,9 @@ rfd = { version = "0.17", default-features = false, optional = true }
 # cargo test writes src/shared/contracts/generated/ and the binary never
 # carries ts-rs. Settings in .cargo/config.toml.
 ts-rs = "12"
+# `trace`: tests count the SQL statements a piece of work runs, so a
+# performance guard holds under any CPU load (BASE-25); test builds only.
+rusqlite = { version = "0.41.1", features = ["trace"] }
 # The unit tests also call the command wrappers: `cargo test -p pharos-core`
 # builds with Tauri, while `cargo check -p pharos-core` (the CLI's view) does not.
 pharos-core = { path = ".", features = ["tauri"] }

@@ -89,6 +89,11 @@ jobs:
       - name: cargo test
         working-directory: src-tauri
         run: cargo test --locked
+      # Wall-clock guards only mean something on a quiet machine: they are
+      # #[ignore] in the parallel suite and run here alone (BASE-25).
+      - name: cargo test (timing tests, one at a time)
+        working-directory: src-tauri
+        run: cargo test --locked -p pharos-core timing_ -- --ignored --test-threads=1
       - name: Generated TS contracts match the committed ones
         run: node scripts/contracts.mjs check
 
