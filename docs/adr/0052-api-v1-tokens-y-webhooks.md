@@ -301,4 +301,18 @@ El usuario aprobó el plan con las tres recomendaciones: el aviso de caducidad d
   - la lectura incremental;
   - los errores y los reintentos;
   - la comprobación de la firma de un webhook en Node y en Python.
-- **Pendiente: A4b**, el capítulo «Integraciones» del manual (tokens de proyecto y personales, webhooks y entregas). Necesita grabar un tour con la app de escritorio, y va en su propio PR. Las entradas del inventario siguen como pendientes y apuntan a A4b.
+
+### A4b · Capítulo «Integraciones» del manual (2026-11-19)
+
+- **Capítulo 20 del manual**, con su tour (`e2e/tours/20-integraciones.tour.ts`) y su texto (`docs/manual/fuentes/integraciones.md`). El coordinador decidió que fuera un solo capítulo, que incluye también «Conectar CI» y la línea de comandos de la pista L (INT-01, INT-04).
+- **Pasos:**
+  - crear un workspace compartido;
+  - llevar a él un proyecto con «Compartir con un workspace…»;
+  - tokens de proyecto: nuevo, el secreto una sola vez, rotar y la tabla;
+  - «Conectar CI» y los pasos en GitHub;
+  - webhooks: nuevo, el secreto, una entrega de prueba que falla a propósito, rotar y borrar;
+  - tokens personales con «Usar en el CLI».
+- **Datos del tour:** el servidor de los tours lleva una `WEBHOOK_SECRETS_KEY` desechable. El destino del webhook es `https://ci.ejemplo.test/…`, que no resuelve nunca (`.test` está reservado): la entrega falla con `ENOTFOUND` y nada sale del equipo.
+- **Fuera del tour:** «Reasignar» y la revocación de todos los tokens de una cuenta por un administrador. Solo aparecen con una segunda persona, y el manual muestra solo a la suya (NC-052). Los cubren los tests.
+- **Visto al recorrerlo:** en el escritorio, un workspace recién creado no aparece en el selector hasta la siguiente sincronización. El tour sincroniza, y «Si algo no sale» lo explica.
+- **Test del SSRF:** la prueba de rebinding ya no consulta DNS real (`localtest.me`). `TargetPolicy.resolve` deja inyectar un resolutor falso que responde 127.0.0.1, y la prueba exige `EPRIVATE`.
