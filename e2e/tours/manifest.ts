@@ -38,7 +38,8 @@ export type ChapterId =
   | "movil"
   | "ejecucion-manual"
   | "evidencias"
-  | "errores";
+  | "errores"
+  | "integraciones";
 
 export interface Chapter {
   id: ChapterId;
@@ -84,6 +85,8 @@ export const CHAPTERS: Chapter[] = [
   { id: "inicio", number: 3, title: "Inicio", file: "03-inicio.tour.ts", status: "active", needs: ["plan", "defectos", "ejecucion-manual"] },
   { id: "evidencias", number: 16, title: "Evidencias", file: "16-evidencias.tour.ts", status: "active" },
   { id: "errores", number: 19, title: "Si algo sale mal", file: "19-errores.tour.ts", status: "active" },
+  // INT-02/INT-03/INT-04 (ADR-0052): tokens, Conectar CI, webhooks.
+  { id: "integraciones", number: 20, title: "Integraciones", file: "20-integraciones.tour.ts", status: "active" },
 ];
 
 /** The chapters as the manual prints them (by `number`), without the preparation. */
@@ -156,9 +159,6 @@ const WEB_ONLY = "Solo existe en la versión web; los tours recorren la app de e
 
 const WORKSPACES_PENDING =
   "necesita una segunda cuenta y un servidor con workspaces: lo cubre la validación de 0.5.0 con dos personas (SYNC-07); el flujo lo prueban los tests de la UI y del servidor";
-
-const TOKENS_PENDING =
-  "el capítulo «Integraciones» llega en A4b (INT-02, pista A), tras las lecturas de la API; lo cubren server/tests/api.tokens.test.ts y src/modules/integrations/ui/integrations.test.tsx";
 
 export const INVENTORY: Item[] = [
   // ---- 1 · Acceso y cuenta ------------------------------------------------------
@@ -467,18 +467,21 @@ export const INVENTORY: Item[] = [
   // two people and two computers covers (ROADMAP §6).
   I("administracion", "route", "route:/workspaces/members", "Miembros y roles de un workspace", { pending: WORKSPACES_PENDING }),
   I("administracion", "route", "route:/workspaces/join", "Unirse a un workspace con un código", { pending: WORKSPACES_PENDING }),
-  I("administracion", "dialog", "dialogs:src/modules/workspaces/ui/CreateWorkspaceDialog.tsx", "Crear workspace", { pending: WORKSPACES_PENDING }),
+  I("integraciones", "dialog", "dialogs:src/modules/workspaces/ui/CreateWorkspaceDialog.tsx", "Crear workspace"),
   I("administracion", "dialog", "dialogs:src/modules/workspaces/ui/InviteDialog.tsx", "Invitar a un workspace (código de un solo uso)", { pending: WORKSPACES_PENDING }),
-  I("administracion", "dialog", "dialogs:src/modules/workspaces/ui/ShareProjectDialog.tsx", "Compartir un proyecto con un workspace", { pending: WORKSPACES_PENDING }),
+  I("integraciones", "dialog", "dialogs:src/modules/workspaces/ui/ShareProjectDialog.tsx", "Compartir un proyecto con un workspace"),
   I("administracion", "dialog", "dialogs:src/modules/workspaces/ui/WorkspaceMembersPage.tsx", "Quitar a un miembro o salir de un workspace", { pending: WORKSPACES_PENDING }),
   // INT-02 (ADR-0052): API tokens. The manual chapter «Integraciones» comes
   // with track A's A4, together with the upload and its curl examples.
-  I("administracion", "tab", "tabs:src/modules/workspaces/ui/WorkspaceMembersPage.tsx", "Pestañas del workspace (Miembros / Integraciones)", { pending: TOKENS_PENDING }),
-  I("administracion", "dialog", "dialogs:src/modules/integrations/ui/ProjectTokensSection.tsx", "Revocar o reasignar un token de proyecto", { pending: TOKENS_PENDING }),
-  I("administracion", "dialog", "dialogs:src/modules/integrations/ui/TokenDialogs.tsx", "Nuevo token, token creado (una sola vez) y rotar", { pending: TOKENS_PENDING }),
-  I("administracion", "dialog", "dialogs:src/modules/integrations/ui/PersonalTokensSection.tsx", "Revocar un token personal", { pending: TOKENS_PENDING }),
-  I("administracion", "dialog", "dialogs:src/modules/integrations/ui/WebhooksSection.tsx", "Nuevo y editar webhook, su secreto, entregas, rotar y borrar (INT-03)", { pending: TOKENS_PENDING }),
-  I("administracion", "dialog", "dialogs:src/modules/integrations/ui/AdminRevokeTokens.tsx", "Revocar todos los tokens de una cuenta (administrador)", {
+  I("integraciones", "tab", "tabs:src/modules/workspaces/ui/WorkspaceMembersPage.tsx", "Pestañas del workspace (Miembros / Integraciones)"),
+  I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/ProjectTokensSection.tsx", "Revocar o reasignar un token de proyecto", {
+    skip: "«Reasignar» solo aparece en el token de otra persona o en uno inactivo, y el manual solo muestra a su persona (NC-052); la tabla y «Revocar» salen en el capítulo 20. Lo cubren server/tests/api.tokens.test.ts y src/modules/integrations/ui/integrations.test.tsx.",
+  }),
+  I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/TokenDialogs.tsx", "Nuevo token, token creado (una sola vez) y rotar"),
+  I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/PersonalTokensSection.tsx", "Revocar un token personal"),
+  I("integraciones", "section", "section:connect-ci", "Conectar CI: el paso de GitHub Actions (INT-04)"),
+  I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/WebhooksSection.tsx", "Nuevo y editar webhook, su secreto, entregas, rotar y borrar (INT-03)"),
+  I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/AdminRevokeTokens.tsx", "Revocar todos los tokens de una cuenta (administrador)", {
     skip: "Necesita una segunda cuenta con tokens, y el manual solo muestra a su persona (NC-052). Lo cubren server/tests/api.tokens.test.ts y src/modules/integrations/ui/integrations.test.tsx.",
   }),
   // PLN-08 (ADR-0049): «Aprobación independiente», seen from one account.

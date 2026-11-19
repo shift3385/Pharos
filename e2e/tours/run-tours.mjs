@@ -291,6 +291,10 @@ const childEnv = {
   // IA-12: a throwaway vault key for this run only, never a real one, so the
   // tour can turn on «Usar esta clave también en la web».
   AI_VAULT_KEY: randomBytes(32).toString("base64"),
+  // INT-03: a throwaway key so chapter 20 can create a webhook. Its target,
+  // https://ci.ejemplo.test/…, never resolves (.test is reserved), so
+  // «Enviar prueba» shows a failed delivery and nothing leaves the machine.
+  WEBHOOK_SECRETS_KEY: randomBytes(32).toString("base64"),
 };
 let exitCode = 1;
 
