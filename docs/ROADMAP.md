@@ -1,4 +1,4 @@
-# Pharos — Hoja de ruta y backlog
+P2 hecho (servidor y web): las mismas reglas con los mismos vectores, rutas `/api/library`, funcionalidad `shared-steps` y referencias protegidas para clientes anteriores. Faltan P3 (interfaz) y P4 (ejecución, exportes y manual) |# Pharos — Hoja de ruta y backlog
 
 > **Replanificación del 2026-10-26**, basada en el estudio `Pharos QA estado del arte.md`
 > (carpeta superior al repo) y aprobada el 2026-10-27. **Línea base del 2026-10-28**:

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { FIELD_ENTITIES, fieldId, validKey } from "../domain/custom-fields";
+import { LIMITS, isLibraryRevision, libraryRevisionId, shaOf } from "../domain/shared-library";
 import {
   DEFECT_PRIORITIES,
   DEFECT_RESOLUTIONS,
@@ -33,6 +34,9 @@ export const LWW_ENTITIES = [
   "defect_link",
   "attachment",
   "template",
+  // The project library (CAS-01, ADR-0055).
+  "shared_step",
+  "dataset",
 ] as const;
 
 /** Entities of the `append_only` sync class (design 0.2.0 §3.2, ADR-0011):
@@ -52,7 +56,17 @@ export const APPEND_ONLY_ENTITIES = [
   "metric",
   // Triage decisions, one event each; the latest is the current one.
   "finding_triage",
+  // Versions of the library (CAS-01, ADR-0055), immutable.
+  "shared_step_revision",
+  "dataset_revision",
 ] as const;
+
+/** The project library (CAS-01, ADR-0055). Only clients that send the
+ *  `shared-steps` feature pull or push it (VERSIONING §6.5). */
+export const LIBRARY_ENTITIES = ["shared_step", "dataset", "shared_step_revision", "dataset_revision"] as const;
+
+export const isLibraryEntity = (entity: string): boolean =>
+  (LIBRARY_ENTITIES as readonly string[]).includes(entity);
 
 /** Suite baselines (CAS-02, ADR-0047). Only clients that send the
  *  `case-baselines` feature pull or push them (VERSIONING §6.5). */
@@ -111,6 +125,8 @@ export const FEATURE_KEYS: Record<string, Partial<Record<string, readonly string
  *  when it saves a case). */
 export const FEATURE_DATA_KEYS: Record<string, Partial<Record<string, readonly string[]>>> = {
   "custom-fields": { test_case: ["custom"] },
+  // CAS-01: the references of a case to the library; its copy is plain steps.
+  "shared-steps": { test_case: ["sharedRefs", "datasetRefs"] },
 };
 
 /** Every entity that syncs, of either class. */
@@ -142,6 +158,9 @@ export const NON_CONTENT_KEYS: Partial<
   // The same imported file gives the same findings and metrics (ADR-0053).
   finding: ["createdAt", "createdBy", "hlc"],
   metric: ["createdAt", "createdBy", "hlc"],
+  // A library version is its content hash (CAS-01).
+  shared_step_revision: ["createdAt", "createdBy", "hlc"],
+  dataset_revision: ["createdAt", "createdBy", "hlc"],
 };
 
 /** Every payload key of `entity` outside its immutable content. */
@@ -177,6 +196,10 @@ export const PROJECT_CHILDREN = [
   "defect_link",
   "case_baseline",
   "attachment",
+  "shared_step",
+  "dataset",
+  "shared_step_revision",
+  "dataset_revision",
 ] as const;
 
 const RESULT_STATUSES = ["passed", "failed", "blocked", "skipped", "other"] as const;
@@ -320,6 +343,29 @@ const BLOB_PAYLOADS: Partial<Record<string, z.ZodType>> = {
   }),
 };
 
+/** What the server checks of the library (CAS-01, ADR-0055): the limits the
+ *  desktop checks (`shared_library.rs`). Extra keys pass. */
+const libraryItem = (def: string, body: string, maxDef: number, maxBody: number, minBody: number) =>
+  z.looseObject({
+    projectId: id,
+    name: z.string().min(1).max(LIMITS.name),
+    description: z.string().max(LIMITS.description).default(""),
+    [def]: z.array(z.looseObject({ id })).max(maxDef),
+    [body]: z.array(z.looseObject({ id })).min(minBody).max(maxBody),
+    status: z.enum(["active", "obsolete"]).default("active"),
+    version: z.number().int().min(1),
+  });
+const LIBRARY_PAYLOADS: Partial<Record<string, z.ZodType>> = {
+  shared_step: libraryItem("params", "steps", LIMITS.params, LIMITS.steps, 1),
+  dataset: libraryItem("columns", "rows", LIMITS.columns, LIMITS.rows, 0),
+  shared_step_revision: libraryItem("params", "steps", LIMITS.params, LIMITS.steps, 1).and(
+    z.looseObject({ itemId: id }),
+  ),
+  dataset_revision: libraryItem("columns", "rows", LIMITS.columns, LIMITS.rows, 0).and(
+    z.looseObject({ itemId: id }),
+  ),
+};
+
 /** What the server checks of a defect document (DEF-01): the enums and the
  *  limits the desktop checks too (`defects.rs`). Extra keys pass. */
 const DEFECT_PAYLOADS: Partial<Record<string, z.ZodType>> = {
@@ -398,6 +444,19 @@ export const deltaSchema = z
           path: ["entityId"],
         });
     }
+    // A library version is its content (CAS-01): its id derives from it.
+    if (isLibraryRevision(d.entity) && d.op === "append") {
+      const p = d.payload;
+      const def = d.entity === "shared_step_revision" ? "params" : "columns";
+      const body = d.entity === "shared_step_revision" ? "steps" : "rows";
+      const sha = shaOf(d.entity, String(p.name ?? ""), p[def] ?? [], p[body] ?? []);
+      if (d.entityId !== libraryRevisionId(d.entity, String(p.itemId ?? ""), Number(p.version ?? 0), sha))
+        ctx.addIssue({
+          code: "custom",
+          message: "A library version's id must be UUIDv5 of its item, version and content.",
+          path: ["entityId"],
+        });
+    }
     // A link is what it links (design §3.3): its id derives from it.
     if (d.entity === "defect_link" && d.op === "upsert") {
       const p = d.payload;
@@ -420,7 +479,8 @@ export const deltaSchema = z
           FINDING_PAYLOADS[d.entity] ??
           CYCLE_PAYLOADS[d.entity] ??
           DEFECT_PAYLOADS[d.entity] ??
-          BLOB_PAYLOADS[d.entity]);
+          BLOB_PAYLOADS[d.entity] ??
+          LIBRARY_PAYLOADS[d.entity]);
     const parsed = schema?.safeParse(d.payload);
     if (parsed && !parsed.success) {
       for (const issue of parsed.error.issues) {

@@ -79,6 +79,8 @@ export const SERVER_FEATURES = [
   "blobs",
   // ING-06 (ADR-0053): findings and metrics of a run (append-only).
   "findings",
+  // CAS-01 (ADR-0055): the project library, shared steps and datasets.
+  "shared-steps",
 ] as const;
 
 /** Features the client sent. Inside one minor the version string does not
@@ -149,6 +151,13 @@ export function understandsDefects(req: FastifyRequest): boolean {
  *  a client never sees them on pull, and may not push them. */
 export function understandsCaseBaselines(req: FastifyRequest): boolean {
   return clientFeatures(req).includes("case-baselines");
+}
+
+/** True if the client knows the project library (CAS-01, ADR-0055). Without
+ *  it a client never sees it on pull, may not push it, and its push keeps
+ *  the stored references of a case (`FEATURE_DATA_KEYS`). */
+export function understandsSharedSteps(req: FastifyRequest): boolean {
+  return clientFeatures(req).includes("shared-steps");
 }
 
 /** True if the client knows findings and metrics (ING-06, ADR-0053). Without

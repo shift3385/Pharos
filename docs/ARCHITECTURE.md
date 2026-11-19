@@ -535,7 +535,10 @@ Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
   the live cases that follow it in the same transaction (a normal case save:
   revision, audit with the cause, review rule), and `reconcile` does the same
   after each pull page. They sync only with a server that lists
-  `shared-steps` (`APPLIED_SET_VERSION` 12) and need `case.edit`.
+  `shared-steps` (`APPLIED_SET_VERSION` 12) and need `case.edit`. The web
+  uses `/api/library` (`server/src/modules/domain/shared-library.service.ts`),
+  the twin of the same rules over the same vectors; a web case save rebuilds
+  the copy too.
 - **Finding triage** (ADR-0053 as amended): `finding_triage`, append-only
   events keyed by fingerprint (same migration, `findings` feature,
   `run.execute` to write). `triage_add` records a decision (a reason unless

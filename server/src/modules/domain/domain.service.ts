@@ -37,6 +37,7 @@ import {
 import { linkId, stampLifecycle } from "../sync/defects";
 import { afterSave, approverCheck, reviewTransition, statusOnCreate, stripReview } from "./case-review";
 import { planAfterSave, planOnCreate } from "./plan-review";
+import { createLibraryService, materializeCase } from "./shared-library.service";
 import type {
   CaseBaselineInput,
   CaseReviewInput,
@@ -407,6 +408,9 @@ export function createDomainService(store: DomainStore) {
       input.automationStatus ?? (prev.automationStatus as string | undefined) ?? (isNew ? "manual" : null);
     const data = normalizeNewCaseData(input.data) as Payload;
     delete data[CASE_FIELDS_STASH_KEY];
+    // The copies of shared steps and datasets are the library's (CAS-01,
+    // ADR-0055): rebuilt on every save, as on the desktop.
+    await materializeCase(tx, str(prev, "projectId"), str(prev, "id"), data);
     const prevData = (prev.data ?? {}) as Payload;
     if (!("custom" in data) && prevData.custom !== undefined) data.custom = prevData.custom;
     const checked = validateValues(await fieldRules(tx, str(prev, "projectId")), caseType ?? "standard", data, prevData);
@@ -1209,7 +1213,32 @@ export function createDomainService(store: DomainStore) {
       }),
   };
 
-  return { projects, testPlans, testCases, caseBaselines, requirements, plannerCards, customFields, defects };
+  // The project library (CAS-01, ADR-0055). A change of an item saves again
+  // each case that follows it: a normal case save, with the cause in its
+  // audit event.
+  const library = createLibraryService({
+    run,
+    liveProject,
+    now,
+    refreshCase: async (tx, userId, doc, cause) => {
+      const p = doc.payload;
+      const input: TestCaseInput = {
+        projectId: str(p, "projectId"),
+        title: str(p, "title"),
+        version: str(p, "version") || undefined,
+        priority: str(p, "priority") || undefined,
+        author: str(p, "author"),
+        data: (p.data ?? {}) as TestCaseInput["data"],
+      };
+      const next = await casePayload(tx, p, input);
+      if (JSON.stringify(next.data) === JSON.stringify(p.data) && next.status === p.status) return false;
+      const stored = await tx.put("test_case", doc.entityId, next, doc, false, { summary: cause });
+      await storeRevision(tx, userId, stored);
+      return true;
+    },
+  });
+
+  return { projects, testPlans, testCases, caseBaselines, requirements, plannerCards, customFields, defects, library };
 }
 
 export type DomainService = ReturnType<typeof createDomainService>;

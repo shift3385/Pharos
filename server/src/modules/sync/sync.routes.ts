@@ -18,6 +18,7 @@ import {
   isAppendOnly,
   isBaselineEntity,
   isBlobEntity,
+  isLibraryEntity,
   isCycleEntity,
   isDefectEntity,
   isExecution,
@@ -37,6 +38,7 @@ import {
   missingFeatures,
   understandsCaseBaselines,
   understandsFindings,
+  understandsSharedSteps,
   understandsBlobs,
   sendsStableSteps,
   understandsAppendOnly,
@@ -128,6 +130,12 @@ export function syncRoutes(
       return reply.code(400).send({
         code: "findings_unsupported",
         message: "This client did not announce the findings sync feature.",
+      });
+    }
+    if (!understandsSharedSteps(req) && deltas.some((d) => isLibraryEntity(d.entity))) {
+      return reply.code(400).send({
+        code: "shared_steps_unsupported",
+        message: "This client did not announce the shared-steps sync feature.",
       });
     }
     if (!understandsBlobs(req) && deltas.some((d) => isBlobEntity(d.entity))) {
@@ -223,6 +231,7 @@ export function syncRoutes(
         baselines: understandsCaseBaselines(req),
         findings: understandsFindings(req),
         blobs: understandsBlobs(req),
+        library: understandsSharedSteps(req),
         auditIn: members.filter((m) => can(m.role, "audit.read")).map((m) => m.workspaceId),
       },
     );
