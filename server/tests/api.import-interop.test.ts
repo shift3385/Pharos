@@ -22,7 +22,7 @@ interface Case {
   results: Record<string, unknown>[];
   findings?: Record<string, unknown>[];
   metrics?: Record<string, unknown>[];
-  warnings: { code: string; testKey: string | null }[];
+  warnings: { code: string; testKey: string | null; detail: string | null }[];
 }
 
 const cases = (JSON.parse(readFileSync(FIXTURE, "utf8")) as { cases: Case[] }).cases;
@@ -32,7 +32,7 @@ const content = (p: Record<string, unknown>) => Object.fromEntries(Object.entrie
 describe("the server's import planner writes what the desktop writes", () => {
   it("has vectors for every format and the corner cases", () => {
     expect(cases.map((c) => c.name)).toEqual(
-      expect.arrayContaining(["single/ctrf", "single/pw-junit", "single/cucumber-messages", "edge", "sarif/trivy", "axe/checkout", "k6/summary"]),
+      expect.arrayContaining(["single/ctrf", "single/pw-junit", "single/cucumber-messages", "edge", "sarif/trivy", "axe/checkout", "k6/summary", "findings-edge"]),
     );
   });
 
@@ -61,6 +61,6 @@ describe("the server's import planner writes what the desktop writes", () => {
     const fctx = { projectId: "p", runId: c.runId, shardId: c.shardId, userId: "u", at: "t", hlc: "h" };
     expect(fm.findings.map((f) => content(findingPayload(f, fctx))).sort(byId)).toEqual((c.findings ?? []).map(content).sort(byId));
     expect(fm.metrics.map((m) => content(metricPayload(m, fctx))).sort(byId)).toEqual((c.metrics ?? []).map(content).sort(byId));
-    expect([...plan.warnings, ...fm.warnings].map((w) => ({ code: w.code, testKey: w.testKey }))).toEqual(c.warnings);
+    expect([...plan.warnings, ...fm.warnings].map((w) => ({ code: w.code, testKey: w.testKey, detail: w.detail }))).toEqual(c.warnings);
   });
 });
