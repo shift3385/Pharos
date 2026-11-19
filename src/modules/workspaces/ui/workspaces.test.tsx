@@ -275,3 +275,49 @@ describe("share a project", () => {
     expect(screen.queryByTestId("share-submit")).toBeNull();
   });
 });
+
+describe("FIX-33/FIX-34: what the desktop's mirror does not have yet", () => {
+  /** A sync-status stub: `runSync` is what the shell's provider shares. */
+  async function withSync(ui: React.ReactElement, runSync: () => void) {
+    const { SyncStatusContext } = await import("@modules/sync-offline/ui/syncStatusContext");
+    const value = { status: "idle", label: "", title: "", conflicts: 0, pending: 0, syncing: false, runSync, openConflicts: () => {} };
+    return withWorkspaces(<SyncStatusContext.Provider value={value as never}>{ui}</SyncStatusContext.Provider>);
+  }
+
+  it("a new workspace is chosen as soon as the list has it, after the sync it starts", async () => {
+    // The list lags behind the create, as the desktop's local mirror does.
+    let listed = [PERSONAL];
+    serve({
+      "GET /workspaces": () => ({ body: { workspaces: listed } }),
+      "POST /workspaces": { status: 201, body: team("test_manager") },
+    });
+    const runSync = vi.fn(() => {
+      listed = [PERSONAL, team("test_manager")];
+      window.dispatchEvent(new CustomEvent("pharos:synced"));
+    });
+    await withSync(<WorkspaceSwitcher />, runSync);
+    await userEvent.click(await screen.findByTestId("workspace-switcher"));
+    await userEvent.click(screen.getByTestId("workspace-create"));
+    await userEvent.type(within(screen.getByRole("dialog")).getByRole("textbox"), "Equipo QA");
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Crear" }));
+    await waitFor(() => expect(runSync).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByTestId("workspace-switcher")).toHaveTextContent("Equipo QA"));
+  });
+
+  it("sharing a project the server does not have yet sends it and keeps the dialog open", async () => {
+    const { ShareProjectDialog } = await import("./ShareProjectDialog");
+    serve({
+      "GET /workspaces": { body: { workspaces: [PERSONAL, team("test_manager")] } },
+      "POST /workspaces/ws-t/move-project": { status: 404, body: { code: "not_found", message: "Project not found." } },
+    });
+    const runSync = vi.fn();
+    const onDone = vi.fn();
+    await withSync(<ShareProjectDialog projectId="p1" projectName="Pagos" onDone={onDone} onCancel={() => {}} />, runSync);
+    const dialog = await screen.findByRole("dialog", { name: "Compartir «Pagos»" });
+    await waitFor(() => expect(within(dialog).getByTestId("share-submit")).toBeEnabled());
+    await userEvent.click(within(dialog).getByTestId("share-submit"));
+    await waitFor(() => expect(runSync).toHaveBeenCalled());
+    expect(onDone).not.toHaveBeenCalled();
+    await waitFor(() => expect(within(dialog).getByTestId("share-submit")).toBeEnabled());
+  });
+});

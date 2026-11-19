@@ -71,9 +71,10 @@ opciones y los códigos de salida, está en [cli.md](../../cli.md).
   para tu CLI.
 - **El proyecto no aparece al crear un token.** Sigue en tu workspace
   personal: llévalo al workspace con «Compartir con un workspace…» (menú «⋯»
-  de su fila en «Proyectos»). Si acabas de crearlo, sincroniza antes.
-- **El workspace que acabas de crear no sale en el selector.** Pulsa
-  «Sincronizar ahora»: la lista llega con la sincronización.
+  de su fila en «Proyectos»).
+- **«… todavía no está en el servidor».** Acabas de crear el proyecto y aún no
+  se había enviado: Pharos lo envía en ese momento. Vuelve a pulsar «Mover y
+  compartir» en unos segundos.
 - **El CI responde 401 `token_inactive`.** El dueño del token salió del
   workspace o se desactivó su cuenta. Un Test Manager puede «Reasignar» el
   token: el secreto del CI no cambia.

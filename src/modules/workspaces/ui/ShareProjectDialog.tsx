@@ -5,7 +5,7 @@ import { Dialog } from "@shared/ui/Dialog";
 import { FormField } from "@shared/ui/FormField";
 import { Select } from "@shared/ui/Select";
 import { useToast } from "@shared/ui/Toast";
-import { workspacesApi } from "../api/workspacesApi";
+import { errorCode, workspacesApi } from "../api/workspacesApi";
 import { can } from "../model/roles";
 import { failureMessage } from "./failure";
 import { useWorkspace } from "./workspaceContext";
@@ -52,7 +52,14 @@ export function ShareProjectDialog({
       setCurrent(destination);
       onDone();
     } catch (e) {
-      toast(failureMessage(t, e), "error");
+      if (errorCode(e) === "not_found") {
+        // Created on this computer and not sent yet: the server cannot move
+        // it. Send it now and say so (FIX-34).
+        sync?.runSync();
+        toast(t("workspaces.share.notSynced", { name: projectName }), "error");
+      } else {
+        toast(failureMessage(t, e), "error");
+      }
       setBusy(false);
     }
   }
