@@ -11,6 +11,7 @@ import { testCaseApi } from "../api/testCaseApi";
 import { buildCaseXlsx, type ExportableCase } from "./caseXlsx";
 import { buildCasePdf, casePdfName } from "./casePdf";
 import { customSheetLabels, customSheetRows } from "./customSheet";
+import { datasetLineOf } from "../model/libraryNotes";
 
 type Translate = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -35,7 +36,7 @@ export function caseToExportable(
           requirementKeys: d.requirementKeys,
           featureTags: d.featureTags,
         })
-      : toGherkin(c.title, d, c.scenarioId);
+      : toGherkin(c.title, d, c.scenarioId, { library: true });
   return {
     scenarioId: c.scenarioId,
     title: c.title,
@@ -50,6 +51,7 @@ export function caseToExportable(
     flows,
     altFlowLabel: t("testCase.flow.altUpper"),
     examplesLabel: t("testCase.examples.title"),
+    datasetLine: datasetLineOf(d, t),
     customRows: customSheetRows(
       {
         caseType: c.caseType,

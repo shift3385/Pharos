@@ -386,6 +386,45 @@ describe("run screen", () => {
     expect(screen.getByText("pagar")).toBeInTheDocument();
   });
 
+  it("shows a dataset's rows as targets and a shared step as a block (CAS-01)", async () => {
+    const row = (n: number, usuario: string) => ({
+      key: `-/R${n}`,
+      flowId: null,
+      flowName: null,
+      exampleRowId: `R${n}`,
+      exampleRow: n - 1,
+      values: { usuario, clave: "k" },
+      testKey: `manual:c1/-/R${n}`,
+    });
+    api.itemDetail.mockResolvedValue(
+      detail({
+        revision: {
+          steps: [
+            { id: "C1", text: "Dado que estoy en la página de acceso" },
+            { id: "C2", text: "Cuando escribo <usuario> y pulso «Entrar»" },
+            { id: "S3", text: "ver el recibo" },
+          ],
+          sharedRefs: [
+            { id: "CALL", sharedStepId: "ss", name: "Iniciar sesión", version: 5, stepIds: ["C1", "C2"] },
+          ],
+          datasetRefs: [{ id: "case", datasetId: "ds", name: "Usuarios válidos", version: 2 }],
+          examples: { headers: ["usuario", "clave"], rows: [] },
+        },
+        targets: [row(1, "ana"), row(2, "luis"), row(3, "admin")],
+      }),
+    );
+    const { container } = renderRun();
+    expect(await screen.findByText("Paso compartido · Iniciar sesión · v5")).toBeInTheDocument();
+    expect(screen.getByText(/Fila 2 de 3/)).toBeInTheDocument();
+    expect(screen.getAllByText("usuario = luis").length).toBeGreaterThan(0);
+    const value = screen.getByText("ana", { selector: "mark" });
+    expect(value).toHaveAttribute("title", "Valor de <usuario>");
+    expect(
+      screen.getByRole("listitem", { name: /Paso 2: Cuando escribo ana.*Paso compartido Iniciar sesión, v5/ }),
+    ).toBeInTheDocument();
+    await expectNoAxeViolations(container);
+  });
+
   it("closes the run as cancelled and reopens a closed one", async () => {
     const user = userEvent.setup();
     renderRun("/projects/p/runs/r1");

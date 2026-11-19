@@ -88,6 +88,7 @@ import { GoToCaseDialog } from "./GoToCaseDialog";
 import { AutomationField, PriorityField } from "./CaseMetaMenus";
 import { CaseReviewPanel } from "./CaseReviewPanel";
 import { approvalLine } from "../export/approvalLine";
+import { datasetLineOf } from "../model/libraryNotes";
 import {
   CASE_TYPES,
   CustomFieldsSection,
@@ -706,6 +707,7 @@ export function TestCaseEditor({
       flows: form.flows,
       altFlowLabel: t("testCase.flow.altUpper"),
       examplesLabel: t("testCase.examples.title"),
+      datasetLine: datasetLineOf({ datasetRefs: form.datasetRefs }, t),
       data: {
         mappedUseCase: form.mappedUseCase,
         caseDate: form.caseDate,
@@ -720,6 +722,9 @@ export function TestCaseEditor({
         examples: form.examples,
         requirementKeys: form.requirementKeys,
         traceability: form.traceability,
+        // CAS-01: the exports name the library blocks and the dataset.
+        sharedRefs: form.sharedRefs,
+        datasetRefs: form.datasetRefs,
       },
       customRows: customSheetRows(form, fields, t),
       customSheet: customSheetLabels(t),

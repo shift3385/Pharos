@@ -83,3 +83,46 @@ describe("caseDocDefinition", () => {
     expect(json).toContain("Rejected"); // alt-flow expected result
   });
 });
+
+describe("caseDocDefinition with the project library (CAS-01)", () => {
+  const tv = (k: string, o?: Record<string, unknown>) =>
+    o ? `${k}:${JSON.stringify(o)}` : k;
+  const library: ExportableCase = {
+    ...basic,
+    level: "outline",
+    data: {
+      steps: [
+        { id: "C1", text: "open login" },
+        { id: "C2", text: "type <user>" },
+        { id: "OWN", text: "pay" },
+      ],
+      sharedRefs: [
+        {
+          id: "CALL",
+          sharedStepId: "ss",
+          version: 4,
+          follow: true,
+          list: "steps",
+          stepIds: ["C1", "C2"],
+          args: {},
+          name: "Iniciar sesión",
+        },
+      ],
+      datasetRefs: [{ id: "case", datasetId: "ds", version: 2, follow: true, name: "Usuarios" }],
+      examples: { headers: ["user"], rows: [{ id: "R1", values: ["ana"] }] },
+    },
+  };
+
+  it("labels each shared-step block and titles the dataset table", () => {
+    const json = JSON.stringify(caseDocDefinition(library, tv));
+    expect(json.match(/library\.export\.sharedBlock/g)).toHaveLength(1);
+    expect(json).toContain('library.export.sharedBlock:{\\"name\\":\\"Iniciar sesión\\",\\"version\\":4}');
+    expect(json).toContain('library.export.datasetTable:{\\"name\\":\\"Usuarios\\",\\"version\\":2}');
+    expect(json).not.toContain('"testCase.examples.title"');
+  });
+
+  it("prints a case without the library as before", () => {
+    const plain = caseDocDefinition(basic, tv);
+    expect(JSON.stringify(plain)).not.toContain("library.export");
+  });
+});

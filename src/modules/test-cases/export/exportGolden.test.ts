@@ -215,3 +215,70 @@ describe.each([
     });
   }
 });
+
+// CAS-01 (ADR-0055 §8): a case with a shared step's copy and a bound dataset.
+// Its steps and rows are ordinary ones; the .feature names the block and the
+// dataset in comments, and B31 of the .xlsx gets one more line.
+const LIBRARY = legacyCase("ATS_006", "Compra con usuario registrado", {
+  gherkinLevel: "outline",
+  preconditions: [{ id: "PRE00001", text: "el carrito tiene un artículo" }],
+  steps: [
+    { id: "C0000001", text: "estoy en la página de acceso" },
+    { id: "C0000002", text: "escribo <usuario> y <clave> y pulso «Entrar»" },
+    { id: "OWN00001", text: "pago el pedido" },
+  ],
+  expectedResult: "El pedido queda «Confirmado»",
+  sharedRefs: [
+    {
+      id: "CALL0001",
+      sharedStepId: "ss-1",
+      version: 4,
+      revisionId: "rev-ss-1-4",
+      follow: true,
+      list: "steps",
+      stepIds: ["C0000001", "C0000002"],
+      args: {},
+      name: "Iniciar sesión",
+    },
+  ],
+  datasetRefs: [
+    {
+      id: "case",
+      datasetId: "ds-1",
+      version: 2,
+      revisionId: "rev-ds-1-2",
+      follow: true,
+      name: "Usuarios válidos",
+    },
+  ],
+  examples: {
+    headers: ["usuario", "clave"],
+    rows: [
+      { id: "ROW00001", values: ["ana@acme.test", "Clave-1"] },
+      { id: "ROW00002", values: ["luis@acme.test", "Clave-2"] },
+      { id: "ROW00003", values: ["admin@acme.test", "Clave-3"] },
+    ],
+  },
+});
+
+describe("exports name the project library (CAS-01)", () => {
+  it("ATS_006: .feature with the block and dataset comments", () => {
+    const gherkin = caseToExportable(LIBRARY, t).gherkin;
+    expect(gherkin).toContain(
+      "    # Paso compartido: Iniciar sesión (v4)\n    When estoy en",
+    );
+    expect(gherkin).toContain(
+      "\n    # Dataset: Usuarios válidos (v2)\n    Examples:",
+    );
+    golden("ATS_006.feature", gherkin);
+  });
+  it("ATS_006: .xlsx with the dataset line in B31", async () => {
+    const c = caseToExportable(LIBRARY, t);
+    expect(c.datasetLine).toBe("«library.export.datasetLine»");
+    const { buffer } = await buildCaseXlsx(c, "es");
+    golden(
+      "ATS_006.es.xlsx.json",
+      JSON.stringify(await xlsxParts(buffer), null, 1),
+    );
+  });
+});

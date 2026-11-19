@@ -6,6 +6,9 @@ export interface LinkableCase {
   id: string;
   scenarioId: string;
   title: string;
+  /** The dataset bound to its Examples (CAS-01): «3 filas · Usuarios
+   *  válidos (v2)» in «Añadir casos». */
+  dataset?: { name: string; version: number; rows: number };
 }
 
 /** The pill tone of a result status (SPEC §4). */

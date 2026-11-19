@@ -1152,7 +1152,19 @@ pub(crate) fn record_result(conn: &Connection, input: &ResultInput) -> Result<St
         .map_err(err)?;
     let id = chosen_id.unwrap_or_else(|| Uuid::new_v4().to_string());
     let hlc = oplog::next_hlc(conn)?;
-    let attributes = object_or_empty(input.attributes.as_ref());
+    // The library facts come from the frozen revision (ADR-0055 §5): a
+    // client's `dataset` / `sharedSteps` keys never stand.
+    let mut attributes = object_or_empty(input.attributes.as_ref());
+    if let Some(m) = attributes.as_object_mut() {
+        m.remove("dataset");
+        m.remove("sharedSteps");
+        let recorded: Vec<String> = steps.iter().filter_map(|s| text(&s.step_id)).collect();
+        m.extend(manual::library_attributes(
+            &revision,
+            item.flow_id.as_deref(),
+            &recorded,
+        ));
+    }
     conn.execute(
         "INSERT INTO results (id, workspace_id, project_id, run_id, shard_id, run_item_id, test_key,
                 test_case_id, test_case_revision_id, case_revision, case_key, flow_id, example_row_id,

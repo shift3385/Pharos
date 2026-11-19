@@ -14,7 +14,9 @@ import { isImported, projectLinks, supersededShards, type ResultLink } from "./r
 import { isLiveRun } from "./run-live.js";
 import { findingCountsOf } from "./findings.js";
 import {
+  boundDataset,
   flowShape,
+  libraryAttributes,
   manualTestKey,
   narrow,
   overlaps,
@@ -693,6 +695,13 @@ export function createRunService(store: DomainStore) {
       (d) => (strOrNull(d.payload, "configurationLabel") ?? "") === (label ?? ""),
     );
     const n = previous.length ? Math.max(...previous.map((d) => num(d.payload, "attempt"))) + 1 : 0;
+    // The library facts come from the frozen revision (ADR-0055 §5): a
+    // client's `dataset` / `sharedSteps` keys never stand.
+    const own = { ...obj(input.attributes) };
+    delete own.dataset;
+    delete own.sharedSteps;
+    const recorded = steps.map((s) => text(s.stepId)).filter((x): x is string => x !== null);
+    const attributes = { ...own, ...libraryAttributes(data, narrowed.flowId, recorded) };
     const payload: Payload = {
       id: attempt,
       workspaceId: WORKSPACE,
@@ -721,7 +730,7 @@ export function createRunService(store: DomainStore) {
       errorTrace: input.errorTrace ?? null,
       executedBy: `user:${userId}`,
       externalId: null,
-      attributes: obj(input.attributes),
+      attributes,
       createdBy: userId,
       createdAt: timestamp(),
       hlc: tx.stamp(),
@@ -815,6 +824,7 @@ export function createRunService(store: DomainStore) {
         } else counts.notRun++;
         counts.total++;
       }
+      const dataset = boundDataset(rd);
       const flow = item.flowId ? (Array.isArray(rd.flows) ? rd.flows : []).map(obj).find((f) => f.id === item.flowId) : undefined;
       items.push({
         item,
@@ -828,6 +838,7 @@ export function createRunService(store: DomainStore) {
         status: worst(statuses) ?? NOT_RUN,
         attempts: attempts.get(item.id) ?? 0,
         hasDraft: false,
+        ...(dataset ? { dataset } : {}),
       });
     }
     return {

@@ -531,3 +531,27 @@
     flex: 1 1 auto;
   }
 }
+
+/* CAS-01: a shared-step call's copy and the row's values in place. */
+.ex-step[data-shared]:not([data-status]) {
+  border-left-color: var(--color-info);
+}
+.ex-step[data-shared="first"] {
+  margin-top: var(--space-2);
+}
+.ex-shared {
+  margin: 0;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--color-info-text);
+}
+.ex-param {
+  padding: 0 2px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--color-info);
+  text-underline-offset: 2px;
+}

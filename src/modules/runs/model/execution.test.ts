@@ -5,7 +5,11 @@ import {
   commandOf,
   derivedStatus,
   elapsedAt,
+  boundDatasetOf,
   fill,
+  fillParts,
+  firstValue,
+  sharedBlocks,
   formatElapsed,
   newDraft,
   nextUnmarked,
@@ -166,4 +170,44 @@ it("finds the attempts of one target", () => {
   const all = [r(null, "ROW"), r(null, "OTHER"), r("F1", null), r(null, "ROW")];
   expect(attemptsOf(all, target())).toHaveLength(2);
   expect(attemptsOf(all, target({ flowId: "F1", exampleRowId: null }))).toHaveLength(1);
+});
+
+describe("the project library in the executor (CAS-01)", () => {
+  const lib = {
+    steps: [
+      { id: "OWN", text: "pay" },
+      { id: "C1", text: "open login" },
+      { id: "C2", text: "type <usuario>" },
+    ],
+    sharedRefs: [
+      { id: "CALL", sharedStepId: "ss", name: "Iniciar sesión", version: 5, stepIds: ["C1", "C2"] },
+    ],
+    datasetRefs: [{ id: "case", datasetId: "ds", name: "Usuarios válidos", version: 2 }],
+    examples: { headers: ["usuario"], rows: [{ id: "R1", values: ["ana"] }, { id: "R2", values: ["luis"] }] },
+  };
+
+  it("groups the copied steps under their call", () => {
+    const blocks = sharedBlocks(lib);
+    expect(blocks.get("OWN")).toBeUndefined();
+    expect(blocks.get("C1")).toEqual({ callId: "CALL", name: "Iniciar sesión", version: 5, first: true });
+    expect(blocks.get("C2")?.first).toBe(false);
+    expect(sharedBlocks({}).size).toBe(0);
+  });
+
+  it("names the bound dataset and its rows", () => {
+    expect(boundDatasetOf(lib)).toEqual({ name: "Usuarios válidos", version: 2, rows: 2 });
+    expect(boundDatasetOf({ examples: lib.examples })).toBeNull();
+  });
+
+  it("splits a text where the row's values go, and labels a row by its first value", () => {
+    expect(fillParts("type <usuario> and <other>", { usuario: "luis" })).toEqual([
+      "type ",
+      { name: "usuario", value: "luis" },
+      " and <other>",
+    ]);
+    expect(fillParts("plain <x>", null)).toEqual(["plain <x>"]);
+    expect(firstValue({ usuario: "luis", clave: "k" })).toBe("usuario = luis");
+    expect(firstValue(["a", "b"])).toBe("a");
+    expect(firstValue(null)).toBe("");
+  });
 });

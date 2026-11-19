@@ -116,6 +116,15 @@ export function CasePickerDialog({
               />
               <span className="rn-mono rn-key">{c.scenarioId}</span>
               <span>{c.title}</span>
+              {c.dataset && (
+                <span className="tp-field__hint" data-testid={`run-case-dataset-${c.scenarioId}`}>
+                  {t("execution.picker.dataset", {
+                    count: c.dataset.rows,
+                    name: c.dataset.name,
+                    version: c.dataset.version,
+                  })}
+                </span>
+              )}
               {already && <span className="tp-field__hint">{t("execution.picker.inRun")}</span>}
             </label>
           );

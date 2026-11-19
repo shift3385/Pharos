@@ -295,6 +295,13 @@ export function RunDetail({
     [
       r.flowName,
       r.rowIndex !== null ? t("execution.row", { n: r.rowIndex + 1 }) : null,
+      r.dataset
+        ? t("execution.run.dataset", {
+            name: r.dataset.name,
+            version: r.dataset.version,
+            count: r.dataset.rows,
+          })
+        : null,
       r.targets > 1 ? t("execution.run.targets", { count: r.targets }) : null,
     ]
       .filter(Boolean)

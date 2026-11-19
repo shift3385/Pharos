@@ -243,6 +243,66 @@ describe("the library on the web (CAS-01)", () => {
     ).toBe(1);
   });
 
+  it("a manual result records the dataset and its shared steps (P4)", async () => {
+    const token = await tokenFor();
+    const p = await project(token);
+    const step = (await call(token, "POST", "/api/library", login(p))).body;
+    const ds = (await call(token, "POST", "/api/library", users(p))).body;
+    const c = (
+      await call(
+        token,
+        "POST",
+        "/api/test-cases",
+        caseWith(p, "Compra", step.id, true, {
+          datasetRefs: [{ id: "case", datasetId: ds.id }],
+        }),
+      )
+    ).body;
+    const run = (
+      await call(token, "POST", "/api/runs", {
+        input: { projectId: p, title: "M" },
+        items: [{ testCaseId: c.id }],
+      })
+    ).body;
+    const overview = (await call(token, "GET", `/api/runs/${run.id}/overview`))
+      .body;
+    expect(overview.items[0].dataset).toEqual({
+      id: ds.id,
+      name: "Usuarios válidos",
+      version: 1,
+      rows: 3,
+    });
+    expect(overview.counts.total).toBe(3);
+    const copied = c.data.sharedRefs[0].stepIds[1] as string;
+    const input = {
+      runItemId: overview.items[0].item.id,
+      attemptId: "00000000-0000-4000-8000-0000000000a1",
+      exampleRowId: c.data.examples.rows[1].id,
+      status: "failed",
+      // A client's own library keys do not stand.
+      attributes: { notes: "n", dataset: { id: "x" }, sharedSteps: { y: 1 } },
+      steps: [
+        { stepId: copied, text: "Cuando escribo luis", status: "failed" },
+        { stepId: "OWN00001", text: "Cuando pago", status: "skipped" },
+      ],
+    };
+    const first = await call(token, "POST", "/api/results", { input });
+    expect(first.status).toBe(200);
+    const stored = await pool.query(
+      `SELECT payload FROM documents WHERE entity = 'result' AND entity_id = $1`,
+      [first.body.id],
+    );
+    expect(stored.rows[0].payload.attributes).toEqual({
+      notes: "n",
+      dataset: { id: ds.id, name: "Usuarios válidos", version: 1 },
+      sharedSteps: { [copied]: { id: step.id, version: 1 } },
+    });
+    // A retry of the same attempt returns it.
+    expect((await call(token, "POST", "/api/results", { input })).body).toEqual(
+      first.body,
+    );
+  });
+
   it("names are unique per kind and an advanced case is refused", async () => {
     const token = await tokenFor();
     const p = await project(token);
