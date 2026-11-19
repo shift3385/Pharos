@@ -1821,6 +1821,37 @@ fn the_api_imports_a_report_file_as_the_desktop_does() {
 /// key, label and attempt, a key over the limit, keywords inside step texts,
 /// `pending` and unknown statuses, epoch-ms times, texts and attributes over
 /// their limits, unknown keys, a suite as text, `browser` as the label.
+/// The corner cases of `findings.rs::plan` no real sample has (suggested by
+/// track F): one fingerprint twice (occurrences 0 and 1), a message and an
+/// axe `html` over their limits, texts over MAX_TEXT, an oversized location,
+/// a metric given twice and a `passed` that is not a boolean.
+fn findings_edge_doc() -> Value {
+    json!({
+        "schemaVersion": "1.0.0",
+        "run": {"sourceTool": "edge-scan"},
+        "shards": [{"ref": "s1", "sourceFormat": "sarif", "normalizerVersion": 1}],
+        "results": [],
+        "findings": [
+            {"ruleId": "R1", "severity": "high", "message": "m".repeat(9000), "fingerprint": "fp-1",
+             "location": {"uri": "a.ts", "startLine": 3}, "standardRefs": ["CWE-79", "x".repeat(1200)],
+             "attributes": {"tool": "edge-scan", "own": 1}},
+            {"ruleId": "R1", "severity": "medium", "message": "again", "fingerprint": "fp-1",
+             "location": {"url": "https://x.test/p", "html": "h".repeat(9000)}, "rawSeverity": "serious",
+             "ruleName": "n".repeat(1200), "helpUri": "https://help.test"},
+            {"ruleId": "R2", "severity": "info", "message": "big location", "fingerprint": "fp-2",
+             "location": {"blob": "b".repeat(17_000)}},
+            {"ruleId": "R3", "severity": "low", "message": "attrs", "fingerprint": "fp-3",
+             "attributes": {"tool": "edge-scan", "blob": "a".repeat(17_000)}}
+        ],
+        "metrics": [
+            {"name": "m", "aggregation": "avg", "value": 12.5, "unit": "ms", "passed": true},
+            {"name": "m", "aggregation": "avg", "value": 99.0},
+            {"name": "m", "aggregation": "p(95)", "value": 30, "threshold": "p(95)<25", "passed": false},
+            {"name": "checks", "value": 0.97, "passed": "yes", "attributes": {"tool": "k6"}}
+        ]
+    })
+}
+
 fn edge_doc() -> Value {
     let long_key = format!("very/long/{}", "k".repeat(2100));
     let long_message = "m".repeat(9000);
@@ -1908,6 +1939,7 @@ fn api_import_interop_vectors() {
             "../../../../packages/formats/src/fixtures/k6/normalized/summary-export.json"
         )),
     ));
+    inputs.push(("findings-edge".into(), findings_edge_doc()));
     let mut cases = Vec::new();
     for (name, doc) in inputs {
         let c = device();
@@ -1966,7 +1998,7 @@ fn api_import_interop_vectors() {
                 ]
                 .contains(&w.code.as_str())
             })
-            .map(|w| json!({"code": w.code, "testKey": w.test_key}))
+            .map(|w| json!({"code": w.code, "testKey": w.test_key, "detail": w.detail}))
             .collect();
         cases.push(json!({
             "name": name, "doc": doc, "sha256": SHA, "runId": out.run_id, "shardId": out.shard_id,
