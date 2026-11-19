@@ -197,6 +197,8 @@ const schema = z
           .filter(Boolean),
       ),
     WEBHOOK_DISPATCH_INTERVAL_MS: z.coerce.number().int().nonnegative().default(2000),
+    // INT-02 A4: how often API-token notices are looked for (0 = never).
+    TOKEN_NOTICE_INTERVAL_MS: z.coerce.number().int().nonnegative().default(3_600_000),
     PHAROS_ADMINS: z
       .string()
       .optional()

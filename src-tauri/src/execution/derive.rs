@@ -736,6 +736,12 @@ pub struct ExecutionSummary {
     pub undated: i64,
     pub runs: Vec<RunRef>,
     pub options: FilterOptions,
+    /// Findings and thresholds of the runs in scope (ING-06, F5b): filled
+    /// after this derivation (`runs::findings::summary`), absent when there
+    /// are none, so the shared vectors do not carry it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, ts(optional))]
+    pub findings: Option<crate::runs::findings::summary::FindingsSummary>,
 }
 
 #[cfg_attr(test, derive(TS), ts(export))]
@@ -2056,6 +2062,7 @@ pub fn summarize(data: &ProjectData, filter: &ExecutionFilter) -> ExecutionSumma
             environments: distinct(|r| &r.environment),
         },
         filter,
+        findings: None,
     }
 }
 

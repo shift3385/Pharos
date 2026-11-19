@@ -17,8 +17,8 @@ pub enum Command {
     Logout,
     /// `run close [RUN-n]` (or `--external-id`).
     RunClose(Option<String>),
-    /// A command of a later PR (`watch`).
-    Later(String),
+    /// `watch [opts] --report <glob>… -- <cmd> [args…]`.
+    Watch,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -45,6 +45,12 @@ pub struct Opts {
     pub status: Option<String>,
     /// `upload --close`: close the run after the last file.
     pub close: bool,
+    /// `watch --report <glob>` (repeatable): the reports the command writes.
+    pub reports: Vec<String>,
+    /// `watch --require-upload`: a failed upload decides the exit code.
+    pub require_upload: bool,
+    /// `watch -- <cmd> [args…]`: the command to run.
+    pub command: Vec<String>,
     /// The files and patterns of `upload`.
     pub files: Vec<String>,
 }
@@ -54,10 +60,6 @@ pub struct Parsed {
     pub command: Command,
     pub opts: Opts,
 }
-
-const COMMANDS: [&str; 7] = [
-    "upload", "projects", "doctor", "watch", "login", "logout", "run",
-];
 
 /// The language asked on the command line, read before parsing the rest so
 /// that a parse error is already in that language.
@@ -83,12 +85,13 @@ pub fn parse(argv: &[String]) -> Result<Parsed, Failure> {
     let mut command: Option<String> = None;
     let mut help = false;
     let mut positional: Vec<String> = Vec::new();
+    let mut after_dashes: Option<Vec<String>> = None;
     let mut i = 0;
     while i < argv.len() {
         let arg = &argv[i];
         i += 1;
         if arg == "--" {
-            positional.extend(argv[i..].iter().cloned());
+            after_dashes = Some(argv[i..].to_vec());
             break;
         }
         if arg == "--version" || arg == "-V" {
@@ -139,6 +142,8 @@ pub fn parse(argv: &[String]) -> Result<Parsed, Failure> {
                 "--token-stdin" => opts.token_stdin = true,
                 "--status" => opts.status = Some(value("--status")?),
                 "--close" => opts.close = true,
+                "--report" => opts.reports.push(value("--report")?),
+                "--require-upload" => opts.require_upload = true,
                 // Never a token on the command line (ADR-0054 §3).
                 "--token" => return Err(Failure::usage("token-flag", "err.token-flag")),
                 other => {
@@ -162,7 +167,17 @@ pub fn parse(argv: &[String]) -> Result<Parsed, Failure> {
         Some(_) if help => Command::Help(command.clone()),
         Some("upload") => {
             opts.files = positional;
+            opts.files.extend(after_dashes.unwrap_or_default());
             Command::Upload
+        }
+        Some("watch") => {
+            if let Some(extra) = positional.first() {
+                return Err(Failure::usage("unknown-option", "err.unknown-option")
+                    .arg(extra.as_str())
+                    .arg("watch"));
+            }
+            opts.command = after_dashes.unwrap_or_default();
+            Command::Watch
         }
         Some(c @ ("projects" | "doctor")) => {
             if let Some(extra) = positional.first() {
@@ -187,7 +202,6 @@ pub fn parse(argv: &[String]) -> Result<Parsed, Failure> {
                     .arg(format!("run {got}")));
             }
         },
-        Some(c) if COMMANDS.contains(&c) => Command::Later(c.to_string()),
         Some(other) => {
             return Err(Failure::usage("unknown-command", "err.unknown-command").arg(other))
         }
@@ -264,9 +278,34 @@ mod tests {
             Command::Help(Some("upload".into()))
         );
         assert_eq!(p(&["--version"]).unwrap().command, Command::Version);
+        let w = p(&[
+            "watch",
+            "-p",
+            "PAG",
+            "--report",
+            "a/*.xml",
+            "--report=b.json",
+            "--require-upload",
+            "--",
+            "npm",
+            "test",
+            "--",
+            "-x",
+        ])
+        .unwrap();
+        assert_eq!(w.command, Command::Watch);
+        assert_eq!(w.opts.reports, vec!["a/*.xml", "b.json"]);
+        assert!(w.opts.require_upload);
+        // Everything after `--` is the command's, `--` and options included.
+        assert_eq!(w.opts.command, vec!["npm", "test", "--", "-x"]);
         assert_eq!(
-            p(&["watch", "--", "npm", "test"]).unwrap().command,
-            Command::Later("watch".into())
+            p(&["watch", "stray", "--", "npm"]).unwrap_err().code,
+            "unknown-option"
+        );
+        // `upload -- file` still takes files after `--`.
+        assert_eq!(
+            p(&["upload", "--", "-odd.xml"]).unwrap().opts.files,
+            vec!["-odd.xml"]
         );
         assert_eq!(p(&["frobnicate"]).unwrap_err().code, "unknown-command");
         assert_eq!(

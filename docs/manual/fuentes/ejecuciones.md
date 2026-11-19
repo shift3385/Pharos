@@ -47,6 +47,21 @@ hay algo que mostrar:
 - «Métricas» pone primero los umbrales incumplidos. «Ver todas» muestra cada
   agregación, y los *checks* de k6 van aparte.
 
+Fuera del run, cuenta el **último escaneo de cada herramienta** (lo que ya no
+aparece en él se dio por corregido):
+
+- La **lista de runs** muestra los hallazgos abiertos de cada run, con el color
+  de la peor severidad, y sus umbrales incumplidos. Un run que solo trae
+  hallazgos o métricas ya no figura como «Sin resultados».
+- En la **matriz de trazabilidad**, un caso con hallazgos abiertos lleva una
+  insignia con cuántos son y el color del peor, y la nota «Hallazgos
+  abiertos». El interruptor **«Con hallazgos abiertos»** deja solo los
+  requisitos afectados.
+- El **informe de estado** añade la sección «7.1 Hallazgos y rendimiento»
+  (abiertos por severidad, nuevos, triados, a revisar, umbrales cumplidos y
+  los incumplidos), y el **informe de cierre** los lista entre los riesgos
+  residuales. Si no hay hallazgos ni umbrales, la sección no aparece.
+
 ## Cómo se vincula un test a su caso
 
 | Formato | Dónde va la clave del caso |

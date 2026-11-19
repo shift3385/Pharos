@@ -206,6 +206,8 @@ No hay que activar nada: funciona con un token.
   - 60 subidas por minuto y token (`API_UPLOAD_RATE_LIMIT_MAX`).
 
   El informe se guarda como evidencia en `BLOB_DIR`, así que hay que contar con su espacio.
+- **Leer** casos, ciclos, defectos y requisitos: listas que solo devuelven lo cambiado desde un cursor. La guía con ejemplos está en [api-v1.md](api-v1.md).
+- **Avisos:** cada hora (`TOKEN_NOTICE_INTERVAL_MS`) el servidor busca tokens que caducan en 7 días, y avisa a su dueño. También busca tokens de proyecto cuyo dueño salió del workspace o tiene la cuenta desactivada, y avisa a los Test Manager.
 - **Ante una fuga:** el administrador del servidor revoca todos los tokens de
   una cuenta desde «Administración › Usuarios» › «Revocar sus tokens…».
 

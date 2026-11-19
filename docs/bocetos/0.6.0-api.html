@@ -1,0 +1,350 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Integraciones de Pharos 0.6.0</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one reading column; each boceto is a framed 1:1 mock of the Pharos screen, with its notes underneath. Same token set as the other Pharos bocetos. */
+:root{
+  --bg:#f3f5f9; --surface:#ffffff; --sunken:#eef1f6; --fg:#14213a; --muted:#5a6680; --line:#d7dde8;
+  --navy:#1e3a6e; --accent:#2f6fd6; --ok:#1d7a4a; --ok-bg:#e3f4ea; --warn:#9a5b00; --warn-bg:#fff1d6;
+  --err:#b42318; --err-bg:#fde8e6; --new:#7a3fd1; --new-bg:#f1e9fd; --on-accent:#ffffff;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:Inter,system-ui,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --new:#c39bff; --new-bg:#2c2246; --on-accent:#0f1522; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --new:#c39bff; --new-bg:#2c2246; --on-accent:#0f1522; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+main{max-width:980px;margin:0 auto;display:grid;gap:44px}
+h1,h2,h3,h4{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:1.9rem;color:var(--navy)} h2{font-size:1.3rem;color:var(--navy)}
+.lead{color:var(--muted);max-width:68ch;margin:6px 0 0}
+.eyebrow{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.block{display:grid;gap:14px}
+.note{max-width:72ch;margin:0;padding-left:1.2em}
+.note li{margin-bottom:4px}
+.frame{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.frame-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:var(--sunken);border-bottom:1px solid var(--line);font-size:.8rem;color:var(--muted)}
+.tag-new{background:var(--new-bg);color:var(--new);font-size:.7rem;font-weight:700;border-radius:4px;padding:1px 6px;letter-spacing:.04em}
+.pad{padding:20px;display:grid;gap:16px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.card{border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:14px;min-width:0}
+.card h3{font-size:1.05rem}
+.card .sub{color:var(--muted);font-size:.85rem;margin:-8px 0 0}
+.field{display:grid;gap:4px;font-size:.84rem}
+.field label{font-weight:600}
+.input{border:1px solid var(--line);border-radius:7px;padding:8px 10px;background:var(--surface);color:var(--fg);font:inherit;font-size:.9rem;display:flex;justify-content:space-between;gap:8px;min-width:0}
+.input.dots{letter-spacing:.2em}
+.input .eye{color:var(--muted);letter-spacing:0;font-size:.78rem}
+.input.bad{border-color:var(--err)}
+.help{color:var(--muted);font-size:.78rem}
+.errtxt{color:var(--err);font-size:.8rem}
+.meter{height:6px;border-radius:3px;background:var(--sunken);overflow:hidden}
+.meter i{display:block;height:100%;width:70%;background:var(--ok)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:7px;padding:7px 14px;font:500 .86rem var(--f-body);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.link{color:var(--accent);font-size:.84rem;font-weight:500;cursor:pointer;background:none;border:0;padding:0;font-family:inherit}
+.banner{display:flex;gap:10px;align-items:flex-start;border-radius:8px;padding:10px 12px;font-size:.85rem}
+.banner.ok{background:var(--ok-bg);color:var(--ok)} .banner.warn{background:var(--warn-bg);color:var(--warn)} .banner.err{background:var(--err-bg);color:var(--err)}
+.banner.info{background:var(--sunken);color:var(--fg)}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.75rem;font-weight:600}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.85rem;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+.codes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 18px;background:var(--sunken);border-radius:8px;padding:16px 18px;font-family:var(--f-mono);font-size:1rem;font-variant-numeric:tabular-nums;counter-reset:c}
+.codes span{counter-increment:c;white-space:nowrap}
+.codes span::before{content:counter(c,decimal-leading-zero) "  ";color:var(--muted);font-size:.78rem}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:.88rem}
+.check input{margin-top:3px}
+.auth{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.8fr);min-height:420px}
+.auth-form{padding:28px 28px;display:grid;gap:14px;align-content:start;max-width:420px}
+.auth-photo{background:linear-gradient(160deg,var(--navy),#0b1630);position:relative}
+.auth-photo::after{content:"Pharos";position:absolute;left:22px;bottom:18px;color:#e6ebf5;font-family:var(--f-display);font-size:1.2rem;opacity:.85}
+.auth-title{font-size:1.45rem;color:var(--fg)}
+.tabs{display:flex;gap:18px;border-bottom:1px solid var(--line);font-size:.86rem;color:var(--muted)}
+.tabs span{padding:8px 0}.tabs .on{color:var(--fg);border-bottom:2px solid var(--accent);font-weight:600}
+.mail{border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:10px;font-size:.88rem;max-width:560px}
+.mail .from{color:var(--muted);font-size:.8rem}
+.mono{font-family:var(--f-mono);font-size:.8rem;word-break:break-all}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.82rem}
+th{text-align:left;background:var(--sunken);color:var(--muted);font-weight:600;padding:6px 8px;white-space:nowrap}
+td{padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
+.state{display:grid;gap:10px}
+.state h4{font-size:.95rem}
+@media (max-width:640px){.auth{grid-template-columns:1fr}.auth-photo{min-height:90px;order:-1}.codes{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.dialog{max-width:540px;margin:18px auto;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 12px 32px rgba(20,33,58,.16);overflow:hidden;min-width:0}
+.dialog header{padding:14px 18px;border-bottom:1px solid var(--line)}
+.dialog header h3{font-size:1.05rem}
+.dialog .body{padding:16px 18px;display:grid;gap:12px}
+.dialog footer{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--line);background:var(--sunken)}
+.chip{display:inline-block;border:1px solid var(--line);border-radius:6px;padding:0 6px;font-family:var(--f-mono);font-size:.72rem;margin:1px 2px 1px 0;white-space:nowrap}
+.pill.err{background:var(--err-bg);color:var(--err)} .pill.mute{background:var(--sunken);color:var(--muted)}
+.secret{display:flex;gap:8px;align-items:center;background:var(--sunken);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;min-width:0}
+.secret code{font-family:var(--f-mono);font-size:.82rem;word-break:break-all;flex:1;min-width:0}
+pre.snip{background:var(--sunken);border-radius:8px;padding:12px 14px;font-family:var(--f-mono);font-size:.76rem;overflow-x:auto;margin:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px 16px}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:0}
+.split > div{padding:16px 18px;min-width:0}
+.split > div + div{border-left:1px solid var(--line)}
+.dl-row{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:.82rem}
+.dl-row.on{background:var(--sunken);margin:0 -8px;padding:6px 8px;border-radius:6px}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+@media (max-width:700px){.split{grid-template-columns:1fr}.split > div + div{border-left:0;border-top:1px solid var(--line)}}
+</style>
+
+<main>
+  <header class="block">
+    <span class="eyebrow">Pharos 0.6.0 · pista A · INT-02 / INT-03 · bocetos para aprobar (2026-11-18)</span>
+    <h1>Integraciones: tokens y webhooks</h1>
+    <p class="lead">CI reporta resultados a Pharos con un token de proyecto, y Pharos avisa a otras herramientas con webhooks firmados. Los dos son del workspace, así que viven en la página del workspace, en una pestaña nueva «Integraciones» junto a «Miembros». Los tokens personales, para el CLI de cada persona, van en «Mi perfil».</p>
+  </header>
+
+  <section class="block" aria-labelledby="b1">
+    <span class="eyebrow">Boceto 1 · Workspace › Integraciones › Tokens de proyecto</span>
+    <h2 id="b1">La lista de tokens del workspace</h2>
+    <div class="frame">
+      <div class="frame-head">Workspace «QA Pagos» · vista de Ana Pérez (Test Manager) <span class="tag-new">NUEVO</span></div>
+      <div class="pad">
+        <div class="tabs"><span>Miembros</span><span>Invitaciones</span><span class="on">Integraciones</span><span>Política</span></div>
+        <div class="row"><strong>Tokens de proyecto</strong><span class="help">Sirven para que CI suba resultados. Un token nunca puede hacer más que la persona que lo creó.</span><span style="flex:1"></span><button class="btn primary">Nuevo token…</button></div>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>Nombre</th><th>Proyecto</th><th>Permisos</th><th>Dueño</th><th>Caduca</th><th>Último uso</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>CI GitHub · pagos-web<br><span class="mono">phr_prj_Ab3k…</span></td><td>Pagos Web</td><td><span class="chip">runs:write</span><span class="chip">runs:read</span><span class="chip">projects:read</span></td><td>Ana Pérez</td><td class="num">16 feb 2027</td><td class="num">hace 12 min<br><span class="help">20.42.7.13</span></td><td><span class="pill ok">Activo</span></td><td class="row"><button class="link">Rotar</button><button class="link">Revocar</button></td></tr>
+          <tr><td>k6 nocturno<br><span class="mono">phr_prj_Q9xe…</span></td><td>API Cobros</td><td><span class="chip">runs:write</span></td><td>Ana Pérez</td><td class="num">24 nov 2026</td><td class="num">ayer 02:10</td><td><span class="pill warn">Caduca en 6 días</span></td><td class="row"><button class="link">Rotar</button><button class="link">Revocar</button></td></tr>
+          <tr><td>Jenkins legado<br><span class="mono">phr_prj_mT0p…</span></td><td>Pagos Web</td><td><span class="chip">runs:write</span></td><td>Carlos Díaz</td><td class="num">3 mar 2027</td><td class="num">hace 3 días</td><td><span class="pill err">Inactivo</span><br><span class="help">Carlos ya no es miembro</span></td><td class="row"><button class="link">Reasignar a mí</button><button class="link">Revocar</button></td></tr>
+          <tr><td>Prueba manual<br><span class="mono">phr_prj_zz81…</span></td><td>Pagos Web</td><td><span class="chip">runs:read</span></td><td>Ana Pérez</td><td class="num">—</td><td class="num">nunca</td><td><span class="pill mute">Revocado el 10 nov</span></td><td></td></tr>
+        </tbody></table></div>
+    </div>
+    <ul class="note">
+      <li>Solo el Test Manager ve «Nuevo token», «Rotar», «Reasignar» y «Revocar» (capacidad <span class="mono">token.manage</span>). Los demás roles ven la lista sin acciones (boceto 7).</li>
+      <li>«Inactivo» dice el motivo: el dueño salió del workspace, bajó de rol o tiene la cuenta desactivada. «Reasignar a mí» lo reactiva sin cambiar el secreto, así que CI no se rompe. Queda auditado.</li>
+      <li>El secreto no vuelve a mostrarse; la lista solo enseña el prefijo para reconocerlo.</li>
+      <li>Siete días antes de que caduque, el dueño y los Test Manager reciben una notificación.</li>
+    </ul>
+  </section>
+
+  <section class="block" aria-labelledby="b2">
+    <span class="eyebrow">Boceto 2 · Nuevo token de proyecto</span>
+    <h2 id="b2">Crear: nombre, proyecto, permisos y caducidad</h2>
+    <div class="frame"><div class="frame-head">Diálogo modal</div>
+      <div class="dialog">
+        <header><h3>Nuevo token de proyecto</h3></header>
+        <div class="body">
+          <div class="field"><label for="t-name">Nombre</label><div class="input" id="t-name">CI GitHub · pagos-web</div><span class="help">Para reconocerlo después: dónde se usa.</span></div>
+          <div class="field"><label for="t-proj">Proyecto</label><div class="input" id="t-proj">Pagos Web <span class="eye">▾</span></div></div>
+          <div class="field"><label>Permisos</label>
+            <div class="grid2">
+              <label class="check"><input type="checkbox" id="s1" checked> Subir resultados y cerrar runs <span class="chip">runs:write</span></label>
+              <label class="check"><input type="checkbox" id="s2" checked> Leer runs y resultados <span class="chip">runs:read</span></label>
+              <label class="check"><input type="checkbox" id="s3" checked> Leer el proyecto <span class="chip">projects:read</span></label>
+              <label class="check"><input type="checkbox" id="s4"> Leer casos <span class="chip">cases:read</span></label>
+              <label class="check"><input type="checkbox" id="s5"> Leer ciclos <span class="chip">cycles:read</span></label>
+              <label class="check"><input type="checkbox" id="s6"> Leer defectos <span class="chip">defects:read</span></label>
+            </div>
+            <span class="help">Vienen marcados los permisos que necesitan una acción de GitHub o el CLI para reportar.</span>
+          </div>
+          <div class="field"><label for="t-exp">Caduca</label><div class="input" id="t-exp">En 90 días · 16 feb 2027 <span class="eye">▾</span></div><span class="help">30, 90, 180 o 365 días, o una fecha. Como máximo, un año.</span></div>
+          <div class="banner info">Este token actuará con tus permisos en «QA Pagos». Si dejas de ser miembro o cambias de rol, dejará de funcionar hasta que otro Test Manager lo reasigne.</div>
+        </div>
+        <footer><button class="btn">Cancelar</button><button class="btn primary">Crear token</button></footer>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="b3">
+    <span class="eyebrow">Boceto 3 · Token creado (se muestra una sola vez)</span>
+    <h2 id="b3">Copiarlo ahora y llevarlo a CI</h2>
+    <div class="frame"><div class="frame-head">Diálogo modal · Esc o un clic fuera no lo cierran hasta marcar la casilla</div>
+      <div class="dialog">
+        <header><h3>Token creado</h3></header>
+        <div class="body">
+          <div class="banner warn">Cópialo ahora. Pharos no lo guarda y no podrá volver a enseñártelo.</div>
+          <div class="secret"><code>phr_prj_Ab3k…(token de ejemplo, se muestra una sola vez)</code><button class="btn">Copiar</button></div>
+          <div class="field"><label>En GitHub Actions</label>
+<pre class="snip">Guárdalo como secreto del repositorio: PHAROS_TOKEN
+- uses: pharos/upload@&lt;sha&gt;
+  with:
+    server: https://pharos.empresa.com
+    token: ${{ secrets.PHAROS_TOKEN }}
+    project: PAGOS
+    report: test-results/junit.xml</pre>
+            <span class="help">La acción y el CLI llegan con INT-01 e INT-04; el ejemplo definitivo saldrá de ellos.</span>
+          </div>
+          <label class="check"><input type="checkbox" id="saved"> Lo he guardado en un sitio seguro</label>
+        </div>
+        <footer><button class="btn primary" disabled>Hecho</button></footer>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="b4">
+    <span class="eyebrow">Boceto 4 · Workspace › Integraciones › Webhooks</span>
+    <h2 id="b4">Avisar a otras herramientas</h2>
+    <div class="frame">
+      <div class="frame-head">Misma pestaña, debajo de los tokens · vista del Test Manager <span class="tag-new">NUEVO</span></div>
+      <div class="pad">
+        <div class="row"><strong>Webhooks</strong><span class="help">Pharos envía un POST firmado cuando pasa algo en este workspace, también si pasa en el escritorio (llega al sincronizar).</span><span style="flex:1"></span><button class="btn primary">Nuevo webhook…</button></div>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>Nombre</th><th>Destino</th><th>Eventos</th><th>Proyecto</th><th>Última entrega</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>Slack #qa-pagos</td><td class="mono">https://hooks.slack.com/…</td><td><span class="chip">run.completed</span><span class="chip">defect.created</span></td><td>Todos</td><td class="num"><span class="pill ok">200</span> hace 12 min</td><td><span class="pill ok">Activo</span></td><td class="row"><button class="link">Entregas</button><button class="link">Editar</button></td></tr>
+          <tr><td>Bot de PRs</td><td class="mono">https://ci.empresa.com/pharos</td><td><span class="chip">run.results_uploaded</span><span class="chip">run.completed</span></td><td>Pagos Web</td><td class="num"><span class="pill warn">503</span> reintento en 10 min</td><td><span class="pill warn">Fallando (3)</span></td><td class="row"><button class="link">Entregas</button><button class="link">Editar</button></td></tr>
+          <tr><td>Jenkins LAN</td><td class="mono">https://10.0.4.12/hook</td><td><span class="chip">cycle.closed</span></td><td>Todos</td><td class="num">—</td><td><span class="pill err">Desactivado</span><br><span class="help">Este servidor no permite la red privada</span></td><td class="row"><button class="link">Editar</button></td></tr>
+        </tbody></table></div>
+    </div>
+    <ul class="note">
+      <li>Tras 50 fallos seguidos, un webhook se desactiva solo y avisa a los Test Manager. «Activar» lo vuelve a encender y reenvía lo pendiente.</li>
+      <li>Si el servidor no tiene <span class="mono">WEBHOOK_SECRETS_KEY</span>, la sección muestra «Los webhooks no están disponibles en este servidor. Quien lo administra puede activarlos» y no deja crear ninguno.</li>
+      <li>Una dirección de la red privada se rechaza al guardar, salvo que el servidor la permita (<span class="mono">WEBHOOK_ALLOW_PRIVATE</span>, decisión 5).</li>
+    </ul>
+  </section>
+
+  <section class="block" aria-labelledby="b5">
+    <span class="eyebrow">Boceto 5 · Nuevo webhook y su secreto</span>
+    <h2 id="b5">Destino, eventos y secreto de firma</h2>
+    <div class="cols">
+      <div class="dialog" style="margin:0">
+        <header><h3>Nuevo webhook</h3></header>
+        <div class="body">
+          <div class="field"><label for="w-name">Nombre</label><div class="input" id="w-name">Bot de PRs</div></div>
+          <div class="field"><label for="w-url">URL</label><div class="input" id="w-url">https://ci.empresa.com/pharos</div><span class="help">Solo https. Pharos no sigue redirecciones.</span></div>
+          <div class="field"><label for="w-proj">Proyecto</label><div class="input" id="w-proj">Pagos Web <span class="eye">▾</span></div></div>
+          <div class="field"><label>Eventos</label>
+            <div class="grid2">
+              <label class="check"><input type="checkbox" id="e1"> Run creado</label>
+              <label class="check"><input type="checkbox" id="e2" checked> Resultados subidos</label>
+              <label class="check"><input type="checkbox" id="e3" checked> Run cerrado</label>
+              <label class="check"><input type="checkbox" id="e4"> Ciclo cerrado</label>
+              <label class="check"><input type="checkbox" id="e5"> Defecto creado</label>
+              <label class="check"><input type="checkbox" id="e6"> Defecto cambia de estado</label>
+              <label class="check"><input type="checkbox" id="e7"> Caso o plan aprobado o devuelto</label>
+            </div>
+          </div>
+        </div>
+        <footer><button class="btn">Cancelar</button><button class="btn primary">Crear webhook</button></footer>
+      </div>
+      <div class="dialog" style="margin:0">
+        <header><h3>Webhook creado</h3></header>
+        <div class="body">
+          <div class="banner warn">Copia el secreto de firma ahora. No se volverá a mostrar.</div>
+          <div class="secret"><code>whsec_MfKQ9r7Ez0bY1u3xWv2cT8pLs6aN4hJd5gR0kVq=</code><button class="btn">Copiar</button></div>
+          <p class="help" style="margin:0">Cada envío lleva las cabeceras <span class="mono">webhook-id</span>, <span class="mono">webhook-timestamp</span> y <span class="mono">webhook-signature</span>, según Standard Webhooks. El manual explica cómo verificarlas en Node y en Python.</p>
+          <div class="row"><button class="btn">Enviar prueba</button><span class="pill ok">ping · 200 · 143 ms</span></div>
+        </div>
+        <footer><button class="btn primary">Hecho</button></footer>
+      </div>
+    </div>
+    <ul class="note">
+      <li>«Rotar secreto» genera uno nuevo. Durante 24 horas Pharos firma con los dos, para que dé tiempo a cambiarlo en el destino.</li>
+    </ul>
+  </section>
+
+  <section class="block" aria-labelledby="b6">
+    <span class="eyebrow">Boceto 6 · Entregas de un webhook</span>
+    <h2 id="b6">Qué se envió, qué respondió el destino y reintentar</h2>
+    <div class="frame">
+      <div class="frame-head">Panel lateral «Entregas · Bot de PRs» · últimos 30 días</div>
+      <div class="split">
+        <div>
+          <div class="dl-row"><span><span class="pill warn">503</span> run.completed</span><span class="help">hace 4 min · intento 3 de 8</span></div>
+          <div class="dl-row on"><span><span class="pill warn">503</span> run.results_uploaded</span><span class="help">hace 5 min · intento 3 de 8</span></div>
+          <div class="dl-row"><span><span class="pill ok">200</span> run.results_uploaded</span><span class="help">hace 5 min</span></div>
+          <div class="dl-row"><span><span class="pill ok">200</span> run.created</span><span class="help">hace 6 min</span></div>
+          <div class="dl-row"><span><span class="pill err">Abandonado</span> run.completed</span><span class="help">ayer · 8 de 8</span></div>
+        </div>
+        <div style="display:grid;gap:10px">
+          <dl class="kv">
+            <dt>Evento</dt><dd>run.results_uploaded · RUN-042 · shard 2 de 4</dd>
+            <dt>Origen</dt><dd>Token «CI GitHub · pagos-web» (Ana Pérez)</dd>
+            <dt>Próximo intento</dt><dd>en 10 min (después de 30 s y 2 min; luego 1 h, 3 h, 6 h y 12 h)</dd>
+            <dt>Respuesta</dt><dd>503 · 10,0 s · «upstream unavailable»</dd>
+          </dl>
+<pre class="snip">{
+  "id": "evt_01JD…",
+  "type": "run.results_uploaded",
+  "occurredAt": "2026-11-18T10:42:07Z",
+  "project": { "id": "…", "name": "Pagos Web" },
+  "actor": { "kind": "token", "name": "CI GitHub · pagos-web" },
+  "data": { "run": { "key": "RUN-042" },
+            "counts": { "passed": 212, "failed": 3, "skipped": 4 } },
+  "links": { "app": "https://pharos.empresa.com/…/runs/RUN-042" }
+}</pre>
+          <div class="row"><button class="btn">Reintentar ahora</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="b7">
+    <span class="eyebrow">Boceto 7 · Lo que ven los demás roles</span>
+    <h2 id="b7">Solo lectura, sin secretos ni URLs completas</h2>
+    <div class="frame">
+      <div class="frame-head">Workspace «QA Pagos» · vista de Luis Gómez (Automation Engineer)</div>
+      <div class="pad">
+        <div class="banner info">Solo un Test Manager del workspace crea, rota o revoca tokens y webhooks. Si necesitas uno para CI, pídeselo a Ana Pérez. Para usar el CLI en tu equipo, crea un token personal en «Mi perfil».</div>
+        <div class="tw"><table>
+          <thead><tr><th>Token</th><th>Proyecto</th><th>Dueño</th><th>Estado</th></tr></thead>
+          <tbody><tr><td>CI GitHub · pagos-web</td><td>Pagos Web</td><td>Ana Pérez</td><td><span class="pill ok">Activo</span></td></tr></tbody>
+        </table></div>
+        <div class="tw"><table>
+          <thead><tr><th>Webhook</th><th>Destino</th><th>Estado</th></tr></thead>
+          <tbody><tr><td>Slack #qa-pagos</td><td class="mono">hooks.slack.com</td><td><span class="pill ok">Activo</span></td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+    <ul class="note"><li>Decisión 1 del plan: si el usuario prefiere que el Automation Engineer cree tokens de proyecto (solo con permisos de runs), este aviso desaparece para ese rol.</li></ul>
+  </section>
+
+  <section class="block" aria-labelledby="b8">
+    <span class="eyebrow">Boceto 8 · Mi perfil › Tokens personales</span>
+    <h2 id="b8">Para el CLI de cada persona</h2>
+    <div class="frame">
+      <div class="frame-head">Mi perfil · Ana Pérez <span class="tag-new">NUEVO</span></div>
+      <div class="pad">
+        <div class="tabs"><span>Datos</span><span>Contraseña y recuperación</span><span class="on">Tokens personales</span></div>
+        <div class="row"><span class="help">Un token personal actúa como tú en los workspaces que elijas, con los permisos que tengas en cada uno.</span><span style="flex:1"></span><button class="btn primary">Nuevo token personal…</button></div>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>Nombre</th><th>Workspaces</th><th>Permisos</th><th>Caduca</th><th>Último uso</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>Portátil · pharos CLI<br><span class="mono">phr_pat_7Hc2…</span></td><td>Todos los míos</td><td><span class="chip">runs:write</span><span class="chip">runs:read</span><span class="chip">cases:read</span></td><td class="num">18 may 2027</td><td class="num">hoy 09:12</td><td><button class="link">Revocar</button></td></tr>
+          <tr><td>Script de métricas<br><span class="mono">phr_pat_Lp0w…</span></td><td>QA Pagos</td><td><span class="chip">cycles:read</span><span class="chip">runs:read</span></td><td class="num">18 dic 2026</td><td class="num">hace 2 días</td><td><button class="link">Revocar</button></td></tr>
+        </tbody></table></div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="b9">
+    <span class="eyebrow">Boceto 9 · Administración › Usuarios (administrador del servidor)</span>
+    <h2 id="b9">Cortar una fuga sin entrar en cada workspace</h2>
+    <div class="frame">
+      <div class="frame-head">Administración · Usuarios · vista de un administrador (SEC-11) · fila ampliada</div>
+      <div class="tw"><table>
+        <thead><tr><th>Persona</th><th>Correo</th><th>Tokens vivos</th><th>Acciones</th></tr></thead>
+        <tbody>
+          <tr><td>Carlos Díaz</td><td>carlos@empresa.test</td><td class="num">3 (1 personal, 2 de proyecto)</td><td class="row"><button class="btn">Ver tokens…</button><button class="btn">Revocar todos sus tokens…</button></td></tr>
+        </tbody></table></div>
+      <div class="pad">
+        <div class="banner warn"><span>Vas a revocar todos los tokens de Carlos Díaz: 1 personal y 2 de proyecto («Jenkins legado» en QA Pagos y «Nightly» en QA Móvil). Los CI que los usan dejarán de reportar, y los Test Manager de esos workspaces recibirán un aviso.</span> <button class="btn">Revocar 3 tokens</button></div>
+      </div>
+    </div>
+    <ul class="note">
+      <li>El administrador ve y revoca tokens, pero no los crea ni ve sus secretos. Cada revocación se audita en el workspace afectado.</li>
+      <li>No hay pestaña «Administración › Integraciones»: lo que se configura es del workspace, y Administración es de la app y del servidor (ADR-0031). Es la decisión 3 del plan.</li>
+    </ul>
+  </section>
+</main>
+
+</body></html>

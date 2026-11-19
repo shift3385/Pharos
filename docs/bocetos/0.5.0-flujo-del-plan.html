@@ -1,0 +1,428 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Aprobación del plan PLN-08</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: documento de propuesta (PLN-08, pista P); cada boceto imita una pantalla de Pharos (marino + tarjetas blancas), como los bocetos de PLN-06/07. */
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --fg:#1b2433; --muted:#5d6878; --line:#d6dce5;
+  --navy:#13233b; --accent:#1f5fae; --accent-soft:#e3edf9;
+  --ok:#1f7a4d; --ok-soft:#e1f3ea; --warn:#9a5b00; --warn-soft:#fdf0d9; --bad:#b3261e; --bad-soft:#fbe4e2;
+  --info:#5a3fa8; --info-soft:#ece6f8;
+  --code-bg:#f5f7fa; --scrim:rgba(19,35,59,.08);
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1522; --surface:#172234; --fg:#e4e9f1; --muted:#9aa6b8; --line:#2c3a50;
+  --navy:#0a1220; --accent:#6aa5ee; --accent-soft:#1d3352;
+  --ok:#5fcf97; --ok-soft:#163a2a; --warn:#f0b75a; --warn-soft:#3b2c12; --bad:#f08a82; --bad-soft:#3d1c1a;
+  --info:#b7a2f2; --info-soft:#2a2244;
+  --code-bg:#111a29; --scrim:rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1522; --surface:#172234; --fg:#e4e9f1; --muted:#9aa6b8; --line:#2c3a50;
+  --navy:#0a1220; --accent:#6aa5ee; --accent-soft:#1d3352;
+  --ok:#5fcf97; --ok-soft:#163a2a; --warn:#f0b75a; --warn-soft:#3b2c12; --bad:#f08a82; --bad-soft:#3d1c1a;
+  --info:#b7a2f2; --info-soft:#2a2244;
+  --code-bg:#111a29; --scrim:rgba(0,0,0,.25); color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.55}
+.wrap{max-width:1040px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:40px}
+header.top{display:grid;gap:8px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:30px;margin:0;text-wrap:balance;line-height:1.2}
+h2{font-size:21px;margin:0 0 4px;text-wrap:balance}
+h3{font-size:16px;margin:0}
+p{margin:0;max-width:72ch}
+.lead{color:var(--muted);max-width:75ch}
+section{display:grid;gap:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:20px;align-items:start}
+.note{font-size:13.5px;color:var(--muted)}
+ul.tight{margin:0;padding-left:20px;display:grid;gap:4px}
+code,.ids{font-family:var(--mono);font-size:12.5px}
+.ids{background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:4px;white-space:nowrap}
+pre{margin:0;background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:14px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.55}
+.cap{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* Diagrama de estados */
+.flow{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;overflow-x:auto}
+.flow svg{display:block;min-width:640px;width:100%;height:auto}
+.flow text{font-family:var(--sans);fill:var(--fg)}
+.flow .sub{fill:var(--muted);font-size:11.5px}
+
+/* Ventana de app */
+.app{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(10,20,40,.05);min-width:0}
+.app .bar{background:var(--navy);color:#e8eef7;font-size:12.5px;padding:8px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.app .bar b{font-weight:600}
+.app .bar .crumb{opacity:.7}
+.app .body{padding:18px;display:grid;gap:14px}
+.head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.head .t{display:flex;gap:10px;align-items:center;flex-wrap:wrap;min-width:0}
+.head h4{margin:0;font-size:18px}
+.pill{display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:600;border-radius:999px;padding:2px 10px;white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.p-draft{background:var(--code-bg);color:var(--muted);border:1px solid var(--line)}
+.p-review{background:var(--info-soft);color:var(--info)}
+.p-ok{background:var(--ok-soft);color:var(--ok)}
+.p-obs{background:var(--code-bg);color:var(--muted);text-decoration:line-through}
+.p-back{background:var(--warn-soft);color:var(--warn)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:inherit;font-size:13.5px;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:6px;padding:6px 12px;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.btn.ghost{border-style:dashed;color:var(--accent)}
+.btn[disabled]{opacity:.5}
+.banner{border-radius:8px;padding:10px 12px;font-size:13.5px;display:grid;gap:4px}
+.b-info{background:var(--info-soft);color:var(--fg);border:1px solid color-mix(in srgb,var(--info) 30%,transparent)}
+.b-warn{background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent)}
+.b-ok{background:var(--ok-soft);border:1px solid color-mix(in srgb,var(--ok) 30%,transparent)}
+.banner .who{font-weight:600}
+.field{border:1px solid var(--line);border-radius:6px;padding:8px 11px;font-size:14px;background:var(--surface);min-height:20px}
+.field.area{min-height:64px}
+.field.ph{color:var(--muted)}
+.lbl{font-size:13px;color:var(--muted);font-weight:500}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:13.5px;margin:0}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+.steps{margin:0;padding-left:22px;display:grid;gap:4px;font-size:14px}
+.gwt{font-family:var(--mono);font-size:12.5px;color:var(--accent);font-weight:500}
+
+/* Diálogo */
+.dlg{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px var(--scrim);padding:20px;display:grid;gap:12px;max-width:470px;width:100%;justify-self:center}
+.dlg h5{margin:0;font-size:17px}
+.dlg .foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.stage{background:var(--scrim);border-radius:10px;padding:22px 14px;display:grid}
+.radio{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+.radio i{flex:none;width:14px;height:14px;border-radius:50%;border:1.5px solid var(--muted);margin-top:3px}
+.radio.on i{border-color:var(--accent);box-shadow:inset 0 0 0 3px var(--surface);background:var(--accent)}
+.radio small{display:block;color:var(--muted);font-size:12.5px}
+.cb{display:flex;gap:8px;align-items:center;font-size:14px}
+.cb i{flex:none;width:14px;height:14px;border:1.5px solid var(--muted);border-radius:3px}
+.cb.on i{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--surface)}
+
+/* Tablas */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:600px}
+th{font-size:12px;color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--code-bg)}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.id{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+td.num{font-variant-numeric:tabular-nums;text-align:right}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--surface)}
+.chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.chip b{font-variant-numeric:tabular-nums}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,120px),1fr));gap:8px}
+.tile{border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid;gap:2px}
+.tile b{font-size:20px;font-variant-numeric:tabular-nums}
+.tile span{font-size:12px;color:var(--muted)}
+.t-add b{color:var(--ok)} .t-del b{color:var(--bad)} .t-mod b{color:var(--warn)} .t-st b{color:var(--info)}
+.chg{font-size:12px;font-weight:600;border-radius:4px;padding:1px 7px;white-space:nowrap}
+.c-add{background:var(--ok-soft);color:var(--ok)} .c-del{background:var(--bad-soft);color:var(--bad)} .c-mod{background:var(--warn-soft);color:var(--warn)} .c-st{background:var(--info-soft);color:var(--info)}
+.diff{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:10px}
+.diff > div{border:1px solid var(--line);border-radius:8px;padding:10px;display:grid;gap:6px;font-size:13.5px;min-width:0}
+del{background:var(--bad-soft);color:var(--bad);text-decoration:line-through;border-radius:3px;padding:0 2px}
+ins{background:var(--ok-soft);color:var(--ok);text-decoration:none;border-radius:3px;padding:0 2px}
+.sel{border:1px solid var(--line);border-radius:6px;padding:7px 11px;font-size:13.5px;display:flex;justify-content:space-between;gap:8px;min-width:0}
+.sel::after{content:"▾";color:var(--muted)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tabs span{font-size:13.5px;padding:7px 12px;color:var(--muted)}
+.tabs span.on{color:var(--accent);border-bottom:2px solid var(--accent);font-weight:600}
+.dec{display:grid;gap:12px}
+.dec > div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:6px}
+.dec .rec{font-size:13.5px}
+.dec .rec b{color:var(--ok)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+<style>
+.toggle{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.toggle .sw{flex:none;width:36px;height:20px;border-radius:999px;background:var(--line);position:relative;margin-top:2px}
+.toggle .sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px var(--scrim)}
+.toggle .sw.on{background:var(--accent)}
+.toggle .sw.on::after{left:18px}
+.toggle.off-locked{opacity:.75}
+.toggle b{font-size:14.5px}
+.toggle small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.reason{font-size:12.5px;color:var(--muted)}
+.self{font-size:11.5px;font-weight:600;border-radius:4px;padding:1px 7px;background:var(--warn-soft);color:var(--warn);white-space:nowrap}
+.tl{list-style:none;margin:0;padding:0;display:grid;gap:10px;font-size:13.5px}
+.tl li{display:grid;grid-template-columns:max-content 1fr;gap:10px}
+.tl time{font-family:var(--mono);font-size:12px;color:var(--muted);padding-top:2px}
+.tag{font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:4px;padding:2px 8px}
+.tag.a{background:var(--ok-soft);color:var(--ok)}
+.tag.b{background:var(--code-bg);color:var(--muted);border:1px solid var(--line)}
+td.y{color:var(--ok);font-weight:600} td.n{color:var(--bad);font-weight:600} td.s{color:var(--warn);font-weight:600}
+.done{font-size:12px;font-weight:600;color:var(--ok)}
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Pharos 0.5.0 «Equipo» · pista P · PLN-08 · plan y bocetos · aprobado</div>
+  <h1>Estados del plan por acciones y «Aprobación independiente»</h1>
+  <p class="lead">El plan deja el selector de estado libre y pasa a usar acciones: Enviar a revisión, Aprobar, Pedir cambios, Marcar obsoleto y Reactivar. Borrador es solo la etapa inicial. Un plan se revisa las veces que haga falta hasta que se aprueba, y editar uno aprobado lo devuelve a En revisión. Quién puede aprobar lo decide una política de cada workspace, «Aprobación independiente», que vale igual para planes y casos.</p>
+  <p class="note">Versión 2, con las respuestas del usuario del 17 nov. Bocetos, no pantallas finales, con datos de ejemplo. El usuario aprobó el plan el 17 nov, con la misma regla para los casos (sección 5).</p>
+</header>
+
+<section>
+  <h2>1 · El flujo</h2>
+  <p>Los estados guardados no cambian (<code>draft</code>, <code>reviewed</code>, <code>approved</code>, <code>obsolete</code>), así que la app 0.4 sigue leyendo los planes. <code>reviewed</code> pasa a llamarse «En revisión».</p>
+  <div class="flow">
+    <svg viewBox="0 0 760 260" role="img" aria-label="Diagrama de estados del plan">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs>
+      <g font-size="14" font-weight="600">
+        <rect x="20" y="90" width="140" height="48" rx="24" fill="var(--code-bg)" stroke="var(--line)"/><text x="90" y="119" text-anchor="middle">Borrador</text>
+        <rect x="300" y="90" width="160" height="48" rx="24" fill="var(--info-soft)" stroke="var(--info)"/><text x="380" y="119" text-anchor="middle" style="fill:var(--info)">En revisión</text>
+        <rect x="600" y="90" width="140" height="48" rx="24" fill="var(--ok-soft)" stroke="var(--ok)"/><text x="670" y="119" text-anchor="middle" style="fill:var(--ok)">Aprobado</text>
+        <rect x="300" y="205" width="160" height="44" rx="22" fill="var(--code-bg)" stroke="var(--line)" stroke-dasharray="4 3"/><text x="380" y="232" text-anchor="middle" style="fill:var(--muted)">Obsoleto</text>
+      </g>
+      <g stroke="var(--muted)" stroke-width="1.5" fill="none" marker-end="url(#ar)">
+        <path d="M160 114 L298 114"/>
+        <path d="M460 106 L598 106"/>
+        <path d="M670 90 C670 50 440 50 420 88"/>
+        <path d="M340 90 C320 40 400 40 382 88"/>
+        <path d="M380 140 L380 203"/>
+        <path d="M460 227 C530 227 520 170 445 140"/>
+      </g>
+      <g font-size="12.5">
+        <text x="229" y="104" text-anchor="middle">Enviar a revisión</text>
+        <text x="529" y="128" text-anchor="middle">Aprobar versión N</text>
+        <text x="610" y="44" text-anchor="middle">Guardar un cambio de contenido</text>
+        <text x="240" y="30" text-anchor="middle">Pedir cambios · guardar cambios</text>
+        <text x="240" y="46" text-anchor="middle" class="sub">(sigue En revisión)</text>
+        <text x="388" y="178" class="sub">Marcar obsoleto (desde cualquier estado)</text>
+        <text x="545" y="200" class="sub">Reactivar</text>
+      </g>
+    </svg>
+  </div>
+  <ul class="tight note">
+    <li>Un plan solo está en Borrador antes de su primer envío. Reactivar uno obsoleto lo lleva a En revisión, o a Borrador si nunca se envió.</li>
+    <li>Las reglas viven en el núcleo, como en CAS-02: un comando nuevo <code>test_plan_review</code> en Rust y <code>POST /api/test-plans/:id/review</code> en la web. Un guardado normal ya no puede cambiar el estado.</li>
+    <li>«Contenido» es lo mismo que hoy sube la versión (PLN-03): título y contenido. El estado, la fecha, el ID de documento, la aprobación y las marcas de la IA no cuentan.</li>
+    <li>Aprobar no sube la versión. Pedir cambios necesita un comentario. Todo queda en la auditoría y en el panel «Historial».</li>
+  </ul>
+</section>
+
+<section>
+  <h2>2 · Paso «Identificación»: el selector sale</h2>
+  <div class="grid2">
+    <div class="app">
+      <div class="bar"><span class="crumb">Proyecto Checkout ›</span> <b>Plan de pruebas</b> <span class="crumb">· Hoy</span></div>
+      <div class="body">
+        <div class="cap">Identificación del plan</div>
+        <div><div class="lbl">Título</div><div class="field">Plan de pruebas · Checkout v3</div></div>
+        <div><div class="lbl">Estado</div><div class="sel">Revisado</div><span class="reason">Se elige a mano: Borrador, Revisado u Obsoleto, sin motivo ni registro.</span></div>
+      </div>
+    </div>
+    <div class="app">
+      <div class="bar"><span class="crumb">Proyecto Checkout ›</span> <b>Plan de pruebas</b> <span class="crumb">· Propuesta</span></div>
+      <div class="body">
+        <div class="cap">Identificación del plan</div>
+        <div><div class="lbl">Título</div><div class="field">Plan de pruebas · Checkout v3</div></div>
+        <div style="display:grid;gap:6px"><div class="lbl">Estado</div>
+          <div class="btns" style="align-items:center"><span class="pill p-review">En revisión</span><a href="#estado" class="note">Cambiar en «Estado del plan»</a></div>
+          <span class="reason">El estado solo cambia con las acciones del panel «Estado del plan».</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="estado">
+  <h2>3 · Panel «Estado del plan», en cada estado</h2>
+  <p class="note">El panel lateral donde hoy está «Aprobar versión N». Ana es la autora del plan; Luis es Test Manager del workspace «QA Tienda».</p>
+  <div class="grid2">
+    <div class="app"><div class="bar"><b>Estado del plan</b> <span class="crumb">· Borrador · v1.0</span></div>
+      <div class="body">
+        <div class="head"><span class="pill p-draft">Borrador</span><span class="note">v1.0 · aún no enviado</span></div>
+        <div><div class="lbl">Nota para quien revise (opcional)</div><div class="field area ph">Primera versión del plan del checkout.</div></div>
+        <div class="btns"><button class="btn primary">Enviar a revisión</button><button class="btn">Marcar obsoleto</button></div>
+        <span class="reason">Con cambios sin guardar, «Enviar a revisión» espera: «Guarda el plan antes de enviarlo».</span>
+      </div></div>
+    <div class="app"><div class="bar"><b>Estado del plan</b> <span class="crumb">· En revisión · v1.3</span></div>
+      <div class="body">
+        <div class="head"><span class="pill p-review">En revisión</span><span class="note">Enviado por Ana · 17 nov, 10:42</span></div>
+        <div class="banner b-info"><span class="who">Nota de Ana</span>Cambié el alcance y las métricas de rendimiento.</div>
+        <div class="btns"><button class="btn ok">Aprobar versión 1.3</button><button class="btn">Pedir cambios…</button><button class="btn">Marcar obsoleto</button></div>
+        <span class="reason">Así lo ve Luis (Test Manager).</span>
+      </div></div>
+    <div class="app"><div class="bar"><b>Estado del plan</b> <span class="crumb">· En revisión · v1.3</span></div>
+      <div class="body">
+        <div class="head"><span class="pill p-review">En revisión</span><span class="pill p-back">Cambios pedidos</span></div>
+        <div class="banner b-warn"><span class="who">Luis pidió cambios · 17 nov, 11:02</span>Falta el criterio de salida de rendimiento: p95 &lt; 800 ms en el pago.</div>
+        <span class="reason">Así lo ve Ana. El plan sigue En revisión. Cuando Ana guarde un cambio, la marca pasa a «Cambios hechos» y Luis puede aprobar.</span>
+      </div></div>
+    <div class="app"><div class="bar"><b>Estado del plan</b> <span class="crumb">· Aprobado · v1.3</span></div>
+      <div class="body">
+        <div class="head"><span class="pill p-ok">Aprobado</span></div>
+        <dl class="kv"><dt>Aprobado por</dt><dd>Luis Pérez</dd><dt>Fecha</dt><dd>17 nov 2026, 12:05</dd><dt>Versión</dt><dd>1.3</dd></dl>
+        <div class="btns"><button class="btn">Marcar obsoleto</button></div>
+        <span class="reason">Si se edita, vuelve a En revisión como versión 1.4 (sección 5).</span>
+      </div></div>
+    <div class="app"><div class="bar"><b>Estado del plan</b> <span class="crumb">· Obsoleto · v1.3</span></div>
+      <div class="body">
+        <div class="head"><span class="pill p-obs">Obsoleto</span><span class="note">Marcado por Luis · 2 dic</span></div>
+        <div class="btns"><button class="btn primary">Reactivar</button></div>
+        <span class="reason">Reactivar lo deja En revisión. No recupera la aprobación anterior: hay que volver a aprobarlo.</span>
+      </div></div>
+  </div>
+</section>
+
+<section>
+  <h2>4 · Aprobar, según la política del workspace</h2>
+  <div class="grid2">
+    <div style="display:grid;gap:8px">
+      <span class="cap">Política desactivada · Ana sola en su workspace personal</span>
+      <div class="stage"><div class="dlg">
+        <h5>Aprobar la versión 1.3</h5>
+        <p>Vas a aprobar un plan que escribiste tú.</p>
+        <div class="banner b-warn">Quedará como <b>aprobación propia</b> en el plan, en el historial y en los exportes. Este workspace no pide aprobación independiente.</div>
+        <div class="foot"><button class="btn">Cancelar</button><button class="btn ok">Aprobar versión 1.3</button></div>
+      </div></div>
+    </div>
+    <div style="display:grid;gap:8px">
+      <span class="cap">Política activada · Ana, autora, en «QA Tienda»</span>
+      <div class="app"><div class="bar"><b>Estado del plan</b> <span class="crumb">· En revisión · v1.3</span></div>
+        <div class="body">
+          <div class="head"><span class="pill p-review">En revisión</span></div>
+          <div class="btns"><button class="btn ok" disabled>Aprobar versión 1.3</button><button class="btn">Marcar obsoleto</button></div>
+          <span class="reason">«QA Tienda» pide aprobación independiente: aprueba un Test Manager que no sea el autor del plan.</span>
+          <div class="banner b-info">Esperando aprobación de: Luis Pérez, Marta Gil (Test Managers).</div>
+        </div></div>
+      <span class="cap" style="margin-top:6px">Política activada · Sara, Test Analyst</span>
+      <div class="app"><div class="body">
+          <div class="btns"><button class="btn ok" disabled>Aprobar versión 1.3</button></div>
+          <span class="reason">Solo un Test Manager aprueba planes. Tu rol en «QA Tienda» es Test Analyst.</span>
+      </div></div>
+    </div>
+  </div>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Quién pulsa «Aprobar»</th><th>Política desactivada</th><th>Política activada</th></tr></thead>
+      <tbody>
+        <tr><td>El autor</td><td class="s">Sí, como aprobación propia</td><td class="n">No: «autor»</td></tr>
+        <tr><td>Otra persona con el rol de aprobación (plan: Test Manager; caso: Test Manager o Test Analyst)</td><td class="y">Sí</td><td class="y">Sí</td></tr>
+        <tr><td>Otra persona que puede editar, sin el rol de aprobación (p. ej. Test Analyst en un plan)</td><td class="y">Sí</td><td class="n">No: «rol»</td></tr>
+        <tr><td>Quien no puede editar (Viewer; Product Owner en un plan o un caso)</td><td class="n">No</td><td class="n">No</td></tr>
+        <tr><td>Quien no es miembro</td><td class="n">No</td><td class="n">No</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">En el workspace personal y en uno local la política está siempre desactivada. Más adelante, la jerarquía de quién aprueba también podrá venir de una integración, como un proyecto de Jira (anotado en INT-05). En 0.5.0 viene del workspace compartido con roles.</p>
+</section>
+
+<section>
+  <h2>5 · Editar un plan aprobado o En revisión</h2>
+  <div class="grid2">
+    <div class="app"><div class="bar"><span class="crumb">Plan ›</span> <b>Alcance</b> <span class="crumb">· Aprobado · v1.3</span></div>
+      <div class="body">
+        <div class="banner b-warn"><span class="who">Este plan está aprobado (versión 1.3)</span>Si guardas este cambio, el plan vuelve a En revisión como versión 1.4 y necesita una aprobación nueva. La aprobación de la 1.3 queda en el historial.</div>
+        <div><div class="lbl">Dentro del alcance</div><div class="field">Pago con tarjeta · Pago con Bizum · <ins>Pago aplazado</ins></div></div>
+        <div class="btns"><button class="btn primary">Guardar</button><button class="btn">Descartar cambios</button></div>
+      </div></div>
+    <div class="app"><div class="bar"><span class="crumb">Plan ›</span> <b>Criterios de salida</b> <span class="crumb">· En revisión · v1.3</span></div>
+      <div class="body">
+        <div class="banner b-info"><span class="who">En revisión</span>Tus cambios se guardan y el plan sigue En revisión.</div>
+        <div><div class="lbl">Criterio</div><div class="field"><ins>p95 &lt; 800 ms en el pago</ins></div></div>
+        <div class="btns"><button class="btn primary">Guardar</button></div>
+      </div></div>
+  </div>
+
+  <h3 style="margin-top:8px">Decidido: los casos siguen la misma regla</h3>
+  <p>CAS-02, que ya está en <code>main</code>, devuelve un caso a Borrador cuando se edita estando aprobado o En revisión, y «Devolver» también lo lleva a Borrador. Con la regla del plan, planes y casos tendrían flujos distintos.</p>
+  <div class="grid2">
+    <div class="dec"><div>
+      <div class="btns" style="align-items:center"><span class="tag a">A · elegida</span><b>Una sola regla</b></div>
+      <ul class="tight note"><li>Editar un caso aprobado lo lleva a En revisión, y editar uno En revisión lo deja ahí.</li><li>«Devolver» pasa a «Pedir cambios» y el caso sigue En revisión.</li><li>Un caso solo está en Borrador antes de su primer envío.</li><li>Lo hace esta pista en el mismo PR. Las baselines no cambian.</li></ul>
+    </div></div>
+    <div class="dec"><div>
+      <div class="btns" style="align-items:center"><span class="tag b">B · descartada</span><b>Mantener la diferencia</b></div>
+      <ul class="tight note"><li>Un caso editado vuelve a Borrador y un plan editado no.</li><li>No se toca CAS-02.</li><li>El manual explica la diferencia.</li></ul>
+    </div></div>
+  </div>
+</section>
+
+<section>
+  <h2>6 · Pedir cambios</h2>
+  <div class="stage"><div class="dlg">
+    <h5>Pedir cambios en el plan</h5>
+    <p>El plan sigue En revisión. Ana verá tu comentario en «Estado del plan» y en el historial.</p>
+    <div><div class="lbl">Qué hay que cambiar (obligatorio)</div><div class="field area">Falta el criterio de salida de rendimiento: p95 &lt; 800 ms en el pago.</div></div>
+    <div class="foot"><button class="btn">Cancelar</button><button class="btn primary">Pedir cambios</button></div>
+  </div></div>
+</section>
+
+<section>
+  <h2>7 · Ajuste del workspace</h2>
+  <p class="note">En la ficha del workspace que trae W2 (Administración › Workspace). Solo lo cambia un Test Manager, con confirmación, y queda en la auditoría.</p>
+  <div class="grid2">
+    <div class="app"><div class="bar"><b>QA Tienda</b> <span class="crumb">· compartido · 6 miembros</span></div>
+      <div class="body">
+        <div class="tabs"><span>Miembros</span><span>Invitaciones</span><span class="on">Reglas</span></div>
+        <div class="toggle"><div><b>Aprobación independiente</b><small>Quien aprueba un plan o un caso necesita el rol (Test Manager para planes; Test Manager o Test Analyst para casos) y no puede ser su autor. Si la desactivas, puede aprobar cualquiera que pueda editarlo, también el autor.</small></div><span class="sw on" role="switch" aria-checked="true"></span></div>
+        <span class="reason">Activada por defecto en los workspaces compartidos.</span>
+      </div></div>
+    <div class="app"><div class="bar"><b>Personal</b> <span class="crumb">· solo tú</span></div>
+      <div class="body">
+        <div class="tabs"><span class="on">Reglas</span></div>
+        <div class="toggle off-locked"><div><b>Aprobación independiente</b><small>Trabajas solo: apruebas tus propios planes y casos, y quedan marcados como aprobación propia.</small></div><span class="sw" role="switch" aria-checked="false" aria-disabled="true"></span></div>
+        <span class="reason">No se puede activar en el workspace personal. Para que apruebe otra persona, mueve el proyecto a un workspace compartido.</span>
+      </div></div>
+  </div>
+  <div class="stage"><div class="dlg">
+    <h5>¿Desactivar la aprobación independiente?</h5>
+    <p>En «QA Tienda», cualquier miembro que pueda editar un plan o un caso podrá aprobarlo, también su autor. Las aprobaciones del autor quedarán marcadas como aprobación propia.</p>
+    <p class="note">Las aprobaciones que ya existen no cambian.</p>
+    <div class="foot"><button class="btn">Cancelar</button><button class="btn primary">Desactivar</button></div>
+  </div></div>
+</section>
+
+<section>
+  <h2>8 · La política en los casos</h2>
+  <p class="note">El panel de revisión de CAS-02 cambia el motivo cuando «Aprobar» está desactivado y añade la marca de aprobación propia. Como en el plan, «Devolver» pasa a «Pedir cambios» y el caso sigue En revisión.</p>
+  <div class="grid2">
+    <div class="app"><div class="bar"><span class="crumb">Casos ›</span> <b>CP-0142 Pago con Bizum rechazado</b></div>
+      <div class="body">
+        <div class="head"><span class="pill p-ok">Aprobado</span><span class="self">Aprobación propia</span></div>
+        <dl class="kv"><dt>Aprobado por</dt><dd>Ana Ruiz (autora)</dd><dt>Versión</dt><dd>2 · revisión 5</dd></dl>
+        <span class="reason">Workspace personal: no pide aprobación independiente.</span>
+      </div></div>
+    <div class="app"><div class="bar"><span class="crumb">Casos ›</span> <b>CP-0143 Reembolso parcial</b></div>
+      <div class="body">
+        <div class="head"><span class="pill p-review">En revisión</span></div>
+        <div class="btns"><button class="btn ok" disabled>Aprobar versión 1</button><button class="btn">Pedir cambios…</button></div>
+        <span class="reason">«QA Tienda» pide aprobación independiente: aprueba un Test Manager o Test Analyst que no sea el autor del caso.</span>
+      </div></div>
+  </div>
+</section>
+
+<section>
+  <h2>9 · Historial del plan</h2>
+  <div class="app"><div class="bar"><b>Historial</b> <span class="crumb">· Plan de pruebas · Checkout v3</span></div>
+    <div class="body">
+      <ul class="tl">
+        <li><time>17 nov 12:05</time><span><span class="pill p-ok">Aprobado</span> v1.3 por Luis Pérez</span></li>
+        <li><time>17 nov 11:30</time><span>v1.3: Ana Ruiz guardó cambios tras la petición</span></li>
+        <li><time>17 nov 11:02</time><span><span class="pill p-back">Cambios pedidos</span> por Luis Pérez: «Falta el criterio de salida de rendimiento…»</span></li>
+        <li><time>16 nov 18:10</time><span><span class="pill p-review">En revisión</span> v1.3: cambio de contenido sobre la 1.2 aprobada; pierde la aprobación</span></li>
+        <li><time>14 nov 09:00</time><span><span class="pill p-ok">Aprobado</span> v1.2 por Ana Ruiz <span class="self">Aprobación propia</span></span></li>
+        <li><time>10 nov 16:20</time><span><span class="pill p-review">En revisión</span> v1.0, enviado por Ana Ruiz</span></li>
+      </ul>
+      <p class="note">El PDF y el .xlsx escriben «Aprobado por: Ana Ruiz (aprobación propia), 14/11/2026, v1.2».</p>
+    </div></div>
+</section>
+
+<section>
+  <h2>Decisiones</h2>
+  <div class="dec">
+    <div><span class="done">Decidido el 17 nov</span><h3>1. Editar un plan aprobado lo lleva a En revisión</h3><p>Borrador es solo la idea inicial. Sube la versión y pide una aprobación nueva.</p></div>
+    <div><span class="done">Decidido el 17 nov</span><h3>2. Editar un plan En revisión lo deja En revisión</h3><p>Se revisa las veces que haga falta. Aprobado es la cúspide.</p></div>
+    <div><span class="done">Decidido el 17 nov</span><h3>3. Con la política desactivada no se pide rol de aprobación</h3><p>Aprueba el autor (queda marcado) u otra persona que pueda editar. La jerarquía la da el workspace compartido con roles. Tomarla de Jira queda para INT-05.</p></div>
+    <div><span class="done">Decidido el 17 nov</span><h3>4. El autor es quien creó el plan o el caso</h3><p>En un caso, quien escribió su primera revisión, como ya hace la regla del workspace.</p></div>
+    <div><span class="done">Decidido el 17 nov</span><h3>5. Solo un Test Manager cambia la política</h3><p>Con confirmación y registro en la auditoría, sin un permiso nuevo.</p></div>
+    <div><span class="done">Decidido el 17 nov</span><h3>6. Los casos siguen la misma regla que el plan</h3><p>«Sí, misma regla»: editar un caso aprobado lo lleva a En revisión y «Devolver» pasa a «Pedir cambios». Se hace en el mismo PR.</p></div>
+  </div>
+</section>
+
+</div>
+
+</body></html>

@@ -1,0 +1,331 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SYNC-07 Workspaces y roles</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: una columna de bocetos; cada boceto es un marco 1:1 de la app con sus notas debajo. Misma paleta que los bocetos anteriores de Pharos. */
+:root{
+  --bg:#f3f5f9; --surface:#ffffff; --sunken:#eef1f6; --fg:#14213a; --muted:#5a6680; --line:#d7dde8;
+  --navy:#1e3a6e; --accent:#2f6fd6; --ok:#1d7a4a; --ok-bg:#e3f4ea; --warn:#9a5b00; --warn-bg:#fff1d6;
+  --err:#b42318; --err-bg:#fde8e6; --neutral-bg:#e9edf3; --new:#7a3fd1; --new-bg:#f1e9fd; --on-accent:#ffffff;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:Inter,system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --neutral-bg:#24304a; --new:#c39bff; --new-bg:#2c2246; --on-accent:#0f1522; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1522; --surface:#172033; --sunken:#1d2840; --fg:#e6ebf5; --muted:#9aa6bf; --line:#2c3a56;
+  --navy:#9db8ec; --accent:#6a9cf0; --ok:#5fd394; --ok-bg:#16352a; --warn:#f2b553; --warn-bg:#3a2c12;
+  --err:#ff8a7d; --err-bg:#3d1c1a; --neutral-bg:#24304a; --new:#c39bff; --new-bg:#2c2246; --on-accent:#0f1522; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+main{max-width:980px;margin:0 auto;display:grid;gap:44px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:1.9rem;color:var(--navy)}
+h2{font-size:1.3rem;color:var(--navy)}
+h3{font-size:1.02rem}
+p{margin:0}
+.lead{color:var(--muted);max-width:70ch;margin-top:6px}
+.eyebrow{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.block{display:grid;gap:14px}
+.note{max-width:74ch;margin:0;padding-left:20px}
+.note li{margin-bottom:4px}
+.frame{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.bar h3{flex:1;min-width:180px}
+.body{padding:16px 18px;display:grid;gap:14px}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);
+  border-radius:7px;padding:6px 12px;font:500 .85rem var(--f-body);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.danger{color:var(--err);border-color:var(--err)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.new{outline:2px dashed var(--new);outline-offset:3px;border-radius:7px}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.75rem;font-weight:600;white-space:nowrap}
+.ok{background:var(--ok-bg);color:var(--ok)} .warn{background:var(--warn-bg);color:var(--warn)}
+.err{background:var(--err-bg);color:var(--err)} .neutral{background:var(--neutral-bg);color:var(--muted)}
+.role{background:var(--new-bg);color:var(--new)}
+.muted{color:var(--muted)} .small{font-size:.82rem}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+select,input[type=text]{font:inherit;font-size:.86rem;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:6px 8px}
+label{font-size:.82rem;font-weight:600;display:grid;gap:4px}
+.split{display:grid;grid-template-columns:240px 1fr;min-height:300px}
+.side{background:var(--sunken);border-right:1px solid var(--line);padding:14px;display:grid;align-content:start;gap:10px;min-width:0}
+.content{padding:16px 18px;min-width:0;display:grid;align-content:start;gap:12px}
+.switch{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;display:grid;gap:2px}
+.menu{border:1px solid var(--line);background:var(--surface);border-radius:8px;box-shadow:0 8px 24px rgba(20,33,58,.14);padding:6px;display:grid;gap:2px}
+.menu .item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;font-size:.86rem}
+.menu .item.sel{background:var(--sunken);font-weight:600}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.nav{font-size:.86rem;color:var(--muted);display:grid;gap:4px}
+.nav .on{color:var(--fg);font-weight:600}
+.banner{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-radius:8px;padding:10px 14px;font-size:.88rem}
+.banner.info{background:var(--neutral-bg)} .banner.warn{background:var(--warn-bg);color:var(--fg)} .banner.err{background:var(--err-bg);color:var(--fg)}
+.banner b{font-weight:600}
+.dialog{max-width:520px;margin:18px auto;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 12px 32px rgba(20,33,58,.16);overflow:hidden}
+.dialog .body{gap:12px}
+.dialog footer{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--line);background:var(--sunken)}
+.backdrop{background:var(--sunken);padding:8px 16px}
+.code{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:1.15rem;letter-spacing:.08em;background:var(--sunken);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;text-align:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cardrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.proj{border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:6px}
+.check{color:var(--ok);font-weight:700} .dash{color:var(--muted)}
+.matrix td:not(:first-child),.matrix th:not(:first-child){text-align:center}
+.matrix td{font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.8rem;color:var(--muted)}
+.toc{display:flex;flex-wrap:wrap;gap:8px}
+.toc a{font-size:.82rem;color:var(--accent);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--surface)}
+@media (max-width:700px){.split{grid-template-columns:1fr}.side{border-right:0;border-bottom:1px solid var(--line)}.grid2{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<main>
+<header class="block">
+  <span class="eyebrow">Pharos 0.5.0 «Equipo» · pista W · bocetos para aprobar</span>
+  <h1>Workspaces, miembros y roles</h1>
+  <p class="lead">Bocetos de SYNC-07 según el borrador del ADR-0042 (modelo A: un rol por workspace; un proyecto se comparte moviéndolo). Lo marcado con borde morado discontinuo es nuevo. Sirven igual para el escritorio y la web, salvo donde se indica.</p>
+  <nav class="toc" aria-label="Bocetos">
+    <a href="#selector">1 · Selector</a><a href="#miembros">2 · Miembros</a><a href="#invitar">3 · Invitar</a>
+    <a href="#unirse">4 · Unirse</a><a href="#mover">5 · Compartir proyecto</a><a href="#viewer">6 · Viewer</a>
+    <a href="#avisos">7 · Avisos de sync</a><a href="#matriz">8 · Permisos</a>
+  </nav>
+</header>
+
+<!-- 1 -->
+<section class="block" id="selector">
+  <h2>1 · Selector de workspace en la barra lateral</h2>
+  <div class="frame">
+    <div class="split">
+      <aside class="side">
+        <div class="switch new" aria-label="Workspace actual">
+          <span class="eyebrow">Workspace</span>
+          <strong>Equipo QA Pagos ▾</strong>
+          <span class="small"><span class="pill role">Test Manager</span></span>
+        </div>
+        <div class="menu new" role="menu" aria-label="Cambiar de workspace">
+          <div class="item"><span>Personal</span><span class="pill neutral">Test Manager</span></div>
+          <div class="item sel"><span>Equipo QA Pagos</span><span class="pill role">Test Manager</span></div>
+          <div class="item"><span>Auditoría externa 2026</span><span class="pill neutral">Viewer</span></div>
+          <hr>
+          <div class="item">＋ Crear workspace</div>
+          <div class="item">Unirse con un código…</div>
+          <div class="item">Miembros y roles</div>
+        </div>
+        <nav class="nav"><span class="on">Inicio</span><span>Proyectos</span><span>Ejecución</span><span>Defectos</span><span>Administración</span></nav>
+      </aside>
+      <div class="content">
+        <div class="bar" style="padding:0;border:0"><h3>Proyectos · Equipo QA Pagos</h3><button class="btn primary" type="button">Nuevo proyecto</button></div>
+        <div class="cardrow">
+          <div class="proj"><strong>Pasarela de pagos</strong><span class="small muted">PAY · 214 casos · creado por Ana Ruiz</span></div>
+          <div class="proj"><strong>Conciliación bancaria</strong><span class="small muted">CON · 87 casos · creado por Luis Peña</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="note">
+    <li>El workspace activo filtra Inicio, Proyectos y el resto de secciones. Se recuerda por cuenta y por equipo.</li>
+    <li>El rol se ve siempre junto al nombre. Así nadie se pregunta por qué un botón está desactivado.</li>
+    <li>«Personal» existe siempre y no admite miembros. Sin servidor, o con un servidor 0.4, solo aparece «Mi workspace» y el menú no ofrece crear ni unirse.</li>
+  </ul>
+</section>
+
+<!-- 2 -->
+<section class="block" id="miembros">
+  <h2>2 · Miembros y roles (solo el Test Manager edita)</h2>
+  <div class="frame">
+    <div class="bar"><h3>Miembros · Equipo QA Pagos</h3><button class="btn primary new" type="button">Invitar</button></div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th scope="col">Persona</th><th scope="col">Correo</th><th scope="col">Rol</th><th scope="col">Desde</th><th scope="col"><span class="muted">Acciones</span></th></tr></thead>
+        <tbody>
+          <tr><td><strong>Ana Ruiz</strong> <span class="pill neutral">tú</span></td><td>ana@ejemplo.test</td>
+            <td><select id="r-ana" aria-label="Rol de Ana Ruiz" disabled><option>Test Manager</option></select></td><td>2026-11-18</td>
+            <td><button class="btn" type="button" disabled title="Hace falta otro Test Manager antes de salir">Salir</button></td></tr>
+          <tr><td><strong>Luis Peña</strong></td><td>luis@ejemplo.test</td>
+            <td><select id="r-luis" aria-label="Rol de Luis Peña"><option>Test Manager</option><option selected>Test Analyst</option><option>Automation Engineer</option><option>Product Owner</option><option>Viewer (solo lectura)</option></select></td><td>2026-11-18</td>
+            <td><button class="btn danger" type="button">Quitar</button></td></tr>
+          <tr><td><strong>Marta Gil</strong></td><td>marta@ejemplo.test</td>
+            <td><select id="r-marta" aria-label="Rol de Marta Gil"><option>Test Manager</option><option>Test Analyst</option><option>Automation Engineer</option><option>Product Owner</option><option selected>Viewer (solo lectura)</option></select></td><td>2026-11-19</td>
+            <td><button class="btn danger" type="button">Quitar</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="body">
+      <h3>Invitaciones pendientes</h3>
+      <div class="scroll">
+        <table>
+          <thead><tr><th scope="col">Para</th><th scope="col">Rol</th><th scope="col">Caduca</th><th scope="col">Estado</th><th scope="col"><span class="muted">Acciones</span></th></tr></thead>
+          <tbody>
+            <tr><td>jorge@ejemplo.test <span class="small muted">(nota)</span></td><td>Automation Engineer</td><td>2026-11-26</td><td><span class="pill warn">Pendiente</span></td><td><button class="btn" type="button">Revocar</button></td></tr>
+            <tr><td><span class="muted">sin nota</span></td><td>Viewer</td><td>2026-11-20</td><td><span class="pill neutral">Caducada</span></td><td><button class="btn" type="button">Quitar</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <ul class="note">
+    <li>Un cambio de rol se aplica en el servidor al momento y en el equipo del afectado en su siguiente sync.</li>
+    <li>No se puede quitar ni degradar al último Test Manager: el selector y «Salir» se desactivan con el motivo en el <code>title</code>.</li>
+    <li>«Quitar» abre una confirmación: «Marta dejará de ver Equipo QA Pagos. Su copia en sus equipos se borrará en su próximo sync. Lo que no haya sincronizado se pierde.»</li>
+    <li>Las demás personas ven esta pantalla en solo lectura, sin columna de acciones.</li>
+  </ul>
+</section>
+
+<!-- 3 -->
+<section class="block" id="invitar">
+  <h2>3 · Invitar (código de un solo uso, sin correo)</h2>
+  <div class="frame backdrop">
+    <div class="grid2">
+      <div class="dialog" role="dialog" aria-labelledby="inv-t1">
+        <div class="bar"><h3 id="inv-t1">Invitar a Equipo QA Pagos</h3></div>
+        <div class="body">
+          <label for="inv-role">Rol
+            <select id="inv-role"><option>Test Analyst</option><option selected>Automation Engineer</option><option>Product Owner</option><option>Viewer (solo lectura)</option><option>Test Manager</option></select></label>
+          <p class="small muted">Puede escribir casos y configuraciones, ejecutar, importar resultados y crear defectos.</p>
+          <label for="inv-note">Para quién (nota opcional, no se envía)
+            <input id="inv-note" type="text" value="jorge@ejemplo.test"></label>
+          <label for="inv-exp">Caduca en
+            <select id="inv-exp"><option>1 día</option><option selected>7 días</option><option>30 días</option></select></label>
+        </div>
+        <footer><button class="btn" type="button">Cancelar</button><button class="btn primary" type="button">Crear invitación</button></footer>
+      </div>
+      <div class="dialog" role="dialog" aria-labelledby="inv-t2">
+        <div class="bar"><h3 id="inv-t2">Invitación creada</h3></div>
+        <div class="body">
+          <p class="small">Envía este texto a la persona por el canal que uséis. Sirve una vez y caduca el 2026-11-26.</p>
+          <div class="code" aria-label="Código de invitación">PHX-7KQ4-M2ZD-9WTA</div>
+          <p class="small muted">Servidor: <strong>https://pharos.ejemplo.test</strong></p>
+          <p class="small muted">En la web, también vale el enlace <code>https://pharos.ejemplo.test/unirse#PHX-7KQ4-M2ZD-9WTA</code>.</p>
+        </div>
+        <footer><button class="btn" type="button">Copiar enlace</button><button class="btn primary" type="button">Copiar texto de invitación</button></footer>
+      </div>
+    </div>
+  </div>
+  <ul class="note">
+    <li>El código solo se muestra una vez, porque el servidor guarda su hash. Si se pierde, se revoca y se crea otro.</li>
+    <li>El texto copiado incluye el servidor, porque el invitado tiene que estar en el mismo (servidor configurable, pista D).</li>
+  </ul>
+</section>
+
+<!-- 4 -->
+<section class="block" id="unirse">
+  <h2>4 · Unirse con un código</h2>
+  <div class="frame backdrop">
+    <div class="dialog" role="dialog" aria-labelledby="join-t">
+      <div class="bar"><h3 id="join-t">Unirse a un workspace</h3></div>
+      <div class="body">
+        <label for="join-code">Código de invitación<input id="join-code" type="text" value="PHX-7KQ4-M2ZD-9WTA"></label>
+        <div class="banner info"><span>Te unes a <b>Equipo QA Pagos</b> como <b>Automation Engineer</b>, invitado por Ana Ruiz.</span></div>
+        <p class="small muted">Sus proyectos se descargarán a este equipo en el próximo sync. Tu workspace Personal no cambia.</p>
+      </div>
+      <footer><button class="btn" type="button">Cancelar</button><button class="btn primary" type="button">Unirme</button></footer>
+    </div>
+  </div>
+  <ul class="note">
+    <li>Al pegar el código se muestra antes el workspace y el rol (consulta de solo lectura), y no se acepta hasta pulsar «Unirme».</li>
+    <li>Errores con su arreglo: «Este código ya se usó o caducó. Pide otro a quien te invitó.» y «Ya eres miembro de este workspace.»</li>
+  </ul>
+</section>
+
+<!-- 5 -->
+<section class="block" id="mover">
+  <h2>5 · Compartir un proyecto (moverlo a un workspace compartido)</h2>
+  <div class="frame backdrop">
+    <div class="dialog" role="dialog" aria-labelledby="mv-t">
+      <div class="bar"><h3 id="mv-t">Compartir «Pasarela de pagos»</h3></div>
+      <div class="body">
+        <label for="mv-dest">Mover a
+          <select id="mv-dest"><option selected>Equipo QA Pagos · 3 miembros</option><option disabled>Auditoría externa 2026 (eres Viewer)</option></select></label>
+        <ul class="small" style="margin:0;padding-left:18px">
+          <li>Se mueve entero: plan, 214 casos, requisitos, ciclos, ejecuciones, defectos, adjuntos y su auditoría.</li>
+          <li>Los 3 miembros de Equipo QA Pagos lo verán con su rol allí.</li>
+          <li>Dejará de estar en tu workspace Personal. Las claves (PAY-…) no cambian.</li>
+        </ul>
+        <div class="banner warn"><span>Hace falta conexión con el servidor. Antes se envían tus cambios pendientes (12).</span></div>
+      </div>
+      <footer><button class="btn" type="button">Cancelar</button><button class="btn primary" type="button">Mover y compartir</button></footer>
+    </div>
+  </div>
+  <ul class="note">
+    <li>Está en el menú del proyecto como «Compartir con un workspace…», y solo para quien es Test Manager en el origen y en el destino.</li>
+    <li>Es una operación atómica del servidor (<code>move-project</code>), así que sin conexión el botón se desactiva con su motivo.</li>
+    <li>En esta versión no hay «devolver a Personal»: se hace moviéndolo de nuevo, si eres Test Manager de los dos.</li>
+  </ul>
+</section>
+
+<!-- 6 -->
+<section class="block" id="viewer">
+  <h2>6 · Viewer: ve todo y no edita (criterio de salida)</h2>
+  <div class="frame">
+    <div class="bar"><h3>PAY-0142 · Pago con tarjeta caducada</h3>
+      <span class="pill neutral">Aprobado</span>
+      <button class="btn" type="button" disabled title="Tu rol en Auditoría externa 2026 (Viewer) no permite editar">Editar</button>
+      <button class="btn" type="button" disabled title="Tu rol (Viewer) no permite ejecutar">Ejecutar</button>
+      <button class="btn" type="button">Exportar</button></div>
+    <div class="body">
+      <div class="banner info new"><span><b>Solo lectura.</b> Tu rol en «Auditoría externa 2026» es Viewer: puedes ver y exportar, pero no cambiar nada.</span></div>
+      <p class="small muted">Dado: un cliente con una tarjeta caducada · Cuando: intenta pagar · Entonces: el pago se rechaza con el código 54…</p>
+    </div>
+  </div>
+  <ul class="note">
+    <li>Hay tres barreras: la UI desactiva, Rust comprueba en <code>journal::record</code> y el servidor rechaza el delta. El e2e prueba la tercera forzando un push.</li>
+    <li>El aviso aparece una vez por sesión en cada sección y se puede plegar.</li>
+    <li>El Viewer no ve la auditoría (decisión 5 de ADR-0019), salvo que el usuario decida otra cosa en el ADR-0042.</li>
+  </ul>
+</section>
+
+<!-- 7 -->
+<section class="block" id="avisos">
+  <h2>7 · Avisos del sync</h2>
+  <div class="frame">
+    <div class="body">
+      <div class="banner err"><span><b>Ya no eres miembro de «Auditoría externa 2026».</b> Su copia en este equipo se eliminará (3 proyectos). Tus 2 cambios sin enviar no pueden llegar al servidor.</span>
+        <button class="btn" type="button">Exportar antes</button><button class="btn primary" type="button">Entendido, eliminar copia</button></div>
+      <div class="banner warn"><span><b>Rechazado por permisos:</b> tu cambio en PAY-0142 no se guardó en el servidor porque tu rol cambió a Viewer.</span>
+        <button class="btn" type="button">Ver en conflictos</button><button class="btn" type="button">Descartar</button></div>
+      <div class="banner info"><span><b>Proyecto sin acceso en el servidor:</b> «Inventario 2025» ya no está en ninguno de tus workspaces. Queda en solo lectura en este equipo.</span>
+        <button class="btn" type="button">Exportar</button><button class="btn danger" type="button">Borrar de este equipo</button></div>
+      <div class="banner info"><span><b>Este servidor no admite workspaces compartidos</b> (versión 0.4). Sigues sincronizando tu workspace como hasta ahora.</span></div>
+      <div class="banner warn"><span><b>App 0.4 con servidor 0.5:</b> «Actualiza Pharos para enviar cambios; tus cambios pendientes se conservan.» (mensaje actual, sin cambios)</span></div>
+    </div>
+  </div>
+  <ul class="note">
+    <li>La baja sale como tarjeta en el indicador de sync, no como modal, y no se borra nada hasta pulsar el botón.</li>
+    <li>«Rechazado por permisos» es un tipo nuevo en el panel de conflictos, junto a «conflicto» y «clave en uso».</li>
+  </ul>
+</section>
+
+<!-- 8 -->
+<section class="block" id="matriz">
+  <h2>8 · Permisos por rol (matriz única para servidor, escritorio y web)</h2>
+  <div class="frame">
+    <div class="scroll">
+      <table class="matrix">
+        <thead><tr><th scope="col">Acción</th><th scope="col">Test Manager</th><th scope="col">Test Analyst</th><th scope="col">Automation Eng.</th><th scope="col">Product Owner</th><th scope="col">Viewer</th></tr></thead>
+        <tbody>
+          <tr><td>Miembros, invitaciones, mover proyectos</td><td class="check">✔</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td></tr>
+          <tr><td>Proyectos y plan de pruebas</td><td class="check">✔</td><td>editar plan</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td></tr>
+          <tr><td>Requisitos (incluido el riesgo)</td><td class="check">✔</td><td class="check">✔</td><td class="dash">—</td><td class="check">✔</td><td class="dash">—</td></tr>
+          <tr><td>Casos, ciclos, configuraciones, campos</td><td class="check">✔</td><td class="check">✔</td><td>casos y config.</td><td class="dash">—</td><td class="dash">—</td></tr>
+          <tr><td>Aprobar un caso (CAS-02, no el autor)</td><td class="check">✔</td><td class="check">✔</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td></tr>
+          <tr><td>Ejecutar a mano · importar resultados</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td><td class="dash">—</td><td class="dash">—</td></tr>
+          <tr><td>Defectos</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td><td>crear y comentar</td><td class="dash">—</td></tr>
+          <tr><td>Ver todo y exportar</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td></tr>
+          <tr><td>Ver la auditoría</td><td class="check">✔</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <ul class="note">
+    <li>Es la tabla de ADR-0019 más la fila de aprobar (CAS-02, propuesta §3.5). Vive en <code>workspace-roles.json</code> como capacidades (<code>case.approve</code>, <code>members.manage</code>…).</li>
+    <li>En «Miembros» habrá un enlace «¿Qué puede hacer cada rol?» que abre esta tabla.</li>
+  </ul>
+</section>
+</main>
+
+</body></html>

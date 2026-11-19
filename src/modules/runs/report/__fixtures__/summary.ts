@@ -110,10 +110,36 @@ export const SUMMARY: ExecutionSummary = {
   options: { builds: ["1.4.2"], environments: ["staging"] },
 };
 
+/** Findings and thresholds of the latest scans (ING-06, F5b). */
+export const FINDINGS: NonNullable<ExecutionSummary["findings"]> = {
+  open: { critical: 1, high: 2, medium: 0, low: 0, info: 0 },
+  new: 1,
+  triaged: 1,
+  review: 2,
+  tools: [
+    {
+      tool: "axe-core",
+      runId: "r3",
+      runKey: "RUN-003",
+      open: { critical: 1, high: 2, medium: 0, low: 0, info: 0 },
+      new: 1,
+      triaged: 1,
+      review: 2,
+    },
+  ],
+  cases: [{ caseId: "c2", open: 3, worst: "critical" }],
+  thresholdsTotal: 3,
+  thresholdsPassed: 2,
+  failedThresholds: [
+    { runId: "r4", runKey: "RUN-004", name: "http_req_duration", aggregation: "p(95)", scope: null, threshold: "p(95)<500", value: 812, unit: "ms", caseId: "c2" },
+  ],
+};
+
 /** The same summary for a closed cycle (DOC-02): its gate record and the
- *  closed cycle before it. */
+ *  closed cycle before it, with findings. */
 export const CLOSED: ExecutionSummary = {
   ...SUMMARY,
+  findings: FINDINGS,
   closure: {
     closedAt: "2026-11-05T16:42:00.000Z",
     closedBy: "u1",

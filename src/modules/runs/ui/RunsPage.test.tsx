@@ -153,6 +153,9 @@ beforeEach(async () => {
       failed: 1,
       other: 0,
       unlinked: 1,
+      findings: 0,
+      findingsWorst: null,
+      thresholdsFailed: 0,
     })),
   );
   api.unlinked.mockResolvedValue(tray);
@@ -195,8 +198,22 @@ describe("RunsPage", () => {
     await expectNoAxeViolations();
   });
 
+  it("shows a scan's open findings and failed thresholds, without empty result counts (ING-06)", async () => {
+    api.counts.mockResolvedValue([
+      { runId: "r1", passed: 0, failed: 0, other: 0, unlinked: 0, findings: 3, findingsWorst: "critical", thresholdsFailed: 1 },
+    ]);
+    renderWithProviders(<RunsPage projectId="p" cases={cases} />);
+    const table = await screen.findByRole("table", { name: "Runs" });
+    expect(await within(table).findByText("3 hallazgos")).toBeInTheDocument();
+    expect(within(table).getByText("1 umbral incumplido")).toBeInTheDocument();
+    expect(within(table).getByText("3 hallazgos").closest(".pill")).toHaveAttribute("title", "Hallazgos abiertos; peor severidad: Crítica");
+    expect(within(table).queryByText("0")).not.toBeInTheDocument();
+  });
+
   it("says «Sin resultados» for a run with no results instead of loading for ever (NC-042, MAN-03)", async () => {
-    api.counts.mockResolvedValue([{ runId: "r1", passed: 1, failed: 1, other: 0, unlinked: 1 }]);
+    api.counts.mockResolvedValue([
+      { runId: "r1", passed: 1, failed: 1, other: 0, unlinked: 1, findings: 0, findingsWorst: null, thresholdsFailed: 0 },
+    ]);
     renderWithProviders(<RunsPage projectId="p" cases={cases} />);
     const table = await screen.findByRole("table", { name: "Runs" });
     expect(await within(table).findByText("Sin resultados")).toBeInTheDocument();
