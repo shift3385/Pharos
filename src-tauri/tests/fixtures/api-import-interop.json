@@ -4456,7 +4456,7 @@
             "message": "Artifact: server/Dockerfile\nType: dockerfile\nVulnerability DS002\nSeverity: HIGH\nMessage: Specify at least 1 USER command in Dockerfile with non-root user as argument\nLink: [DS002](https://avd.aquasec.com/misconfig/ds002)",
             "rawSeverity": "error · security-severity 8",
             "ruleId": "DS002",
-            "ruleName": "Misconfiguration",
+            "ruleName": "Image user should not be 'root'",
             "severity": "high",
             "shardRef": "s1",
             "standardRefs": []
@@ -4482,7 +4482,7 @@
             "message": "Artifact: server/Dockerfile\nType: dockerfile\nVulnerability DS026\nSeverity: LOW\nMessage: Add HEALTHCHECK instruction in your Dockerfile\nLink: [DS026](https://avd.aquasec.com/misconfig/ds026)",
             "rawSeverity": "note · security-severity 2",
             "ruleId": "DS026",
-            "ruleName": "Misconfiguration",
+            "ruleName": "No HEALTHCHECK defined",
             "severity": "low",
             "shardRef": "s1",
             "standardRefs": []
@@ -4539,7 +4539,7 @@
           "projectId": "85f0a2e7-69fb-4a58-8bcc-bcbd14e06657",
           "rawSeverity": "note · security-severity 2",
           "ruleId": "DS026",
-          "ruleName": "Misconfiguration",
+          "ruleName": "No HEALTHCHECK defined",
           "runId": "fe44124b-441d-4562-b650-5fa47046dcfb",
           "severity": "low",
           "shardId": "e4d45c46-9c2d-57f8-ba38-7dcb54a0be3a",
@@ -4572,7 +4572,7 @@
           "projectId": "85f0a2e7-69fb-4a58-8bcc-bcbd14e06657",
           "rawSeverity": "error · security-severity 8",
           "ruleId": "DS002",
-          "ruleName": "Misconfiguration",
+          "ruleName": "Image user should not be 'root'",
           "runId": "fe44124b-441d-4562-b650-5fa47046dcfb",
           "severity": "high",
           "shardId": "e4d45c46-9c2d-57f8-ba38-7dcb54a0be3a",
@@ -10842,6 +10842,145 @@
           "testKey": null
         }
       ]
+    },
+    {
+      "doc": {
+        "findings": [
+          {
+            "attributes": {
+              "tool": "x"
+            },
+            "caseKey": " TC-1 ",
+            "fingerprint": "fp-1",
+            "message": "m",
+            "ruleId": "R1",
+            "severity": "low"
+          },
+          {
+            "attributes": {
+              "caseKey": "TC-2"
+            },
+            "caseKey": "TC-9",
+            "fingerprint": "fp-2",
+            "message": "m",
+            "ruleId": "R2",
+            "severity": "low"
+          }
+        ],
+        "metrics": [
+          {
+            "aggregation": "rate",
+            "caseKey": "TC-1",
+            "name": "m",
+            "passed": false,
+            "threshold": "rate<0.1",
+            "value": 0.5
+          }
+        ],
+        "results": [],
+        "run": {
+          "sourceTool": "k6"
+        },
+        "schemaVersion": "1.0.0",
+        "shards": [
+          {
+            "normalizerVersion": 1,
+            "ref": "s1",
+            "sourceFormat": "k6"
+          }
+        ]
+      },
+      "findings": [
+        {
+          "attributes": {
+            "caseKey": "TC-1",
+            "tool": "x"
+          },
+          "createdAt": "2026-11-19T13:08:20.093Z",
+          "createdBy": "11111111-1111-4111-8111-111111111111",
+          "fingerprint": "fp-1",
+          "helpUri": null,
+          "hlc": "001795093700094-00002-f504ac8d-56e6-47db-aef9-c5e86242e9a3",
+          "id": "27626400-9aeb-54a3-9b3c-146be9d5b072",
+          "location": {},
+          "message": "m",
+          "projectId": "5e253351-b7bb-448a-8969-f59ac63f2861",
+          "rawSeverity": null,
+          "ruleId": "R1",
+          "ruleName": null,
+          "runId": "846ccc8f-dd31-4362-abcb-aeddafe9b0b8",
+          "severity": "low",
+          "shardId": "5e918ea1-2075-54bd-883b-ad396ea09632",
+          "standardRefs": [],
+          "workspaceId": "e3fbc563-734b-4486-8034-89482f9a6fc3"
+        },
+        {
+          "attributes": {
+            "caseKey": "TC-2"
+          },
+          "createdAt": "2026-11-19T13:08:20.093Z",
+          "createdBy": "11111111-1111-4111-8111-111111111111",
+          "fingerprint": "fp-2",
+          "helpUri": null,
+          "hlc": "001795093700094-00004-f504ac8d-56e6-47db-aef9-c5e86242e9a3",
+          "id": "43346cfe-0b4d-5cb1-9ce0-8de77d9805bd",
+          "location": {},
+          "message": "m",
+          "projectId": "5e253351-b7bb-448a-8969-f59ac63f2861",
+          "rawSeverity": null,
+          "ruleId": "R2",
+          "ruleName": null,
+          "runId": "846ccc8f-dd31-4362-abcb-aeddafe9b0b8",
+          "severity": "low",
+          "shardId": "5e918ea1-2075-54bd-883b-ad396ea09632",
+          "standardRefs": [],
+          "workspaceId": "e3fbc563-734b-4486-8034-89482f9a6fc3"
+        }
+      ],
+      "metrics": [
+        {
+          "aggregation": "rate",
+          "attributes": {
+            "caseKey": "TC-1"
+          },
+          "createdAt": "2026-11-19T13:08:20.094Z",
+          "createdBy": "11111111-1111-4111-8111-111111111111",
+          "hlc": "001795093700094-00006-f504ac8d-56e6-47db-aef9-c5e86242e9a3",
+          "id": "4ee5157d-4095-52b0-aacb-5ad3624394f5",
+          "name": "m",
+          "passed": false,
+          "projectId": "5e253351-b7bb-448a-8969-f59ac63f2861",
+          "runId": "846ccc8f-dd31-4362-abcb-aeddafe9b0b8",
+          "scope": null,
+          "shardId": "5e918ea1-2075-54bd-883b-ad396ea09632",
+          "threshold": "rate<0.1",
+          "unit": null,
+          "value": 0.5,
+          "workspaceId": "e3fbc563-734b-4486-8034-89482f9a6fc3"
+        }
+      ],
+      "name": "case-key",
+      "results": [],
+      "runId": "846ccc8f-dd31-4362-abcb-aeddafe9b0b8",
+      "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "shard": {
+        "formatVersion": null,
+        "hlc": "001795093700093-00000-f504ac8d-56e6-47db-aef9-c5e86242e9a3",
+        "id": "5e918ea1-2075-54bd-883b-ad396ea09632",
+        "importedAt": "2026-11-19T13:08:20.093Z",
+        "importedBy": "11111111-1111-4111-8111-111111111111",
+        "normalizerVersion": 1,
+        "projectId": "5e253351-b7bb-448a-8969-f59ac63f2861",
+        "runId": "846ccc8f-dd31-4362-abcb-aeddafe9b0b8",
+        "shardIndex": null,
+        "shardTotal": null,
+        "sourceAttachmentId": null,
+        "sourceFileSha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceFormat": "k6",
+        "workspaceId": "e3fbc563-734b-4486-8034-89482f9a6fc3"
+      },
+      "shardId": "5e918ea1-2075-54bd-883b-ad396ea09632",
+      "warnings": []
     }
   ]
 }

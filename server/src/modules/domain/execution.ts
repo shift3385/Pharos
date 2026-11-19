@@ -87,6 +87,11 @@ export function execFingerprint(data: unknown): string {
   return createHash("sha256").update(canonical(kept)).digest("hex");
 }
 
+/** The test key of a metric as a result of its case (`metric_test_key`).
+ *  One per metric, aggregation and scope. */
+export const metricTestKey = (name: string, aggregation: string | null, scope: string | null) =>
+  `metric:${name}|${aggregation ?? ""}|${scope ?? ""}`;
+
 /** The entity kinds the derivation reads; each is read once for every
  *  project asked for (`payload->>'projectId' = ANY(...)`), whatever their
  *  number. */
@@ -105,6 +110,8 @@ const KINDS = [
   "unlinked_mapping",
   "run_item",
   "configuration",
+  // ING-06 (F5): a linked metric with a threshold is a result of its case.
+  "metric",
 ] as const;
 type Kind = (typeof KINDS)[number];
 
@@ -211,6 +218,49 @@ function projectData(project: RemoteDoc, docs: (kind: Kind) => RemoteDoc[]): Pro
     const executed = a.revisionId ? revisionData.get(a.revisionId) : undefined;
     a.execFingerprint = executed === undefined ? null : execFingerprint(executed);
     attempts.push(a);
+  }
+  // A metric with a threshold linked to a case is a result of that case in
+  // its run, at the run's time (`execution::load_attempts`, ADR-0012 and
+  // ADR-0053): a failed threshold fails the case. Unlinked metrics and
+  // metrics without a threshold change no case.
+  for (const d of docs("metric")) {
+    const p = d.payload;
+    if (typeof p.passed !== "boolean") continue;
+    const run = liveRuns.get(str(p, "runId"));
+    if (!run) continue;
+    const shardId = str(p, "shardId");
+    if (superseded.has(shardId)) continue;
+    const attributes = obj(p.attributes);
+    const testKey = metricTestKey(str(p, "name"), strOrNull(p, "aggregation"), strOrNull(p, "scope"));
+    const l = linkOf({
+      runId: str(p, "runId"),
+      testKey,
+      attributes,
+      caseKey: typeof attributes.caseKey === "string" ? attributes.caseKey : null,
+    });
+    if (!l.caseId) continue;
+    const at = strOrNull(run, "startedAt") ?? strOrNull(run, "finishedAt") ?? strOrNull(p, "createdAt");
+    const shard = shards.get(shardId);
+    attempts.push({
+      id: d.entityId,
+      runId: str(p, "runId"),
+      testKey,
+      configurationLabel: null,
+      attempt: 0,
+      status: p.passed ? "passed" : "failed",
+      startedAt: strOrNull(run, "startedAt"),
+      finishedAt: at,
+      shardImportedAt: shard ? strOrNull(shard, "importedAt") : null,
+      hlc: str(p, "hlc"),
+      declaredFlaky: false,
+      imported: true,
+      configurationId: strOrNull(run, "configurationId") ?? l.configurationId,
+      caseId: l.caseId,
+      flowId: l.flowId,
+      rowId: l.exampleRowId,
+      revisionId: l.revisionId,
+      execFingerprint: null,
+    });
   }
   // The defects' links, with the lists in hand (the defects module's rule).
   const requirementDocs = docs("requirement");

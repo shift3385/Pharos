@@ -614,3 +614,50 @@ fn a_defect_stamps_its_lifecycle_and_old_ones_read_the_audit_log() {
     assert!(fixed.is_some());
     assert_eq!(*reopens, 1);
 }
+
+/// A k6 summary whose metrics link to cases (ING-06, F5): by a case tag in
+/// `attributes.tags` (a `{case:…}` sub-metric) or by the document's `caseKey`.
+fn k6_doc(day: &str, failed: bool) -> Value {
+    json!({
+        "schemaVersion": "1.0.0",
+        "run": {"sourceTool": "k6", "startedAt": format!("{day}T09:00:00Z")},
+        "shards": [{"ref": "s1", "sourceFormat": "k6", "normalizerVersion": 1}],
+        "metrics": [
+            {"name": "http_req_duration", "aggregation": "p95", "scope": "case:TC-001",
+             "value": if failed { 742.0 } else { 120.0 }, "unit": "ms",
+             "threshold": "p(95)<500", "passed": !failed,
+             "attributes": {"type": "trend", "tags": ["@TC-001"]}, "shardRef": "s1"},
+            {"name": "checks", "aggregation": "rate", "value": 1.0, "threshold": "rate>0.9",
+             "passed": true, "caseKey": "TC-002", "shardRef": "s1"},
+            // A failed threshold of no case changes no case.
+            {"name": "http_req_failed", "aggregation": "rate", "value": 0.5,
+             "threshold": "rate<0.01", "passed": false, "shardRef": "s1"},
+            // A metric without a threshold is no result.
+            {"name": "iterations", "aggregation": "count", "value": 10.0,
+             "attributes": {"tags": ["@TC-001"]}, "shardRef": "s1"}
+        ]
+    })
+}
+
+#[test]
+fn a_linked_failed_threshold_fails_its_case_in_the_matrix() {
+    let c = device();
+    let p = new_project(&c);
+    let tc1 = test_case::insert_case(&c, &case_input(&p, "TC-001", "Pago", json!({}))).unwrap();
+    let tc2 = test_case::insert_case(&c, &case_input(&p, "TC-002", "Carga", json!({}))).unwrap();
+    let tc3 = test_case::insert_case(&c, &case_input(&p, "TC-003", "Otro", json!({}))).unwrap();
+    let k6_run = import(&c, &p, k6_doc("2026-11-10", true));
+    let s = summary(&c, &p);
+    let row = case_row(&s, &tc1);
+    assert_eq!(row.status, "failed");
+    let last = row.last.as_ref().unwrap();
+    assert_eq!(last.run_id, k6_run);
+    // By the document's caseKey, kept in the attributes.
+    assert_eq!(case_row(&s, &tc2).status, "passed");
+    // The unlinked failed threshold touches no case.
+    assert_eq!(case_row(&s, &tc3).status, "not_run");
+
+    // A newer manual pass of TC-001 wins: the latest run decides.
+    manual(&c, &p, &tc1, "passed", "2026-11-11T10:00:00Z");
+    assert_eq!(case_row(&summary(&c, &p), &tc1).status, "passed");
+}

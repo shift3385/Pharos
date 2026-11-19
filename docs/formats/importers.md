@@ -37,7 +37,12 @@ Comunes:
 - **Persistente:** `runs/findings.rs` los guarda en la transacción de la
   importación (tablas `findings` y `metrics`, migración 0048) y los
   sincroniza como `finding` y `metric`. Un Pharos Run JSON con un hallazgo
-  sin `fingerprint` recibe la derivada al leerse (`fingerprintOf`).
+  sin `fingerprint` recibe la derivada al leerse (`fingerprintOf`). El
+  `caseKey` de un hallazgo o una métrica se guarda como `attributes.caseKey`.
+- **Vínculo a un caso** (se deriva al leer): una etiqueta de caso en
+  `attributes.tags` o el `caseKey`. Una métrica **con umbral** vinculada es un
+  resultado de su caso en su run: si el umbral falla, el caso falla en la
+  matriz.
 - **Vectores para puertos** (el CLI): `fixtures/detection-vectors.json` (el
   formato o el error de cada muestra y de entradas en línea, por contenido) y
   `fixtures/schema-vectors.json` (documentos válidos e inválidos, con sus
@@ -50,7 +55,7 @@ Se detecta por `version` `2.x` y `runs[]`.
 | Pharos | SARIF |
 | --- | --- |
 | uno por | resultado con `kind` `fail` (por defecto), `open` o `review`, y sin `baselineState: absent`. Los demás se cuentan en el aviso `sarif-skipped` |
-| `ruleId` / `ruleName` | `ruleId` (o `rule.id`) / `rule.name` o `shortDescription`. La regla se busca por `rule.index`/`ruleIndex` en el `toolComponent` del resultado o en `extensions`, y si no por id |
+| `ruleId` / `ruleName` | `ruleId` (o `rule.id`) / `shortDescription` o, si no hay, `rule.name` (que suele ser un id o una palabra genérica: «Misconfiguration» en Trivy). La regla se busca por `rule.index`/`ruleIndex` en el `toolComponent` del resultado o en `extensions`, y si no por id |
 | `severity` | `security-severity` del resultado o de la regla (≥9 crítica, ≥7 alta, ≥4 media, >0 baja); si no, `level` del resultado o `defaultConfiguration.level`: `error` alta, `warning` media (también por defecto), `note` baja, `none` info |
 | `rawSeverity` | `level` y `security-severity n`, unidos con ` · ` |
 | `message` | `message.text`, `markdown`, o el `messageStrings` de la regla con `{n}` sustituidos |

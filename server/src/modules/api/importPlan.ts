@@ -496,6 +496,17 @@ function objectStored(v: unknown): [Json, boolean] {
   return [kept, true];
 }
 
+/** The attributes of a finding or a metric with its document's `caseKey`
+ *  (trimmed, clipped to MAX_TEXT) kept as `attributes.caseKey` unless they
+ *  already name one (`findings.rs::with_case_key`, F5): the case link uses
+ *  it. */
+function withCaseKey(entry: Json): Json {
+  const attributes = { ...obj(entry.attributes) };
+  const key = typeof entry.caseKey === "string" ? entry.caseKey.trim() : "";
+  if (key && !("caseKey" in attributes)) attributes.caseKey = clip(key, MAX_TEXT)[0];
+  return attributes;
+}
+
 export interface PlannedFinding {
   id: string;
   ruleId: string;
@@ -562,7 +573,7 @@ export function planFindings(doc: Json, shardId: string, ids: {
       location0.html = h;
     }
     const [location, cutLocation] = objectStored(location0);
-    const [attributes, cutAttributes] = objectStored(f.attributes);
+    const [attributes, cutAttributes] = objectStored(withCaseKey(f));
     const standardRefs = arr(f.standardRefs)
       .filter((s): s is string => typeof s === "string")
       .map((s) => clip(s, MAX_TEXT)[0]);
@@ -600,7 +611,7 @@ export function planFindings(doc: Json, shardId: string, ids: {
       return;
     }
     metricIds.add(id);
-    const [attributes, cutAttributes] = objectStored(m.attributes);
+    const [attributes, cutAttributes] = objectStored(withCaseKey(m));
     if (cutAttributes) cut += 1;
     out.metrics.push({
       id,
