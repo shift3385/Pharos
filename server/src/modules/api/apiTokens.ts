@@ -10,15 +10,15 @@
 //   web chain, entity `api_token`, in the token's workspace (a personal token
 //   without a workspace: the owner's personal one). Never the token itself.
 import type { Pool, PoolClient } from "pg";
-import { AppError, AuthErrors } from "../auth/errors";
-import { appendWebEvent } from "../audit/audit.store";
-import type { ServerClock } from "../sync/sync.hlc";
-import { lockWorkspaces } from "../sync/sync.repository";
-import { requireMembership, requireRole, WorkspaceErrors } from "../workspaces/access";
-import { membership, personalOf, type Queryable } from "../workspaces/members";
-import { can } from "../workspaces/roles";
-import { API_SCOPES, SCOPE_CAPABILITY, type ApiScope } from "./scopes";
-import { hashToken, newToken, parseToken, type TokenKind } from "./tokenFormat";
+import { AppError, AuthErrors } from "../auth/errors.js";
+import { appendWebEvent } from "../audit/audit.store.js";
+import type { ServerClock } from "../sync/sync.hlc.js";
+import { lockWorkspaces } from "../sync/sync.repository.js";
+import { requireMembership, requireRole, WorkspaceErrors } from "../workspaces/access.js";
+import { membership, personalOf, type Queryable } from "../workspaces/members.js";
+import { can } from "../workspaces/roles.js";
+import { API_SCOPES, SCOPE_CAPABILITY, type ApiScope } from "./scopes.js";
+import { hashToken, newToken, parseToken, type TokenKind } from "./tokenFormat.js";
 
 /** Longest life of a token: one year (approved 2026-11-18, decision 4). */
 export const MAX_TOKEN_DAYS = 366;

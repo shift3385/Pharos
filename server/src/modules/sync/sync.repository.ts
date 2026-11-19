@@ -1,7 +1,7 @@
 import type { Pool, PoolClient } from "pg";
-import { decide } from "./sync.merge";
-import { can, capabilityFor, type Capability, type WorkspaceRole } from "../workspaces/roles";
-import { membership } from "../workspaces/members";
+import { decide } from "./sync.merge.js";
+import { can, capabilityFor, type Capability, type WorkspaceRole } from "../workspaces/roles.js";
+import { membership } from "../workspaces/members.js";
 import {
   isProvisionalKey,
   KEY_BLOCK_SIZE,
@@ -22,7 +22,7 @@ import {
   PROJECT_CHILDREN,
   type Delta,
   type KeyKind,
-} from "./sync.schemas";
+} from "./sync.schemas.js";
 
 /** A pool, or a client inside a transaction. */
 type Queryable = Pick<Pool, "query"> | PoolClient;

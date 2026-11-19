@@ -784,7 +784,8 @@ ADR-0013; built in E4, step 9).** The section «Ejecuciones»
   `server/tests/formats.test.ts` checks Node gives the same snapshots; the
   package's relative imports end in `.js` and `tsc -p packages/formats`, in
   `npm run typecheck`, compiles it as NodeNext ESM; the server image builds
-  from the repo root, `server/Dockerfile` with `server/Dockerfile.dockerignore`),
+  from the repo root, `server/Dockerfile` with `server/Dockerfile.dockerignore`;
+  the server build compiles it into `server/dist/node_modules/@pharos/formats`),
   Playwright JSON and Pharos Run JSON itself.
   The format is detected by content (Cucumber JSON is refused). Each produces a
   Pharos Run JSON document checked by `parsePharosRun`, with a `testKey` per
@@ -1631,7 +1632,9 @@ Policy: [ADR-0021](adr/0021-ci-y-cadena-de-suministro.md).
 
 ## Backend (Phase 1+)
 
-`server/` is a Fastify + TypeScript app (run via `tsx`) backed by PostgreSQL —
+`server/` is a Fastify + TypeScript app (run from source via `tsx` in
+development and tests; compiled with `tsc` to `dist/` for production by
+`npm run build`, DEU-01, ADR-0052 «A5») backed by PostgreSQL —
 either a native service or the `db` container of the root `docker-compose.yml`
 (`postgres:15-alpine`). Layered per domain module (routes → service/merge →
 repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +

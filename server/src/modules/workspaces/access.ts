@@ -1,8 +1,8 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { Pool } from "pg";
-import { AppError } from "../auth/errors";
-import { membership, memberships, personalOf, wasMember, type Membership, type Queryable } from "./members";
-import { can, type Capability } from "./roles";
+import { AppError } from "../auth/errors.js";
+import { membership, memberships, personalOf, wasMember, type Membership, type Queryable } from "./members.js";
+import { can, type Capability } from "./roles.js";
 
 declare module "fastify" {
   interface FastifyRequest {

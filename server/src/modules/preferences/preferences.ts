@@ -6,9 +6,9 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { Pool } from "pg";
 import { z } from "zod";
-import { makeRequireAuth } from "../auth/middleware";
-import type { TokenService } from "../auth/tokens";
-import { requireSupportedVersion } from "../sync/sync.version";
+import { makeRequireAuth } from "../auth/middleware.js";
+import type { TokenService } from "../auth/tokens.js";
+import { requireSupportedVersion } from "../sync/sync.version.js";
 
 /** The keys an account may keep. A new preference is added here. The `ui.*`
  *  ones are SYNC-09: language, theme and appearance follow the account. */

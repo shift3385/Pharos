@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
-import type { ServerClock } from "../sync/sync.hlc";
-import { storeAppend, WEB_AUDIT_DEVICE } from "../sync/sync.repository";
-import { hashOf, sha256Hex, type AuditEvent } from "./audit.chain";
+import type { ServerClock } from "../sync/sync.hlc.js";
+import { storeAppend, WEB_AUDIT_DEVICE } from "../sync/sync.repository.js";
+import { hashOf, sha256Hex, type AuditEvent } from "./audit.chain.js";
 
 // The web's audit chain (AUD-01b, ADR-0015). Every domain write of the web
 // leaves one `audit_event` in the user's document store, in the same

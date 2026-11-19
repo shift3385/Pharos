@@ -15,14 +15,14 @@
 import type { FastifyError, FastifyInstance, FastifyRequest } from "fastify";
 import type { Pool } from "pg";
 import { z } from "zod";
-import type { Env } from "../../config/env";
-import { AppError } from "../auth/errors";
-import { makeRequireAuth } from "../auth/middleware";
-import type { TokenService } from "../auth/tokens";
-import { requireSupportedVersion } from "../sync/sync.version";
-import { WEB_PROVIDERS, ProviderError, chat, messagesSchema, validModel, type Fetch, type WebProvider } from "./providers";
-import { createVault, type Vault } from "./vault";
-import { wipeAiVault } from "./ai.wipe";
+import type { Env } from "../../config/env.js";
+import { AppError } from "../auth/errors.js";
+import { makeRequireAuth } from "../auth/middleware.js";
+import type { TokenService } from "../auth/tokens.js";
+import { requireSupportedVersion } from "../sync/sync.version.js";
+import { WEB_PROVIDERS, ProviderError, chat, messagesSchema, validModel, type Fetch, type WebProvider } from "./providers.js";
+import { createVault, type Vault } from "./vault.js";
+import { wipeAiVault } from "./ai.wipe.js";
 
 /** What the account has on this server. */
 export interface WebAccess {

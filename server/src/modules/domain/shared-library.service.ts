@@ -4,9 +4,9 @@
 // `shared-library.ts`, shared with the sync checks.
 
 import { randomUUID } from "node:crypto";
-import { AppError } from "../auth/errors";
-import type { RemoteDoc } from "../sync/sync.repository";
-import { staleWrite, type DomainTx } from "./domain.store";
+import { AppError } from "../auth/errors.js";
+import type { RemoteDoc } from "../sync/sync.repository.js";
+import { staleWrite, type DomainTx } from "./domain.store.js";
 import {
   DATASET,
   DATASET_REFS,
@@ -40,7 +40,7 @@ import {
   type Obj,
   type Outcome,
   type SharedVersion,
-} from "./shared-library";
+} from "./shared-library.js";
 
 const revisionEntity = (entity: string) =>
   entity === SHARED_STEP ? SHARED_STEP_REVISION : DATASET_REVISION;

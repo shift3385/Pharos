@@ -1,4 +1,4 @@
-import type { Delta } from "./sync.schemas";
+import type { Delta } from "./sync.schemas.js";
 
 /** What the server holds for one entity, as far as merging is concerned. */
 export interface StoredVersion {

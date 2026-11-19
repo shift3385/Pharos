@@ -1,17 +1,17 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
-import { AppError } from "../auth/errors";
-import { makeRequireAuth } from "../auth/middleware";
-import type { TokenService } from "../auth/tokens";
-import type { RemoteDoc } from "../sync/sync.repository";
-import { requireSupportedVersion } from "../sync/sync.version";
-import { contentSha256, normalizeCaseData, revisionContent, revisionId, stepText } from "../sync/stable-steps";
-import { finalAttempts, NOT_RUN, type ProgressAttempt } from "./cycle-progress";
-import { staleWrite, type DomainStore, type DomainTx } from "./domain.store";
-import { sortable, timestamp } from "./domain.service";
-import { isImported, projectLinks, supersededShards, type ResultLink } from "./resultLink";
-import { isLiveRun } from "./run-live";
+import { AppError } from "../auth/errors.js";
+import { makeRequireAuth } from "../auth/middleware.js";
+import type { TokenService } from "../auth/tokens.js";
+import type { RemoteDoc } from "../sync/sync.repository.js";
+import { requireSupportedVersion } from "../sync/sync.version.js";
+import { contentSha256, normalizeCaseData, revisionContent, revisionId, stepText } from "../sync/stable-steps.js";
+import { finalAttempts, NOT_RUN, type ProgressAttempt } from "./cycle-progress.js";
+import { staleWrite, type DomainStore, type DomainTx } from "./domain.store.js";
+import { sortable, timestamp } from "./domain.service.js";
+import { isImported, projectLinks, supersededShards, type ResultLink } from "./resultLink.js";
+import { isLiveRun } from "./run-live.js";
 import {
   flowShape,
   manualTestKey,
@@ -21,7 +21,7 @@ import {
   targetKey,
   targetsOf,
   type ExecutionTarget,
-} from "./runs-targets";
+} from "./runs-targets.js";
 
 // Runs on the web (EJE-06, ADR-0013): the rules of the desktop's `runs.rs`,
 // `runs/manual.rs` and `cycles.rs::execute` applied to the server's document

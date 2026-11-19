@@ -1,29 +1,29 @@
 import type { Pool, PoolClient } from "pg";
 import { createHash, randomBytes } from "node:crypto";
-import type { AuthRepository, UserRow } from "./auth.repository";
-import type { Session } from "./auth.service";
-import type { ChangePasswordInput, RecoverInput } from "./auth.schemas";
-import { AuthErrors } from "./errors";
-import { hashPassword, verifyPassword } from "./password";
+import type { AuthRepository, UserRow } from "./auth.repository.js";
+import type { Session } from "./auth.service.js";
+import type { ChangePasswordInput, RecoverInput } from "./auth.schemas.js";
+import { AuthErrors } from "./errors.js";
+import { hashPassword, verifyPassword } from "./password.js";
 import {
   generateRecoveryCodes,
   hashRecoveryCode,
   normalizeRecoveryCode,
   verifyRecoveryCode,
-} from "./recovery-codes";
-import type { Mailer } from "./mailer";
-import { resetEmail, resetLink } from "./reset-email";
-import { appendWebEvent } from "../audit/audit.store";
-import type { ServerClock } from "../sync/sync.hlc";
-import { lockWorkspaces } from "../sync/sync.repository";
-import { personalOf } from "../workspaces/members";
-import { wipeAiVault } from "../ai/ai.wipe";
+} from "./recovery-codes.js";
+import type { Mailer } from "./mailer.js";
+import { resetEmail, resetLink } from "./reset-email.js";
+import { appendWebEvent } from "../audit/audit.store.js";
+import type { ServerClock } from "../sync/sync.hlc.js";
+import { lockWorkspaces } from "../sync/sync.repository.js";
+import { personalOf } from "../workspaces/members.js";
+import { wipeAiVault } from "../ai/ai.wipe.js";
 import {
   AdminErrors,
   auditAccountEvent,
   lockPersonal,
-} from "../admin/admin.service";
-import { emitNotification } from "../notifications/notifications";
+} from "../admin/admin.service.js";
+import { emitNotification } from "../notifications/notifications.js";
 
 // Changing and recovering the account password (SEC-08, SEC-09 by email;
 // ADR-0045). Every change runs in one transaction under the write lock of

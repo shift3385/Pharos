@@ -4,7 +4,7 @@
 // `src-tauri/tests/fixtures/execution-vectors.json`; a change here is a change
 // there. The rules (R1–R12) are in ADR-0013 «Implementación (paso 10)».
 
-import { cells, instantMs, NOT_RUN } from "./cycle-progress";
+import { cells, instantMs, NOT_RUN } from "./cycle-progress.js";
 
 export const CONTRACT_VERSION = 1;
 export const RETEST = "retest";

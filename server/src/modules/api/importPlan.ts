@@ -14,7 +14,7 @@
 // own imports, uuid and zod, resolve only where its dependencies are
 // installed; the upload loads it when it runs, as the parser does).
 import { createHash } from "node:crypto";
-import { AppError } from "../auth/errors";
+import { AppError } from "../auth/errors.js";
 
 type Json = Record<string, unknown>;
 

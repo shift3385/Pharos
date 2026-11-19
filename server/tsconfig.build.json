@@ -1,0 +1,24 @@
+{
+  // The production build (DEU-01, ADR-0052 «A5»): plain Node ESM in dist/,
+  // run with `node dist/server.js`. `npm run build` first compiles the shared
+  // @pharos/formats into dist/node_modules/@pharos/formats (scripts/build.mjs),
+  // so Node finds it there and its types come from its .d.ts. Development and
+  // tests keep running the sources with tsx and vitest (tsconfig.json).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": "src",
+    "sourceMap": true,
+    "types": ["node"],
+    "paths": {
+      "@pharos/formats": ["./dist/node_modules/@pharos/formats/index.d.ts"]
+    }
+  },
+  "include": ["src"],
+  // Type-level checks against the desktop's contracts only; nothing imports it
+  // and it reaches outside the server (src/shared/contracts).
+  "exclude": ["src/modules/sync/sync.contracts.ts"]
+}

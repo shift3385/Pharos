@@ -1,6 +1,6 @@
 import type { FastifyRequest } from "fastify";
-import type { TokenService } from "./tokens";
-import { AuthErrors } from "./errors";
+import type { TokenService } from "./tokens.js";
+import { AuthErrors } from "./errors.js";
 
 /** Builds a Fastify preHandler that authenticates the Bearer access token and
  *  sets `req.userId` / `req.userRole`. Shared by protected routes. */

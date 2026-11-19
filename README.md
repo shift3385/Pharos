@@ -457,7 +457,9 @@ Frontend (repository root):
 | `npm run coverage:rust`        | Rust coverage report into `coverage/rust/`                                                                        |
 
 Backend (`server/`): `npm start`, `npm run dev` (auto-reload), `npm run migrate`,
-`npm run seed:test-user`, `npm test` (needs `pharos_test_db`), `npm run typecheck`.
+`npm run seed:test-user`, `npm test` (needs `pharos_test_db`), `npm run typecheck`,
+`npm run build` (production build into `dist/`, DEU-01) and `npm run start:dist`
+(runs it with plain node, as the Docker image does).
 
 Desktop core (`src-tauri/`): `cargo check`, `cargo test`.
 

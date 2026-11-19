@@ -5,9 +5,9 @@
 // which `app.ts` passes in as `core`.
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
-import { makeRequireAuth } from "../auth/middleware";
-import type { TokenService } from "../auth/tokens";
-import { requireSupportedVersion } from "../sync/sync.version";
+import { makeRequireAuth } from "../auth/middleware.js";
+import type { TokenService } from "../auth/tokens.js";
+import { requireSupportedVersion } from "../sync/sync.version.js";
 
 const MAX_DAYS = 400;
 const MAX_WINDOWS = 16;

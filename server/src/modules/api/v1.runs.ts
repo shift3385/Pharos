@@ -4,15 +4,15 @@
 // lives in its own scope, where the body is the report's raw bytes.
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { Pool } from "pg";
-import { AppError } from "../auth/errors";
-import { TokenErrors, type ApiPrincipal, type ApiTokenService } from "./apiTokens";
-import { statusCounts } from "./importPlan";
-import { inflate, parseUpload, type ReportParser } from "./reportParse";
-import { externalRunId, RunErrors, type RunImport } from "./runImport";
-import type { RunService } from "../domain/runs";
-import { insertRun } from "../domain/runs";
-import type { DomainStore } from "../domain/domain.store";
-import { resolveProject, API_V1 } from "./v1";
+import { AppError } from "../auth/errors.js";
+import { TokenErrors, type ApiPrincipal, type ApiTokenService } from "./apiTokens.js";
+import { statusCounts } from "./importPlan.js";
+import { inflate, parseUpload, type ReportParser } from "./reportParse.js";
+import { externalRunId, RunErrors, type RunImport } from "./runImport.js";
+import type { RunService } from "../domain/runs.js";
+import { insertRun } from "../domain/runs.js";
+import type { DomainStore } from "../domain/domain.store.js";
+import { resolveProject, API_V1 } from "./v1.js";
 import {
   resultListSchema,
   runCloseSchema,
@@ -22,7 +22,7 @@ import {
   runSummarySchema,
   uploadQuerySchema,
   uploadResponseSchema,
-} from "./v1.schemas";
+} from "./v1.schemas.js";
 
 type Json = Record<string, unknown>;
 

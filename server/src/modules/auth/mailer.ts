@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import type { Env } from "../../config/env";
+import type { Env } from "../../config/env.js";
 
 // Outgoing email for password reset links (SEC-09, ADR-0045). Optional: with
 // no SMTP_HOST there is no mailer and the email reset is off.

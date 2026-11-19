@@ -1,8 +1,8 @@
 import type { Pool, PoolClient } from "pg";
-import { AppError } from "../auth/errors";
-import { diff, location } from "../audit/audit.diff";
-import { appendWebEvent, type AuditAction } from "../audit/audit.store";
-import type { ServerClock } from "../sync/sync.hlc";
+import { AppError } from "../auth/errors.js";
+import { diff, location } from "../audit/audit.diff.js";
+import { appendWebEvent, type AuditAction } from "../audit/audit.store.js";
+import type { ServerClock } from "../sync/sync.hlc.js";
 import {
   COLS,
   KEY_SQL,
@@ -14,11 +14,11 @@ import {
   takenKey,
   toDoc,
   type RemoteDoc,
-} from "../sync/sync.repository";
-import type { KeyKind } from "../sync/sync.schemas";
-import { WorkspaceErrors } from "../workspaces/access";
-import { memberships, type Membership } from "../workspaces/members";
-import { can, capabilityFor, type Capability } from "../workspaces/roles";
+} from "../sync/sync.repository.js";
+import type { KeyKind } from "../sync/sync.schemas.js";
+import { WorkspaceErrors } from "../workspaces/access.js";
+import { memberships, type Membership } from "../workspaces/members.js";
+import { can, capabilityFor, type Capability } from "../workspaces/roles.js";
 
 /** Domain writes of the web (BASE-10, ADR-0004) go to the same document
  *  store the devices sync with: every write is a document with a new

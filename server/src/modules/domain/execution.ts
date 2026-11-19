@@ -8,14 +8,14 @@
 
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
-import { AppError } from "../auth/errors";
-import { makeRequireAuth } from "../auth/middleware";
-import type { TokenService } from "../auth/tokens";
-import type { RemoteDoc } from "../sync/sync.repository";
-import { requireSupportedVersion } from "../sync/sync.version";
+import { AppError } from "../auth/errors.js";
+import { makeRequireAuth } from "../auth/middleware.js";
+import type { TokenService } from "../auth/tokens.js";
+import type { RemoteDoc } from "../sync/sync.repository.js";
+import { requireSupportedVersion } from "../sync/sync.version.js";
 import { createHash } from "node:crypto";
-import type { DomainReader, DomainStore, DomainTx } from "./domain.store";
-import { withLinks, type LinkContext } from "./defects";
+import type { DomainReader, DomainStore, DomainTx } from "./domain.store.js";
+import { withLinks, type LinkContext } from "./defects.js";
 import {
   checkedBands,
   closeRecord,
@@ -27,9 +27,9 @@ import {
   type HomeMetrics,
   type HomeRequest,
   type ProjectData,
-} from "./execution-summary";
-import { factsOf, isImported, linkDataOf, linkResolver, supersededShards, type ResultLink } from "./resultLink";
-import { sortable, timestamp } from "./domain.service";
+} from "./execution-summary.js";
+import { factsOf, isImported, linkDataOf, linkResolver, supersededShards, type ResultLink } from "./resultLink.js";
+import { sortable, timestamp } from "./domain.service.js";
 
 type Payload = Record<string, unknown>;
 const str = (p: Payload, k: string) => (typeof p[k] === "string" ? (p[k] as string) : "");

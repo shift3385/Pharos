@@ -1,12 +1,12 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { Pool } from "pg";
 import { z } from "zod";
-import { AppError } from "../auth/errors";
-import type { TokenService } from "../auth/tokens";
-import { makeRequireAuth } from "../auth/middleware";
-import { requireSupportedVersion } from "../sync/sync.version";
-import { requireRole } from "../workspaces/access";
-import { isSha256, sha256Hex, type BlobStore } from "./blobStore";
+import { AppError } from "../auth/errors.js";
+import type { TokenService } from "../auth/tokens.js";
+import { makeRequireAuth } from "../auth/middleware.js";
+import { requireSupportedVersion } from "../sync/sync.version.js";
+import { requireRole } from "../workspaces/access.js";
+import { isSha256, sha256Hex, type BlobStore } from "./blobStore.js";
 
 // Attachment and template contents by hash (SYNC-04b, ADR-0014, ADR-0042 §7).
 // Every route names the workspace (`workspace`) and needs the account's

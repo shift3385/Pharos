@@ -1,13 +1,13 @@
 import { z } from "zod";
-import { AUTOMATION_STATUSES, CASE_TYPES, FIELD_ENTITIES } from "./custom-fields";
-import { REVIEW_ACTIONS } from "./case-review";
+import { AUTOMATION_STATUSES, CASE_TYPES, FIELD_ENTITIES } from "./custom-fields.js";
+import { REVIEW_ACTIONS } from "./case-review.js";
 import {
   DEFECT_PRIORITIES,
   DEFECT_RESOLUTIONS,
   DEFECT_SEVERITIES,
   DEFECT_STATUSES,
   LINK_TARGET_KINDS,
-} from "../sync/defects";
+} from "../sync/defects.js";
 
 /** Inputs of the web's domain endpoints (BASE-10). They mirror the inputs of
  *  the desktop's Tauri commands; the owner always comes from the access token,

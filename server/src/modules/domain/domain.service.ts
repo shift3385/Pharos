@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { AppError } from "../auth/errors";
-import { isProvisionalKey, type KeyKind } from "../sync/sync.schemas";
-import type { RemoteDoc } from "../sync/sync.repository";
+import { AppError } from "../auth/errors.js";
+import { isProvisionalKey, type KeyKind } from "../sync/sync.schemas.js";
+import type { RemoteDoc } from "../sync/sync.repository.js";
 import {
   contentSha256,
   normalizeCaseData,
@@ -9,8 +9,8 @@ import {
   randomId,
   revisionContent,
   revisionId,
-} from "../sync/stable-steps";
-import { staleWrite, type DomainStore, type DomainTx } from "./domain.store";
+} from "../sync/stable-steps.js";
+import { staleWrite, type DomainStore, type DomainTx } from "./domain.store.js";
 import {
   CASE_FIELDS_STASH_KEY,
   CASE_TYPES,
@@ -21,7 +21,7 @@ import {
   validKey,
   type FieldOption,
   type FieldRule,
-} from "./custom-fields";
+} from "./custom-fields.js";
 import {
   checkStatus,
   checkTarget,
@@ -33,11 +33,11 @@ import {
   putLink,
   linkContext,
   withLinks,
-} from "./defects";
-import { linkId, stampLifecycle } from "../sync/defects";
-import { afterSave, approverCheck, reviewTransition, statusOnCreate, stripReview } from "./case-review";
-import { planAfterSave, planOnCreate } from "./plan-review";
-import { createLibraryService, materializeCase } from "./shared-library.service";
+} from "./defects.js";
+import { linkId, stampLifecycle } from "../sync/defects.js";
+import { afterSave, approverCheck, reviewTransition, statusOnCreate, stripReview } from "./case-review.js";
+import { planAfterSave, planOnCreate } from "./plan-review.js";
+import { createLibraryService, materializeCase } from "./shared-library.service.js";
 import type {
   CaseBaselineInput,
   CaseReviewInput,
@@ -51,7 +51,7 @@ import type {
   RequirementInput,
   TestCaseInput,
   TestPlanInput,
-} from "./domain.schemas";
+} from "./domain.schemas.js";
 
 // The web's domain rules (BASE-10, ADR-0004). They are the rules of the
 // desktop core (`project.rs`, `test_plan.rs`, `test_case.rs`,

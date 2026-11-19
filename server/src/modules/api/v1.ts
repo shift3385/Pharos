@@ -4,17 +4,17 @@
 // schema below is also the OpenAPI contract (`openapi.ts`).
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { Pool } from "pg";
-import { AppError } from "../auth/errors";
-import { memberships } from "../workspaces/members";
-import { TokenErrors, type ApiPrincipal, type ApiTokenService } from "./apiTokens";
-import type { ApiScope } from "./scopes";
-import { meSchema, projectListSchema, projectSchema } from "./v1.schemas";
-import { buildOpenApi } from "./openapi";
-import { apiV1RunRoutes, type UploadLimits } from "./v1.runs";
-import type { RunImport } from "./runImport";
-import type { ReportParser } from "./reportParse";
-import type { DomainStore } from "../domain/domain.store";
-import type { RunService } from "../domain/runs";
+import { AppError } from "../auth/errors.js";
+import { memberships } from "../workspaces/members.js";
+import { TokenErrors, type ApiPrincipal, type ApiTokenService } from "./apiTokens.js";
+import type { ApiScope } from "./scopes.js";
+import { meSchema, projectListSchema, projectSchema } from "./v1.schemas.js";
+import { buildOpenApi } from "./openapi.js";
+import { apiV1RunRoutes, type UploadLimits } from "./v1.runs.js";
+import type { RunImport } from "./runImport.js";
+import type { ReportParser } from "./reportParse.js";
+import type { DomainStore } from "../domain/domain.store.js";
+import type { RunService } from "../domain/runs.js";
 
 declare module "fastify" {
   interface FastifyRequest {

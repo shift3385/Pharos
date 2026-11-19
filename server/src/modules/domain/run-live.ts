@@ -1,4 +1,4 @@
-import type { RemoteDoc } from "../sync/sync.repository";
+import type { RemoteDoc } from "../sync/sync.repository.js";
 
 /** The one predicate of a run that can still be read and written (EJE-07):
  *  not a tombstone. Its results and shards count only while it is live. The

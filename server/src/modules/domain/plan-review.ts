@@ -1,4 +1,4 @@
-import { afterSave, statusOnCreate, stripReview } from "./case-review";
+import { afterSave, statusOnCreate, stripReview } from "./case-review.js";
 
 // Review flow of a test plan for the web (PLN-08, ADR-0049): the same flow
 // as a case (`case-review.ts`), with the plan's own content. The desktop's

@@ -1,10 +1,10 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
-import type { TokenService } from "../auth/tokens";
-import { makeRequireAuth } from "../auth/middleware";
-import { requireSupportedVersion } from "../sync/sync.version";
-import { WORKSPACE_ROLES } from "./roles";
-import { EXPIRY_DAYS, type WorkspaceService } from "./workspaces.service";
+import type { TokenService } from "../auth/tokens.js";
+import { makeRequireAuth } from "../auth/middleware.js";
+import { requireSupportedVersion } from "../sync/sync.version.js";
+import { WORKSPACE_ROLES } from "./roles.js";
+import { EXPIRY_DAYS, type WorkspaceService } from "./workspaces.service.js";
 
 const nameSchema = z.object({ name: z.string().trim().min(1).max(120) });
 const roleSchema = z.enum(WORKSPACE_ROLES);

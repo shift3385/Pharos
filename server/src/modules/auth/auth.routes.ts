@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
-import type { AuthService } from "./auth.service";
-import type { TokenService } from "./tokens";
-import type { AccountService } from "./account.service";
-import type { AdminService } from "../admin/admin.service";
+import type { AuthService } from "./auth.service.js";
+import type { TokenService } from "./tokens.js";
+import type { AccountService } from "./account.service.js";
+import type { AdminService } from "../admin/admin.service.js";
 import {
   changePasswordSchema,
   loginSchema,
@@ -14,8 +14,8 @@ import {
   resetConfirmSchema,
   resetRequestSchema,
   resetTokenSchema,
-} from "./auth.schemas";
-import { makeRequireAuth } from "./middleware";
+} from "./auth.schemas.js";
+import { makeRequireAuth } from "./middleware.js";
 
 declare module "fastify" {
   interface FastifyRequest {

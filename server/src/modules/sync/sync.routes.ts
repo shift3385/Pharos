@@ -1,17 +1,17 @@
 import type { FastifyInstance } from "fastify";
 import type { Pool } from "pg";
-import type { TokenService } from "../auth/tokens";
-import { makeRequireAuth } from "../auth/middleware";
+import type { TokenService } from "../auth/tokens.js";
+import { makeRequireAuth } from "../auth/middleware.js";
 import type {
   AppendRejected,
   KeyConflict,
   Rejected,
   RemoteDoc,
   SyncRepository,
-} from "./sync.repository";
-import { syncWorkspace } from "../workspaces/access";
-import { memberships } from "../workspaces/members";
-import { can } from "../workspaces/roles";
+} from "./sync.repository.js";
+import { syncWorkspace } from "../workspaces/access.js";
+import { memberships } from "../workspaces/members.js";
+import { can } from "../workspaces/roles.js";
 import {
   FEATURE_DATA_KEYS,
   FEATURE_KEYS,
@@ -26,9 +26,9 @@ import {
   keyBlocksSchema,
   pullSchema,
   pushSchema,
-} from "./sync.schemas";
-import { flattenCaseData } from "./stable-steps";
-import { CASE_FIELDS_STASH_KEY } from "../domain/custom-fields";
+} from "./sync.schemas.js";
+import { flattenCaseData } from "./stable-steps.js";
+import { CASE_FIELDS_STASH_KEY } from "../domain/custom-fields.js";
 import {
   readOnlyClient,
   requireSupportedVersion,
@@ -48,7 +48,7 @@ import {
   understandsRuns,
   readOnlyByWorkspaces,
   understandsWorkspaces,
-} from "./sync.version";
+} from "./sync.version.js";
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);

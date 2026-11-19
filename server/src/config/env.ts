@@ -1,6 +1,6 @@
 import { z } from "zod";
 import dotenv from "dotenv";
-import { isExplicitOrigin, parseOrigins } from "./origins";
+import { isExplicitOrigin, parseOrigins } from "./origins.js";
 
 // Load .env from the server dir and the repo root (compose/root .env).
 dotenv.config();

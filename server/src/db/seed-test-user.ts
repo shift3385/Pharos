@@ -2,11 +2,11 @@
 // fresh or reset database can be signed into without registering by hand.
 // Idempotent: an existing account is left untouched. Refuses to run with
 // NODE_ENV=production. Override the values with TEST_USER_EMAIL / TEST_USER_PASSWORD.
-import { env } from "../config/env";
-import { createPool } from "./pool";
-import { runMigrations } from "./migrate";
-import { createAuthRepository } from "../modules/auth/auth.repository";
-import { hashPassword } from "../modules/auth/password";
+import { env } from "../config/env.js";
+import { createPool } from "./pool.js";
+import { runMigrations } from "./migrate.js";
+import { createAuthRepository } from "../modules/auth/auth.repository.js";
+import { hashPassword } from "../modules/auth/password.js";
 
 const TEST_USER = {
   email: (process.env.TEST_USER_EMAIL ?? "smoke@pharos.dev").toLowerCase(),

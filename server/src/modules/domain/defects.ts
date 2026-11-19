@@ -5,12 +5,12 @@
 // so does creating a defect from a result with its attachments.
 
 import { randomUUID } from "node:crypto";
-import { AppError } from "../auth/errors";
-import type { RemoteDoc } from "../sync/sync.repository";
-import { linkId, needsResolution, transitionAllowed } from "../sync/defects";
-import type { DomainTx } from "./domain.store";
-import { isImported, projectLinks, type ResultLink } from "./resultLink";
-import type { DefectInput, DefectTransition, LinkTargetInput } from "./domain.schemas";
+import { AppError } from "../auth/errors.js";
+import type { RemoteDoc } from "../sync/sync.repository.js";
+import { linkId, needsResolution, transitionAllowed } from "../sync/defects.js";
+import type { DomainTx } from "./domain.store.js";
+import { isImported, projectLinks, type ResultLink } from "./resultLink.js";
+import type { DefectInput, DefectTransition, LinkTargetInput } from "./domain.schemas.js";
 
 type Payload = Record<string, unknown>;
 

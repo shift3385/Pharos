@@ -1,8 +1,8 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import type { TokenService } from "../auth/tokens";
-import { makeRequireAuth } from "../auth/middleware";
-import { requireSupportedVersion } from "../sync/sync.version";
-import type { DomainService } from "./domain.service";
+import type { TokenService } from "../auth/tokens.js";
+import { makeRequireAuth } from "../auth/middleware.js";
+import { requireSupportedVersion } from "../sync/sync.version.js";
+import type { DomainService } from "./domain.service.js";
 import {
   caseBaselineInputSchema,
   caseReviewSchema,
@@ -28,7 +28,7 @@ import {
   libraryPreviewSchema,
   libraryQuerySchema,
   libraryStatusSchema,
-} from "./domain.schemas";
+} from "./domain.schemas.js";
 
 /** The web's domain API (BASE-10, ADR-0004): the browser reads and writes
  *  through these endpoints and holds no domain logic of its own. Everything

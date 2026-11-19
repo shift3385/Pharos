@@ -8,14 +8,14 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
-import { AppError } from "../auth/errors";
-import { makeRequireAuth } from "../auth/middleware";
-import type { TokenService } from "../auth/tokens";
-import type { RemoteDoc } from "../sync/sync.repository";
-import { requireSupportedVersion } from "../sync/sync.version";
-import type { DomainStore, DomainTx } from "./domain.store";
-import { supersededShards } from "./resultLink";
-import { isLiveRun } from "./run-live";
+import { AppError } from "../auth/errors.js";
+import { makeRequireAuth } from "../auth/middleware.js";
+import type { TokenService } from "../auth/tokens.js";
+import type { RemoteDoc } from "../sync/sync.repository.js";
+import { requireSupportedVersion } from "../sync/sync.version.js";
+import type { DomainStore, DomainTx } from "./domain.store.js";
+import { supersededShards } from "./resultLink.js";
+import { isLiveRun } from "./run-live.js";
 
 /** The shards of a project a newer normalizer replaced: their findings and
  *  metrics are left out, like results (`CURRENT_SHARD` on the desktop). */

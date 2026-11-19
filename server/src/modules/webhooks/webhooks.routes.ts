@@ -1,10 +1,10 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
-import type { TokenService } from "../auth/tokens";
-import { makeRequireAuth } from "../auth/middleware";
-import { requireSupportedVersion } from "../sync/sync.version";
-import { WEBHOOK_EVENTS } from "./events";
-import { WebhookErrors, type WebhookService } from "./webhooks.service";
+import type { TokenService } from "../auth/tokens.js";
+import { makeRequireAuth } from "../auth/middleware.js";
+import { requireSupportedVersion } from "../sync/sync.version.js";
+import { WEBHOOK_EVENTS } from "./events.js";
+import { WebhookErrors, type WebhookService } from "./webhooks.service.js";
 
 // Webhooks of a workspace (INT-03, ADR-0052 §2.2 and §4). Only with a session
 // of the app or the web, never with an API token. Who may do what is checked

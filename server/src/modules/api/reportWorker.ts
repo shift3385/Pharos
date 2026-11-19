@@ -1,6 +1,6 @@
 // One uploaded report, read in a child process so the API can stop it at its
 // deadline (`reportParse.ts::processParser`). It answers once and exits.
-import { inProcessParser, reasonOf } from "./reportParse";
+import { inProcessParser, reasonOf } from "./reportParse.js";
 
 process.once("message", (text) => {
   inProcessParser(String(text)).then(

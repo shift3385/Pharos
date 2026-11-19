@@ -1,4 +1,4 @@
-import { AppError } from "../auth/errors";
+import { AppError } from "../auth/errors.js";
 
 // Review flow of a test case for the web (CAS-02, ADR-0047, changed by
 // PLN-08, ADR-0049): the rules of the desktop's `case_review.rs`, on the

@@ -1,11 +1,11 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
-import type { TokenService } from "../auth/tokens";
-import { makeRequireAuth } from "../auth/middleware";
-import type { AdminService } from "../admin/admin.service";
-import { requireSupportedVersion } from "../sync/sync.version";
-import { MAX_ROTATION_OVERLAP_HOURS, TokenErrors, type ApiTokenService } from "./apiTokens";
-import { API_SCOPES } from "./scopes";
+import type { TokenService } from "../auth/tokens.js";
+import { makeRequireAuth } from "../auth/middleware.js";
+import type { AdminService } from "../admin/admin.service.js";
+import { requireSupportedVersion } from "../sync/sync.version.js";
+import { MAX_ROTATION_OVERLAP_HOURS, TokenErrors, type ApiTokenService } from "./apiTokens.js";
+import { API_SCOPES } from "./scopes.js";
 
 // Managing API tokens (INT-02, ADR-0052 §2.2). Only with a session of the app
 // or the web: a token never manages tokens (no escalation). Who may do what

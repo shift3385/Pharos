@@ -1,16 +1,16 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
-import { AppError } from "../auth/errors";
-import { makeRequireAuth } from "../auth/middleware";
-import type { TokenService } from "../auth/tokens";
-import type { RemoteDoc } from "../sync/sync.repository";
-import { requireSupportedVersion } from "../sync/sync.version";
-import { cells, count, emptySummary, type ProgressAttempt, type ProgressSummary } from "./cycle-progress";
-import { isImported, projectLinks, supersededShards, type ResultLink } from "./resultLink";
-import { staleWrite, type DomainStore, type DomainTx } from "./domain.store";
-import { isLiveRun } from "./run-live";
-import { sortable, timestamp } from "./domain.service";
+import { AppError } from "../auth/errors.js";
+import { makeRequireAuth } from "../auth/middleware.js";
+import type { TokenService } from "../auth/tokens.js";
+import type { RemoteDoc } from "../sync/sync.repository.js";
+import { requireSupportedVersion } from "../sync/sync.version.js";
+import { cells, count, emptySummary, type ProgressAttempt, type ProgressSummary } from "./cycle-progress.js";
+import { isImported, projectLinks, supersededShards, type ResultLink } from "./resultLink.js";
+import { staleWrite, type DomainStore, type DomainTx } from "./domain.store.js";
+import { isLiveRun } from "./run-live.js";
+import { sortable, timestamp } from "./domain.service.js";
 
 // Test cycles and configurations on the web (CYC-01, ADR-0017): the rules of
 // the desktop's `cycles.rs` applied to the server's document store, with the
