@@ -46,7 +46,7 @@ chapter("navegacion", () => {
     covers: ["action:project-nav"],
     focus: PROJECT_GROUP,
     run: async () => {
-      for (const section of ["plan", "planner", "requirements", "cases", "cycles", "runs", "defects", "traceability", "settings"]) {
+      for (const section of ["plan", "planner", "requirements", "cases", "library", "cycles", "runs", "defects", "traceability", "settings"]) {
         await expect(byTestId(`nav-project-${section}`)).toBeDisplayed();
       }
       await expect(byTestId("nav-project-planner")).toHaveAttribute("aria-current", "page");

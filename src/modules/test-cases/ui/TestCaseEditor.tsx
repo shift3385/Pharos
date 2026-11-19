@@ -110,6 +110,14 @@ import "@shared/ui/buttons.css";
 import "./TestCase.css";
 import "./CaseList.css";
 import { TextArea } from "@shared/ui/TextArea";
+import {
+  BoundDataset,
+  LibraryStepList,
+  blockEdited,
+  useCaseLibrary,
+  type DatasetRef,
+  type SharedRef,
+} from "@modules/library";
 
 export type { CaseNav } from "./CaseNavBar";
 
@@ -166,6 +174,10 @@ interface FormState {
   background: Step[];
   flows: Flow[];
   featureSource: string;
+  /** The project library (CAS-01): calls of shared steps and the dataset
+   *  bound to the Examples table. Their copies are rebuilt by the core. */
+  sharedRefs: SharedRef[];
+  datasetRefs: DatasetRef[];
 }
 
 function emptyForm(): FormState {
@@ -200,6 +212,8 @@ function emptyForm(): FormState {
     background: [],
     flows: [],
     featureSource: "",
+    sharedRefs: [],
+    datasetRefs: [],
   };
 }
 
@@ -244,6 +258,8 @@ function fromCase(c: TestCase): FormState {
         ? reconcileFlows(undefined, parseFeatureFlows(d.featureSource).flows)
         : []),
     featureSource: d.featureSource ?? "",
+    sharedRefs: d.sharedRefs ?? [],
+    datasetRefs: d.datasetRefs ?? [],
   };
 }
 
@@ -366,6 +382,7 @@ export function TestCaseEditor({
   const [goingTo, setGoingTo] = useState(false);
   const [gherkinEditing, setGherkinEditing] = useState(false);
   const [fields, setFields] = useState<CustomField[]>([]);
+  const [blockWarning, setBlockWarning] = useState(false);
   const mobile = useBreakpoint() === "mobile";
   // A checklist has no Gherkin: only the editor view (FLD-01).
   const caseType = effectiveCaseType(form.caseType);
@@ -456,6 +473,7 @@ export function TestCaseEditor({
     let next = { ...form, ...patch };
     if (
       next.gherkinLevel === "outline" &&
+      next.datasetRefs.length === 0 &&
       ("steps" in patch || "expectedResult" in patch)
     ) {
       next = { ...next, examples: withPlaceholderColumns(next) };
@@ -463,6 +481,18 @@ export function TestCaseEditor({
     setForm(next);
     setGherkin(buildGherkin(next));
   };
+
+  // A change from the library (an insert, a block's action, a preview): on
+  // the latest form, since it may arrive after an await (CAS-01).
+  const applyLibrary = (patch: Partial<FormState>) =>
+    setForm((f) => {
+      let next = { ...f, ...patch };
+      if (next.gherkinLevel === "outline" && next.datasetRefs.length === 0 && "steps" in patch) {
+        next = { ...next, examples: withPlaceholderColumns(next) };
+      }
+      setGherkin(buildGherkin(next));
+      return next;
+    });
 
   // Gherkin edits: the level is derived from the code so the case is always in a
   // level that can represent it. Advanced parses into flows + background;
@@ -499,6 +529,15 @@ export function TestCaseEditor({
       return;
     }
     const parsed = fromGherkin(text);
+    // A line of a shared step's block edited here comes back from the
+    // library when the case is saved (CAS-01): say so, without blocking.
+    if (form.sharedRefs.length > 0) {
+      const after = [
+        ...reconcileSteps(form.preconditions, parsed.preconditions),
+        ...reconcileSteps(form.steps, parsed.steps),
+      ];
+      if (blockEdited([...form.preconditions, ...form.steps], after, form.sharedRefs)) setBlockWarning(true);
+    }
     setForm((f) => ({
       ...f,
       ...splitFeatureTags(parsed.featureTags, tagContext(f)),
@@ -564,7 +603,8 @@ export function TestCaseEditor({
     });
   };
 
-  async function save() {
+  async function save(patch?: Partial<FormState>) {
+    const f = patch ? { ...form, ...patch } : form;
     setSaving(true);
     const author = testCase?.author ?? (user ? `${user.firstName} ${user.lastName}` : "");
     const clean = (a: string[]) => a.map((s) => s.trim()).filter(Boolean);
@@ -576,50 +616,53 @@ export function TestCaseEditor({
       rows: ex.rows.filter((r) => r.values.some((c) => c.trim())),
     });
     const data: TestCaseData = {
-      gherkinLevel: form.gherkinLevel,
-      mappedUseCase: form.mappedUseCase,
-      caseDate: form.caseDate || undefined,
-      description: form.description,
-      preconditions: cleanSteps(form.preconditions),
-      steps: cleanSteps(form.steps),
-      expectedResult: form.expectedResult,
-      postconditions: clean(form.postconditions),
-      acceptanceCriteria: clean(form.acceptanceCriteria),
-      testData: form.testData,
-      notes: form.notes,
-      requirementKeys: form.requirementKeys,
-      featureTags: form.featureTags,
-      scenarioTags: form.scenarioTags,
-      traceability: form.traceability,
-      dataRequirements: form.dataRequirements,
-      environmentRequirements: form.environmentRequirements,
-      aiProvenance: liveProvenance(form.aiProvenance, form.gherkinLevel, form.flows),
+      gherkinLevel: f.gherkinLevel,
+      mappedUseCase: f.mappedUseCase,
+      caseDate: f.caseDate || undefined,
+      description: f.description,
+      preconditions: cleanSteps(f.preconditions),
+      steps: cleanSteps(f.steps),
+      expectedResult: f.expectedResult,
+      postconditions: clean(f.postconditions),
+      acceptanceCriteria: clean(f.acceptanceCriteria),
+      testData: f.testData,
+      notes: f.notes,
+      requirementKeys: f.requirementKeys,
+      featureTags: f.featureTags,
+      scenarioTags: f.scenarioTags,
+      traceability: f.traceability,
+      dataRequirements: f.dataRequirements,
+      environmentRequirements: f.environmentRequirements,
+      aiProvenance: liveProvenance(f.aiProvenance, f.gherkinLevel, f.flows),
     };
-    if (form.gherkinLevel === "outline") data.examples = cleanExamples(form.examples);
-    if (form.gherkinLevel === "advanced") {
-      data.background = cleanSteps(form.background);
-      data.flows = form.flows;
-      data.featureSource = buildGherkin(form);
+    if (f.gherkinLevel === "outline") data.examples = cleanExamples(f.examples);
+    if (f.gherkinLevel === "advanced") {
+      data.background = cleanSteps(f.background);
+      data.flows = f.flows;
+      data.featureSource = buildGherkin(f);
     }
     // Always sent, so `{}` clears them; unknown keys travel back untouched.
-    data.custom = form.custom;
+    data.custom = f.custom;
+    // The library refs (CAS-01): sent when there are any, or to clear them.
+    if (f.sharedRefs.length > 0 || testCase?.data.sharedRefs) data.sharedRefs = f.sharedRefs;
+    if (f.datasetRefs.length > 0 || testCase?.data.datasetRefs) data.datasetRefs = f.datasetRefs;
     const input: TestCaseInput = {
       projectId,
       caseIdPrefix,
       caseIdDigits,
-      scenarioId: form.scenarioId.trim() || undefined,
-      title: form.title.trim(),
-      version: form.version,
-      status: form.status,
-      priority: form.priority,
+      scenarioId: f.scenarioId.trim() || undefined,
+      title: f.title.trim(),
+      version: f.version,
+      status: f.status,
+      priority: f.priority,
       // Never set and not touched: omitted, so the stored null stays.
-      caseType: form.caseType ?? undefined,
-      automationStatus: form.automationStatus ?? undefined,
+      caseType: f.caseType ?? undefined,
+      automationStatus: f.automationStatus ?? undefined,
       author,
       data,
       userId,
     };
-    const warnings = caseWarnings(form);
+    const warnings = caseWarnings(f);
     try {
       const saved = testCase
         ? await testCaseApi.update(testCase.id, input)
@@ -631,12 +674,13 @@ export function TestCaseEditor({
       );
       if (saved) {
         setTestCase(saved);
-        const f = fromCase(saved);
-        setForm(f);
-        setSnapshot(JSON.stringify(f));
-        setGherkin(buildGherkin(f));
+        const loaded = fromCase(saved);
+        setForm(loaded);
+        setSnapshot(JSON.stringify(loaded));
+        setGherkin(buildGherkin(loaded));
+        setBlockWarning(false);
       } else {
-        setSnapshot(JSON.stringify(form));
+        setSnapshot(JSON.stringify(f));
       }
       // Opening a new case by its id right after saving is not «leaving».
       unsaved.bypass(() => onSaved?.(saved));
@@ -793,6 +837,24 @@ export function TestCaseEditor({
   // sidebar and pills, the system «Atrás») and closing the window ask first
   // while there are unsaved changes (RED-V3k).
   const unsaved = useUnsavedChangesGuard(dirty, t("testCase.nav.discardMessage"));
+  // The project library in the case (CAS-01, ADR-0055): basic and Outline only.
+  const lib = useCaseLibrary<Step>({
+    projectId,
+    caseId: testCase?.id ?? null,
+    userId,
+    state: {
+      gherkinLevel: form.gherkinLevel,
+      preconditions: form.preconditions,
+      steps: form.steps,
+      expectedResult: form.expectedResult,
+      examples: form.examples,
+      sharedRefs: form.sharedRefs,
+      datasetRefs: form.datasetRefs,
+    },
+    apply: (patch) => applyLibrary(patch as Partial<FormState>),
+    save: (patch) => guard(() => void save(patch as Partial<FormState>)),
+    statusKey: testCase?.revision,
+  });
   const goTo = (id: string) => nav?.onGo(id);
 
   if (found === false) {
@@ -1052,6 +1114,9 @@ export function TestCaseEditor({
         </>
       ) : level === "advanced" ? (
         <>
+          <p className="tp-field__hint" role="note">
+            {t("library.advancedNote")}
+          </p>
           <FlowsEditor
             background={form.background}
             flows={form.flows}
@@ -1089,10 +1154,17 @@ export function TestCaseEditor({
               />
             }
           >
-            <StepListField
-              label={t("testCase.preconditions")}
-              items={form.preconditions}
+            <LibraryStepList
+              projectId={projectId}
+              list="preconditions"
+              steps={form.preconditions}
+              refs={form.sharedRefs}
+              statuses={lib.statuses}
+              actions={lib.blockActions}
               onChange={(v) => update({ preconditions: v })}
+              renderOwn={(own, onChange) => (
+                <StepListField label={t("testCase.preconditions")} items={own} onChange={onChange} />
+              )}
             />
           </CaseSection>
 
@@ -1115,10 +1187,35 @@ export function TestCaseEditor({
               />
             }
           >
-            <SortableSteps
-              label={t("testCase.steps")}
+            <LibraryStepList
+              projectId={projectId}
+              list="steps"
               steps={form.steps}
+              refs={form.sharedRefs}
+              statuses={lib.statuses}
+              actions={lib.blockActions}
               onChange={(v) => update({ steps: v })}
+              renderOwn={(own, onChange, at) => (
+                <SortableSteps
+                  label={t("testCase.steps")}
+                  steps={own}
+                  onChange={onChange}
+                  start={at.start}
+                  addable={at.last}
+                  actions={
+                    at.last ? (
+                      <button
+                        type="button"
+                        className="tp-list-field__add"
+                        onClick={lib.openInsert}
+                        disabled={lib.busy}
+                      >
+                        {t("library.insert.open")}
+                      </button>
+                    ) : undefined
+                  }
+                />
+              )}
             />
           </CaseSection>
 
@@ -1154,6 +1251,18 @@ export function TestCaseEditor({
 
           {level === "outline" && (
             <CaseSection title={t("testCase.examples.title")}>
+              {lib.bound && lib.datasetActions ? (
+                <BoundDataset
+                  projectId={projectId}
+                  binding={lib.bound}
+                  table={form.examples}
+                  params={lib.params}
+                  dataset={lib.dataset}
+                  status={lib.datasetStatus}
+                  {...lib.datasetActions}
+                />
+              ) : (
+                <>
               <p className="tp-field__hint">{t("testCase.examples.hint")}</p>
               {placeholders.length > 0 && (
                 <p className="tp-field__hint">
@@ -1172,6 +1281,16 @@ export function TestCaseEditor({
                 value={form.examples}
                 onChange={(v) => update({ examples: v })}
               />
+              <button
+                type="button"
+                className="tp-list-field__add"
+                onClick={lib.openBind}
+                disabled={lib.busy}
+              >
+                {t("library.bind.open")}
+              </button>
+                </>
+              )}
             </CaseSection>
           )}
 
@@ -1281,6 +1400,7 @@ export function TestCaseEditor({
   const dialogs = (
     <>
       {confirmDialog}
+      {lib.dialogs}
       {goingTo && nav && (
         <GoToCaseDialog
           cases={nav.cases}
@@ -1398,6 +1518,12 @@ export function TestCaseEditor({
       {notice && (
         <Alert kind="success" className="tc-notice">
           {notice}
+        </Alert>
+      )}
+
+      {blockWarning && (
+        <Alert kind="warning" className="tc-notice">
+          {t("library.gherkinWarning")}
         </Alert>
       )}
 

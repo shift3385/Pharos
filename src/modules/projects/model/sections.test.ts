@@ -9,6 +9,7 @@ describe("project sections (ADR-0029, UX-21)", () => {
       "planner",
       "requirements",
       "cases",
+      "library",
       "cycles",
       "runs",
       "defects",

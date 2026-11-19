@@ -234,3 +234,23 @@ Hecho en `src-tauri/src/shared_library.rs` y `shared_library/materialize.rs`, co
   - los payloads se validan con los límites del §1, y el id de una versión tiene que corresponder a su contenido;
   - permiso: `case.edit`.
 - **El cliente anuncia `shared-steps`** (`transport.ts`).
+
+## Implementación: interfaz (P3, 2026-11-19)
+
+Hecho en el módulo `src/modules/library` y en el editor de casos. Sigue los bocetos 1 a 6; el 7 (ejecución) es de P4.
+
+- **Sección «Biblioteca»** del proyecto (`/projects/:id/library?tab=steps|datasets&item=<id|new>`), después de «Casos». Cada pestaña lista sus elementos con búsqueda, «Nuevo…» y «Mostrar obsoletos». El elemento abierto también va en la dirección, así que «Abrir en la biblioteca» desde un caso lleva a él.
+- **Editores** de un paso compartido (pasos con resultado esperado opcional, subir, bajar y quitar, y los parámetros encontrados con su valor al insertar) y de un dataset (rejilla con flechas e Intro, pegar desde una hoja de cálculo, importar CSV o `.xlsx`, exportar CSV). Los dos tienen las pestañas «Usado en» y «Versiones», y los botones «Marcar obsoleto» o «Reactivar» y «Eliminar», que está desactivado si algún caso lo usa.
+- **Aviso de impacto.** Solo se muestra si cambia el contenido canónico (nombre, parámetros o columnas, pasos o filas) y algún caso sigue el elemento. Un cambio de descripción se guarda sin aviso.
+- **En el caso** (básico y Outline):
+  - «Insertar paso compartido…» elige el paso, sus argumentos y la lista (Pasos o Precondiciones). Añade la llamada y llama a `library_preview` para ver la copia al momento.
+  - Cada llamada se ve como un bloque de solo lectura con sus acciones y su estado (`library_case_status`).
+  - «Vincular dataset…» enlaza la tabla de ejemplos, que pasa a verse de solo lectura, con «Elegir filas…», «Fijar» o «Seguir», «Desvincular (copiar filas)» y la columna para un parámetro que falta (`columnMap`).
+  - Los casos avanzados muestran una nota en lugar de las acciones.
+- **Precisiones:**
+  - **«Actualizar» y «Restaurar» guardan el caso.** «Actualizar» lo guarda siguiendo la última versión; «Restaurar» lo guarda sin más, porque guardar rehace la copia (P1).
+  - **«Fijar en vN» y «Desvincular»** cambian el formulario, y se aplican al guardar.
+  - **Los bloques no se mueven** como una unidad: los pasos propios se reordenan entre ellos, y para cambiar el sitio de un bloque se desvincula y se vuelve a insertar.
+  - **Reimportar un CSV o un `.xlsx`** sobre un dataset conserva el id de cada columna por su nombre y el de cada fila por su posición, para que los resultados sigan apuntando a la misma fila.
+  - **Exportar CSV** usa `;` con la interfaz en español y `,` en inglés, y lleva BOM.
+  - **Solo lectura para quien no puede editar casos:** la interfaz no oculta los botones; el núcleo y el servidor rechazan el cambio y se muestra su mensaje.
