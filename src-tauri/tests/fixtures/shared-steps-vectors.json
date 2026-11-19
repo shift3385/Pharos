@@ -1,0 +1,602 @@
+{
+  "$comment": "CAS-01 (ADR-0055): the materialized copy of shared steps and datasets in a case. Both cores (src-tauri/src/shared_library/materialize.rs and server/src/modules/domain/shared-library.ts) must produce `expected` from `data` and `library`. Regenerate the outputs with PHAROS_WRITE_VECTORS=1 cargo test vectors_match, then review the diff.",
+  "derivedIds": [
+    {
+      "caseId": "CASE1",
+      "id": "8BQZ54WR",
+      "itemId": "L1",
+      "kind": "step",
+      "refId": "CALL1"
+    },
+    {
+      "caseId": "0b6a0e2c-6f0e-4a63-9a43-0f4b7b0c1a11",
+      "id": "ZJZPMRKH",
+      "itemId": "Z1Y2X3W4",
+      "kind": "step",
+      "refId": "K7M2Q9XA"
+    },
+    {
+      "caseId": "CASE1",
+      "id": "TBF0W01W",
+      "itemId": "R1",
+      "kind": "row",
+      "refId": "case"
+    }
+  ],
+  "vectors": [
+    {
+      "caseId": "CASE1",
+      "data": {
+        "gherkinLevel": "basic",
+        "sharedRefs": [
+          {
+            "args": {
+              "usuario": "ana@acme.test"
+            },
+            "id": "CALL1",
+            "sharedStepId": "S1"
+          }
+        ],
+        "steps": [
+          {
+            "id": "OWN00001",
+            "text": "Cuando pago"
+          }
+        ]
+      },
+      "expected": {
+        "gherkinLevel": "outline",
+        "sharedRefs": [
+          {
+            "args": {
+              "usuario": "ana@acme.test"
+            },
+            "follow": true,
+            "id": "CALL1",
+            "list": "steps",
+            "name": "Iniciar sesión",
+            "revisionId": "rev-s1-1",
+            "sharedStepId": "S1",
+            "stepIds": [
+              "8BQZ54WR",
+              "6KEMT6S9"
+            ],
+            "version": 1
+          }
+        ],
+        "steps": [
+          {
+            "id": "OWN00001",
+            "text": "Cuando pago"
+          },
+          {
+            "id": "8BQZ54WR",
+            "text": "Dado que estoy en la página de acceso"
+          },
+          {
+            "expected": "Veo ana@acme.test",
+            "id": "6KEMT6S9",
+            "text": "Cuando escribo ana@acme.test y <clave>"
+          }
+        ]
+      },
+      "library": {
+        "shared": [
+          {
+            "itemId": "S1",
+            "name": "Iniciar sesión",
+            "revisionId": "rev-s1-1",
+            "steps": [
+              {
+                "id": "L1",
+                "text": "Dado que estoy en la página de acceso"
+              },
+              {
+                "expected": "Veo <usuario>",
+                "id": "L2",
+                "text": "Cuando escribo <usuario> y <clave>"
+              }
+            ],
+            "version": 1
+          }
+        ]
+      },
+      "missing": [],
+      "missingColumns": [],
+      "name": "a call is placed after the case's own step, with derived ids and arguments"
+    },
+    {
+      "caseId": "CASE1",
+      "data": {
+        "sharedRefs": [
+          {
+            "args": {},
+            "follow": true,
+            "id": "CALL1",
+            "list": "steps",
+            "revisionId": "rev-s1-1",
+            "sharedStepId": "S1",
+            "stepIds": [
+              "OLDCOPY1",
+              "OLDCOPY2"
+            ],
+            "version": 1
+          }
+        ],
+        "steps": [
+          {
+            "id": "A0000001",
+            "text": "Antes"
+          },
+          {
+            "id": "OLDCOPY1",
+            "text": "Abro la app"
+          },
+          {
+            "id": "OLDCOPY2",
+            "text": "Entro"
+          },
+          {
+            "id": "B0000001",
+            "text": "Después"
+          }
+        ]
+      },
+      "expected": {
+        "sharedRefs": [
+          {
+            "args": {},
+            "follow": true,
+            "id": "CALL1",
+            "list": "steps",
+            "name": "Iniciar sesión",
+            "revisionId": "rev-s1-2",
+            "sharedStepId": "S1",
+            "stepIds": [
+              "8BQZ54WR",
+              "Y2110GSB"
+            ],
+            "version": 2
+          }
+        ],
+        "steps": [
+          {
+            "id": "A0000001",
+            "text": "Antes"
+          },
+          {
+            "id": "8BQZ54WR",
+            "text": "Abro la aplicación"
+          },
+          {
+            "id": "Y2110GSB",
+            "text": "Veo el inicio"
+          },
+          {
+            "id": "B0000001",
+            "text": "Después"
+          }
+        ]
+      },
+      "library": {
+        "shared": [
+          {
+            "itemId": "S1",
+            "name": "Iniciar sesión",
+            "revisionId": "rev-s1-1",
+            "steps": [
+              {
+                "id": "L1",
+                "text": "Abro la app"
+              },
+              {
+                "id": "L2",
+                "text": "Entro"
+              }
+            ],
+            "version": 1
+          },
+          {
+            "itemId": "S1",
+            "name": "Iniciar sesión",
+            "revisionId": "rev-s1-2",
+            "steps": [
+              {
+                "id": "L1",
+                "text": "Abro la aplicación"
+              },
+              {
+                "id": "L3",
+                "text": "Veo el inicio"
+              }
+            ],
+            "version": 2
+          }
+        ]
+      },
+      "missing": [],
+      "missingColumns": [],
+      "name": "a new version replaces the old copy in place and keeps the ids"
+    },
+    {
+      "caseId": "CASE1",
+      "data": {
+        "preconditions": [],
+        "sharedRefs": [
+          {
+            "args": {},
+            "follow": false,
+            "id": "CALL1",
+            "list": "preconditions",
+            "revisionId": "rev-s1-1",
+            "sharedStepId": "S1",
+            "stepIds": [],
+            "version": 1
+          }
+        ]
+      },
+      "expected": {
+        "preconditions": [
+          {
+            "id": "8BQZ54WR",
+            "text": "Abro la app"
+          }
+        ],
+        "sharedRefs": [
+          {
+            "args": {},
+            "follow": false,
+            "id": "CALL1",
+            "list": "preconditions",
+            "name": "Iniciar sesión",
+            "revisionId": "rev-s1-1",
+            "sharedStepId": "S1",
+            "stepIds": [
+              "8BQZ54WR"
+            ],
+            "version": 1
+          }
+        ]
+      },
+      "library": {
+        "shared": [
+          {
+            "itemId": "S1",
+            "name": "Iniciar sesión",
+            "revisionId": "rev-s1-1",
+            "steps": [
+              {
+                "id": "L1",
+                "text": "Abro la app"
+              }
+            ],
+            "version": 1
+          },
+          {
+            "itemId": "S1",
+            "name": "Iniciar sesión",
+            "revisionId": "rev-s1-2",
+            "steps": [
+              {
+                "id": "L1",
+                "text": "Abro la aplicación"
+              }
+            ],
+            "version": 2
+          }
+        ]
+      },
+      "missing": [],
+      "missingColumns": [],
+      "name": "a pinned call stays at its version"
+    },
+    {
+      "caseId": "CASE1",
+      "data": {
+        "sharedRefs": [
+          {
+            "args": {},
+            "follow": true,
+            "id": "CALL1",
+            "list": "steps",
+            "revisionId": "rev-s9-3",
+            "sharedStepId": "S9",
+            "stepIds": [
+              "KEEP0001"
+            ],
+            "version": 3
+          }
+        ],
+        "steps": [
+          {
+            "id": "KEEP0001",
+            "text": "Abro la app"
+          }
+        ]
+      },
+      "expected": {
+        "sharedRefs": [
+          {
+            "args": {},
+            "follow": true,
+            "id": "CALL1",
+            "list": "steps",
+            "revisionId": "rev-s9-3",
+            "sharedStepId": "S9",
+            "stepIds": [
+              "KEEP0001"
+            ],
+            "version": 3
+          }
+        ],
+        "steps": [
+          {
+            "id": "KEEP0001",
+            "text": "Abro la app"
+          }
+        ]
+      },
+      "library": {
+        "shared": []
+      },
+      "missing": [
+        "CALL1"
+      ],
+      "missingColumns": [],
+      "name": "a call whose version is not here keeps its copy"
+    },
+    {
+      "caseId": "CASE1",
+      "data": {
+        "datasetRefs": [
+          {
+            "columnMap": {
+              "pass": "clave"
+            },
+            "datasetId": "D1",
+            "id": "case",
+            "rowIds": [
+              "R1",
+              "R3"
+            ]
+          }
+        ],
+        "expectedResult": "Veo <usuario>",
+        "gherkinLevel": "basic",
+        "steps": [
+          {
+            "id": "S0000001",
+            "text": "Cuando entro con <usuario> y <pass>"
+          }
+        ]
+      },
+      "expected": {
+        "datasetRefs": [
+          {
+            "columnMap": {
+              "pass": "clave"
+            },
+            "datasetId": "D1",
+            "follow": true,
+            "id": "case",
+            "name": "Usuarios válidos",
+            "revisionId": "rev-d1-2",
+            "rowIds": [
+              "R1",
+              "R3"
+            ],
+            "version": 2
+          }
+        ],
+        "examples": {
+          "headers": [
+            "usuario",
+            "pass",
+            "perfil"
+          ],
+          "rows": [
+            {
+              "id": "TBF0W01W",
+              "values": [
+                "ana@acme.test",
+                "Clave-1",
+                "cliente"
+              ]
+            },
+            {
+              "id": "H1X6Y53J",
+              "values": [
+                "admin@acme.test",
+                "Clave-3",
+                "admin"
+              ]
+            }
+          ]
+        },
+        "expectedResult": "Veo <usuario>",
+        "gherkinLevel": "outline",
+        "steps": [
+          {
+            "id": "S0000001",
+            "text": "Cuando entro con <usuario> y <pass>"
+          }
+        ]
+      },
+      "library": {
+        "datasets": [
+          {
+            "columns": [
+              {
+                "id": "cp",
+                "name": "perfil"
+              },
+              {
+                "id": "cu",
+                "name": "usuario"
+              },
+              {
+                "id": "ck",
+                "name": "clave"
+              }
+            ],
+            "itemId": "D1",
+            "name": "Usuarios válidos",
+            "revisionId": "rev-d1-2",
+            "rows": [
+              {
+                "id": "R1",
+                "values": {
+                  "ck": "Clave-1",
+                  "cp": "cliente",
+                  "cu": "ana@acme.test"
+                }
+              },
+              {
+                "id": "R2",
+                "values": {
+                  "ck": "Clave-2",
+                  "cp": "cliente",
+                  "cu": "luis@acme.test"
+                }
+              },
+              {
+                "id": "R3",
+                "values": {
+                  "ck": "Clave-3",
+                  "cp": "admin",
+                  "cu": "admin@acme.test"
+                }
+              }
+            ],
+            "version": 2
+          }
+        ]
+      },
+      "missing": [],
+      "missingColumns": [],
+      "name": "a dataset becomes the Examples table: parameters first, then the other columns, chosen rows only"
+    },
+    {
+      "caseId": "CASE2",
+      "data": {
+        "datasetRefs": [
+          {
+            "datasetId": "D1",
+            "id": "case"
+          }
+        ],
+        "steps": [
+          {
+            "id": "S0000001",
+            "text": "Pago con <tarjeta> como <usuario>"
+          }
+        ]
+      },
+      "expected": {
+        "datasetRefs": [
+          {
+            "datasetId": "D1",
+            "follow": true,
+            "id": "case",
+            "name": "Usuarios",
+            "revisionId": "rev-d1-1",
+            "version": 1
+          }
+        ],
+        "examples": {
+          "headers": [
+            "tarjeta",
+            "usuario"
+          ],
+          "rows": [
+            {
+              "id": "QJ39QTK0",
+              "values": [
+                "",
+                "ana"
+              ]
+            }
+          ]
+        },
+        "gherkinLevel": "outline",
+        "steps": [
+          {
+            "id": "S0000001",
+            "text": "Pago con <tarjeta> como <usuario>"
+          }
+        ]
+      },
+      "library": {
+        "datasets": [
+          {
+            "columns": [
+              {
+                "id": "cu",
+                "name": "usuario"
+              }
+            ],
+            "itemId": "D1",
+            "name": "Usuarios",
+            "revisionId": "rev-d1-1",
+            "rows": [
+              {
+                "id": "R1",
+                "values": {
+                  "cu": "ana"
+                }
+              }
+            ],
+            "version": 1
+          }
+        ]
+      },
+      "missing": [],
+      "missingColumns": [
+        "tarjeta"
+      ],
+      "name": "a parameter with no column is reported and left empty"
+    },
+    {
+      "caseId": "CASE1",
+      "data": {
+        "gherkinLevel": "advanced",
+        "sharedRefs": [
+          {
+            "id": "CALL1",
+            "sharedStepId": "S1"
+          }
+        ]
+      },
+      "error": "shared_library.advanced_unsupported",
+      "library": {},
+      "name": "an advanced case cannot use the library in 0.6.0"
+    },
+    {
+      "caseId": "CASE1",
+      "data": {
+        "gherkinLevel": "basic",
+        "sharedRefs": [],
+        "steps": [
+          {
+            "id": "X0000001",
+            "text": "<sin dataset>"
+          }
+        ]
+      },
+      "expected": {
+        "gherkinLevel": "basic",
+        "sharedRefs": [],
+        "steps": [
+          {
+            "id": "X0000001",
+            "text": "<sin dataset>"
+          }
+        ]
+      },
+      "library": {},
+      "missing": [],
+      "missingColumns": [],
+      "name": "a case without calls or bindings is left as it is"
+    }
+  ]
+}

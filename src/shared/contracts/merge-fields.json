@@ -1,5 +1,5 @@
 {
-  "$comment": "Field-level merge rules (SYNC-02, ADR-0051). One source for the desktop (Rust, include_str!) and the web (TS); both pass merge-vectors.json. A field not listed is a scalar: taken from the side that changed it, a conflict when both changed it differently. Paths: a payload key, or `data.<key>` one level down. Types: scalar | text (a scalar the conflict panel diffs by words) | set (a list without order, of values or of objects with an `id`) | idList (a list of objects with a unique string `id`, merged by id and by key, its order kept) | object (merged key by key with `fields`) | map (merged key by key; an array value is a set, anything else a scalar). groups: fields merged as one. guards: when one side changed only guard fields (an approval, a review step) and the other changed anything else, the conflict is of the whole entity: an approval never covers content it did not see. A content edit that reopens a review changes the guard fields the same way on both sides, so two edits still merge. `when` limits a guard to a value one side set (closing a cycle).",
+  "$comment": "Field-level merge rules (SYNC-02, ADR-0051). One source for the desktop (Rust, include_str!) and the web (TS); both pass merge-vectors.json. A field not listed is a scalar: taken from the side that changed it, a conflict when both changed it differently. Paths: a payload key, or `data.<key>` one level down. Types: scalar | text (a scalar the conflict panel diffs by words) | set (a list without order, of values or of objects with an `id`) | idList (a list of objects with a unique string `id`, merged by id and by key, its order kept) | object (merged key by key with `fields`) | map (merged key by key; an array value is a set, anything else a scalar). groups: fields merged as one. guards: when one side changed only guard fields (an approval, a review step) and the other changed anything else, the conflict is of the whole entity: an approval never covers content it did not see. A content edit that reopens a review changes the guard fields the same way on both sides, so two edits still merge. `when` limits a guard to a value one side set (closing a cycle). derived (CAS-01, ADR-0055): refs are lists of references to the library, stepLists and table hold the copies the core rebuilds from them; a conflict on a copied step, on the bound table or on a reference key in refKeys is resolved to the remote side, and the next save or reconcile rewrites it.",
   "version": 1,
   "bookkeeping": {
     "remote": ["id", "workspaceId", "ownerId", "createdAt", "revision"],
@@ -36,6 +36,12 @@
         },
         "data.custom": {
           "type": "map"
+        },
+        "data.sharedRefs": {
+          "type": "idList"
+        },
+        "data.datasetRefs": {
+          "type": "idList"
         }
       },
       "groups": [],
@@ -44,7 +50,13 @@
           "name": "review",
           "fields": ["status", "version", "data.review", "data.approval"]
         }
-      ]
+      ],
+      "derived": {
+        "refs": ["data.sharedRefs", "data.datasetRefs"],
+        "stepLists": ["data.steps", "data.preconditions"],
+        "table": "data.examples",
+        "refKeys": ["version", "revisionId", "stepIds", "name"]
+      }
     },
     "test_plan": {
       "fields": {
@@ -137,6 +149,41 @@
           "fields": ["sha256", "size", "mime"]
         }
       ],
+      "guards": []
+    },
+    "shared_step": {
+      "fields": {
+        "description": {
+          "type": "text"
+        },
+        "params": {
+          "type": "idList"
+        },
+        "steps": {
+          "type": "idList"
+        }
+      },
+      "groups": [],
+      "guards": []
+    },
+    "dataset": {
+      "fields": {
+        "description": {
+          "type": "text"
+        },
+        "columns": {
+          "type": "idList"
+        },
+        "rows": {
+          "type": "idList",
+          "fields": {
+            "values": {
+              "type": "map"
+            }
+          }
+        }
+      },
+      "groups": [],
       "guards": []
     }
   }

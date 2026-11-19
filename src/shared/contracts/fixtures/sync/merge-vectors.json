@@ -640,6 +640,187 @@
         "merged": { "id": "k1", "title": "T2", "priority": "high", "data": {} },
         "origins": { "title": "remote", "data.due": "local" }
       }
+    },
+    {
+      "name": "library copies (CAS-01): a conflict only on a copied step and on the reference version goes to the remote side",
+      "entity": "test_case",
+      "base": {
+        "id": "c1",
+        "data": {
+          "steps": [{ "id": "C1", "text": "A" }],
+          "sharedRefs": [
+            {
+              "id": "CALL1",
+              "sharedStepId": "X",
+              "version": 1,
+              "revisionId": "r1",
+              "follow": true,
+              "list": "steps",
+              "stepIds": ["C1"],
+              "args": {}
+            }
+          ]
+        }
+      },
+      "local": {
+        "id": "c1",
+        "data": {
+          "steps": [{ "id": "C1", "text": "B" }],
+          "sharedRefs": [
+            {
+              "id": "CALL1",
+              "sharedStepId": "X",
+              "version": 2,
+              "revisionId": "r2",
+              "follow": true,
+              "list": "steps",
+              "stepIds": ["C1"],
+              "args": {}
+            }
+          ]
+        }
+      },
+      "remote": {
+        "id": "c1",
+        "data": {
+          "steps": [{ "id": "C1", "text": "C" }],
+          "sharedRefs": [
+            {
+              "id": "CALL1",
+              "sharedStepId": "X",
+              "version": 3,
+              "revisionId": "r3",
+              "follow": true,
+              "list": "steps",
+              "stepIds": ["C1"],
+              "args": {}
+            }
+          ]
+        }
+      },
+      "expect": {
+        "kind": "merged",
+        "merged": {
+          "id": "c1",
+          "data": {
+            "steps": [{ "id": "C1", "text": "C" }],
+            "sharedRefs": [
+              {
+                "id": "CALL1",
+                "sharedStepId": "X",
+                "version": 3,
+                "revisionId": "r3",
+                "follow": true,
+                "list": "steps",
+                "stepIds": ["C1"],
+                "args": {}
+              }
+            ]
+          }
+        },
+        "origins": { "data.steps": "both", "data.sharedRefs": "both" }
+      }
+    },
+    {
+      "name": "library copies (CAS-01): two different arguments of one call stay a conflict",
+      "entity": "test_case",
+      "base": {
+        "id": "c1",
+        "data": {
+          "sharedRefs": [
+            {
+              "id": "CALL1",
+              "sharedStepId": "X",
+              "version": 1,
+              "revisionId": "r1",
+              "follow": true,
+              "list": "steps",
+              "stepIds": ["C1"],
+              "args": {}
+            }
+          ]
+        }
+      },
+      "local": {
+        "id": "c1",
+        "data": {
+          "sharedRefs": [
+            {
+              "id": "CALL1",
+              "sharedStepId": "X",
+              "version": 1,
+              "revisionId": "r1",
+              "follow": true,
+              "list": "steps",
+              "stepIds": ["C1"],
+              "args": { "u": "a" }
+            }
+          ]
+        }
+      },
+      "remote": {
+        "id": "c1",
+        "data": {
+          "sharedRefs": [
+            {
+              "id": "CALL1",
+              "sharedStepId": "X",
+              "version": 1,
+              "revisionId": "r1",
+              "follow": true,
+              "list": "steps",
+              "stepIds": ["C1"],
+              "args": { "u": "b" }
+            }
+          ]
+        }
+      },
+      "expect": {
+        "kind": "conflict",
+        "merged": {
+          "id": "c1",
+          "data": {
+            "sharedRefs": [
+              {
+                "id": "CALL1",
+                "sharedStepId": "X",
+                "version": 1,
+                "revisionId": "r1",
+                "follow": true,
+                "list": "steps",
+                "stepIds": ["C1"],
+                "args": { "u": "b" }
+              }
+            ]
+          }
+        },
+        "origins": { "data.sharedRefs": "both" },
+        "conflicts": ["data.sharedRefs#CALL1.args"]
+      }
+    },
+    {
+      "name": "dataset (CAS-01): two people change different cells of the same row",
+      "entity": "dataset",
+      "base": {
+        "id": "d1",
+        "rows": [{ "id": "R1", "values": { "a": "1", "b": "2" } }]
+      },
+      "local": {
+        "id": "d1",
+        "rows": [{ "id": "R1", "values": { "a": "9", "b": "2" } }]
+      },
+      "remote": {
+        "id": "d1",
+        "rows": [{ "id": "R1", "values": { "a": "1", "b": "8" } }]
+      },
+      "expect": {
+        "kind": "merged",
+        "merged": {
+          "id": "d1",
+          "rows": [{ "id": "R1", "values": { "a": "9", "b": "8" } }]
+        },
+        "origins": { "rows": "both" }
+      }
     }
   ]
 }

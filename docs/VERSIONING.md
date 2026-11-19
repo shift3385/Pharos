@@ -232,7 +232,7 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
    - **Dentro de una MENOR**, la versión no distingue un build de otro: lo
      hace la cabecera `x-pharos-sync-features` (`key-conflicts`, `append-only`,
      `complete-payload`, `stable-steps`, `runs`, `custom-fields`, `cycles`,
-     `defects`, `workspaces`, `blobs`). Un cliente que
+     `defects`, `workspaces`, `blobs`, `shared-steps`). Un cliente que
      aún no ha visto `stable-steps` en las respuestas del servidor no le envía
      casos ni revisiones (los retiene y el diagnóstico los cuenta). Del mismo
      modo, sin `runs` no le envía runs, elementos, reglas de enlace, shards ni
@@ -307,6 +307,14 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      adjuntos ni plantillas (los retiene) y el servidor no se los da en el
      pull; un push que los traiga recibe 400 `blobs_unsupported`. Su
      contenido no viaja en el oplog: va por hash a `/blobs` antes del push.
+   - **`shared-steps` (CAS-01, ADR-0055)**: sin ella el escritorio no envía
+     pasos compartidos, datasets ni sus versiones (los retiene) y el servidor
+     no se los da en el pull. Las referencias del caso (`data.sharedRefs`,
+     `data.datasetRefs`) van en `FEATURE_DATA_KEYS`: el push de un cliente
+     sin la funcionalidad conserva lo que el servidor tenga en ellas. La
+     copia materializada son pasos y filas normales, así que un cliente
+     anterior los lee y ejecuta como siempre. La migración local 0049 es
+     aditiva y `APPLIED_SET_VERSION` sube a 12 (el cursor vuelve a 0 una vez).
    - **Fusión por campo (SYNC-02, ADR-0051)**: sin puerta ni cambio de
      forma. El cliente fusiona y envía un delta normal sobre la versión del
      servidor, así que una app 0.5 sigue resolviendo por entidad y un

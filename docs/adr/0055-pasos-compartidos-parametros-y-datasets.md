@@ -185,3 +185,32 @@ El usuario aprobó el plan y eligió las cinco recomendaciones («Sí, apruebo»
 3. **Fila explícita en informes que no son Cucumber** (JUnit `example_row`, `extra.exampleRow` de CTRF y la anotación `row` de Playwright): sí, en un PR aparte (P5), después de la pista F, porque toca sus parsers y sube `NORMALIZER_VERSION`.
 4. **Límites:** 50 pasos y 20 parámetros por paso compartido; 30 columnas, 500 filas y 4 KB por celda en un dataset.
 5. **La biblioteca en la interfaz:** una sección del proyecto, «Biblioteca», con las pestañas «Pasos compartidos» y «Datasets», en `/projects/:projectId/library?tab=` (ADR-0029).
+
+## Implementación: núcleo (P1, 2026-11-19)
+
+Hecho en `src-tauri/src/shared_library.rs` y `shared_library/materialize.rs`, con la migración local 0049. Precisiones sobre la decisión, sin cambiarla:
+
+- **Guardar siempre rehace la copia.** Cada guardado local de un caso (`test_case::prepare_data`) reconstruye la copia desde la biblioteca, así que en este equipo la copia nunca se separa de su versión.
+  - Esto concreta el §2: «Modificado fuera de la biblioteca» solo puede aparecer en lo que llega por sync de un cliente que no conoce la biblioteca.
+  - «Restaurar» es guardar el caso. «Desvincular» es quitar la referencia.
+  - El editor avisa antes de que una línea de un bloque editada en la pestaña Gherkin se pierda al guardar (P3).
+- **Ids de los parámetros.** Un parámetro sin id (declarado sin id o detectado en un paso) lo recibe derivado de su nombre: `short_hash("param:<nombre>")`. Así, volver a guardar lo mismo no crea una versión nueva.
+- **Versión y revisión.** `version` sube solo si cambia el hash del contenido canónico (`name` + `params`/`columns` + `steps`/`rows`). La descripción y el estado no lo cambian.
+  - Al recibir un `shared_step` o un `dataset` por pull, el equipo guarda también la fila de su versión (id determinista), sin encolarla: así puede reconstruir un caso aunque el documento de la versión llegue después.
+  - Una versión recibida cuyo id no corresponde a su contenido se descarta.
+- **Propagación.** `update_item` sube la versión, escribe la versión `append_only` y guarda de nuevo cada caso vivo que sigue el elemento (`test_case::refresh_from_library`), en la misma transacción.
+  - Cada guardado deja en su evento de auditoría `summary.cause = { shared_step | dataset: id, version }` y aplica la regla de revisión.
+  - Al final de cada página de pull, `reconcile` hace lo mismo con los casos de los proyectos tocados que van por detrás de la biblioteca local. Se salta los casos que la cuenta no puede editar.
+- **Fusión.** `merge-fields.json` añade:
+  - para el caso, `data.sharedRefs` y `data.datasetRefs` (`idList`) y un bloque `derived`;
+  - para `shared_step`, `description`, `params` y `steps`;
+  - para `dataset`, `description`, `columns` y `rows`, con `values` como `map`, así que dos celdas distintas de una fila se fusionan solas.
+
+  Con `derived`, un conflicto que solo toca un paso copiado (`data.steps#<id>` de un `stepIds`), la tabla de un caso con dataset o las claves `version`, `revisionId`, `stepIds` y `name` de una referencia se resuelve por el lado remoto. El siguiente guardado o `reconcile` lo reescribe. Los argumentos y `follow` siguen siendo conflictos normales. Los vectores nuevos están en `merge-vectors.json`.
+- **Sync en el escritorio.**
+  - `shared_step` y `dataset` entran en `oplog::SYNCED`, y sus versiones en `APPEND_ONLY`; `APPLIED_SET_VERSION` pasa a 12.
+  - Todo se retiene hasta que el servidor de la cuenta lista `shared-steps`.
+  - Las cuatro tablas siguen al proyecto: papelera, purga (`PurgeSummary.library`), restaurar, mover de workspace y borrar el proyecto.
+  - Permiso: `case.edit`.
+- **Comandos Tauri:** `library_list`, `library_get`, `library_create`, `library_update`, `library_impact`, `library_set_status`, `library_delete`, `library_versions`, `library_case_status` y `library_preview` (la vista previa de una inserción en el editor).
+- **Vectores comunes:** `src-tauri/tests/fixtures/shared-steps-vectors.json` (materializar e ids derivados). `PHAROS_WRITE_VECTORS=1 cargo test vectors_match` los regenera.

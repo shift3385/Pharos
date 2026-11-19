@@ -68,6 +68,18 @@ pub const APPEND_ONLY: &[AppendOnly] = &[
         insert_if_absent: crate::case_baseline::insert_if_absent,
         owner: crate::case_baseline::owner,
     },
+    AppendOnly {
+        entity: crate::shared_library::SHARED_STEP_REVISION,
+        read: crate::shared_library::shared_revision_payload,
+        insert_if_absent: crate::shared_library::shared_revision_insert_if_absent,
+        owner: crate::shared_library::shared_revision_owner,
+    },
+    AppendOnly {
+        entity: crate::shared_library::DATASET_REVISION,
+        read: crate::shared_library::dataset_revision_payload,
+        insert_if_absent: crate::shared_library::dataset_revision_insert_if_absent,
+        owner: crate::shared_library::dataset_revision_owner,
+    },
 ];
 
 /// Version of the set of entities this build applies on pull. A pull cursor
@@ -86,8 +98,9 @@ pub const APPEND_ONLY: &[AppendOnly] = &[
 /// (SYNC-07, ADR-0042): one cursor per workspace, so every workspace is pulled
 /// from the start once. 10: attachment and template (SYNC-04b), whose
 /// content travels by hash outside the oplog. 11: finding, metric and
-/// finding_triage (ING-06, ADR-0053).
-pub const APPLIED_SET_VERSION: i64 = 11;
+/// finding_triage (ING-06, ADR-0053). 12: shared_step, dataset and their
+/// versions (CAS-01, ADR-0055).
+pub const APPLIED_SET_VERSION: i64 = 12;
 
 pub fn append_only(entity: &str) -> Option<&'static AppendOnly> {
     APPEND_ONLY.iter().find(|a| a.entity == entity)

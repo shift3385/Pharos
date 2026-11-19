@@ -48,7 +48,7 @@ const STEP_LISTS: [&str; 3] = ["preconditions", "background", "steps"];
 const FLOW_STEP_LISTS: [&str; 2] = ["preconditions", "steps"];
 
 /// 8 Crockford base32 characters from the first 40 bits of `sha256(input)`.
-fn short_hash(input: &str) -> String {
+pub(crate) fn short_hash(input: &str) -> String {
     let digest = Sha256::digest(input.as_bytes());
     let mut acc: u64 = 0;
     for b in &digest[..5] {

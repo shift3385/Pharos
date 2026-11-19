@@ -34,6 +34,14 @@ interface EntityRules {
   fields: Record<string, FieldSpec>;
   groups: { name: string; fields: string[] }[];
   guards: { name: string; fields: string[]; when?: string }[];
+  /** Copies the core rebuilds (CAS-01, ADR-0055): a conflict that only
+   *  touches them goes to the remote side; the next save rewrites them. */
+  derived?: {
+    refs: string[];
+    stepLists: string[];
+    table?: string;
+    refKeys: string[];
+  };
 }
 
 export interface FieldConflict {
@@ -364,6 +372,65 @@ export function merge(
   local: Payload,
   remote: Payload,
   choices: Record<string, Side> = {},
+): MergeOutcome {
+  const first = mergeOnce(entity, base, local, remote, choices);
+  const d = RULES.entities[entity]?.derived;
+  if (first.kind !== "conflict" || !d) return first;
+  const more = { ...choices };
+  let added = false;
+  for (const c of first.conflicts) {
+    if (!(c.key in more) && isDerived(d, c.key, [base, local, remote])) {
+      more[c.key] = "remote";
+      added = true;
+    }
+  }
+  return added ? mergeOnce(entity, base, local, remote, more) : first;
+}
+
+/** True if a conflict key only touches what the core rebuilds. */
+function isDerived(
+  d: NonNullable<EntityRules["derived"]>,
+  key: string,
+  sides: Payload[],
+): boolean {
+  const refs = (p: Payload, path: string): Record<string, unknown>[] => {
+    const v = at(p, path);
+    return Array.isArray(v) ? v.filter(isObject) : [];
+  };
+  for (const path of d.refs) {
+    if (key.startsWith(`${path}#`)) {
+      const rest = key.slice(path.length + 1);
+      const dot = rest.indexOf(".");
+      return dot >= 0 && d.refKeys.includes(rest.slice(dot + 1));
+    }
+  }
+  for (const list of d.stepLists) {
+    if (key.startsWith(`${list}#`)) {
+      const id = key.slice(list.length + 1).split(".")[0];
+      return sides.some((p) =>
+        d.refs.some((path) =>
+          refs(p, path).some(
+            (r) => Array.isArray(r.stepIds) && r.stepIds.includes(id),
+          ),
+        ),
+      );
+    }
+  }
+  const t = d.table;
+  if (t && (key === t || key.startsWith(`${t}.`) || key.startsWith(`${t}#`))) {
+    return sides.some((p) =>
+      d.refs.some((path) => refs(p, path).some((r) => "datasetId" in r)),
+    );
+  }
+  return false;
+}
+
+function mergeOnce(
+  entity: string,
+  base: Payload,
+  local: Payload,
+  remote: Payload,
+  choices: Record<string, Side>,
 ): MergeOutcome {
   const e = RULES.entities[entity] ?? NO_RULES;
   const guard = trippedGuard(e, base, local, remote);

@@ -140,7 +140,7 @@ const LISTED: [Kind; 9] = [
 ];
 
 /// Every table a project's delete cascades to (`project::delete_project`).
-const PROJECT_CHILDREN: [(&str, &str); 13] = [
+const PROJECT_CHILDREN: [(&str, &str); 15] = [
     ("test_plan", "test_plans"),
     ("test_case", "test_cases"),
     ("requirement", "requirements"),
@@ -154,6 +154,8 @@ const PROJECT_CHILDREN: [(&str, &str); 13] = [
     ("test_cycle_item", "test_cycle_items"),
     ("defect", "defects"),
     ("defect_link", "defect_links"),
+    ("shared_step", "shared_steps"),
+    ("dataset", "datasets"),
 ];
 
 /// Rows deleted with a row of `entity` (`runs::delete`, `cycles`, `defects`):

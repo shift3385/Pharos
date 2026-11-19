@@ -54,6 +54,25 @@ struct EntityRules {
     groups: Vec<Group>,
     #[serde(default)]
     guards: Vec<Guard>,
+    #[serde(default)]
+    derived: Option<Derived>,
+}
+
+/// Copies the core rebuilds from somewhere else (CAS-01, ADR-0055): a
+/// conflict that only touches them is resolved to the remote side, and the
+/// next save or reconcile rewrites them from the library.
+#[derive(Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+struct Derived {
+    /// Lists of references, each element with `stepIds` (calls) or not.
+    refs: Vec<String>,
+    /// The lists that hold the copied steps.
+    step_lists: Vec<String>,
+    /// The table a binding rewrites, when one exists.
+    #[serde(default)]
+    table: Option<String>,
+    /// The keys of a reference the core writes.
+    ref_keys: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -571,6 +590,84 @@ fn tripped_guard(e: &EntityRules, b: &Value, l: &Value, r: &Value) -> Option<Str
 }
 
 pub fn merge(
+    entity: &str,
+    base: &Value,
+    local: &Value,
+    remote: &Value,
+    choices: &HashMap<String, Side>,
+) -> Outcome {
+    let first = merge_once(entity, base, local, remote, choices);
+    let Outcome::Conflict { conflicts, .. } = &first else {
+        return first;
+    };
+    let Some(d) = rules()
+        .entities
+        .get(entity)
+        .and_then(|e| e.derived.as_ref())
+    else {
+        return first;
+    };
+    let mut more = choices.clone();
+    let mut added = false;
+    for c in conflicts {
+        if !more.contains_key(&c.key) && is_derived(d, &c.key, &[base, local, remote]) {
+            more.insert(c.key.clone(), Side::Remote);
+            added = true;
+        }
+    }
+    if added {
+        merge_once(entity, base, local, remote, &more)
+    } else {
+        first
+    }
+}
+
+/// True if a conflict key only touches what the core rebuilds (`Derived`).
+fn is_derived(d: &Derived, key: &str, sides: &[&Value]) -> bool {
+    let refs = |p: &Value, path: &str| -> Vec<Value> {
+        at(p, path)
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default()
+    };
+    for path in &d.refs {
+        if let Some(rest) = key.strip_prefix(&format!("{path}#")) {
+            if let Some((_, sub)) = rest.split_once('.') {
+                return d.ref_keys.iter().any(|k| k == sub);
+            }
+            return false;
+        }
+    }
+    for list in &d.step_lists {
+        if let Some(rest) = key.strip_prefix(&format!("{list}#")) {
+            let id = rest.split('.').next().unwrap_or(rest);
+            return sides.iter().any(|p| {
+                d.refs.iter().any(|path| {
+                    refs(p, path).iter().any(|r| {
+                        r.get("stepIds")
+                            .and_then(Value::as_array)
+                            .is_some_and(|ids| ids.iter().any(|x| x.as_str() == Some(id)))
+                    })
+                })
+            });
+        }
+    }
+    if let Some(table) = &d.table {
+        if key == table
+            || key.starts_with(&format!("{table}."))
+            || key.starts_with(&format!("{table}#"))
+        {
+            return sides.iter().any(|p| {
+                d.refs
+                    .iter()
+                    .any(|path| refs(p, path).iter().any(|r| r.get("datasetId").is_some()))
+            });
+        }
+    }
+    false
+}
+
+fn merge_once(
     entity: &str,
     base: &Value,
     local: &Value,

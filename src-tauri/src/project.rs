@@ -306,6 +306,8 @@ pub(crate) fn delete_project(conn: &Connection, id: &str, author: &str) -> Resul
         "test_cycle_items",
         "defects",
         "defect_links",
+        "shared_steps",
+        "datasets",
     ] {
         let sql = format!(
             "UPDATE {table} SET deleted_at = datetime('now') \

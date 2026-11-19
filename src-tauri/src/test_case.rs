@@ -335,7 +335,7 @@ pub(crate) fn insert_case(conn: &Connection, input: &TestCaseInput) -> Result<St
     // defaults).
     let case_type = input.case_type.as_deref().unwrap_or("standard");
     let automation = input.automation_status.as_deref().unwrap_or("manual");
-    let mut data = prepare_data(conn, &input.project_id, case_type, &input.data, None)?;
+    let mut data = prepare_data(conn, &id, &input.project_id, case_type, &input.data, None)?;
     // A new case never starts in review or approved, and never brings who
     // sent or approved it (an import, CAS-02): the review flow gives both.
     case_review::strip_review(&mut data);
@@ -389,6 +389,17 @@ pub(crate) fn update_case(
     id: &str,
     input: &TestCaseInput,
 ) -> Result<(), String> {
+    update_case_with(conn, id, input, None)
+}
+
+/// `update_case` with extra JSON for the audit event (the cause of a
+/// rewrite from the library, CAS-01).
+fn update_case_with(
+    conn: &Connection,
+    id: &str,
+    input: &TestCaseInput,
+    summary: Option<Value>,
+) -> Result<(), String> {
     if !owns(conn, id, &input.user_id)? {
         return Err("test case not found".to_string());
     }
@@ -423,6 +434,7 @@ pub(crate) fn update_case(
     let previous = serde_json::from_str::<Value>(&stored.data).ok();
     let mut data = prepare_data(
         conn,
+        id,
         &stored.project_id,
         case_type.as_deref().unwrap_or("standard"),
         &input.data,
@@ -430,8 +442,9 @@ pub(crate) fn update_case(
     )?;
     // The review flow (CAS-02, ADR-0047): a save keeps the stored status and
     // who sent or approved it; only `test_case_review` moves the status. A
-    // save that changes the content of a case in review or approved sends it
-    // back to draft, drops its approval and, once approved, bumps its version.
+    // save that changes the content of an approved case sends it back to
+    // review («En revisión»), drops its approval and bumps its version; one in
+    // review stays in review (PLN-08 option A, ADR-0049).
     let after = case_review::after_save(
         case_review::Saved {
             status: &stored.status,
@@ -469,21 +482,78 @@ pub(crate) fn update_case(
     )
     .map_err(|e| e.to_string())?;
     let user = &input.user_id;
-    journal::record(
-        conn,
-        Change::new(
-            "test_case",
-            id,
-            Action::Update,
-            Actor::user(user),
-            "upsert",
-            revision + 1,
-            user,
-        )
-        .before(before),
-    )?;
+    let mut change = Change::new(
+        "test_case",
+        id,
+        Action::Update,
+        Actor::user(user),
+        "upsert",
+        revision + 1,
+        user,
+    )
+    .before(before);
+    if let Some(summary) = summary {
+        change = change.summary(summary);
+    }
+    journal::record(conn, change)?;
     revisions::ensure_current(conn, id, user, true)?;
     Ok(())
+}
+
+/// Saves a case again with its own stored fields, so its copies of shared
+/// steps and datasets are rebuilt from the library (CAS-01, ADR-0055 §4).
+/// `cause` goes to the audit event. False if the user does not own it or
+/// nothing changed.
+pub(crate) fn refresh_from_library(
+    conn: &Connection,
+    id: &str,
+    user: &str,
+    cause: Value,
+) -> Result<bool, String> {
+    if !owns(conn, id, user)? {
+        return Ok(false);
+    }
+    let stored = conn
+        .query_row(
+            "SELECT project_id, title, version, priority, author, data, case_type, \n             automation_status FROM test_cases WHERE id = ?1",
+            params![id],
+            |r| {
+                Ok((
+                    r.get::<_, String>(0)?,
+                    r.get::<_, String>(1)?,
+                    r.get::<_, String>(2)?,
+                    r.get::<_, Option<String>>(3)?,
+                    r.get::<_, String>(4)?,
+                    r.get::<_, String>(5)?,
+                    r.get::<_, Option<String>>(6)?,
+                    r.get::<_, Option<String>>(7)?,
+                ))
+            },
+        )
+        .map_err(|e| e.to_string())?;
+    let (project_id, title, version, priority, author, data, case_type, automation) = stored;
+    let data: Value = serde_json::from_str(&data).unwrap_or_else(|_| empty_object());
+    let mut rebuilt = data.clone();
+    steps::normalize_new_case_data(&mut rebuilt);
+    crate::shared_library::materialize_case(conn, &project_id, id, &mut rebuilt)?;
+    if rebuilt == data {
+        return Ok(false);
+    }
+    let input = TestCaseInput {
+        project_id,
+        scenario_id: None,
+        title,
+        version: Some(version),
+        status: None,
+        priority,
+        case_type,
+        automation_status: automation,
+        author,
+        data,
+        user_id: user.to_string(),
+    };
+    update_case_with(conn, id, &input, Some(cause))?;
+    Ok(true)
 }
 
 /// The stored columns `update_case` reads before a save.
@@ -605,6 +675,7 @@ fn review_base(
 /// (`{}` clears them).
 fn prepare_data(
     conn: &Connection,
+    case_id: &str,
     project_id: &str,
     case_type: &str,
     input: &Value,
@@ -612,6 +683,9 @@ fn prepare_data(
 ) -> Result<Value, String> {
     let mut data = input.clone();
     steps::normalize_new_case_data(&mut data);
+    // The copies of shared steps and datasets are the library's (CAS-01,
+    // ADR-0055): rebuilt on every save, so they never drift on this device.
+    crate::shared_library::materialize_case(conn, project_id, case_id, &mut data)?;
     custom_fields::take_stash(&mut data);
     if let (Some(obj), Some(kept)) = (data.as_object_mut(), previous.and_then(|p| p.get("custom")))
     {
