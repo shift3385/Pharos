@@ -87,10 +87,14 @@ pub fn core_code(error: &str) -> (Option<&str>, &str) {
 
 /// The failure for an error of the core, by its code.
 pub fn from_core(error: &str) -> Failure {
-    // A write that stayed blocked after the core's own retries (SEC-05b, N5):
-    // the CLI does not retry again.
+    // A write that stayed blocked after the core's own retries (SEC-05b, N5:
+    // `db::DB_BUSY_ERROR`, or SQLite's own words from a single statement): the
+    // CLI does not retry again.
     let lower = error.to_ascii_lowercase();
-    if lower.contains("database is locked") || lower.contains("database is busy") {
+    if lower.starts_with("db-busy")
+        || lower.contains("database is locked")
+        || lower.contains("database is busy")
+    {
         return Failure::new(Exit::DbInUse, "db-busy", "err.db-busy").detail(error.trim());
     }
     let (code, text) = core_code(error);
@@ -130,6 +134,9 @@ mod tests {
         let f = from_core("db-in-use: another Pharos process (the app or the CLI) is using it");
         assert_eq!((f.exit, f.code.as_str()), (Exit::DbInUse, "db-in-use"));
         assert_eq!(from_core("db-key-missing: …").exit, Exit::DbInUse);
+        let f =
+            from_core("db-busy: another Pharos process kept the local database busy; try again");
+        assert_eq!((f.exit, f.code.as_str()), (Exit::DbInUse, "db-busy"));
         let f = from_core("database is locked");
         assert_eq!((f.exit, f.code.as_str()), (Exit::DbInUse, "db-busy"));
         assert_eq!(from_core("run-closed").exit, Exit::NotFound);
