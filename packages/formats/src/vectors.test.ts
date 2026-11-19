@@ -11,11 +11,12 @@ import { parsePharosRun } from "./schema.js";
 
 const FIXTURES = resolve(process.cwd(), "packages/formats/src/fixtures");
 
-/** Every raw sample: not a snapshot, a README, a script or a vector file. */
+/** Every raw sample: not a snapshot, a README, a script or a vector file.
+ *  Allure is a folder, not a file: its own test reads it (allure.test.ts). */
 function samples(dir: string): string[] {
   return readdirSync(dir).flatMap((f) => {
     const p = join(dir, f);
-    if (statSync(p).isDirectory()) return f === "normalized" ? [] : samples(p);
+    if (statSync(p).isDirectory()) return f === "normalized" || f === "allure" ? [] : samples(p);
     if (/\.(md|js)$/.test(f) || /-vectors\.json$/.test(f)) return [];
     return [p];
   });

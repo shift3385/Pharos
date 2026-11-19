@@ -75,7 +75,9 @@ export class ReportError extends Error {
       | "invalid-xml"
       | "invalid-pharos-run"
       | "too-large"
-      | "unsupported-version",
+      | "unsupported-version"
+      // ING-07: an Allure upload that is not a readable zip.
+      | "invalid-zip",
     detail?: string,
   ) {
     super(detail ? `${code}: ${detail}` : code);

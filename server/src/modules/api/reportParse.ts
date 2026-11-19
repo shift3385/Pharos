@@ -16,6 +16,7 @@ import { gunzipSync } from "node:zlib";
 import { fork } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { AppError } from "../auth/errors.js";
+import { isZip, readZip, ZipError } from "./zip.js";
 
 /** What a parse gives back: the format it detected and the document. */
 export interface ParsedUpload {
@@ -29,9 +30,18 @@ export interface ParsedUpload {
 /** A byte-order mark (U+FEFF) before a document is not part of it. */
 const BOM = String.fromCharCode(0xfeff);
 
-export type ReportParser = (text: string) => Promise<ParsedUpload>;
+/** A file of an Allure folder (`@pharos/formats` `AllureFile`). */
+export interface AllureEntry {
+  name: string;
+  text?: string;
+  base64?: string;
+}
+/** What a parser reads: a report's text, or an `allure-results` folder
+ *  unzipped (ING-07). */
+export type ReportInput = string | { allure: AllureEntry[] };
+export type ReportParser = (input: ReportInput) => Promise<ParsedUpload>;
 
-/** Formats `?format=` accepts. `allure` comes with track F (F6). */
+/** Formats `?format=` accepts. */
 export const UPLOAD_FORMATS = [
   "pharos_run_json",
   "junit",
@@ -45,7 +55,7 @@ export const UPLOAD_FORMATS = [
   "trx",
 ] as const;
 export type UploadFormat = (typeof UPLOAD_FORMATS)[number];
-const NOT_YET: readonly string[] = ["allure"];
+const NOT_YET: readonly string[] = [];
 
 export const UploadErrors = {
   unsupported: (format: string) =>
@@ -88,9 +98,19 @@ export function reasonOf(e: unknown): string {
   return typeof code === "string" && /^[a-z-]+$/.test(code) ? code : "unreadable";
 }
 
-/** Reads `text` with the shared parsers, in this thread. */
-export async function inProcessParser(text: string): Promise<ParsedUpload> {
+/** Reads a report with the shared parsers, in this thread. */
+export async function inProcessParser(input: ReportInput): Promise<ParsedUpload> {
   const formats = await import("@pharos/formats");
+  if (typeof input !== "string") {
+    const parsed = formats.parseAllureResults(input.allure);
+    return {
+      format: parsed.format,
+      doc: parsed.doc as unknown as Record<string, unknown>,
+      warnings: parsed.warnings,
+      inline: [...parsed.inline.entries()].map(([ref, b]) => ({ ref, data: b.data, encoding: b.encoding })),
+    };
+  }
+  const text = input;
   const { DOMParser } = await import("@xmldom/xmldom");
   formats.configureXml(DOMParser as never);
   const body = (text.startsWith(BOM) ? text.slice(1) : text).trimStart();
@@ -123,7 +143,7 @@ export async function inProcessParser(text: string): Promise<ParsedUpload> {
  *  does. It costs a process start per upload, which CI uploads afford. */
 export function processParser(timeoutMs: number): ReportParser {
   const script = fileURLToPath(new URL(import.meta.url.endsWith(".ts") ? "./reportWorker.ts" : "./reportWorker.js", import.meta.url));
-  return (text) =>
+  return (input) =>
     new Promise<ParsedUpload>((resolve, reject) => {
       const child = fork(script, [], { execArgv: process.execArgv, serialization: "advanced", stdio: ["ignore", "ignore", "ignore", "ipc"] });
       let settled = false;
@@ -140,17 +160,40 @@ export function processParser(timeoutMs: number): ReportParser {
       );
       child.once("error", () => done(() => reject(UploadErrors.invalid("unreadable"))));
       child.once("exit", () => done(() => reject(UploadErrors.invalid("unreadable"))));
-      child.send(text);
+      child.send(input);
     });
 }
 
-/** Parses, then checks the format the caller named against the one found. */
-export async function parseUpload(parser: ReportParser, file: Buffer, expected: string | undefined): Promise<ParsedUpload> {
+/** An uploaded zip as an Allure folder: its files, bounded (`zip.ts`). */
+async function allureOf(file: Buffer, maxBytes: number): Promise<{ allure: AllureEntry[] }> {
+  const { isAllureTextFile } = await import("@pharos/formats");
+  let entries;
+  try {
+    entries = readZip(file, maxBytes);
+  } catch (e) {
+    if (e instanceof ZipError && e.reason === "too-large") throw UploadErrors.tooLarge(maxBytes);
+    throw UploadErrors.invalid("invalid-zip", "allure");
+  }
+  return {
+    allure: entries.map((e) =>
+      isAllureTextFile(e.name) ? { name: e.name, text: e.data.toString("utf8") } : { name: e.name, base64: e.data.toString("base64") },
+    ),
+  };
+}
+
+/** Parses, then checks the format the caller named against the one found.
+ *  A zip is an `allure-results` folder (ING-07), unzipped within `maxBytes`. */
+export async function parseUpload(
+  parser: ReportParser,
+  file: Buffer,
+  expected: string | undefined,
+  maxBytes = 50 * 1024 * 1024,
+): Promise<ParsedUpload> {
   if (expected && !(UPLOAD_FORMATS as readonly string[]).includes(expected)) throw UploadErrors.unsupported(expected);
   if (expected && NOT_YET.includes(expected)) throw UploadErrors.unsupported(expected);
   let parsed: ParsedUpload;
   try {
-    parsed = await parser(file.toString("utf8"));
+    parsed = await parser(isZip(file) ? await allureOf(file, maxBytes) : file.toString("utf8"));
   } catch (e) {
     if (e instanceof AppError) throw e;
     throw UploadErrors.invalid(reasonOf(e), expected);

@@ -13,7 +13,7 @@ los parsers (el CLI de INT-01) tiene que reproducirla.
 
 SARIF, axe y k6 (hallazgos y métricas), Allure y TRX (resultados) y `.xcresult`
 están aprobados en [ADR-0053](../adr/0053-hallazgos-metricas-y-paquete-de-formatos.md).
-SARIF, axe, k6 y TRX ya tienen parser (abajo); Allure y `.xcresult` siguen en el
+SARIF, axe, k6, TRX y Allure ya tienen parser (abajo); `.xcresult` sigue en el
 [plan de la pista F](../design/f-formatos-plan.md) §7 hasta que se implementen.
 Los tres dan `findings[]` y `metrics[]` sin `results[]`, así que no cambian
 Pharos Run JSON 1.0.0. No suben `NORMALIZER_VERSION`: antes nadie podía
@@ -116,6 +116,29 @@ sube. Muestras: `fixtures/trx/` (dorny/test-reporter, MIT).
 | adjuntos | `ResultFiles/ResultFile@path`, bajo la carpeta del resultado |
 | `run` | `sourceTool` = `mstest`, `xunit` o `nunit` (del adaptador o del ensamblado; si no, `vstest`); `Times@start`; `context.runName` y `context.finishedAt` |
 
+### Allure → resultados
+
+Una carpeta `allure-results` (Allure 2; Allure 3 lee lo mismo), no un archivo:
+«Importar informe», la API (`format=allure`) y el CLI la reciben como `.zip`.
+`parseAllureResults` recibe sus archivos ya leídos, así que el paquete no lee
+zips: lo hacen el escritorio (`jszip`) y el servidor (`api/zip.ts`). Pharos
+Run JSON 1.1.0, como TRX. Muestra: `fixtures/allure/playwright/`, escrita por
+allure-playwright 3.15.0 sobre tres specs propias.
+
+| Pharos | Allure |
+| --- | --- |
+| `testKey` | el archivo de la spec si `fullName` empieza por uno (allure-playwright: la misma clave que el JSON de Playwright); si no, la etiqueta `package` (`.` → `/`) o `testClass`. Títulos: `parentSuite`, `suite` y `subSuite` que no repitan la ruta, y el nombre |
+| intentos | resultados del mismo `historyId`, por `start`: el último es el final. Un final `passed` tras uno fallido es `flaky` (o `statusDetails.flaky`) |
+| `status` / `rawStatus` | `passed`; `failed` y `broken` → `failed`; `skipped`; el resto → `other` / el original |
+| tiempos | `start` / `stop` (ms) y su diferencia |
+| `message` / `trace` | `statusDetails.message` / `.trace` |
+| etiquetas | las etiquetas `tag`, `AS_ID` y `ALLURE_ID` y los enlaces `tms` (su nombre) → `@…`: así se vincula |
+| filas | los `parameters` no `excluded` van a `attributes.parameters`; el mismo `testCaseId` con valores distintos da filas `[n]` (por los valores ordenados) |
+| pasos | los de primer nivel, sin los envoltorios de hooks de allure-playwright ni los pasos que solo llevan un adjunto |
+| adjuntos | los del resultado y los de sus pasos (`source`), con sus bytes si vienen en la carpeta |
+| `*-container.json` | un `befores`/`afters` fallido hace fallar a sus hijos (`attributes.failedFixture`) |
+| `run` | `sourceTool` = la etiqueta `framework` (si no, `allure`); `environment.properties` → `context.environment`; `executor.json` → `context.executor*` |
+
 ## Detección
 
 Se detecta por el **contenido**, nunca por la extensión:
@@ -125,6 +148,7 @@ Se detecta por el **contenido**, nunca por la extensión:
 | La primera línea es un sobre de Messages (`{"meta":…}`) | `cucumber_messages` (se lee línea a línea)                    |
 | XML con `<testsuites>` o `<testsuite>`                  | `junit`                                                       |
 | XML con `<TestRun>` (VSTest)                           | `trx`                                                         |
+| Un `.zip` (empieza por `PK`) con `*-result.json`         | `allure` (la carpeta `allure-results`)                         |
 | JSON con `reportFormat: "CTRF"`                         | `ctrf`                                                        |
 | JSON con `testEngine.name: "axe-core"` y `violations`, o un arreglo de ellos | `axe` |
 | JSON con `version` `2.x` y `runs[]`                     | `sarif`                                                       |

@@ -6,6 +6,7 @@ import {
   type ImportAttachment,
   type InlineBody,
   type ParsedReport,
+  parseAllureResults,
   parseReportFile,
   slashes,
 } from "@pharos/formats";
@@ -16,6 +17,7 @@ import type {
 } from "@shared/contracts/contract";
 import { runsApi } from "../api/runsApi";
 import { sha256OfBlob } from "./sha256";
+import { allureFilesOfZip, isZipFile } from "./allureZip";
 
 export interface ReadReport {
   file: File;
@@ -24,9 +26,12 @@ export interface ReadReport {
   sha256: string;
 }
 
-/** Parses a report and hashes it. */
+/** Parses a report and hashes it. A `.zip` is an `allure-results` folder
+ *  (ING-07); the zip itself is the raw report. */
 export async function readReport(file: File): Promise<ReadReport> {
-  const parsed = await parseReportFile(file);
+  const parsed = (await isZipFile(file))
+    ? parseAllureResults(await allureFilesOfZip(file))
+    : await parseReportFile(file);
   // Hashed as a stream: a 200 MB report is never whole in memory for it.
   const sha256 = await sha256OfBlob(file);
   return { file, parsed, sha256 };
