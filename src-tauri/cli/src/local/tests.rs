@@ -460,3 +460,106 @@ fn a_junit_report_is_imported_locally_with_its_retries() {
     assert_eq!(code, 0, "{out}");
     assert!(out.contains("already imported into RUN-001"), "{out}");
 }
+
+/// `pharos watch` in local mode (INT-01 L3): the command runs, its exit code
+/// is kept, only the report it wrote goes up (not the old one next to it),
+/// and a failed check before the command never runs it.
+#[cfg(windows)]
+#[test]
+fn watch_runs_the_command_and_uploads_only_what_it_wrote() {
+    let f = Fixture::new();
+    std::fs::create_dir_all(f.work().join("reports")).unwrap();
+    f.write("source.json", &report("single__ctrf.json"));
+    // An old report that must not go up.
+    f.write("reports/old.json", &report("single__pw.json"));
+    let old = f.work().join("reports").join("old.json");
+    let an_hour_ago = std::time::SystemTime::now() - std::time::Duration::from_secs(3600);
+    std::fs::File::options()
+        .write(true)
+        .open(&old)
+        .unwrap()
+        .set_modified(an_hour_ago)
+        .unwrap();
+    // The "tests": write a report, fail with 3.
+    let tests = r"copy /Y source.json reports\new.json >NUL & exit /B 3";
+    let (code, out, err) = f.run(
+        &[
+            "watch",
+            "-p",
+            "TC",
+            "--report",
+            "reports/*.json",
+            "--lang",
+            "en",
+            "--",
+            "cmd",
+            "/C",
+            tests,
+        ],
+        &[],
+    );
+    assert_eq!(code, 3, "the command's code\n{out}\n{err}");
+    assert!(out.contains("── end (exit code 3"), "{out}");
+    assert!(
+        out.contains("old.json: unchanged since before the command, not uploaded"),
+        "{out}"
+    );
+    assert!(out.contains("Imported 1 of 1 into run RUN-001."), "{out}");
+    assert!(out.contains("Exits with the command's code: 3"), "{out}");
+
+    // A project that does not exist: the command never runs.
+    let marker = f.work().join("ran.txt");
+    let (code, _, err) = f.run(
+        &[
+            "watch",
+            "-p",
+            "NOPE",
+            "--report",
+            "reports/*.json",
+            "--",
+            "cmd",
+            "/C",
+            "echo x> ran.txt",
+        ],
+        &[],
+    );
+    assert_eq!(code, 4, "{err}");
+    assert!(!marker.exists(), "the command ran despite the failed check");
+
+    // The tests pass but write nothing new: their code (0), with a warning;
+    // with --require-upload the missing report decides.
+    let (code, _, err) = f.run(
+        &[
+            "watch",
+            "-p",
+            "TC",
+            "--report",
+            "reports/none-*.json",
+            "--lang",
+            "en",
+            "--",
+            "cmd",
+            "/C",
+            "exit /B 0",
+        ],
+        &[],
+    );
+    assert_eq!(code, 0, "{err}");
+    assert!(err.contains("[no-new-report]"), "{err}");
+    let (code, _, _) = f.run(
+        &[
+            "watch",
+            "-p",
+            "TC",
+            "--report",
+            "reports/none-*.json",
+            "--require-upload",
+            "--",
+            "cmd",
+            "/C",
+            "exit /B 0",
+        ],
+        &[],
+    );
+    assert_eq!(code, 2);
+}
