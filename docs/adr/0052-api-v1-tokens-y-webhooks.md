@@ -314,5 +314,7 @@ El usuario aprobó el plan con las tres recomendaciones: el aviso de caducidad d
   - tokens personales con «Usar en el CLI».
 - **Datos del tour:** el servidor de los tours lleva una `WEBHOOK_SECRETS_KEY` desechable. El destino del webhook es `https://ci.ejemplo.test/…`, que no resuelve nunca (`.test` está reservado): la entrega falla con `ENOTFOUND` y nada sale del equipo.
 - **Fuera del tour:** «Reasignar» y la revocación de todos los tokens de una cuenta por un administrador. Solo aparecen con una segunda persona, y el manual muestra solo a la suya (NC-052). Los cubren los tests.
-- **Visto al recorrerlo:** en el escritorio, un workspace recién creado no aparece en el selector hasta la siguiente sincronización. El tour sincroniza, y «Si algo no sale» lo explica.
+- **Visto al recorrerlo**, y corregido después (NC-059 y NC-060):
+  - en el escritorio, un workspace recién creado no aparecía en el selector hasta la siguiente sincronización (FIX-33);
+  - compartir un proyecto todavía sin enviar respondía «No se pudo completar» (FIX-34).
 - **Test del SSRF:** la prueba de rebinding ya no consulta DNS real (`localtest.me`). `TargetPolicy.resolve` deja inyectar un resolutor falso que responde 127.0.0.1, y la prueba exige `EPRIVATE`.

@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { ChevronsUpDown, KeyRound, Plus, Users } from "lucide-react";
 import { Menu, MenuItem, MenuSeparator } from "@shared/ui/Menu";
 import { usePopover } from "@shared/ui/usePopover";
+import { useSyncStatus } from "@modules/sync-offline";
 import { CreateWorkspaceDialog } from "./CreateWorkspaceDialog";
 import { useWorkspace } from "./workspaceContext";
 import "./workspaces.css";
@@ -18,6 +19,16 @@ export function WorkspaceSwitcher({ compact = false }: { compact?: boolean }) {
   const menu = usePopover("menu");
   const { available, workspaces, current, setCurrent, reload } = useWorkspace();
   const [creating, setCreating] = useState(false);
+  const sync = useSyncStatus();
+  // A workspace just created: chosen as soon as the list has it. On the
+  // desktop the list is the local mirror, which a sync refreshes (FIX-33).
+  const [created, setCreated] = useState<string | null>(null);
+  useEffect(() => {
+    if (created && workspaces.some((w) => w.id === created)) {
+      setCurrent(created);
+      setCreated(null);
+    }
+  }, [created, workspaces, setCurrent]);
   if (!available || !current) return null;
   const roleLabel = t(`workspaces.roles.${current.role}`);
   return (
@@ -64,7 +75,9 @@ export function WorkspaceSwitcher({ compact = false }: { compact?: boolean }) {
           onCancel={() => setCreating(false)}
           onCreated={(w) => {
             setCreating(false);
-            void reload().then(() => setCurrent(w.id));
+            setCreated(w.id);
+            sync?.runSync();
+            void reload();
           }}
         />
       )}

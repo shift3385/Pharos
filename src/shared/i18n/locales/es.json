@@ -5224,7 +5224,8 @@
       "online": "Hace falta conexión con el servidor. Lo que tengas sin enviar llega después al nuevo workspace.",
       "submit": "Mover y compartir",
       "done": "«{{name}}» está ahora en «{{workspace}}»",
-      "notManager": "eres {{role}}"
+      "notManager": "eres {{role}}",
+      "notSynced": "«{{name}}» todavía no está en el servidor: Pharos lo está enviando ahora. Vuelve a pulsar «Mover y compartir» en unos segundos."
     },
     "readOnly": "Solo lectura. Tu rol en «{{name}}» es {{role}}: puedes ver y exportar, pero no cambiar nada.",
     "revoked": {
