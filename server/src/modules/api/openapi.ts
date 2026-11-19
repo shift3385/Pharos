@@ -97,8 +97,8 @@ const NOT_FOUND = json("Error", "`not_found` or `run_not_found`: not in the toke
 
 /** The version of the v1 contract (VERSIONING §6.6): the minor grows with
  *  each additive change, the patch with corrections of the text. A new
- *  major is a new path (`/api/v2`). 1.1.0: runs and report uploads (A2). */
-export const API_V1_CONTRACT_VERSION = "1.1.0";
+ *  major is a new path (`/api/v2`). 1.1.0: runs and report uploads (A2). 1.1.1: findings and metrics are stored (A2b); the text changes, not the shapes. */
+export const API_V1_CONTRACT_VERSION = "1.1.1";
 
 /** The document. */
 export function buildOpenApi() {
@@ -146,7 +146,7 @@ export function buildOpenApi() {
             "Formats: Pharos Run JSON 1.x, JUnit XML, CTRF, Playwright JSON, Cucumber Messages (NDJSON), SARIF, axe-core JSON and k6 summary; `allure` and `trx` answer 422 `unsupported_format` until their parsers ship.",
             "`Content-Encoding: gzip` is accepted. The body is limited compressed (413) and once decompressed (413); a DTD in XML is refused (422 `invalid_report`, reason `doctype`); reading has a time limit (422 `report_timeout`). Errors never quote the file.",
             "The run: `runKey`, or `externalId` (created by the first upload, open until closed), or a new run closed as completed once imported. Case links are derived when read, from `@<prefix><n>` tags or `caseKey`.",
-            "SARIF findings and k6/axe metrics are kept in the raw report until track F stores them (ADR-0053); `counts.findings` and `counts.metrics` are 0 until then and a `findings-in-raw-report` warning says how many.",
+            "SARIF, axe and k6 bring findings and metrics instead of results: they are stored with the shard as the desktop stores them (ADR-0053) and counted in `counts.findings` and `counts.metrics`. A finding without its rule, severity, message or fingerprint, or a metric without a name or a finite value, is 422 `invalid_report` and nothing is written.",
           ].join("\n\n"),
           parameters: [PROJECT, ...uploadParameters()],
           requestBody: {

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pharos API",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "description": "Public API of a Pharos server for CI and scripts. Authenticate with a project token or a personal access token: `Authorization: Bearer phr_…`. A token acts as its owner and never does more than the owner's current role allows. Retry only network errors, 429, 502, 503 and 504; an upload is idempotent (the same file in the same run answers 200 and writes nothing)."
   },
   "servers": [
@@ -197,7 +197,7 @@
       "post": {
         "operationId": "uploadResults",
         "summary": "Upload one test report.",
-        "description": "Scope `runs:write`. The body is the report file itself, one file per request (several files: several requests to the same run).\n\nFormats: Pharos Run JSON 1.x, JUnit XML, CTRF, Playwright JSON, Cucumber Messages (NDJSON), SARIF, axe-core JSON and k6 summary; `allure` and `trx` answer 422 `unsupported_format` until their parsers ship.\n\n`Content-Encoding: gzip` is accepted. The body is limited compressed (413) and once decompressed (413); a DTD in XML is refused (422 `invalid_report`, reason `doctype`); reading has a time limit (422 `report_timeout`). Errors never quote the file.\n\nThe run: `runKey`, or `externalId` (created by the first upload, open until closed), or a new run closed as completed once imported. Case links are derived when read, from `@<prefix><n>` tags or `caseKey`.\n\nSARIF findings and k6/axe metrics are kept in the raw report until track F stores them (ADR-0053); `counts.findings` and `counts.metrics` are 0 until then and a `findings-in-raw-report` warning says how many.",
+        "description": "Scope `runs:write`. The body is the report file itself, one file per request (several files: several requests to the same run).\n\nFormats: Pharos Run JSON 1.x, JUnit XML, CTRF, Playwright JSON, Cucumber Messages (NDJSON), SARIF, axe-core JSON and k6 summary; `allure` and `trx` answer 422 `unsupported_format` until their parsers ship.\n\n`Content-Encoding: gzip` is accepted. The body is limited compressed (413) and once decompressed (413); a DTD in XML is refused (422 `invalid_report`, reason `doctype`); reading has a time limit (422 `report_timeout`). Errors never quote the file.\n\nThe run: `runKey`, or `externalId` (created by the first upload, open until closed), or a new run closed as completed once imported. Case links are derived when read, from `@<prefix><n>` tags or `caseKey`.\n\nSARIF, axe and k6 bring findings and metrics instead of results: they are stored with the shard as the desktop stores them (ADR-0053) and counted in `counts.findings` and `counts.metrics`. A finding without its rule, severity, message or fingerprint, or a metric without a name or a finite value, is 422 `invalid_report` and nothing is written.",
         "parameters": [
           {
             "name": "projectId",

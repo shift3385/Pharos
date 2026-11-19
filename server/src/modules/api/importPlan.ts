@@ -466,3 +466,212 @@ export function resultPayload(
     steps: r.steps,
   };
 }
+
+// ---- findings and metrics (ING-06, ADR-0053; A2b) ---------------------------------
+//
+// The twin of `src-tauri/src/runs/findings.rs::plan`: the document's
+// `findings[]` and `metrics[]` checked and shaped for a shard, the same ids
+// (`findingId`, `metricId`), cuts and payloads the desktop writes and syncs.
+
+export const MAX_FINDINGS = 20_000;
+export const MAX_METRICS = 5_000;
+const MAX_HTML = 1_000;
+const MAX_TEXT = 1_000;
+export const SEVERITIES = ["critical", "high", "medium", "low", "info"] as const;
+
+/** A trimmed, non-empty text of `v[k]`, cut to `max`, or null. */
+function optText(v: Json, k: string, max: number): string | null {
+  const s = typeof v[k] === "string" ? (v[k] as string).trim() : "";
+  return s ? clip(s, max)[0] : null;
+}
+
+/** An object as stored: whole within the attribute limit; over it, only its
+ *  `tool` and `truncated: true` (`findings.rs::object_text`). */
+function objectStored(v: unknown): [Json, boolean] {
+  const o = obj(v);
+  if (bytes(o) <= MAX_ATTRIBUTES) return [o, false];
+  const kept: Json = {};
+  if ("tool" in o) kept.tool = o.tool;
+  kept.truncated = true;
+  return [kept, true];
+}
+
+export interface PlannedFinding {
+  id: string;
+  ruleId: string;
+  ruleName: string | null;
+  severity: (typeof SEVERITIES)[number];
+  rawSeverity: string | null;
+  message: string;
+  location: Json;
+  fingerprint: string;
+  standardRefs: string[];
+  helpUri: string | null;
+  attributes: Json;
+}
+
+export interface PlannedMetric {
+  id: string;
+  name: string;
+  aggregation: string | null;
+  scope: string | null;
+  value: number;
+  unit: string | null;
+  threshold: string | null;
+  passed: boolean | null;
+  attributes: Json;
+}
+
+export interface FindingsPlan {
+  findings: PlannedFinding[];
+  metrics: PlannedMetric[];
+  warnings: ImportWarning[];
+}
+
+/** Checks and shapes `findings[]` and `metrics[]` for a shard. A finding
+ *  needs its rule, severity, message and fingerprint; a metric its name and a
+ *  finite value; anything else is `invalid_report`. */
+export function planFindings(doc: Json, shardId: string, ids: {
+  findingId: (shard: string, fingerprint: string, n: number) => string;
+  metricId: (shard: string, name: string, aggregation: string | null, scope: string | null) => string;
+}): FindingsPlan {
+  const findings = arr(doc.findings);
+  const metrics = arr(doc.metrics);
+  if (findings.length > MAX_FINDINGS) throw importError("too-large", `at most ${MAX_FINDINGS} findings per import`);
+  if (metrics.length > MAX_METRICS) throw importError("too-large", `at most ${MAX_METRICS} metrics per import`);
+  const out: FindingsPlan = { findings: [], metrics: [], warnings: [] };
+  let cut = 0;
+  const seen = new Map<string, number>();
+  findings.forEach((raw, i) => {
+    const f = obj(raw);
+    const bad = (what: string) => importError("invalid-report", `findings.${i}.${what}`);
+    const ruleId = optText(f, "ruleId", MAX_TEXT);
+    if (!ruleId) throw bad("ruleId");
+    const severity = f.severity;
+    if (typeof severity !== "string" || !(SEVERITIES as readonly string[]).includes(severity)) throw bad("severity");
+    const messageRaw = typeof f.message === "string" && f.message.trim() ? f.message : null;
+    if (!messageRaw) throw bad("message");
+    const [message, cutMessage] = clip(messageRaw, MAX_ERROR_MESSAGE);
+    const fingerprint = optText(f, "fingerprint", MAX_TEXT);
+    if (!fingerprint) throw bad("fingerprint");
+    const location0: Json = { ...obj(f.location) };
+    let cutHtml = false;
+    if (typeof location0.html === "string") {
+      const [h, c] = clip(location0.html, MAX_HTML);
+      cutHtml = c;
+      location0.html = h;
+    }
+    const [location, cutLocation] = objectStored(location0);
+    const [attributes, cutAttributes] = objectStored(f.attributes);
+    const standardRefs = arr(f.standardRefs)
+      .filter((s): s is string => typeof s === "string")
+      .map((s) => clip(s, MAX_TEXT)[0]);
+    if (cutMessage || cutHtml || cutLocation || cutAttributes) cut += 1;
+    const n = seen.get(fingerprint) ?? 0;
+    seen.set(fingerprint, n + 1);
+    out.findings.push({
+      id: ids.findingId(shardId, fingerprint, n),
+      ruleId,
+      ruleName: optText(f, "ruleName", MAX_TEXT),
+      severity: severity as PlannedFinding["severity"],
+      rawSeverity: optText(f, "rawSeverity", MAX_TEXT),
+      message,
+      location,
+      fingerprint,
+      standardRefs,
+      helpUri: optText(f, "helpUri", MAX_TEXT),
+      attributes,
+    });
+  });
+  const metricIds = new Set<string>();
+  metrics.forEach((raw, i) => {
+    const m = obj(raw);
+    const bad = (what: string) => importError("invalid-report", `metrics.${i}.${what}`);
+    const name = optText(m, "name", MAX_TEXT);
+    if (!name) throw bad("name");
+    const value = m.value;
+    if (typeof value !== "number" || !Number.isFinite(value)) throw bad("value");
+    const aggregation = optText(m, "aggregation", MAX_TEXT);
+    const scope = optText(m, "scope", MAX_TEXT);
+    const id = ids.metricId(shardId, name, aggregation, scope);
+    if (metricIds.has(id)) {
+      // The same name, aggregation and scope twice: the first one counts.
+      out.warnings.push({ code: "duplicate-metric", testKey: null, detail: name });
+      return;
+    }
+    metricIds.add(id);
+    const [attributes, cutAttributes] = objectStored(m.attributes);
+    if (cutAttributes) cut += 1;
+    out.metrics.push({
+      id,
+      name,
+      aggregation,
+      scope,
+      value,
+      unit: optText(m, "unit", MAX_TEXT),
+      threshold: optText(m, "threshold", MAX_TEXT),
+      passed: typeof m.passed === "boolean" ? m.passed : null,
+      attributes,
+    });
+  });
+  if (cut > 0) out.warnings.push({ code: "text-truncated", testKey: null, detail: String(cut) });
+  return out;
+}
+
+/** Findings by severity, for the import event (`Planned::severities`). */
+export function severityCounts(findings: PlannedFinding[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const s of SEVERITIES) {
+    const n = findings.filter((f) => f.severity === s).length;
+    if (n > 0) out[s] = n;
+  }
+  return out;
+}
+
+type DocContext = { projectId: string; runId: string; shardId: string; userId: string; at: string; hlc: string };
+
+/** The `finding` document (`findings.rs::finding_payload`). */
+export function findingPayload(f: PlannedFinding, ctx: DocContext): Json {
+  return {
+    id: f.id,
+    workspaceId: "local",
+    projectId: ctx.projectId,
+    runId: ctx.runId,
+    shardId: ctx.shardId,
+    ruleId: f.ruleId,
+    ruleName: f.ruleName,
+    severity: f.severity,
+    rawSeverity: f.rawSeverity,
+    message: f.message,
+    location: f.location,
+    fingerprint: f.fingerprint,
+    standardRefs: f.standardRefs,
+    helpUri: f.helpUri,
+    attributes: f.attributes,
+    createdBy: ctx.userId,
+    createdAt: ctx.at,
+    hlc: ctx.hlc,
+  };
+}
+
+/** The `metric` document (`findings.rs::metric_payload`). */
+export function metricPayload(m: PlannedMetric, ctx: DocContext): Json {
+  return {
+    id: m.id,
+    workspaceId: "local",
+    projectId: ctx.projectId,
+    runId: ctx.runId,
+    shardId: ctx.shardId,
+    name: m.name,
+    aggregation: m.aggregation,
+    scope: m.scope,
+    value: m.value,
+    unit: m.unit,
+    threshold: m.threshold,
+    passed: m.passed,
+    attributes: m.attributes,
+    createdBy: ctx.userId,
+    createdAt: ctx.at,
+    hlc: ctx.hlc,
+  };
+}

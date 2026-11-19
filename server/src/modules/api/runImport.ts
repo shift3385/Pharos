@@ -24,7 +24,21 @@ import { timestamp } from "../domain/domain.service";
 import type { RemoteDoc } from "../sync/sync.repository";
 import type { Pool } from "pg";
 import type { ApiPrincipal } from "./apiTokens";
-import { checkDoc, clip, MAX_TITLE, planImport, resultPayload, runFieldsOf, statusCounts, text, type ImportWarning } from "./importPlan";
+import {
+  checkDoc,
+  clip,
+  findingPayload,
+  MAX_TITLE,
+  metricPayload,
+  planFindings,
+  planImport,
+  resultPayload,
+  runFieldsOf,
+  severityCounts,
+  statusCounts,
+  text,
+  type ImportWarning,
+} from "./importPlan";
 import type { ParsedUpload } from "./reportParse";
 
 /** Namespace of the runs an `externalId` names (ADR-0052 §2). */
@@ -234,10 +248,12 @@ export function createRunImport(deps: {
         const runKey = str(runDoc.payload, "runKey");
         const shardId = formats.shardId(runId, sha, parsedNormalizer(doc));
         const plan = planImport(doc, shardId, formats);
+        // Findings and metrics are checked before anything is written (ING-06).
+        const fm = planFindings(doc, shardId, formats);
         const existing = await tx.get("run_shard", shardId);
         if (existing && !existing.deleted) {
           await attach(tx, rawAttachment(projectId, shardId));
-          return { runId, runKey, shardId, created: false, runCreated, plan, status: str(runDoc.payload, "status") };
+          return { runId, runKey, shardId, created: false, runCreated, plan, fm, status: str(runDoc.payload, "status") };
         }
         if (!runCreated && str(runDoc.payload, "status") !== "in_progress") throw RunErrors.closed(runKey);
         const at = nowIso();
@@ -265,6 +281,9 @@ export function createRunImport(deps: {
             resultPayload(r, { projectId, runId, shardId, executedBy: plan.executedBy, userId, at, hlc: tx.stamp() }),
           );
         }
+        const ctx = { projectId, runId, shardId, userId, at };
+        for (const f of fm.findings) await tx.append("finding", f.id, findingPayload(f, { ...ctx, hlc: tx.stamp() }));
+        for (const m of fm.metrics) await tx.append("metric", m.id, metricPayload(m, { ...ctx, hlc: tx.stamp() }));
         await tx.audit(
           "import",
           "run_shard",
@@ -273,7 +292,11 @@ export function createRunImport(deps: {
             runId,
             format: plan.format,
             results: plan.results.length,
-            warnings: plan.warnings.length,
+            findings: fm.findings.length,
+            findingSeverities: severityCounts(fm.findings),
+            metrics: fm.metrics.length,
+            thresholdsFailed: fm.metrics.filter((m) => m.passed === false).length,
+            warnings: plan.warnings.length + fm.warnings.length,
             via,
           },
           { results: [null, plan.results.length] },
@@ -289,7 +312,7 @@ export function createRunImport(deps: {
           );
           status = "completed";
         }
-        return { runId, runKey, shardId, created: true, runCreated, plan, status };
+        return { runId, runKey, shardId, created: true, runCreated, plan, fm, status };
       });
 
       function rawAttachment(projectId: string, shardId: string) {
@@ -309,11 +332,7 @@ export function createRunImport(deps: {
       // The link is derived when read: count what the readers will see.
       const views = (await runs.results(userId, result.runId)).filter((v) => v.shardId === result.shardId);
       const linked = views.filter((v) => v.effectiveTestCaseId).length;
-      const warnings = [...result.plan.warnings];
-      const findings = Array.isArray(doc.findings) ? doc.findings.length : 0;
-      const metrics = Array.isArray(doc.metrics) ? doc.metrics.length : 0;
-      if (findings || metrics)
-        warnings.push({ code: "findings-in-raw-report", testKey: null, detail: `${findings} findings, ${metrics} metrics` });
+      const warnings = [...result.plan.warnings, ...result.fm.warnings];
       // Attachments the report embeds stay in the raw report for now (A2).
       if (parsed.inline.length)
         warnings.push({ code: "attachments-in-raw-report", testKey: null, detail: `${parsed.inline.length} attachments` });
@@ -331,9 +350,8 @@ export function createRunImport(deps: {
           linked,
           unlinked: views.length - linked,
           byStatus: statusCounts(result.plan.results),
-          // Stored from F2 on (ADR-0053); kept in the raw report until then.
-          findings: 0,
-          metrics: 0,
+          findings: result.fm.findings.length,
+          metrics: result.fm.metrics.length,
         },
         warnings,
       };

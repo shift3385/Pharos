@@ -8,7 +8,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import * as formats from "@pharos/formats";
-import { planImport, resultPayload } from "../src/modules/api/importPlan";
+import { findingPayload, metricPayload, planFindings, planImport, resultPayload } from "../src/modules/api/importPlan";
 
 const FIXTURE = new URL("../../src-tauri/tests/fixtures/api-import-interop.json", import.meta.url);
 
@@ -20,6 +20,8 @@ interface Case {
   shardId: string;
   shard: Record<string, unknown>;
   results: Record<string, unknown>[];
+  findings?: Record<string, unknown>[];
+  metrics?: Record<string, unknown>[];
   warnings: { code: string; testKey: string | null }[];
 }
 
@@ -29,7 +31,9 @@ const content = (p: Record<string, unknown>) => Object.fromEntries(Object.entrie
 
 describe("the server's import planner writes what the desktop writes", () => {
   it("has vectors for every format and the corner cases", () => {
-    expect(cases.map((c) => c.name)).toEqual(expect.arrayContaining(["single/ctrf", "single/pw-junit", "single/cucumber-messages", "edge"]));
+    expect(cases.map((c) => c.name)).toEqual(
+      expect.arrayContaining(["single/ctrf", "single/pw-junit", "single/cucumber-messages", "edge", "sarif/trivy", "axe/checkout", "k6/summary"]),
+    );
   });
 
   it.each(cases.map((c) => [c.name, c] as const))("%s", (_name, c) => {
@@ -51,6 +55,12 @@ describe("the server's import planner writes what the desktop writes", () => {
       shardIndex: c.shard.shardIndex,
       shardTotal: c.shard.shardTotal,
     });
-    expect(plan.warnings.map((w) => ({ code: w.code, testKey: w.testKey }))).toEqual(c.warnings);
+    // Findings and metrics (A2b): the same ids and content as findings.rs.
+    const fm = planFindings(c.doc, c.shardId, formats);
+    const byId = (a: Record<string, unknown>, b: Record<string, unknown>) => String(a.id).localeCompare(String(b.id));
+    const fctx = { projectId: "p", runId: c.runId, shardId: c.shardId, userId: "u", at: "t", hlc: "h" };
+    expect(fm.findings.map((f) => content(findingPayload(f, fctx))).sort(byId)).toEqual((c.findings ?? []).map(content).sort(byId));
+    expect(fm.metrics.map((m) => content(metricPayload(m, fctx))).sort(byId)).toEqual((c.metrics ?? []).map(content).sort(byId));
+    expect([...plan.warnings, ...fm.warnings].map((w) => ({ code: w.code, testKey: w.testKey }))).toEqual(c.warnings);
   });
 });
