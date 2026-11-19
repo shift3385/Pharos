@@ -149,6 +149,14 @@
     {
       "file": "trx/dotnet-xunitv3.trx",
       "format": "trx"
+    },
+    {
+      "file": "xcresult/Xcode16-Mixed-XCTest-SwiftTesting.json",
+      "format": "xcresult"
+    },
+    {
+      "file": "xcresult/Xcode26-Mixed-XCTest-SwiftTesting.json",
+      "format": "xcresult"
     }
   ],
   "inline": [

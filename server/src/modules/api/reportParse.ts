@@ -53,6 +53,7 @@ export const UPLOAD_FORMATS = [
   "k6",
   "allure",
   "trx",
+  "xcresult",
 ] as const;
 export type UploadFormat = (typeof UPLOAD_FORMATS)[number];
 const NOT_YET: readonly string[] = [];

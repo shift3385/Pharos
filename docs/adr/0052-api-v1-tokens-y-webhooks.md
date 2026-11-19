@@ -40,7 +40,7 @@ Además, el único código que convierte un Pharos Run JSON en documentos es Rus
 ### 2. Subida de resultados
 
 - `POST /api/v1/projects/{projectId}/results?format=<fmt>` acepta un informe por petición, con el fichero como cuerpo y gzip si se quiere. Sin multipart y sin dependencias nuevas.
-  - Formatos: **Pharos Run JSON 1.x**, el formato por defecto, o el original del informe: `junit`, `ctrf`, `playwright_json`, `cucumber_messages`, `sarif`, `k6`, `axe`, `trx`, o `allure` (un zip).
+  - Formatos: **Pharos Run JSON 1.x**, el formato por defecto, o el original del informe: `junit`, `ctrf`, `playwright_json`, `cucumber_messages`, `sarif`, `k6`, `axe`, `trx`, `xcresult` (el JSON de `xcresulttool`) o `allure` (un zip).
   - El servidor convierte el informe con los parsers compartidos de la pista F (`@pharos/formats`), sin copiarlos, y lo guarda como un Pharos Run JSON.
   - Varios ficheros van en varias peticiones al mismo run.
 - **Defensas de la subida** (revisión de seguridad, pedidas por el coordinador el 2026-11-18). Se documentan también en el OpenAPI de la ruta (A2):

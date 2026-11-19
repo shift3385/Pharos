@@ -49,6 +49,7 @@ export const uploadFormatSchema = z.enum([
   "k6",
   "allure",
   "trx",
+  "xcresult",
 ]);
 
 /** Where an uploaded report goes and how it is named (query parameters). */

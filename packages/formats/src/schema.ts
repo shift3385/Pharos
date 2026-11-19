@@ -133,6 +133,7 @@ export const shardSchema = z.looseObject({
     // 1.1.0 (ING-07).
     "allure",
     "trx",
+    "xcresult",
   ]),
   sourceFileSha256: z
     .string()

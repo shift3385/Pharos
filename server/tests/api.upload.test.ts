@@ -183,6 +183,43 @@ describe("uploading a report", () => {
     expect(bad.json()).toMatchObject({ code: "invalid_report" });
   });
 
+  it("imports xcresulttool test results (ING-07): a Swift Testing tag links, a retry is an attempt", async () => {
+    const { token, ws } = await setup();
+    const results = {
+      devices: [{ deviceName: "iPhone 16 Pro", platform: "iOS Simulator", osVersion: "18.2" }],
+      testNodes: [
+        {
+          nodeType: "Unit test bundle",
+          name: "ShopTests",
+          children: [
+            {
+              nodeType: "Test Suite",
+              name: "Pagos",
+              children: [
+                {
+                  nodeType: "Test Case",
+                  name: "Paga con tarjeta",
+                  nodeIdentifier: "PayTests/testPay()",
+                  tags: ["PAY-001"],
+                  result: "Passed",
+                  children: [
+                    { nodeType: "Repetition", name: "Retry 1", result: "Failed", children: [{ nodeType: "Failure Message", name: "Pay.swift:3: timeout" }] },
+                    { nodeType: "Repetition", name: "Retry 2", result: "Passed" },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const res = await upload(token, JSON.stringify(results), "format=xcresult&fileName=tests.json", { "content-type": "application/json" });
+    expect(res.statusCode).toBe(201);
+    expect(res.json()).toMatchObject({ shard: { created: true, format: "xcresult" }, counts: { results: 2, linked: 2 } });
+    const shard = (await pool.query("SELECT payload FROM documents WHERE workspace_id = $1 AND entity = 'run_shard'", [ws])).rows[0];
+    expect(shard.payload).toMatchObject({ sourceFormat: "xcresult" });
+  });
+
   it("the same file again is a no-op that answers the same run", async () => {
     const { token } = await setup();
     const first = (await upload(token, FILE_A)).json();

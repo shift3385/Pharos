@@ -33,6 +33,7 @@ export const IMPORT_FORMATS = [
   // ING-07 (Pharos Run JSON 1.1.0).
   "allure",
   "trx",
+  "xcresult",
 ] as const;
 
 export const MAX_IMPORT_RESULTS = 20_000;
