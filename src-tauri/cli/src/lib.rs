@@ -11,6 +11,7 @@ pub mod config;
 pub mod doctor;
 pub mod exit;
 pub mod i18n;
+pub mod junit;
 #[cfg(feature = "local")]
 pub mod local;
 pub mod output;

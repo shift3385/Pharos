@@ -2340,8 +2340,8 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   and manual v2 (MAN-03/04). Part of it is in `main`; most of it still lives on
   the integration branch `local/app-completa` — see `docs/ROADMAP.md` §2.1 for
   where each piece is and §2.2 for the approved course (ADR-0039): autonomous execution as the axis up to 1.0.
-- **Known gaps (2026-11-18):** the `pharos` CLI imports Pharos Run JSON into
-  the local database (INT-01 L1) but has no remote mode, `watch` or installer
+- **Known gaps (2026-11-18):** the `pharos` CLI imports Pharos Run JSON and
+  JUnit into the local database (INT-01 L1, L4) but has no remote mode, `watch` or installer
   yet, and no other process can write while the app is open (SEC-05); no shared
   workspaces or roles (SYNC-07); exit criteria are recognised from free text and
   never gate closing a cycle; no SARIF/k6/axe/Allure ingest, CLI, public API or

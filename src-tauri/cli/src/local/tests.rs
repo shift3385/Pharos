@@ -210,9 +210,10 @@ fn other_formats_and_bad_documents_are_refused_and_the_rest_still_imports() {
     f.write("ok.json", &report("single__ctrf.json"));
     f.write("eslint.sarif", r#"{"version":"2.1.0","runs":[]}"#);
     f.write(
-        "junit.xml",
-        "<?xml version=\"1.0\"?><testsuites></testsuites>",
+        "results.trx",
+        "<?xml version=\"1.0\"?><TestRun><Results/></TestRun>",
     );
+    f.write("broken.xml", "<testsuites><testsuite></testsuites>");
     f.write(
         "bad.json",
         r#"{"schemaVersion":"1.0.0","results":[{"name":"t","status":"green"}]}"#,
@@ -224,12 +225,16 @@ fn other_formats_and_bad_documents_are_refused_and_the_rest_still_imports() {
         "{err}"
     );
     assert!(err.contains("[format-not-local]"), "{err}");
-    let (code, _, err) = f.run(&["upload", "junit.xml", "-p", "TC", "--lang", "es"], &[]);
+    let (code, _, err) = f.run(&["upload", "results.trx", "-p", "TC", "--lang", "es"], &[]);
     assert_eq!(code, 5);
     assert!(
-        err.contains("JUnit no se puede importar en modo local"),
+        err.contains("TRX no se puede importar en modo local"),
         "{err}"
     );
+    let (code, _, err) = f.run(&["upload", "broken.xml", "-p", "TC", "--lang", "en"], &[]);
+    assert_eq!(code, 5);
+    assert!(err.contains("broken.xml: not valid XML."), "{err}");
+    assert!(err.contains("[invalid-report]"), "{err}");
     let (code, _, err) = f.run(&["upload", "bad.json", "-p", "TC", "--lang", "en"], &[]);
     assert_eq!(code, 5);
     assert!(err.contains("results.0.status"), "{err}");
@@ -345,4 +350,41 @@ fn projects_are_picked_by_id_or_prefix_as_the_api_does() {
         super::pick_project(&all, "PAG").unwrap_err().code,
         "ambiguous-project"
     );
+}
+
+/// A raw ING-01 sample of the formats package.
+fn sample(name: &str) -> String {
+    std::fs::read_to_string(
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../packages/formats/src/fixtures/ing01/"
+        )
+        .to_string()
+            + name,
+    )
+    .unwrap()
+}
+
+#[test]
+fn a_junit_report_is_imported_locally_with_its_retries() {
+    let f = Fixture::new();
+    f.write("junit.xml", &sample("single/pw-junit.xml"));
+    let (code, out, err) = f.run(&["upload", "junit.xml", "-p", "TC", "--json"], &[]);
+    assert_eq!(
+        code, 0,
+        "{out}
+{err}"
+    );
+    let lines = json_lines(&out);
+    assert_eq!(lines[0]["format"], "junit");
+    assert_eq!(lines[0]["run"]["key"], "RUN-001");
+    let expected = crate::junit::parse(&sample("single/pw-junit.xml")).unwrap();
+    assert_eq!(
+        lines[0]["counts"]["results"],
+        expected["results"].as_array().unwrap().len()
+    );
+    // The same JUnit again is a no-op, as in the app.
+    let (code, out, _) = f.run(&["upload", "junit.xml", "-p", "TC", "--lang", "en"], &[]);
+    assert_eq!(code, 0, "{out}");
+    assert!(out.contains("already imported into RUN-001"), "{out}");
 }
