@@ -72,7 +72,8 @@ const DIR: &str = "evidence";
 const TMP: &str = "tmp";
 /// How long an unfinished write's temp file must sit untouched before an
 /// open removes it (`clean_tmp`): far longer than any live write between two
-/// blocks, short enough that leftovers of a crash go the same day.
+/// blocks, short enough that leftovers of a crash go the same day. It must
+/// stay above `UPLOAD_IDLE` (checked at compile time).
 pub(crate) const STALE_TMP: std::time::Duration = std::time::Duration::from_secs(60 * 60);
 
 /// Error kinds the UI translates (prefixes of the error strings).
@@ -303,7 +304,9 @@ impl EvidenceStore {
         let now = std::time::SystemTime::now();
         let mut removed = 0;
         for entry in entries.filter_map(Result::ok) {
-            let modified = entry.metadata().and_then(|m| m.modified()).ok();
+            // The file itself, not the directory listing: on Windows the
+            // listing can lag behind a file still open for writing.
+            let modified = fs::metadata(entry.path()).and_then(|m| m.modified()).ok();
             // A time in the future (a clock change) is not "old".
             let old = modified
                 .and_then(|m| now.duration_since(m).ok())
@@ -797,6 +800,9 @@ const MAX_OPEN_UPLOADS: usize = 8;
 /// An upload untouched this long is dropped (the webview reloaded mid-upload,
 /// or the chunk that held it never came back), so it never blocks new ones.
 const UPLOAD_IDLE: Duration = Duration::from_secs(10 * 60);
+// An abandoned upload slot is dropped long before `clean_tmp` may remove its
+// temp file: a file older than STALE_TMP has no writer left.
+const _: () = assert!(UPLOAD_IDLE.as_secs() < STALE_TMP.as_secs());
 
 /// One upload: waiting for its next chunk, or being written by one.
 enum Slot {
