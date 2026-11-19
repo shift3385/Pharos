@@ -1,0 +1,375 @@
+{
+  "format": "allure",
+  "warnings": [],
+  "inline": {
+    "a1": {
+      "encoding": "text",
+      "length": 1048
+    },
+    "a2": {
+      "encoding": "text",
+      "length": 9
+    },
+    "a3": {
+      "encoding": "text",
+      "length": 1216
+    },
+    "a4": {
+      "encoding": "text",
+      "length": 1216
+    },
+    "a5": {
+      "encoding": "text",
+      "length": 628
+    },
+    "a6": {
+      "encoding": "text",
+      "length": 628
+    }
+  },
+  "doc": {
+    "schemaVersion": "1.1.0",
+    "run": {
+      "trigger": "import",
+      "sourceTool": "playwright",
+      "startedAt": "2026-11-19T18:53:44.471Z",
+      "context": {
+        "environment": {
+          "os": "ci",
+          "app": "pharos-sample"
+        }
+      }
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "allure",
+        "normalizerVersion": 1
+      }
+    ],
+    "results": [
+      {
+        "name": "añade al carrito tras un reintento",
+        "testKey": "carrito.spec.mjs::añade al carrito tras un reintento",
+        "filePath": "carrito.spec.mjs",
+        "suite": [],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "failed",
+        "attempt": 0,
+        "externalId": "b829358a8154e72d6c645e5bee03fff7:d41d8cd98f00b204e9800998ecf8427e",
+        "startedAt": "2026-11-19T18:53:44.471Z",
+        "finishedAt": "2026-11-19T18:53:44.488Z",
+        "duration": 17,
+        "message": "Error: falla la primera vez\n\nexpect(received).toBeGreaterThan(expected)\n\nExpected: > 0\nReceived:   0",
+        "trace": "  4 |\n  5 | test(\"añade al carrito tras un reintento\", async () => {\n> 6 |   expect(test.info().retry, \"falla la primera vez\").toBeGreaterThan(0);\n    |                                                     ^\n  7 | });\n  8 |\n  9 | for (const qty of [1, 3]) {\n\nError: falla la primera vez\n\nexpect(received).toBeGreaterThan(expected)\n\nExpected: > 0\nReceived:   0\n    at /home/runner/work/app/specs/carrito.spec.mjs:6:53",
+        "steps": [
+          {
+            "text": "falla la primera vez",
+            "status": "failed",
+            "durationMs": 3,
+            "actual": "Error: falla la primera vez\n\nexpect(received).toBeGreaterThan(expected)\n\nExpected: > 0\nReceived:   0"
+          }
+        ],
+        "attachments": [
+          "a1"
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "fullName": "carrito.spec.mjs › añade al carrito tras un reintento"
+        }
+      },
+      {
+        "name": "añade al carrito tras un reintento",
+        "testKey": "carrito.spec.mjs::añade al carrito tras un reintento",
+        "filePath": "carrito.spec.mjs",
+        "suite": [],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 1,
+        "externalId": "b829358a8154e72d6c645e5bee03fff7:d41d8cd98f00b204e9800998ecf8427e",
+        "startedAt": "2026-11-19T18:53:45.631Z",
+        "finishedAt": "2026-11-19T18:53:45.644Z",
+        "duration": 13,
+        "steps": [
+          {
+            "text": "falla la primera vez",
+            "status": "passed",
+            "durationMs": 1
+          }
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "flaky": true,
+          "fullName": "carrito.spec.mjs › añade al carrito tras un reintento"
+        }
+      },
+      {
+        "name": "calcula el total con 1 unidades",
+        "testKey": "carrito.spec.mjs::calcula el total con 1 unidades",
+        "filePath": "carrito.spec.mjs",
+        "suite": [],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 0,
+        "externalId": "a22e61e8928e7a11c1dba0bc23112748:28014379745877a2c341434f99a7b588",
+        "startedAt": "2026-11-19T18:53:45.722Z",
+        "finishedAt": "2026-11-19T18:53:45.937Z",
+        "duration": 215,
+        "steps": [
+          {
+            "text": "Expect \"toBeGreaterThan\"",
+            "status": "passed",
+            "durationMs": 1
+          }
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "parameters": {
+            "qty": "1"
+          },
+          "fullName": "carrito.spec.mjs › calcula el total con 1 unidades"
+        }
+      },
+      {
+        "name": "calcula el total con 3 unidades",
+        "testKey": "carrito.spec.mjs::calcula el total con 3 unidades",
+        "filePath": "carrito.spec.mjs",
+        "suite": [],
+        "tags": [],
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 0,
+        "externalId": "565c2813ab64b2640a000ff00c46f46f:98f81830d13304bf8b9e48c9ff425f3c",
+        "startedAt": "2026-11-19T18:53:45.955Z",
+        "finishedAt": "2026-11-19T18:53:45.960Z",
+        "duration": 5,
+        "steps": [
+          {
+            "text": "Expect \"toBeGreaterThan\"",
+            "status": "passed",
+            "durationMs": 1
+          }
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "parameters": {
+            "qty": "3"
+          },
+          "fullName": "carrito.spec.mjs › calcula el total con 3 unidades"
+        }
+      },
+      {
+        "name": "paga con tarjeta @TC-001",
+        "testKey": "pagos.spec.mjs::Pagos › paga con tarjeta @TC-001",
+        "filePath": "pagos.spec.mjs",
+        "suite": [
+          "Pagos"
+        ],
+        "tags": [
+          "@TC-001"
+        ],
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 0,
+        "externalId": "9be2623b45385edaff440e5ee4c8bd93:d41d8cd98f00b204e9800998ecf8427e",
+        "startedAt": "2026-11-19T18:53:46.011Z",
+        "finishedAt": "2026-11-19T18:53:46.021Z",
+        "duration": 10,
+        "steps": [
+          {
+            "text": "rellena la tarjeta",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "text": "confirma el pago",
+            "status": "passed",
+            "durationMs": 2
+          }
+        ],
+        "attachments": [
+          "a2"
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "fullName": "pagos.spec.mjs › Pagos › paga con tarjeta @TC-001"
+        }
+      },
+      {
+        "name": "rechaza una tarjeta caducada",
+        "testKey": "pagos.spec.mjs::Pagos › rechaza una tarjeta caducada",
+        "filePath": "pagos.spec.mjs",
+        "suite": [
+          "Pagos"
+        ],
+        "tags": [
+          "@TC-002"
+        ],
+        "status": "failed",
+        "rawStatus": "failed",
+        "attempt": 0,
+        "externalId": "7aff76503e2203e911e45b966b06302c:d41d8cd98f00b204e9800998ecf8427e",
+        "startedAt": "2026-11-19T18:53:46.041Z",
+        "finishedAt": "2026-11-19T18:53:46.050Z",
+        "duration": 9,
+        "message": "Error: status\n\nexpect(received).toBe(expected) // Object.is equality\n\nExpected: 200\nReceived: 402",
+        "trace": "  14 |   test(\"rechaza una tarjeta caducada\", async () => {\n  15 |     await allure.label(\"tag\", \"TC-002\");\n> 16 |     expect(402, \"status\").toBe(200);\n     |                           ^\n  17 |   });\n  18 | });\n  19 |\n\nError: status\n\nexpect(received).toBe(expected) // Object.is equality\n\nExpected: 200\nReceived: 402\n    at /home/runner/work/app/specs/pagos.spec.mjs:16:27",
+        "steps": [
+          {
+            "text": "status",
+            "status": "failed",
+            "durationMs": 4,
+            "actual": "Error: status\n\nexpect(received).toBe(expected) // Object.is equality\n\nExpected: 200\nReceived: 402"
+          }
+        ],
+        "attachments": [
+          "a3"
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "fullName": "pagos.spec.mjs › Pagos › rechaza una tarjeta caducada"
+        }
+      },
+      {
+        "name": "rechaza una tarjeta caducada",
+        "testKey": "pagos.spec.mjs::Pagos › rechaza una tarjeta caducada",
+        "filePath": "pagos.spec.mjs",
+        "suite": [
+          "Pagos"
+        ],
+        "tags": [
+          "@TC-002"
+        ],
+        "status": "failed",
+        "rawStatus": "failed",
+        "attempt": 1,
+        "externalId": "7aff76503e2203e911e45b966b06302c:d41d8cd98f00b204e9800998ecf8427e",
+        "startedAt": "2026-11-19T18:53:47.141Z",
+        "finishedAt": "2026-11-19T18:53:47.387Z",
+        "duration": 246,
+        "message": "Error: status\n\nexpect(received).toBe(expected) // Object.is equality\n\nExpected: 200\nReceived: 402",
+        "trace": "  14 |   test(\"rechaza una tarjeta caducada\", async () => {\n  15 |     await allure.label(\"tag\", \"TC-002\");\n> 16 |     expect(402, \"status\").toBe(200);\n     |                           ^\n  17 |   });\n  18 | });\n  19 |\n\nError: status\n\nexpect(received).toBe(expected) // Object.is equality\n\nExpected: 200\nReceived: 402\n    at /home/runner/work/app/specs/pagos.spec.mjs:16:27",
+        "steps": [
+          {
+            "text": "status",
+            "status": "failed",
+            "durationMs": 5,
+            "actual": "Error: status\n\nexpect(received).toBe(expected) // Object.is equality\n\nExpected: 200\nReceived: 402"
+          }
+        ],
+        "attachments": [
+          "a4"
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "fullName": "pagos.spec.mjs › Pagos › rechaza una tarjeta caducada"
+        }
+      },
+      {
+        "name": "exporta el perfil (pendiente)",
+        "testKey": "perfil.spec.mjs::exporta el perfil (pendiente)",
+        "filePath": "perfil.spec.mjs",
+        "suite": [],
+        "tags": [],
+        "status": "skipped",
+        "rawStatus": "skipped",
+        "attempt": 0,
+        "externalId": "555d9b7d8f18464fd94a22e68de3191e:d41d8cd98f00b204e9800998ecf8427e",
+        "startedAt": "2026-11-19T18:53:48.547Z",
+        "finishedAt": "2026-11-19T18:53:48.547Z",
+        "duration": 0,
+        "shardRef": "s1",
+        "attributes": {
+          "fullName": "perfil.spec.mjs › exporta el perfil (pendiente)"
+        }
+      },
+      {
+        "name": "muestra el perfil",
+        "testKey": "perfil.spec.mjs::muestra el perfil",
+        "filePath": "perfil.spec.mjs",
+        "suite": [],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "failed",
+        "attempt": 0,
+        "externalId": "ce9524e83c321718ef23e7c9d14ec0fe:d41d8cd98f00b204e9800998ecf8427e",
+        "startedAt": "2026-11-19T18:53:48.548Z",
+        "finishedAt": "2026-11-19T18:53:48.553Z",
+        "duration": 5,
+        "message": "Error: perfil no disponible",
+        "trace": "  4 |\n  5 | test(\"muestra el perfil\", async () => {\n> 6 |   throw new Error(\"perfil no disponible\");\n    |         ^\n  7 | });\n  8 |\n\nError: perfil no disponible\n    at /home/runner/work/app/specs/perfil.spec.mjs:6:9",
+        "attachments": [
+          "a5"
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "fullName": "perfil.spec.mjs › muestra el perfil"
+        }
+      },
+      {
+        "name": "muestra el perfil",
+        "testKey": "perfil.spec.mjs::muestra el perfil",
+        "filePath": "perfil.spec.mjs",
+        "suite": [],
+        "tags": [],
+        "status": "failed",
+        "rawStatus": "failed",
+        "attempt": 1,
+        "externalId": "ce9524e83c321718ef23e7c9d14ec0fe:d41d8cd98f00b204e9800998ecf8427e",
+        "startedAt": "2026-11-19T18:53:49.679Z",
+        "finishedAt": "2026-11-19T18:53:49.684Z",
+        "duration": 5,
+        "message": "Error: perfil no disponible",
+        "trace": "  4 |\n  5 | test(\"muestra el perfil\", async () => {\n> 6 |   throw new Error(\"perfil no disponible\");\n    |         ^\n  7 | });\n  8 |\n\nError: perfil no disponible\n    at /home/runner/work/app/specs/perfil.spec.mjs:6:9",
+        "attachments": [
+          "a6"
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "fullName": "perfil.spec.mjs › muestra el perfil"
+        }
+      }
+    ],
+    "attachments": [
+      {
+        "ref": "a1",
+        "name": "error-context",
+        "kind": "evidence",
+        "contentType": "text/markdown"
+      },
+      {
+        "ref": "a2",
+        "name": "recibo.txt",
+        "kind": "log",
+        "contentType": "text/plain"
+      },
+      {
+        "ref": "a3",
+        "name": "error-context",
+        "kind": "evidence",
+        "contentType": "text/markdown"
+      },
+      {
+        "ref": "a4",
+        "name": "error-context",
+        "kind": "evidence",
+        "contentType": "text/markdown"
+      },
+      {
+        "ref": "a5",
+        "name": "error-context",
+        "kind": "evidence",
+        "contentType": "text/markdown"
+      },
+      {
+        "ref": "a6",
+        "name": "error-context",
+        "kind": "evidence",
+        "contentType": "text/markdown"
+      }
+    ]
+  }
+}

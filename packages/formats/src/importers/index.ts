@@ -30,6 +30,7 @@ import { isK6Summary, parseK6 } from "./k6.js";
 import { isSarif, parseSarif } from "./sarif.js";
 import { parseJunit } from "./junit.js";
 import { isTrx, parseTrx } from "./trx.js";
+import { type AllureFile, parseAllure } from "./allure.js";
 import { MessagesCollector, parseMessages } from "./messages.js";
 import { parsePlaywright } from "./playwright.js";
 
@@ -42,6 +43,7 @@ export { type SarifLog, isSarif, parseSarif } from "./sarif.js";
 export { parseCtrf } from "./ctrf.js";
 export { parseJunit } from "./junit.js";
 export { TRX_NAMESPACE, isTrx, parseTrx, trxDuration } from "./trx.js";
+export { type AllureFile, isAllureResults, parseAllure } from "./allure.js";
 export { parsePlaywright } from "./playwright.js";
 
 const ENVELOPE_KEYS = new Set([
@@ -167,6 +169,12 @@ function parseJson(json: unknown): ParsedReport {
       o as unknown as Parameters<typeof parsePlaywright>[0],
     );
   throw new ReportError("unknown-format");
+}
+
+/** An `allure-results` folder (ING-07), its files already read: validated
+ *  and within the per-import limits, as a single report. */
+export function parseAllureResults(files: AllureFile[]): ParsedReport {
+  return checked(parseAllure(files));
 }
 
 /** The parse result, validated and within the per-import limits. */
