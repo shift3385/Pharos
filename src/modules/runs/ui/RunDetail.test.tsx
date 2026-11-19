@@ -4,6 +4,8 @@
 // revision after the case changed, the new-run dialog, deleting a run
 // (EJE-07), and the web (EJE-06): the same executor without files, its draft
 // in this browser.
+// The «Hallazgos» and «Métricas» tabs of a run with findings and metrics
+// (ING-06, F4), with the triage dialog.
 // axe checks the markup of each (UX-05, ADR-0027).
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@test/slow";
@@ -41,6 +43,10 @@ const api = vi.hoisted(() => ({
   previewAttachment: vi.fn(),
   deletePreview: vi.fn(),
   delete: vi.fn(),
+  findings: vi.fn(),
+  metrics: vi.fn(),
+  triage: vi.fn(),
+  triageHistory: vi.fn(),
 }));
 vi.mock("../api/runsApi", () => ({ runsApi: api }));
 const platform = vi.hoisted(() => ({ desktop: true }));
@@ -252,6 +258,9 @@ beforeEach(async () => {
   api.close.mockResolvedValue(run({ status: "completed" }));
   api.previewAttachment.mockResolvedValue(null);
   api.configurations.mockResolvedValue([]);
+  api.findings.mockResolvedValue([]);
+  api.metrics.mockResolvedValue([]);
+  api.triageHistory.mockResolvedValue([]);
 });
 
 describe("run screen", () => {
@@ -753,5 +762,113 @@ describe("new manual run", () => {
     const [input, items] = api.createManual.mock.calls[0];
     expect(input).toMatchObject({ projectId: "p", environment: "staging", userId: "test-user" });
     expect(items).toEqual([{ testCaseId: "c3" }]);
+  });
+});
+
+describe("findings and metrics of a run (ING-06, F4)", () => {
+  const finding = (over: Record<string, unknown> = {}) => ({
+    id: "f1",
+    runId: "r1",
+    shardId: "s1",
+    ruleId: "javascript.sqli",
+    ruleName: "Inyección SQL por concatenación",
+    severity: "critical",
+    rawSeverity: "error · security-severity 9.8",
+    message: "La consulta se arma con la entrada del usuario.",
+    location: { uri: "server/src/orders.repo.ts", line: 118, column: 5 },
+    fingerprint: "sarif:semgrep:javascript.sqli:primaryLocationLineHash=abc:1",
+    standardRefs: ["CWE:89"],
+    helpUri: "https://example.test/sqli",
+    attributes: { tool: "Semgrep" },
+    triage: null,
+    isNew: true,
+    ...over,
+  });
+  const metric = (over: Record<string, unknown> = {}) => ({
+    id: "m1",
+    runId: "r1",
+    shardId: "s1",
+    name: "http_req_duration",
+    aggregation: "p95",
+    scope: "expected_response:true",
+    value: 742,
+    unit: "ms",
+    threshold: "p(95)<500",
+    passed: false,
+    attributes: {},
+    ...over,
+  });
+
+  beforeEach(() => {
+    api.findings.mockResolvedValue([
+      finding(),
+      finding({ id: "f2", ruleId: "x-powered-by", ruleName: "Cabecera expuesta", severity: "low", isNew: false, fingerprint: "fp2", standardRefs: ["CWE:200"], location: { uri: "server/src/app.ts", line: 4 } }),
+      finding({ id: "f3", ruleId: "color-contrast", ruleName: "Contraste", severity: "info", fingerprint: "fp3", attributes: { needsReview: true } }),
+    ]);
+    api.metrics.mockResolvedValue([
+      metric(),
+      metric({ id: "m2", name: "http_req_failed", aggregation: "rate", scope: null, unit: "ratio", value: 0.004, threshold: "rate<0.01", passed: true }),
+      metric({ id: "m3", name: "checks", aggregation: "rate", scope: "::Pago::status es 200", unit: "ratio", value: 1, threshold: null, passed: null, attributes: { passes: 10, fails: 0 } }),
+    ]);
+  });
+
+  it("shows the tabs only when there is something, and the findings by rule, without axe violations", async () => {
+    const user = userEvent.setup();
+    const { container } = renderRun("/projects/p/runs/r1");
+    const tabs = await screen.findByRole("tablist", { name: "Contenido del run" });
+    expect(within(tabs).getAllByRole("tab").map((t) => t.textContent)).toEqual([
+      expect.stringContaining("Casos"),
+      expect.stringContaining("Hallazgos"),
+      expect.stringContaining("Métricas"),
+    ]);
+    await user.click(within(tabs).getByRole("tab", { name: /Hallazgos/ }));
+    const panel = await screen.findByTestId("findings-panel");
+    // Open by default: the «A revisar» one is not listed.
+    expect(within(panel).getAllByTestId("finding")).toHaveLength(2);
+    expect(within(panel).getByText("server/src/orders.repo.ts:118:5")).toBeInTheDocument();
+    expect(within(panel).getByText("Nuevo")).toBeInTheDocument();
+    expect(within(panel).getByText("CWE:89")).toBeInTheDocument();
+    await user.click(within(panel).getByRole("button", { name: /A revisar/ }));
+    expect(within(panel).getAllByTestId("finding")).toHaveLength(1);
+    await expectNoAxeViolations(container);
+  });
+
+  it("records a triage decision with its reason and reloads the run", async () => {
+    const user = userEvent.setup();
+    api.triage.mockResolvedValue({ id: "t1", fingerprint: "fp2", state: "false_positive", reason: "No aplica", defectId: null, createdBy: "u", createdAt: "" });
+    renderRun("/projects/p/runs/r1?tab=findings");
+    const panel = await screen.findByTestId("findings-panel");
+    await user.click(within(panel).getAllByTestId("finding-triage")[0]);
+    const dialog = await screen.findByRole("dialog", { name: /Triaje/ });
+    const save = within(dialog).getByTestId("triage-save");
+    // A reason is required to mark it a false positive.
+    expect(save).toBeDisabled();
+    await user.type(within(dialog).getByTestId("triage-reason"), "No aplica");
+    await expectNoAxeViolations(dialog);
+    await user.click(save);
+    await waitFor(() =>
+      expect(api.triage).toHaveBeenCalledWith(
+        expect.objectContaining({ projectId: "p", state: "false_positive", reason: "No aplica" }),
+      ),
+    );
+    await waitFor(() => expect(api.findings).toHaveBeenCalledTimes(2));
+  });
+
+  it("shows the metrics with the failed threshold first and the checks apart", async () => {
+    renderRun("/projects/p/runs/r1?tab=metrics");
+    const panel = await screen.findByTestId("metrics-panel");
+    expect(within(panel).getByTestId("metrics-thresholds")).toHaveTextContent("Umbrales cumplidos: 1 de 2.");
+    expect(within(panel).getByTestId("metrics-thresholds")).toHaveTextContent("http_req_duration p(95)<500: 742 ms");
+    expect(within(panel).getByText("Incumplido")).toBeInTheDocument();
+    expect(within(panel).getByRole("heading", { name: "Checks" })).toBeInTheDocument();
+    expect(within(panel).getByText("::Pago::status es 200")).toBeInTheDocument();
+  });
+
+  it("has no tabs for a run without findings or metrics", async () => {
+    api.findings.mockResolvedValue([]);
+    api.metrics.mockResolvedValue([]);
+    renderRun("/projects/p/runs/r1");
+    expect(await screen.findByRole("heading", { name: "Regresión manual" })).toBeInTheDocument();
+    expect(screen.queryByRole("tablist", { name: "Contenido del run" })).not.toBeInTheDocument();
   });
 });

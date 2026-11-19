@@ -12,7 +12,8 @@ concreta de pruebas, y puede salir de tres sitios:
 - **De un ciclo:** «Ejecutar» crea un run por configuración (capítulo 9).
 - **A mano:** «Nuevo run manual», con los casos que elijas (capítulo 11).
 - **De tu automatización:** «Importar informe» lee los resultados de
-  Playwright, Cucumber, JUnit o CTRF.
+  Playwright, Cucumber, JUnit o CTRF, los hallazgos de un SARIF (Semgrep,
+  Trivy, ZAP, CodeQL, ESLint…) o de axe, y las métricas del resumen de k6.
 
 Al importar, Pharos enlaza cada test con su caso por la clave del caso. Los
 que no la llevan esperan en la bandeja **«Sin vincular»**: vinculándolos una
@@ -24,6 +25,27 @@ En este manual, la automatización de Pharos deja dos informes:
   la bandeja;
 - un JUnit de los tests de acceso, ya vinculados a PH-001 y PH-002, con la
   captura de un fallo, importado en el ciclo «Regresión 0.3.0».
+
+## Hallazgos y métricas
+
+Un SARIF o un informe de axe no traen tests, sino **hallazgos**: una regla
+incumplida en un sitio (un archivo y una línea, o una página y un elemento).
+Un resumen de k6 trae **métricas**, con sus umbrales. Al importarlos, la vista
+previa cuenta los hallazgos por severidad y los umbrales incumplidos.
+
+En el run, las pestañas **«Hallazgos»** y **«Métricas»** aparecen solo si
+hay algo que mostrar:
+
+- «Hallazgos» los agrupa por regla, con la severidad y las referencias (WCAG,
+  CWE…). «Nuevo» marca los que no estaban en el run anterior de la misma
+  herramienta. Los que axe no pudo decidir quedan «A revisar» y no cuentan
+  como abiertos.
+- **«Triaje»** decide qué hacer con un hallazgo: falso positivo, riesgo
+  aceptado o corregido, siempre con un motivo, o reabrirlo. La decisión vale
+  para ese hallazgo en todos los runs del proyecto, y las anteriores quedan
+  en su historial.
+- «Métricas» pone primero los umbrales incumplidos. «Ver todas» muestra cada
+  agregación, y los *checks* de k6 van aparte.
 
 ## Cómo se vincula un test a su caso
 

@@ -258,3 +258,122 @@ describe("finding triage over sync (ADR-0053 as amended: append-only events)", (
     ).toBe(400);
   });
 });
+
+describe("findings, metrics and triage on the web (F4)", () => {
+  async function web(
+    token: string,
+    method: "GET" | "POST",
+    url: string,
+    payload?: unknown,
+  ) {
+    const res = await app.inject({
+      method,
+      url,
+      headers: headers(token, "key-conflicts,stable-steps"),
+      payload: payload as object,
+    });
+    return { status: res.statusCode, body: res.body ? res.json() : undefined };
+  }
+  async function newRun(
+    token: string,
+    projectId: string,
+    title: string,
+    startedAt: string,
+  ) {
+    const res = await web(token, "POST", "/api/runs", {
+      input: { projectId, title, sourceTool: "axe-core", startedAt },
+    });
+    expect(res.status).toBe(200);
+    return res.body.id as string;
+  }
+  const findingOf = (
+    projectId: string,
+    runId: string,
+    id: string,
+    fingerprint: string,
+    severity: string,
+  ) => ({
+    ...finding(projectId, { id, runId, fingerprint, severity }),
+    entityId: id,
+  });
+
+  it("lists a run's findings worst first, with triage and what is new since the previous run", async () => {
+    const token = await tokenFor();
+    const p = await projectOf(token);
+    const r1 = await newRun(token, p, "Antes", "2026-11-18T10:00:00.000Z");
+    const r2 = await newRun(token, p, "Ahora", "2026-11-19T10:00:00.000Z");
+    expect(
+      (
+        await push(token, ALL, [
+          findingOf(p, r1, "a1", "fp-old", "high"),
+          findingOf(p, r2, "b1", "fp-old", "high"),
+          findingOf(p, r2, "b2", "fp-new", "critical"),
+          { ...metric(p), payload: { ...metric(p).payload, runId: r2 } },
+        ])
+      ).statusCode,
+    ).toBe(200);
+    const one = (await web(token, "GET", `/api/runs/${r1}/findings`)).body as {
+      isNew: boolean;
+    }[];
+    expect(one.map((f) => f.isNew)).toEqual([false]);
+    const two = (await web(token, "GET", `/api/runs/${r2}/findings`)).body as {
+      fingerprint: string;
+      severity: string;
+      isNew: boolean;
+      triage: unknown;
+    }[];
+    expect(two.map((f) => [f.fingerprint, f.severity, f.isNew])).toEqual([
+      ["fp-new", "critical", true],
+      ["fp-old", "high", false],
+    ]);
+    const metrics = (await web(token, "GET", `/api/runs/${r2}/metrics`))
+      .body as { passed: boolean }[];
+    expect(metrics.map((m) => m.passed)).toEqual([false]);
+
+    const set = await web(token, "POST", "/api/finding-triage", {
+      projectId: p,
+      fingerprint: "fp-old",
+      state: "accepted_risk",
+      reason: "Diseño aprobado",
+    });
+    expect(set.status).toBe(200);
+    expect(set.body).toMatchObject({
+      state: "accepted_risk",
+      reason: "Diseño aprobado",
+      createdBy: expect.any(String),
+    });
+    for (const run of [r1, r2]) {
+      const fs = (await web(token, "GET", `/api/runs/${run}/findings`))
+        .body as { fingerprint: string; triage: { state: string } | null }[];
+      expect(fs.find((f) => f.fingerprint === "fp-old")!.triage?.state).toBe(
+        "accepted_risk",
+      );
+    }
+    await web(token, "POST", "/api/finding-triage", {
+      projectId: p,
+      fingerprint: "fp-old",
+      state: "open",
+    });
+    const history = (
+      await web(
+        token,
+        "GET",
+        `/api/finding-triage?projectId=${p}&fingerprint=fp-old`,
+      )
+    ).body as { state: string }[];
+    expect(history.map((h) => h.state)).toEqual(["open", "accepted_risk"]);
+    // The web's decisions reach the desktops through sync.
+    expect((await pulled(token, ALL)).length).toBeGreaterThan(0);
+  });
+
+  it("refuses a decision without its reason", async () => {
+    const token = await tokenFor();
+    const p = await projectOf(token);
+    const res = await web(token, "POST", "/api/finding-triage", {
+      projectId: p,
+      fingerprint: "fp",
+      state: "fixed",
+    });
+    expect(res.status).toBe(400);
+  });
+});
