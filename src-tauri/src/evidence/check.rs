@@ -25,8 +25,8 @@
 //!   the database lock, and never a file created or modified in the last 24
 //!   hours or open by another process (detected on Windows only): it may belong
 //!   to an upload of another instance or to a database the user moved aside.
-//!   Nothing is deleted if `pharos.db.enc` changed on disk since this process
-//!   last read or wrote it (another Pharos on the same folder).
+//!   Nothing is deleted if another connection committed to the database since
+//!   this process last saved (another Pharos on the same folder).
 //! - **Audit.** Each deleted orphan and each check that changed a mark leaves
 //!   an event through `journal::record_event_in`, as `system:evidence` on
 //!   behalf of the user and with no project: in the device's local chain
@@ -1115,8 +1115,8 @@ pub fn evidence_check_cancel(check: State<EvidenceCheck>) {
     check.request_cancel();
 }
 
-/// Error prefix when `pharos.db.enc` changed on disk since this process last
-/// read or wrote it: another Pharos may be using the same data folder.
+/// Error prefix when another connection committed to the database since this
+/// process last saved: another Pharos may be using the same data folder.
 pub const DB_CHANGED: &str = "evidence-db-changed";
 
 /// Deletes the orphans the user confirmed (see `delete_orphans`), unless the
@@ -1134,7 +1134,7 @@ pub(crate) fn delete_confirmed(
 ) -> Result<EvidenceDeleted, String> {
     let _guard = check.guard()?;
     let mut out = db.with_conn(|c| {
-        if db.changed_on_disk() {
+        if db.changed_on_disk(c) {
             return Err(format!(
                 "{DB_CHANGED}: the database file changed on disk; another Pharos may be \
                  using this data folder"

@@ -47,6 +47,10 @@ exceptions = [
   { allow = ["MPL-2.0"], crate = "dtoa-short" },
   { allow = ["MPL-2.0"], crate = "option-ext" },
   { allow = ["MPL-2.0"], crate = "selectors" },
+  # Unlicense (public-domain dedication) of the miniz part of SQLite3 Multiple
+  # Ciphers, the per-page encrypted SQLite (SEC-05, ADR-0050). Approved by the
+  # user on 2026-11-18 for this crate only; notices in THIRD-PARTY-NOTICES.md.
+  { allow = ["Unlicense"], crate = "sqlite3mc-src" },
 ]
 
 [licenses.private]

@@ -506,8 +506,27 @@ Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
   package; ADR-0053): zod schema,
   `parsePharosRun` and the generated JSON Schema
   `docs/formats/pharos-run-1.schema.json`. `results[]` is a superset of CTRF
-  `results.tests[]`; `findings[]`, `metrics[]` and `exploratorySession` are
-  validated only. The importers of step 9 produce it.
+  `results.tests[]`. `findings[]` and `metrics[]` are stored since ING-06
+  (below); `exploratorySession` is validated only. The importers of step 9
+  produce it.
+- **Findings and metrics** (ING-06, ADR-0053; migration 0048,
+  `runs/findings.rs`): append-only children of a shard like results, written
+  by the importer in its transaction (`findings::plan`/`write`; 20,000
+  findings and 5,000 metrics per import, long texts cut deterministically).
+  Ids are `findingId(shard, fingerprint, n)` and `metricId(shard, name,
+  aggregation, scope)` (`runs/ids.rs` and `ids.ts`, shared vectors). They sync
+  as `finding` and `metric` only with a server that lists `findings`
+  (`sync::server_takes_findings`, `APPLIED_SET_VERSION` 11); the server
+  checks their required fields, needs `result.import` to write them and
+  tombstones them with their project. Case links stay in `attributes.tags`,
+  resolved when read (F5). A finding without a fingerprint gets the derived
+  one when its Pharos Run JSON is read (`fingerprintOf`).
+- **Finding triage** (ADR-0053 as amended): `finding_triage`, append-only
+  events keyed by fingerprint (same migration, `findings` feature,
+  `run.execute` to write). `triage_add` records a decision (a reason unless
+  it reopens), `triage_current` derives each fingerprint's state from its
+  latest event (HLC, then id) and `triage_history` lists the rest. There
+  is no LWW entity and no conflict to resolve.
 
 **Manual execution (EJE-02; ADR-0013, ADR-0014).** `src-tauri/src/runs/manual.rs`
 and `src/modules/runs/` (`RunDetail`, `ExecutionPanel`), no migration:
@@ -847,10 +866,11 @@ through `src-tauri/src/journal.rs`:
   moves): counts only.
 - **A copy of the database forks nothing:** a database recovered with the
   recovery key gets a new `device_id`, so its events start a new chain. So
-  does a copy put back by hand (AUD-01c, `restored_copy.rs`): each save
-  bumps `sync_state.save_seq` and writes the same number to
-  `pharos.db.enc.seq`; an image whose count is below that mark is a restored
-  copy and its `device_id` is rotated on open. Without the mark nothing is
+  does a copy put back by hand (AUD-01c, `restored_copy.rs`): each open (and
+  each backup) bumps `sync_state.save_seq` and writes the same number to
+  `pharos.db.seq` (`pharos.db.enc.seq` before 0.6); a database whose count is
+  below that mark is a restored copy and its `device_id` is rotated on open. A
+  copy taken after the last open is not told apart (SEC-05). Without the mark nothing is
   rotated. The diagnostics carry `restoredCopyDetectedAt`.
 - **Growth.** Every audited change writes two oplog rows (the entity's and its
   event's) and an event with the changed values; a planner reorder writes one
@@ -1634,6 +1654,24 @@ core Postgres lacks). Modules:
 
   Every token change is an `api_token` audit event, which never holds the
   secret.
+
+  Report uploads (A2, `v1.runs.ts`):
+  - `POST /api/v1/projects/{projectId}/results`: the report file is the
+    body, read in its own Fastify scope as raw bytes (gzip allowed).
+  - `reportParse.ts` inflates the body within `API_UPLOAD_MAX_BYTES` and
+    parses it with `@pharos/formats` in a child process killed after
+    `API_PARSE_TIMEOUT_MS`. Tests inject the in-process parser.
+  - `runImport.ts` picks the run: `runKey`; `externalId`, a deterministic
+    run so a CI matrix converges; or a new run, closed once imported.
+  - `importPlan.ts` is the twin of `import.rs::plan`, checked against
+    `src-tauri/tests/fixtures/api-import-interop.json`.
+  - The upload writes the `run_shard`, the `result` documents and a
+    `raw_report` attachment, with its blob in `BLOB_DIR`, in one
+    transaction of the token's owner. Links are derived when read.
+
+  Runs: `GET`/`POST …/runs`, `GET …/runs/{runKey}` (with counts) and
+  `…/results`, and `POST …/runs/{runKey}/close`, all on the web's run
+  service (`insertRun` is shared).
 - `blobs` (SYNC-04b, ADR-0042 §7) — attachment and template contents by
   hash, outside the oplog. Table `blobs (workspace_id, sha256, …)`
   (migration 0020) over a `BlobStore`; today `diskBlobStore(BLOB_DIR)`,
@@ -1773,36 +1811,109 @@ Fastify's own 4xx errors keep their status in the JSON error format.
 ## Local data (Phase 2+)
 
 The desktop client owns an encrypted local SQLite database (offline source of
-truth, spec §9). SQLCipher is **not** used because its OpenSSL build did not
-compile under the GNU toolchain the project used until 2026-10-27 (it now builds
-with MSVC; page-level encryption is re-evaluated in backlog item SEC-04). Instead
-the working database lives in memory — loaded and saved with SQLite
-`deserialize`/`serialize`, so the plaintext never touches disk — and is
-persisted atomically to `pharos.db.enc` as an **AES-256-GCM** blob (pure-Rust
-RustCrypto, no OpenSSL). The 32-byte key is stored in the OS keychain. Schema is
-applied by a small forward-only migration runner (`src-tauri/migrations/`).
+truth, spec §9). Since 0.6 (SEC-05,
+[ADR-0050](adr/0050-pharos-core-y-sqlite-en-disco-cifrado.md)) it lives **on
+disk, encrypted per page**:
+
+- **Files.** `pharos.db`, plus `pharos.db-wal` and `pharos.db-shm` while it
+  is open (WAL mode).
+- **Encryption.** SQLite3 Multiple Ciphers in the SQLCipher 4 scheme
+  (AES-256-CBC + HMAC-SHA512 per page), compiled by
+  `src-tauri/sqlite3mc-sys`. The SEC-04 spike
+  (`docs/spikes/SEC-04-cifrado-por-pagina.md`) chose it.
+  - rusqlite is built with `in_gecko`: libsqlite3-sys uses its bundled
+    bindings and links nothing, so that static library is the SQLite of the
+    process.
+  - The SQLCipher 4 scheme is compiled in as the default, so `PRAGMA key`
+    alone always writes it.
+- **No plaintext on disk.**
+  - Every page is encrypted, the WAL's too.
+  - `temp_store` is memory.
+  - A test scans the folder for a known marker and for the SQLite header,
+    while the database is open and after it closes.
+- **Saving is SQLite's commit.** It writes the pages that changed, not the
+  whole database.
+  - `Db::persist()` only records `PRAGMA data_version`, which
+    `changed_on_disk` uses (DAT-03b). The calls go in SEC-05b.
+  - `with_tx` keeps entity, oplog and audit rows in one transaction.
+- **Pragmas:**
+  - `journal_mode=WAL`, `synchronous=NORMAL`, `foreign_keys=ON`,
+    `busy_timeout=5000`;
+  - `auto_vacuum=INCREMENTAL`, set on a new file and on a converted one.
+    Space is reclaimed incrementally; nothing runs a full `VACUUM` during use
+    (agreed with SYNC-10).
+- **Key.** The 32-byte `db-key` in the OS keychain stays the only secret.
+  - The page key is `HKDF-SHA256(db_key, "pharos-page-v1")`, given raw
+    (`PRAGMA key = "x'<64 hex>'"`, no PBKDF). Opening takes about 1 ms.
+  - Recovery keys and `evidence/` are unchanged.
+  - A wrong key only fails on the first read, so `open_disk` probes
+    `sqlite_master` and maps `SQLITE_NOTADB` to a key error.
+- **One process per data folder until SEC-05b.** `pharos.lock` (ADR-0050 §7).
+
+**Conversion from 0.5 (`convert_legacy`).** Before 0.6, the database lived in
+memory and was saved whole to `pharos.db.enc` as one AES-256-GCM blob. On the
+first open of 0.6:
+
+1. **Read without changing anything.** The latest save (a complete
+   `pharos.db.enc.new` too) is read, and is refused if it is newer or under
+   another key.
+2. **Space.** The free space must cover the backup plus twice the image
+   (`db-convert-no-space`).
+3. **Backup.** The original blob is kept byte for byte as
+   `pharos.db.enc.bak-<version>-<last migration>`.
+4. **Migrations** run in memory.
+5. **Write.** `VACUUM INTO` writes the encrypted `pharos.db.convert`. The
+   key travels in the URI, so SQLite's messages are never passed on. The
+   backup API cannot copy a plain database into an encrypted one (SEC-04).
+6. **Check.** The new file must pass `integrity_check` and have the same
+   tables with the same row counts. Its `sync_state.converted_from` keeps the
+   sha256 of the source.
+7. **Rename** to `pharos.db`.
+8. **Witness.** `pharos.db.enc` becomes a witness: an image with only
+   `schema_migrations` plus `disk-format-v2`. A Pharos before 0.6 refuses it
+   with its usual "newer version" screen instead of starting empty.
+
+Resuming after a crash:
+- A leftover `pharos.db.convert` is discarded.
+- A `pharos.db` converted from the same file only needs its witness.
+- A different `pharos.db.enc` next to a `pharos.db` means the user went back
+  to 0.5 and kept working. The old database is put aside as
+  `pharos.db.bak-<version>-superseded` and the newer file is converted.
+- A witness without `pharos.db` is `db-missing`.
+
+**In the app.**
+- A conversion runs on a background thread behind its own screen
+  (`db_open_converting`); `db_open_error` waits for the open to finish.
+- `db_open_retry` opens again after `db-in-use`, `db-convert-no-space` or
+  `db-convert-failed`.
+- **Going back to 0.5 is manual:** restore the `.bak`.
 
 Key recovery (SEC-03, [ADR-0024](adr/0024-clave-de-recuperacion.md)):
 
 - **Key store.** `db.rs` reads and writes the key through a `KeyStore` trait:
-  `Keychain` (account `db-key`, shared by every instance) in the app, an
+  `Keychain` (account `db-key`, shared by every instance) in the app, and an
   in-memory store in tests.
-- **No silent new key.** A key is generated only when neither `pharos.db.enc`
-  nor `pharos.db.enc.new` exists. A missing key with a saved file fails with
-  `db-key-missing`; a key that does not decrypt it, or a keychain entry that is
-  not a valid key, fails with `db-key-mismatch`. Both land in `DbStatus` like
-  any open error. An I/O error while checking for saved files fails closed.
-- **No silent wipe.** A lone `pharos.db.enc.new` the key does not decrypt is
-  `db-key-mismatch` and stays on disk (AES-GCM cannot tell a torn write from
-  another key); a torn `.new` is discarded only next to a `pharos.db.enc` the
-  same key opens.
+- **No silent new key.**
+  - A key is generated only when none of `pharos.db`, `pharos.db.enc` and
+    `pharos.db.enc.new` exists.
+  - A missing key with a saved file fails with `db-key-missing`.
+  - A key that does not decrypt it, or a keychain entry that is not a valid
+    key, fails with `db-key-mismatch`.
+  - Both land in `DbStatus` like any open error. An I/O error while checking
+    for saved files fails closed.
+- **No silent wipe.**
+  - A lone `pharos.db.enc.new` that the key does not decrypt is
+    `db-key-mismatch` and stays on disk: AES-GCM cannot tell a torn write
+    from another key.
+  - A torn `.new` is discarded only next to a `pharos.db.enc` that the same
+    key opens.
 - **Recovery key** (`src-tauri/src/recovery.rs`): the key itself plus a 3-byte
   `SHA-256("pharos-recovery-v1" || key)` checksum, as 56 Crockford base32
   characters in 14 groups of 4. `recovery_key_export` returns it for the
   Profile dialog.
 - **`db_recover`** runs only while `DbStatus` holds a key error. It decodes the
   key (`recovery-key-invalid`), decrypts the latest save before touching
-  anything (`recovery-key-wrong`), opens it, keeps the replaced key once as
+  anything (`recovery-key-wrong`), opens it (converting a `pharos.db.enc` if needed), keeps the replaced key once as
   `db-key.prev`, stores the new one in the keychain, `manage`s the `Db` at runtime and clears
   `DbStatus`, so the UI continues without a restart. A bad key changes no file
   and no keychain entry.
@@ -1812,10 +1923,12 @@ Key recovery (SEC-03, [ADR-0024](adr/0024-clave-de-recuperacion.md)):
 Upgrades follow `docs/VERSIONING.md` §6 (SEC-06):
 
 - **Backup before migrating.** When an existing database has pending
-  migrations, the still-encrypted file is first copied to
-  `pharos.db.enc.bak-<app version>-<last applied migration>`. The migration
-  part keeps two upgrades within one app version apart.
-  - The migrated image is then saved at once.
+  migrations, it is first copied, encrypted with the same key (SQLite's backup
+  API), to `pharos.db.bak-<app version>-<last applied migration>`; a
+  `pharos.db.enc` being converted keeps its original blob as
+  `pharos.db.enc.bak-…`. The migration part keeps two upgrades within one
+  app version apart.
+  - The two kinds of backup are pruned apart (by prefix).
   - Only the 3 newest backups are kept (`BACKUPS_KEPT`); pruning is best effort.
   - If the backup cannot be written, or its path holds anything other than the
     same bytes, opening fails with "failed to save the pre-migration backup"
@@ -1912,7 +2025,7 @@ size, and a file is never held whole in memory while it is written or read.
 (The migration below reads BLOBs that are already part of the in-memory image,
 and its `VACUUM` can briefly double that image.)
 
-- **Data folder = `pharos.db.enc` + `evidence/`.** Backups, recovery and the
+- **Data folder = `pharos.db` + `evidence/`** (`pharos.db.enc` before 0.6). Backups, recovery and the
   "newer version" check cover both. The store is created only after the
   database decrypts and passes that check, so a wrong key or a newer database
   never touches `evidence/`.
@@ -1993,8 +2106,8 @@ and its `VACUUM` can briefly double that image.)
     both times: a copy or a restore keeps the source's modification time but
     gets a new creation time) and not open by another process (detected on
     Windows only: an open without sharing fails). Nothing is deleted if
-    `pharos.db.enc` changed on disk since this process last read or wrote it
-    (`Db::changed_on_disk`): a second Pharos on the same data folder may have
+    another connection committed to the database since this process last
+    saved (`Db::changed_on_disk`, `PRAGMA data_version`): a second Pharos on the same data folder may have
     linked those files in a database this one does not see. For each file its
     audit event is written in a savepoint first and the file removed after;
     a failed removal rolls the savepoint back. The result is always partial
@@ -2100,7 +2213,7 @@ fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,
     triggers). Each oplog row is stamped with its workspace, and a pending
     delta carries it (`Delta.workspaceId`).
   - `workspaces_apply` moves the account's rows from the local workspace
-    to the personal one (backup `pharos.db.enc.bak-<version>-workspaces`
+    to the personal one (backup `pharos.db.bak-<version>-workspaces`
     first), on every sync.
   - Pulls are per workspace, with one cursor each
     (`cursor:<user>:<workspace>`). A move tombstone deletes nothing, and a

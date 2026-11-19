@@ -67,7 +67,10 @@ pub(crate) fn capability_for(entity: &str, is_new: bool) -> &'static str {
         "configuration" => "config.edit",
         "test_cycle" | "test_cycle_item" => "cycle.edit",
         "planner_card" => "planner.edit",
-        "run_shard" => "result.import",
+        // Findings and metrics only come from an import (ING-06, ADR-0053).
+        "run_shard" | "finding" | "metric" => "result.import",
+        // A triage decision is a judgement on an executed result.
+        "finding_triage" => "run.execute",
         "run" | "run_item" | "unlinked_mapping" | "result" => "run.execute",
         "defect" if is_new => "defect.create",
         "defect" | "defect_link" => "defect.edit",
@@ -311,6 +314,9 @@ const PROJECT_TABLES: &[&str] = &[
     "unlinked_mappings",
     "run_shards",
     "results",
+    "findings",
+    "metrics",
+    "finding_triage",
     "defects",
     "defect_links",
     "attachments",
@@ -758,7 +764,7 @@ fn require_user(user_id: &str) -> Result<(), String> {
 
 /// Refreshes the mirror from `GET /workspaces` and moves the account's local
 /// rows into its personal workspace. The first time it moves anything, the
-/// database is backed up before (SEC-06 style: `pharos.db.enc.bak-…-workspaces`).
+/// database is backed up before (SEC-06 style: `pharos.db.bak-…-workspaces`).
 #[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn workspaces_apply(

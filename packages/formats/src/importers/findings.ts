@@ -2,6 +2,7 @@
 // the common severity scale, the location keys a derived fingerprint is
 // built from, and the standard references (WCAG, CWE…) in one notation.
 
+import { derivedFingerprint } from "../ids.js";
 import type { PharosFinding } from "../schema.js";
 
 export type Severity = PharosFinding["severity"];
@@ -90,4 +91,21 @@ export function wcagLevelOf(tags: Iterable<string>): string | undefined {
     if (m) return m[1].toUpperCase();
   }
   return undefined;
+}
+
+/** The fingerprint of a finding: its own, or one derived from the tool, the
+ *  rule and its location (a web location if it has a URL or a selector, else
+ *  a code location). Both persisters need one (ADR-0053). */
+export function fingerprintOf(f: PharosFinding, tool: string): string {
+  if (f.fingerprint?.trim()) return f.fingerprint;
+  const loc = (f.location ?? {}) as Record<string, unknown>;
+  const str = (k: string) =>
+    typeof loc[k] === "string" ? (loc[k] as string) : undefined;
+  const num = (k: string) =>
+    typeof loc[k] === "number" ? (loc[k] as number) : undefined;
+  const key =
+    str("url") !== undefined || str("selector") !== undefined
+      ? webLocationKey(str("url"), str("selector"))
+      : codeLocationKey(str("uri"), num("line"), num("column"));
+  return derivedFingerprint(tool, f.ruleId, key);
 }

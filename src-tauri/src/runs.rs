@@ -25,6 +25,7 @@
 
 pub mod delete;
 pub mod derive;
+pub mod findings;
 pub mod ids;
 pub mod import;
 pub(crate) mod link;
@@ -1536,7 +1537,8 @@ pub(crate) fn owner_sql(entity: &str) -> Option<&'static str> {
         RESULT => {
             "SELECT p.owner_id FROM results x JOIN projects p ON p.id = x.project_id WHERE x.id = ?1"
         }
-        _ => return None,
+        // Findings and metrics (ING-06) are children of a run too.
+        _ => return findings::owner_sql(entity),
     })
 }
 
@@ -1773,7 +1775,8 @@ fn is_purged(conn: &Connection, run_id: &str) -> Result<bool, String> {
         .is_some())
 }
 
-/// `(entity, id)` of the shards and results of a run, for the purge.
+/// `(entity, id)` of the shards, results, findings and metrics of a run, for
+/// the purge.
 pub(crate) fn appended_rows(
     conn: &Connection,
     run_id: &str,
@@ -1790,16 +1793,20 @@ pub(crate) fn appended_rows(
             .map_err(err)?;
         out.extend(ids.into_iter().map(|id| (entity, id)));
     }
+    out.extend(findings::appended_rows(conn, run_id)?);
     Ok(out)
 }
 
-/// True while a shard or result of the run still has to reach the server.
+/// True while a shard, result, finding or metric of the run still has to reach
+/// the server.
 pub(crate) fn has_pending_appends(conn: &Connection, run_id: &str) -> Result<bool, String> {
     conn.query_row(
         "SELECT 1 FROM oplog o
           WHERE o.synced_at IS NULL AND o.payload NOT LIKE '%\"appendRejected\"%'
             AND ((o.entity = 'result' AND o.entity_id IN (SELECT id FROM results WHERE run_id = ?1))
-              OR (o.entity = 'run_shard' AND o.entity_id IN (SELECT id FROM run_shards WHERE run_id = ?1)))
+              OR (o.entity = 'run_shard' AND o.entity_id IN (SELECT id FROM run_shards WHERE run_id = ?1))
+              OR (o.entity = 'finding' AND o.entity_id IN (SELECT id FROM findings WHERE run_id = ?1))
+              OR (o.entity = 'metric' AND o.entity_id IN (SELECT id FROM metrics WHERE run_id = ?1)))
           LIMIT 1",
         params![run_id],
         |_| Ok(()),

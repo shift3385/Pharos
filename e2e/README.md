@@ -126,9 +126,10 @@ it happen inside the isolated run instead of skipping them:
   requirement; the app then edits the same requirement and syncs.
 - **Orphan evidence** (chapter 14): a stray `.pev` file, back-dated two days,
   in the tour profile's `evidence/` folder.
-- **Database that does not open** (chapter 15): the app is closed, the tour
-  profile's `pharos.db.enc` is replaced by garbage (a copy is kept), the app
-  restarts on the error screen, then the copy is restored.
+- **Database that does not open** (chapter 19): the app is closed and the
+  tour holds the profile's `pharos.lock` open, as a second Pharos would; the app
+  restarts on «Otro Pharos está usando tus datos», the tour lets go and
+  «Reintentar» opens the data (ADR-0050 §7).
 - **«Algo salió mal»** (chapter 15): date formatting is made to throw in the
   WebView, so a view fails and the error boundary catches it.
 - **Clipboard paste** (chapter 13) and the **attachments folder** of a report

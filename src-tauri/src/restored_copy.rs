@@ -1,12 +1,14 @@
 //! A copy of the database put back by hand (AUD-01c, ADR-0015). A `.bak`
-//! copied over `pharos.db.enc` keeps the `device_id` of the file it came from,
+//! copied over `pharos.db` keeps the `device_id` of the file it came from,
 //! so its new audit events would extend a chain whose later links already
 //! exist: the chain forks and `verify_chain` sees a broken link.
 //!
-//! Each save counts itself twice: inside the encrypted image
-//! (`sync_state.save_seq`) and in a plain mark next to it
-//! (`pharos.db.enc.seq`, only that number). On open, an image whose count is
-//! below the mark is older than what this device last wrote: a restored copy.
+//! Each open (and each backup) counts itself twice: inside the encrypted
+//! database (`sync_state.save_seq`) and in a plain mark next to it
+//! (`pharos.db.seq`, only that number; `pharos.db.enc.seq` before 0.6, still
+//! checked when a `pharos.db.enc` is converted). On open, a database whose
+//! count is below the mark is older than what this device last opened: a
+//! restored copy. A copy taken after the last open is not told apart.
 //! It gets a new `device_id` (`oplog::rotate_device_id`, as a recovery with
 //! the key does), so its events start a new chain, and the count jumps to the
 //! mark so the next save is ahead again.

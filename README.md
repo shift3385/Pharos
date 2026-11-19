@@ -317,14 +317,27 @@ Both themes meet AA contrast. The audit and its open points are in
 
 The desktop app keeps its data in `%APPDATA%\com.pharos.desktop\`:
 
-- `pharos.db.enc`: the encrypted database;
+- `pharos.db`: the database, encrypted page by page (SQLCipher 4 scheme, SEC-05).
+  While Pharos is open it also has `pharos.db-wal` and `pharos.db-shm` next
+  to it: they are part of it, encrypted too, and disappear when it closes;
+- `pharos.lock`: held while Pharos (or its CLI) has the folder open, so a
+  second one cannot overwrite the first's data;
 - `evidence\`: the attachment files, encrypted, one `.pev` file per distinct
   content ([ADR-0014](docs/adr/0014-evidencias-cifradas-por-hash.md)). The
   names say nothing about the content, and the database key (so also the
   recovery key) opens them. Never edit or delete files in it by hand;
   `evidence\tmp\` only holds unfinished uploads and is emptied at start.
 
-The two belong together: back up, copy and restore **both**.
+The two belong together: back up, copy and restore **both**, with Pharos
+closed (an open database can have recent changes still in `pharos.db-wal`).
+
+**Before 0.6** the database was one encrypted file, `pharos.db.enc`. The
+first start of 0.6 converts it (a short "Updating the format of your data"
+screen) and keeps the original, untouched, as
+`pharos.db.enc.bak-<version>-<last migration>`. Afterwards `pharos.db.enc` is
+only a small marker: if a 0.5 opens the folder it says the data comes from a
+newer version instead of starting empty. If there is not enough free space
+for the conversion, Pharos says how much is missing and changes nothing.
 
 Evidence store defaults (DAT-03). Their Administration settings arrive with
 manual execution (step 7 of the 0.2.0 design):
@@ -341,12 +354,12 @@ Retention by kind only applies to the evidence of imported runs. When it
 expires, the file goes and the record of it stays. A deleted attachment's file
 is removed at once if nothing else uses the same content.
 
-Before a new version upgrades that database, the app saves an untouched,
-encrypted copy next to it: `pharos.db.enc.bak-<version>-<last migration>`. For
-example, `0.1.0-beta.1` opening data saved by `0.1.0-alpha.1` keeps
-`pharos.db.enc.bak-0.1.0-beta.1-0011_sync_conflicts`.
+Before a new version upgrades that database, the app saves an encrypted copy
+next to it: `pharos.db.bak-<version>-<last migration>` (before 0.6,
+`pharos.db.enc.bak-…`). For example, `0.1.0-beta.1` opening data saved by
+`0.1.0-alpha.1` kept `pharos.db.enc.bak-0.1.0-beta.1-0011_sync_conflicts`.
 
-- Only the 3 newest copies are kept; older ones are deleted.
+- Only the 3 newest copies of each kind are kept; older ones are deleted.
 - If the copy cannot be saved, the app upgrades nothing and says so.
 - The upgrade to `0.2.0` moves the planner attachments out of the database
   into `evidence\`, so `pharos.db.enc` shrinks. The copies saved before it
@@ -357,10 +370,16 @@ example, `0.1.0-beta.1` opening data saved by `0.1.0-alpha.1` keeps
 To go back to the data from before an upgrade:
 
 1. Close Pharos.
-2. Rename `pharos.db.enc` (keep it until you are sure you want to discard it).
-3. Copy the `.bak-…` file you want to `pharos.db.enc`. Leave `evidence\` as it
-   is: an older copy simply does not use the newer files.
+2. Rename `pharos.db` (keep it until you are sure you want to discard it).
+3. Copy the `pharos.db.bak-…` file you want to `pharos.db`. Leave `evidence\`
+   as it is: an older copy simply does not use the newer files.
 4. Open the Pharos version that wrote that copy.
+
+To go back to **0.5** after the conversion: close Pharos, copy
+`pharos.db.enc.bak-0.6…` over `pharos.db.enc` and install 0.5. Changes made in
+0.6 that were not synced stay only in `pharos.db` (synced ones come back with
+the next sync). When you update again, the newer `pharos.db.enc` is converted
+and the previous `pharos.db` is kept as `pharos.db.bak-<version>-superseded`.
 
 The copy is encrypted with the same key, kept in the Windows Credential
 Manager, so it only opens on the same Windows account, or anywhere with the
@@ -376,13 +395,15 @@ decrypted without the **recovery key** ([ADR-0024](docs/adr/0024-clave-de-recupe
   characters in 14 groups of 4 (`XXXX-XXXX-…`). Write it on paper or store it
   in a password manager, never next to the copy of your data: anyone with both
   can read it. Pharos keeps no copy of it.
-- **A full backup** is `pharos.db.enc` plus the `evidence\` folder, and the
-  recovery key. The `.bak-…` copies and the evidence files use the same key.
+- **A full backup** is `pharos.db` (with Pharos closed) plus the `evidence\`
+  folder, and the recovery key. The `.bak-…` copies and the evidence files use
+  the same key. Never copy only `pharos.db-wal` or `pharos.db-shm`.
 
 To recover on another PC:
 
 1. Install Pharos and close it if it is open.
-2. Copy `pharos.db.enc` and the `evidence\` folder to
+2. Copy `pharos.db` (or, from a version before 0.6, `pharos.db.enc`) and the
+   `evidence\` folder to
    `%APPDATA%\com.pharos.desktop\`. Without `evidence\` the data still opens,
    but its attachments say they are not on this device.
 3. Open Pharos. It says the database key is missing (or that the stored key
@@ -393,9 +414,9 @@ To recover on another PC:
    any, is kept once as `db-key.prev`.
 
 If a valid recovery key is reported as not opening the database, either it is
-another key or the file is damaged (AES-GCM cannot tell them apart). With the
-right key, close Pharos, move `pharos.db.enc` aside and copy the newest
-`pharos.db.enc.bak-…` in its place as `pharos.db.enc`. Pharos never deletes a
+another key or the file is damaged (encryption cannot tell them apart). With
+the right key, close Pharos, move `pharos.db` aside and copy the newest
+`pharos.db.bak-…` in its place as `pharos.db`. Pharos never deletes a
 saved file it cannot decrypt: a lone `pharos.db.enc.new` (a first save that
 never finished) stays until it opens or you remove it.
 
@@ -524,6 +545,10 @@ Optional limits (defaults in brackets):
 | `AI_VAULT_KEY`            | 32 random bytes in base64 (`openssl rand -base64 32`) that encrypt the AI keys kept for the web (IA-12) [empty = AI on the web is off] |
 | `AI_CHAT_RATE_LIMIT_MAX` / `_WINDOW` | AI requests from the web per account [30 per `1 minute`]                                                         |
 | `API_RATE_LIMIT_MAX` / `_WINDOW` | Requests to the public API `/api/v1` per API token (without a well-formed token, per IP) [300 per `1 minute`] |
+| `API_UPLOAD_LIMIT_BYTES` | Largest report upload to `/api/v1` as received, gzip compressed [25 MiB] |
+| `API_UPLOAD_MAX_BYTES` | Largest report once decompressed [100 MiB] |
+| `API_PARSE_TIMEOUT_MS` | Time to read one uploaded report before it is refused [30000] |
+| `API_UPLOAD_RATE_LIMIT_MAX` / `_WINDOW` | Report uploads per API token [60 per `1 minute`] |
 | `AI_VAULT_RATE_LIMIT_MAX` / `_WINDOW` | Uploads and removals of the AI key per account [10 per `1 hour`]                                                |
 | `AI_CHAT_BODY_LIMIT_BYTES` | Largest body on `/ai/chat`, images included [20 MiB]                                                                         |
 

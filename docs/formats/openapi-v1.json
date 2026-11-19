@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pharos API",
-    "version": "1.0.0",
-    "description": "Public API of a Pharos server for CI and scripts. Authenticate with a project token or a personal access token: `Authorization: Bearer phr_…`. A token acts as its owner and never does more than the owner's current role allows."
+    "version": "1.1.0",
+    "description": "Public API of a Pharos server for CI and scripts. Authenticate with a project token or a personal access token: `Authorization: Bearer phr_…`. A token acts as its owner and never does more than the owner's current role allows. Retry only network errors, 429, 502, 503 and 504; an upload is idempotent (the same file in the same run answers 200 and writes nothing)."
   },
   "servers": [
     {
@@ -42,7 +42,7 @@
             }
           },
           "403": {
-            "description": "`insufficient_scope` (the token lacks the scope) or `forbidden` (its owner's role lacks the capability).",
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -52,7 +52,7 @@
             }
           },
           "429": {
-            "description": "`rate_limited`: too many requests for this token.",
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -91,7 +91,7 @@
             }
           },
           "403": {
-            "description": "`insufficient_scope` (the token lacks the scope) or `forbidden` (its owner's role lacks the capability).",
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -101,7 +101,7 @@
             }
           },
           "429": {
-            "description": "`rate_limited`: too many requests for this token.",
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -123,6 +123,7 @@
             "name": "projectId",
             "in": "path",
             "required": true,
+            "description": "The project's id, or its case-ID prefix (`PHR`) when it is unique within the token's reach (409 `ambiguous_project` otherwise).",
             "schema": {
               "type": "string"
             }
@@ -150,7 +151,7 @@
             }
           },
           "403": {
-            "description": "`insufficient_scope` (the token lacks the scope) or `forbidden` (its owner's role lacks the capability).",
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -160,7 +161,17 @@
             }
           },
           "404": {
-            "description": "`not_found`.",
+            "description": "`not_found` or `run_not_found`: not in the token's reach, or it does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`ambiguous_project`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -170,7 +181,686 @@
             }
           },
           "429": {
-            "description": "`rate_limited`: too many requests for this token.",
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/results": {
+      "post": {
+        "operationId": "uploadResults",
+        "summary": "Upload one test report.",
+        "description": "Scope `runs:write`. The body is the report file itself, one file per request (several files: several requests to the same run).\n\nFormats: Pharos Run JSON 1.x, JUnit XML, CTRF, Playwright JSON, Cucumber Messages (NDJSON), SARIF, axe-core JSON and k6 summary; `allure` and `trx` answer 422 `unsupported_format` until their parsers ship.\n\n`Content-Encoding: gzip` is accepted. The body is limited compressed (413) and once decompressed (413); a DTD in XML is refused (422 `invalid_report`, reason `doctype`); reading has a time limit (422 `report_timeout`). Errors never quote the file.\n\nThe run: `runKey`, or `externalId` (created by the first upload, open until closed), or a new run closed as completed once imported. Case links are derived when read, from `@<prefix><n>` tags or `caseKey`.\n\nSARIF findings and k6/axe metrics are kept in the raw report until track F stores them (ADR-0053); `counts.findings` and `counts.metrics` are 0 until then and a `findings-in-raw-report` warning says how many.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "description": "The project's id, or its case-ID prefix (`PHR`) when it is unique within the token's reach (409 `ambiguous_project` otherwise).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "description": "Checked against the format the server detects; without it, the detected one is used.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pharos_run_json",
+                "junit",
+                "ctrf",
+                "playwright_json",
+                "cucumber_messages",
+                "sarif",
+                "axe",
+                "k6",
+                "allure",
+                "trx"
+              ]
+            }
+          },
+          {
+            "name": "runKey",
+            "in": "query",
+            "required": false,
+            "description": "An open run of the project (RUN-012).",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "externalId",
+            "in": "query",
+            "required": false,
+            "description": "The run of this id in the project, created by the first upload: the jobs of a CI matrix converge on one run (e.g. github:owner/repo:run_id:attempt).",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          },
+          {
+            "name": "runName",
+            "in": "query",
+            "required": false,
+            "description": "Title of a run this upload creates.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          },
+          {
+            "name": "cycleKey",
+            "in": "query",
+            "required": false,
+            "description": "Cycle of a run this upload creates (CYC-…).",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "configuration",
+            "in": "query",
+            "required": false,
+            "description": "Configuration (by name) of a run this upload creates.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "caseKey",
+            "in": "query",
+            "required": false,
+            "description": "Link every result of the file without a case of its own to this case (PH-001).",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "fileName",
+            "in": "query",
+            "required": false,
+            "description": "Name the raw report is kept under.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "The report file.",
+          "content": {
+            "application/xml": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "application/x-ndjson": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "application/zip": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The same file was already in that run: nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadResult"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "A new shard was stored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`format_mismatch`, `validation_error` (bad parameters, empty body) or `token_in_url`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found` or `run_not_found`: not in the token's reach, or it does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`run_closed` or `ambiguous_project`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "`payload_too_large`: compressed or decompressed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "`unsupported_media_type`: a Content-Encoding other than gzip.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`invalid_report` (with `reason`), `report_timeout` or `unsupported_format`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/runs": {
+      "get": {
+        "operationId": "listRuns",
+        "summary": "The project's live runs, newest first.",
+        "description": "Scope `runs:read`.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "description": "The project's id, or its case-ID prefix (`PHR`) when it is unique within the token's reach (409 `ambiguous_project` otherwise).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The runs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found` or `run_not_found`: not in the token's reach, or it does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createRun",
+        "summary": "An empty open run to upload into.",
+        "description": "Scope `runs:write`. With `externalId`, the run of that id: created once (201), found afterwards (200), so any job of a CI matrix may call it.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "description": "The project's id, or its case-ID prefix (`PHR`) when it is unique within the token's reach (409 `ambiguous_project` otherwise).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The run of that externalId, which already existed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "The run, created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found` or `run_not_found`: not in the token's reach, or it does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/runs/{runKey}": {
+      "get": {
+        "operationId": "getRun",
+        "summary": "A run and its counts (final attempts by status, linked and unlinked results).",
+        "description": "Scope `runs:read`.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "description": "The project's id, or its case-ID prefix (`PHR`) when it is unique within the token's reach (409 `ambiguous_project` otherwise).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "runKey",
+            "in": "path",
+            "required": true,
+            "description": "The run's key (`RUN-012`).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found` or `run_not_found`: not in the token's reach, or it does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/runs/{runKey}/results": {
+      "get": {
+        "operationId": "listRunResults",
+        "summary": "Every result of a run, with its derived case link.",
+        "description": "Scope `runs:read`.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "description": "The project's id, or its case-ID prefix (`PHR`) when it is unique within the token's reach (409 `ambiguous_project` otherwise).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "runKey",
+            "in": "path",
+            "required": true,
+            "description": "The run's key (`RUN-012`).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found` or `run_not_found`: not in the token's reach, or it does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/runs/{runKey}/close": {
+      "post": {
+        "operationId": "closeRun",
+        "summary": "Close an open run: completed (default) or aborted.",
+        "description": "Scope `runs:write`; the owner's role needs to execute runs.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "description": "The project's id, or its case-ID prefix (`PHR`) when it is unique within the token's reach (409 `ambiguous_project` otherwise).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "runKey",
+            "in": "path",
+            "required": true,
+            "description": "The run's key (`RUN-012`).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunClose"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The run, closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid token: `token_invalid`, `token_revoked`, `token_expired` or `token_inactive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`insufficient_scope` (the token lacks the scope), `forbidden` (its owner's role lacks the capability) or `account_disabled`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found` or `run_not_found`: not in the token's reach, or it does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`run_closed`: already closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many requests for this token. Honour `Retry-After`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -337,6 +1027,478 @@
         },
         "required": [
           "projects"
+        ]
+      },
+      "Run": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "runKey": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "trigger": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "in_progress",
+              "completed",
+              "aborted"
+            ]
+          },
+          "startedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "finishedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "environment": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "build": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "commitSha": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "branch": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ciUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cycleId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "configurationId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "runKey",
+          "title",
+          "trigger",
+          "status",
+          "startedAt",
+          "finishedAt",
+          "environment",
+          "build",
+          "commitSha",
+          "branch",
+          "ciUrl",
+          "cycleId",
+          "configurationId"
+        ],
+        "additionalProperties": {}
+      },
+      "RunList": {
+        "type": "object",
+        "properties": {
+          "runs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Run"
+            }
+          }
+        },
+        "required": [
+          "runs"
+        ]
+      },
+      "RunCreate": {
+        "type": "object",
+        "properties": {
+          "externalId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "cycleKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "configuration": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "environment": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "build": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "commitSha": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "branch": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "ciUrl": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "RunClose": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "default": "completed",
+            "type": "string",
+            "enum": [
+              "completed",
+              "aborted"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "RunSummary": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "$ref": "#/components/schemas/Run"
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "results": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "linked": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "unlinked": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "byStatus": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "required": [
+              "results",
+              "linked",
+              "unlinked",
+              "byStatus"
+            ]
+          }
+        },
+        "required": [
+          "run",
+          "counts"
+        ]
+      },
+      "ResultList": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "shardId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "testKey": {
+                  "type": "string"
+                },
+                "caseKey": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "testCaseId": {
+                  "description": "The case it links to, derived when read.",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "configurationLabel": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "attempt": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "status": {
+                  "type": "string"
+                },
+                "durationMs": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "errorMessage": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "isFinal": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "shardId",
+                "testKey",
+                "caseKey",
+                "testCaseId",
+                "configurationLabel",
+                "attempt",
+                "status",
+                "durationMs",
+                "errorMessage",
+                "isFinal"
+              ],
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "results"
+        ]
+      },
+      "UploadFormat": {
+        "type": "string",
+        "enum": [
+          "pharos_run_json",
+          "junit",
+          "ctrf",
+          "playwright_json",
+          "cucumber_messages",
+          "sarif",
+          "axe",
+          "k6",
+          "allure",
+          "trx"
+        ]
+      },
+      "UploadResult": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "key": {
+                "type": "string"
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "in_progress",
+                  "completed",
+                  "aborted"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "key",
+              "url",
+              "status"
+            ]
+          },
+          "shard": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "created": {
+                "type": "boolean"
+              },
+              "format": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "created",
+              "format"
+            ]
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "results": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "linked": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "unlinked": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "byStatus": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "findings": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "metrics": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "results",
+              "linked",
+              "unlinked",
+              "byStatus",
+              "findings",
+              "metrics"
+            ]
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "testKey": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "detail": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "code",
+                "testKey",
+                "detail"
+              ]
+            }
+          }
+        },
+        "required": [
+          "run",
+          "shard",
+          "counts",
+          "warnings"
         ]
       },
       "Error": {

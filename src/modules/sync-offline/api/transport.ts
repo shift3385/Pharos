@@ -32,11 +32,12 @@ export const VERSION_HEADER = "x-pharos-version";
  *  pull and key lease, and reads `rejected`; a client of an earlier minor
  *  without it may only read. `blobs` (SYNC-04b): it syncs attachments and
  *  templates, uploading their content to `/blobs` before the push.
+ *  `findings` (ING-06, ADR-0053): it syncs findings and metrics.
  *  Inside one minor the version string does not change
  *  between builds, so this header is what tells them apart. */
 export const FEATURES_HEADER = "x-pharos-sync-features";
 export const SYNC_FEATURES =
-  "key-conflicts,append-only,complete-payload,stable-steps,runs,custom-fields,cycles,defects,requirement-data,workspaces,case-baselines,blobs";
+  "key-conflicts,append-only,complete-payload,stable-steps,runs,custom-fields,cycles,defects,requirement-data,workspaces,case-baselines,blobs,findings";
 
 /** The app version, from its single source (`@shared/version`, UX-07). */
 export { APP_VERSION };

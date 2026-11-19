@@ -669,12 +669,16 @@ fn orphans_are_not_deleted_when_another_process_saved_the_database() {
         .evidence()
         .relative(&db.evidence().path_for(&orphan.sha256).unwrap())
         .unwrap();
-    // Another writer replaces the database file: a copy put back by hand, or
-    // a Pharos from before the folder lock (ADR-0050), which a second
-    // `Db` here can no longer be.
-    std::thread::sleep(Duration::from_millis(20));
-    let enc = dir.join("pharos.db.enc");
-    fs::write(&enc, fs::read(&enc).unwrap()).unwrap();
+    // Another connection commits: a process from before the folder lock
+    // (ADR-0050), which a second `Db` here can no longer be.
+    let other = crate::db::open_disk(&dir.join("pharos.db"), &KEY, false).unwrap();
+    other
+        .execute(
+            "INSERT INTO sync_state (key, value) VALUES ('other', '1')",
+            [],
+        )
+        .unwrap();
+    drop(other);
     let check = EvidenceCheck::default();
     let files = [file];
     let err = delete_confirmed(&db, &check, &files, None, later(), ORPHAN_MIN_AGE).unwrap_err();
@@ -689,7 +693,7 @@ fn orphans_are_not_deleted_when_another_process_saved_the_database() {
 }
 
 #[test]
-fn deleted_orphans_are_reported_even_if_saving_fails() {
+fn deleted_orphans_are_reported_with_their_events_committed() {
     let dir = temp_dir();
     let db = Db::open_with_key(&dir, KEY).unwrap();
     db.persist().unwrap();
@@ -698,16 +702,15 @@ fn deleted_orphans_are_reported_even_if_saving_fails() {
         .evidence()
         .relative(&db.evidence().path_for(&orphan.sha256).unwrap())
         .unwrap();
-    // The save's temp path is taken by a folder: saving fails.
-    fs::create_dir(dir.join("pharos.db.enc.new")).unwrap();
     let check = EvidenceCheck::default();
     let out = delete_confirmed(&db, &check, &[file], Some(OWNER), later(), ORPHAN_MIN_AGE).unwrap();
     assert_eq!(out.deleted, 1);
-    assert!(!out.saved);
+    assert!(out.saved);
     assert!(!db.evidence().path_for(&orphan.sha256).unwrap().exists());
-    // The event is kept in memory, for the next save.
+    drop(db);
+    // Each deletion's event was committed with it (SEC-05): it is there on reopen.
+    let db = Db::open_with_key(&dir, KEY).unwrap();
     assert_eq!(db.with_conn(|c| Ok(events(c, "evidence_file"))).unwrap(), 1);
-    fs::remove_dir(dir.join("pharos.db.enc.new")).unwrap();
     drop(db);
     fs::remove_dir_all(&dir).unwrap();
 }
