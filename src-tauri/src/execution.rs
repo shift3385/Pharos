@@ -614,6 +614,5 @@ pub fn cycle_close(
     user_id: String,
 ) -> Result<Option<CycleClosure>, String> {
     let record = db.with_tx(|conn| close_cycle(conn, &cycle_id, &input, &user_id))?;
-    db.persist()?;
     Ok(record)
 }

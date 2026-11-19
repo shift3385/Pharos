@@ -1714,7 +1714,6 @@ pub(crate) fn import_upload(
             crate::db::in_tx(c, |tx| commit(tx, request, stored))
         })
     })?;
-    db.persist()?;
     Ok(out)
 }
 
@@ -1746,7 +1745,6 @@ pub(crate) fn attach_upload(
             })
         })
     })?;
-    db.persist()?;
     Ok(id)
 }
 

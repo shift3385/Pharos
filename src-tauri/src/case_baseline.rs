@@ -483,7 +483,6 @@ pub fn case_baseline_create(
     input: BaselineInput,
 ) -> Result<Option<Baseline>, String> {
     let id = db.with_tx(|conn| create_baseline(conn, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_baseline(conn, &id, &input.user_id))
 }
 

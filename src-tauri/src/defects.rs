@@ -2351,7 +2351,6 @@ pub fn defect_get(db: State<Db>, id: String, user_id: String) -> Result<Option<D
 #[tauri::command]
 pub fn defect_create(db: State<Db>, input: DefectInput) -> Result<Option<Defect>, String> {
     let id = db.with_tx(|conn| insert_defect(conn, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_defect(conn, &id, &input.user_id))
 }
 
@@ -2363,7 +2362,6 @@ pub fn defect_update(
     input: DefectInput,
 ) -> Result<Option<Defect>, String> {
     db.with_tx(|conn| update_defect(conn, &id, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_defect(conn, &id, &input.user_id))
 }
 
@@ -2387,7 +2385,6 @@ pub fn defect_transition(
             fixed_in_build.as_deref(),
         )
     })?;
-    db.persist()?;
     db.with_conn(|conn| get_defect(conn, &id, &user_id))
 }
 
@@ -2408,7 +2405,6 @@ pub fn defect_link_set(
     linked: bool,
 ) -> Result<Option<Defect>, String> {
     db.with_tx(|conn| set_link(conn, &defect_id, &user_id, &target, linked))?;
-    db.persist()?;
     db.with_conn(|conn| get_defect(conn, &defect_id, &user_id))
 }
 
@@ -2473,7 +2469,6 @@ pub fn defect_attachment_add(
         }
         Ok(stored)
     })?;
-    db.persist()?;
     Ok(Some(DefectAttachment {
         id,
         name,

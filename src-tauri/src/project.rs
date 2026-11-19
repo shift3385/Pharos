@@ -352,7 +352,6 @@ pub fn project_get(db: State<Db>, id: String, owner_id: String) -> Result<Option
 pub fn project_create(db: State<Db>, input: ProjectInput) -> Result<Option<Project>, String> {
     let owner = input.owner_id.clone().unwrap_or_default();
     let id = db.with_tx(|conn| insert_project(conn, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_project(conn, &id, &owner))
 }
 
@@ -370,7 +369,6 @@ pub fn project_update(
         }
         update_project(conn, &id, &input)
     })?;
-    db.persist()?;
     db.with_conn(|conn| get_project(conn, &id, &owner))
 }
 
@@ -383,7 +381,7 @@ pub fn project_delete(db: State<Db>, id: String, owner_id: String) -> Result<(),
         }
         delete_project(conn, &id, &owner_id)
     })?;
-    db.persist()
+    Ok(())
 }
 
 #[cfg(test)]

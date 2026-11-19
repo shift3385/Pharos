@@ -2655,7 +2655,6 @@ pub fn configuration_create(
     input: ConfigurationInput,
 ) -> Result<Option<Configuration>, String> {
     let id = db.with_tx(|conn| create_configuration(conn, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_configuration(conn, &id))
 }
 
@@ -2667,7 +2666,6 @@ pub fn configuration_update(
     input: ConfigurationInput,
 ) -> Result<Option<Configuration>, String> {
     db.with_tx(|conn| update_configuration(conn, &id, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_configuration(conn, &id))
 }
 
@@ -2680,7 +2678,6 @@ pub fn configuration_archive(
     user_id: String,
 ) -> Result<Option<Configuration>, String> {
     db.with_tx(|conn| set_configuration_archived(conn, &id, archived, &user_id))?;
-    db.persist()?;
     db.with_conn(|conn| get_configuration(conn, &id))
 }
 
@@ -2693,7 +2690,6 @@ pub fn configuration_reorder(
     user_id: String,
 ) -> Result<Vec<Configuration>, String> {
     db.with_tx(|conn| reorder_configurations(conn, &project_id, &ids, &user_id))?;
-    db.persist()?;
     db.with_conn(|conn| list_configurations(conn, &project_id, &user_id, true))
 }
 
@@ -2717,7 +2713,6 @@ pub fn cycle_get(db: State<Db>, id: String, user_id: String) -> Result<Option<Te
 #[tauri::command]
 pub fn cycle_create(db: State<Db>, input: TestCycleInput) -> Result<Option<TestCycle>, String> {
     let id = db.with_tx(|conn| insert_cycle(conn, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_cycle(conn, &id, &input.user_id))
 }
 
@@ -2729,7 +2724,6 @@ pub fn cycle_update(
     input: TestCycleInput,
 ) -> Result<Option<TestCycle>, String> {
     db.with_tx(|conn| update_cycle(conn, &id, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_cycle(conn, &id, &input.user_id))
 }
 
@@ -2742,7 +2736,6 @@ pub fn cycle_clone(
     user_id: String,
 ) -> Result<Option<TestCycle>, String> {
     let new_id = db.with_tx(|conn| clone_cycle(conn, &id, title.as_deref(), &user_id))?;
-    db.persist()?;
     db.with_conn(|conn| get_cycle(conn, &new_id, &user_id))
 }
 
@@ -2750,7 +2743,7 @@ pub fn cycle_clone(
 #[tauri::command]
 pub fn cycle_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_cycle(conn, &id, &user_id))?;
-    db.persist()
+    Ok(())
 }
 
 #[cfg(feature = "tauri")]
@@ -2772,7 +2765,6 @@ pub fn cycle_items_add(
     items: Vec<CycleItemInput>,
 ) -> Result<AddOutcome, String> {
     let out = db.with_tx(|conn| add_items(conn, &cycle_id, &user_id, &items))?;
-    db.persist()?;
     Ok(out)
 }
 
@@ -2787,7 +2779,6 @@ pub fn cycle_items_add_by_filter(
 ) -> Result<AddOutcome, String> {
     let out =
         db.with_tx(|conn| add_by_filter(conn, &cycle_id, &user_id, &filter, assignee.as_deref()))?;
-    db.persist()?;
     Ok(out)
 }
 
@@ -2812,7 +2803,7 @@ pub fn cycle_filter_preview(
 #[tauri::command]
 pub fn cycle_item_update(db: State<Db>, id: String, input: CycleItemUpdate) -> Result<(), String> {
     db.with_tx(|conn| update_item(conn, &id, &input))?;
-    db.persist()
+    Ok(())
 }
 
 #[cfg(feature = "tauri")]
@@ -2824,7 +2815,6 @@ pub fn cycle_items_remove(
     user_id: String,
 ) -> Result<usize, String> {
     let n = db.with_tx(|conn| remove_items(conn, &cycle_id, &ids, &user_id))?;
-    db.persist()?;
     Ok(n)
 }
 
@@ -2837,7 +2827,6 @@ pub fn cycle_items_reorder(
     user_id: String,
 ) -> Result<Vec<CycleItem>, String> {
     db.with_tx(|conn| reorder_items(conn, &cycle_id, &ids, &user_id))?;
-    db.persist()?;
     db.with_conn(|conn| list_items(conn, &cycle_id, &user_id))
 }
 
@@ -2849,7 +2838,6 @@ pub fn cycle_execute(
     input: ExecuteInput,
 ) -> Result<ExecuteResult, String> {
     let executed = db.with_tx(|conn| execute(conn, &cycle_id, &input))?;
-    db.persist()?;
     db.with_conn(|conn| {
         let mut runs_out = Vec::new();
         for id in &executed.run_ids {

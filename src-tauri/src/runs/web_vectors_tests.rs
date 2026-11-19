@@ -433,7 +433,6 @@ fn draft_with_file(db: &crate::db::Db, item: &str, key: &str, step: &str, bytes:
         .map(drop)
     })
     .unwrap();
-    db.persist().unwrap();
     assert!(db.evidence().exists(&stored.sha256));
     stored.sha256
 }

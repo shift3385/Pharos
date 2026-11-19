@@ -355,7 +355,7 @@ pub fn notifications_apply_pull(
     kept_ids: Option<Vec<String>>,
 ) -> Result<(), String> {
     db.with_tx(|c| apply_pull(c, &user_id, &items, cursor, kept_ids.as_deref()))?;
-    db.persist()
+    Ok(())
 }
 
 #[cfg(feature = "tauri")]
@@ -366,9 +366,6 @@ pub fn notifications_add_local(
     notification: LocalNotification,
 ) -> Result<bool, String> {
     let added = db.with_tx(|c| add_local(c, &user_id, &notification))?;
-    if added {
-        db.persist()?;
-    }
     Ok(added)
 }
 
@@ -380,9 +377,6 @@ pub fn notifications_mark_read(
     ids: Option<Vec<String>>,
 ) -> Result<usize, String> {
     let n = db.with_tx(|c| mark_read(c, &user_id, ids.as_deref()))?;
-    if n > 0 {
-        db.persist()?;
-    }
     Ok(n)
 }
 
@@ -400,14 +394,14 @@ pub fn notifications_read_sent(
     ids: Vec<String>,
 ) -> Result<(), String> {
     db.with_tx(|c| read_sent(c, &user_id, &ids))?;
-    db.persist()
+    Ok(())
 }
 
 #[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn notifications_outbox_add(db: State<Db>, user_id: String, body: Value) -> Result<(), String> {
     db.with_tx(|c| outbox_add(c, &user_id, &body))?;
-    db.persist()
+    Ok(())
 }
 
 #[cfg(feature = "tauri")]
@@ -427,7 +421,7 @@ pub fn notifications_outbox_done(
     ids: Vec<String>,
 ) -> Result<(), String> {
     db.with_tx(|c| outbox_done(c, &user_id, &ids))?;
-    db.persist()
+    Ok(())
 }
 
 #[cfg(test)]

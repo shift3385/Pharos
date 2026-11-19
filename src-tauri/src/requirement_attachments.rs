@@ -189,7 +189,6 @@ pub fn requirement_attachment_add(
         }
         Ok(stored)
     })?;
-    db.persist()?;
     Ok(Some(RequirementAttachment {
         id,
         name,

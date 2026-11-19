@@ -739,7 +739,6 @@ pub fn test_case_get(
 #[tauri::command]
 pub fn test_case_create(db: State<Db>, input: TestCaseInput) -> Result<Option<TestCase>, String> {
     let id = db.with_tx(|conn| insert_case(conn, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_case(conn, &id, &input.user_id))
 }
 
@@ -751,7 +750,6 @@ pub fn test_case_update(
     input: TestCaseInput,
 ) -> Result<Option<TestCase>, String> {
     db.with_tx(|conn| update_case(conn, &id, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_case(conn, &id, &input.user_id))
 }
 
@@ -759,7 +757,7 @@ pub fn test_case_update(
 #[tauri::command]
 pub fn test_case_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_case(conn, &id, &user_id))?;
-    db.persist()
+    Ok(())
 }
 
 #[cfg(feature = "tauri")]
@@ -782,7 +780,6 @@ pub fn test_case_review(
     input: case_review::ReviewInput,
 ) -> Result<Option<TestCase>, String> {
     db.with_tx(|conn| case_review::review_case(conn, &id, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_case(conn, &id, &input.user_id))
 }
 
