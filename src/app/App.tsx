@@ -5,7 +5,7 @@ import { useAuth, AuthScreen, RESET_PATH } from "@modules/auth";
 import { AppShell } from "./layout/AppShell";
 import { AppSplash } from "./AppSplash";
 import { DbConvertingScreen, DbErrorScreen } from "./DbErrorScreen";
-import { useDbOpenError } from "./dbStatus";
+import { useDbOpenError, useExternalDbChanges } from "./dbStatus";
 import { DashboardPage } from "./dashboard/DashboardPage";
 import { ProjectDetailPage, ProjectsPage } from "@modules/projects";
 import { AdminPage, adminPath } from "@modules/admin";
@@ -15,6 +15,7 @@ import { JoinWorkspacePage, WorkspaceMembersPage } from "@modules/workspaces";
 export function App() {
   const { status } = useAuth();
   const db = useDbOpenError();
+  useExternalDbChanges();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   // Signing in always opens Inicio (UX-27), wherever the last session ended

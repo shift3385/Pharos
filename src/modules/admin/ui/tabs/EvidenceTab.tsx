@@ -15,7 +15,7 @@ import { capabilities } from "@shared/platform";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { useToast } from "@shared/ui/Toast";
-import { EVIDENCE_CHECK_BUSY, EVIDENCE_DB_CHANGED, evidenceApi } from "../../api/evidenceApi";
+import { EVIDENCE_CHECK_BUSY, evidenceApi } from "../../api/evidenceApi";
 import { SettingsRow, SettingsSection } from "../SettingsSection";
 import { EvidenceRetentionSection } from "./EvidenceRetentionSection";
 
@@ -469,9 +469,7 @@ function Orphans({
       toast(
         reason.startsWith(EVIDENCE_CHECK_BUSY)
           ? t("admin.evidence.check.busy")
-          : reason.startsWith(EVIDENCE_DB_CHANGED)
-            ? t("admin.evidence.orphans.dbChanged")
-            : t("admin.evidence.orphans.failed", { reason }),
+          : t("admin.evidence.orphans.failed", { reason }),
         "error",
       );
     } finally {

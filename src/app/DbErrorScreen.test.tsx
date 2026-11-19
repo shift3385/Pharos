@@ -35,7 +35,7 @@ describe("DbErrorScreen (SEC-06)", () => {
     const error = `${DB_IN_USE_ERROR}: another Pharos process is using this data folder`;
     renderWithProviders(<DbErrorScreen error={error} />);
     expect(
-      screen.getByText("Otro Pharos está usando tus datos"),
+      screen.getByText("Otro Pharos está actualizando tus datos"),
     ).toBeInTheDocument();
     expect(screen.getByText(error)).toBeInTheDocument();
   });

@@ -2054,7 +2054,6 @@ pub(crate) fn held_back(conn: &Connection) -> Result<i64, String> {
 #[tauri::command]
 pub fn run_create(db: State<Db>, input: RunInput) -> Result<Option<Run>, String> {
     let id = db.with_tx(|conn| insert_run(conn, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_run(conn, &id, &input.user_id))
 }
 
@@ -2062,7 +2061,6 @@ pub fn run_create(db: State<Db>, input: RunInput) -> Result<Option<Run>, String>
 #[tauri::command]
 pub fn run_update(db: State<Db>, id: String, input: RunInput) -> Result<Option<Run>, String> {
     db.with_tx(|conn| update_run(conn, &id, &input))?;
-    db.persist()?;
     db.with_conn(|conn| get_run(conn, &id, &input.user_id))
 }
 
@@ -2087,7 +2085,6 @@ pub fn run_items_add(
     items: Vec<RunItemInput>,
 ) -> Result<Vec<RunItem>, String> {
     db.with_tx(|conn| add_items(conn, &run_id, &user_id, &items))?;
-    db.persist()?;
     db.with_conn(|conn| list_items(conn, &run_id, &user_id))
 }
 
@@ -2105,7 +2102,6 @@ pub fn run_items_list(
 #[tauri::command]
 pub fn result_record(db: State<Db>, input: ResultInput) -> Result<String, String> {
     let id = db.with_tx(|conn| record_result(conn, &input))?;
-    db.persist()?;
     Ok(id)
 }
 
@@ -2137,6 +2133,5 @@ pub fn unlinked_mapping_set(
             &user_id,
         )
     })?;
-    db.persist()?;
     Ok(id)
 }

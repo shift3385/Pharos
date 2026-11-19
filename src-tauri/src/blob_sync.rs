@@ -605,9 +605,6 @@ pub async fn blobs_transfer(
                     }
                 }
             }
-            if done.downloaded > 0 {
-                db.persist()?;
-            }
         }
         _ => return Err("unknown phase".into()),
     }

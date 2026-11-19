@@ -436,7 +436,6 @@ pub fn template_create(
     user_id: String,
 ) -> Result<Option<TemplateData>, String> {
     let id = db.with_tx(|conn| insert_template(conn, db.evidence(), &input, &user_id))?;
-    db.persist()?;
     db.with_conn(|conn| get_template(conn, db.evidence(), &id, &user_id))
 }
 
@@ -449,7 +448,6 @@ pub fn template_update(
     user_id: String,
 ) -> Result<Option<TemplateData>, String> {
     db.with_tx(|conn| update_template(conn, &id, &meta, &user_id))?;
-    db.persist()?;
     db.with_conn(|conn| get_template(conn, db.evidence(), &id, &user_id))
 }
 
@@ -457,7 +455,7 @@ pub fn template_update(
 #[tauri::command]
 pub fn template_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_template(conn, &id, &user_id))?;
-    db.persist()
+    Ok(())
 }
 
 /// Idempotently inserts the bundled built-in templates (by stable id). Existing
@@ -465,9 +463,7 @@ pub fn template_delete(db: State<Db>, id: String, user_id: String) -> Result<(),
 #[cfg(feature = "tauri")]
 #[tauri::command]
 pub fn template_seed(db: State<Db>, items: Vec<TemplateSeedItem>) -> Result<(), String> {
-    if db.with_conn(|conn| seed_templates(conn, db.evidence(), &items))? {
-        db.persist()?;
-    }
+    db.with_conn(|conn| seed_templates(conn, db.evidence(), &items))?;
     Ok(())
 }
 

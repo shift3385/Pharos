@@ -659,35 +659,25 @@ fn the_damaged_mark_survives_release_collect_and_a_restart() {
     fs::remove_dir_all(&dir).unwrap();
 }
 
+/// SEC-05b: a file another process linked (its row committed by another
+/// connection on the same database) is not an orphan any more.
 #[test]
-fn orphans_are_not_deleted_when_another_process_saved_the_database() {
+fn a_file_another_process_linked_is_not_deleted() {
     let dir = temp_dir();
     let db = Db::open_with_key(&dir, KEY).unwrap();
-    db.persist().unwrap();
     let orphan = db.evidence().put(&b"orphan"[..], u64::MAX).unwrap();
     let file = db
         .evidence()
         .relative(&db.evidence().path_for(&orphan.sha256).unwrap())
         .unwrap();
-    // Another connection commits: a process from before the folder lock
-    // (ADR-0050), which a second `Db` here can no longer be.
+    // Another process (the CLI) links the same content and commits.
     let other = crate::db::open_disk(&dir.join("pharos.db"), &KEY, false).unwrap();
-    other
-        .execute(
-            "INSERT INTO sync_state (key, value) VALUES ('other', '1')",
-            [],
-        )
-        .unwrap();
+    crate::evidence::record_blob(&other, &orphan, None).unwrap();
     drop(other);
     let check = EvidenceCheck::default();
-    let files = [file];
-    let err = delete_confirmed(&db, &check, &files, None, later(), ORPHAN_MIN_AGE).unwrap_err();
-    assert!(err.starts_with(DB_CHANGED), "{err}");
+    let out = delete_confirmed(&db, &check, &[file], None, later(), ORPHAN_MIN_AGE).unwrap();
+    assert_eq!(out.deleted, 0);
     assert!(db.evidence().path_for(&orphan.sha256).unwrap().exists());
-    // Once this process has written the file again, it is its own state.
-    db.persist().unwrap();
-    let out = delete_confirmed(&db, &check, &files, None, later(), ORPHAN_MIN_AGE).unwrap();
-    assert_eq!(out.deleted, 1);
     drop(db);
     fs::remove_dir_all(&dir).unwrap();
 }
@@ -696,7 +686,6 @@ fn orphans_are_not_deleted_when_another_process_saved_the_database() {
 fn deleted_orphans_are_reported_with_their_events_committed() {
     let dir = temp_dir();
     let db = Db::open_with_key(&dir, KEY).unwrap();
-    db.persist().unwrap();
     let orphan = db.evidence().put(&b"orphan"[..], u64::MAX).unwrap();
     let file = db
         .evidence()

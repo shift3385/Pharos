@@ -15,7 +15,6 @@ import { invoke } from "@shared/platform";
 export const EVIDENCE_CHECK_BUSY = "evidence-check-busy";
 /** Error prefix when the database file changed on disk (another Pharos on
  *  the same data folder): orphans are not deleted then. */
-export const EVIDENCE_DB_CHANGED = "evidence-db-changed";
 
 export const evidenceApi = {
   usage: (): Promise<EvidenceUsage> => invoke("evidence_usage"),

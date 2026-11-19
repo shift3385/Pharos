@@ -665,10 +665,7 @@ pub fn evidence_retention_set(
     policy: RetentionPolicy,
     user_id: String,
 ) -> Result<EvidenceRetention, String> {
-    let changed = db.with_tx(|conn| set(conn, &project_id, &kind, &policy, &user_id))?;
-    if changed {
-        db.persist()?;
-    }
+    db.with_tx(|conn| set(conn, &project_id, &kind, &policy, &user_id))?;
     db.with_conn(|conn| get(conn, &project_id, &user_id))
 }
 
@@ -683,8 +680,5 @@ pub fn evidence_retention_copy(
     user_id: String,
 ) -> Result<usize, String> {
     let changed = db.with_tx(|conn| copy(conn, &from_project_id, &to_project_id, &user_id))?;
-    if changed > 0 {
-        db.persist()?;
-    }
     Ok(changed)
 }

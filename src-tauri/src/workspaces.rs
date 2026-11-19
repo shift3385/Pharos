@@ -786,7 +786,6 @@ pub fn workspaces_apply(
         db.backup_now("workspaces")?;
     }
     let applied = db.with_tx(|conn| apply(conn, &user_id, &workspaces))?;
-    db.persist()?;
     Ok(applied)
 }
 
@@ -836,7 +835,7 @@ pub fn sync_refused_record(
 ) -> Result<(), String> {
     require_user(&user_id)?;
     db.with_tx(|conn| record_refused(conn, &user_id, &items))?;
-    db.persist()
+    Ok(())
 }
 
 /// An open refusal, for the conflict panel («Rechazado por permisos»).
@@ -924,7 +923,7 @@ pub fn sync_rejection_discard(db: State<Db>, user_id: String, id: String) -> Res
         .map_err(|e| e.to_string())?;
         Ok(())
     })?;
-    db.persist()
+    Ok(())
 }
 
 #[cfg(test)]

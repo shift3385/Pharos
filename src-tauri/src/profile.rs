@@ -128,7 +128,6 @@ pub fn profile_upsert(db: State<Db>, input: ProfileInput) -> Result<Option<Profi
             &role,
         )
     })?;
-    db.persist()?;
     db.with_conn(current_profile)
 }
 

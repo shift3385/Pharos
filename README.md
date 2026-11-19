@@ -320,8 +320,9 @@ The desktop app keeps its data in `%APPDATA%\com.pharos.desktop\`:
 - `pharos.db`: the database, encrypted page by page (SQLCipher 4 scheme, SEC-05).
   While Pharos is open it also has `pharos.db-wal` and `pharos.db-shm` next
   to it: they are part of it, encrypted too, and disappear when it closes;
-- `pharos.lock`: held while Pharos (or its CLI) has the folder open, so a
-  second one cannot overwrite the first's data;
+- `pharos.lock`: held for a moment while Pharos (or its CLI) opens the folder,
+  so two of them never convert or upgrade it at once. Once open, several
+  Pharos windows and the CLI use the data at the same time;
 - `evidence\`: the attachment files, encrypted, one `.pev` file per distinct
   content ([ADR-0014](docs/adr/0014-evidencias-cifradas-por-hash.md)). The
   names say nothing about the content, and the database key (so also the
