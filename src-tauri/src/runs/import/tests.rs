@@ -1940,6 +1940,27 @@ fn api_import_interop_vectors() {
         )),
     ));
     inputs.push(("findings-edge".into(), findings_edge_doc()));
+    // F5: a document's caseKey kept as attributes.caseKey (trimmed), unless
+    // the attributes already name one; a metric without attributes too.
+    inputs.push((
+        "case-key".into(),
+        json!({
+            "schemaVersion": "1.0.0",
+            "run": {"sourceTool": "k6"},
+            "shards": [{"ref": "s1", "sourceFormat": "k6", "normalizerVersion": 1}],
+            "results": [],
+            "findings": [
+                {"ruleId": "R1", "severity": "low", "message": "m", "fingerprint": "fp-1",
+                 "caseKey": " TC-1 ", "attributes": {"tool": "x"}},
+                {"ruleId": "R2", "severity": "low", "message": "m", "fingerprint": "fp-2",
+                 "caseKey": "TC-9", "attributes": {"caseKey": "TC-2"}}
+            ],
+            "metrics": [
+                {"name": "m", "aggregation": "rate", "value": 0.5, "threshold": "rate<0.1",
+                 "passed": false, "caseKey": "TC-1"}
+            ]
+        }),
+    ));
     let mut cases = Vec::new();
     for (name, doc) in inputs {
         let c = device();
