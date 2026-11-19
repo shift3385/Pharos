@@ -153,6 +153,27 @@ fn object_text(v: Option<&Value>) -> (String, bool) {
     (Value::Object(kept).to_string(), true)
 }
 
+/// The attributes of a finding or a metric, with the document's `caseKey`
+/// (when it names one) kept as `attributes.caseKey`: the link to a case is
+/// derived when read, from it and from the tags (ADR-0053, F5).
+fn with_case_key(v: &Value) -> Option<Value> {
+    let mut attrs = match v.get("attributes") {
+        Some(Value::Object(m)) => m.clone(),
+        _ => Map::new(),
+    };
+    if let Some(key) = v
+        .get("caseKey")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|k| !k.is_empty())
+    {
+        attrs
+            .entry("caseKey")
+            .or_insert_with(|| json!(clip(key, MAX_TEXT).0));
+    }
+    Some(Value::Object(attrs))
+}
+
 /// Checks and shapes the document's `findings[]` and `metrics[]` for a shard.
 /// A finding needs its rule, severity, message and fingerprint; a metric its
 /// name and a finite value. Anything else is `invalid-report`.
@@ -207,7 +228,7 @@ pub(crate) fn plan(doc: &Value, shard_id: &str) -> Result<Planned, String> {
             location.insert("html".into(), json!(h));
         }
         let (location, cut_location) = object_text(Some(&Value::Object(location)));
-        let (attributes, cut_attributes) = object_text(f.get("attributes"));
+        let (attributes, cut_attributes) = object_text(with_case_key(f).as_ref());
         let refs: Vec<String> = f
             .get("standardRefs")
             .and_then(Value::as_array)
@@ -256,7 +277,7 @@ pub(crate) fn plan(doc: &Value, shard_id: &str) -> Result<Planned, String> {
             out.warnings.push(("duplicate-metric", name.clone()));
             continue;
         }
-        let (attributes, cut_attributes) = object_text(m.get("attributes"));
+        let (attributes, cut_attributes) = object_text(with_case_key(m).as_ref());
         if cut_attributes {
             cut += 1;
         }
@@ -847,7 +868,10 @@ pub fn list_findings(
     let triage = triage_current(conn, &project)?;
     let previous = previous_fingerprints(conn, run_id)?;
     let mut stmt = conn
-        .prepare("SELECT * FROM findings WHERE run_id = ?1")
+        .prepare(&format!(
+            "SELECT * FROM findings x WHERE x.run_id = ?1 AND {}",
+            super::link::CURRENT_SHARD
+        ))
         .map_err(err)?;
     let mut out = stmt
         .query_map(params![run_id], |r| {
@@ -901,10 +925,11 @@ pub fn list_metrics(
         return Ok(Vec::new());
     }
     let mut stmt = conn
-        .prepare(
-            "SELECT * FROM metrics WHERE run_id = ?1
+        .prepare(&format!(
+            "SELECT * FROM metrics x WHERE x.run_id = ?1 AND {}
               ORDER BY (passed = 0) DESC, name, coalesce(scope, ''), coalesce(aggregation, ''), id",
-        )
+            super::link::CURRENT_SHARD
+        ))
         .map_err(err)?;
     let out = stmt
         .query_map(params![run_id], |r| {
