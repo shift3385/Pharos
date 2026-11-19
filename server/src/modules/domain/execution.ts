@@ -30,6 +30,7 @@ import {
 } from "./execution-summary";
 import { factsOf, isImported, linkDataOf, linkResolver, supersededShards, type ResultLink } from "./resultLink";
 import { sortable, timestamp } from "./domain.service";
+import { findingsSummary, type FindingsInput } from "./findingsSummary";
 
 type Payload = Record<string, unknown>;
 const str = (p: Payload, k: string) => (typeof p[k] === "string" ? (p[k] as string) : "");
@@ -112,6 +113,9 @@ const KINDS = [
   "configuration",
   // ING-06 (F5): a linked metric with a threshold is a result of its case.
   "metric",
+  // F5b: the findings summary of the matrix and the reports.
+  "finding",
+  "finding_triage",
 ] as const;
 type Kind = (typeof KINDS)[number];
 
@@ -124,7 +128,7 @@ const byUpdatedDesc = (a: RemoteDoc, b: RemoteDoc) => {
  *  them when null), most recently updated first. Reads without locks, one
  *  query per entity kind plus one for the projects: the cost does not grow
  *  with the number of projects. */
-export async function loadProjects(r: DomainReader, ids: string[] | null): Promise<ProjectData[]> {
+export async function loadProjects(r: DomainReader, ids: string[] | null): Promise<LoadedProject[]> {
   const projects = (await r.projects(ids ? [...new Set(ids)] : null)).sort(byUpdatedDesc);
   if (projects.length === 0) return [];
   const projectIds = projects.map((p) => p.entityId);
@@ -148,7 +152,10 @@ export async function loadProjects(r: DomainReader, ids: string[] | null): Promi
 }
 
 /** One project's data from the lists already read (no query). */
-function projectData(project: RemoteDoc, docs: (kind: Kind) => RemoteDoc[]): ProjectData {
+/** A project's data and, read lazily, its findings (F5b). */
+export type LoadedProject = ProjectData & { findingsInput: () => FindingsInput };
+
+function projectData(project: RemoteDoc, docs: (kind: Kind) => RemoteDoc[]): LoadedProject {
   const projectId = project.entityId;
   const allRuns = docs("run");
   const runDocs = allRuns.filter((d) => !d.deleted);
@@ -363,6 +370,77 @@ function projectData(project: RemoteDoc, docs: (kind: Kind) => RemoteDoc[]): Pro
       : null,
     // TRZ-04: the project's bands; absent or invalid → the defaults.
     riskBands: checkedBands(project.payload.riskBandLow, project.payload.riskBandMedium),
+    findingsInput: () => {
+      // The case a finding or metric links to: its tags or `caseKey`.
+      const caseOf = (runId: string, attributes: Payload) =>
+        linkOf({
+          runId,
+          testKey: "",
+          attributes,
+          caseKey: typeof attributes.caseKey === "string" ? attributes.caseKey : null,
+        }).caseId;
+      const fingerprintsByRun = new Map<string, Set<string>>();
+      const findings: FindingsInput["findings"] = [];
+      for (const d of docs("finding")) {
+        const p = d.payload;
+        const runId = str(p, "runId");
+        if (!liveRuns.has(runId)) continue;
+        const fingerprint = str(p, "fingerprint");
+        fingerprintsByRun.set(runId, (fingerprintsByRun.get(runId) ?? new Set()).add(fingerprint));
+        if (superseded.has(str(p, "shardId"))) continue;
+        const attributes = obj(p.attributes);
+        findings.push({
+          runId,
+          fingerprint,
+          severity: strOrNull(p, "severity") ?? "info",
+          needsReview: attributes.needsReview === true,
+          caseId: caseOf(runId, attributes),
+        });
+      }
+      const metrics: FindingsInput["metrics"] = [];
+      for (const d of docs("metric")) {
+        const p = d.payload;
+        if (typeof p.passed !== "boolean") continue;
+        const runId = str(p, "runId");
+        if (!liveRuns.has(runId) || superseded.has(str(p, "shardId"))) continue;
+        const attributes = obj(p.attributes);
+        metrics.push({
+          id: d.entityId,
+          runId,
+          name: str(p, "name"),
+          aggregation: strOrNull(p, "aggregation"),
+          scope: strOrNull(p, "scope"),
+          value: typeof p.value === "number" ? p.value : Number(p.value),
+          unit: strOrNull(p, "unit"),
+          threshold: strOrNull(p, "threshold"),
+          passed: p.passed,
+          caseId: caseOf(runId, attributes),
+        });
+      }
+      // The current decision on each fingerprint: the newest event (HLC, id).
+      const triage = new Map<string, string>();
+      const events = [...docs("finding_triage")].sort((a, b) => {
+        const [ha, hb] = [str(a.payload, "hlc"), str(b.payload, "hlc")];
+        if (ha !== hb) return ha < hb ? 1 : -1;
+        return a.entityId < b.entityId ? 1 : a.entityId > b.entityId ? -1 : 0;
+      });
+      for (const d of events) {
+        const fp = str(d.payload, "fingerprint");
+        if (fp && !triage.has(fp)) triage.set(fp, str(d.payload, "state") || "open");
+      }
+      return {
+        runs: runDocs.map((d) => ({
+          id: d.entityId,
+          tool: strOrNull(d.payload, "sourceTool") ?? "",
+          startedAt: strOrNull(d.payload, "startedAt"),
+          createdAt: strOrNull(d.payload, "createdAt"),
+        })),
+        findings,
+        fingerprintsByRun,
+        metrics,
+        triage,
+      };
+    },
   };
 }
 
@@ -403,7 +481,11 @@ export function createExecutionService(store: DomainStore) {
      *  the read transaction ends. */
     summary: async (userId: string, filter: ExecutionFilter) => {
       const [data] = await store.read(userId, (r) => loadProjects(r, [filter.projectId]));
-      return data ? summarize(data, filter) : null;
+      if (!data) return null;
+      const summary = summarize(data, filter);
+      // F5b: the findings and thresholds of the summary's runs, when any.
+      const findings = findingsSummary(data.findingsInput(), summary.runs);
+      return findings ? { ...summary, findings } : summary;
     },
     /** The Home metrics (RED-W6's `GET /api/home/metrics` calls this). */
     homeMetrics: async (userId: string, request: HomeRequest): Promise<HomeMetrics> => {

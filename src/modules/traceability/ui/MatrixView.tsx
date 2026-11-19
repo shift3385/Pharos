@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { caseLink } from "@modules/test-cases";
+import { findingSeverityTone } from "@modules/runs";
 import { Switch } from "@shared/ui/Switch";
 import { parseStamp } from "@shared/time/stamp";
 import { Trans, useTranslation } from "react-i18next";
@@ -187,6 +188,11 @@ export function MatrixView({
   const { t, i18n } = useTranslation();
   const mobile = useBreakpoint() === "mobile";
   const [onlyGaps, setOnlyGaps] = useState(false);
+  const [onlyFindings, setOnlyFindings] = useState(false);
+  const withFindings = useMemo(
+    () => new Set(matrix.rows.filter((r) => r.findings).map((r) => r.requirementKey)),
+    [matrix.rows],
+  );
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
   const { summary, gaps } = matrix;
@@ -197,8 +203,10 @@ export function MatrixView({
 
   const groups = useMemo(() => {
     const all = groupRows(matrix.rows);
-    return onlyGaps ? all.filter((g) => g.rows[0].coverage === "not_covered") : all;
-  }, [matrix.rows, onlyGaps]);
+    return all
+      .filter((g) => !onlyGaps || g.rows[0].coverage === "not_covered")
+      .filter((g) => !onlyFindings || withFindings.has(g.rows[0].requirementKey));
+  }, [matrix.rows, onlyGaps, onlyFindings, withFindings]);
   const pages = Math.max(1, Math.ceil(groups.length / pageSize));
   const current = Math.min(page, pages);
   const shown = groups.slice((current - 1) * pageSize, current * pageSize);
@@ -253,6 +261,18 @@ export function MatrixView({
           <StatusPill tone="neutral" title={t("traceability.result.staleTitle")}>
             {t("traceability.result.stale")}
           </StatusPill>
+        )}
+        {r.findings && (
+          <span data-testid={`trace-findings-${r.scenarioId ?? ""}`}>
+            <StatusPill
+              tone={findingSeverityTone(r.findings.worst)}
+              title={t("traceability.findings.badgeTitle", {
+                severity: t(`findings.severity.${r.findings.worst}`),
+              })}
+            >
+              {t("traceability.findings.badge", { count: r.findings.open })}
+            </StatusPill>
+          </span>
         )}
       </div>
     );
@@ -463,6 +483,19 @@ export function MatrixView({
             title={t("traceability.matrix.onlyGapsHint")}
           />
         </div>
+        {withFindings.size > 0 && (
+          <div className="tz-gaps-toggle" data-on={onlyFindings || undefined}>
+            <Switch
+              checked={onlyFindings}
+              onChange={(v) => {
+                setOnlyFindings(v);
+                setPage(1);
+              }}
+              label={t("traceability.matrix.onlyFindings", { count: withFindings.size })}
+              title={t("traceability.matrix.onlyFindingsHint")}
+            />
+          </div>
+        )}
       </div>
       {filters}
 

@@ -565,6 +565,20 @@ Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
   (`execution::load_attempts`, the server's `execution.ts`): a failed
   threshold fails the case and a newer run decides as usual. The derivation
   core and its vectors are untouched.
+- **Findings summary** (F5b): `ExecutionSummary.findings` (optional, absent
+  without findings or thresholds) is computed after `derive::summarize` by
+  `runs/findings/summary.rs` (server twin `findingsSummary.ts`, fed by the
+  execution loader's lazy `findingsInput`): from the summary's runs, the
+  latest of each tool, its open findings by severity (not triaged, not «A
+  revisar»), new ones (not in the tool's previous run), triaged and review
+  counts, the open findings of each linked case with the worst severity, and
+  the thresholds (total, passed, failed with their case). The matrix reads
+  `findings.cases` (badge, note `openFindings`, «Con hallazgos abiertos»
+  filter); the status report adds «7.1 Hallazgos y rendimiento» and the
+  completion report lists them under residual risks (`findingsSection.ts`).
+  `RunCounts` gains open `findings`, `findingsWorst` and
+  `thresholdsFailed` (`import::add_finding_counts`, the server's
+  `findingCountsOf`); a run with findings or metrics only is listed.
 - **Screens** (F4b): the run detail gains underline tabs (`?tab=`) «Casos»,
   «Hallazgos» and «Métricas», shown only when the run has findings or
   metrics. `FindingsPanel` filters by severity, standing (open, «A revisar»,

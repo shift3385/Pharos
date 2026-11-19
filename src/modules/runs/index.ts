@@ -13,6 +13,7 @@ export {
   summaryQuery,
 } from "./api/executionApi";
 export { evaluateExitCriteria } from "./model/exitCriteria";
+export { severityTone as findingSeverityTone } from "./model/findings";
 export { StatusReportDialog } from "./report/StatusReportDialog";
 export { StatusReportButton } from "./report/StatusReportButton";
 // The quality gate at closing a cycle (DOC-02).

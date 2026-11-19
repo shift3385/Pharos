@@ -359,6 +359,15 @@ export function CompletionReportDialog({
               {table(report.openDefects, t("completionReport.noDefects"))}
               <h5>{t("completionReport.riskyRequirements")}</h5>
               {table(report.riskyRequirements, t("completionReport.noRisky"))}
+              {report.findings && (
+                <div data-testid="completion-findings">
+                  <h5>{t("completionReport.findings")}</h5>
+                  <p>{report.findings.findingsLine}</p>
+                  {report.findings.thresholdsLine && <p>{report.findings.thresholdsLine}</p>}
+                  {table(report.findings.tools, t("common.noData"))}
+                  {table(report.findings.failed, t("statusReport.findings.noFailed"))}
+                </div>
+              )}
               {textField("risks", t("completionReport.notes"), t("completionReport.placeholder.risks"))}
             </section>
             <section>

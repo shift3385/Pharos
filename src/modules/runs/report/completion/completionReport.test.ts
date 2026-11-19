@@ -124,6 +124,13 @@ describe("completion report model (DOC-01)", () => {
     expect(r.approvalLine).toBe("Borrador sin aprobar");
   });
 
+  it("lists open findings and failed thresholds among the residual risks (ING-06)", () => {
+    const r = buildCompletionReport(S, ctx(), t);
+    expect(r.findings?.findingsLine).toMatch(/^3 hallazgos abiertos/);
+    expect(r.findings?.failed.rows[0]).toEqual(["RUN-004", "http_req_duration · p(95)", "p(95)<500", "812 ms", "TC-002"]);
+    expect(buildCompletionReport({ ...S, findings: undefined }, ctx(), t).findings).toBeNull();
+  });
+
   it("works without a plan or a planned end", () => {
     const r = buildCompletionReport(
       S,
@@ -223,6 +230,7 @@ describe("completion report exports", () => {
     expect(texts).toContain("Borrador sin aprobar");
     expect(wb.getWorksheet("Medidas")!.getRow(1).getCell(5).value).toBe("Objetivo del plan");
     expect(wb.getWorksheet("Riesgos residuales")!.getRow(3).getCell(1).value).toBe("DEF-001");
+    expect(texts.some((x) => x.startsWith("Hallazgos y umbrales"))).toBe(true);
     expect(wb.getWorksheet("Casos")!.getRow(2).getCell(1).value).toBe("TC-001");
   });
 

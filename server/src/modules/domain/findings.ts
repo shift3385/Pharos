@@ -167,6 +167,45 @@ async function previousFingerprints(
   );
 }
 
+/** What the runs list shows of a run's findings (F5b, `add_finding_counts`). */
+export interface RunFindingCounts {
+  /** Open: neither triaged nor «A revisar». */
+  findings: number;
+  findingsWorst: string | null;
+  thresholdsFailed: number;
+}
+
+/** The open findings and failed thresholds of every live run of a project,
+ *  by run id (current shards only). */
+export async function findingCountsOf(
+  tx: DomainTx,
+  projectId: string,
+): Promise<Map<string, RunFindingCounts>> {
+  const live = new Set((await tx.list("run", projectId)).filter(isLiveRun).map((d) => d.entityId));
+  const superseded = await supersededOf(tx, projectId);
+  const current = (d: RemoteDoc) =>
+    live.has(s(d.payload, "runId") ?? "") && !superseded.has(s(d.payload, "shardId") ?? "");
+  const out = new Map<string, RunFindingCounts>();
+  const entry = (runId: string) => {
+    let c = out.get(runId);
+    if (!c) out.set(runId, (c = { findings: 0, findingsWorst: null, thresholdsFailed: 0 }));
+    return c;
+  };
+  const triage = await triageCurrent(tx, projectId);
+  for (const d of (await tx.list("finding", projectId)).filter(current)) {
+    const c = entry(s(d.payload, "runId") ?? "");
+    const state = triage.get(s(d.payload, "fingerprint") ?? "")?.state;
+    if ((state && state !== "open") || o(d.payload, "attributes").needsReview === true) continue;
+    const severity = s(d.payload, "severity") ?? "info";
+    c.findings++;
+    if (c.findingsWorst === null || rank(severity) < rank(c.findingsWorst)) c.findingsWorst = severity;
+  }
+  for (const d of (await tx.list("metric", projectId)).filter(current)) {
+    if (d.payload.passed === false) entry(s(d.payload, "runId") ?? "").thresholdsFailed++;
+  }
+  return out;
+}
+
 export function createFindingService(store: DomainStore) {
   const write = store.tx.bind(store);
   const read = store.readTx.bind(store);

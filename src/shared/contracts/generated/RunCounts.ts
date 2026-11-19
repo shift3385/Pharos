@@ -2,6 +2,16 @@
 
 /**
  * What the runs list shows of each run: its final results by status, and
- * how many of them have no case (not even by a later link).
+ * how many of them have no case (not even by a later link); and its open
+ * findings with the worst severity and its failed thresholds (ING-06, F5b),
+ * so a run with findings only is not shown as empty.
  */
-export type RunCounts = { runId: string, passed: number, failed: number, other: number, unlinked: number, };
+export type RunCounts = { runId: string, passed: number, failed: number, other: number, unlinked: number, 
+/**
+ * Open findings: neither triaged nor «A revisar».
+ */
+findings: number, 
+/**
+ * `critical` | `high` | `medium` | `low` | `info`; None without open ones.
+ */
+findingsWorst: string | null, thresholdsFailed: number, };
