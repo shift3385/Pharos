@@ -77,6 +77,7 @@ impl Fixture {
             cwd: self.work(),
             user_config_dir: None,
             tty: false,
+            stdin: None,
         };
         let argv: Vec<String> = args.iter().map(|s| s.to_string()).collect();
         let (mut out, mut err) = (Vec::new(), Vec::new());
@@ -293,13 +294,13 @@ fn what_is_missing_has_its_own_exit_code() {
             .0,
         2
     );
-    // Remote mode comes with L2.
+    // A server makes it remote; without a token nothing is sent.
     let (code, _, err) = f.run(
         &["upload", "ctrf.json", "-p", "TC"],
         &[("PHAROS_URL", "https://x.example")],
     );
-    assert_eq!(code, 2);
-    assert!(err.contains("[not-available]"), "{err}");
+    assert_eq!(code, 3);
+    assert!(err.contains("[no-token]"), "{err}");
     // Nobody signed in to the app.
     f.local.user = None;
     let (code, _, err) = f.run(&["upload", "ctrf.json", "-p", "TC"], &[]);

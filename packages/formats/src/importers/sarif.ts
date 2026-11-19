@@ -298,7 +298,9 @@ export function parseSarif(log: SarifLog): ParsedReport {
 
       findings.push({
         ruleId,
-        ruleName: rule?.name ?? rule?.shortDescription?.text,
+        // The short description reads as a title; `name` is often an id or a
+        // generic word (Trivy: «Misconfiguration»).
+        ruleName: rule?.shortDescription?.text ?? rule?.name,
         severity,
         rawSeverity:
           [

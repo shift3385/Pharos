@@ -537,7 +537,17 @@ Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
   `/api/runs/:id/metrics` and `/api/finding-triage`, the twin of the same
   rules; a decision from the web is one more `finding_triage` event.
   `runsApi.findings`, `metrics`, `triage` and `triageHistory` pick the
-  side.
+  side. Findings and metrics of a superseded shard are left out, like
+  results.
+- **Case links and the matrix** (F5a): a finding or metric links to a case
+  by a case tag in `attributes.tags` or by the document's `caseKey`, kept as
+  `attributes.caseKey` (`findings::with_case_key`), resolved when read by the
+  results' resolver. A metric **with a threshold** linked to a case is an
+  attempt of that case in its run, at the run's time (test key
+  `metric:<name>|<aggregation>|<scope>`), added by the loaders
+  (`execution::load_attempts`, the server's `execution.ts`): a failed
+  threshold fails the case and a newer run decides as usual. The derivation
+  core and its vectors are untouched.
 - **Screens** (F4b): the run detail gains underline tabs (`?tab=`) «Casos»,
   «Hallazgos» and «Métricas», shown only when the run has findings or
   metrics. `FindingsPanel` filters by severity, standing (open, «A revisar»,
@@ -2328,8 +2338,8 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   `bin/pharos.exe` and the NSIS hooks `src-tauri/windows/installer-hooks.nsh`.
   The resource is not in `tauri.conf.json` because tauri-build copies
   resources on every cargo build, which would fail without a staged CLI. The
-  hooks call `pharos setup-path add|remove <install>in`, which edits
-  `HKCUEnvironmentPath` in Rust: the NSIS strings top out at 1024
+  hooks call `pharos setup-path add|remove <install>\bin`, which edits
+  `HKCU\Environment\Path` in Rust: the NSIS strings top out at 1024
   characters. The MSI (stable versions) ships the file without touching the
   PATH. The workflow also uploads `pharos-cli-<version>-windows-x64`
   (zip + SHA256SUMS) and, from an `ubuntu-latest` job, the remote-only
@@ -2394,8 +2404,8 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   the integration branch `local/app-completa` — see `docs/ROADMAP.md` §2.1 for
   where each piece is and §2.2 for the approved course (ADR-0039): autonomous execution as the axis up to 1.0.
 - **Known gaps (2026-11-18):** the `pharos` CLI imports Pharos Run JSON and
-  JUnit into the local database (INT-01 L1, L4) but has no remote mode, `watch` or installer
-  yet, and no other process can write while the app is open (SEC-05); no shared
+  JUnit into the local database (INT-01 L1, L4) and uploads any report to a server's API v1
+  (INT-01 L2), but has no `watch` or installer yet, and no other process can write while the app is open (SEC-05); no shared
   workspaces or roles (SYNC-07); exit criteria are recognised from free text and
   never gate closing a cycle; no SARIF/k6/axe/Allure ingest, CLI, public API or
   mobile app yet.

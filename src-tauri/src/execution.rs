@@ -478,7 +478,98 @@ fn load_attempts<'c>(
         }
         out.push(x.a);
     }
+    // A metric with a threshold linked to a case counts as a result of that
+    // case in its run: a failed threshold fails the case (ADR-0012, the
+    // user's decision 2 of ADR-0053). Unlinked metrics stay out.
+    let metrics = rows(
+        conn,
+        &format!(
+            "SELECT x.id, x.run_id, x.name, x.aggregation, x.scope, x.passed,
+                    coalesce(r.started_at, r.finished_at, x.created_at),
+                    s.imported_at, x.hlc, r.configuration_id, x.attributes, r.started_at
+               FROM metrics x
+               JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL
+               LEFT JOIN run_shards s ON s.id = x.shard_id
+              WHERE r.project_id = ?1 AND x.passed IS NOT NULL AND {}",
+            link::CURRENT_SHARD
+        ),
+        project_id,
+        |r| {
+            let name: String = r.get(2)?;
+            let aggregation: Option<String> = r.get(3)?;
+            let scope: Option<String> = r.get(4)?;
+            let passed: bool = r.get(5)?;
+            Ok((
+                AttemptData {
+                    id: r.get(0)?,
+                    run_id: r.get(1)?,
+                    test_key: metric_test_key(&name, aggregation.as_deref(), scope.as_deref()),
+                    configuration_label: None,
+                    attempt: 0,
+                    status: if passed { "passed" } else { "failed" }.into(),
+                    started_at: r.get(11)?,
+                    // The run's time, not the import's: a threshold belongs to its run.
+                    finished_at: r.get(6)?,
+                    shard_imported_at: r.get(7)?,
+                    hlc: r.get(8)?,
+                    imported: true,
+                    declared_flaky: false,
+                    configuration_id: r.get(9)?,
+                    case_id: None,
+                    flow_id: None,
+                    row_id: None,
+                    revision_id: None,
+                    exec_fingerprint: None,
+                },
+                json(r.get(10)?),
+            ))
+        },
+    )?;
+    for (mut a, attributes) in metrics {
+        let attributes = if attributes.is_object() {
+            attributes
+        } else {
+            serde_json::json!({})
+        };
+        let case_key = attributes
+            .get("caseKey")
+            .and_then(Value::as_str)
+            .map(str::to_string);
+        let stored = StoredFacts::of(&attributes, case_key.as_deref(), None, Vec::new());
+        if resolver.is_none() {
+            resolver = Some(Resolver::for_project(conn, project_id)?);
+        }
+        let l = resolver.as_mut().expect("set above").resolve(
+            &a.run_id,
+            &a.test_key,
+            &stored.facts(),
+            true,
+        )?;
+        let Some(case_id) = l.case_id else {
+            continue;
+        };
+        a.case_id = Some(case_id);
+        a.flow_id = l.flow_id;
+        a.row_id = l.example_row_id;
+        a.revision_id = l.revision_id;
+        a.configuration_id = a.configuration_id.or(l.configuration_id);
+        out.push(a);
+    }
     Ok((out, resolver))
+}
+
+/// The test key of a metric as a result of its case: one per metric,
+/// aggregation and scope (`metric:http_req_duration|p95|case:TC-1`).
+pub(crate) fn metric_test_key(
+    name: &str,
+    aggregation: Option<&str>,
+    scope: Option<&str>,
+) -> String {
+    format!(
+        "metric:{name}|{}|{}",
+        aggregation.unwrap_or(""),
+        scope.unwrap_or("")
+    )
 }
 
 /// Most local days a request may carry (a year and a month).
