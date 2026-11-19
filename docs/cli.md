@@ -2,18 +2,14 @@
 
 Referencia de la línea de comandos de Pharos (INT-01, [ADR-0054](adr/0054-cli-y-plantillas-de-github-actions.md)).
 
-El plan completo y los bocetos están en [`design/l-int01-plan.md`](design/l-int01-plan.md). El capítulo del manual de usuario llega con «Conectar CI» (L6).
+El plan completo y los bocetos están en [`design/l-int01-plan.md`](design/l-int01-plan.md). El manual de usuario lo cuenta en el capítulo «Integraciones», junto a «Conectar CI».
 
-> **Estado (L1, L2, L4, L5).**
+> **Estado:** todos los comandos de INT-01 funcionan:
 >
-> - **Funciona:**
->   - `upload` en modo local (Pharos Run JSON y JUnit) y en modo remoto (cualquier formato que lea el servidor);
->   - `projects`, `doctor`, `login`, `logout` y `run close`.
-> - **Llega más adelante:**
->   - `watch` (L3);
->   - las plantillas de GitHub Actions y «Conectar CI» (L6);
+> - `upload` en modo local (Pharos Run JSON y JUnit, también con la app abierta) y en modo remoto (cualquier formato que lea el servidor);
+> - `watch`, `projects`, `doctor`, `login`, `logout` y `run close`.
 >
-> Mientras tanto, esos comandos responden «llega en una versión próxima» y salen con el código 2.
+> Las plantillas de GitHub Actions están en [`integraciones/github-actions/`](integraciones/github-actions/README.md).
 
 ## Instalarlo
 
@@ -51,6 +47,7 @@ Con un directorio de target compartido, `CARGO_TARGET_DIR` decide dónde queda `
 | `pharos doctor` | Comprueba la versión, la configuración y el modo. En local, también la sesión y la base de datos; en remoto, el servidor y el token (dueño, permisos y caducidad). Sale con 0 si solo hay avisos. |
 | `pharos login [--server URL] [--token-stdin]` | Pide el token (no se ve al escribirlo) o lo lee de la entrada estándar. Lo comprueba con el servidor, lo guarda en el Administrador de credenciales de Windows y deja ese servidor como el de por defecto. |
 | `pharos logout [--server URL]` | Borra ese token del almacén de credenciales. |
+| `pharos watch [opciones] --report <patrón>… -- <comando> [argumentos…]` | Ejecuta las pruebas y sube los informes que escribieron o cambiaron (§ «`watch`»). Sale con el código de las pruebas. |
 | `pharos run close [RUN-n] [--external-id <id>] [--status completed\|aborted]` | Cierra un run del servidor. Sin clave, el de `--external-id` o, en GitHub Actions, el de este CI: es el último job de una matriz. |
 | `pharos help [comando]` · `pharos --version` | Ayuda y versión. |
 
@@ -78,6 +75,25 @@ Con un directorio de target compartido, `CARGO_TARGET_DIR` decide dónde queda `
 - **No existe `--token`:** quedaría en el historial del shell y en la lista de procesos. El token va en `PHAROS_TOKEN`, `--token-stdin` o `pharos login`.
 - **Varios ficheros** van a un único run nuevo, que queda cerrado como completado al terminar. En remoto, el CLI crea antes el run vacío (`createRun`), porque el servidor cierra al momento el run que crea una subida.
 - **Repetir un fichero** que ya está en el proyecto no escribe nada y no es un error («ya estaba importado en RUN-n»).
+
+## `watch`
+
+`pharos watch -p PAG --report "test-results/*.xml" -- npx playwright test`
+
+1. **Antes de ejecutar nada**, comprueba el modo, el proyecto y:
+   - en remoto, el token con el servidor (`GET /me`);
+   - en local, la sesión y la base de datos.
+
+   Un token caducado se descubre en segundos, no después de las pruebas: sale con su código y el comando no se ejecuta.
+2. **Ejecuta el comando** en esta misma terminal: su salida sale tal cual y el comando lee la misma entrada.
+   - En Windows, un nombre como `npm` se busca con las extensiones de `PATHEXT` (`npm.cmd`), como haría la terminal.
+   - Ctrl+C llega a las pruebas, pero no corta `watch`, que sube lo que llegaron a escribir.
+3. **Sube solo los informes nuevos:** los que coinciden con `--report` (repetible, o `report` en `pharos.toml`) y se escribieron o cambiaron durante el comando.
+   - Un informe que ya estaba se enseña como «sin cambios desde antes del comando» y no se sube.
+   - La subida es la de `upload`, con sus mismas opciones (`--server`, `--run-name`, `--external-id`, `--close`…).
+4. **Sale con el código del comando**, para que CI siga fallando cuando fallan las pruebas.
+   - Si la subida falla o no hay ningún informe nuevo, avisa y conserva ese código.
+   - Con `--require-upload`, el fallo de la subida decide el código de salida.
 
 ## Modo local
 
@@ -133,7 +149,7 @@ La primera línea de la salida siempre dice el modo, la carpeta o el servidor, e
 | `project` | Proyecto por defecto |
 | `server` | Servidor (pasa a modo remoto) |
 | `format` | Formato por defecto |
-| `report` | Patrones de informes para `watch` (L3) |
+| `report` | Patrones de informes para `watch` |
 | `cycle` | Ciclo por defecto |
 | `config` | Configuración por defecto |
 | `lang` | Idioma |

@@ -19,6 +19,7 @@ pub mod output;
 pub mod path_env;
 pub mod remote;
 pub mod runjson;
+pub mod watch;
 
 use std::io::Write;
 
@@ -89,6 +90,7 @@ pub fn run(
                 Some("upload") => "help.upload",
                 Some("projects") => "help.projects",
                 Some("doctor") => "help.doctor",
+                Some("watch") => "help.watch",
                 _ => "help.main",
             };
             let text = p.t(key, &[]);
@@ -113,10 +115,22 @@ pub fn run(
             }
             .code()
         }
-        Command::Later(name) => {
-            let f = Failure::usage("not-available", "err.command-later").arg(name.as_str());
-            p.failure(&f);
-            f.exit.code()
+        Command::Watch => {
+            let cfg = match cfg {
+                Ok(cfg) => cfg,
+                Err(f) => {
+                    p.failure(&f);
+                    return f.exit.code();
+                }
+            };
+            watch::watch(
+                opts,
+                &cfg,
+                env,
+                #[cfg(feature = "local")]
+                local,
+                &mut p,
+            )
         }
         Command::Doctor => doctor::doctor(
             opts,

@@ -1,0 +1,47 @@
+# Pharos · el CLI en un runner Windows (INT-01, INT-04; ADR-0054).
+# `pharos watch` comprueba el token antes de lanzar las pruebas, las ejecuta,
+# sube los informes que escribieron y sale con el código de las pruebas.
+#
+# El CLI viene en el zip `pharos-cli-<versión>-windows-x64` del flujo
+# «Installer», con su SHA256SUMS. Ponlo donde tu equipo guarde herramientas
+# (una release, un almacén interno) y comprueba el hash al descargarlo: el paso
+# «Instalar pharos» es un ejemplo con una URL tuya.
+#
+# En GitHub: secreto PHAROS_TOKEN (token de proyecto) y variable PHAROS_URL.
+name: CLI de Pharos en Windows
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    runs-on: windows-latest
+    env:
+      PHAROS_URL: ${{ vars.PHAROS_URL }}
+      PHAROS_TOKEN: ${{ secrets.PHAROS_TOKEN }}
+      PHAROS_PROJECT: PAG
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: Instalar pharos
+        shell: pwsh
+        env:
+          # La dirección del zip y su SHA-256, de su SHA256SUMS.
+          PHAROS_CLI_URL: https://tu-almacen.example/pharos-cli-0.6.0-windows-x64.zip
+          PHAROS_CLI_SHA256: "<sha256 del zip>"
+        run: |
+          Invoke-WebRequest $env:PHAROS_CLI_URL -OutFile pharos-cli.zip
+          if ((Get-FileHash pharos-cli.zip -Algorithm SHA256).Hash -ne $env:PHAROS_CLI_SHA256) { throw "El SHA-256 del CLI no coincide." }
+          Expand-Archive pharos-cli.zip -DestinationPath "$env:RUNNER_TEMP\pharos"
+          Add-Content $env:GITHUB_PATH "$env:RUNNER_TEMP\pharos"
+      - name: Pruebas, subidas a Pharos
+        shell: pwsh
+        run: pharos watch --report "test-results/*.xml" -- npm test
