@@ -31,6 +31,6 @@ Este manual explica, pantalla a pantalla, cómo se usa Pharos. Cada paso es tamb
 17. [Asistente de IA](17-ia.md) (19 pasos)
 18. [Pantallas estrechas y móvil](18-movil.md) (6 pasos)
 19. [Si algo sale mal](19-errores.md) (4 pasos)
-20. [Integraciones](20-integraciones.md) (0 pasos)
+20. [Integraciones](20-integraciones.md) (16 pasos)
 
 - [Apéndice. Atajos de teclado](A-atajos-de-teclado.md)
