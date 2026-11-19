@@ -5069,6 +5069,10 @@
       },
       "webhook": {
         "disabled": "Se desactivó el webhook {{title}} tras 50 fallos seguidos. Revisa su destino y vuelve a activarlo en «Integraciones»."
+      },
+      "token": {
+        "expiring": "Tu token {{title}} caduca en 7 días. Crea uno nuevo y cámbialo en tu CI antes de que deje de funcionar.",
+        "inactive": "El token {{title}} de {{owner}} ha dejado de funcionar: su dueño salió del workspace o se desactivó su cuenta. Reasígnalo o revócalo en «Integraciones»."
       }
     },
     "action": {

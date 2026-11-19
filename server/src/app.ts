@@ -54,6 +54,7 @@ import { setDocumentHook } from "./modules/sync/sync.repository.js";
 import { createWebhookService } from "./modules/webhooks/webhooks.service.js";
 import { webhookRoutes } from "./modules/webhooks/webhooks.routes.js";
 import { createDispatcher, type Sender } from "./modules/webhooks/dispatcher.js";
+import { createTokenNotices } from "./modules/api/tokenNotices.js";
 
 /** Routes limited per client IP: guessing passwords on login, and burning
  *  Argon2 CPU on register; guessing passwords, recovery codes or reset links,
@@ -247,6 +248,13 @@ export function buildApp(deps: {
   });
   // API tokens and the public API /api/v1 (INT-02, ADR-0052).
   const apiTokens = createApiTokenService(pool, clock);
+  // Expiry and inactive-token notices (A4): a sweep, hourly by default.
+  const tokenNotices = createTokenNotices({ pool, membership });
+  app.decorate("tokenNotices", tokenNotices);
+  if (env.TOKEN_NOTICE_INTERVAL_MS > 0) {
+    app.addHook("onReady", async () => tokenNotices.start(env.TOKEN_NOTICE_INTERVAL_MS, app.log));
+  }
+  app.addHook("onClose", async () => tokenNotices.stop());
   void app.register(async (instance) => {
     apiTokenRoutes(instance, { service: apiTokens, tokens, admin });
   });
@@ -256,6 +264,7 @@ export function buildApp(deps: {
       service: apiTokens,
       store: domainStore,
       runs,
+      cycles,
       runImport: createRunImport({ pool, store: domainStore, runs, blobs: blobStore, publicUrl: env.APP_PUBLIC_URL }),
       parser: deps.reportParser ?? processParser(env.API_PARSE_TIMEOUT_MS),
       limits: {

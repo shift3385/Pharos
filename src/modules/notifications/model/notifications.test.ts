@@ -120,3 +120,16 @@ describe("W's kinds", () => {
     expect(targetOf(n("a", "x", { kind: "member.removed", projectId: null }))).toBeNull();
   });
 });
+
+describe("API token notices (INT-02 A4)", () => {
+  it("open the workspace's integrations, or the profile for a personal token", () => {
+    expect(targetOf(n("a", "x", { kind: "token.inactive", workspaceId: "ws-1" }))).toMatchObject({
+      path: "/workspaces/members?id=ws-1&tab=integrations",
+      label: "notifications.action.integrations",
+    });
+    expect(targetOf(n("a", "x", { kind: "token.expiring", workspaceId: null, projectId: null }))).toMatchObject({
+      path: "/profile",
+      label: "notifications.action.profile",
+    });
+  });
+});
