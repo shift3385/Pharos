@@ -63,6 +63,8 @@ pub(crate) fn capability_for(entity: &str, is_new: bool) -> &'static str {
         "test_plan" => "plan.edit",
         "requirement" => "requirement.edit",
         "test_case" | "test_case_revision" | "case_baseline" => "case.edit",
+        // The library feeds the cases (CAS-01): whoever may edit cases.
+        "shared_step" | "shared_step_revision" | "dataset" | "dataset_revision" => "case.edit",
         "custom_field" => "field.edit",
         "configuration" => "config.edit",
         "test_cycle" | "test_cycle_item" => "cycle.edit",
@@ -321,6 +323,10 @@ const PROJECT_TABLES: &[&str] = &[
     "defect_links",
     "attachments",
     "case_baselines",
+    "shared_steps",
+    "shared_step_revisions",
+    "datasets",
+    "dataset_revisions",
     "audit_log",
 ];
 

@@ -56,7 +56,8 @@ pub(crate) fn table_for(entity: &str) -> Option<&'static str> {
         other => crate::runs::table_for(other)
             .or_else(|| crate::cycles::table_for(other))
             .or_else(|| crate::defects::table_for(other))
-            .or_else(|| crate::blob_sync::table_for(other)),
+            .or_else(|| crate::blob_sync::table_for(other))
+            .or_else(|| crate::shared_library::table_for(other)),
     }
 }
 
@@ -161,6 +162,9 @@ pub(crate) fn read_payload(
     }
     if crate::blob_sync::table_for(entity).is_some() {
         return crate::blob_sync::read_payload(conn, entity, id);
+    }
+    if crate::shared_library::table_for(entity).is_some() {
+        return crate::shared_library::read_payload(conn, entity, id);
     }
     let (sql, build): (&str, fn(&rusqlite::Row) -> rusqlite::Result<PayloadRow>) = match entity {
         "project" => (
@@ -712,6 +716,15 @@ pub(crate) fn server_takes_findings(conn: &Connection, user: &str) -> Result<boo
     server_lists(conn, user, FINDINGS)
 }
 
+/// The server feature that stores the project library (CAS-01, ADR-0055).
+/// Until the account's server lists it, shared steps, datasets and their
+/// versions stay pending.
+pub(crate) const SHARED_STEPS: &str = "shared-steps";
+
+pub(crate) fn server_takes_shared_steps(conn: &Connection, user: &str) -> Result<bool, String> {
+    server_lists(conn, user, SHARED_STEPS)
+}
+
 /// The server feature that stores attachments and templates by hash
 /// (SYNC-04b). Until the account's server lists it, they stay pending.
 pub(crate) fn server_takes_blobs(conn: &Connection, user: &str) -> Result<bool, String> {
@@ -854,6 +867,8 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
     let defects_too = server_takes_defects(conn, user)?;
     // Attachments and templates wait for a server with `blobs` (SYNC-04b).
     let blobs_too = server_takes_blobs(conn, user)?;
+    // Shared steps and datasets wait for a server with `shared-steps` (CAS-01).
+    let library_too = server_takes_shared_steps(conn, user)?;
     // (entity, entity_id) → (op ids, max hlc, author of the latest change), in
     // first-change order.
     let mut order: Vec<(String, String)> = Vec::new();
@@ -877,13 +892,15 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
                    AND (o.entity NOT IN ({}) OR ?5)
                    AND (o.entity NOT IN ({}) OR ?6)
                    AND (o.entity NOT IN ({}) OR ?7)
+                   AND (o.entity NOT IN ({}) OR ?8)
                  ORDER BY o.rowid",
                 oplog::synced_sql_list(),
                 crate::workspaces::refused_sql(),
                 crate::runs::entities_sql_list(),
                 crate::cycles::entities_sql_list(),
                 crate::defects::entities_sql_list(),
-                crate::blob_sync::entities_sql_list()
+                crate::blob_sync::entities_sql_list(),
+                crate::shared_library::entities_sql_list()
             ))
             .map_err(|e| e.to_string())?;
         let rows = stmt
@@ -895,7 +912,8 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
                     fields_too,
                     cycles_too,
                     defects_too,
-                    blobs_too
+                    blobs_too,
+                    library_too
                 ],
                 |r| {
                     Ok((
@@ -985,6 +1003,8 @@ pub(crate) fn build_pending_append(conn: &Connection, user: &str) -> Result<Pend
     let baselines_too = server_takes_case_baselines(conn, user)?;
     // Findings and metrics wait for a server with `findings` (ING-06).
     let findings_too = server_takes_findings(conn, user)?;
+    // Versions of shared steps and datasets wait for `shared-steps` (CAS-01).
+    let library_too = server_takes_shared_steps(conn, user)?;
     let rows: Vec<(String, String, String, String, String)> = {
         let mut stmt = conn
             .prepare(&format!(
@@ -995,17 +1015,26 @@ pub(crate) fn build_pending_append(conn: &Connection, user: &str) -> Result<Pend
                     AND (entity NOT IN ({}) OR ?3)
                     AND (entity <> '{}' OR ?4)
                     AND (entity NOT IN ({}) OR ?5)
+                    AND (entity NOT IN ({}) OR ?6)
                   ORDER BY rowid",
                 sync_class::append_only_sql_list(),
                 revisions::ENTITY,
                 crate::runs::entities_sql_list(),
                 crate::case_baseline::ENTITY,
-                crate::runs::findings::entities_sql_list()
+                crate::runs::findings::entities_sql_list(),
+                crate::shared_library::entities_sql_list()
             ))
             .map_err(|e| e.to_string())?;
         let rows = stmt
             .query_map(
-                params![user, revisions_too, runs_too, baselines_too, findings_too],
+                params![
+                    user,
+                    revisions_too,
+                    runs_too,
+                    baselines_too,
+                    findings_too,
+                    library_too
+                ],
                 |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
             )
             .map_err(|e| e.to_string())?;
@@ -1549,6 +1578,18 @@ fn write_doc(
         "custom_field" => {
             custom_fields::write_doc(conn, workspace_id, user, &doc.entity_id, doc.revision, p)?;
         }
+        "shared_step" | "dataset" => {
+            crate::shared_library::write_doc(
+                conn,
+                workspace_id,
+                user,
+                &doc.entity,
+                &doc.entity_id,
+                doc.revision,
+                false,
+                p,
+            )?;
+        }
         "requirement" => {
             // A definitive key never changes, but the server's version wins:
             // a provisional key replaced on another device, or a key renamed in
@@ -1821,9 +1862,30 @@ pub(crate) fn apply_page_in(
             None => ensure_workspace(conn)?,
         };
         let tx = crate::db::begin_immediate(conn)?;
+        let mut library_projects: Vec<String> = Vec::new();
         for doc in docs {
             apply_doc(&tx, &workspace_id, user_id, doc)?;
+            if !doc.deleted
+                && matches!(
+                    doc.entity.as_str(),
+                    "test_case"
+                        | "shared_step"
+                        | "dataset"
+                        | "shared_step_revision"
+                        | "dataset_revision"
+                )
+            {
+                if let Some(p) = doc.payload.get("projectId").and_then(Value::as_str) {
+                    if !library_projects.iter().any(|x| x == p) {
+                        library_projects.push(p.to_string());
+                    }
+                }
+            }
         }
+        // Cases behind the library on this device are rewritten once the
+        // page is in (CAS-01, ADR-0055 §4): deterministic, so every device
+        // that does it writes the same content.
+        crate::shared_library::reconcile(&tx, user_id, &library_projects)?;
         tx.commit().map_err(|e| e.to_string())
     })?;
     db.persist_and_collect()
@@ -2128,6 +2190,8 @@ fn restore_project_children(conn: &Connection, project_id: &str) -> Result<(), S
         ("test_cycle_item", "test_cycle_items"),
         ("defect", "defects"),
         ("defect_link", "defect_links"),
+        ("shared_step", "shared_steps"),
+        ("dataset", "datasets"),
     ] {
         conn.execute(
             &format!(

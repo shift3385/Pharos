@@ -522,6 +522,20 @@ Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
   tombstones them with their project. Case links stay in `attributes.tags`,
   resolved when read (F5). A finding without a fingerprint gets the derived
   one when its Pharos Run JSON is read (`fingerprintOf`).
+- **Project library** (CAS-01, ADR-0055, migration 0049): `shared_step` and
+  `dataset` are lww children of a project (`shared_library.rs`), each with
+  immutable `append_only` versions (`shared_step_revision`,
+  `dataset_revision`, id UUIDv5 of item, version and content hash). A case
+  names them in `data.sharedRefs` / `data.datasetRefs` and keeps a
+  materialized copy (`shared_library/materialize.rs`): copied steps with
+  ids derived from the call and the library step, and the Examples table
+  from the dataset with ids derived from its rows, so execution, baselines,
+  the matrix, exports and imports read the case revision as before. Every
+  local save rebuilds the copy; saving a content change of an item rewrites
+  the live cases that follow it in the same transaction (a normal case save:
+  revision, audit with the cause, review rule), and `reconcile` does the same
+  after each pull page. They sync only with a server that lists
+  `shared-steps` (`APPLIED_SET_VERSION` 12) and need `case.edit`.
 - **Finding triage** (ADR-0053 as amended): `finding_triage`, append-only
   events keyed by fingerprint (same migration, `findings` feature,
   `run.execute` to write). `triage_add` records a decision (a reason unless

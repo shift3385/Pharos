@@ -52,6 +52,8 @@ pub struct PurgeSummary {
     pub(crate) cycles: usize,
     /// Defects and defect links (DEF-01); a defect takes its attachments.
     pub(crate) defects: usize,
+    /// Shared steps and datasets (CAS-01); each takes its versions.
+    pub(crate) library: usize,
     pub(crate) templates: usize,
 }
 
@@ -66,6 +68,7 @@ impl PurgeSummary {
             + self.runs
             + self.cycles
             + self.defects
+            + self.library
             + self.templates
     }
 }
@@ -163,7 +166,7 @@ struct Child {
     dependents: &'static [&'static str],
 }
 
-const CHILDREN: [Child; 13] = [
+const CHILDREN: [Child; 15] = [
     Child {
         entity: "test_plan",
         table: "test_plans",
@@ -272,6 +275,20 @@ const CHILDREN: [Child; 13] = [
         key: Some(("defect_key", KeyKind::Defect)),
         // Its files go with the next evidence collection (ADR-0014).
         dependents: &["DELETE FROM attachments WHERE owner_entity = 'defect' AND owner_id = ?1"],
+    },
+    // The library (CAS-01): an item goes with its versions. Cases keep their
+    // copies, so nothing else depends on it.
+    Child {
+        entity: "shared_step",
+        table: "shared_steps",
+        key: None,
+        dependents: &["DELETE FROM shared_step_revisions WHERE item_id = ?1"],
+    },
+    Child {
+        entity: "dataset",
+        table: "datasets",
+        key: None,
+        dependents: &["DELETE FROM dataset_revisions WHERE item_id = ?1"],
     },
 ];
 
@@ -516,7 +533,7 @@ fn purge_scoped(
     for (n, child) in counts.iter_mut().zip(CHILDREN.iter()) {
         *n = purge_children(conn, user, days, child, only)?;
     }
-    let [test_plans, test_cases, requirements, planner_cards, runs, run_items, mappings, custom_fields, cycles, cycle_items, configurations, defect_links, defects] =
+    let [test_plans, test_cases, requirements, planner_cards, runs, run_items, mappings, custom_fields, cycles, cycle_items, configurations, defect_links, defects, shared_steps, datasets] =
         counts;
     Ok(PurgeSummary {
         test_plans,
@@ -534,6 +551,7 @@ fn purge_scoped(
             },
         cycles: cycles + cycle_items + configurations,
         defects: defects + defect_links,
+        library: shared_steps + datasets,
         projects: purge_projects(conn, user, days, only)?,
         templates: purge_templates(conn, user, days, only)?,
     })

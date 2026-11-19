@@ -58,6 +58,8 @@ pub mod revisions;
 mod revisions_sync_tests;
 pub mod runs;
 pub mod server;
+// The project library: shared steps and datasets (CAS-01, ADR-0055).
+pub mod shared_library;
 pub mod steps;
 pub mod sync;
 pub mod sync_class;

@@ -1204,6 +1204,10 @@ const AUDITED: &[&str] = &[
     "test_case::test_case_delete",
     "test_case::test_case_review",
     "case_baseline::case_baseline_create",
+    "shared_library::library_create",
+    "shared_library::library_update",
+    "shared_library::library_set_status",
+    "shared_library::library_delete",
     "requirement::requirement_create",
     "requirement::requirement_update",
     "custom_fields::custom_field_create",
@@ -1310,6 +1314,13 @@ const EXEMPT: &[(&str, &str)] = &[
     (
         "case_baseline::case_baseline_current",
         "read: the project's cases now, nothing is written",
+    ),
+    ("shared_library::library_impact", "read: the cases a change would touch"),
+    ("shared_library::library_versions", "read"),
+    ("shared_library::library_case_status", "read"),
+    (
+        "shared_library::library_preview",
+        "read: builds a case's copy without saving it",
     ),
     (
         "profile::profile_upsert",
@@ -1673,6 +1684,31 @@ fn every_audited_command_leaves_an_event() {
         )
         .unwrap();
         crate::case_baseline::create_baseline(tx, &input).map(drop)
+    });
+    let lib_input = |name: &str| -> crate::shared_library::LibraryInput {
+        serde_json::from_value(json!({
+            "projectId": p, "kind": "shared_step", "name": name,
+            "body": ["Abro la app"], "userId": U
+        }))
+        .unwrap()
+    };
+    let item = in_tx(&c, |tx| {
+        crate::shared_library::create_item(tx, &lib_input("L0")).map(|i| i.id)
+    })
+    .unwrap();
+    step("shared_library::library_create", &mut |tx| {
+        crate::shared_library::create_item(tx, &lib_input("L1")).map(drop)
+    });
+    step("shared_library::library_update", &mut |tx| {
+        let mut changed = lib_input("L0");
+        changed.body = json!(["Abro la aplicación"]);
+        crate::shared_library::update_item(tx, &item, &changed).map(drop)
+    });
+    step("shared_library::library_set_status", &mut |tx| {
+        crate::shared_library::set_status(tx, &item, "obsolete", U).map(drop)
+    });
+    step("shared_library::library_delete", &mut |tx| {
+        crate::shared_library::delete_item(tx, &item, U)
     });
     let req = in_tx(&c, |tx| {
         requirement::insert_requirement(tx, &req_input("R"))

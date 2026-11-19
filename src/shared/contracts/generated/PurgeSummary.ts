@@ -16,4 +16,8 @@ cycles: number,
 /**
  * Defects and defect links (DEF-01); a defect takes its attachments.
  */
-defects: number, templates: number, };
+defects: number, 
+/**
+ * Shared steps and datasets (CAS-01); each takes its versions.
+ */
+library: number, templates: number, };
