@@ -7,6 +7,7 @@
 // the location: outside the append-only content, `NON_CONTENT_KEYS`).
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import * as formats from "@pharos/formats";
 import { planImport, resultPayload } from "../src/modules/api/importPlan";
 
 const FIXTURE = new URL("../../src-tauri/tests/fixtures/api-import-interop.json", import.meta.url);
@@ -32,7 +33,7 @@ describe("the server's import planner writes what the desktop writes", () => {
   });
 
   it.each(cases.map((c) => [c.name, c] as const))("%s", (_name, c) => {
-    const plan = planImport(c.doc, c.shardId);
+    const plan = planImport(c.doc, c.shardId, formats);
     const ctx = { projectId: "p", runId: c.runId, shardId: c.shardId, executedBy: plan.executedBy, userId: "u", at: "t", hlc: "h" };
     const mine = plan.results.map((r) => content(resultPayload(r, ctx))).sort((a, b) => String(a.id).localeCompare(String(b.id)));
     const theirs = c.results.map(content).sort((a, b) => String(a.id).localeCompare(String(b.id)));

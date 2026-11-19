@@ -183,6 +183,10 @@ Por PR: A1 tokens, A2 subida, A3 webhooks, A4 lecturas, A5 DEU-01.
   - el mismo documento de shard y de resultado.
 
   `src-tauri/tests/fixtures/api-import-interop.json` lo comprueba. Lo genera `import/tests.rs::api_import_interop_vectors` a partir de las instantáneas de ING-01 y un documento de casos límite, y lo comprueba también `server/tests/api.import-interop.test.ts`: mismos ids y mismo contenido.
+  - El servidor no importa `@pharos/formats` al arrancar. La subida lo carga cuando se ejecuta y pasa sus funciones de ids al planificador. Los imports del propio paquete (`uuid`, `zod`) solo se resuelven donde están instaladas sus dependencias:
+    - en el repo, el `node_modules` de la raíz;
+    - en la imagen, el enlace `/app/node_modules`;
+    - en el job `server` de la CI no están, y un servidor que las cargara al arrancar no llegaría a arrancar (el test de entorno lo vio).
   - `insertRun` sale del cierre de `createRunService` para que la API reutilice la creación de runs de la web (clave `RUN-nnn`, ciclo y configuración).
 - **El informe crudo** se guarda como blob por hash en el workspace (SYNC-04b) y como `attachment` (`raw_report`) del shard, igual que en el escritorio.
   - Los adjuntos que trae el propio informe (Playwright, Cucumber Messages) todavía no se guardan aparte. Quedan dentro del informe crudo, un aviso `attachments-in-raw-report` dice cuántos son, y se guardarán como evidencia junto con F2.

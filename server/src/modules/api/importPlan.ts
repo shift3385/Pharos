@@ -8,8 +8,12 @@
 // No linking here: an imported result stores only what its report said, and
 // its case, revision, item, flow, row and configuration are derived when read
 // (ADR-0013 «Vínculo derivado», `domain/resultLink.ts`).
+//
+// The id functions come from `@pharos/formats` as a parameter, not a static
+// import: the server process must boot without loading the package (its
+// own imports, uuid and zod, resolve only where its dependencies are
+// installed; the upload loads it when it runs, as the parser does).
 import { createHash } from "node:crypto";
-import { importedResultId, importedStepResultId } from "@pharos/formats";
 import { AppError } from "../auth/errors";
 
 type Json = Record<string, unknown>;
@@ -228,7 +232,14 @@ export function checkDoc(doc: Json): void {
 
 /** What will be written for `doc` into the shard `shardId`
  *  (`import.rs::plan`, without the link). */
-export function planImport(doc: Json, shardId: string): ImportPlan {
+/** The deterministic ids of an import (`@pharos/formats`, `ids.ts`). */
+export interface ResultIds {
+  importedResultId: (shard: string, testKey: string, label: string | null | undefined, attempt: number) => string;
+  importedStepResultId: (resultId: string, position: number) => string;
+}
+
+export function planImport(doc: Json, shardId: string, ids: ResultIds): ImportPlan {
+  const { importedResultId, importedStepResultId } = ids;
   const shard = obj(arr(doc.shards)[0]);
   const format = text(shard.sourceFormat) ?? "pharos_run_json";
   if (!(IMPORT_FORMATS as readonly string[]).includes(format))

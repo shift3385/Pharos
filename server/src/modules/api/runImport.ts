@@ -16,7 +16,6 @@
 // same run is a no-op (200), never a duplicate.
 import { randomUUID } from "node:crypto";
 import { v5 as uuidv5 } from "uuid";
-import { shardId as shardIdOf } from "@pharos/formats";
 import { AppError } from "../auth/errors";
 import { sha256Hex, type BlobStore } from "../blobs/blobStore";
 import type { DomainStore, DomainTx } from "../domain/domain.store";
@@ -156,6 +155,8 @@ export function createRunImport(deps: {
       const { principal, project, file, parsed, options } = input;
       if (options.runKey && options.externalId) throw RunErrors.both();
       const userId = principal.ownerId;
+      // Loaded when an upload runs, never at boot (see importPlan.ts).
+      const formats = await import("@pharos/formats");
       const doc = parsed.doc;
       checkDoc(doc);
       // `--case`: the file's results without a case of their own go to it.
@@ -231,8 +232,8 @@ export function createRunImport(deps: {
         }
         const runId = runDoc.entityId;
         const runKey = str(runDoc.payload, "runKey");
-        const shardId = shardIdOf(runId, sha, parsedNormalizer(doc));
-        const plan = planImport(doc, shardId);
+        const shardId = formats.shardId(runId, sha, parsedNormalizer(doc));
+        const plan = planImport(doc, shardId, formats);
         const existing = await tx.get("run_shard", shardId);
         if (existing && !existing.deleted) {
           await attach(tx, rawAttachment(projectId, shardId));
