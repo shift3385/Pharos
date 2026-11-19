@@ -147,4 +147,10 @@
   - el contrato son los siete snapshots `normalized/*junit*` de `@pharos/formats`: un test compara el documento entero con cada uno;
   - escribe `normalizerVersion` 1, el que reproduce;
   - el modo local lee JUnit e informes de hasta 50 MB (`MAX_WHOLE_REPORT_BYTES`).
-- **L2, L3, L5–L7:** pendientes.
+- **L5 · Distribución:**
+  - `build:installer` compila el CLI y lo deja en `src-tauri/bin/pharos.exe`. `tauri.installer.conf.json` (fusionado con `--config`) lo declara como recurso `bin/pharos.exe` y añade los *hooks* de NSIS. En `tauri.conf.json` no puede ir, porque tauri-build copia los recursos en cada `cargo build`;
+  - **cambio respecto del plan:** los *hooks* no editan el PATH en NSIS, porque su NSIS trabaja con textos de 1024 caracteres y muchos PATH son más largos. Llaman a `pharos setup-path add|remove`, que lo edita en Rust (`HKCUEnvironmentPath` sin expandir, `REG_EXPAND_SZ`, solo esa entrada, aviso `WM_SETTINGCHANGE`). Si falla, el instalador sigue y lo anota;
+  - el MSI de las versiones estables lleva el CLI, pero no toca el PATH;
+  - `installer.yml` publica `pharos-cli-<versión>-windows-x64.zip` y, en un job de `ubuntu-latest` (solo en `main` y en tags), `pharos-cli-<versión>-linux-x64.tar.gz` solo remoto, cada uno con `SHA256SUMS`;
+  - `version:set` ya escribe la versión del CLI (L1).
+- **L2, L3, L6, L7:** pendientes.

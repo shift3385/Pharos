@@ -5,9 +5,16 @@
 // ship the NSIS installer only, and stable versions ship NSIS + MSI.
 // tauri.conf.json lists only "nsis", so a plain `tauri build` never fails on it.
 //
+// The installer also ships the command line (INT-01 L5, ADR-0054 §4): the
+// `pharos-cli` crate is built first and staged as src-tauri/bin/pharos.exe,
+// and tauri.installer.conf.json (merged with --config) lists it as a resource
+// and adds the NSIS hooks that put it on the user's PATH. It is not in
+// tauri.conf.json because tauri-build copies resources on every cargo build,
+// which would then fail without a staged CLI.
+//
 //   npm run build:installer            # extra args go to `tauri build`, e.g. -- --ci
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -29,6 +36,45 @@ export function bundlesFor(version) {
   return ["nsis", "msi"];
 }
 
+/** The config merged into tauri.conf.json for an installer build. */
+export const INSTALLER_CONFIG = "src-tauri/tauri.installer.conf.json";
+/** Where the CLI is staged, relative to src-tauri (the resource source). */
+export const STAGED_CLI = "bin/pharos.exe";
+
+/** The CLI binary Cargo writes for a release build in `targetDir`. */
+export function cliBinary(targetDir, platform = process.platform) {
+  return join(targetDir, "release", platform === "win32" ? "pharos-cli.exe" : "pharos-cli");
+}
+
+/** Builds the CLI (release) and stages it for the installer. */
+function stageCli() {
+  const tauriDir = join(root, "src-tauri");
+  const build = spawnSync("cargo", ["build", "--release", "--locked", "-p", "pharos-cli"], {
+    cwd: tauriDir,
+    stdio: "inherit",
+    shell: process.platform === "win32",
+  });
+  if (build.status !== 0) return build.status ?? 1;
+  // The target folder as Cargo resolves it (CARGO_TARGET_DIR, a local
+  // .cargo/config.toml, or src-tauri/target).
+  const meta = spawnSync("cargo", ["metadata", "--format-version", "1", "--no-deps"], {
+    cwd: tauriDir,
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+    shell: process.platform === "win32",
+  });
+  if (meta.status !== 0) {
+    console.error(meta.stderr);
+    return meta.status ?? 1;
+  }
+  const { target_directory } = JSON.parse(meta.stdout);
+  const staged = join(tauriDir, STAGED_CLI);
+  mkdirSync(dirname(staged), { recursive: true });
+  copyFileSync(cliBinary(target_directory), staged);
+  console.log(`CLI staged: ${staged}`);
+  return 0;
+}
+
 function main(extra) {
   const { version } = JSON.parse(
     readFileSync(join(root, "package.json"), "utf8"),
@@ -37,9 +83,19 @@ function main(extra) {
   console.log(
     `Pharos ${version}: building ${bundles.join(" + ")} installer(s)`,
   );
+  const staged = stageCli();
+  if (staged !== 0) return staged;
   const res = spawnSync(
     "npx",
-    ["tauri", "build", "--bundles", bundles.join(","), ...extra],
+    [
+      "tauri",
+      "build",
+      "--bundles",
+      bundles.join(","),
+      "--config",
+      INSTALLER_CONFIG,
+      ...extra,
+    ],
     {
       cwd: root,
       stdio: "inherit",

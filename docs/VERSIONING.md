@@ -136,6 +136,11 @@ pre-release identifier in app version must be numeric-only". Por eso:
 `npm run build:installer` (`scripts/build-installer.mjs`) elige los formatos a
 partir de la versión, y la CI publica el instalador como artefacto (BASE-09).
 
+El instalador lleva el CLI `pharos` con la misma versión: `version:set` también
+escribe `src-tauri/cli/Cargo.toml`. La CI publica además el CLI suelto
+(`pharos-cli-<versión>-windows-x64.zip` y `-linux-x64.tar.gz`, cada uno con su
+`SHA256SUMS`; [ADR-0054](adr/0054-cli-y-plantillas-de-github-actions.md) §4).
+
 ## 6. Compatibilidad de datos (obligatoria para cambios grandes)
 
 Los cambios que vienen tocan el formato de los datos, así que estas reglas son
