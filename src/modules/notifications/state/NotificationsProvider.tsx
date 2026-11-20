@@ -10,6 +10,7 @@ import {
   pullNotifications,
 } from "../api/notificationsApi";
 import { CASE_REVIEW_EVENT, notificationOfReview, reviewEventOf } from "../model/caseReview";
+import { notificationOfPlanReview, PLAN_REVIEW_EVENT, planReviewEventOf } from "../model/planReview";
 import { unreadCount } from "../model/group";
 import type { AppNotification } from "../model/types";
 import { NotificationsContext, type NotificationsValue } from "./notificationsContext";
@@ -71,6 +72,17 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     };
     window.addEventListener(CASE_REVIEW_EVENT, onReview);
     return () => window.removeEventListener(CASE_REVIEW_EVENT, onReview);
+  }, []);
+
+  // A plan's «Aprobar» and «Pedir cambios» → its author (FIX-43).
+  useEffect(() => {
+    const onPlanReview = (e: Event) => {
+      const event = planReviewEventOf(e);
+      const input = event && notificationOfPlanReview(event);
+      if (input) void notify(input);
+    };
+    window.addEventListener(PLAN_REVIEW_EVENT, onPlanReview);
+    return () => window.removeEventListener(PLAN_REVIEW_EVENT, onPlanReview);
   }, []);
 
   // New sync conflicts → a notification of this device. Only an increase

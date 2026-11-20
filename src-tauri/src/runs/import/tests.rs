@@ -369,6 +369,87 @@ fn a_report_with_only_its_end_time_starts_then_not_at_the_import() {
 }
 
 #[test]
+fn a_report_with_a_start_and_durations_ends_at_the_start_plus_them_not_at_the_import() {
+    // FIX-43: a JUnit report gives its start and each test's duration, not
+    // its end; the run used to end at the import (days later).
+    let c = device();
+    // One project per report: the helper imports the same file bytes, and a
+    // project refuses the same file twice.
+    let times = |doc: Value| -> (String, String) {
+        let p = new_project(&c);
+        let out = import(&c, &new_run(&p, doc)).unwrap();
+        c.query_row(
+            "SELECT started_at, finished_at FROM runs WHERE id = ?1",
+            [&out.run_id],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap()
+    };
+    let shards = json!([{"sourceFormat": "junit"}]);
+    let junit = json!({"schemaVersion": "1.0.0", "run": {"startedAt": "2026-11-17T18:10:00"},
+        "shards": shards, "results": [
+            {"name": "a", "status": "passed", "testKey": "a", "duration": 2500},
+            {"name": "b", "status": "failed", "testKey": "b", "duration": 3300.4}]});
+    // JUnit's timestamp has no zone: the end has none either (same clock).
+    assert_eq!(
+        times(junit.clone()),
+        (
+            "2026-11-17T18:10:00".into(),
+            "2026-11-17T18:10:05.800".into()
+        )
+    );
+    let mut zoned = junit;
+    zoned["run"]["startedAt"] = json!("2026-11-17T18:10:00-04:00");
+    assert_eq!(
+        times(zoned),
+        (
+            "2026-11-17T18:10:00-04:00".into(),
+            "2026-11-17T22:10:05.800Z".into()
+        )
+    );
+    // Results that say when they ended: the latest of them.
+    let ended = json!({"schemaVersion": "1.0.0", "run": {"startedAt": "2026-11-17T18:10:00Z"},
+        "shards": shards, "results": [
+            {"name": "a", "status": "passed", "testKey": "a", "duration": 1, "finishedAt": "2026-11-17T18:10:04.5Z"},
+            {"name": "b", "status": "passed", "testKey": "b", "duration": 1, "stop": 1_794_939_009_000_i64}]});
+    assert_eq!(times(ended).1, "2026-11-17T18:10:09.000Z");
+    // An explicit start and end are kept as they are.
+    let both = json!({"schemaVersion": "1.0.0",
+        "run": {"startedAt": "2026-11-17T18:10:00Z", "finishedAt": "2026-11-17T18:20:00Z"},
+        "shards": shards, "results": [{"name": "a", "status": "passed", "testKey": "a", "duration": 5}]});
+    assert_eq!(
+        times(both),
+        ("2026-11-17T18:10:00Z".into(), "2026-11-17T18:20:00Z".into())
+    );
+}
+
+#[test]
+fn rfc3339_times_are_read_with_their_zone_and_fraction() {
+    assert_eq!(ms_of_iso("1970-01-01T00:00:00Z"), Some((0, true)));
+    assert_eq!(ms_of_iso("1970-01-01T01:00:00.5+01:00"), Some((500, true)));
+    assert_eq!(ms_of_iso("1970-01-01T00:00:01"), Some((1000, false)));
+    assert_eq!(
+        ms_of_iso("2026-11-17T18:10:05.800123Z"),
+        Some((1_794_939_005_800, true))
+    );
+    assert_eq!(
+        iso_of_ms(ms_of_iso("2026-11-17T14:10:00-04:00").unwrap().0),
+        "2026-11-17T18:10:00.000Z"
+    );
+    for bad in [
+        "2026-11-17",
+        "2026-11-17T18:10",
+        "2026-13-01T00:00:00Z",
+        "2026-11-17 18:10:00Z",
+        "2026-11-17T18:10:00.Z",
+        "2026-11-17T18:10:00+0100",
+        "x",
+    ] {
+        assert_eq!(ms_of_iso(bad), None, "{bad}");
+    }
+}
+
+#[test]
 fn the_revision_is_the_one_current_when_the_run_started() {
     let c = device();
     let p = new_project(&c);
@@ -1970,6 +2051,34 @@ fn api_import_interop_vectors() {
         )),
     ));
     inputs.push(("findings-edge".into(), findings_edge_doc()));
+    // FIX-43: when a new run ends, from a start and durations (JUnit, no
+    // zone), from results that say when they ended, and from a zoned start.
+    for (name, start, results) in [
+        (
+            "run-end/durations",
+            "2026-11-17T18:10:00",
+            json!([{"name": "a", "status": "passed", "testKey": "a", "duration": 2500},
+                   {"name": "b", "status": "failed", "testKey": "b", "duration": 3300.4}]),
+        ),
+        (
+            "run-end/zoned",
+            "2026-11-17T18:10:00.250-04:00",
+            json!([{"name": "a", "status": "passed", "testKey": "a", "duration": 999.5}]),
+        ),
+        (
+            "run-end/results",
+            "2026-11-17T18:10:00Z",
+            json!([{"name": "a", "status": "passed", "testKey": "a", "finishedAt": "2026-11-17T18:10:04.5Z"},
+                   {"name": "b", "status": "passed", "testKey": "b", "stop": 1_794_939_009_000_i64}]),
+        ),
+    ] {
+        inputs.push((
+            name.into(),
+            json!({"schemaVersion": "1.0.0", "run": {"startedAt": start},
+                   "shards": [{"ref": "s1", "sourceFormat": "junit", "normalizerVersion": 1}],
+                   "results": results}),
+        ));
+    }
     // F5: a document's caseKey kept as attributes.caseKey (trimmed), unless
     // the attributes already name one; a metric without attributes too.
     inputs.push((
@@ -2055,6 +2164,8 @@ fn api_import_interop_vectors() {
             "name": name, "doc": doc, "sha256": SHA, "runId": out.run_id, "shardId": out.shard_id,
             "shard": shard, "results": results, "findings": findings, "metrics": metrics,
             "warnings": warnings,
+            // When the new run ends (`runFieldsOf(doc).finishedAt` on the server).
+            "runEnd": run_end(&serde_json::from_value::<Doc>(doc.clone()).unwrap()),
         }));
     }
     let got = json!({
@@ -2126,7 +2237,7 @@ fn api_import_interop_vectors() {
             out.push(json!({
                 "name": c["name"], "doc": c["doc"], "shard": strip(&c["shard"]),
                 "results": results, "findings": sorted("findings"), "metrics": sorted("metrics"),
-                "warnings": c["warnings"],
+                "warnings": c["warnings"], "runEnd": c["runEnd"],
             }));
         }
         Value::Array(out)

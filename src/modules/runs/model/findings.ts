@@ -1,3 +1,4 @@
+import { formatPercent } from "@shared/i18n/percent";
 import type { FindingView, MetricView } from "@shared/contracts/contract";
 import type { PillTone } from "@shared/ui/StatusPill";
 
@@ -153,7 +154,7 @@ export function formatMetric(
         ? `${n(m.value / 1000, 2)} s`
         : `${n(m.value, m.value < 10 ? 2 : 0)} ms`;
     case "ratio":
-      return `${n(m.value * 100, 2)} %`;
+      return formatPercent(m.value * 100, { lang: locale, digits: 2 });
     case "/s":
       return `${n(m.value)} /s`;
     case "B":

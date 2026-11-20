@@ -1,6 +1,7 @@
 // How the app follows the session: renewals made by a request elsewhere, a
 // session that ends, and a startup check the server cannot answer.
 
+import { useEffect } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -88,6 +89,59 @@ describe("AuthProvider and the session's renewal", () => {
     await act(() => renewSession("old", store));
     await userEvent.click(screen.getByRole("button", { name: "out" }));
     expect(authApi.logout).toHaveBeenCalledWith("r2");
+  });
+
+  it("a new account is in the store before the app opens with it, however slow the keychain (FIX-43)", async () => {
+    // The order that failed on the desktop: «Continuar» on the recovery
+    // codes published the account while the keychain write was still
+    // running; the first sync and the workspace list read the store at once
+    // (`getSession`), found nothing («not-authenticated») and the selector
+    // never appeared.
+    saved = null;
+    let release: () => void = () => undefined;
+    const slow: SessionStore = {
+      load: async () => saved,
+      save: (s) =>
+        new Promise<void>((done) => {
+          release = () => {
+            saved = s;
+            done();
+          };
+        }),
+      clear: async () => {
+        saved = null;
+      },
+    };
+    vi.spyOn(authApi, "register").mockResolvedValue({ ...session("new", "r9"), recoveryCodes: ["c1"] });
+    const seen: (string | null)[] = [];
+    function Opens() {
+      const { user, register, completeRegistration } = useAuth();
+      // What the shell does when an account enters: read the stored session.
+      useEffect(() => {
+        if (user) void slow.load().then((s) => seen.push(s?.accessToken ?? null));
+      }, [user]);
+      return (
+        <>
+          <button type="button" onClick={() => void register({} as never)}>
+            register
+          </button>
+          <button type="button" onClick={() => void completeRegistration()}>
+            continue
+          </button>
+        </>
+      );
+    }
+    render(
+      <AuthProvider store={slow}>
+        <Opens />
+      </AuthProvider>,
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "register" }));
+    await userEvent.click(screen.getByRole("button", { name: "continue" }));
+    // The keychain has not answered yet: the app has not opened.
+    expect(seen).toEqual([]);
+    await act(async () => release());
+    await waitFor(() => expect(seen).toEqual(["new"]));
   });
 
   it("a profile save updates the signed-in user at once and in the stored session", async () => {

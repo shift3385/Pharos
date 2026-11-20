@@ -113,7 +113,7 @@ describe("token notices", () => {
     const got = await notices(ana.userId);
     expect(got).toHaveLength(1);
     expect(got[0]).toMatchObject({ kind: "token.inactive", workspace_id: ws, subject: { title: "CI de Luis" } });
-    expect(got[0].data).toMatchObject({ reason: "owner_left", ownerName: "luis" });
+    expect(got[0].data).toMatchObject({ reason: "owner_left", ownerName: "F L" }); // the official name (FIX-43)
     // Luis left: he is not told.
     expect(await notices(luis.userId)).toEqual([]);
     expect((await app.tokenNotices.runOnce()).inactive).toBe(0);

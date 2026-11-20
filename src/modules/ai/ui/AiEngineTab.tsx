@@ -1,3 +1,4 @@
+import { formatPercent } from "@shared/i18n/percent";
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -682,7 +683,7 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
                   <span style={{ width: `${pull.percent ?? 0}%` }} />
                 </div>
                 <p className="adm-hint">
-                  {pull.status} {pull.percent != null ? `${pull.percent}%` : ""}
+                  {pull.status} {pull.percent != null ? formatPercent(pull.percent, { digits: 0 }) : ""}
                 </p>
                 <p className="ai-warn">{t("ai.dontClose")}</p>
               </div>

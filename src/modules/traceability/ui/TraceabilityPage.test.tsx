@@ -1,4 +1,7 @@
 import "@test/slow";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -150,10 +153,10 @@ describe("Trazabilidad (RED-V3)", () => {
     renderWithProviders(<TraceabilityPage projectId="p1" projectName="Portal" />);
     const table = await screen.findByRole("table", { name: "Matriz de trazabilidad" });
     const tracks = table.style.getPropertyValue("--dt-cols");
-    expect(tracks).toContain("minmax(140px,1.6fr)");
-    expect(tracks).toContain("minmax(140px,1.7fr)");
+    expect(tracks).toContain("minmax(128px,1.6fr)");
+    expect(tracks).toContain("minmax(128px,1.7fr)");
     // FIX-42: the notes get a readable minimum and wrap instead of ending in «Defect…».
-    expect(tracks).toContain("minmax(120px,1fr)");
+    expect(tracks).toContain("minmax(112px,1fr)");
     expect(tracks).not.toContain("minmax(0,0.8fr)");
     const titles = table.querySelectorAll(".tz-clamp");
     expect(titles.length).toBeGreaterThan(0);
@@ -161,6 +164,51 @@ describe("Trazabilidad (RED-V3)", () => {
     const notes = table.querySelectorAll(".tz-notes");
     expect(notes.length).toBeGreaterThan(0);
     expect(table.querySelector('[role="cell"] .tz-clip, td .tz-clip')).toBeNull();
+  });
+
+  it("every column, «Comentarios» last, fits the panel at 1440 px instead of being cut at its edge (FIX-43)", async () => {
+    // jsdom does not lay out, so the layout is computed from the rules that
+    // apply: each row is its own grid of `--dt-cols` (dataTable.css), the
+    // table is at least `--dt-min` wide, and the panel clips what overflows.
+    // FIX-42 gave the notes a 120 px minimum, but the minima added up to
+    // 1138 px inside a 1120 px table in a ~1120 px panel: the last track
+    // started past the panel's edge («Defecto abiert…»).
+    setViewportWidth(1440);
+    renderWithProviders(<TraceabilityPage projectId="p1" projectName="Portal" />);
+    const table = await screen.findByRole("table", { name: "Matriz de trazabilidad" });
+    const here = dirname(fileURLToPath(import.meta.url));
+    const read = (path: string) => readFileSync(join(here, path), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+    const block = (css: string, selector: string) => {
+      const at = css.indexOf(`\n${selector} {`);
+      expect(at, selector).toBeGreaterThan(-1);
+      return css.slice(at, css.indexOf("}", at));
+    };
+    const px = (decl: string, re: RegExp) => Number(re.exec(decl)?.[1] ?? NaN);
+    const row = block(read("../../../shared/ui/dataTable.css"), ".dt__row");
+    const gap = px(row, /\bgap:\s*(\d+)px/);
+    const padX = px(row, /padding:\s*\d+px\s+(\d+)px/);
+    const tracks = table.style.getPropertyValue("--dt-cols").trim().split(/\s+(?![^(]*\))/);
+    expect(tracks).toHaveLength(9);
+    // A track's minimum: «84px» or the first argument of «minmax(112px,1fr)».
+    const minima = tracks.map((tr) => px(tr, /^(?:minmax\()?(\d+)px/));
+    expect(minima.every(Number.isFinite)).toBe(true);
+    const needed = minima.reduce((a, b) => a + b, 0) + gap * (tracks.length - 1) + 2 * padX;
+    const tableMin = px(table.style.getPropertyValue("--dt-min"), /(\d+)px/);
+    // The table is at least as wide as its tracks need, so they never overflow it…
+    expect(needed).toBeLessThanOrEqual(tableMin);
+    // …and the panel has that room at 1440 px: the sidebar, the page's
+    // largest padding on both sides, the panel's borders and a classic
+    // (non-overlay) scrollbar of 17 px.
+    const sidebar = px(read("../../../shared/theme/tokens.css"), /--sidebar-width:\s*(\d+)px/);
+    const page = block(read("../../../app/layout/AppShell.css"), ".app-shell__page");
+    const pad = px(page, /padding:\s*clamp\(\d+px,\s*[\d.]+cqi,\s*(\d+)px\)/);
+    const panel = 1440 - sidebar - 2 * pad - 2 - 17;
+    expect(tableMin).toBeLessThanOrEqual(panel);
+    // The notes take what is left and wrap word by word, never with an ellipsis.
+    expect(tracks[8]).toMatch(/^minmax\(\d+px,1fr\)$/);
+    const notes = block(read("./Traceability.css"), ".tz-notes");
+    expect(notes).toMatch(/white-space:\s*normal/);
+    expect(notes).not.toMatch(/text-overflow|nowrap/);
   });
 
   it("«Mostrar solo huecos» counts and keeps only the uncovered requirements", async () => {

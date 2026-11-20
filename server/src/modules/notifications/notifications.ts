@@ -16,6 +16,7 @@ import { z } from "zod";
 import { makeRequireAuth } from "../auth/middleware.js";
 import type { TokenService } from "../auth/tokens.js";
 import { requireSupportedVersion } from "../sync/sync.version.js";
+import { personNameSql } from "../auth/personName.js";
 
 /** Kinds that travel. `sync.conflict` is local to a device and never sent. */
 export const NOTIFICATION_KINDS = [
@@ -23,6 +24,9 @@ export const NOTIFICATION_KINDS = [
   "case.review_requested",
   "case.approved",
   "case.changes_requested",
+  // FIX-43: a plan's review, told to its author like a case's.
+  "plan.approved",
+  "plan.changes_requested",
   "defect.assigned",
   "cycle.closed",
   // W (workspaces): someone joined (to the Test Managers), you were removed.
@@ -189,7 +193,7 @@ export async function emitNotification(
   await db.query(
     `INSERT INTO notifications
        (recipient_id, actor_id, actor_name, kind, workspace_id, project_id, subject, data, dedupe_key)
-     SELECT r, $2::uuid, COALESCE((SELECT display_name FROM users WHERE id = $2::uuid), ''),
+     SELECT r, $2::uuid, COALESCE((SELECT ${personNameSql()} FROM users WHERE id = $2::uuid), ''),
             $3, $4, $5, $6::jsonb, $7::jsonb, $8
        FROM unnest($1::uuid[]) AS r
      ON CONFLICT (recipient_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING`,

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
-import { personName, useAuth } from "@modules/auth";
+import { aliasOf, personName, useAuth } from "@modules/auth";
 import { Alert } from "@shared/ui/Alert";
 import { Select } from "@shared/ui/Select";
 import { Switch } from "@shared/ui/Switch";
@@ -19,7 +19,7 @@ import { InviteDialog } from "./InviteDialog";
 import { useWorkspace } from "./workspaceContext";
 import "./workspaces.css";
 
-// The one name of a person across the app (FIX-41).
+// A member by the official name, the alias below it (GLOSARIO, FIX-43).
 const nameOf = (m: Member) => personName(m);
 
 /** «Miembros y roles» (SYNC-07, boceto 2). Everyone sees the members; only a
@@ -190,6 +190,11 @@ export function WorkspaceMembersPage() {
                 <tr key={m.userId} data-testid={`member-${m.userId}`} data-email={m.email}>
                   <td>
                     {nameOf(m)} {self && <span className="ui-badge">{t("workspaces.members.you")}</span>}
+                    {aliasOf(m) && (
+                      <small className="ws-member__alias" data-testid={`member-alias-${m.userId}`}>
+                        {aliasOf(m)}
+                      </small>
+                    )}
                     {m.disabled && (
                       <span className="ui-badge" title={t("workspaces.members.disabledHint")}>
                         {t("workspaces.members.disabled")}

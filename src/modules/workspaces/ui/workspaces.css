@@ -184,3 +184,10 @@ details.ws-section > summary {
   font-size: var(--fs-caption);
   color: var(--color-text-secondary);
 }
+
+/* The member's alias under the official name (GLOSARIO, FIX-43). */
+.ws-member__alias {
+  display: block;
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+}

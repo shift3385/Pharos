@@ -1,3 +1,4 @@
+import { formatPercent, formatRatio } from "@shared/i18n/percent";
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { caseLink } from "@modules/test-cases";
@@ -47,6 +48,10 @@ const RISK_TONE: Record<RiskBand, PillTone> = {
   unassessed: "neutral",
 };
 const PAGE_SIZES = [10, 25, 50];
+/** The matrix's width before it scrolls: its tracks' minima (584 px fixed,
+ *  128 + 128 + 112 px flexible), 8 gaps of 14 px and 2 × 20 px of row padding. It fits
+ *  the panel at 1440 px with the sidebar open (FIX-43). */
+const MATRIX_MIN_WIDTH = 1104;
 
 /** A matrix row plus whether it opens its requirement's group (the
  *  requirement cells show only there). */
@@ -72,8 +77,7 @@ function groupRows(rows: MatrixRow[]): Group[] {
   return groups;
 }
 
-const percent = (ratio: number | null | undefined) =>
-  ratio == null ? "—" : `${Math.round(ratio * 100)} %`;
+const percent = (ratio: number | null | undefined) => formatRatio(ratio, { digits: 0 });
 
 /** «Cobertura ponderada» (TRZ-04, ADR-0043): each assessed requirement
  *  weighs its risk level; the unassessed ones are counted apart. */
@@ -353,7 +357,7 @@ export function MatrixView({
     {
       id: "reqTitle",
       header: t("traceability.matrix.col.requirementTitle"),
-      width: "minmax(140px,1.6fr)",
+      width: "minmax(128px,1.6fr)",
       cell: (l) =>
         l.first && (
           <span className="tz-clamp" title={l.row.requirementTitle}>
@@ -364,7 +368,7 @@ export function MatrixView({
     {
       id: "priority",
       header: t("traceability.matrix.col.priority"),
-      width: "112px",
+      width: "104px",
       cell: (l) => l.first && priorityCell(l.row),
     },
     {
@@ -376,7 +380,7 @@ export function MatrixView({
     {
       id: "caseTitle",
       header: t("traceability.matrix.col.caseTitle"),
-      width: "minmax(140px,1.7fr)",
+      width: "minmax(128px,1.7fr)",
       cell: (l) =>
         l.row.caseId ? (
           <span className="tz-clamp" title={l.row.caseTitle}>
@@ -389,27 +393,29 @@ export function MatrixView({
     {
       id: "execution",
       header: t("traceability.matrix.col.execution"),
-      width: "150px",
+      width: "132px",
       cell: (l) => result(l.row),
     },
     {
       id: "defects",
       header: t("traceability.matrix.col.defects"),
-      width: "96px",
+      width: "84px",
       cell: (l) => defectPills(l.row),
     },
     {
       id: "coverage",
       header: t("traceability.matrix.col.coverage"),
-      width: "100px",
+      width: "96px",
       cell: (l) => l.first && coveragePill(l.row),
     },
     {
       id: "notes",
       header: t("traceability.matrix.col.notes"),
-      // The notes wrap word by word instead of ending in «Defect…» (FIX-42):
-      // a short, readable column at 1440 px.
-      width: "minmax(120px,1fr)",
+      // The notes wrap word by word instead of ending in «Defect…» (FIX-42).
+      // The minima of all the tracks fit the panel at 1440 px (FIX-43): with
+      // 1138 px of minima in a 1120 px table, this column was pushed past
+      // the panel's edge and cut («Defecto abiert…»).
+      width: "minmax(112px,1fr)",
       cell: (l) => <span className="tz-notes tz-muted">{notes(l.row)}</span>,
     },
   ];
@@ -515,7 +521,7 @@ export function MatrixView({
         </div>
         <div className="tz-kpi">
           <dt>{t("traceability.matrix.coverage")}</dt>
-          <dd>{summary.totalRequirements ? `${pct} %` : "—"}</dd>
+          <dd>{summary.totalRequirements ? formatPercent(pct, { digits: 0 }) : "—"}</dd>
         </div>
         <WeightedKpi coverage={coverage} />
       </dl>
@@ -550,7 +556,7 @@ export function MatrixView({
             getRowId={(l) => l.key}
             label={t("traceability.matrix.title")}
             rowTone={(l) => (l.row.coverage === "not_covered" ? "gap" : undefined)}
-            minWidth={1120}
+            minWidth={MATRIX_MIN_WIDTH}
           />
         )}
         {groups.length > 0 && (

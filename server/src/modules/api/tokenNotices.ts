@@ -11,6 +11,7 @@
 import type { Pool } from "pg";
 import { emitNotification, type Membership } from "../notifications/notifications.js";
 import { EXPIRING_DAYS } from "./apiTokens.js";
+import { personNameSql } from "../auth/personName.js";
 
 /** The owner is an active member of the token's workspace and not disabled. */
 const OWNER_OK = `
@@ -36,7 +37,7 @@ interface Claimed {
 
 const RETURNING = `
   RETURNING t.id, t.kind, t.name, t.display_prefix, t.owner_user_id, t.workspace_id, t.project_id, t.expires_at,
-            (SELECT coalesce(nullif(u.display_name, ''), u.email) FROM users u WHERE u.id = t.owner_user_id) AS owner_name,
+            (SELECT ${personNameSql("u")} FROM users u WHERE u.id = t.owner_user_id) AS owner_name,
             EXISTS (SELECT 1 FROM users u WHERE u.id = t.owner_user_id AND u.disabled_at IS NOT NULL) AS owner_disabled`;
 
 export function createTokenNotices(deps: { pool: Pool; membership: Membership; now?: () => Date }) {

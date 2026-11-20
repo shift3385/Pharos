@@ -96,7 +96,7 @@ describe("Administración › Auditoría (AUD-01)", () => {
     render();
     expect(await screen.findByText("ATS_014")).toBeInTheDocument();
     expect(screen.getByText("Agente planner-01")).toBeInTheDocument();
-    expect(screen.getByText("en nombre de QA")).toBeInTheDocument();
+    expect(screen.getByText("en nombre de Quality Analyst")).toBeInTheDocument();
     expect(screen.getByText("Editado")).toBeInTheDocument();
     expect(screen.getByText("Importado")).toBeInTheDocument();
     expect(screen.getAllByText("Este equipo").length).toBeGreaterThan(0);

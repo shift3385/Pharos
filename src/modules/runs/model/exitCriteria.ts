@@ -1,3 +1,4 @@
+import { formatPercent } from "@shared/i18n/percent";
 import type { ExitCriterion } from "@shared/contracts/contract";
 
 // Exit criteria (contract v1, R11) are evaluated by the derivation itself
@@ -45,6 +46,5 @@ export function evaluateExitCriteria(
 /** A criterion's value as text: `95 %` for ratios, a count otherwise. */
 export function criterionValue(c: ExitCriterion): string {
   if (c.value === null) return "—";
-  const n = Number.isInteger(c.value) ? String(c.value) : c.value.toFixed(1);
-  return c.kind === "criticalDefects" ? n : `${n} %`;
+  return c.kind === "criticalDefects" ? String(c.value) : formatPercent(c.value);
 }

@@ -107,7 +107,7 @@ describe("GenerateCasesModal (IA-05)", () => {
         requirementKey: "REQ-007",
         provenance,
         proposals: [cases[0]],
-        author: "QA", // the display name (FIX-41)
+        author: "Quality Analyst", // the official name (GLOSARIO, FIX-43)
         caseIdPrefix: "TC-",
       }),
     );

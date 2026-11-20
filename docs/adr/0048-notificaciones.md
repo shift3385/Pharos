@@ -92,6 +92,10 @@
       escucha y lo convierte (el autor, o el workspace para pedir revisión).
       Se deduplica por `caseId:revision:kind`: la versión del caso no cambia
       al enviar, devolver y volver a enviar.
+    - `plan.approved`, `plan.changes_requested` (*FIX-43*): como los del caso,
+      al autor del plan (`createdBy`) cuando otra persona lo aprueba o pide
+      cambios; el plan dispara `pharos:plan-review` tras guardar y se
+      deduplica por `planId:revision:kind`. Una aprobación propia no avisa.
     - `defect.assigned`: al guardar un defecto cuyo responsable cambia a una
       cuenta. Hoy el responsable es texto libre, así que solo notifica cuando
       W dé un selector de miembros. *Hecho en FIX-41:* «Asignado a» elige un

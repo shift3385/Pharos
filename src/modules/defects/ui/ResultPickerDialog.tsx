@@ -6,15 +6,8 @@ import { Dialog } from "@shared/ui/Dialog";
 import { LoadError } from "@shared/ui/LoadError";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { defectsApi } from "../api/defectsApi";
+import { resultName as nameOf } from "../model/resultName";
 import type { LinkableItem, ResultCandidate } from "../model/types";
-
-/** A result linked to a case (by its tag, or later by hand from «Sin
- *  vincular») is named by the case's current key and title; an unlinked
- *  one by its test (FIX-42). */
-function nameOf(r: ResultCandidate, cases: Map<string, LinkableItem>): string {
-  const c = r.testCaseId ? cases.get(r.testCaseId) : undefined;
-  return c ? `${c.key} · ${c.title}` : (r.caseKey ?? r.testKey);
-}
 
 /**
  * Picks a failed attempt of the project's runs (newest first): to create a

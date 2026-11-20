@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { badgeText, groupByDay, targetOf, unreadCount } from "./group";
 import { notificationOfReview, reviewEventOf, type CaseReviewEvent } from "./caseReview";
+import { notificationOfPlanReview, PLAN_REVIEW_EVENT, planReviewEventOf, type PlanReviewEvent } from "./planReview";
 import type { AppNotification } from "./types";
 
 const n = (id: string, createdAt: string, patch: Partial<AppNotification> = {}): AppNotification => ({
@@ -131,5 +132,54 @@ describe("API token notices (INT-02 A4)", () => {
       path: "/profile",
       label: "notifications.action.profile",
     });
+  });
+});
+
+describe("a plan's review (FIX-43)", () => {
+  const event: PlanReviewEvent = {
+    kind: "returned",
+    planId: "tp-1",
+    title: "Plan de pruebas de Pharos",
+    version: "1.0",
+    projectId: "p1",
+    workspaceId: "ws-1",
+    authorId: "liomar",
+    actorId: "jorge",
+    at: "2026-11-20T10:15:00Z",
+    revision: 7,
+    comment: "Falta el alcance",
+  };
+
+  it("tells the plan's author when someone else asks for changes or approves", () => {
+    expect(notificationOfPlanReview(event)).toEqual({
+      kind: "plan.changes_requested",
+      to: { userIds: ["liomar"] },
+      projectId: "p1",
+      workspaceId: "ws-1",
+      subject: { entity: "test_plan", id: "tp-1", title: "Plan de pruebas de Pharos" },
+      data: { version: "1.0", at: "2026-11-20T10:15:00Z", comment: "Falta el alcance" },
+      dedupeKey: "tp-1:7:plan.changes_requested",
+    });
+    expect(notificationOfPlanReview({ ...event, kind: "approved", comment: undefined })).toMatchObject({
+      kind: "plan.approved",
+      to: { userIds: ["liomar"] },
+      dedupeKey: "tp-1:7:plan.approved",
+    });
+  });
+
+  it("tells nobody of the author's own act, a self-approval or an unknown author", () => {
+    expect(notificationOfPlanReview({ ...event, actorId: "liomar" })).toBeNull();
+    expect(notificationOfPlanReview({ ...event, kind: "approved", selfApproval: true })).toBeNull();
+    expect(notificationOfPlanReview({ ...event, authorId: "" })).toBeNull();
+  });
+
+  it("opens the project's plan", () => {
+    const plan = { kind: "plan.approved", subject: { entity: "test_plan", id: "tp-1", title: "t" } };
+    expect(targetOf(n("a", "x", plan))).toEqual({ kind: "path", path: "/projects/p1/plan", label: "notifications.action.openPlan" });
+  });
+
+  it("reads the event from window", () => {
+    expect(planReviewEventOf(new CustomEvent(PLAN_REVIEW_EVENT, { detail: event }))).toEqual(event);
+    expect(planReviewEventOf(new CustomEvent(PLAN_REVIEW_EVENT, { detail: { planId: 1 } }))).toBeNull();
   });
 });

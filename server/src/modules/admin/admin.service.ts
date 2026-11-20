@@ -5,6 +5,7 @@ import type { ServerClock } from "../sync/sync.hlc.js";
 import { lockWorkspaces } from "../sync/sync.repository.js";
 import { personalOf } from "../workspaces/members.js";
 import { emitNotification } from "../notifications/notifications.js";
+import { personNameSql } from "../auth/personName.js";
 
 // The server administrator (SEC-11, ADR-0045 amendment): an instance-level
 // role, apart from the workspace roles. It is read from the database on every
@@ -289,7 +290,7 @@ export function createAdminService(deps: {
         disabled_reason: string | null;
       }>(
         `SELECT u.id, u.email, u.display_name, u.first_name, u.last_name, u.is_admin, u.created_at,
-                u.disabled_at, u.disabled_reason, db.display_name AS disabled_by_name,
+                u.disabled_at, u.disabled_reason, ${personNameSql("db")} AS disabled_by_name,
                 (SELECT count(*) FROM account_recovery_codes c WHERE c.user_id = u.id) AS codes_total,
                 (SELECT count(*) FROM account_recovery_codes c WHERE c.user_id = u.id AND c.used_at IS NULL) AS codes_left,
                 (SELECT count(*) FROM workspace_members m JOIN workspaces w ON w.id = m.workspace_id
@@ -377,11 +378,11 @@ export function createAdminService(deps: {
         await client.query(ADMINS_LOCK);
         if (targetId === actorId) throw AdminErrors.disableSelf();
         const { rows } = await client.query<{
-          display_name: string;
+          name: string;
           active_admin: boolean;
           disabled_at: Date | null;
         }>(
-          `SELECT display_name, is_admin AND disabled_at IS NULL AS active_admin, disabled_at
+          `SELECT ${personNameSql()} AS name, is_admin AND disabled_at IS NULL AS active_admin, disabled_at
              FROM users WHERE id = $1 FOR UPDATE`,
           [targetId],
         );
@@ -413,7 +414,7 @@ export function createAdminService(deps: {
             subject: {
               entity: "account",
               id: targetId,
-              title: target.display_name,
+              title: target.name,
             },
           });
           return { disabled: false, changed: true };
@@ -537,7 +538,7 @@ export function createAdminService(deps: {
             subject: {
               entity: "account",
               id: targetId,
-              title: target.display_name,
+              title: target.name,
             },
             data: { workspaceName: ws.name },
           });
@@ -557,10 +558,10 @@ export function createAdminService(deps: {
         await client.query(ADMINS_LOCK);
         const { rows } = await client.query<{
           is_admin: boolean;
-          display_name: string;
+          name: string;
           disabled_at: Date | null;
         }>(
-          "SELECT is_admin, display_name, disabled_at FROM users WHERE id = $1",
+          `SELECT is_admin, ${personNameSql()} AS name, disabled_at FROM users WHERE id = $1`,
           [targetId],
         );
         const target = rows[0];
@@ -600,7 +601,7 @@ export function createAdminService(deps: {
             subject: {
               entity: "account",
               id: targetId,
-              title: target.display_name,
+              title: target.name,
             },
             dedupeKey: null,
           });

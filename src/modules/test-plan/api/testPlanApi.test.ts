@@ -39,6 +39,39 @@ describe("testPlanApi", () => {
     ]);
   });
 
+  it("announces «Pedir cambios» and «Aprobar» with the plan's author, as stored (FIX-43)", async () => {
+    onDesktop();
+    const stored = (action: string) => ({
+      id: "tp-1",
+      workspaceId: "ws-1",
+      projectId: "p1",
+      title: "Plan",
+      version: "1.0",
+      createdBy: "author",
+      revision: 5,
+      status: action === "approve" ? "approved" : "reviewed",
+      data:
+        action === "approve"
+          ? { approval: { by: "rev", byName: "Rev", at: "2026-11-20T10:00:00Z", version: "1.0" } }
+          : { review: { state: "changesRequested", returnedAt: "2026-11-20T09:00:00Z", comment: "Alcance" } },
+    });
+    const seen: unknown[] = [];
+    const listen = (e: Event) => seen.push((e as CustomEvent).detail);
+    window.addEventListener("pharos:plan-review", listen);
+    try {
+      for (const action of ["return", "approve", "send"] as const) {
+        invoke.mockResolvedValueOnce(stored(action));
+        await testPlanApi.review({ id: "tp-1", revision: 4 }, { action, userId: "rev", userName: "Rev" });
+      }
+    } finally {
+      window.removeEventListener("pharos:plan-review", listen);
+    }
+    expect(seen).toEqual([
+      expect.objectContaining({ kind: "returned", planId: "tp-1", authorId: "author", actorId: "rev", comment: "Alcance", revision: 5 }),
+      expect.objectContaining({ kind: "approved", authorId: "author", at: "2026-11-20T10:00:00Z", selfApproval: false }),
+    ]);
+  });
+
   it("desktop: revision history from the Rust core", async () => {
     onDesktop();
     await testPlanApi.revisions("t1", "u1");

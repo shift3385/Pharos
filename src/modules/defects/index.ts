@@ -5,6 +5,7 @@ export { DefectsPage } from "./ui/DefectsPage";
 export { DefectEditor } from "./ui/DefectEditor";
 export { defectsApi, projectDefects } from "./api/defectsApi";
 export { isOpenDefect } from "./model/lifecycle";
+export { caseLabel, originLabel } from "./model/resultName";
 export type { Defect, DefectInput, LinkableItem } from "./model/types";
 
 import { defectsApi } from "./api/defectsApi";
