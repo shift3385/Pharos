@@ -291,7 +291,7 @@ export const CHAPTERS: Chapter[] = [
   { id: "ia", number: 17, title: "Asistente de IA", file: "17-ia.tour.ts", status: "active", uses: ["plan", "requisitos", "casos-base", "requisitos-api"] },
   { id: "movil", number: 18, title: "Pantallas estrechas y móvil", file: "18-movil.tour.ts", status: "active", uses: ["plan", "casos-base"] },
   { id: "inicio", number: 3, title: "Inicio", file: "03-inicio.tour.ts", status: "active", uses: ["plan", "resultados", "ejecucion-manual", "defectos", "ciclo-cerrado"] },
-  { id: "evidencias", number: 16, title: "Evidencias", file: "16-evidencias.tour.ts", status: "active", uses: ["resultados", "ejecucion-manual", "defectos", "ciclo-cerrado"] },
+  { id: "evidencias", number: 16, title: "Evidencias", file: "16-evidencias.tour.ts", status: "active", uses: ["resultados", "ejecucion-manual", "defectos"] },
   { id: "errores", number: 19, title: "Si algo sale mal", file: "19-errores.tour.ts", status: "active", uses: ["cuenta-liomar"] },
   // Team work with Jorge (decision D-1): it creates «Equipo QA», shares
   // «Pharos» into it, invites Jorge, and shows members, roles, review and

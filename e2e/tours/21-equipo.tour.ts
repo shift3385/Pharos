@@ -260,7 +260,7 @@ chapter("equipo", () => {
   step("aprobar-propio", {
     title: "Tu propio caso no lo apruebas tú",
     caption:
-      "Con la aprobación independiente, el «Aprobar versión N» de Liomar está en gris y explica por qué: «Este espacio de trabajo pide aprobación independiente: lo tiene que aprobar otra persona.». El caso espera «En revisión» a que lo revise Jorge.",
+      "Con la aprobación independiente, el «Aprobar versión N» de Liomar está en gris y explica por qué: «Este workspace pide aprobación independiente: lo tiene que aprobar otra persona.». El caso espera «En revisión» a que lo revise Jorge.",
     focus: ".tc-review",
     run: async () => {
       await expect(byTestId("case-approve")).toBeDisabled();
@@ -286,7 +286,7 @@ chapter("equipo", () => {
   step("cambios-guardados", {
     title: "Hacer los cambios",
     caption:
-      "Liomar añade la comprobación que pidió Jorge («+ Añadir paso» en «Comprobaciones») y guarda. El caso sigue «En revisión», y el aviso pasa a «Cambios guardados tras la petición de Jorge L. Meneses Yero», con su comentario; debajo, «Cambios desde la revisión N» enseña la comprobación añadida, para que Jorge sepa qué mirar.",
+      "Liomar añade la comprobación que pidió Jorge («+ Añadir paso» en «Comprobaciones») y guarda. El caso sigue «En revisión», y el aviso pasa a «Cambios guardados tras la petición de Jorge L. Meneses Yero», con su comentario; debajo, «Cambios desde el …», con la fecha de la revisión que Jorge vio, enseña la comprobación añadida, para que Jorge sepa qué mirar.",
     focus: ".tc-review",
     run: async () => {
       const group = $(`[role="group"][aria-label="${C.checklist.items}"]`);

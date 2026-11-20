@@ -128,8 +128,8 @@ chapter("defectos", () => {
       `Debajo, «Dónde se encontró» lleva la build y el entorno (en este ejemplo, ${RELEASE.build} en ${RELEASE.environment}), y «Asignado a» dice quién se ocupa del defecto: se elige entre los miembros activos del workspace, o «Sin asignar». En «Personal» el único miembro eres tú, así que Liomar se lo asigna a sí mismo; en un workspace compartido, la persona elegida recibe un aviso con el defecto (capítulo 21). En «Vínculos», marca los casos y los requisitos afectados: la matriz de trazabilidad (capítulo 13) los mostrará junto al defecto. Liomar marca el caso «Crear un proyecto» (PH-003) y el requisito REQ-002.`,
     focus: '//label[.//*[@data-testid="defect-assignee"]]',
     run: async () => {
-      await chooseOption(byTestId("defect-assignee"), { text: PERSONA.alias });
-      await expect(byTestId("defect-assignee")).toHaveText(expect.stringContaining(PERSONA.alias));
+      await chooseOption(byTestId("defect-assignee"), { text: `${PERSONA.first} ${PERSONA.last}` });
+      await expect(byTestId("defect-assignee")).toHaveText(expect.stringContaining(`${PERSONA.first} ${PERSONA.last}`));
       // «Dónde se encontró» on top, «Vínculos» with the marked case below.
       await scrollToTop('section.df-section:has([data-testid="defect-assignee"])');
     },
@@ -328,7 +328,7 @@ chapter("defectos", () => {
   step("escape", {
     title: "Un defecto que se escapó de las pruebas",
     caption:
-      `Si el defecto se encontró fuera de las pruebas, por ejemplo en producción o en una demostración, marca «Encontrado fuera de las pruebas (escape)» en «Dónde se encontró». Cuenta como escape del último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo dejó pasar, y la recogen la tendencia de ciclos del Inicio (capítulo 3) y el informe de go/no-go (capítulo 9). En este ejemplo, un usuario de la beta avisa de que el enlace del correo de bienvenida abre la versión anterior, y Liomar lo registra como escape, con lo que vio el usuario y la build y el entorno de la beta.`,
+      `Si el defecto se encontró fuera de las pruebas, por ejemplo en producción o en una demostración, marca «Encontrado fuera de las pruebas» en «Dónde se encontró». Cuenta como escape del último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo dejó pasar, y la recogen la tendencia de ciclos del Inicio (capítulo 3) y el informe de go/no-go (capítulo 9). En este ejemplo, un usuario de la beta avisa de que el enlace del correo de bienvenida abre la versión anterior, y Liomar lo registra como escape, con lo que vio el usuario y la build y el entorno de la beta.`,
     focus: ".df-escaped",
     run: async () => {
       await clickButton(F.newDefect);

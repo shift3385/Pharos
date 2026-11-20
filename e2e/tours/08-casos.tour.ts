@@ -876,7 +876,7 @@ chapter("casos", () => {
       await expect(byTestId("baseline-counts")).toBeDisplayed();
     },
     after: async () => {
-      await clickButton(C.baselines.title);
+      await clickButton(C.baselines.open);
       await clickButton(C.baselines.back);
       await expect($("section.cl")).toBeDisplayed();
     },

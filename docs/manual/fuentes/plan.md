@@ -179,7 +179,7 @@ combinan solos; solo el mismo campo pide elegir (capítulo 15, «Conflictos»).
 
 - **Las acciones de «Estado del plan» están en gris.** Debajo dice por qué:
   guarda los cambios antes de seguir con la revisión.
-- **«No puedes aprobar este plan».** El espacio de trabajo pide aprobación
+- **«No puedes aprobar este plan».** El workspace pide aprobación
   independiente: lo aprueba un Test Manager que no sea quien creó el plan. Si
   trabajas solo, el plan va en tu espacio personal, donde puedes aprobarlo tú.
 - **«Sin cambios: no hay nada que guardar».** El plan no ha cambiado desde el

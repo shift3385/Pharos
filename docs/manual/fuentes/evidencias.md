@@ -43,7 +43,7 @@ acorta los registros y limpia un archivo huérfano.
 | Tecla | Dónde | Qué hace |
 | --- | --- | --- |
 | Tab | Retención por proyecto | Recorre los tipos y su plazo |
-| ↑ ↓ | Selector de plazo de un tipo | Cambian entre «Por defecto», «Siempre» y «Días…» |
+| ↑ ↓ | Selector de plazo de un tipo | Cambian entre «Por defecto», «Siempre» y «Número de días» |
 | Esc | Confirmación de acortar la retención o de borrar huérfanos | No la cierra: usa «Cancelar» |
 
 ## Si algo no sale

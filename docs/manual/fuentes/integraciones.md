@@ -169,7 +169,7 @@ según el idioma de Windows (o `--lang es`).
 - Un token por CI y por proyecto, con el nombre de dónde se usa: si se filtra,
   revocas solo ese.
 - Da a cada token solo los permisos que necesita. Para subir resultados basta
-  «Subir resultados y cerrar runs».
+  «Subir resultados y cerrar ejecuciones».
 - Guarda el token como secreto del CI (`PHAROS_TOKEN`), nunca en el
   repositorio ni en la URL: Pharos rechaza un token en la URL, y el CLI no
   tiene opción `--token` para que no quede en el historial de la terminal.

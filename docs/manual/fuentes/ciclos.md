@@ -78,9 +78,9 @@ proyecto y la clave del ciclo). Tiene once apartados:
 6. **Medidas de prueba:** las métricas congeladas al cerrar, frente al ciclo
    anterior y al objetivo del plan (capítulo 5), y si se alcanza.
 7. **Riesgos residuales:** los defectos del ciclo que siguen abiertos hoy,
-   los hallazgos abiertos y los umbrales de rendimiento incumplidos de sus
-   runs (capítulo 10), y los requisitos sin cubrir o sin pasar, del riesgo
-   más alto al más bajo.
+   los hallazgos abiertos y los umbrales de rendimiento incumplidos de los
+   runs del ciclo (capítulo 10), y los requisitos sin cubrir o sin pasar, del
+   riesgo más alto al más bajo.
 8. **Entregables:** los que guarda Pharos y los del plan, que marcas como
    entregados.
 9. **Activos reutilizables:** casos, configuraciones y datos de prueba.
@@ -106,6 +106,15 @@ En este manual, Liomar prepara la «Regresión 0.6.0» de Pharos, la del plan
 - **Configuraciones:** Chrome y Edge.
 - **Casos:** dos añadidos a mano y los de prioridad alta, añadidos por
   filtro.
+
+Los últimos pasos del capítulo, desde «El ciclo, ejecutado», ocurren más
+tarde en la historia: un ciclo se cierra cuando ya se ha ejecutado. Para
+entonces, Liomar ha importado el informe de la automatización en el ciclo
+(capítulo 10), ha registrado los resultados de Chrome y Edge como en el
+capítulo 11 y ha abierto el defecto crítico del acceso (capítulo 12). Con
+esas cifras (las 4 celdas ejecutadas, una tasa de éxito del 50 %, un defecto
+crítico abierto y la cobertura de requisitos en el 18,2 %), cierra el ciclo
+con **No-go**: la versión no sale hasta corregir el acceso.
 
 ## Atajos de teclado
 

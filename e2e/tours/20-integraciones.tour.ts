@@ -71,7 +71,7 @@ chapter("integraciones", () => {
   step("nuevo-token", {
     title: "Nuevo token de proyecto",
     caption:
-      "«Nuevo token…» abre el formulario: un nombre que diga dónde se usa (en este ejemplo, «CI de Pharos»), el proyecto, los permisos (scopes) y la caducidad, entre 30 días y un año (90 por defecto). El token actúa en nombre de quien lo crea y nunca puede más que su rol: si ese rol cambia, el token cambia con él. Para un CI que sube resultados basta «Subir resultados y cerrar runs».",
+      "«Nuevo token…» abre el formulario: un nombre que diga dónde se usa (en este ejemplo, «CI de Pharos»), el proyecto, los permisos (scopes) y la caducidad, entre 30 días y un año (90 por defecto). El token actúa en nombre de quien lo crea y nunca puede más que su rol: si ese rol cambia, el token cambia con él. Para un CI que sube resultados basta «Subir resultados y cerrar ejecuciones».",
     covers: ["dialogs:src/modules/integrations/ui/TokenDialogs.tsx"],
     shot: { element: D },
     run: async () => {

@@ -55,7 +55,7 @@ revisión, con estas acciones bajo la cabecera del caso.
 | Obsoleto | «Reactivar» | El caso vuelve a «En revisión» (a Borrador si nunca se envió). Hay que aprobarlo de nuevo. |
 
 - Primero se guarda: con cambios sin guardar, las acciones esperan.
-- Quien revisa ve «Cambios desde la revisión N», con lo que cambió campo a
+- Quien revisa ve «Cambios desde el …» (la fecha de la última revisión), con lo que cambió campo a
   campo desde la última versión aprobada o enviada. Lo quitado aparece
   tachado y lo añadido, resaltado.
 - **Borrador es solo el principio**, como en el plan (capítulo 5): un caso

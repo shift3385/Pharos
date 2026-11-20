@@ -54,7 +54,7 @@ chapter("ajustes", () => {
       await button(es.projects.save).click();
       await waitForToast(es.projects.savedToast);
       // FIX-11: the sidebar switcher shows the prefix at once.
-      await expect($(".sidebar__project-badge")).toHaveText(`${PROJECT_A.prefix}-`);
+      await expect($(".sidebar__project-badge")).toHaveText(PROJECT_A.prefix);
     },
   });
 
