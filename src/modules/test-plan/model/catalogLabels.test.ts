@@ -41,6 +41,8 @@ describe("plan catalogs (ADR-0030)", () => {
     expect(
       normalizeDeliverables(["Documento de plan de pruebas", "UAT sign-off", "Informe propio", "testPlan"]),
     ).toEqual(["testPlan", "uatSignoff", "Informe propio"]);
+    // The Spanish label before FIX-44 and the current one name the same entry.
+    expect(normalizeDeliverables(["Sign-off de UAT", "Acta de aceptación (UAT)"])).toEqual(["uatSignoff"]);
   });
 
   it("exports catalog entries in the export's language and own entries as typed", () => {

@@ -51,7 +51,9 @@ export function PlanTimeline({ plan, limit = 4 }: { plan: TestPlan; limit?: numb
   const names: Record<string, string> = user ? { [user.id]: personName(user) } : {};
   const approval = plan.data.approval;
   if (approval) names[approval.by] ??= approval.byName;
-  const nameOf = (actor: string) => names[actor] || t("testPlan.timeline.someone");
+  // A person's name never breaks across lines (FIX-44: «Jorge L. Meneses /
+  // Yero»): its spaces do not wrap.
+  const nameOf = (actor: string) => (names[actor] || t("testPlan.timeline.someone")).replace(/ /g, "\u00a0");
   const fmt = new Intl.DateTimeFormat(i18n.resolvedLanguage, { dateStyle: "medium", timeStyle: "short" });
 
   return (
@@ -62,7 +64,11 @@ export function PlanTimeline({ plan, limit = 4 }: { plan: TestPlan; limit?: numb
           ? t("testPlan.timeline.created")
           : s.approved
             ? t("testPlan.timeline.approved", { name: nameOf(s.actor) })
-            : [nameOf(s.actor), s.sections.map((id) => t(`testPlan.step.${id}`)).join(", ")]
+            : // A draft sent to review is a change of state, not an edit: the
+              // review's own record is not «Identificación del plan» (FIX-44).
+              s.statusBefore === "draft" && s.status === "reviewed"
+              ? t("testPlan.timeline.sent", { name: nameOf(s.actor) })
+              : [nameOf(s.actor), s.sections.map((id) => t(`testPlan.step.${id}`)).join(", ")]
                 .filter(Boolean)
                 .join(" · ");
         return (

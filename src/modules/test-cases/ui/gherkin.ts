@@ -35,6 +35,9 @@ export function newFlow(name: string): Flow {
 }
 
 const INDENT_STEP = "    ";
+/** The name of an untitled Feature or Scenario, in Spanish as the rest of
+ *  the case (FIX-44: it was a raw English «Untitled» / «Scenario»). */
+const UNTITLED = "Sin título";
 const INDENT_TABLE = "      ";
 
 // ---- Tags (TRZ-03) ----
@@ -144,7 +147,7 @@ function renderExamples(table: ExampleTable | TextTable): string[] {
 
 /** Scaffolds a starter feature for the advanced level from the basic fields. */
 function scaffoldAdvanced(title: string, data: TestCaseData): string {
-  const lines = [`Feature: ${title || "Untitled"}`, "", `  Scenario: ${title || "Scenario"}`];
+  const lines = [`Feature: ${title || UNTITLED}`, "", `  Scenario: ${title || UNTITLED}`];
   const step = (kw: string, first: boolean, text: string) =>
     lines.push(`${INDENT_STEP}${first ? kw : "And"} ${text}`);
   texts(data.preconditions)
@@ -188,9 +191,9 @@ export function toGherkin(
   const isOutline = level === "outline";
   const lines: string[] = [];
   lines.push(...featureTagLine(data));
-  lines.push(`Feature: ${title || "Untitled"}`);
+  lines.push(`Feature: ${title || UNTITLED}`);
   lines.push(...tagLine("  ", [scenarioId, ...(data.scenarioTags ?? [])]));
-  lines.push(`  ${isOutline ? "Scenario Outline" : "Scenario"}: ${title || "Scenario"}`);
+  lines.push(`  ${isOutline ? "Scenario Outline" : "Scenario"}: ${title || UNTITLED}`);
 
   const step = (kw: string, first: boolean, text: string) =>
     lines.push(`${INDENT_STEP}${first ? kw : "And"} ${text}`);
@@ -338,7 +341,7 @@ export function flowsToGherkin(
     featureTags?: string[];
   } = {},
 ): string {
-  const lines: string[] = [...featureTagLine(tags), `Feature: ${title || "Untitled"}`];
+  const lines: string[] = [...featureTagLine(tags), `Feature: ${title || UNTITLED}`];
 
   const bg = texts(background)
     .map((s) => s.trim())

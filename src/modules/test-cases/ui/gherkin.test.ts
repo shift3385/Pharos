@@ -68,8 +68,11 @@ describe("gherkin mapper", () => {
     expect(out).not.toContain("Then");
   });
 
-  it("falls back to Untitled when title is empty", () => {
-    expect(toGherkin("", baseData)).toContain("Feature: Untitled");
+  it("falls back to «Sin título», never raw English, when title is empty", () => {
+    const g = toGherkin("", baseData);
+    expect(g).toContain("Feature: Sin título");
+    expect(g).toContain("Scenario: Sin título");
+    expect(g).not.toMatch(/Untitled|Scenario: Scenario/);
   });
 });
 

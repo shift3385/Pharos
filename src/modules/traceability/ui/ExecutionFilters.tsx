@@ -41,7 +41,9 @@ export function ExecutionFilters({
     label: string,
     options: FilterOption[],
   ) => (
-    <label className="tz-filter">
+    // The cycle's name is what tells cycles apart: its field takes the room
+    // the others do not need (FIX-44: «CYC-001 · Regresió…»).
+    <label className={key === "cycleId" ? "tz-filter tz-filter--wide" : "tz-filter"}>
       <span className="tz-filter__label">{label}</span>
       <Select
         value={value[key]}

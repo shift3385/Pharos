@@ -88,7 +88,7 @@ export function RequirementsPanel({
           {open(r)}
           <AiMark r={r} />
           {r.description && (
-            <span className="tz-muted tz-clip" title={r.description}>
+            <span className="tz-muted tz-desc" title={r.description}>
               {r.description}
             </span>
           )}

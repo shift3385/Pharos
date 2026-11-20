@@ -160,7 +160,7 @@ export function RequirementProposalsReview({
         </span>
         <button
           type="button"
-          className="ui-btn ui-btn--ghost ui-btn--small"
+          className="ui-btn ui-btn--small"
           onClick={() =>
             setSelected(
               new Set(items.filter((p) => !blocked(p).length).map((p) => p.id)),
@@ -171,7 +171,7 @@ export function RequirementProposalsReview({
         </button>
         <button
           type="button"
-          className="ui-btn ui-btn--ghost ui-btn--small"
+          className="ui-btn ui-btn--small"
           onClick={() => setSelected(new Set())}
         >
           {t("traceability.proposals.selectNone")}

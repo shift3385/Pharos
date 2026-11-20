@@ -158,7 +158,7 @@ describe("Trazabilidad (RED-V3)", () => {
     // FIX-42: the notes get a readable minimum and wrap instead of ending in «Defect…».
     expect(tracks).toContain("minmax(112px,1fr)");
     expect(tracks).not.toContain("minmax(0,0.8fr)");
-    const titles = table.querySelectorAll(".tz-clamp");
+    const titles = table.querySelectorAll(".tz-title");
     expect(titles.length).toBeGreaterThan(0);
     titles.forEach((title) => expect(title).toHaveAttribute("title", title.textContent ?? ""));
     const notes = table.querySelectorAll(".tz-notes");
@@ -252,7 +252,7 @@ describe("Trazabilidad (RED-V3)", () => {
     const dialog = screen.getByRole("alertdialog");
     await userEvent.keyboard("{Escape}");
     expect(dialog).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole("button", { name: "Eliminar" }));
+    await userEvent.click(within(dialog).getByRole("button", { name: "Sí, eliminar" }));
     await waitFor(() => expect(remove).toHaveBeenCalledWith("REQ-047", expect.any(String)));
   });
 

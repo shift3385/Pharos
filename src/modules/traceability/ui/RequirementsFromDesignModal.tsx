@@ -47,6 +47,7 @@ import { MAX_ATTACHMENTS } from "../fromDesign/limits";
 import "@shared/ui/ConfirmDialog.css";
 import "./Traceability.css";
 import { TextArea } from "@shared/ui/TextArea";
+import { formatSize } from "../fromDesign/size";
 
 type Phase =
   | "material"
@@ -67,7 +68,6 @@ interface Extracted {
 const ACCEPT =
   ".png,.jpg,.jpeg,.webp,.gif,.svg,.pdf,.zip,.excalidraw,.html,.htm,.md,image/*,application/pdf";
 
-const mb = (base64: number) => (base64 * 0.75) / (1024 * 1024);
 
 /** «Requisitos desde diseños» (IA-18, ADR-0037). The person drops, pastes or
  *  picks screenshots, sketches, PDF exports, an Excalidraw sketch or a Claude
@@ -521,7 +521,7 @@ export function RequirementsFromDesignModal({
               {t("traceability.fromDesign.summary", {
                 count: summary.attachments,
                 max: MAX_ATTACHMENTS,
-                mb: mb(summary.base64).toFixed(1),
+                size: formatSize(summary.base64 * 0.75, i18n.resolvedLanguage ?? "es"),
                 tokens: summary.tokens.toLocaleString(i18n.resolvedLanguage),
               })}
             </p>

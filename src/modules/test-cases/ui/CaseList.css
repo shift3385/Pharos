@@ -146,12 +146,17 @@
   color: var(--color-warning-text);
 }
 
+/* A title wraps to a second line before it is cut, so the end that tells
+   two cases apart («(copia)») stays visible (FIX-44). */
 .cl-title {
+  display: -webkit-box;
   min-width: 0;
   overflow: hidden;
   font-weight: var(--fw-medium);
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   color: var(--color-text-primary);
   text-decoration: none;
 }
@@ -628,6 +633,8 @@
 }
 
 .tc-gherkin__status {
+  display: inline-flex;
+  flex: none;
   white-space: nowrap;
   color: var(--color-success-text);
 }

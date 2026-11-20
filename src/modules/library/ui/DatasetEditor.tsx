@@ -283,9 +283,12 @@ export function DatasetEditor({
             ))}
           </ul>
         )}
-        <div className="lb-callout" role="note">
+        {/* One short line; the why sits behind its «?» (FIX-44). */}
+        <div className="lb-callout lb-callout--line" role="note">
           <b>{t("library.dataset.secretsTitle")}</b>
-          <span>{t("library.dataset.secretsHelp")}</span>
+          <InfoTip id="lb-dataset-secrets-help" label={t("library.dataset.secretsTitle")}>
+            {t("library.dataset.secretsHelp")}
+          </InfoTip>
         </div>
       </ItemEditorFrame>
       {ed.dialogs}

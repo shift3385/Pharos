@@ -27,6 +27,27 @@ describe("plan wizard layout (FIX-40)", () => {
     expect(rule(".tpw-metrics__row", narrow)).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\) auto 38px/);
   });
 
+  it("a control the page scrolls to stops clear of the sticky footer (FIX-44)", () => {
+    expect(rule(".tpw__fields :is(input, textarea, select, button, [tabindex])")).toMatch(/scroll-margin-bottom:\s*120px/);
+  });
+
+  it("stacked under the calendar, the schedule rows have no scroll box of their own (FIX-44)", () => {
+    const stacked = rule('.tps[data-layout="stacked"] .tps-lists');
+    expect(stacked).toMatch(/overflow-y:\s*visible/);
+    expect(stacked).not.toMatch(/max-block-size/);
+  });
+
+  it("a milestone's diamond sits inside its day, under the number (FIX-44)", () => {
+    expect(rule(".tps-day")).toMatch(/height:\s*40px/);
+    expect(rule(".tps-diamond")).toMatch(/bottom:\s*5px/);
+    expect(rule(".tps-diamond")).not.toMatch(/\btop:/);
+  });
+
+  it("«Título» takes the whole row and the approver's name its own line (FIX-44)", () => {
+    expect(rule(".tpw-ident")).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\);/);
+    expect(rule(".tpw-facts dt.tpw-facts__full")).toMatch(/grid-column:\s*1 \/ -1/);
+  });
+
   it("«Aprobado por» wraps instead of being cut", () => {
     const wrap = rule(".tpw-facts dd.tpw-facts__wrap");
     expect(wrap).toMatch(/overflow-wrap:\s*anywhere/);

@@ -2088,7 +2088,7 @@
       "schedule": "Sprints and milestones of the test cycle. Click the start day and then the end day to create a sprint (Esc cancels). Select a sprint and drag its ends to change the dates, or edit them in its row. In «Milestone», click a day to add a milestone.",
       "risks": "Risks that can affect testing and how they are mitigated.",
       "communication": "How and when progress is reported.",
-      "closure": "Conditions to meet before closing the cycle.",
+      "closure": "Conditions to meet before closing the cycle. Criteria measured by a metric are evaluated by themselves when a cycle closes; their text is written from the metric.",
       "purpose": "The test objectives the plan pursues and what it is for.",
       "conclusion": "Evaluation against objectives and exit criteria, open risks and the decision.",
       "assumptions": "What planning takes for granted and the limits the team cannot change (deadlines, people, rules). If an assumption stops holding, review the plan.",
@@ -2125,7 +2125,8 @@
       "exportPdf": "Export .pdf",
       "exportPdfDesc": "A document ready to sign",
       "exportXlsx": "Export .xlsx",
-      "exportXlsxDesc": "Editable in Excel"
+      "exportXlsxDesc": "Editable in Excel",
+      "history": "History in the document: {{mode}}"
     },
     "panel": {
       "title": "Plan status",
@@ -2387,11 +2388,11 @@
     "metricsNone": "No metrics yet. Add one from the catalog or your own.",
     "closureLink": {
       "label": "Measured by",
+      "target": "Target",
       "none": "No metric · checked by hand",
       "blocking": "Blocking",
       "advisory": "Advisory",
-      "blockingTip": "A blocking criterion marked «Not met» needs a justification to close the cycle; an advisory one is only reported.",
-      "hint": "Criteria measured by a metric are evaluated by themselves when a cycle closes. Their text is written from the metric."
+      "blockingTip": "A blocking criterion marked «Not met» needs a justification to close the cycle; an advisory one is only reported."
     },
     "approval": {
       "by": "Approved by",
@@ -2407,6 +2408,7 @@
       "title": "History",
       "created": "Plan created",
       "approved": "Approved by {{name}}",
+      "sent": "Sent to review by {{name}}",
       "lostApproval": "loses its approval",
       "none": "No saved changes yet.",
       "someone": "Another account"
@@ -2529,10 +2531,11 @@
     "suggest": {
       "button": "✨ Suggest tests",
       "disabled": "You need AI configured and a plan in the project",
-      "title": "Suggest tests with AI",
+      "title": "Suggest cases with AI",
       "loading": "Generating suggestions from the plan…",
       "empty": "No suggestions were generated. Check the plan has types/levels and the AI responds.",
-      "create": "Create {{count}}",
+      "create_one": "Create {{count}} case",
+      "create_other": "Create {{count}} cases",
       "creating": "Creating…"
     },
     "exportDone": "Saved to {{name}}",
@@ -2581,7 +2584,7 @@
       "advanced": {
         "name": "Advanced",
         "keywords": "Background · Rule · multiple Scenario",
-        "desc": "A full Feature with several scenarios. Authored directly in the Gherkin editor."
+        "desc": "A full Feature: shared preconditions and several flows, in the form or in Gherkin."
       },
       "includes": "Includes"
     },
@@ -2860,7 +2863,7 @@
       },
       "editingReviewed": "This case is in review. If you save changes to its content, it stays in review.",
       "editingApproved": "This case is approved. If you save changes to its content, it goes back to review with a new version and needs approving again.",
-      "changesSince": "Changes since revision {{revision}} ({{status}})",
+      "changesSince": "Changes since {{date}} ({{status}})",
       "toast": {
         "send": "{{key}} sent to review",
         "approve": "Version {{version}} of {{key}} approved",
@@ -3424,7 +3427,7 @@
       "delete": "Delete {{key}}",
       "deleteTitle": "Delete requirement",
       "deleteWarning": "{{key}} will be deleted. Its ID will not be reused: cases linking it will show it as an unknown requirement.",
-      "deleteConfirm": "Delete",
+      "deleteConfirm": "Yes, delete",
       "deletedToast": "{{key}} deleted",
       "cases": "Cases",
       "actions": "Actions",
@@ -3544,9 +3547,12 @@
     },
     "gaps": {
       "title": "Traceability gaps",
-      "casesWithoutRequirement": "Cases without a requirement",
-      "unknownLinks": "Cases linking a requirement that does not exist",
-      "defectsWithoutCase": "Defects without a linked case",
+      "casesWithoutRequirement_one": "Case without a requirement",
+      "casesWithoutRequirement_other": "Cases without a requirement",
+      "unknownLinks_one": "Case linking a requirement that does not exist",
+      "unknownLinks_other": "Cases linking a requirement that does not exist",
+      "defectsWithoutCase_one": "Defect without a linked case",
+      "defectsWithoutCase_other": "Defects without a linked case",
       "subtitle": "What breaks the requirement ↔ case ↔ defect chain",
       "migrateHint_one": "{{count}} ID appears in the free-text Traceability of your cases and can become a link.",
       "migrateHint_other": "{{count}} IDs appear in the free-text Traceability of your cases and can become links."
@@ -3558,10 +3564,10 @@
       "include": "Include",
       "found": "Found",
       "willCreate": "will be created",
-      "summary": "{{links}} links and {{creates}} new requirements will be created.",
+      "summary": "Links to create: {{links}} · new requirements: {{creates}}.",
       "apply": "Apply",
       "applying": "Applying…",
-      "doneToast": "Migration applied: {{links}} links, {{creates}} new requirements"
+      "doneToast": "Migration applied · links: {{links}} · new requirements: {{creates}}"
     },
     "fromDesign": {
       "open": "Requirements from designs",
@@ -3587,7 +3593,7 @@
       "remove": "Remove {{name}}",
       "context": "Product context (optional)",
       "contextPlaceholder": "E.g. a bank's customer portal, customer role",
-      "summary": "{{count}} of {{max}} images or PDF · {{mb}} MB · ≈ {{tokens}} input tokens (estimate)",
+      "summary": "{{count}} of {{max}} images or PDF · {{size}} · ≈ {{tokens}} input tokens (estimate)",
       "over": {
         "attachments": "At most {{max}} images or PDF per analysis: untick some.",
         "size": "The images and PDF are too large for one analysis: untick some.",
@@ -3743,7 +3749,7 @@
         "config": "Configuration",
         "other": "Other"
       },
-      "sendWhat": "{{files}} files (≈ {{tokens}} tokens) will be sent in {{calls}} calls.",
+      "sendWhat": "{{files}} files (≈ {{tokens}} tokens, counted on the text as read) will be sent in {{calls}} calls.",
       "neverSent": "Dependencies, builds, hidden files, binaries and files with secrets (.env, keys, certificates) are never sent.",
       "redacted_one": "{{count}} line that looks like a secret is replaced by “[secreto omitido]” ({{files}} files)",
       "redacted_other": "{{count}} lines that look like a secret are replaced by “[secreto omitido]” ({{files}} files)",
@@ -4439,7 +4445,9 @@
     "resolutionDialog": {
       "title": "Close {{key}}",
       "rejectTitle": "Reject {{key}}",
+      "moveTitle": "Move {{key}} to «{{status}}»",
       "message": "«{{title}}» moves to «{{status}}». Give the resolution.",
+      "messagePlain": "«{{title}}» moves to «{{status}}».",
       "fixedInBuild": "Fixed in build (optional)",
       "confirm": "Apply",
       "cancel": "Cancel"
@@ -4461,6 +4469,7 @@
       "actual": "Actual result",
       "severity": "Severity",
       "severityHint": "Impact on the system. Priority is how urgent the fix is.",
+      "priorityHint": "How urgent the fix is. Severity is the impact on the system.",
       "priority": "Priority",
       "status": "Status",
       "foundInBuild": "Build",
@@ -4495,7 +4504,8 @@
     "results": {
       "loadFailed": "The results could not be loaded.",
       "title": "Results that did not pass",
-      "pickToCreate": "Choose the failed attempt the defect comes from: the steps of the executed revision, the actual result, the build and the environment are filled in, and its evidence is added.",
+      "pickToCreate": "Choose the failed attempt the defect comes from.",
+      "pickToCreateHelp": "The new defect is filled in with the steps of the executed revision, the actual result, the build and the environment, and its evidence is added.",
       "pickToLink": "Choose the attempt to link to this defect.",
       "empty": "No failed results in this project's runs.",
       "search": "Search by run, case or test…",
@@ -6002,7 +6012,7 @@
       "loadFailed": "The library could not be loaded.",
       "none": "The library has no active shared steps. Create them in the Library section.",
       "choose": "Choose",
-      "argsHelp": "Empty: the parameter passes to the case. A literal (ana@acme.test) is written in the copy. Another parameter (<customer>) renames it.",
+      "argsHelp": "Empty: the parameter passes to the case. A literal (liomar.qa@pharos.test) is written in the copy. Another parameter (<customer>) renames it.",
       "noParams": "This shared step has no parameters.",
       "argPlaceholder": "Empty: passes to the case",
       "argOf": "Argument for <{{name}}>",

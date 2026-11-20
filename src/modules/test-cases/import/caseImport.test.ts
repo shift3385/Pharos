@@ -56,6 +56,14 @@ describe("parseCaseXlsx (basic)", () => {
     const byKey = (k: string) => rows.find((r) => r.labelKey === k);
     expect(byKey("testCase.notes")?.status).toBe("empty");
     expect(rows.length).toBe(18); // 17 fields + the Gherkin level
+    // The report reads as the app (FIX-44): the day as «1 ago 2026», not
+    // the ISO day, and the level by its name, not «basic».
+    const date = byKey("testCase.caseDate")?.preview ?? "";
+    expect(date).not.toBe("2026-08-01");
+    expect(date).toMatch(/^1 \S+ 2026$|^\S+ 1, 2026$/);
+    const level = byKey("testCase.level.label");
+    expect(level?.previewKey).toBe("testCase.level.basic.name");
+    expect(level?.preview).toBeUndefined();
   });
 });
 
