@@ -981,7 +981,34 @@
         "risks": "Riesgos",
         "lifecycle": "Ciclo de vida",
         "closures": "Cierres",
-        "links": "Vínculos"
+        "links": "Vínculos",
+        "review": "Revisión",
+        "approval": "Aprobación",
+        "version": "Versión",
+        "caseType": "Tipo de caso",
+        "automationStatus": "Automatización",
+        "scenarioId": "ID de escenario",
+        "custom": "Campos personalizados",
+        "requirementKeys": "Requisitos vinculados",
+        "traceability": "Otras referencias",
+        "mappedUseCase": "Caso de uso mapeado",
+        "gherkinLevel": "Nivel Gherkin",
+        "expectedResult": "Resultado esperado",
+        "postconditions": "Postcondiciones",
+        "acceptanceCriteria": "Criterios de aceptación",
+        "testData": "Datos de prueba",
+        "notes": "Notas",
+        "examples": "Examples",
+        "background": "Precondición compartida",
+        "flows": "Flujos",
+        "featureSource": "Gherkin",
+        "featureTags": "Etiquetas de la feature",
+        "scenarioTags": "Etiquetas del escenario",
+        "dataRequirements": "Requisitos de datos",
+        "environmentRequirements": "Requisitos de entorno",
+        "sharedRefs": "Pasos compartidos",
+        "datasetRefs": "Datasets",
+        "caseDate": "Fecha del caso"
       },
       "summary": {
         "created": "Creados",
@@ -1145,6 +1172,11 @@
         "remote": "La del servidor",
         "true": "Sí",
         "false": "No"
+      },
+      "reviewEvents": {
+        "sent": "Enviado a revisión",
+        "changesRequested": "Cambios pedidos",
+        "approved": "Aprobado"
       }
     },
     "users": {
@@ -2691,7 +2723,19 @@
         "added": "añadido",
         "removed": "quitado",
         "changed": "cambiado",
-        "moved": "movido"
+        "moved": "movido",
+        "added_f": "añadida",
+        "removed_f": "quitada",
+        "changed_f": "cambiada",
+        "moved_f": "movida",
+        "added_mpl": "añadidos",
+        "removed_mpl": "quitados",
+        "changed_mpl": "cambiados",
+        "moved_mpl": "movidos",
+        "added_fpl": "añadidas",
+        "removed_fpl": "quitadas",
+        "changed_fpl": "cambiadas",
+        "moved_fpl": "movidas"
       },
       "field": {
         "title": "Título",
@@ -2711,7 +2755,21 @@
         "acceptanceCriteria": "Criterio de aceptación",
         "requirementKeys": "Requisito",
         "examples": "Examples",
-        "flows": "Flujo"
+        "flows": "Flujo",
+        "checks": "Comprobación"
+      },
+      "gender": {
+        "description": "f",
+        "testData": "mpl",
+        "dataRequirements": "mpl",
+        "environmentRequirements": "mpl",
+        "notes": "fpl",
+        "traceability": "fpl",
+        "background": "f",
+        "preconditions": "f",
+        "postconditions": "f",
+        "examples": "mpl",
+        "checks": "f"
       }
     },
     "baselines": {
@@ -4255,7 +4313,8 @@
       "externalHint": "Para anotar la incidencia en otra herramienta. La sincronización con Jira llegará en una próxima versión.",
       "labels": "Etiquetas",
       "escaped": "Encontrado fuera de las pruebas (escape)",
-      "escapedHint": "Por ejemplo, en producción. Cuenta como escape del último ciclo cerrado antes de darlo de alta."
+      "escapedHint": "Por ejemplo, en producción. Cuenta como escape del último ciclo cerrado antes de darlo de alta.",
+      "unassigned": "Sin asignar"
     },
     "links": {
       "cases": "Casos de prueba",
@@ -5216,7 +5275,7 @@
         "expired": "Caducada"
       },
       "revoke": "Revocar",
-      "noInvitations": "No hay invitaciones.",
+      "noInvitations": "No hay invitaciones pendientes.",
       "roles": "¿Qué puede hacer cada rol?",
       "none": "Sin workspaces compartidos todavía. Crea uno o únete con un código desde el selector de workspace.",
       "disabled": "Desactivada",

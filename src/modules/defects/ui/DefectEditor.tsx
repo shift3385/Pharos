@@ -16,7 +16,10 @@ import { InfoTip } from "@shared/ui/InfoTip";
 import { notify, unlessReported } from "@shared/ui/notify";
 import { Select } from "@shared/ui/Select";
 import { useToast } from "@shared/ui/Toast";
+import { personName } from "@modules/auth";
 import { notify as notifyPeople } from "@modules/notifications";
+import { useWorkspace } from "@modules/workspaces";
+import { assigneeOptions } from "../model/assignee";
 import { MAX_ATTACHMENT_MB, defectsApi } from "../api/defectsApi";
 import { NEXT_STATUSES, needsResolution } from "../model/lifecycle";
 import {
@@ -106,9 +109,9 @@ const ids = (d: Defect | null, kind: string) =>
  * result's evidence. Built with the primitives of the case and card editors:
  * `docs/rediseno/` has no design for it.
  */
-/** An account id: the only assignee a notification can reach. Until the
- *  workspaces (W) give a member picker, the assignee is free text and nobody
- *  is notified. */
+/** An account id: the only assignee a notification can reach. «Asignado a»
+ *  picks a member of the workspace and stores their account (FIX-41); a name
+ *  typed before there were members notifies nobody. */
 const ACCOUNT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Tells the new assignee (RED-W2). Never waits or fails. */
@@ -159,6 +162,8 @@ export function DefectEditor({
   const fileRef = useRef<HTMLInputElement>(null);
   const desktop = capabilities.attachments();
   const update = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
+  // The project is in the current workspace (the sidebar shows its projects).
+  const members = useWorkspace().current?.members ?? [];
 
   useEffect(() => {
     if (current && desktop) void defectsApi.attachmentList(current.id, userId).then(setAttachments);
@@ -516,7 +521,20 @@ export function DefectEditor({
             </label>
             <label className="tp-field">
               <span>{t("defects.field.assignee")}</span>
-              <input value={form.assignee} maxLength={200} onChange={(e) => update({ assignee: e.target.value })} />
+              {members.length > 0 ? (
+                <Select<string>
+                  value={form.assignee}
+                  onChange={(assignee) => update({ assignee })}
+                  data-testid="defect-assignee"
+                  options={assigneeOptions(
+                    members.map((m) => ({ userId: m.userId, name: personName(m), disabled: m.disabled })),
+                    form.assignee,
+                    t("defects.field.unassigned"),
+                  )}
+                />
+              ) : (
+                <input value={form.assignee} maxLength={200} onChange={(e) => update({ assignee: e.target.value })} />
+              )}
             </label>
             {/* DOC-06 (D4): an escape is marked by hand; the trend and the
                 go/no-go report count it against the cycle closed before. */}

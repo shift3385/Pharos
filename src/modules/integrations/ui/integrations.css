@@ -116,6 +116,11 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+/* One YAML line (FIX-41): its wrapped rest hangs under its own text; the
+   inline padding and negative text-indent come from `IndentedLines`. */
+.int-snippet__line {
+  display: block;
+}
 .int-personal {
   display: grid;
   gap: var(--space-2);

@@ -6,6 +6,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
 import type { Defect } from "../model/types";
+import { WorkspaceContext } from "@modules/workspaces";
 import { DefectEditor } from "./DefectEditor";
 
 const link = vi.fn();
@@ -36,6 +37,12 @@ const notify = vi.fn();
 vi.mock("@shared/ui/notify", async (orig) => ({
   ...(await orig<typeof import("@shared/ui/notify")>()),
   notify: (...a: unknown[]) => notify(...a),
+}));
+
+const notifyPeople = vi.fn(async () => undefined);
+vi.mock("@modules/notifications", async (orig) => ({
+  ...(await orig<typeof import("@modules/notifications")>()),
+  notify: (...a: unknown[]) => notifyPeople(...(a as [])),
 }));
 
 const DEFECT: Defect = {
@@ -176,5 +183,42 @@ describe("DefectEditor · links and evidence (MAN-03)", () => {
     const click = vi.spyOn(input, "click");
     await user.click(pick);
     expect(click).toHaveBeenCalledOnce();
+  });
+});
+
+describe("DefectEditor · «Asignado a» a member (FIX-41, ADR-0048)", () => {
+  const JORGE = "0b0e7150-0000-4000-8000-000000000001";
+  const team = {
+    id: "ws-t",
+    name: "Equipo QA",
+    kind: "shared" as const,
+    role: "test_manager" as const,
+    members: [
+      { userId: "u1", email: "liomar@pharos.test", displayName: "Liomar QA", firstName: "Liomar", lastName: "Rodríguez", role: "test_manager" as const, addedAt: null },
+      { userId: JORGE, email: "jorge@pharos.test", displayName: "", firstName: "Jorge L.", lastName: "Meneses Yero", role: "test_analyst" as const, addedAt: null },
+    ],
+  };
+
+  it("picks a teammate, stores the account and tells them", async () => {
+    const user = userEvent.setup();
+    update.mockImplementation(async (_id: string, input: { assignee?: string }) => ({ ...DEFECT, revision: 2, assignee: input.assignee ?? null }));
+    renderWithProviders(
+      <WorkspaceContext.Provider
+        value={{ available: true, workspaces: [team], current: team, setCurrent: () => {}, role: "test_manager", can: () => true, reload: async () => {} }}
+      >
+        <DefectEditor projectId="p1" userId="u1" defect={DEFECT} onClose={vi.fn()} />
+      </WorkspaceContext.Provider>,
+    );
+    await user.click(await screen.findByTestId("defect-assignee"));
+    await user.click(await screen.findByRole("option", { name: "Jorge L. Meneses Yero" }));
+    expect(screen.getByTestId("defect-assignee")).toHaveTextContent("Jorge L. Meneses Yero");
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
+    await waitFor(() => expect(update).toHaveBeenCalled());
+    expect(update.mock.calls[0][1].assignee).toBe(JORGE);
+    await waitFor(() =>
+      expect(notifyPeople).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: "defect.assigned", to: { userIds: [JORGE] } }),
+      ),
+    );
   });
 });

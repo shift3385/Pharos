@@ -9,7 +9,7 @@ import {
   type AiResult,
   type GeneratedCase,
 } from "@modules/ai";
-import { useAuth } from "@modules/auth";
+import { personName, useAuth } from "@modules/auth";
 import { GherkinCode, createProposedCases, proposalGherkin, type CreateProposedCasesResult } from "@modules/test-cases";
 import type { Requirement } from "../model/types";
 import "@shared/ui/ConfirmDialog.css";
@@ -95,7 +95,7 @@ export function GenerateCasesModal({
     const summary = await createProposedCases({
       projectId,
       userId: user?.id ?? "",
-      author: user ? `${user.firstName} ${user.lastName}` : "",
+      author: personName(user),
       requirementKey: key,
       provenance: result.provenance,
       proposals: chosen.map((i) => result.value[i]),

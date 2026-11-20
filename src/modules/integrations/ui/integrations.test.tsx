@@ -224,6 +224,16 @@ describe("Workspace › Integraciones › Conectar CI", () => {
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
     await userEvent.click(screen.getByTestId("ci-copy"));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining("- name: Subir a Pharos"));
+    // FIX-41: what is shown is exactly what is copied, and each line wraps
+    // under its own text (hanging indent), never at column 0.
+    const copied = (writeText.mock.calls[0] as unknown as [string])[0];
+    expect(yaml.textContent).toBe(copied);
+    const lines = [...yaml.querySelectorAll<HTMLElement>(".int-snippet__line")];
+    expect(lines).toHaveLength(copied.split("\n").length);
+    const uses = lines.find((l) => l.textContent?.trimStart().startsWith("uses:"));
+    const indent = uses!.textContent!.length - uses!.textContent!.trimStart().length;
+    expect(uses!.style.paddingLeft).toBe(`${indent + 2}ch`);
+    expect(uses!.style.textIndent).toBe(`-${indent + 2}ch`);
   });
 });
 

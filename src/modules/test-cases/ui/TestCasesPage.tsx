@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
-import { useAuth } from "@modules/auth";
+import { personName, useAuth } from "@modules/auth";
 import { logClientError } from "@shared/diagnostics";
 import { LoadError } from "@shared/ui/LoadError";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
@@ -200,7 +200,7 @@ export function TestCasesPage({
     );
 
   async function createSuggested(items: TestSuggestion[], provenance: AiProvenance) {
-    const author = user ? `${user.firstName} ${user.lastName}` : "";
+    const author = personName(user);
     try {
       for (const s of items) {
         await testCaseApi.create(
@@ -235,7 +235,7 @@ export function TestCasesPage({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    const author = user ? `${user.firstName} ${user.lastName}` : "";
+    const author = personName(user);
     setImportState({ parsing: true, done: 0, total: 0, rows: [], result: null });
     try {
       const { parseCaseXlsx } = await import("../import/caseImport");
@@ -312,7 +312,7 @@ export function TestCasesPage({
   /** Sends the given drafts to review one by one (CAS-02); a failure does
    *  not stop the rest and is reported. */
   async function sendToReview(ids: ReadonlySet<string>) {
-    const userName = user ? `${user.firstName} ${user.lastName}`.trim() : "";
+    const userName = personName(user);
     let sent = 0;
     let lastError: unknown = null;
     for (const c of summaries.filter((s) => ids.has(s.id))) {

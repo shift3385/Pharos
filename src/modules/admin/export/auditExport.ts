@@ -25,6 +25,8 @@ export interface AuditExportLabels {
   headers: string[];
   actor: (actor: string) => string;
   action: (action: string) => string;
+  /** What an event did, review steps by name (FIX-41); else `action`. */
+  event?: (row: AuditRow) => string;
   entity: (entity: string) => string;
   device: (deviceId: string) => string;
   field: (field: string) => string;
@@ -59,7 +61,7 @@ export function exportRows(events: AuditRow[], l: AuditExportLabels): string[][]
       e.at,
       l.actor(e.actor),
       e.onBehalfOf ? l.actor(e.onBehalfOf) : "",
-      l.action(e.action),
+      l.event ? l.event(e) : l.action(e.action),
       l.entity(e.entity),
       elementName(e) ?? e.entityId,
       e.projectName ?? e.projectId ?? "",

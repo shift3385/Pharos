@@ -116,7 +116,7 @@ El CLI escribe en la base de datos de Pharos de este equipo, con el mismo códig
 
 El CLI sube cada informe tal cual a la API v1 del servidor (`POST /api/v1/projects/{proyecto}/results`, [ADR-0052](adr/0052-api-v1-tokens-y-webhooks.md)).
 
-- **Formatos:** no los detecta ni los lee el CLI, sino el servidor: JUnit, CTRF, Playwright JSON, Cucumber Messages, SARIF, k6, axe y Pharos Run JSON.
+- **Formatos:** no los detecta ni los lee el CLI, sino el servidor: JUnit, CTRF, Playwright JSON, Cucumber Messages, SARIF, k6, axe, Allure (la carpeta `allure-results` en un `.zip`), TRX, xcresult (el JSON de `xcrun xcresulttool get test-results tests`, no el paquete `.xcresult`) y Pharos Run JSON.
 - **Envío:** los ficheros de más de 64 KB van comprimidos con gzip.
 - **Reintentos:** solo ante errores de red, 429 (respetando `Retry-After`), 502, 503 y 504, con tres intentos como mucho. Subir dos veces el mismo fichero no duplica nada.
 - **Token:**

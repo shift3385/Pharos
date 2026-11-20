@@ -244,6 +244,33 @@ describe("suite baselines in a shared workspace (CAS-02 with ADR-0042)", () => {
 
     expect((await teamCall(vera, "POST", "/api/case-baselines", { projectId, name: "R2", caseIds: [c.id] })).status).toBe(403);
   });
+
+  it("a reviewer's answer names the case's author, not the reviewer (FIX-41)", async () => {
+    // The web notifies `createdBy` of «Pedir cambios» and «Aprobar»: it
+    // must be the author, or the author is never told.
+    const ana = await tokenFor("ana@pharos.dev");
+    const jorge = await tokenFor("jorge@pharos.dev");
+    const anaId = (await teamCall(ana, "GET", "/auth/me")).body.id as string;
+    const ws = (await teamCall(ana, "POST", "/workspaces", { name: "Equipo QA" })).body.id as string;
+    const inv = await teamCall(ana, "POST", `/workspaces/${ws}/invitations`, { role: "test_manager" });
+    expect((await teamCall(jorge, "POST", "/invitations/accept", { code: inv.body.code })).status).toBe(200);
+    const { projectId, c } = await newCase(ana);
+    expect((await teamCall(ana, "POST", `/workspaces/${ws}/move-project`, { projectId })).status).toBe(200);
+    expect((await review(ana, c.id, { action: "send" })).body.createdBy).toBe(anaId);
+
+    const back = await review(jorge, c.id, { action: "return", comment: "Paso 3?" });
+    expect(back.status).toBe(200);
+    expect(back.body.createdBy).toBe(anaId);
+    // Saving the case, as the reviewer does it, names the author too.
+    const saved = await call(jorge, "PUT", `/api/test-cases/${c.id}`, {
+      input: { projectId, title: "Pay", author: "QA", priority: "high", data: back.body.data },
+    });
+    expect(saved.status).toBe(200);
+    expect(saved.body.createdBy).toBe(anaId);
+    const approved = await review(jorge, c.id, { action: "approve" });
+    expect(approved.status).toBe(200);
+    expect(approved.body.createdBy).toBe(anaId);
+  });
 });
 
 describe("the save rules", () => {

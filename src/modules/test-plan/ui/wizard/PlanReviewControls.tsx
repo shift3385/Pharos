@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Archive, Check, MessageSquareWarning, RotateCcw, Send } from "lucide-react";
-import { useAuth } from "@modules/auth";
+import { personName, useAuth } from "@modules/auth";
 import { Alert } from "@shared/ui/Alert";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { TextArea } from "@shared/ui/TextArea";
@@ -52,7 +52,7 @@ export function PlanReviewControls({
   const whyId = useId();
   const lang = i18n.resolvedLanguage ?? "es";
   const userId = user?.id ?? "";
-  const userName = user ? `${user.firstName} ${user.lastName}`.trim() : "";
+  const userName = personName(user);
   const status = plan.status;
   const review = planReviewOf((plan.data as Record<string, unknown> | null)?.review);
   const actions = planActions(status);
