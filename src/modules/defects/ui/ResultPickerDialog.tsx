@@ -105,7 +105,7 @@ export function ResultPickerDialog({
                   {t(`defects.resultStatus.${r.status}`, { defaultValue: r.status })}
                 </StatusPill>
                 <span className="df-muted">
-                  {t("defects.results.attempt", { n: r.attempt })} · {when(r.createdAt)}
+                  {t("defects.results.attempt", { n: r.attempt + 1 })} · {when(r.createdAt)}
                 </span>
               </div>
               <button
