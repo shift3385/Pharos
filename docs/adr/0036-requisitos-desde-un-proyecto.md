@@ -89,7 +89,8 @@
     4. **Revisión y aplicación** en la vista común.
   - **Prompt versionado, como una skill.** Los prompts viven en el código
     (`src/modules/ai/api/requirementPrompts.ts`) con un identificador de versión,
-    `req-extract@1` y `req-synthesis@1`. La versión se guarda en la procedencia de lo
+    `req-extract@2` y `req-synthesis@2` (la @2, de FIX-45, pide redactarlo en el idioma
+    del usuario: «El sistema deberá …»). La versión se guarda en la procedencia de lo
     aceptado, junto al proveedor y al modelo, para saber con qué instrucciones salió
     cada requisito. Los prompts usan los criterios de ISO/IEC/IEEE 29148: un requisito
     necesario, singular, inequívoco y verificable. Se redactan en EARS cuando encaja y

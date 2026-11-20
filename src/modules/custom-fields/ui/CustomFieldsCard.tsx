@@ -26,6 +26,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { Menu, MenuItem, MenuSeparator } from "@shared/ui/Menu";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { StatusPill } from "@shared/ui/StatusPill";
@@ -317,9 +318,15 @@ export function CustomFieldsCard({
     >
       <div className="cf-card__head">
         <div className="pj-card-box__head">
-          <h2 id={titleId} className="pj-section-title">
-            {t("customFields.title")}
-          </h2>
+          {/* A one-line subtitle; the rules behind «?» (FIX-45). */}
+          <div className="pj-card-box__title-row">
+            <h2 id={titleId} className="pj-section-title">
+              {t("customFields.title")}
+            </h2>
+            <InfoTip id={`${titleId}-rules`} label={t("customFields.title")}>
+              {t("customFields.rules")}
+            </InfoTip>
+          </div>
           <p className="pj-card-box__desc">
             {t(
               entity === "defect"

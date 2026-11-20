@@ -15,6 +15,10 @@
 .rn-mono {
   font-family: var(--font-mono);
 }
+/* A key, build or version that must not break at its hyphen (FIX-45). */
+.rn-nowrap {
+  white-space: nowrap;
+}
 .rn-key {
   font-size: var(--fs-caption);
   color: var(--color-text-secondary);
@@ -61,6 +65,15 @@
   gap: var(--space-2);
   min-width: 0;
 }
+/* Its «?» on a surface like the chips beside it: over the background image
+   the bare icon was drawn on the photo (FIX-45). */
+.rn-tray__bar .infotip {
+  width: 32px;
+  height: 32px;
+  margin-left: 0;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+}
 /* ---- Surfaces (FIX-37) ----
    Over the background image nothing is drawn on the photo: the tab strips and
    the one-line notes (load error, run deleted or not found, desktop only) sit
@@ -92,6 +105,33 @@
   /* The import form and its preview can be taller than the window. */
   max-height: calc(100dvh - var(--space-6));
   overflow-y: auto;
+}
+/* «Importar informe» (FIX-45): the dialog itself does not scroll; its form
+   does, between the title and the buttons, so «Cancelar / Importar» are
+   always in view however tall the preview grows or short the window is. */
+.rn-import {
+  overflow: hidden;
+}
+.rn-modal__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.rn-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  /* Room for the fields' focus rings, which the scroll box would clip. */
+  margin: 0 calc(-1 * var(--space-2));
+  padding: var(--space-1) var(--space-2);
+}
+.rn-import .cd__actions {
+  flex: none;
 }
 .rn-form {
   display: flex;

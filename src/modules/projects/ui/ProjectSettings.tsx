@@ -6,6 +6,7 @@ import { projectCaseCount } from "@modules/test-cases";
 import { projectHasPlan } from "@modules/test-plan";
 import { projectCardCount } from "@modules/planner";
 import { requirementApi } from "@modules/traceability";
+import { isTauri } from "@shared/platform";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { ErrorSummary } from "@shared/ui/FormField";
 import { useSaveGuard } from "@shared/ui/fieldProps";
@@ -269,7 +270,7 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
             {t("projects.deleteTitle")}
           </h2>
           <p className="pj-card-box__desc">
-            {t("projects.deleteWarning", { name: project.name })}
+            {t(isTauri() ? "projects.deleteWarning" : "projects.deleteWarningWeb", { name: project.name })}
           </p>
         </div>
         <button type="button" className="pj-danger" onClick={() => void askDelete()}>
@@ -282,7 +283,7 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
         <ConfirmDialog
           variant="destructive"
           title={t("projects.deleteTitle")}
-          message={t("projects.deleteWarning", { name: project.name })}
+          message={t(isTauri() ? "projects.deleteWarning" : "projects.deleteWarningWeb", { name: project.name })}
           confirmLabel={t("projects.deleteConfirm")}
           confirmText={word}
           onConfirm={() => void remove()}

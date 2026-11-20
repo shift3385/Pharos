@@ -37,6 +37,7 @@ vi.mock("@shared/platform", async (orig) => ({
   isTauri: () => true,
 }));
 // jsdom's File has no text()/stream(): read the fixture directly.
+const fixture = vi.hoisted(() => ({ path: "packages/formats/src/fixtures/ing01/shard2/ctrf.json" }));
 vi.mock("../model/importFlow", async (orig) => {
   const real = await orig<typeof import("../model/importFlow")>();
   return {
@@ -45,10 +46,7 @@ vi.mock("../model/importFlow", async (orig) => {
       file,
       parsed: parseReportText(
         readFileSync(
-          resolve(
-            process.cwd(),
-            "packages/formats/src/fixtures/ing01/shard2/ctrf.json",
-          ),
+          resolve(process.cwd(), fixture.path),
           "utf8",
         ),
       ),
@@ -134,6 +132,7 @@ const preview: ReportImportPreview = {
 };
 
 beforeEach(async () => {
+  fixture.path = "packages/formats/src/fixtures/ing01/shard2/ctrf.json";
   await i18n.changeLanguage("es");
   Object.values(api).forEach((f) => f.mockReset());
   api.list.mockResolvedValue([
@@ -181,6 +180,8 @@ describe("RunsPage", () => {
     const table = await screen.findByRole("table", { name: "Runs" });
     expect(within(table).getByText("RUN-001")).toBeInTheDocument();
     expect(within(table).getByText("RUN-002")).toBeInTheDocument();
+    // FIX-45: «build 0.6.0-beta.1» never breaks at its hyphen.
+    for (const b of within(table).getAllByText("build 1.4.2")) expect(b).toHaveClass("rn-nowrap");
     await waitFor(() =>
       expect(within(table).getAllByText("1 sin vincular")).toHaveLength(2),
     );
@@ -278,7 +279,7 @@ describe("RunsPage", () => {
   });
 
   it("imports a report: preview, then the run it went into", async () => {
-    renderWithProviders(<RunsPage projectId="p" cases={cases} />);
+    renderWithProviders(<RunsPage projectId="p" caseIdPrefix="TC-" cases={cases} />);
     await screen.findByRole("table", { name: "Runs" });
     await userEvent.click(
       screen.getByRole("button", { name: "Importar informe" }),
@@ -288,6 +289,23 @@ describe("RunsPage", () => {
     });
     const confirm = within(dialog).getByRole("button", { name: "Importar" });
     expect(confirm).toBeDisabled();
+    // FIX-45: the form scrolls between the title and the buttons, so
+    // «Cancelar / Importar» stay in view; the intro is behind the title's «?»,
+    // with an example key of this project, and describes the dialog.
+    const body = within(dialog).getByTestId("import-body");
+    expect(body).toHaveClass("rn-modal__body");
+    expect(body).not.toContainElement(confirm);
+    expect(dialog).toHaveClass("rn-import");
+    expect(dialog).toHaveAccessibleDescription(expect.stringContaining("(por ejemplo, @TC-001)"));
+    expect(
+      within(dialog).getByRole("button", { name: "Más información: Importar un informe de resultados" }),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByText(/@PRJ-001/)).not.toBeInTheDocument();
+    // No standing help paragraph: the file hint is behind the field's «?».
+    const hints = Array.from(dialog.querySelectorAll(".tp-field__hint, .cd__msg"));
+    expect(hints.map((h) => h.textContent).join(" ")).not.toMatch(
+      /El formato se detecta|Elige la carpeta|cuentan en el progreso del ciclo|Trae los resultados/,
+    );
     await userEvent.upload(
       within(dialog).getByLabelText(/^Informe/),
       new File(["{}"], "ctrf.json"),
@@ -307,13 +325,15 @@ describe("RunsPage", () => {
     );
     for (const f of ["JUnit XML", "CTRF", "SARIF", "axe", "k6", "TRX", "xcresulttool", "Pharos Run JSON", "Cucumber Messages"])
       expect(i18n.t("runs.import.formats")).toContain(f);
-    expect(within(dialog).getByText(/@PRJ-001/)).toBeInTheDocument();
+    expect(within(dialog).getByLabelText(/^Informe/)).toHaveAccessibleDescription(
+      expect.stringContaining("El formato se detecta por el contenido."),
+    );
     expect(
       within(dialog).getByText(/TC-009 no es un caso de este proyecto/),
     ).toBeInTheDocument();
     // CTRF names its attachments by path: the folder picker appears.
     expect(
-      within(dialog).getByLabelText(/Carpeta de adjuntos/),
+      within(dialog).getByLabelText(/^Carpeta de adjuntos/),
     ).toBeInTheDocument();
     await expectNoAxeViolations();
     await userEvent.click(confirm);
@@ -328,6 +348,33 @@ describe("RunsPage", () => {
       shardTotal: 2,
     });
     expect(request.newRun.title).toContain("ctrf.json");
+  });
+
+  it("counts a scan's findings, not «0 resultados» (FIX-45)", async () => {
+    fixture.path = "packages/formats/src/fixtures/sarif/eslint.sarif";
+    api.preview.mockResolvedValue({
+      ...preview,
+      format: "sarif",
+      tests: 0,
+      results: 0,
+      linked: 0,
+      statuses: {},
+      attachments: 0,
+      findings: 2,
+      findingSeverities: { medium: 2 },
+      warnings: [],
+    });
+    renderWithProviders(<RunsPage projectId="p" cases={cases} />);
+    await screen.findByRole("table", { name: "Runs" });
+    await userEvent.click(screen.getByRole("button", { name: "Importar informe" }));
+    const dialog = screen.getByRole("dialog", { name: "Importar un informe de resultados" });
+    await userEvent.upload(within(dialog).getByLabelText(/^Informe/), new File(["{}"], "eslint.sarif"));
+    const parsed = await within(dialog).findByTestId("import-parsed");
+    expect(parsed).toHaveTextContent(/^SARIF · \d+ hallazgos?$/);
+    // A findings-only preview has no empty status line.
+    await within(dialog).findByTestId("import-preview-findings");
+    expect(dialog.querySelectorAll(".rn-preview .tp-field__hint")).toHaveLength(0);
+    expect(within(dialog).getByRole("textbox", { name: "Título del run" })).toHaveValue("ESLint · eslint.sarif");
   });
 
   it("says no folder was chosen when the report's attachments were not looked for (FIX-42)", async () => {

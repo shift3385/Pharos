@@ -77,7 +77,6 @@ export function ConfigurationDialog({
       <h3 id={`${id}-title`} className="cd__title">
         {configuration ? t("configurations.editTitle") : t("configurations.newTitle")}
       </h3>
-      <p className="cd__msg">{t("configurations.dialogHint")}</p>
       <form
         className="cy-form"
         onSubmit={(e) => {
@@ -115,7 +114,12 @@ export function ConfigurationDialog({
             </FormField>
           ))}
         </div>
-        <FormField label={t("configurations.labels")} hint={t("configurations.labelsHint")}>
+        {/* The rule of the labels beside them, behind «?» (FIX-45). */}
+        <FormField
+          label={t("configurations.labels")}
+          hint={t("configurations.labelsHint")}
+          info={t("configurations.dialogHint")}
+        >
           {(p) => (
             <div className="cy-chips">
               {labels.map((l) => (

@@ -12,11 +12,17 @@
   justify-content: flex-end;
 }
 
+/* The filters on one card, as the cases list (FIX-45): over the background
+   image, on a phone above all, the bare row sat on the photo. */
 .pl-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 12px;
+  padding: 12px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
 .pl-toolbar .ui-search {
@@ -86,12 +92,14 @@
   text-overflow: ellipsis;
 }
 
+/* Tabular numerals of the body font (FIX-45): the monospace slashed zero read
+   as «θ»; secondary text, readable on the dark theme too. */
 .pl-col__count {
   padding: 1px 6px;
-  font-family: var(--font-mono);
   font-size: 11px;
+  font-weight: var(--fw-medium);
   font-variant-numeric: tabular-nums;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   background: var(--color-surface-1);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
@@ -303,10 +311,16 @@
   flex-basis: 100%;
 }
 
+/* The columns are swiped: no scroll thumb under them (FIX-45). */
 [data-viewport="mobile"] .pl-board {
   margin-inline: -16px;
   padding-inline: 16px;
   scroll-padding-inline: 16px;
+  scrollbar-width: none;
+}
+
+[data-viewport="mobile"] .pl-board::-webkit-scrollbar {
+  display: none;
 }
 
 [data-viewport="mobile"] .pl-card__handle,
@@ -351,7 +365,15 @@
   flex-direction: column;
   gap: var(--space-2);
 }
+.pl-attach__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+/* Aligned with the «Adjuntos» label: no browser list indent (FIX-45). */
 .pl-attach__list {
+  margin: 0;
+  padding: 0;
   list-style: none;
   display: flex;
   flex-direction: column;

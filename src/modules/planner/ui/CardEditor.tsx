@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Paperclip, Trash2 } from "lucide-react";
 import { ListField } from "@shared/ui/fields";
+import { FormField } from "@shared/ui/FormField";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { Select } from "@shared/ui/Select";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useUnsavedChangesGuard } from "@shared/ui/useUnsavedChangesGuard";
@@ -21,6 +23,12 @@ import {
 import { TextArea } from "@shared/ui/TextArea";
 
 const MAX_BYTES = MAX_ATTACHMENT_MB * 1024 * 1024;
+
+/** «0,2 KB» in the UI language, never «0.2 KB» (FIX-45). Local until a
+ *  shared size formatter exists in `@shared/i18n`. */
+function kilobytes(bytes: number, lang = "es"): string {
+  return `${new Intl.NumberFormat(lang, { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format(bytes / 1024)} KB`;
+}
 
 /** The text for an evidence store error (evidence.rs prefixes). */
 function explainEvidence(t: (key: string, o?: Record<string, unknown>) => string, reason: string) {
@@ -46,7 +54,7 @@ export function CardEditor({
   initialStatus: CardStatus;
   onClose: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const toast = useToast();
   const [kind, setKind] = useState<CardKind>(card?.kind ?? "task");
   const [title, setTitle] = useState(card?.title ?? "");
@@ -169,10 +177,10 @@ export function CardEditor({
           </label>
         </div>
 
-        <label className="tp-field">
-          <span>{t("planner.cardTitle")}</span>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} />
-        </label>
+        {/* Required, and marked so as in the other forms (FIX-45). */}
+        <FormField label={t("planner.cardTitle")} required>
+          {(p) => <input {...p} value={title} onChange={(e) => setTitle(e.target.value)} />}
+        </FormField>
         <label className="tp-field">
           <span>{t("planner.description")}</span>
           <TextArea
@@ -185,7 +193,15 @@ export function CardEditor({
         <p className="tp-field__grouplabel">{t("planner.labels")}</p>
         <ListField label={t("planner.labels")} items={labels} onChange={setLabels} />
 
-        <p className="tp-field__grouplabel">{t("planner.attachments")}</p>
+        {/* The limit and where files are kept, behind «?» (FIX-45). */}
+        <div className="pl-attach__head">
+          <p className="tp-field__grouplabel">{t("planner.attachments")}</p>
+          {card && (
+            <InfoTip id="pl-attach-limit" label={t("planner.attachments")}>
+              {t("planner.attachLimit", { mb: MAX_ATTACHMENT_MB })}
+            </InfoTip>
+          )}
+        </div>
         {!card ? (
           <p className="tp-field__hint">{t("planner.attachAfterSave")}</p>
         ) : (
@@ -201,7 +217,7 @@ export function CardEditor({
                     📎 {a.name}
                   </button>
                   <span className="pl-attach__size">
-                    {(a.size / 1024).toFixed(1)} KB
+                    {kilobytes(a.size, i18n.resolvedLanguage)}
                   </span>
                   <button
                     type="button"
@@ -234,9 +250,6 @@ export function CardEditor({
               aria-label={t("planner.attachFiles")}
               onChange={(e) => void addFiles(e.target.files)}
             />
-            <p id="pl-attach-limit" className="tp-field__hint">
-              {t("planner.attachLimit", { mb: MAX_ATTACHMENT_MB })}
-            </p>
           </div>
         )}
       </div>

@@ -99,7 +99,7 @@ describe("project routes (ADR-0029)", () => {
     expect(await screen.findByText("Plan en revisión")).toBeInTheDocument();
     expect(screen.getByText("240 casos")).toBeInTheDocument();
     expect(screen.getByText("0 requisitos")).toBeInTheDocument();
-    expect(screen.getByText("Cierre del ciclo: 7 nov")).toBeInTheDocument();
+    expect(screen.getByText("Fin del plan: 7 nov")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Proyectos/ })).not.toBeInTheDocument();
   });
 
