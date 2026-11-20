@@ -1316,11 +1316,14 @@ pub(crate) fn draft_from_result(
         )
         .optional()
         .map_err(err)?;
+    // The failed step's expected result, else the one of the flow (or of the
+    // case) that ran: a case often states it once, not per step (FIX-42).
     let expected = step_row
         .as_ref()
         .and_then(|(sid, _, _)| sid.as_deref())
         .and_then(|sid| steps.iter().find(|s| s.0.as_deref() == Some(sid)))
-        .and_then(|s| s.2.clone());
+        .and_then(|s| s.2.clone())
+        .or_else(|| flow_expected(&data, flow_id.as_deref()));
     let actual = step_row
         .as_ref()
         .and_then(|(_, _, a)| a.clone())
@@ -1356,6 +1359,26 @@ pub(crate) fn draft_from_result(
         }),
         ..Default::default()
     })
+}
+
+/// The expected result of a flow of a revision (`expectedResult`), or of the
+/// case for its main flow, when it says one.
+fn flow_expected(data: &Value, flow_id: Option<&str>) -> Option<String> {
+    let holder = match flow_id {
+        Some(f) => data
+            .get("flows")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .find(|x| x.get("id").and_then(Value::as_str) == Some(f))?,
+        None => data,
+    };
+    holder
+        .get("expectedResult")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|e| !e.is_empty())
+        .map(String::from)
 }
 
 /// (id, text, expected) of the steps a flow of a revision runs: the main flow

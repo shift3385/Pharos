@@ -407,12 +407,10 @@ export function MatrixView({
     {
       id: "notes",
       header: t("traceability.matrix.col.notes"),
-      width: "minmax(0,0.8fr)",
-      cell: (l) => (
-        <span className="tz-clip tz-muted" title={notes(l.row)}>
-          {notes(l.row)}
-        </span>
-      ),
+      // The notes wrap word by word instead of ending in «Defect…» (FIX-42):
+      // a short, readable column at 1440 px.
+      width: "minmax(120px,1fr)",
+      cell: (l) => <span className="tz-notes tz-muted">{notes(l.row)}</span>,
     },
   ];
 

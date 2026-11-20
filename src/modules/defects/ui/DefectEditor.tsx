@@ -705,6 +705,7 @@ export function DefectEditor({
           userId={userId}
           purpose="link"
           exclude={results.map((l) => l.targetId)}
+          cases={cases}
           onPick={(r) => void linkResult(r.resultId, true)}
           onClose={() => setPicking(false)}
         />

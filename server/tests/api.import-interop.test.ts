@@ -8,7 +8,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import * as formats from "@pharos/formats";
-import { findingPayload, metricPayload, planFindings, planImport, resultPayload } from "../src/modules/api/importPlan";
+import { findingPayload, metricPayload, planFindings, planImport, resultPayload, runFieldsOf } from "../src/modules/api/importPlan";
 
 const FIXTURE = new URL("../../src-tauri/tests/fixtures/api-import-interop.json", import.meta.url);
 
@@ -62,5 +62,16 @@ describe("the server's import planner writes what the desktop writes", () => {
     expect(fm.findings.map((f) => content(findingPayload(f, fctx))).sort(byId)).toEqual((c.findings ?? []).map(content).sort(byId));
     expect(fm.metrics.map((m) => content(metricPayload(m, fctx))).sort(byId)).toEqual((c.metrics ?? []).map(content).sort(byId));
     expect([...plan.warnings, ...fm.warnings].map((w) => ({ code: w.code, testKey: w.testKey, detail: w.detail }))).toEqual(c.warnings);
+  });
+});
+
+describe("the run fields of a new imported run", () => {
+  it("starts at the report's end when it gives no start, never after it finishes (FIX-42)", () => {
+    const only = runFieldsOf({ run: { finishedAt: "2026-11-18T07:15:00Z" } });
+    expect(only.startedAt).toBe("2026-11-18T07:15:00Z");
+    expect(only.finishedAt).toBe("2026-11-18T07:15:00Z");
+    const both = runFieldsOf({ run: { startedAt: "2026-11-18T07:00:00Z", finishedAt: "2026-11-18T07:15:00Z" } });
+    expect(both.startedAt).toBe("2026-11-18T07:00:00Z");
+    expect(runFieldsOf({ run: {} }).startedAt).toBeNull();
   });
 });

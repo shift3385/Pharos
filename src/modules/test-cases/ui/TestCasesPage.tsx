@@ -34,6 +34,7 @@ import { reviewErrorKey } from "../model/review";
 import { hasMenuFilters } from "../model/caseList";
 import type { CaseImportResult, DetectionRow } from "../import/caseImport";
 import type { RequirementOption } from "../model/types";
+import { linkTracedRequirements } from "../model/trace";
 
 /** `?case=new` opens a new case; `?case=<id>` opens that case. */
 const NEW_CASE = "new";
@@ -347,7 +348,15 @@ export function TestCasesPage({
         t("testCase.importSkippedFields", { keys: skipped.join(", ") }),
         "warning",
       );
-    setSeed(input);
+    // The requirement keys of «Trazabilidad» that exist in the project come
+    // back as links, not as free text (FIX-42).
+    setSeed({
+      ...input,
+      data: linkTracedRequirements(
+        input.data,
+        requirements.map((r) => r.requirementKey),
+      ),
+    });
     setImportState(null);
     openCase(NEW_CASE);
   }

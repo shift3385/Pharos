@@ -6,7 +6,15 @@ import { Dialog } from "@shared/ui/Dialog";
 import { LoadError } from "@shared/ui/LoadError";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { defectsApi } from "../api/defectsApi";
-import type { ResultCandidate } from "../model/types";
+import type { LinkableItem, ResultCandidate } from "../model/types";
+
+/** A result linked to a case (by its tag, or later by hand from «Sin
+ *  vincular») is named by the case's current key and title; an unlinked
+ *  one by its test (FIX-42). */
+function nameOf(r: ResultCandidate, cases: Map<string, LinkableItem>): string {
+  const c = r.testCaseId ? cases.get(r.testCaseId) : undefined;
+  return c ? `${c.key} · ${c.title}` : (r.caseKey ?? r.testKey);
+}
 
 /**
  * Picks a failed attempt of the project's runs (newest first): to create a
@@ -18,6 +26,7 @@ export function ResultPickerDialog({
   userId,
   purpose,
   exclude = [],
+  cases = [],
   onPick,
   onClose,
 }: {
@@ -26,6 +35,8 @@ export function ResultPickerDialog({
   purpose: "create" | "link";
   /** Results already linked. */
   exclude?: string[];
+  /** The project's cases: a linked result is named by its case (FIX-42). */
+  cases?: LinkableItem[];
   onPick: (r: ResultCandidate) => void;
   onClose: () => void;
 }) {
@@ -52,12 +63,17 @@ export function ResultPickerDialog({
       live = false;
     };
   }, [projectId, userId, loadAttempt]);
+  const caseById = useMemo(() => new Map(cases.map((c) => [c.id, c])), [cases]);
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (results ?? [])
       .filter((r) => !exclude.includes(r.resultId))
-      .filter((r) => !q || [r.runKey, r.runTitle, r.caseKey ?? "", r.testKey].some((v) => v.toLowerCase().includes(q)));
-  }, [results, query, exclude]);
+      .filter(
+        (r) =>
+          !q ||
+          [r.runKey, r.runTitle, nameOf(r, caseById), r.testKey].some((v) => v.toLowerCase().includes(q)),
+      );
+  }, [results, query, exclude, caseById]);
   const when = (s: string) =>
     new Intl.DateTimeFormat(i18n.resolvedLanguage, { dateStyle: "medium", timeStyle: "short" }).format(
       new Date(s.includes("T") ? s : `${s.replace(" ", "T")}Z`),
@@ -100,7 +116,9 @@ export function ResultPickerDialog({
             <li key={r.resultId} className="df-picker__item">
               <div className="df-picker__what">
                 <span className="df-key">{r.runKey}</span>
-                <span className="df-picker__case">{r.caseKey ?? r.testKey}</span>
+                <span className="df-picker__case" title={r.testKey}>
+                  {nameOf(r, caseById)}
+                </span>
                 <StatusPill tone={r.status === "failed" ? "error" : "warning"} dot>
                   {t(`defects.resultStatus.${r.status}`, { defaultValue: r.status })}
                 </StatusPill>
@@ -112,7 +130,7 @@ export function ResultPickerDialog({
                 type="button"
                 className="ui-btn ui-btn--small"
                 onClick={() => onPick(r)}
-                aria-label={`${t("defects.results.choose")}: ${r.runKey} ${r.caseKey ?? r.testKey}`}
+                aria-label={`${t("defects.results.choose")}: ${r.runKey} ${nameOf(r, caseById)}`}
               >
                 {t("defects.results.choose")}
               </button>

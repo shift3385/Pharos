@@ -125,6 +125,13 @@
   gap: var(--space-3);
   min-width: 0;
 }
+/* «Resultados importados» under the items of a run that has both (FIX-42). */
+.ex-imported__title {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-ui);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
 .ex-start {
   align-self: flex-start;
 }

@@ -352,6 +352,7 @@ export function DefectsPage({
           projectId={projectId}
           userId={userId}
           purpose="create"
+          cases={cases}
           onPick={(r) => void createFrom(r)}
           onClose={() => setPicking(false)}
         />

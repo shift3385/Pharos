@@ -296,7 +296,18 @@ describe("RunsPage", () => {
     // shown and never edited.
     expect(await within(dialog).findByText(/Shard 2 de 2/)).toBeInTheDocument();
     expect(within(dialog).queryByLabelText(/^Shard/)).not.toBeInTheDocument();
-    await within(dialog).findByText(/2 tests, 3 intentos: 3 se vinculan/);
+    // FIX-42: what links is counted in attempts, as the sentence says.
+    await within(dialog).findByText(
+      "2 tests en 3 intentos. Intentos que se vinculan a un caso: 3; sin vincular: 0.",
+    );
+    // FIX-42: every format the app reads, behind the «?» of the file field,
+    // and a neutral example key in the intro.
+    expect(within(dialog).getByLabelText(/^Informe/)).toHaveAccessibleDescription(
+      expect.stringContaining("Allure (la carpeta allure-results en un .zip)"),
+    );
+    for (const f of ["JUnit XML", "CTRF", "SARIF", "axe", "k6", "TRX", "xcresulttool", "Pharos Run JSON", "Cucumber Messages"])
+      expect(i18n.t("runs.import.formats")).toContain(f);
+    expect(within(dialog).getByText(/@PRJ-001/)).toBeInTheDocument();
     expect(
       within(dialog).getByText(/TC-009 no es un caso de este proyecto/),
     ).toBeInTheDocument();
@@ -317,6 +328,34 @@ describe("RunsPage", () => {
       shardTotal: 2,
     });
     expect(request.newRun.title).toContain("ctrf.json");
+  });
+
+  it("says no folder was chosen when the report's attachments were not looked for (FIX-42)", async () => {
+    const doc = parseReportText(
+      readFileSync(resolve(process.cwd(), "packages/formats/src/fixtures/ing01/shard2/ctrf.json"), "utf8"),
+    ).doc;
+    const byPath = doc.attachments.filter((a) => a.path);
+    expect(byPath.length).toBeGreaterThan(0);
+    api.importReport.mockResolvedValue({
+      runId: "r3",
+      runKey: "RUN-003",
+      shardId: "s",
+      alreadyImported: false,
+      results: 3,
+      linked: 3,
+      unlinked: 0,
+      attachments: byPath.map((a) => ({ ref: a.ref, ownerEntity: "result", ownerId: "x" })),
+      warnings: [],
+    });
+    renderWithProviders(<RunsPage projectId="p" cases={cases} />);
+    await screen.findByRole("table", { name: "Runs" });
+    await userEvent.click(screen.getByRole("button", { name: "Importar informe" }));
+    const dialog = screen.getByRole("dialog", { name: "Importar un informe de resultados" });
+    await userEvent.upload(within(dialog).getByLabelText(/^Informe/), new File(["{}"], "ctrf.json"));
+    await within(dialog).findByText(/2 tests en 3 intentos/);
+    await userEvent.click(within(dialog).getByRole("button", { name: "Importar" }));
+    expect(await within(dialog).findByText(/no elegiste la carpeta de adjuntos/)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/en la carpeta elegida/)).not.toBeInTheDocument();
   });
 
   // CYC-02: a new imported run can belong to a cycle that is not closed.
@@ -346,7 +385,7 @@ describe("RunsPage", () => {
       within(dialog).getByLabelText(/^Informe/),
       new File(["{}"], "ctrf.json"),
     );
-    await within(dialog).findByText(/2 tests, 3 intentos/);
+    await within(dialog).findByText(/2 tests en 3 intentos/);
     await selectValue(picker, "c1");
     // The preview follows the cycle (a closed one would fail here).
     await waitFor(() =>
@@ -385,7 +424,7 @@ describe("RunsPage", () => {
       within(dialog).getByLabelText(/^Informe/),
       new File(["{}"], "ctrf.json"),
     );
-    await within(dialog).findByText(/2 tests, 3 intentos/);
+    await within(dialog).findByText(/2 tests en 3 intentos/);
     await userEvent.click(within(dialog).getByRole("radio", { name: "Run abierto" }));
     expect(
       await within(dialog).findByText("Este run es del ciclo CYC-001 · Regresión."),
@@ -417,7 +456,7 @@ describe("RunsPage", () => {
       within(dialog).getByLabelText(/^Informe/),
       new File(["{}"], "ctrf.json"),
     );
-    await within(dialog).findByText(/2 tests, 3 intentos/);
+    await within(dialog).findByText(/2 tests en 3 intentos/);
     await userEvent.click(within(dialog).getByRole("button", { name: "Importar" }));
     expect(await within(dialog).findByRole("alert")).toHaveTextContent(
       "El ciclo está cerrado",
