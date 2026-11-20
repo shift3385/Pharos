@@ -208,7 +208,7 @@ chapter("ia", () => {
       await clickButton(es.traceability.fromProject.pick, D);
       await waitForText(es.traceability.fromProject.continue, 30_000);
       await expect(dialog()).toHaveText(expect.stringContaining("README.md"));
-      await $(`${D} .tz-scan__field--wide input`).setValue(AI_MATERIAL.folderContext);
+      await $(`${D} .tz-scan__field--wide textarea`).setValue(AI_MATERIAL.folderContext);
     },
   });
 
@@ -434,13 +434,14 @@ chapter("ia", () => {
   step("precondiciones", {
     title: "Sugerir y revisar el caso con IA",
     caption:
-      "En el editor de un caso, cada lista tiene su botón de IA (✨) junto a su título; su nombre aparece al pasar el cursor. «Sugerir precondiciones» las propone a partir del resto del caso, y con la lista ya escrita pasa a «Revisar precondiciones». Igual en pasos, postcondiciones y criterios, en cada flujo de un caso avanzado y en las comprobaciones de una checklist. La revisión propone añadir, reformular o eliminar, y cada propuesta dice por qué. Reformular y eliminar empiezan sin marcar: solo se aplican si los marcas. Datos de prueba y Notas no llevan IA.",
+      "En el editor de un caso, cada lista tiene su botón de IA (✨) junto a su título; su nombre aparece al pasar el cursor. «Sugerir precondiciones» las propone a partir del resto del caso (en este ejemplo, PH-002, «Rechazar credenciales no válidas», que aún no tiene ninguna), y con la lista ya escrita pasa a «Revisar precondiciones». Igual en pasos, postcondiciones y criterios, en cada flujo de un caso avanzado y en las comprobaciones de una checklist. La revisión propone añadir, reformular o eliminar, y cada propuesta dice por qué; si la lista ya está bien, lo dice y no aplica nada. Reformular y eliminar empiezan sin marcar: solo se aplican si los marcas. Datos de prueba y Notas no llevan IA.",
     covers: ["ai:suggest-preconditions"],
     skip: AI_SKIP,
     focus: ".assist__preview",
     run: async () => {
       await browser.keys("Escape");
-      await $("a.cl-title*=Iniciar sesión").click();
+      // PH-002 has no preconditions yet: the AI has something to propose.
+      await $("a.cl-title*=Rechazar credenciales").click();
       aiCall();
       // «Sugerir» on an empty list, «Revisar» once the case has preconditions.
       const pre = es.testCase.aiReview.preconditions;
@@ -450,7 +451,7 @@ chapter("ia", () => {
         timeout: AI_TIMEOUT,
         timeoutMsg: "the AI review of the preconditions never answered",
       });
-      if (await $(".assist__failure").isExisting()) throw new Error(`the AI review failed: ${await $(".assist__failure").getText()}`);
+      if (await $(".assist__failure").isExisting()) throw new Error(`the AI review failed: ${await $(".assist__failure").getProperty("textContent")}`);
       await $(".assist__preview").scrollIntoView({ block: "center" });
     },
   });
