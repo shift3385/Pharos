@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
+import { ToastProvider } from "@shared/ui/Toast";
 import { SyncIndicator, SyncStatusProvider } from "./SyncIndicator";
 import { SyncStatusContext, type SyncStatusValue } from "./syncStatusContext";
 
@@ -125,6 +126,26 @@ describe("SyncIndicator (UX-26)", () => {
       show("full", value({ syncing: true }));
       expect(icon()).not.toHaveClass("sync__spin");
     });
+  });
+
+  it("says merged edits came from another device or someone else, not always «otra persona» (FIX-39)", async () => {
+    syncAny.mockReset().mockResolvedValue({ pushed: 0, pulled: 0, conflicts: 0 });
+    renderWithProviders(
+      <ToastProvider>
+        <SyncStatusProvider>
+          <SyncIndicator variant="compact" />
+        </SyncStatusProvider>
+      </ToastProvider>,
+    );
+    await screen.findByRole("button", { name: /Sincronizar ahora/ });
+    act(() => {
+      window.dispatchEvent(new CustomEvent("pharos:sync-merged", { detail: { count: 2 } }));
+    });
+    expect(
+      await screen.findByText(
+        "Se combinaron tus cambios con los hechos a la vez en otro equipo o por otra persona en 2 elementos. Nada se perdió; queda en la auditoría.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("turns during the automatic sync too (sign-in, NC-025)", async () => {

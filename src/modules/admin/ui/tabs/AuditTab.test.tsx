@@ -8,8 +8,10 @@ import userEvent from "@testing-library/user-event";
 import { useLocation } from "react-router";
 import { renderWithProviders, i18n } from "@test/utils";
 import { expectNoAxeViolations } from "@test/axe";
+import { setViewportWidth } from "@test/viewport";
 import { ToastProvider } from "@shared/ui/Toast";
 import type { AuditRow, AuditVerify } from "../../model/audit";
+import { WorkspaceContext } from "@modules/workspaces";
 import { AuditTab } from "./AuditTab";
 
 const api = vi.hoisted(() => ({ list: vi.fn(), facets: vi.fn(), verify: vi.fn() }));
@@ -137,6 +139,38 @@ describe("Administración › Auditoría (AUD-01)", () => {
     expect(within(dialog).getByText("42")).toBeInTheDocument();
   });
 
+  it("says a sync conflict was combined without asking, in the list and in the detail (ADR-0051)", async () => {
+    const merged = row({
+      id: "e3",
+      actor: `user:${ME}`,
+      onBehalfOf: null,
+      action: "resolve_conflict",
+      entity: "requirement",
+      entityKey: "REQ-006",
+      changes: '{"description":["Antes","Después"]}',
+      summary: '{"resolution":"merged","auto":true,"fields":{"description":"remote"},"remoteRevision":4}',
+    });
+    api.list.mockResolvedValue({ total: 1, events: [merged] });
+    setViewportWidth(1440);
+    const user = userEvent.setup();
+    render();
+    const open = await screen.findByTestId("audit-row-e3");
+    const listed = open.closest(".dt__row") as HTMLElement;
+    expect(within(listed).getByText("Conflicto resuelto")).toBeInTheDocument();
+    expect(within(listed).getByText("Se quedó: Combinado · Descripción")).toBeInTheDocument();
+    await user.click(open);
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByTestId("audit-resolution")).toHaveTextContent("Combinado · Sin preguntar");
+    expect(within(dialog).getByRole("table", { name: "Cambios campo a campo" })).toBeInTheDocument();
+  });
+
+  it("gives the action column room for its longest label, «Conflicto resuelto» (FIX-39)", async () => {
+    render();
+    await screen.findByText("ATS_014");
+    const table = screen.getByRole("table", { name: "Registro de auditoría" });
+    expect(table.style.getPropertyValue("--dt-cols")).toContain("minmax(140px, 0.8fr)");
+  });
+
   it("names the broken chain, the event and why, and marks its row", async () => {
     const user = userEvent.setup();
     api.verify.mockResolvedValue({
@@ -178,5 +212,55 @@ describe("Administración › Auditoría (AUD-01)", () => {
     render();
     expect(await screen.findByText(/Ningún evento coincide con los filtros/)).toBeInTheDocument();
     expect(screen.getByTestId("audit-export")).toBeDisabled();
+  });
+
+  it("names a teammate, his review step and its fields (FIX-41)", async () => {
+    const jorge = "db071500-0000-4000-8000-000000000000";
+    const review = { state: "pending", sentBy: ME, sentAt: "2026-11-19T23:27:00Z", revision: 2, version: "1.0" };
+    api.list.mockResolvedValue({
+      total: 1,
+      events: [
+        row({
+          actor: `user:${jorge}`,
+          onBehalfOf: null,
+          deviceId: "web",
+          entityKey: "PH-004",
+          changes: JSON.stringify({
+            "data.approval": [null, { by: jorge, at: "2026-11-19T23:29:00Z", version: "1.0" }],
+            "data.review": [review, { ...review, state: "approved" }],
+            status: ["reviewed", "approved"],
+          }),
+        }),
+      ],
+    });
+    const team = {
+      id: "ws-t",
+      name: "Equipo QA",
+      kind: "shared" as const,
+      role: "test_manager" as const,
+      members: [
+        { userId: jorge, email: "jorge@pharos.test", displayName: "", firstName: "Jorge L.", lastName: "Meneses Yero", role: "test_analyst" as const, addedAt: null },
+      ],
+    };
+    renderWithProviders(
+      <WorkspaceContext.Provider
+        value={{ available: true, workspaces: [team], current: team, setCurrent: () => {}, role: "test_manager", can: () => true, reload: async () => {} }}
+      >
+        <ToastProvider>
+          <AuditTab />
+        </ToastProvider>
+      </WorkspaceContext.Provider>,
+      { route: "/admin?tab=audit" },
+    );
+    expect(await screen.findByText("PH-004")).toBeInTheDocument();
+    expect(screen.getByText("Jorge L. Meneses Yero")).toBeInTheDocument();
+    expect(screen.queryByText(/^Usuario /)).toBeNull();
+    expect(screen.getByText("Aprobado")).toBeInTheDocument();
+    expect(screen.queryByText("Editado")).toBeNull();
+    // The fields by their names, never «approval, review».
+    await userEvent.click(screen.getByTestId("audit-row-e1"));
+    const diff = within(await screen.findByRole("dialog")).getByRole("table", { name: "Cambios campo a campo" });
+    for (const name of ["Aprobación", "Revisión", "Estado"]) expect(within(diff).getByText(name)).toBeInTheDocument();
+    expect(within(diff).queryByText(/^(approval|review)$/)).toBeNull();
   });
 });

@@ -1,5 +1,7 @@
-/* Notifications panel (RED-W2). Tokens only. */
-.topbar__panel--notifications {
+/* Notifications panel (RED-W2). Tokens only. Two classes (FIX-41): the
+   shell's `.topbar__panel` (320 px, 16 px padding) loads later and won over
+   one, which wrapped a key as «PH-/004». */
+.topbar__panel.topbar__panel--notifications {
   width: 400px;
   max-width: calc(100vw - 24px);
   padding: 0;
@@ -140,7 +142,12 @@
 .np-row__text {
   font-size: var(--fs-caption);
   line-height: 1.4;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+}
+
+/* A key (PH-004) never breaks over two lines. */
+.np-row__key {
+  white-space: nowrap;
 }
 
 .np-row__meta {

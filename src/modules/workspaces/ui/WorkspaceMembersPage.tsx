@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
-import { useAuth } from "@modules/auth";
+import { personName, useAuth } from "@modules/auth";
 import { Alert } from "@shared/ui/Alert";
 import { Select } from "@shared/ui/Select";
 import { Switch } from "@shared/ui/Switch";
@@ -12,13 +12,15 @@ import { isTauri } from "@shared/platform";
 import { useToast } from "@shared/ui/Toast";
 import { useConfirm } from "@shared/ui/useConfirm";
 import { workspacesApi, type Invitation, type Member } from "../api/workspacesApi";
+import { openInvitations } from "../model/invitations";
 import { can, ROLE_ORDER, type WorkspaceRole } from "../model/roles";
 import { failureMessage } from "./failure";
 import { InviteDialog } from "./InviteDialog";
 import { useWorkspace } from "./workspaceContext";
 import "./workspaces.css";
 
-const nameOf = (m: Member) => m.displayName || [m.firstName, m.lastName].filter(Boolean).join(" ") || m.email;
+// The one name of a person across the app (FIX-41).
+const nameOf = (m: Member) => personName(m);
 
 /** «Miembros y roles» (SYNC-07, boceto 2). Everyone sees the members; only a
  *  Test Manager changes roles, removes people and handles invitations. The
@@ -51,7 +53,7 @@ export function WorkspaceMembersPage() {
     }
     if (manager) {
       try {
-        setInvitations(await workspacesApi.invitations(workspace.id));
+        setInvitations(openInvitations(await workspacesApi.invitations(workspace.id)));
       } catch {
         setInvitations([]);
       }
@@ -185,7 +187,7 @@ export function WorkspaceMembersPage() {
               const self = m.userId === user?.id;
               const lastManager = m.role === "test_manager" && managers <= 1;
               return (
-                <tr key={m.userId} data-testid={`member-${m.userId}`}>
+                <tr key={m.userId} data-testid={`member-${m.userId}`} data-email={m.email}>
                   <td>
                     {nameOf(m)} {self && <span className="ui-badge">{t("workspaces.members.you")}</span>}
                     {m.disabled && (
@@ -199,6 +201,7 @@ export function WorkspaceMembersPage() {
                     {manager ? (
                       <Select<WorkspaceRole>
                         aria-label={t("workspaces.members.role")}
+                        data-testid={`member-role-${m.email}`}
                         value={m.role}
                         disabled={busy || lastManager}
                         title={lastManager ? t("workspaces.members.lastManager") : undefined}
@@ -224,6 +227,7 @@ export function WorkspaceMembersPage() {
                           disabled={busy || lastManager}
                           title={lastManager ? t("workspaces.members.lastManager") : undefined}
                           onClick={() => void remove(m)}
+                          data-testid={`member-${self ? "leave" : "remove"}-${m.email}`}
                         >
                           {self ? t("workspaces.members.leave") : t("workspaces.members.remove")}
                         </button>

@@ -26,7 +26,9 @@ export type DiffField =
   | (typeof STEP_LISTS)[number]
   | (typeof TEXT_LISTS)[number]
   | "examples"
-  | "flows";
+  | "flows"
+  // The items of a checklist case, kept in `steps` (FIX-41).
+  | "checks";
 
 export interface FieldChange {
   field: DiffField;
@@ -115,8 +117,13 @@ function flowsOf(v: unknown): FlowLike[] {
 }
 
 /** The changes from `a` to `b` (title and `data`). Fields outside the
- *  content (priority, custom fields, review records) are left out. */
-export function diffCase(a: { title: string; data: unknown }, b: { title: string; data: unknown }): FieldChange[] {
+ *  content (priority, custom fields, review records) are left out. In a
+ *  checklist (`checklist`), `steps` holds its checks and is named so. */
+export function diffCase(
+  a: { title: string; data: unknown },
+  b: { title: string; data: unknown },
+  options: { checklist?: boolean } = {},
+): FieldChange[] {
   const out: FieldChange[] = [];
   if (a.title.trim() !== b.title.trim()) out.push({ field: "title", kind: "changed", before: a.title, after: b.title });
   const da = asData(a.data);
@@ -132,7 +139,9 @@ export function diffCase(a: { title: string; data: unknown }, b: { title: string
       ...(after ? { after } : {}),
     });
   }
-  for (const f of STEP_LISTS) diffSteps(f, stepsOf(da[f]), stepsOf(db[f]), out);
+  for (const f of STEP_LISTS) {
+    diffSteps(f === "steps" && options.checklist ? "checks" : f, stepsOf(da[f]), stepsOf(db[f]), out);
+  }
   for (const f of TEXT_LISTS) diffTextList(f, da[f], db[f], out);
   const ea = examplesText(da.examples);
   const eb = examplesText(db.examples);

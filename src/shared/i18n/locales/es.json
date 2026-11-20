@@ -49,7 +49,7 @@
       "submit": "Abrir con la clave",
       "opening": "Abriendo…",
       "invalid": "La clave tiene un error de escritura: revisa cada grupo y vuelve a intentarlo.",
-      "wrong": "La clave es válida, pero no abre esta base de datos: es otra clave o el archivo está dañado. Comprueba que sea la de este equipo; si lo es, una copia pharos.db.enc.bak-… puede abrirse con ella (README, Clave de recuperación).",
+      "wrong": "La clave es válida, pero no abre esta base de datos: es otra clave o el archivo está dañado. Comprueba que sea la de este equipo; si lo es, una copia pharos.db.bak-… puede abrirse con ella (README, Clave de recuperación).",
       "failed": "No se pudo abrir con la clave: {{detail}}"
     }
   },
@@ -108,7 +108,7 @@
     "importedToast": "Plantilla importada: «{{name}}»",
     "updatedToast": "Plantilla actualizada",
     "deleteTitle": "Eliminar plantilla",
-    "deleteWarning": "¿Eliminar la plantilla «{{name}}»? Esta acción no se puede deshacer.",
+    "deleteWarning": "La plantilla «{{name}}» pasa a la papelera. Puedes restaurarla desde Administración › General › Papelera hasta que se elimine para siempre.",
     "form": {
       "createTitle": "Importar plantilla",
       "editTitle": "Editar plantilla",
@@ -461,8 +461,8 @@
       "legacyDiscardConfirm_other": "¿Descartar los {{count}} elementos sin descargarlos? No se podrán recuperar.",
       "legacySavedConfirm_one": "¿Quitar {{count}} elemento de este navegador? Comprueba antes que el archivo descargado está en tus descargas.",
       "legacySavedConfirm_other": "¿Quitar los {{count}} elementos de este navegador? Comprueba antes que el archivo descargado está en tus descargas.",
-      "merged": "Alguien cambió este elemento mientras lo editabas. Se combinó con tus cambios, que tocaban otros campos, y se guardó.",
-      "mergeTitle": "Alguien cambió los mismos campos mientras editabas",
+      "merged": "Este elemento cambió en otro equipo o lo cambió otra persona mientras lo editabas. Se combinó con tus cambios, que tocaban otros campos, y se guardó.",
+      "mergeTitle": "Los mismos campos cambiaron en otro equipo o los cambió otra persona mientras editabas",
       "mergeIntro": "Lo que no choca ya está combinado. Elige qué queda en cada campo y se guarda; o vuelve al formulario sin guardar.",
       "mergeCancel": "Volver sin guardar"
     },
@@ -579,8 +579,8 @@
       }
     },
     "accountDisabled": "Tu cuenta está desactivada en el servidor. La sincronización está parada; tus datos y tus cambios pendientes se quedan en este equipo y se enviarán si un administrador la reactiva.",
-    "autoMerged_one": "Se combinaron cambios de otra persona en {{count}} elemento. Nada se perdió; queda en la auditoría.",
-    "autoMerged_other": "Se combinaron cambios de otras personas en {{count}} elementos. Nada se perdió; queda en la auditoría."
+    "autoMerged_one": "Se combinaron tus cambios con los hechos a la vez en otro equipo o por otra persona en {{count}} elemento. Nada se perdió; queda en la auditoría.",
+    "autoMerged_other": "Se combinaron tus cambios con los hechos a la vez en otro equipo o por otra persona en {{count}} elementos. Nada se perdió; queda en la auditoría."
   },
   "admin": {
     "title": "Administración",
@@ -753,7 +753,7 @@
       "desktopOnly": "Las evidencias se guardan cifradas en este equipo: su uso y su verificación solo están en la app de escritorio.",
       "usage": {
         "title": "Almacén de evidencias",
-        "desc": "Los adjuntos se guardan cifrados en la carpeta evidence, junto a la base de datos, y no se sincronizan todavía.",
+        "desc": "Los adjuntos se guardan cifrados en la carpeta evidence, junto a la base de datos. Se sincronizan con tu workspace: cada archivo se sube una vez y los demás equipos lo bajan después de sincronizar. Los de una ejecución manual en curso esperan a que guardes el resultado.",
         "total": "Ocupa",
         "totalValue_one": "{{size}} · {{count}} archivo",
         "totalValue_other": "{{size}} · {{count}} archivos",
@@ -981,7 +981,34 @@
         "risks": "Riesgos",
         "lifecycle": "Ciclo de vida",
         "closures": "Cierres",
-        "links": "Vínculos"
+        "links": "Vínculos",
+        "review": "Revisión",
+        "approval": "Aprobación",
+        "version": "Versión",
+        "caseType": "Tipo de caso",
+        "automationStatus": "Automatización",
+        "scenarioId": "ID de escenario",
+        "custom": "Campos personalizados",
+        "requirementKeys": "Requisitos vinculados",
+        "traceability": "Otras referencias",
+        "mappedUseCase": "Caso de uso mapeado",
+        "gherkinLevel": "Nivel Gherkin",
+        "expectedResult": "Resultado esperado",
+        "postconditions": "Postcondiciones",
+        "acceptanceCriteria": "Criterios de aceptación",
+        "testData": "Datos de prueba",
+        "notes": "Notas",
+        "examples": "Examples",
+        "background": "Precondición compartida",
+        "flows": "Flujos",
+        "featureSource": "Gherkin",
+        "featureTags": "Etiquetas de la feature",
+        "scenarioTags": "Etiquetas del escenario",
+        "dataRequirements": "Requisitos de datos",
+        "environmentRequirements": "Requisitos de entorno",
+        "sharedRefs": "Pasos compartidos",
+        "datasetRefs": "Datasets",
+        "caseDate": "Fecha del caso"
       },
       "summary": {
         "created": "Creados",
@@ -1140,7 +1167,16 @@
         "account_disabled": "Cuenta desactivada",
         "account_enabled": "Cuenta reactivada",
         "test_manager_succession": "Nuevo Test Manager (cuenta desactivada)",
-        "merged": "Combinado"
+        "merged": "Combinado",
+        "local": "La mía",
+        "remote": "La del servidor",
+        "true": "Sí",
+        "false": "No"
+      },
+      "reviewEvents": {
+        "sent": "Enviado a revisión",
+        "changesRequested": "Cambios pedidos",
+        "approved": "Aprobado"
       }
     },
     "users": {
@@ -2687,7 +2723,19 @@
         "added": "añadido",
         "removed": "quitado",
         "changed": "cambiado",
-        "moved": "movido"
+        "moved": "movido",
+        "added_f": "añadida",
+        "removed_f": "quitada",
+        "changed_f": "cambiada",
+        "moved_f": "movida",
+        "added_mpl": "añadidos",
+        "removed_mpl": "quitados",
+        "changed_mpl": "cambiados",
+        "moved_mpl": "movidos",
+        "added_fpl": "añadidas",
+        "removed_fpl": "quitadas",
+        "changed_fpl": "cambiadas",
+        "moved_fpl": "movidas"
       },
       "field": {
         "title": "Título",
@@ -2707,7 +2755,21 @@
         "acceptanceCriteria": "Criterio de aceptación",
         "requirementKeys": "Requisito",
         "examples": "Examples",
-        "flows": "Flujo"
+        "flows": "Flujo",
+        "checks": "Comprobación"
+      },
+      "gender": {
+        "description": "f",
+        "testData": "mpl",
+        "dataRequirements": "mpl",
+        "environmentRequirements": "mpl",
+        "notes": "fpl",
+        "traceability": "fpl",
+        "background": "f",
+        "preconditions": "f",
+        "postconditions": "f",
+        "examples": "mpl",
+        "checks": "f"
       }
     },
     "baselines": {
@@ -2809,7 +2871,7 @@
       "rate": "Tasa de éxito",
       "rateTitle": "Casos que pasan sobre los casos con un resultado final en el periodo ({{period}}), en todos los proyectos abiertos. Un caso con varios flujos, filas o configuraciones pasa solo si pasan todos. Los tests sin vincular no cuentan",
       "defects": "Defectos abiertos",
-      "defectsTitle": "Defectos sin cerrar en el Tablero de tus proyectos",
+      "defectsTitle": "Defectos sin cerrar de tus proyectos, en su sección Defectos",
       "critical_one": "{{count}} crítico",
       "critical_other": "{{count}} críticos",
       "noCritical": "Ninguno crítico",
@@ -3108,7 +3170,7 @@
     "attachments": "Adjuntos",
     "attachAfterSave": "Guarda la tarjeta para poder añadir adjuntos.",
     "attachTooLarge": "«{{name}}» supera el límite de {{mb}} MB.",
-    "attachLimit": "Hasta {{mb}} MB por archivo. Se guardan cifrados en este equipo.",
+    "attachLimit": "Hasta {{mb}} MB por archivo. Se guardan cifrados en este equipo y se sincronizan como el resto de los datos.",
     "attachFailed": "No se pudo adjuntar «{{name}}»: {{reason}}",
     "attachMissing": "Este archivo no está en este equipo (se copió la carpeta de datos sin su carpeta de evidencias, o el archivo caducó).",
     "attachUnreadable": "Este archivo no se puede abrir: está dañado o se cifró con otra clave.",
@@ -3607,7 +3669,7 @@
   },
   "recoveryKey": {
     "title": "Clave de recuperación",
-    "intro": "La base de datos local está cifrada y su clave vive solo en el almacén de credenciales de este equipo. Si lo pierdes (PC nuevo, Windows reinstalado), solo la clave de recuperación junto con tu copia de pharos.db.enc devuelve tus datos.",
+    "intro": "La base de datos local está cifrada y su clave vive solo en el almacén de credenciales de este equipo. Si lo pierdes (PC nuevo, Windows reinstalado), solo la clave de recuperación junto con tu copia de pharos.db y de la carpeta evidence devuelve tus datos.",
     "lastShown": "Mostrada por última vez: {{date}}",
     "desktopOnly": "Disponible solo en la app de escritorio.",
     "show": "Mostrar clave de recuperación",
@@ -3619,7 +3681,7 @@
     "guidePaper": "Escríbela en papel y guárdala en un lugar seguro, o",
     "guideManager": "guárdala en un gestor de contraseñas.",
     "guideRisk": "No la envíes por correo ni chat y no la guardes junto a la copia de tus datos.",
-    "guideBackup": "Para restaurar en otro equipo necesitas esta clave y una copia de pharos.db.enc (y de la carpeta evidence/ cuando exista). Pharos no puede recuperarla por ti.",
+    "guideBackup": "Para restaurar en otro equipo necesitas esta clave y una copia de pharos.db (hecha con Pharos cerrado) y de la carpeta evidence. Pharos no puede recuperarla por ti.",
     "copy": "Copiar al portapapeles",
     "copied": "Copiada",
     "copiedHint": "Pégala en tu gestor de contraseñas y después copia otra cosa para vaciar el portapapeles.",
@@ -4251,7 +4313,8 @@
       "externalHint": "Para anotar la incidencia en otra herramienta. La sincronización con Jira llegará en una próxima versión.",
       "labels": "Etiquetas",
       "escaped": "Encontrado fuera de las pruebas (escape)",
-      "escapedHint": "Por ejemplo, en producción. Cuenta como escape del último ciclo cerrado antes de darlo de alta."
+      "escapedHint": "Por ejemplo, en producción. Cuenta como escape del último ciclo cerrado antes de darlo de alta.",
+      "unassigned": "Sin asignar"
     },
     "links": {
       "cases": "Casos de prueba",
@@ -5198,7 +5261,7 @@
         "expired": "Caducada"
       },
       "revoke": "Revocar",
-      "noInvitations": "No hay invitaciones.",
+      "noInvitations": "No hay invitaciones pendientes.",
       "roles": "¿Qué puede hacer cada rol?",
       "none": "Sin workspaces compartidos todavía. Crea uno o únete con un código desde el selector de workspace.",
       "disabled": "Desactivada",

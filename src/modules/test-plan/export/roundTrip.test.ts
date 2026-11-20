@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import "@test/slow";
 import i18n from "@shared/i18n";
 import { buildPlanXlsx } from "./planXlsx";
+import { milestonesTable } from "./planExtras";
 import { parsePlanXlsx } from "../import/planImport";
 import { defaults, fromInput, toExportable } from "../ui/wizard/formState";
 
@@ -75,6 +76,42 @@ describe("schedule ids through export → import (RED-W5)", () => {
     const imported = fromInput(input, t).sprints;
     expect(new Set(imported.map((s) => s.id)).size).toBe(2);
     expect(imported.map((s) => s.id)).not.toContain("AAAAAAAA");
+  });
+});
+
+describe("milestones through export → import (FIX-40)", () => {
+  it.each(["es", "en"] as const)("come back from their own sheet, equal to the exported ones (%s)", async (lang) => {
+    const t = i18n.getFixedT(lang);
+    serveTemplate(lang);
+    const form = {
+      ...defaults(t),
+      sprints: [{ id: "AAAAAAAA", name: "Sprint 1", start: "2026-11-09", end: "2026-11-22" }],
+      milestones: [
+        { id: "CCCCCCCC", name: "Versión candidata", date: "2026-11-27" },
+        { id: "DDDDDDDD", name: "Salida a producción", date: "2026-12-06" },
+      ],
+    };
+    const { buffer } = await buildPlanXlsx(
+      { ...toExportable(form, "Autor", t), extraTables: [milestonesTable(form.milestones, t)] },
+      lang,
+      t,
+    );
+    const { input, rows } = await parsePlanXlsx(buffer, "plan.xlsx", "Autor");
+    expect(input.data.milestones).toEqual(form.milestones.map(({ name, date }) => ({ name, date })));
+    expect(rows.find((r) => r.labelKey === "testPlan.milestones")).toMatchObject({ status: "filled", count: 2 });
+    // Into the form with fresh ids, like the sprints (RED-W5).
+    const imported = fromInput(input, t).milestones;
+    expect(imported.map(({ name, date }) => ({ name, date }))).toEqual(input.data.milestones);
+    expect(imported.map((m) => m.id)).not.toContain("CCCCCCCC");
+  });
+
+  it("a file without the milestones sheet brings none and says so", async () => {
+    const t = i18n.getFixedT("es");
+    serveTemplate("es");
+    const { buffer } = await buildPlanXlsx(toExportable(defaults(t), "Autor", t), "es", t);
+    const { input, rows } = await parsePlanXlsx(buffer, "plan.xlsx", "Autor");
+    expect(input.data.milestones).toBeUndefined();
+    expect(rows.find((r) => r.labelKey === "testPlan.milestones")?.status).toBe("notFound");
   });
 });
 

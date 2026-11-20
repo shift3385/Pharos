@@ -1324,6 +1324,11 @@ pub(crate) fn apply_doc(
         return Ok(());
     }
     oplog::observe_hlc(conn, &doc.hlc)?;
+    // Where the server keeps it is where it lives, before any base check: a
+    // move's copy has the version we already have (FIX-38).
+    if !doc.deleted {
+        crate::workspaces::relocate_pulled(conn, &doc.entity, &doc.entity_id, workspace_id)?;
+    }
     let base = base_of(conn, user, &doc.entity, &doc.entity_id)?;
     // The version we already have in sync (typically the echo of our own push).
     if base.as_ref() == Some(&(doc.revision, doc.hlc.clone())) {

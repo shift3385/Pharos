@@ -39,7 +39,11 @@ export function AuditDetail({
   const toast = useToast();
   const titleId = useId();
   const diff = diffRows(row.changes);
-  const summary = summaryEntries(row.summary);
+  // A resolved sync conflict says what was kept, and whether Pharos combined
+  // it without asking (ADR-0051), beside its field diff.
+  const resolution = summaryEntries(row.summary).find(([k]) => k === "resolution")?.[1];
+  const auto = summaryEntries(row.summary).find(([k]) => k === "auto")?.[1] === true;
+  const summary = summaryEntries(row.summary).filter(([k]) => resolution === undefined || (k !== "resolution" && k !== "auto"));
   const showBefore = row.action !== "create";
   const showAfter = row.action !== "delete";
   const key = elementName(row) ?? labels.entity(row.entity);
@@ -68,7 +72,7 @@ export function AuditDetail({
     <Dialog labelledBy={titleId} onClose={onClose} className="aud-detail" overlayClassName="aud-detail-overlay">
       <header className="aud-detail__head">
         <h2 id={titleId} className="t-card-title aud-detail__title">
-          <ActionPill action={row.action} label={labels.action(row.action)} />
+          <ActionPill action={labels.eventKey(row)} label={labels.event(row)} />
           <span>{key}</span>
         </h2>
         <button type="button" className="ui-iconbtn" onClick={onClose} aria-label={t("common.close")}>
@@ -93,6 +97,15 @@ export function AuditDetail({
         </dd>
         <dt>{t("admin.audit.cols.origin")}</dt>
         <dd>{labels.device(row.deviceId)}</dd>
+        {resolution !== undefined && (
+          <>
+            <dt>{t("admin.audit.summary.resolution")}</dt>
+            <dd data-testid="audit-resolution">
+              {labels.summaryValue(resolution)}
+              {auto && ` · ${t("admin.audit.summary.auto")}`}
+            </dd>
+          </>
+        )}
       </dl>
 
       {row.redactedAt ? (
@@ -124,7 +137,9 @@ export function AuditDetail({
           {summary.map(([k, v]) => (
             <div key={k} className="aud-kv__pair">
               <dt>{t(`admin.audit.summary.${k}`, { defaultValue: k })}</dt>
-              <dd>{valueLines(v).join(", ") || "—"}</dd>
+              <dd>
+                {(typeof v === "string" || typeof v === "boolean" ? labels.summaryValue(v) : valueLines(v).join(", ")) || "—"}
+              </dd>
             </div>
           ))}
         </dl>

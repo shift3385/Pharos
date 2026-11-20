@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Archive, Check, RotateCcw, Send, Undo2 } from "lucide-react";
-import { useAuth } from "@modules/auth";
+import { personName, useAuth } from "@modules/auth";
 import { Alert } from "@shared/ui/Alert";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { TextArea } from "@shared/ui/TextArea";
@@ -49,7 +49,7 @@ export function CaseReviewPanel({
   const commentId = useId();
   const lang = i18n.resolvedLanguage ?? "es";
   const userId = user?.id ?? "";
-  const userName = user ? `${user.firstName} ${user.lastName}`.trim() : "";
+  const userName = personName(user);
   const status = testCase.status;
   const data = (testCase.data ?? {}) as Record<string, unknown>;
   const review = reviewOf(data.review);
@@ -132,7 +132,7 @@ export function CaseReviewPanel({
   const saveFirst = dirty ? t("testCase.review.saveFirst") : null;
   const approveWhy = saveFirst ?? (verdict && !verdict.ok ? t(`testCase.review.notAllowed.${verdict.reason}`) : null);
   const selfApproval = verdict?.ok === true && verdict.selfApproval;
-  const changes = base ? diffCase(base, testCase) : [];
+  const changes = base ? diffCase(base, testCase, { checklist: testCase.caseType === "checklist" }) : [];
 
   return (
     <section className="tc-review" aria-labelledby="tc-review-title" data-testid="case-review">

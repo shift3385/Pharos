@@ -29,10 +29,15 @@ export function CaseChanges({ changes }: { changes: FieldChange[] }) {
         const field = t(`testCase.diff.field.${c.field}`);
         const where = c.position ? t("testCase.diff.at", { field, n: c.position }) : field;
         const label = c.name ? `${c.name} · ${where}` : where;
+        // «Precondición 2 añadida», «Notas cambiadas»: the kind agrees with
+        // the field where the language needs it (FIX-41).
+        const kind = t(`testCase.diff.kind.${c.kind}`, {
+          context: t(`testCase.diff.gender.${c.field}`, { defaultValue: "" }),
+        });
         return (
           <li key={i} className="tc-diff__item" data-kind={c.kind}>
             <span className="tc-diff__label">
-              {label} <span className="tc-diff__kind">{t(`testCase.diff.kind.${c.kind}`)}</span>
+              {label} <span className="tc-diff__kind">{kind}</span>
             </span>
             {c.kind === "added" ? (
               <ins className="tc-diff__text">{c.after}</ins>

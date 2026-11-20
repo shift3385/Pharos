@@ -238,6 +238,7 @@ export function UsersTab() {
                     <tr
                       key={u.id}
                       data-testid={`user-${u.id}`}
+                      data-email={u.email}
                       className={off ? "usr-row--off" : undefined}
                     >
                       <td>
@@ -300,6 +301,7 @@ export function UsersTab() {
                               className="ui-btn ui-btn--small"
                               disabled={busy}
                               onClick={() => setResetting(u)}
+                              data-testid={`user-reset-${u.email}`}
                             >
                               <KeyRound size={14} aria-hidden="true" />
                               {t("admin.users.reset")}
@@ -316,6 +318,7 @@ export function UsersTab() {
                                   : undefined
                               }
                               onClick={() => void toggleAdmin(u)}
+                              data-testid={`user-${u.isAdmin ? "revoke" : "grant"}-${u.email}`}
                             >
                               {u.isAdmin
                                 ? t("admin.users.revoke")
@@ -333,6 +336,7 @@ export function UsersTab() {
                                   : undefined
                               }
                               onClick={() => setDisabling(u)}
+                              data-testid={`user-disable-${u.email}`}
                             >
                               <UserX size={14} aria-hidden="true" />
                               {t("admin.users.disable")}
@@ -344,6 +348,7 @@ export function UsersTab() {
                               className="ui-btn ui-btn--small"
                               disabled={busy}
                               onClick={() => void enable(u)}
+                              data-testid={`user-enable-${u.email}`}
                             >
                               <UserCheck size={14} aria-hidden="true" />
                               {t("admin.users.enable")}

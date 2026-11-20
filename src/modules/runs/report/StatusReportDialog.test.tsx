@@ -46,7 +46,7 @@ describe("Informe de estado (EJE-03)", () => {
     expect(within(exit).getAllByText("No cumple")).toHaveLength(2);
     expect(within(exit).getByText("Cumple")).toBeInTheDocument();
     expect(within(dialog).getByTestId("report-summary")).toHaveValue(
-      "Se han ejecutado 3 de 4 casos (75.0 %), con una tasa de éxito de 33.3 %. Hay 1 defectos abiertos, 1 críticos. Criterios de salida: 1 de 3 cumplidos.",
+      "Se han ejecutado 3 de 4 casos (75 %), con una tasa de éxito de 33.3 %. Hay 1 defectos abiertos, 1 críticos. Criterios de salida: 1 de 3 cumplidos.",
     );
     expect(dialog).toHaveTextContent("se guardan solo en este equipo");
     await expectNoAxeViolations();

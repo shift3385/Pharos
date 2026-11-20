@@ -63,6 +63,20 @@ chapter("errores", () => {
       // The app waits for the other open (10 s) before it says so.
       await expect(byTestId("db-error")).toBeDisplayed({ wait: 30_000 });
       await expect(byTestId("db-error")).toHaveText(expect.stringContaining("Otro Pharos está actualizando tus datos"));
+      // The screen follows the theme stored on this device (`pharos.theme`).
+      // A new WebDriver session can start the WebView without the storage of
+      // the earlier one, so the app falls back to the system theme (dark on
+      // a dark Windows): put back the manual's light theme, as the
+      // preparation does, and open the screen again (FIX-39).
+      const theme = await browser.execute(() => document.documentElement.dataset.theme);
+      if (theme !== "light") {
+        await browser.execute(() => localStorage.setItem("pharos.theme", "light"));
+        await browser.refresh();
+        await expect(byTestId("db-error")).toBeDisplayed({ wait: 30_000 });
+        await browser.waitUntil(async () => (await browser.execute(() => document.documentElement.dataset.theme)) === "light", {
+          timeoutMsg: "the database screen did not take the stored light theme",
+        });
+      }
     },
   });
 

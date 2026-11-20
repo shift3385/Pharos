@@ -2,7 +2,7 @@
 //
 //   npm run check:manual                          (in verify:static, so in the `client` check)
 //   node scripts/check-manual.mjs --from-run      (after the tours: what really passed)
-//   node scripts/check-manual.mjs --secret-scan   (needs PHAROS_TOURS_AI_KEY in the environment)
+//   node scripts/check-manual.mjs --secret-scan   (the AI key as the tour runner finds it; fails without one)
 //
 // Static check — fails when:
 //   - the app has something with no item in the inventory (e2e/tours/manifest.ts):
@@ -28,6 +28,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { findAiKey } from "./manual/ai-key.mjs";
 import { scanForSecret } from "./manual/secret-scan.mjs";
 
 const repoDir = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -262,17 +263,35 @@ export async function check({ fromRun = false, env = process.env } = {}) {
   return { errors, total, done, pending, chapters: CHAPTERS };
 }
 
+// ---- Secret scan --------------------------------------------------------------------
+
+/** `--secret-scan`: the AI key, found as the tour runner finds it
+ *  (`findAiKey`: PHAROS_TOURS_AI_KEY, else ANTHROPIC_API_KEY of `.env` here
+ *  or in the main checkout), must appear in no generated file. Without a
+ *  key it fails: it cannot pass without checking (FIX-41). The key is never
+ *  printed. */
+export async function secretScan(dir, env = process.env) {
+  const ai = findAiKey(dir, env);
+  if (!ai?.key) {
+    return {
+      ok: false,
+      message:
+        "✖ check:manual: no AI key to look for (PHAROS_TOURS_AI_KEY, or ANTHROPIC_API_KEY in .env): the secret scan checked nothing.",
+    };
+  }
+  const hits = await scanForSecret(ai.key, [join(dir, "docs", "manual"), join(dir, "e2e", "results")], dir);
+  return hits.length > 0
+    ? { ok: false, message: `✖ check:manual: the AI key appears in ${hits.length} generated file(s):\n  ${hits.join("\n  ")}` }
+    : { ok: true, message: "✓ check:manual: the AI key appears in no generated file." };
+}
+
 // ---- CLI --------------------------------------------------------------------------
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (process.argv.includes("--secret-scan")) {
-    const hits = await scanForSecret(process.env.PHAROS_TOURS_AI_KEY ?? "", [join(repoDir, "docs", "manual"), join(repoDir, "e2e", "results")], repoDir);
-    if (hits.length > 0) {
-      console.error(`✖ check:manual: the AI key appears in ${hits.length} generated file(s):\n  ${hits.join("\n  ")}`);
-      process.exit(1);
-    }
-    console.log("✓ check:manual: the AI key appears in no generated file.");
-    process.exit(0);
+    const { ok, message } = await secretScan(repoDir);
+    (ok ? console.log : console.error)(message);
+    process.exit(ok ? 0 : 1);
   }
   const { errors, total, done, pending } = await check({ fromRun: process.argv.includes("--from-run") });
   const pct = total === 0 ? 0 : Math.round((done / total) * 1000) / 10;

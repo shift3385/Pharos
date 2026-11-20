@@ -16,8 +16,19 @@ export interface DetectionRow {
   /** i18n key of the detected value, shown instead of `preview` (a priority
    *  or status: its label, not the stored key such as «medium»). */
   previewKey?: string;
+  /** The detected list item by item, shown instead of `preview`: an item
+   *  with a `key` shows its label in the person's language (a catalog
+   *  entry, not «functional»), one without shows its `text` (an own
+   *  entry). */
+  previewItems?: PreviewItem[];
   /** Row count (table fields). */
   count?: number;
+}
+
+/** One item of a detected list: an i18n `key` for its label, or as typed. */
+export interface PreviewItem {
+  key?: string;
+  text: string;
 }
 
 export interface ImportProgress {

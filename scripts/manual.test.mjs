@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { arrayLiteral, check, countDialogs, coversIn, hasViewSwitch, prerequisiteErrors, routePaths, stepsIn } from "./check-manual.mjs";
+import { arrayLiteral, check, countDialogs, coversIn, hasViewSwitch, prerequisiteErrors, routePaths, secretScan, stepsIn } from "./check-manual.mjs";
 import { findAiKey } from "./manual/ai-key.mjs";
 import { inline, leftoverTable, markdownToHtml, tableCells } from "./manual/markdown.mjs";
 import { printWithEdge, settled, sweepProfiles } from "./manual/edge-print.mjs";
@@ -279,6 +279,27 @@ test("findAiKey: an empty variable counts as unset; the env wins over .env", asy
     const fromEnv = findAiKey(dir, { PHAROS_TOURS_AI_KEY: "k-123456789", PHAROS_TOURS_AI_MODEL: "" });
     assert.equal(fromEnv?.source, "env");
     assert.equal(fromEnv?.model, undefined);
+  });
+});
+
+test("--secret-scan finds the key as the tour runner does, and never passes without one (FIX-41)", async () => {
+  await tempDir(async (dir) => {
+    const none = await secretScan(dir, {});
+    assert.equal(none.ok, false);
+    assert.match(none.message, /checked nothing/);
+
+    const key = "sk-from-dotenv-0123456789";
+    writeFileSync(join(dir, ".env"), `ANTHROPIC_API_KEY=${key}\n`);
+    mkdirSync(join(dir, "docs", "manual"), { recursive: true });
+    writeFileSync(join(dir, "docs", "manual", "clean.md"), "nothing here\n");
+    const clean = await secretScan(dir, { PHAROS_TOURS_AI_KEY: "" });
+    assert.equal(clean.ok, true);
+
+    writeFileSync(join(dir, "docs", "manual", "leak.md"), `key: ${key}\n`);
+    const leak = await secretScan(dir, {});
+    assert.equal(leak.ok, false);
+    assert.match(leak.message, /leak\.md/);
+    assert.ok(!leak.message.includes(key), "the key is never printed");
   });
 });
 

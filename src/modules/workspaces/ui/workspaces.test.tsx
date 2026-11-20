@@ -121,6 +121,9 @@ describe("members and roles", () => {
         body: {
           invitations: [
             { id: "inv1", role: "viewer", note: "jorge@pharos.dev", createdAt: "2026-11-18T10:00:00Z", expiresAt: "2026-11-25T10:00:00Z", status: "pending" },
+            // Used or revoked: not pending any more (FIX-41).
+            { id: "inv0", role: "test_analyst", note: "Luis, ya dentro", createdAt: "2026-11-17T10:00:00Z", expiresAt: "2026-11-24T10:00:00Z", status: "accepted" },
+            { id: "inv9", role: "viewer", note: "revocada", createdAt: "2026-11-17T10:00:00Z", expiresAt: "2026-11-24T10:00:00Z", status: "revoked" },
           ],
         },
       },
@@ -134,6 +137,9 @@ describe("members and roles", () => {
     expect(await screen.findByRole("heading", { name: "Miembros · Equipo QA" })).toBeInTheDocument();
     expect(await screen.findByTestId("member-luis")).toHaveTextContent("Luis");
     expect(await screen.findByText("jorge@pharos.dev")).toBeInTheDocument();
+    expect(screen.queryByText("Luis, ya dentro")).toBeNull();
+    expect(screen.queryByText("revocada")).toBeNull();
+    expect(screen.queryByText("Aceptada")).toBeNull();
     // The only Test Manager cannot lose the role.
     const anaRow = screen.getByTestId(`member-${ME}`);
     expect(within(anaRow).getByRole("button", { name: "Salir" })).toBeDisabled();

@@ -107,7 +107,8 @@ describe("profile page", () => {
     setViewportWidth(1440);
     const { unmount } = renderWithProviders(<ProfilePage />);
     await screen.findByDisplayValue("Quality");
-    expect(screen.getByText("Quality Analyst")).toBeInTheDocument();
+    // The display name, the one name of a person across the app (FIX-41).
+    expect(document.querySelector(".profile__name")).toHaveTextContent(/^QA$/);
     expect(screen.getByTitle("qa@pharos.dev")).toHaveTextContent(
       "qa@pharos.dev",
     );
