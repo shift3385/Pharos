@@ -60,7 +60,13 @@ export function useAuditLabels(thisDevice: string) {
       c.broken
         ? t(`admin.audit.integrity.break.${c.broken.kind}`, { seq: c.broken.seq, expected: c.broken.expected ?? "" })
         : t("admin.audit.integrity.chainOk");
-    return { actor, isMe, action, event, eventKey, entity, field, device, chainBreak };
+    // A summary value: a known code (`password_changed`, `merged`, `true`)
+    // in words, anything else (a count, a file name) as it is.
+    const summaryValue = (v: unknown) => {
+      const text = String(v);
+      return /^[a-z_]+$/.test(text) ? t(`admin.audit.summaryValue.${text}`, { defaultValue: text }) : text;
+    };
+    return { actor, isMe, action, event, eventKey, entity, field, device, chainBreak, summaryValue };
   }, [t, user, thisDevice, workspaces]);
 }
 

@@ -8,6 +8,7 @@ import userEvent from "@testing-library/user-event";
 import { useLocation } from "react-router";
 import { renderWithProviders, i18n } from "@test/utils";
 import { expectNoAxeViolations } from "@test/axe";
+import { setViewportWidth } from "@test/viewport";
 import { ToastProvider } from "@shared/ui/Toast";
 import type { AuditRow, AuditVerify } from "../../model/audit";
 import { WorkspaceContext } from "@modules/workspaces";
@@ -136,6 +137,38 @@ describe("Administración › Auditoría (AUD-01)", () => {
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText("Creados")).toBeInTheDocument();
     expect(within(dialog).getByText("42")).toBeInTheDocument();
+  });
+
+  it("says a sync conflict was combined without asking, in the list and in the detail (ADR-0051)", async () => {
+    const merged = row({
+      id: "e3",
+      actor: `user:${ME}`,
+      onBehalfOf: null,
+      action: "resolve_conflict",
+      entity: "requirement",
+      entityKey: "REQ-006",
+      changes: '{"description":["Antes","Después"]}',
+      summary: '{"resolution":"merged","auto":true,"fields":{"description":"remote"},"remoteRevision":4}',
+    });
+    api.list.mockResolvedValue({ total: 1, events: [merged] });
+    setViewportWidth(1440);
+    const user = userEvent.setup();
+    render();
+    const open = await screen.findByTestId("audit-row-e3");
+    const listed = open.closest(".dt__row") as HTMLElement;
+    expect(within(listed).getByText("Conflicto resuelto")).toBeInTheDocument();
+    expect(within(listed).getByText("Se quedó: Combinado · Descripción")).toBeInTheDocument();
+    await user.click(open);
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByTestId("audit-resolution")).toHaveTextContent("Combinado · Sin preguntar");
+    expect(within(dialog).getByRole("table", { name: "Cambios campo a campo" })).toBeInTheDocument();
+  });
+
+  it("gives the action column room for its longest label, «Conflicto resuelto» (FIX-39)", async () => {
+    render();
+    await screen.findByText("ATS_014");
+    const table = screen.getByRole("table", { name: "Registro de auditoría" });
+    expect(table.style.getPropertyValue("--dt-cols")).toContain("minmax(140px, 0.8fr)");
   });
 
   it("names the broken chain, the event and why, and marks its row", async () => {

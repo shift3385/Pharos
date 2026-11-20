@@ -91,6 +91,9 @@ describe("TemplatesTab", () => {
     await user.click(screen.getByRole("button", { name: "Más acciones: Mi plan de regresión" }));
     await user.click(within(screen.getByRole("menu")).getByRole("menuitem", { name: /Eliminar/ }));
     const dialog = screen.getByRole("alertdialog", { name: "Eliminar plantilla" });
+    // It goes to the trash, so the dialog says so instead of «no se puede deshacer» (FIX-39).
+    expect(dialog).toHaveTextContent("pasa a la papelera");
+    expect(dialog).not.toHaveTextContent("no se puede deshacer");
     // Destructive: Escape does not dismiss it, only «Cancelar».
     await user.keyboard("{Escape}");
     expect(dialog).toBeInTheDocument();

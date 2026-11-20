@@ -51,17 +51,25 @@
 }
 
 /* ---- Grouped tabs: one strip that scrolls sideways ---- */
+/* The groups wrap onto a second line when they do not fit, so no tab is ever
+   cut off (a server administrator has one more, «Usuarios», FIX-39). Only the
+   phone layout scrolls sideways, with the fades below as the hint. */
 .adm-tabs {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
-  gap: 18px;
+  gap: 10px 18px;
   margin: 0 -4px;
   padding: 0 4px 2px;
+}
+
+[data-viewport="mobile"] .adm-tabs {
+  flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
 }
 
-.adm-tabs::-webkit-scrollbar {
+[data-viewport="mobile"] .adm-tabs::-webkit-scrollbar {
   display: none;
 }
 
@@ -104,7 +112,19 @@
 
 .adm-tabs__row {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
+}
+
+/* A group wider than the strip shrinks and wraps its own tabs (not on the
+   phone, where the strip scrolls). */
+[data-viewport]:not([data-viewport="mobile"]) .adm-tabs__group {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+[data-viewport="mobile"] .adm-tabs__row {
+  flex-wrap: nowrap;
 }
 
 .adm-tab {
