@@ -201,6 +201,14 @@
   overflow-y: auto;
 }
 
+/* In a scrolling column the rows keep their full height: an explicit
+   `min-height` replaces flexbox's content minimum, so a row with a two-line
+   explanation was squeezed and its text ran into the next row (FIX-36). */
+.bs__body > *,
+.menu__list > * {
+  flex-shrink: 0;
+}
+
 .menu__item--sheet {
   min-height: 46px;
   font-size: 15px;

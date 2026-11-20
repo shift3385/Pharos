@@ -60,7 +60,16 @@ export function DbErrorScreen({
           {t("dbError.retry")}
         </button>
       )}
-      <code className="app-splash__detail">{error}</code>
+      {/* The raw line is for support, in English: behind «Detalles técnicos»
+          (FIX-36), except the space numbers «Falta espacio» points to. */}
+      {error.startsWith(CONVERT_NO_SPACE_ERROR) ? (
+        <code className="app-splash__detail">{error}</code>
+      ) : (
+        <details className="app-splash__more">
+          <summary>{t("dbError.technical")}</summary>
+          <code className="app-splash__detail">{error}</code>
+        </details>
+      )}
     </div>
   );
 }

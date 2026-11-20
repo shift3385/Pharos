@@ -267,7 +267,7 @@ export function DashboardPage() {
   // One line (UX-28): the greeting and the date on the left, the actions on
   // the right. While customizing, the hint takes the date's place.
   const header = (
-    <div className="home-header" ref={headerRef}>
+    <div className="home-header ui-backdrop" ref={headerRef}>
       <div className="home-header__text">
         <h1 className="t-page-title home-header__title">
           {user?.firstName

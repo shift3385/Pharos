@@ -219,3 +219,27 @@ button[aria-expanded="true"] .lucide-chevron-down {
     scrollbar-color: var(--color-border) transparent;
   }
 }
+
+/* The phone layout in a desktop window (a mouse, not a finger) has no overlay
+   scrollbar of its own: it gets Pharos's, thinner, instead of the classic one
+   with arrow buttons (FIX-36). A real phone keeps the system's. */
+@media (pointer: fine) {
+  :root[data-viewport="mobile"] ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  :root[data-viewport="mobile"] ::-webkit-scrollbar-track,
+  :root[data-viewport="mobile"] ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  :root[data-viewport="mobile"] ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 2px;
+  }
+
+  :root[data-viewport="mobile"] ::-webkit-scrollbar-button {
+    display: none;
+  }
+}

@@ -1138,22 +1138,26 @@
   background: var(--color-navy-500);
 }
 
+/* The milestone sits at the top-right corner of the day, outside the digits,
+   so it never hides the number (FIX-36). */
 .tps-diamond {
   position: absolute;
-  bottom: 0;
-  left: 50%;
+  top: 2px;
+  left: calc(50% + 9px);
   width: 7px;
   height: 7px;
-  margin-left: -3.5px;
   background: var(--color-accent);
   transform: rotate(45deg);
 }
 
+[data-viewport="mobile"] .tps-diamond {
+  left: calc(50% + 12px);
+}
+
 .tps-diamond[data-active] {
-  bottom: -1px;
+  top: 1px;
   width: 9px;
   height: 9px;
-  margin-left: -4.5px;
   box-shadow: 0 0 0 2px var(--color-navy-500);
 }
 

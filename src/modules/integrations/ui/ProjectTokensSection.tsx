@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { Alert } from "@shared/ui/Alert";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { useToast } from "@shared/ui/Toast";
 import { useConfirm } from "@shared/ui/useConfirm";
 import { tokensApi, type ApiToken, type IssuedToken, type WorkspaceProject } from "../api/tokensApi";
@@ -82,9 +83,14 @@ export function ProjectTokensSection({
   return (
     <section className="ws-section" aria-labelledby="int-project-tokens" data-testid="project-tokens">
       <div className="int-head">
-        <h2 id="int-project-tokens" className="ws-section__title">
-          {t("integrations.tokens.projectTitle")}
-        </h2>
+        <div className="ui-title-row">
+          <h2 id="int-project-tokens" className="ws-section__title">
+            {t("integrations.tokens.projectTitle")}
+          </h2>
+          <InfoTip id="int-project-tokens-help" label={t("integrations.tokens.projectTitle")}>
+            {t("integrations.tokens.projectHint")}
+          </InfoTip>
+        </div>
         {manager && (
           <button
             type="button"
@@ -98,10 +104,9 @@ export function ProjectTokensSection({
           </button>
         )}
       </div>
-      <p className="tp__muted">{t("integrations.tokens.projectHint")}</p>
       {!manager && <Alert kind="info">{t("integrations.tokens.onlyManager")}</Alert>}
       {error && <Alert kind="error">{error}</Alert>}
-      {tokens && tokens.length === 0 && <p className="tp__muted">{t("integrations.tokens.noneProject")}</p>}
+      {tokens && tokens.length === 0 && <p className="int-muted">{t("integrations.tokens.noneProject")}</p>}
       {tokens && tokens.length > 0 && (
         <TokensTable
           tokens={tokens}

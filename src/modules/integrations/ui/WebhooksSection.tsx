@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Alert } from "@shared/ui/Alert";
 import { Dialog } from "@shared/ui/Dialog";
 import { FormField } from "@shared/ui/FormField";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { Select } from "@shared/ui/Select";
 import { useToast } from "@shared/ui/Toast";
 import { useConfirm } from "@shared/ui/useConfirm";
@@ -115,19 +116,23 @@ export function WebhooksSection({ workspace, manager }: { workspace: { id: strin
   return (
     <section className="ws-section" aria-labelledby="int-webhooks" data-testid="webhooks">
       <div className="int-head">
-        <h2 id="int-webhooks" className="ws-section__title">
-          {t("integrations.webhooks.title")}
-        </h2>
+        <div className="ui-title-row">
+          <h2 id="int-webhooks" className="ws-section__title">
+            {t("integrations.webhooks.title")}
+          </h2>
+          <InfoTip id="int-webhooks-help" label={t("integrations.webhooks.title")}>
+            {t("integrations.webhooks.hint")}
+          </InfoTip>
+        </div>
         {manager && enabled && (
           <button type="button" className="ui-btn ui-btn--primary" onClick={() => setEditing("new")} data-testid="webhook-new">
             {t("integrations.webhooks.new")}
           </button>
         )}
       </div>
-      <p className="tp__muted">{t("integrations.webhooks.hint")}</p>
       {!enabled && <Alert kind="info">{t("integrations.webhooks.disabledServer")}</Alert>}
       {error && <Alert kind="error">{error}</Alert>}
-      {hooks && hooks.length === 0 && enabled && <p className="tp__muted">{t("integrations.webhooks.none")}</p>}
+      {hooks && hooks.length === 0 && enabled && <p className="int-muted">{t("integrations.webhooks.none")}</p>}
       {hooks && hooks.length > 0 && (
         <div className="ws-table-wrap">
           <table className="ws-table int-table" data-testid="webhooks-table">
@@ -373,8 +378,10 @@ function SecretDialog({ name, secret, onDone }: { name: string; secret: string; 
         <button type="button" className="ui-btn ui-btn--small" onClick={() => void copy()}>
           {t("integrations.tokens.copy")}
         </button>
+        <InfoTip id={`${id}-secret-help`} label={t("integrations.webhooks.secretTitle", { name })}>
+          {t("integrations.webhooks.secretHint")}
+        </InfoTip>
       </div>
-      <p className="tp__muted">{t("integrations.webhooks.secretHint")}</p>
       <label className="int-scope">
         <input type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)} data-testid="webhook-saved" />
         <span>{t("integrations.tokens.saved")}</span>
@@ -423,7 +430,7 @@ function DeliveriesDialog({ workspaceId, hook, onClose }: { workspaceId: string;
         {t("integrations.webhooks.deliveriesTitle", { name: hook.name })}
       </h3>
       {error && <Alert kind="error">{error}</Alert>}
-      {list && list.length === 0 && <p className="tp__muted">{t("integrations.webhooks.noDeliveries")}</p>}
+      {list && list.length === 0 && <p className="int-muted">{t("integrations.webhooks.noDeliveries")}</p>}
       {list && list.length > 0 && (
         <div className="int-split">
           <ul className="int-dl" aria-label={t("integrations.webhooks.deliveries")}>
@@ -434,7 +441,7 @@ function DeliveriesDialog({ workspaceId, hook, onClose }: { workspaceId: string;
                     {d.lastStatus ?? t(`integrations.webhooks.statuses.${d.status}`)}
                   </span>{" "}
                   <code>{d.eventType}</code>
-                  <span className="tp__muted"> · {date(d.createdAt)}</span>
+                  <span className="int-muted"> · {date(d.createdAt)}</span>
                 </button>
               </li>
             ))}

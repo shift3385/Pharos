@@ -19,7 +19,16 @@
 .int-prefix {
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: var(--color-text-muted);
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+/* Column titles stay on one line; a narrow window scrolls the table. */
+.int-table th {
+  white-space: nowrap;
+}
+.int-muted {
+  margin: 0;
+  color: var(--color-text-secondary);
 }
 .int-num {
   font-variant-numeric: tabular-nums;
@@ -95,23 +104,40 @@
   font-weight: 600;
   margin: 0;
 }
+/* Code to copy (YAML, a command, a payload): long lines wrap inside the box
+   instead of scrolling sideways (FIX-36). Copy takes the text, not the wrap. */
 .int-snippet {
   margin: 0;
   padding: 10px 12px;
-  overflow-x: auto;
   border-radius: 8px;
   background: var(--color-surface-2);
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .int-personal {
   display: grid;
   gap: var(--space-2);
 }
 /* Webhooks (INT-03): the deliveries dialog (boceto 6). */
-.int-deliveries {
+/* `.cd` caps a dialog at 440 px: this one needs room for the list and the
+   detail side by side. */
+.cd.int-deliveries {
   width: min(960px, 100%);
+  max-width: min(960px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+/* «Rotar»: three actions; they wrap as whole buttons, never inside one. */
+.cd.int-rotate {
+  max-width: 520px;
+}
+.int-rotate .cd__actions {
+  flex-wrap: wrap;
+}
+.int-rotate .cd__actions > * {
+  white-space: nowrap;
 }
 .int-split {
   display: grid;
