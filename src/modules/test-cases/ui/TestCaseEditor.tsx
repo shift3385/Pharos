@@ -864,7 +864,7 @@ export function TestCaseEditor({
 
   if (found === false) {
     return (
-      <section className="tc-editor tc-missing" aria-labelledby="tc-missing-title">
+      <section className="tc-editor tc-missing tc-body" aria-labelledby="tc-missing-title">
         <h2 id="tc-missing-title">{t("testCase.nav.notFoundTitle")}</h2>
         <p>{t("testCase.nav.notFound")}</p>
         <button type="button" className="ui-btn" onClick={onClose}>
@@ -1079,6 +1079,7 @@ export function TestCaseEditor({
         <>
           <CaseSection
             title={t("testCase.checklist.items")}
+            info={t("testCase.checklist.hint")}
             assist={
               <CaseListReview
                 field="checklist"
@@ -1096,7 +1097,6 @@ export function TestCaseEditor({
               />
             }
           >
-            <p className="tp-field__hint">{t("testCase.checklist.hint")}</p>
             <SortableSteps
               label={t("testCase.checklist.items")}
               steps={form.steps}
@@ -1255,7 +1255,14 @@ export function TestCaseEditor({
           </CaseSection>
 
           {level === "outline" && (
-            <CaseSection title={t("testCase.examples.title")}>
+            <CaseSection
+              title={t("testCase.examples.title")}
+              info={
+                lib.bound && lib.datasetActions
+                  ? undefined
+                  : t("testCase.examples.hint")
+              }
+            >
               {lib.bound && lib.datasetActions ? (
                 <BoundDataset
                   projectId={projectId}
@@ -1268,7 +1275,6 @@ export function TestCaseEditor({
                 />
               ) : (
                 <>
-              <p className="tp-field__hint">{t("testCase.examples.hint")}</p>
               {placeholders.length > 0 && (
                 <p className="tp-field__hint">
                   {t("testCase.examples.placeholders")}:{" "}
@@ -1446,57 +1452,62 @@ export function TestCaseEditor({
 
   return (
     <section className="tc-editor" data-view={view} aria-labelledby="tc-head-title">
-      <CaseNavBar
-        nav={nav}
-        saveState={saveState}
-        onBack={onClose}
-        onGo={goTo}
-        onGoTo={() => setGoingTo(true)}
-        more={
-          <MoreActions
-            hasCase={testCase != null}
-            onRevisions={() => void toggleRevisions()}
-            onXlsx={() => void exportXlsx()}
-            onPdf={() => void exportPdf()}
-            onFeature={checklist ? undefined : () => void exportFeature()}
-          />
-        }
-        save={saveButton}
-      />
-
-      <header className="tc-head">
-        <div className="tc-head__ids">
-          {form.scenarioId && <span className="cl-id">{form.scenarioId}</span>}
-          <StatusPill tone={statusTone(form.status)} strike={form.status === "obsolete"}>
-            {t(`testCase.statusLabel.${form.status}`)}
-          </StatusPill>
-          <span className="tc-head__level">
-            {checklist
-              ? t("testCase.caseTypeLabel.checklist")
-              : t(`testCase.level.${level}.name`)}
-          </span>
-        </div>
-        <h2 id="tc-head-title" className="tc-head__title">
-          {form.title.trim() || (testCase ? t("testCase.editTitle") : t("testCase.newTitle"))}
-        </h2>
-        {!checklist && viewSwitch}
-      </header>
-
-      {testCase && (
-        <CaseReviewPanel
-          testCase={testCase}
-          dirty={dirty}
-          contentEdited={contentEdited}
-          onChanged={(saved) => {
-            setTestCase(saved);
-            const f = fromCase(saved);
-            setForm(f);
-            setSnapshot(JSON.stringify(f));
-            setGherkin(buildGherkin(f));
-            onSaved?.(saved);
-          }}
+      {/* The editor's chrome (nav bar, title strip and review panel) sits on
+          the same card as the form, so it is never drawn over the
+          background image (FIX-35). */}
+      <div className="tc-body tc-chrome">
+        <CaseNavBar
+          nav={nav}
+          saveState={saveState}
+          onBack={onClose}
+          onGo={goTo}
+          onGoTo={() => setGoingTo(true)}
+          more={
+            <MoreActions
+              hasCase={testCase != null}
+              onRevisions={() => void toggleRevisions()}
+              onXlsx={() => void exportXlsx()}
+              onPdf={() => void exportPdf()}
+              onFeature={checklist ? undefined : () => void exportFeature()}
+            />
+          }
+          save={saveButton}
         />
-      )}
+
+        <header className="tc-head">
+          <div className="tc-head__ids">
+            {form.scenarioId && <span className="cl-id">{form.scenarioId}</span>}
+            <StatusPill tone={statusTone(form.status)} strike={form.status === "obsolete"}>
+              {t(`testCase.statusLabel.${form.status}`)}
+            </StatusPill>
+            <span className="tc-head__level">
+              {checklist
+                ? t("testCase.caseTypeLabel.checklist")
+                : t(`testCase.level.${level}.name`)}
+            </span>
+          </div>
+          <h2 id="tc-head-title" className="tc-head__title">
+            {form.title.trim() || (testCase ? t("testCase.editTitle") : t("testCase.newTitle"))}
+          </h2>
+          {!checklist && viewSwitch}
+        </header>
+
+        {testCase && (
+          <CaseReviewPanel
+            testCase={testCase}
+            dirty={dirty}
+            contentEdited={contentEdited}
+            onChanged={(saved) => {
+              setTestCase(saved);
+              const f = fromCase(saved);
+              setForm(f);
+              setSnapshot(JSON.stringify(f));
+              setGherkin(buildGherkin(f));
+              onSaved?.(saved);
+            }}
+          />
+        )}
+      </div>
 
       {showSummary && (
         <ErrorSummary
@@ -1533,7 +1544,7 @@ export function TestCaseEditor({
       )}
 
       {form.aiProvenance.case && (
-        <div className="tc-ai-case">
+        <div className="tc-ai-case tc-body">
           <span>{t("testCase.aiPendingCase")}</span>
           <ProvenanceBadge provenance={form.aiProvenance.case} onReview={() => review("case")} />
         </div>
@@ -1558,7 +1569,7 @@ export function TestCaseEditor({
                   ) : (
                     <button
                       type="button"
-                      className="ui-btn ui-btn--small ui-btn--ghost tp-revs__restore"
+                      className="ui-btn ui-btn--small tp-revs__restore"
                       onClick={() => void restoreRevision(r.id)}
                     >
                       {t("testCase.restoreAction")}
@@ -1577,7 +1588,7 @@ export function TestCaseEditor({
       {view === "split" && (
         <div className="tc-split">
           <div className="tc-split__pane tc-body">{editor}</div>
-          <div className="tc-split__pane tc-split__pane--gherkin">{gherkinView}</div>
+          <div className="tc-split__pane tc-split__pane--gherkin tc-body">{gherkinView}</div>
         </div>
       )}
 
