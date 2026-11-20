@@ -280,7 +280,7 @@ chapter("casos", () => {
   step("flujos", {
     title: "Un caso «Avanzado» con flujos alternos",
     caption:
-      "El nivel «Avanzado» añade precondiciones compartidas (Background), que se cumplen antes de cada flujo (aquí, que haya una sesión iniciada), y flujos alternativos además del principal, cada uno con su nombre, sus pasos y su resultado (en este ejemplo, el caso «Crear un proyecto» con el flujo alterno «Nombre vacío»). En Gherkin, cada flujo es un Scenario. «+ Añadir flujo alterno» crea otro y la papelera junto al nombre lo quita. Cada flujo puede llevar su propia tabla de ejemplos.",
+      "El nivel «Avanzado» añade precondiciones compartidas (Background), que se cumplen antes de cada flujo (aquí, que haya una sesión iniciada), y flujos alternativos además del principal, cada uno con su nombre, sus pasos y su resultado (en este ejemplo, PH-003: el flujo principal y, al pie de la captura, el alterno «Nombre vacío»). En Gherkin, cada flujo es un Scenario. Al final de los flujos, «+ Añadir flujo alterno» crea otro; la papelera junto al nombre de un flujo lo quita. Cada flujo puede llevar su propia tabla de ejemplos.",
     covers: ["action:case-flows"],
     focus: [`[role="group"][aria-label="${C.flow.background}"]`, ".tc-flow__del"],
     run: async () => {
@@ -323,9 +323,21 @@ chapter("casos", () => {
       // A reference written by hand, which «Migrar trazabilidad» (chapter 13) turns into a link.
       await (await field(C.otherReferences)).setValue("Relacionado con REQ-006");
       await saveCase();
-      // From the top of the form: the title, «Tipo de caso: Checklist», the
-      // references and the items.
+      // From the top of the form: the title, «Tipo de caso: Checklist» and
+      // the references; the items are the next step.
       await pageTop();
+    },
+  });
+
+  step("checklist-items", {
+    title: "Las comprobaciones",
+    caption:
+      "Más abajo, «Comprobaciones» ocupa el lugar de los pasos: una comprobación por fila, con su asa para reordenarla y su papelera (aquí, las tres de la prueba de humo: que la app arranca sin errores, que se puede iniciar sesión y que el Inicio muestra los proyectos).",
+    covers: ["action:case-checklist"],
+    shot: { element: `[role="group"][aria-label="${C.checklist.items}"]` },
+    run: async () => {
+      await scrollToTop(`[role="group"][aria-label="${C.checklist.items}"]`, 56);
+      await expect($(`[role="group"][aria-label="${C.checklist.items}"]`)).toBeDisplayed();
     },
   });
 
@@ -512,7 +524,7 @@ chapter("casos", () => {
   step("caso-con-biblioteca", {
     title: "El caso con su paso compartido y su dataset",
     caption:
-      "El caso muestra los pasos insertados como un bloque («Paso compartido · Iniciar sesión», con su versión) y la tabla vinculada, de solo lectura, con «Dataset · Usuarios válidos». Un bloque nuevo sigue la última versión: si alguien cambia el paso o el dataset en la biblioteca, el caso se actualiza solo. «Fijar en vN» lo deja en esa versión, «Abrir en la biblioteca» lleva a editarlo y «Desvincular» convierte los pasos o las filas en propios del caso. Liomar lo vincula a REQ-001, como los otros casos de acceso, y al guardarlo recibe la clave PH-005.",
+      "El caso muestra los pasos insertados como un bloque («Paso compartido · Iniciar sesión», con su versión) y la tabla vinculada, de solo lectura, con «Dataset · Usuarios válidos». Un bloque nuevo sigue la última versión: si alguien cambia el paso o el dataset en la biblioteca, el caso se actualiza solo. «Fijar en vN» lo deja en esa versión, «Abrir en la biblioteca» lleva a editarlo y «Desvincular» convierte los pasos o las filas en propios del caso. Liomar lo vincula a REQ-001, como los otros casos de acceso; al guardarlo recibe la clave PH-005, que nombra el aviso de impacto del paso siguiente.",
     focus: [".lb-bound", '[data-testid="shared-step-block"]'],
     run: async () => {
       for (const key of LIBRARY.case.requirementKeys) await linkRequirement(key);
@@ -590,7 +602,7 @@ chapter("casos", () => {
   step("recorrer", {
     title: "Editar y recorrer los casos",
     caption:
-      "Con un caso abierto, la barra superior indica su posición en la lista («N de M») y sus flechas pasan al anterior o al siguiente respetando el filtro activo, para revisar varios casos seguidos sin volver a la lista. El orden del recorrido se fija al abrir el caso, aunque la lista cambie. A la derecha, el estado de guardado avisa si hay cambios sin guardar; si sales con cambios, Pharos pregunta antes de perderlos.",
+      "Con un caso abierto (aquí, PH-001, al que Liomar acaba de rellenar «Caso de uso mapeado»), la barra superior indica su posición en la lista («N de M») y sus flechas pasan al anterior o al siguiente respetando el filtro activo, para revisar varios casos seguidos sin volver a la lista. El orden del recorrido se fija al abrir el caso, aunque la lista cambie. A la derecha, el estado de guardado avisa si hay cambios sin guardar; si sales con cambios, Pharos pregunta antes de perderlos.",
     covers: ["action:case-walk", "action:case-edit"],
     focus: ".tc-nav",
     run: async () => {
@@ -600,6 +612,10 @@ chapter("casos", () => {
       // An edit that leaves the title as the later chapters know it.
       await (await field("Caso de uso mapeado")).setValue("Entrar en Pharos");
       await saveCase();
+      // The shot: PH-001 with its «N de M» bar; the walk comes after it.
+      await pageTop();
+    },
+    after: async () => {
       const before = await $(".tc-nav__pos").getText();
       const steps = await atLeast(".tc-nav__step", 1);
       const enabled = [];
@@ -777,7 +793,7 @@ chapter("casos", () => {
   step("aprobar-caso", {
     title: "Aprobar un caso",
     caption:
-      "Quien revisa ve quién envió el caso y su nota, y, si había una versión anterior aprobada o enviada, qué cambió desde entonces. «Pedir cambios…» deja un comentario obligatorio y el caso sigue en revisión. «Aprobar versión N» pide confirmación y deja quién aprobó, cuándo y qué versión. Liomar trabaja en su espacio personal, que no pide aprobación independiente, así que puede aprobar su propio caso y queda como «aprobación propia». En un espacio compartido con «Aprobación independiente» lo aprueba otra persona: el capítulo 21 enseña a Jorge revisando y aprobando los casos de Liomar.",
+      "Quien revisa ve quién envió el caso y su nota, y, si había una versión anterior aprobada o enviada, qué cambió desde entonces. «Pedir cambios…» deja un comentario obligatorio y el caso sigue en revisión. «Aprobar versión N» pide confirmación y deja quién aprobó, cuándo y qué versión. Liomar trabaja en su espacio personal, que no pide aprobación independiente, así que puede aprobar su propio caso y queda como «aprobación propia». En un espacio compartido con «Aprobación independiente» lo aprueba otra persona: el capítulo 20 enseña a Jorge revisando y aprobando los casos de Liomar.",
     covers: ["action:case-review-approve", "dialogs:src/modules/test-cases/ui/CaseReviewPanel.tsx"],
     focus: ".tc-review",
     run: async () => {

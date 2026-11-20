@@ -18,11 +18,15 @@ import {
   menuItem,
   openProject,
   openSection,
+  pointerAway,
+  scrollToTop,
   selectOption,
   tf,
   waitForText,
   waitForToast,
 } from "./helpers";
+
+const GENERAL = 'section[aria-labelledby="pj-general-title"]';
 
 chapter("ajustes", () => {
   step("ajustes", {
@@ -36,6 +40,10 @@ chapter("ajustes", () => {
       await openSection("settings");
       await expect($("#pj-prefix")).toHaveValue(`${PROJECT_A.prefix}-`);
       await expect($(".pj-settings__preview")).toHaveText(expect.stringContaining(`${PROJECT_A.prefix}-`));
+      // The settings, not the project header: this chapter runs right after
+      // chapter 4, before the plan, requirements and cases of chapters 5–8
+      // exist, while the manual prints it after them.
+      await scrollToTop(GENERAL);
     },
   });
 
@@ -48,6 +56,7 @@ chapter("ajustes", () => {
     run: async () => {
       await $("#pj-prefix").setValue(`${PROJECT_B.prefix}-`);
       await waitForText(es.projects.prefix.overlap.split("{{")[0]);
+      await scrollToTop(GENERAL);
     },
     after: async () => {
       await $("#pj-prefix").setValue(`${PROJECT_A.prefix}-`);
@@ -61,15 +70,16 @@ chapter("ajustes", () => {
   step("historial-plan", {
     title: "El historial en el plan exportado",
     caption:
-      "«Historial en el plan exportado» decide qué llevan del historial el .xlsx y el .pdf del plan (capítulo 5), tanto al exportarlo desde el asistente como en el ZIP del proyecto. «Solo la versión vigente», la opción de partida, pone en la cabecera la versión, la fecha, el autor y el estado actuales. «Historial de revisiones» añade una tabla con una fila por persona y día: su último guardado, el estado y las secciones que cambió. Se guarda al elegirlo, sin pulsar «Guardar» («Ajuste del historial guardado.»). En este ejemplo, Liomar elige el historial: el plan de Pharos pasa por revisiones y quiere que se vean al firmarlo.",
+      "«Historial en el plan exportado» decide qué llevan del historial el .xlsx y el .pdf del plan (capítulo 5), tanto al exportarlo desde el asistente como en el ZIP del proyecto. «Solo la versión vigente», la opción de partida, pone en la cabecera la versión, la fecha, el autor y el estado actuales. «Historial de revisiones» añade una tabla con una fila por persona y día: su último guardado, el estado y las secciones que cambió. Se guarda al elegirlo, sin pulsar «Guardar» (un aviso lo confirma). En este ejemplo, Liomar deja «Solo la versión vigente», la opción con la que creó el proyecto en el capítulo 4: es la que lleva el plan que exportó en el capítulo 5.",
     covers: ["action:plan-export-history"],
-    toast: true,
     focus: "fieldset.pj-choice",
     run: async () => {
-      const option = $(`label.pj-choice__option*=${es.testPlan.historyMode.revisions}`);
+      // One choice for the whole story: chapter 4 creates «Pharos» with
+      // «Solo la versión vigente» and chapter 5 exports the plan with it.
+      const option = $(`label.pj-choice__option*=${es.testPlan.historyMode.current}`);
       await option.scrollIntoView({ block: "center" });
-      await option.click();
-      await waitForToast(es.projects.settings.planHistorySaved);
+      await expect(option.$("input")).toBeSelected();
+      await pointerAway();
     },
   });
 
@@ -141,7 +151,7 @@ chapter("ajustes", () => {
   step("campo-archivar", {
     title: "Archivar un campo",
     caption:
-      "Un campo no se borra, para no perder lo que ya se escribió en él: se archiva desde su menú («Archivar») y sus valores se conservan. «Mostrar archivados» lo enseña y «Desarchivar» lo recupera.",
+      "Un campo no se borra, para no perder lo que ya se escribió en él: se archiva desde su menú («Archivar») y sus valores se conservan. «Mostrar archivados» lo enseña y «Desarchivar» lo recupera. En este ejemplo, Liomar archiva «Sprint antiguo», un campo que ya no usa.",
     covers: ["action:custom-field-archive"],
     focus: '[data-testid="custom-fields-card"]',
     run: async () => {

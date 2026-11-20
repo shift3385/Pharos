@@ -1,5 +1,5 @@
 <testsuites id="" name="" tests="4" failures="0" skipped="0" errors="1" time="1.9144189999999999">
-<testsuite name="features\auth.feature.spec.js" timestamp="2026-10-27T03:52:07.111Z" hostname="" tests="3" failures="0" skipped="0" time="0.087" errors="1">
+<testsuite name="features\auth.feature.spec.js" timestamp="2026-11-12T03:52:07.111Z" hostname="" tests="3" failures="0" skipped="0" time="0.087" errors="1">
 <testcase name="Autenticación › Login con credenciales válidas" classname="features\auth.feature.spec.js" time="0.021">
 </testcase>
 <testcase name="Autenticación › Login rechazado › Ejemplo 1" classname="features\auth.feature.spec.js" time="0.025">
@@ -58,7 +58,7 @@
 </error>
 </testcase>
 </testsuite>
-<testsuite name="features\flaky.feature.spec.js" timestamp="2026-10-27T03:52:07.111Z" hostname="" tests="1" failures="0" skipped="0" time="0.032" errors="0">
+<testsuite name="features\flaky.feature.spec.js" timestamp="2026-11-12T03:52:07.111Z" hostname="" tests="1" failures="0" skipped="0" time="0.032" errors="0">
 <testcase name="Sesión › Reintento de sesión expirada" classname="features\flaky.feature.spec.js" time="0.032">
 <system-out>
 <![CDATA[

@@ -74,7 +74,14 @@ test("the Markdown subset renders lists, notes, links and code, and escapes HTML
 
 test("parseSource splits a chapter source into its parts", () => {
   const src = parseSource("# T\n\nintro ignorada\n\n## Para qué sirve\n\nA.\n\n## Consejos\n\n- B\n\n## Véase también\n\nC\n\n### Paso nuevo\n\nNota.");
-  assert.deepEqual(src, { purpose: "A.", extra: [], keys: "", trouble: "", mobile: "", tips: "- B", seeAlso: "C", notes: { nuevo: "Nota." } });
+  assert.deepEqual(src, { purpose: "A.", extra: [], keys: "", trouble: "", mobile: "", tips: "- B", seeAlso: "C", notes: { nuevo: "Nota." }, before: {} });
+});
+
+test("parseSource keeps a lead-in for the step it comes before", () => {
+  const src = parseSource("## Para qué sirve\n\nA.\n\n### Antes del paso cierre\n\n**Más adelante.** Texto.\n\n### Paso cierre\n\nNota.");
+  assert.deepEqual(src.before, { cierre: "**Más adelante.** Texto." });
+  assert.deepEqual(src.notes, { cierre: "Nota." });
+  assert.equal(src.purpose, "A.");
 });
 
 test("parseSource reads the manual v2 sections: keyboard, problems and mobile (MAN-03)", () => {

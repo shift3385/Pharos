@@ -104,7 +104,7 @@ chapter("ejecucion-manual", () => {
   step("ejecutor", {
     title: "El ejecutor",
     caption:
-      "Un clic en un caso abre el ejecutor junto a la lista: los pasos del caso con su resultado esperado. Marca cada paso como «Pasa», «Falla», «Bloqueado» u «Omitido» (repetir la marca la quita). Falla y Bloqueado abren «Obtenido / notas» para escribir qué pasó (en este ejemplo, el paso 3 falla: Pharos se queda en la entrada con «Correo o contraseña incorrectos.»). Con el teclado es más rápido: P, F, B y S marcan el paso enfocado; J o ↓ y K o ↑ cambian de paso; N abre las notas; T pone en marcha o pausa el cronómetro.",
+      "Un clic en un caso abre el ejecutor junto a la lista: los pasos del caso con su resultado esperado. Marca cada paso como «Pasa», «Falla», «Bloqueado» u «Omitido» (repetir la marca la quita). Falla y Bloqueado abren «Obtenido / notas» para escribir qué pasó (en este ejemplo, los tres primeros pasan y el 4, «Pulsar «Entrar»», falla: Pharos se queda en la entrada con «Correo o contraseña incorrectos.»). Con el teclado es más rápido: P, F, B y S marcan el paso enfocado; J o ↓ y K o ↑ cambian de paso; N abre las notas; T pone en marcha o pausa el cronómetro.",
     covers: ["action:manual-run-result", "keyboard:exec-keys"],
     run: async () => {
       await execute(MANUAL_RUN.failed.caseKey);
@@ -113,6 +113,8 @@ chapter("ejecucion-manual", () => {
       await browser.keys(["j"]);
       await browser.keys(["p"]);
       await expect(byTestId("exec-step-2-pass")).toHaveAttribute("aria-pressed", "true");
+      // Writing the address and the password works; «Entrar» fails.
+      for (let n = 3; n < MANUAL_RUN.failed.step; n++) await byTestId(`exec-step-${n}-pass`).click();
       await byTestId(`exec-step-${MANUAL_RUN.failed.step}-fail`).click();
       // «Obtenido» opens the field and focuses it: type into the focus.
       await byTestId(`exec-step-${MANUAL_RUN.failed.step}-notes`).click();
@@ -231,7 +233,7 @@ chapter("ejecucion-manual", () => {
   step("crear-defecto", {
     title: "Crear un defecto desde el intento fallido",
     caption:
-      "En un intento fallido o bloqueado, «Crear defecto» abre el editor de defectos relleno con los pasos de la revisión ejecutada, lo obtenido, el resultado esperado (el del paso que falló o, si no tiene, el del caso), la build y el entorno, ya vinculado al resultado y a su caso, y con sus evidencias (sin copiar los archivos). «Guardar y crear defecto», en un paso que falla, hace lo mismo sin guardar antes el intento. Los vínculos ofrecen los casos y los requisitos del proyecto, como en «Defectos» (capítulo 12). En este ejemplo, el fallo de acceso ya tiene su defecto, creado en el capítulo 12 desde el informe importado, así que Liomar vuelve sin guardar: un mismo fallo, un solo defecto.",
+      "En un intento fallido o bloqueado, «Crear defecto» abre el editor de defectos relleno con los pasos de la revisión ejecutada, lo obtenido, el resultado esperado (el del paso que falló o, si no tiene, el del caso), la build y el entorno, ya vinculado al resultado y a su caso, y con sus evidencias (sin copiar los archivos). «Guardar y crear defecto», en un paso que falla, hace lo mismo sin guardar antes el intento. Los vínculos ofrecen los casos y los requisitos del proyecto, como en «Defectos» (capítulo 12). En este ejemplo, el fallo de acceso ya tiene su defecto (se registra desde el informe importado; lo verás en el capítulo 12), así que Liomar vuelve sin guardar: un mismo fallo, un solo defecto.",
     run: async () => {
       await byTestId("exec-create-defect").click();
       await expect($(".tp-editor__save")).toBeDisplayed();
@@ -362,7 +364,8 @@ chapter("ejecucion-manual", () => {
         if (!scroller || scroller === strip.parentElement) return;
         const s = scroller.getBoundingClientRect();
         const c = chip.getBoundingClientRect();
-        scroller.scrollLeft += c.right - s.right;
+        // The selected chip whole at the left edge: no card cut on that side.
+        scroller.scrollLeft += c.left - s.left;
       });
     },
     // Liomar has run everything: the run ends completed (the prerequisite of
@@ -400,10 +403,11 @@ chapter("ejecucion-manual", () => {
     focus: `${D} [data-testid="report-recommendations"]`,
     run: async () => {
       await byTestId("report-recommendations").setValue(
-        `Repetir PH-001 y la tercera fila de PH-005 cuando se corrija el fallo de acceso, y cerrar el ciclo «${CYCLE.title}».`,
+        `Repetir PH-001 y la tercera fila de PH-005 cuando se corrija el fallo de acceso, y ejecutar los runs del ciclo «${CYCLE.title}» antes de cerrarlo.`,
       );
-      // From «7.1 Hallazgos y rendimiento» down to the recommendations.
-      await scrollToTop($(D).$(`h4=${es.statusReport.section.findings}`));
+      // From «7.1 Hallazgos y rendimiento» down to the end of the body (the
+      // line under the recommendations), clear of the button bar.
+      await scrollToTop($(D).$(`h4=${es.statusReport.section.findings}`), 0);
     },
   });
 

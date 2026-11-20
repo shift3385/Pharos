@@ -66,7 +66,7 @@ chapter("ciclos", () => {
   step("detalle", {
     title: "El ciclo, recién creado",
     caption:
-      "«Crear ciclo» lo crea con su clave y abre su detalle: arriba, el estado, la build, el entorno, las fechas y el sprint; los botones «Ejecutar», «Informe de estado», «Editar» y el menú «⋯»; el resumen de resultados (pasa, falla, bloqueado, omitido, sin ejecutar) y las pestañas «Elementos», lo que hay que probar, y «Runs», las ejecuciones lanzadas. «← Ciclos» vuelve a la lista. Un ciclo vacío no se puede ejecutar todavía.",
+      "«Crear ciclo» lo crea con su clave y abre su detalle: arriba, el estado, la build, el entorno, las fechas y el sprint; los botones «Ejecutar», «Informe de estado», «Editar», «Cerrar ciclo…» (al final del capítulo) y el menú «⋯»; el resumen de resultados (pasa, falla, bloqueado, omitido, sin ejecutar) y las pestañas «Elementos», lo que hay que probar, y «Runs», las ejecuciones lanzadas. «← Ciclos» vuelve a la lista. Un ciclo vacío no se puede ejecutar todavía.",
     run: async () => {
       await clickButton(Y.create, D);
       await waitForToast(Y.createdToast.split("{{")[0]);
@@ -100,7 +100,7 @@ chapter("ciclos", () => {
   step("por-filtro", {
     title: "Añadir por filtro",
     caption:
-      "Para no marcar caso por caso, «Añadir por filtro» los elige por etiquetas, prioridad, estado del caso, requisitos o riesgo mínimo de sus requisitos (por ejemplo, «Alto (≥ 13)»). El recuento («N casos coinciden») se actualiza mientras marcas. Se añaden los que coinciden en ese momento: si después cambian, el ciclo no cambia.",
+      "Para no marcar caso por caso, «Añadir por filtro» los elige por etiquetas, prioridad, estado del caso, requisitos o riesgo mínimo de sus requisitos (por ejemplo, «Alto (≥ 13)»). El recuento («N casos coinciden») se actualiza mientras marcas. Se añaden los que coinciden en ese momento: si después cambian, el ciclo no cambia. En este ejemplo, Liomar marca la prioridad alta: solo coincide PH-001, que ya está en el ciclo, así que no se añade nada nuevo.",
     covers: ["dialogs:src/modules/cycles/ui/ItemDialogs.tsx"],
     run: async () => {
       await clickButton(tf("cycles.add.confirm_other", { count: 2 }), D);

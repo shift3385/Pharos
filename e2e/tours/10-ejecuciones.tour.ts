@@ -92,7 +92,7 @@ chapter("ejecuciones", () => {
   step("lista", {
     title: "Ejecuciones",
     caption:
-      "Un run es una ejecución concreta de pruebas: manual, creada al ejecutar un ciclo, o importada de tu automatización. Pulsa «Ejecuciones» en el menú lateral. La pestaña «Runs» lista los runs con su clave, su título, su origen y su build, su estado (en curso, completado o cancelado), sus resultados (pasan, fallan, otros, sin vincular) y su inicio; en este ejemplo, los dos runs del ciclo «Regresión 0.6.0», todavía sin resultados. «Sin vincular» reúne los tests importados que esperan un caso. Arriba, «Informe de estado», «Importar informe» y «Nuevo run manual» (capítulo 11). Los runs que sube tu CI con `pharos upload` o «Conectar CI» (capítulo 20) aparecen aquí solos.",
+      "Un run es una ejecución concreta de pruebas: manual, creada al ejecutar un ciclo, o importada de tu automatización. Pulsa «Ejecuciones» en el menú lateral. La pestaña «Runs» lista los runs con su clave, su título, su origen y su build, su estado (en curso, completado o cancelado), sus resultados (pasan, fallan, otros, sin vincular) y su inicio; en este ejemplo, los dos runs del ciclo «Regresión 0.6.0», todavía sin resultados. «Sin vincular» reúne los tests importados que esperan un caso. Arriba, «Informe de estado», «Importar informe» y «Nuevo run manual» (capítulo 11). Los runs que sube tu CI con `pharos upload` o «Conectar CI» (capítulo 21) aparecen aquí solos.",
     covers: ["section:runs", "state:runs-empty"],
     run: async () => {
       await openProject(PROJECT_A.name);

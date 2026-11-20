@@ -1,4 +1,4 @@
-// Chapter 21 — Trabajo en equipo (decision D-1, MAN-03, NC-052 amended).
+// Chapter 20 — Trabajo en equipo (decision D-1, MAN-03, NC-052 amended).
 // Liomar creates the shared workspace «Equipo QA», shares «Pharos» into it,
 // invites his QA teammate Jorge L. Meneses Yero with a one-time code, turns on
 // «Aprobación independiente», sends a case to Jorge's review (Jorge asks for
@@ -11,7 +11,7 @@
 // jorgeApprovesCase, jorgeApprovesPlan); he never signs in to this app, and
 // the captions say what he did «desde su equipo».
 //
-// It runs before chapter 20 (manifest.ts), which gives the shared «Pharos» a
+// It runs before chapter 21 (manifest.ts), which gives the shared «Pharos» a
 // CI token; the manual prints it after. It leaves «Equipo QA» with «Pharos»
 // (prerequisite `equipo-qa`) and Jorge as its second Test Manager
 // (`jorge-en-equipo`).

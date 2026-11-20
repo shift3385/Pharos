@@ -185,7 +185,7 @@ chapter("tablero", () => {
   step("eliminar", {
     title: "Eliminar una tarjeta",
     caption:
-      "La papelera de la tarjeta pide confirmación («¿Eliminar la tarjeta?») antes de borrarla con sus adjuntos. Esc no cierra este aviso: solo «Cancelar». En la app de escritorio, la tarjeta eliminada queda en la Papelera (Administración › General, capítulo 15) y se puede restaurar hasta que se cumple su plazo.",
+      "En este ejemplo, Liomar elimina «Automatizar la regresión de acceso»: esa automatización queda fuera del alcance de la 0.6.0 y se planificará con la versión siguiente. La papelera de la tarjeta pide confirmación («¿Eliminar la tarjeta?») antes de borrarla con sus adjuntos. Esc no cierra este aviso: solo «Cancelar». En la app de escritorio, la tarjeta eliminada queda en la Papelera (Administración › General, capítulo 15) y se puede restaurar hasta que se cumple su plazo.",
     covers: ["dialogs:src/modules/planner/ui/PlannerBoard.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {

@@ -43,7 +43,7 @@ chapter("ciclos-cierre", () => {
   step("cerrar-ciclo", {
     title: "Cerrar el ciclo: el quality gate",
     caption:
-      "Un ciclo se cierra con «Cerrar ciclo…», nunca desde «Editar». Pharos evalúa los criterios de salida del plan sobre los resultados del ciclo. Cada criterio obligatorio que no se cumple, o que no tiene datos, pide una justificación de al menos 20 caracteres: por qué se acepta el riesgo o por qué no, quién lo asume y cuándo se resuelve. Los criterios que Pharos no mide solo (aquí, «Casos críticos ejecutados» y «Satisfacción del producto en la demo») se marcan a mano con «Cumple» o «No cumple», y los orientativos solo informan. En este ejemplo se ejecutó todo, pero hay un defecto crítico abierto y la cobertura de requisitos no llega al objetivo: Liomar justifica cada uno y elige «No-go», porque con el acceso roto la versión no puede salir; «Go con riesgos» la dejaría salir con los riesgos justificados. Al pie se ve quién firma y cuándo: queda en Auditoría. Cerrar un ciclo también avisa en las notificaciones del equipo y a los webhooks del proyecto (capítulo 20).",
+      "Un ciclo se cierra con «Cerrar ciclo…», nunca desde «Editar». Pharos evalúa los criterios de salida del plan sobre los resultados del ciclo. Cada criterio obligatorio que no se cumple, o que no tiene datos, pide una justificación de al menos 20 caracteres: por qué se acepta el riesgo o por qué no, quién lo asume y cuándo se resuelve. Los criterios que Pharos no mide solo (aquí, «Casos críticos ejecutados» y «Satisfacción del producto en la demo») se marcan a mano con «Cumple» o «No cumple», y los orientativos solo informan. En este ejemplo se ejecutó todo, pero hay un defecto crítico abierto y la cobertura de requisitos no llega al objetivo: Liomar justifica cada uno y elige «No-go», porque con el acceso roto la versión no puede salir; «Go con riesgos» la dejaría salir con los riesgos justificados. Al pie se ve quién firma y cuándo: queda en Auditoría. Cerrar un ciclo también avisa en las notificaciones del equipo y a los webhooks del proyecto (capítulo 21).",
     covers: ["dialogs:src/modules/runs/gate/CloseCycleDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -106,7 +106,7 @@ chapter("ciclos-cierre", () => {
   step("riesgos-residuales", {
     title: "Los riesgos residuales",
     caption:
-      "Más abajo, «Riesgos residuales» dice lo que queda pendiente al cerrar: los defectos del ciclo que siguen abiertos (aquí, el crítico del acceso, registrado desde PH-001 en el capítulo 12) y los requisitos sin cubrir o sin pasar, del riesgo más alto al más bajo: REQ-005, de riesgo alto, sin cubrir, y REQ-001, que falla. Si los runs del ciclo trajeran hallazgos abiertos o umbrales de rendimiento incumplidos (capítulo 10), también saldrían aquí. Es la lista con la que se planifica la siguiente ronda.",
+      "Más abajo, «Riesgos residuales» dice lo que queda pendiente al cerrar: los defectos del ciclo que siguen abiertos (aquí, el crítico del acceso, registrado desde PH-001 en el capítulo 12) y los requisitos sin cubrir o que fallan en el ciclo, del riesgo más alto al más bajo: encabezan la lista REQ-005, de riesgo alto y sin cubrir, y REQ-001, que falla; siguen los que aún no tienen casos. Si los runs del ciclo trajeran hallazgos abiertos o umbrales de rendimiento incumplidos (capítulo 10), también saldrían aquí. Es la lista con la que se planifica la siguiente ronda.",
     covers: ["dialogs:src/modules/runs/report/completion/CompletionReportDialog.tsx"],
     shot: { element: D },
     run: async () => {

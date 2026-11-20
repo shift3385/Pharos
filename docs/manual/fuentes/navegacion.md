@@ -109,10 +109,10 @@ atajos siguen siendo los de tu navegador.
   servidor en todo» (capítulo 15).
 - **Veo un aviso de solo lectura.** Tu rol en ese workspace es Viewer: puedes
   ver y exportar, pero no cambiar nada. Pide otro rol a su Test Manager
-  (capítulo 21).
+  (capítulo 20).
 - **«Rechazado por permisos».** El servidor no aceptó un cambio porque tu rol
   en ese workspace no lo permite. «Descartar» deja la versión del servidor
-  (capítulo 21).
+  (capítulo 20).
 - **No veo un proyecto en «Proyectos».** Está en otro workspace: cámbialo en el
   selector de la parte de arriba del menú lateral.
 
@@ -156,7 +156,7 @@ atajos siguen siendo los de tu navegador.
 
 - Capítulo 1, «Acceso y cuenta»: el menú de usuario.
 - Capítulo 4, «Proyectos»: crear y abrir proyectos.
-- Capítulos 20, «Integraciones», y 21, «Trabajo en equipo»: los workspaces
+- Capítulos 20, «Trabajo en equipo», y 21, «Integraciones»: los workspaces
   compartidos, los roles y las notificaciones de otras personas.
 - Capítulo 15, «Administración»: tema, idioma, sincronización y conflictos.
 - Capítulo 18, «Pantallas estrechas y móvil».

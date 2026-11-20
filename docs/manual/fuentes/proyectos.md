@@ -24,7 +24,7 @@ día.
 «Proyectos» lista los proyectos del **workspace** elegido en el selector de la
 parte de arriba del menú lateral (capítulo 2). En «Personal», tu espacio
 propio, están los tuyos. Un proyecto se comparte con tu equipo llevándolo a un
-workspace compartido con «Compartir con un workspace…» (capítulo 21).
+workspace compartido con «Compartir con un workspace…» (capítulo 20).
 
 En este manual, Liomar crea dos proyectos:
 

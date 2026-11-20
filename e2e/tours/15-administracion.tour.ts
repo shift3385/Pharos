@@ -3,7 +3,7 @@
 // background, download folder, trash), sync (now, automatic, the silent
 // field-by-field merge, a conflict, its notification and the merge panel),
 // security (recovery key), diagnostics, the audit and the AI key in the web
-// (the workspace rules are in chapter 21). Example: Liomar, QA and Test Manager of his own
+// (the workspace rules are in chapter 20). Example: Liomar, QA and Test Manager of his own
 // workspace, sets up his Pharos.
 //
 // The last block is for whoever administers the server: the app signs in as
@@ -246,27 +246,23 @@ chapter("administracion", () => {
   step("papelera", {
     title: "Papelera",
     caption:
-      "Al final de «General», la «Papelera» reúne lo que has borrado en este equipo y aún no se ha eliminado para siempre: el número de elementos, su desglose por tipo (proyectos, casos, requisitos, defectos…) y, en cada fila, cuándo se borró y en cuántos días se eliminará según la retención. Marca filas para «Restaurar» (vuelven a su sitio con su clave y su historial, y se sincronizan) o «Eliminar para siempre»; un proyecto vuelve con lo que se borró con él. «Vaciar papelera» pide confirmación y conserva lo que tiene cambios sin sincronizar. En la web no se guarda lo borrado: la papelera está en la app de escritorio. En la lista están, entre otros, el requisito REQ-007, que Liomar borró en el capítulo 7, y la plantilla que acaba de eliminar.",
+      "Al final de «General», la «Papelera» reúne lo que has borrado en este equipo y aún no se ha eliminado para siempre: el número de elementos, su desglose por tipo (proyectos, casos, requisitos, defectos…) y, en cada fila, cuándo se borró y en cuántos días se eliminará según la retención. Marca filas para «Restaurar» (vuelven a su sitio con su clave y su historial, y se sincronizan) o «Eliminar para siempre»; un proyecto vuelve con lo que se borró con él. «Vaciar papelera» pide confirmación y conserva lo que tiene cambios sin sincronizar. En la web no se guarda lo borrado: la papelera está en la app de escritorio. Los botones del desglose filtran la lista: aquí, «Plantillas» deja solo la plantilla que Liomar acaba de eliminar; «Todo» la muestra entera, con, entre otros, el requisito REQ-007 que borró en el capítulo 7.",
     covers: ["dialogs:src/modules/admin/ui/TrashSection.tsx"],
     focus: '[data-testid="admin-trash"]',
     run: async () => {
       await openAdminTab("general");
       await expect(byTestId("trash-table")).toBeDisplayed();
       await waitForText("REQ-007");
-      // The card on top and its list scrolled to the end: REQ-007 and the
-      // template, above the save bar.
+      // The template Liomar just deleted, through the breakdown's filter: the
+      // whole list is longer than its box.
+      await $(".adm-trash__chips").$(`button*=${es.admin.trash.kind.template_other}`).click();
+      await expect($('[data-testid="trash-table"]').$(hasText("Plan de pruebas · Pharos (propia)"))).toBeDisplayed();
       await scrollToTop('[data-testid="admin-trash"]');
-      await browser.execute(() => {
-        const card = document.querySelector('[data-testid="admin-trash"]');
-        for (const el of card ? Array.from(card.querySelectorAll<HTMLElement>("*")) : [])
-          if (el.scrollHeight > el.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowY)) el.scrollTop = el.scrollHeight;
-      });
-      for (const name of ["Plan de pruebas · Pharos (propia)", "REQ-007"])
-        if (!(await $('[data-testid="trash-table"]').$(hasText(name)).isDisplayed({ withinViewport: true })))
-          throw new Error(`«${name}» is not in view in the trash`);
       await browser.action("pointer").move({ origin: "viewport", x: 700, y: 40 }).perform();
     },
     after: async () => {
+      await $(".adm-trash__chips").$(`button*=${es.admin.trash.everything}`).click();
+      await expect($('[data-testid="trash-table"]').$(hasText("REQ-007"))).toBeExisting();
       // «Vaciar papelera» asks first; Liomar keeps his trash.
       await byTestId("trash-empty").click();
       await expect($('[role="alertdialog"]')).toBeDisplayed();

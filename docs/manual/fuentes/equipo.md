@@ -1,7 +1,7 @@
-# Trabajo en equipo (fuente del capítulo 21)
+# Trabajo en equipo (fuente del capítulo 20)
 
 Texto escrito a mano del capítulo. Los pasos (pie y captura) los genera el
-tour `e2e/tours/21-equipo.tour.ts`. Liomar trabaja con su compañero de QA,
+tour `e2e/tours/20-equipo.tour.ts`. Liomar trabaja con su compañero de QA,
 Jorge L. Meneses Yero, que actúa desde su propio equipo: se une al workspace,
 revisa y aprueba. Es la única persona del manual además de Liomar
 (NC-052, enmendada). Todas las capturas son del Pharos de Liomar.
@@ -102,6 +102,6 @@ workspace, apruebe planes o reasigne los tokens de CI si alguien se va.
 
 - Capítulo 8, «Casos de prueba», y capítulo 5, «Plan de pruebas»: la revisión
   y la aprobación paso a paso.
-- Capítulo 20, «Integraciones»: los tokens de CI y los webhooks del
+- Capítulo 21, «Integraciones»: los tokens de CI y los webhooks del
   workspace.
 - Capítulo 15, «Administración»: la auditoría y las cuentas del servidor.

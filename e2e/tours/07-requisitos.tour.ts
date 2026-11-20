@@ -77,7 +77,7 @@ chapter("requisitos", () => {
   step("requisitos", {
     title: "La lista de requisitos",
     caption:
-      "«Importar 11» añade los once requisitos del CSV, de REQ-002 a REQ-012, y un aviso lo confirma («Importados: 11 nuevos, 0 actualizados»); la captura muestra los primeros. Cada fila muestra el ID, el requisito con su descripción, la prioridad, cuántos casos lo enlazan y si está «Cubierto» o «Sin cubrir» (las filas sin cubrir se tiñen, para verlas enseguida). A la derecha, ✨ genera casos con IA desde ese requisito (capítulo 17) y la papelera lo elimina. Haz clic en el título para editarlo.",
+      "«Importar 11» añade los once requisitos del CSV, de REQ-002 a REQ-012, y al importar un aviso lo confirma («Importados: 11 nuevos, 0 actualizados»); la captura muestra los primeros. Cada fila muestra el ID, el requisito con su descripción, la prioridad, cuántos casos lo enlazan y si está «Cubierto» o «Sin cubrir» (las filas sin cubrir se tiñen, para verlas enseguida). A la derecha, ✨ genera casos con IA desde ese requisito (capítulo 17) y la papelera lo elimina. Haz clic en el título para editarlo.",
     run: async () => {
       await clickButton(tf("traceability.import.confirm", { count: 11 }), D);
       await waitForToast(tf("traceability.import.doneToast", { created: 11, updated: 0 }));

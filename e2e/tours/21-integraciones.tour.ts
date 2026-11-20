@@ -1,9 +1,9 @@
-// Chapter 20 — Integraciones (INT-02, INT-03; ADR-0052): what a Test Manager
+// Chapter 21 — Integraciones (INT-02, INT-03; ADR-0052): what a Test Manager
 // sets up so CI and other tools talk to Pharos: project tokens (create, the
 // secret once, rotate, reassign, revoke), «Conectar CI», webhooks (create, the
 // secret once, a test delivery and «Entregas») and personal tokens in «Mi
-// perfil». Example: the «Pharos» that chapter 21 shares into «Equipo QA»
-// (prerequisites `equipo-qa` and `jorge-en-equipo`; chapter 21 runs first)
+// perfil». Example: the «Pharos» that chapter 20 shares into «Equipo QA»
+// (prerequisites `equipo-qa` and `jorge-en-equipo`; chapter 20 runs first)
 // gets the token «CI de Pharos» (TEAM in data/pharos.ts).
 //
 // «Conectar CI» and «Usar en el CLI» are track L's UI (L6b, INT-04); their
@@ -59,7 +59,7 @@ chapter("integraciones", () => {
   step("integraciones", {
     title: "La pestaña «Integraciones»",
     caption:
-      "Los tokens de CI y los webhooks pertenecen a un workspace compartido (capítulo 21). En el selector de workspace, con «Equipo QA» elegido, «Miembros y roles» abre la página del workspace, con dos pestañas: «Miembros» e «Integraciones». «Integraciones» reúne los tokens de proyecto, «Conectar CI» y los webhooks. Solo existe en un workspace compartido y necesita el servidor. Cualquier miembro la ve; solo un Test Manager crea, rota, revoca o reasigna.",
+      "Los tokens de CI y los webhooks pertenecen a un workspace compartido (capítulo 20). En el selector de workspace, con «Equipo QA» elegido, «Miembros y roles» abre la página del workspace, con dos pestañas: «Miembros» e «Integraciones». «Integraciones» reúne los tokens de proyecto, «Conectar CI» y los webhooks. Solo existe en un workspace compartido y necesita el servidor. Cualquier miembro la ve; solo un Test Manager crea, rota, revoca o reasigna.",
     covers: ["tabs:src/modules/workspaces/ui/WorkspaceMembersPage.tsx"],
     focus: '[role="tablist"]',
     run: async () => {

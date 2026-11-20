@@ -91,7 +91,7 @@ chapter("inicio", () => {
   step("comparar", {
     title: "Comparar con el periodo anterior",
     caption:
-      "Al final del menú del periodo, «Comparar con el periodo anterior» enfrenta el periodo con otro de la misma duración justo antes: los 7 días con los 7 anteriores, «Hoy» con ayer y «Este mes» con los mismos días antes del día 1; debajo del interruptor ves sus fechas. Encendido, el botón del periodo dice «vs anterior», la «Tasa de éxito» muestra la diferencia en puntos (▲ en verde si sube, ▼ en rojo si baja) y «Ejecuciones diarias» suma una línea gris de puntos con el total de cada día del periodo anterior, su diferencia en % junto al total y una columna «Anterior» en «Ver los datos». Las demás cifras son el estado de ahora y no cambian. El interruptor no cierra el menú (Esc lo cierra), y Pharos lo recuerda en este equipo, como el periodo. En este ejemplo el trabajo empezó esta semana, así que la semana anterior no tiene datos: los dos paneles lo dicen con «sin datos antes» y la línea gris queda en cero.",
+      "Al final del menú del periodo, «Comparar con el periodo anterior» enfrenta el periodo con otro de la misma duración justo antes: los 7 días con los 7 anteriores, «Hoy» con ayer y «Este mes» con los mismos días antes del día 1; debajo del interruptor ves sus fechas. Encendido, el botón del periodo dice «vs anterior», la «Tasa de éxito» muestra la diferencia en puntos (▲ en verde si sube, ▼ en rojo si baja) y «Ejecuciones diarias» suma una línea gris de puntos con el total de cada día del periodo anterior, su diferencia en % junto al total y una columna «Anterior» en «Ver los datos». Las demás cifras son el estado de ahora y no cambian. El interruptor no cierra el menú (Esc lo cierra), y Pharos lo recuerda en este equipo, como el periodo. En este ejemplo la semana anterior no tiene datos: cada intento lleva la fecha en que entró en Pharos (el de un informe importado, la de la importación) y todos son de esta semana. Los dos paneles lo dicen con «sin datos antes» y la línea gris queda en cero.",
     covers: ["action:home-compare"],
     focus: ['[data-testid="home-period"]', '[data-gadget="kpiRate"]', "section.home-daily"],
     run: async () => {
@@ -150,7 +150,7 @@ chapter("inicio", () => {
   step("criterios", {
     title: "Criterios de salida",
     caption:
-      "«Criterios de salida» evalúa los criterios de cierre del plan de pruebas de un proyecto (capítulo 5): el anillo da el porcentaje ejecutado y cada criterio dice «Cumple», «No cumple» o «Sin datos» (los que Pharos no puede medir solo). El titular resume si el proyecto está «Listo para cerrar» o si «Hay criterios que no se cumplen». Si el plan no define criterios, se usan los de por defecto; «Abrir el plan» lleva a él.",
+      "«Criterios de salida» evalúa los criterios de cierre del plan de pruebas de un proyecto (capítulo 5): el anillo da el porcentaje ejecutado y cada criterio dice «Cumple», «No cumple» o «Sin datos» (los que Pharos no puede medir solo). El titular resume si el proyecto está «Listo para cerrar» o si «Hay criterios que no se cumplen». Son cifras del proyecto entero, no de un ciclo: en «Pharos», 3 de sus 5 casos tienen resultado (PH-003 y PH-004 no se han ejecutado), por eso el anillo marca menos que el cierre del ciclo «Regresión 0.6.0» (capítulo 9), que solo cuenta PH-001 y PH-002. Si el plan no define criterios, se usan los de por defecto; «Abrir el plan» lleva a él.",
     covers: ["action:home-exit-criteria"],
     shot: { element: '[data-gadget="exitCriteria"]' },
     run: async () => {
@@ -252,7 +252,7 @@ chapter("inicio", () => {
     caption:
       "«Tendencia de ciclos» sigue una métrica a lo largo de los últimos ciclos cerrados del proyecto (con las cifras congeladas al cerrarlos) y del ciclo activo, en vivo y punteado: la tasa de éxito, la densidad de defectos, los escapes, el tiempo de corrección, la reapertura o el flaky. La línea verde es el objetivo del plan y el punto bajo cada ciclo, su veredicto (Go, Go con riesgos o No-go). Si una métrica empeora dos ciclos seguidos o se sale del objetivo, el gadget lo avisa. El selector de la cabecera elige el proyecto. Aquí, «Pharos» tiene un ciclo cerrado, la «Regresión 0.6.0» del capítulo 9 (CYC-001): su tasa de éxito, 50 %, con el punto rojo de su «No-go» debajo; a la derecha, «Último cerrado» con su cifra y el aviso «fuera del objetivo», porque el plan pide al menos un 90 %. La línea se completa a medida que se cierran más ciclos con «Cerrar ciclo…». Un proyecto sin ningún ciclo dice cómo empezar.",
     covers: ["action:home-trend"],
-    focus: '[data-testid="home-trend"]',
+    shot: { element: '[data-gadget="trend"]' },
     run: async () => {
       await expect(byTestId("home-trend")).toBeDisplayed();
       await expect(byTestId("home-trend-metric")).toBeDisplayed();

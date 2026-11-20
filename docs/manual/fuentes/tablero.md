@@ -47,7 +47,7 @@ regresión de acceso.
   otro equipo del workspace: se vuelve a intentar en la siguiente
   sincronización.
 - **No puedo crear tarjetas ni adjuntar archivos.** Tu rol en ese workspace es
-  Viewer: solo puedes ver el tablero (capítulo 21).
+  Viewer: solo puedes ver el tablero (capítulo 20).
 - **Eliminé una tarjeta por error.** En la app de escritorio está en la
   Papelera de «Administración › General» (capítulo 15): «Restaurar» la
   devuelve con sus adjuntos.

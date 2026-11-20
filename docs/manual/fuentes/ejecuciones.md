@@ -35,7 +35,7 @@ En este manual, la automatización de Pharos deja estos informes:
 - la auditoría de accesibilidad (axe) del diálogo «Nuevo requisito»;
 - una prueba de carga de la API con k6, con un umbral incumplido.
 
-Los runs que suben tu CI con `pharos upload` o «Conectar CI» (capítulo 20)
+Los runs que suben tu CI con `pharos upload` o «Conectar CI» (capítulo 21)
 llegan a la misma lista, sin importar nada a mano.
 
 ## Hallazgos y métricas
@@ -161,7 +161,7 @@ su tag.
 - Capítulo 11, «Ejecución manual» y el informe de estado.
 - Capítulo 13, «Trazabilidad»: el último resultado de cada caso y sus
   hallazgos.
-- Capítulo 20, «Integraciones»: subir los informes desde el CI.
+- Capítulo 21, «Integraciones»: subir los informes desde el CI.
 - [Guía de pruebas de la beta](../guia-beta.md), apartado 4.4c «Importar
   resultados de pruebas automáticas».
 - [Formatos de importación](../formats/importers.md).

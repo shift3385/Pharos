@@ -86,7 +86,7 @@ chapter("plan", () => {
 
   step("importar", {
     title: "Importar el plan desde Excel",
-    caption: `Liomar no escribe el plan paso a paso: lo tiene en Excel, en «${PLAN.file}», un plan exportado antes desde Pharos. «Importar / Exportar», en la cabecera, y después «Importar .xlsx» leen un plan exportado o una plantilla rellenada en Excel (Administración › Plantillas). Antes de tocar nada, el informe de importación muestra, campo a campo, qué reconoció y qué no («no detectado», «en blanco»…), para que decidas si aplicarlo. Las listas salen con sus nombres («Funcionales, Rendimiento…»), y más abajo el informe cuenta también los hitos que trae el Excel, en su hoja «Hitos». El título del plan sale del nombre del archivo.`,
+    caption: `Liomar no escribe el plan paso a paso: lo tiene en Excel, en «${PLAN.file}», un plan exportado antes desde Pharos. «Importar / Exportar», en la cabecera, y después «Importar .xlsx» leen un plan exportado o una plantilla rellenada en Excel (Administración › Plantillas). Antes de tocar nada, el informe de importación muestra, campo a campo, qué reconoció y qué no («no detectado», «en blanco»…), para que decidas si aplicarlo. Las listas salen con sus nombres, y más abajo el informe cuenta también los hitos que trae el Excel, en su hoja «Hitos». El título del plan sale del nombre del archivo.`,
     covers: ["upload:src/modules/test-plan/ui/TestPlanWizard.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -100,7 +100,7 @@ chapter("plan", () => {
   step("importado", {
     title: "El plan, cargado en el asistente",
     caption: `«Aplicar al formulario» carga lo reconocido en el asistente, todavía sin guardar: la línea del paso dice «Cambios sin guardar» y la lista de pasos marca con una ✓ los que quedan completos. En el paso 1 ya están el título («${PLAN.title}»), la versión («${PLAN.version}») y la fecha (${dmy(PLAN.planDate)}). Un plan importado empieza siempre en Borrador, aunque el Excel venga de un plan aprobado.`,
-    focus: "nav.tpw-rail",
+    focus: ".tpw-rail__head",
     run: async () => {
       await $(`button=${es.importReport.apply}`).click();
       await waitForToast(P.import.applied);
@@ -115,7 +115,7 @@ chapter("plan", () => {
       "«Guardar», en la cabecera, guarda el plan desde cualquier paso (en el último, «Finalizar plan» hace lo mismo): aparece el aviso «Plan de pruebas guardado», la línea de estado pasa a «Guardado · ahora mismo» y la cabecera del proyecto pasa de «Sin plan» a «Plan borrador». Guarda a menudo: cada guardado con cambios sube la versión y crea una revisión a la que puedes volver; guardar sin cambios avisa de que no hay nada que guardar. Con el plan guardado, el panel de la derecha muestra «Estado del plan» (estado, versión, autor, última actualización y las acciones de revisión) y, debajo, el «Historial» de sus últimos cambios.",
     toast: true,
     covers: ["action:plan-save"],
-    focus: ["header.pj-header", "aside.tpw-side"],
+    focus: ["header.pj-header", ".toast-stack .toast", 'section[aria-labelledby="tpw-status-title"]'],
     run: async () => {
       await button(P.save).click();
       await waitForToast(P.savedToast);
@@ -126,9 +126,9 @@ chapter("plan", () => {
 
   step("identificacion", {
     title: "Paso 1 · Identificación del plan",
-    caption: `El paso 1 es el bloque de identificación del documento de ISO/IEC/IEEE 29119-3: el título (aquí, «${PLAN.title}»), el estado (no se elige aquí: cambia con las acciones de «Estado del plan», como en los casos), el ID de documento (por defecto «TP-», el prefijo del proyecto y seis caracteres; se puede cambiar), la versión («${PLAN.version}») y la fecha. El autor no se escribe: lo pone Pharos con tu nombre (en este ejemplo, «Liomar QA»); lo ves en el panel «Estado del plan» y en el plan exportado.`,
+    caption: `El paso 1 es el bloque de identificación del documento de ISO/IEC/IEEE 29119-3: el título (aquí, «${PLAN.title}»), el estado (no se elige aquí: cambia con las acciones de «Estado del plan», como en los casos), el ID de documento (por defecto «TP-», el prefijo del proyecto y seis caracteres; se puede cambiar), la versión («${PLAN.version}») y la fecha. El autor no se escribe: lo pone Pharos con tu nombre (en este ejemplo, «Liomar Rodríguez»); lo verás en el panel «Estado del plan» y en el plan exportado.`,
     covers: ["wizard:identification"],
-    focus: ".tpw-ident",
+    shot: { element: ".tpw-ident" },
     run: async () => {
       await expect($("h2.tpw__title")).toHaveText(P.step.identification);
       await expect(await field(P.version)).toHaveValue(PLAN.version);
@@ -288,14 +288,14 @@ chapter("plan", () => {
   step("roles", {
     title: "Paso 13 · Roles, independencia y formación",
     caption:
-      "Cada fila une un rol con su responsabilidad, para que quede claro quién decide y quién hace qué: aquí, el «Responsable de QA» (Liomar) planifica, prioriza y aprueba el cierre, y el «Analista de pruebas» (su compañero de QA, capítulo 21) diseña y ejecuta los casos y revisa los de Liomar. «+ Añadir fila» crea otra y la papelera de cada una la quita. Con un motor de IA, «Sugerir responsabilidades con IA» propone la responsabilidad de los roles que aún no la tienen. Debajo, la independencia de las pruebas en una escala de cinco, de quien escribe el código a un equipo externo (aquí, «Probadores del equipo»), con cómo se garantiza, y las necesidades de formación con su plazo.",
+      "Cada fila une un rol con su responsabilidad, para que quede claro quién decide y quién hace qué: aquí, el «Responsable de QA» (Liomar) planifica, prioriza y aprueba el cierre, y el «Analista de pruebas» (su compañero de QA, capítulo 20) diseña y ejecuta los casos y revisa los de Liomar. «+ Añadir fila» crea otra y la papelera de cada una la quita. Con un motor de IA, «Sugerir responsabilidades con IA» propone la responsabilidad de los roles que aún no la tienen. Debajo, la independencia de las pruebas en una escala de cinco, de quien escribe el código a un equipo externo (aquí, «Probadores del equipo»), con cómo se garantiza, y las necesidades de formación con su plazo.",
     covers: ["wizard:roles"],
     focus: ".tpw-scale",
     run: async () => {
       await next("roles");
       await expect(byTestId("plan-independence").$(`input[value="${PLAN.independence}"]`)).toBeSelected();
-      // The roles, the scale and the training row, all above the step footer.
-      await byTestId("plan-independence").scrollIntoView({ block: "center" });
+      // From the step title, just below the top bar.
+      await scrollToTop(".tpw__form");
     },
   });
 
@@ -313,9 +313,9 @@ chapter("plan", () => {
   step("cronograma", {
     title: "Paso 15 · Cronograma",
     caption:
-      "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas: aquí, los dos sprints de la versión, del 9 de noviembre al 6 de diciembre, y los dos hitos que trajo el Excel, «Congelación de código» y «Publicación de la 0.6.0». Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin (Esc cancela el rango a medias): el sprint aparece como una franja y en la lista «Sprints», con su nombre y sus fechas, que puedes editar (dd/mm/aaaa e Intro). «Siguiente sprint» añade el siguiente a continuación, con la duración del paso 7. La leyenda explica el calendario: las franjas alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es hoy y el rojo claro señala días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). Con el ratón puedes arrastrar los extremos del sprint seleccionado. Las flechas de arriba cambian de mes.",
+      "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas: aquí, los dos sprints de la versión, del 9 de noviembre al 6 de diciembre, y los dos hitos que trajo el Excel: «Congelación de código», el rombo del 25 de noviembre, y «Publicación de la 0.6.0», el 7 de diciembre, al día siguiente del último sprint. Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin (Esc cancela el rango a medias): el sprint aparece como una franja y en la lista «Sprints», con su nombre y sus fechas, que puedes editar (dd/mm/aaaa e Intro). «Siguiente sprint» añade el siguiente a continuación, con la duración del paso 7. La leyenda explica el calendario: las franjas alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es hoy y el rojo claro señala días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). Con el ratón puedes arrastrar los extremos del sprint seleccionado. Las flechas de arriba cambian de mes.",
     covers: ["wizard:schedule"],
-    focus: ".tps-card",
+    focus: ".tps-grid",
     run: async () => {
       await next("schedule");
       await expect($('[role="grid"].tps-grid')).toBeDisplayed();
@@ -356,7 +356,7 @@ chapter("plan", () => {
       // The calendar card from its top («Sprint / Hito» whole, below the top
       // bar) and, below, the three milestones (two from the Excel, FIX-40);
       // the pointer off the controls without scrolling.
-      await scrollToTop(".tps-card", 8);
+      await scrollToTop(".tps-card", 18);
       await browser.action("pointer").move({ origin: "viewport", x: 1270, y: 760 }).perform();
     },
   });
@@ -478,7 +478,7 @@ chapter("plan", () => {
   step("exportar", {
     title: "Exportar el plan",
     caption:
-      "«Importar / Exportar», en la cabecera, ofrece el plan en .pdf, maquetado y listo para firmar, o en .xlsx, editable en Excel y que «Importar .xlsx» vuelve a leer. Qué historial lleva el documento («Solo la versión vigente» o «Historial de revisiones») lo decide «Ajustes del proyecto» (capítulo 14). Se exporta lo que ves, aunque no esté guardado. El archivo va a tu carpeta de descarga (Administración › General, capítulo 15) y un aviso dice su nombre.",
+      "«Importar / Exportar», en la cabecera, ofrece el plan en .pdf, maquetado y listo para firmar, o en .xlsx, editable en Excel y que «Importar .xlsx» vuelve a leer. Al pie del menú, «Historial en el documento» dice qué historial lleva: aquí, «Solo la versión vigente», la opción con la que Liomar creó el proyecto en el capítulo 4 (se cambia en «Ajustes del proyecto», capítulo 14). Se exporta lo que ves, aunque no esté guardado. El archivo va a tu carpeta de descarga (Administración › General, capítulo 15) y un aviso dice su nombre.",
     covers: ["action:plan-export"],
     focus: '[role="menu"]',
     run: async () => {
@@ -512,7 +512,7 @@ chapter("plan", () => {
   step("aprobar", {
     title: "Aprobar el plan",
     caption:
-      "En revisión, el plan se aprueba con «Aprobar versión N». Pharos pide confirmación y recuerda que, si después se edita el contenido, el plan volverá a «En revisión» y habrá que aprobarlo de nuevo. Liomar trabaja en su workspace personal, que no pide aprobación independiente, así que el diálogo le avisa de que aprueba su propio plan. Cuando el plan pasa al workspace del equipo, lo revisa otra persona: allí se piden cambios con «Pedir cambios…» y lo aprueba un Test Manager que no sea el autor (capítulo 21).",
+      "En revisión, el plan se aprueba con «Aprobar versión N». Pharos pide confirmación y recuerda que, si después se edita el contenido, el plan volverá a «En revisión» y habrá que aprobarlo de nuevo. Liomar trabaja en su workspace personal, que no pide aprobación independiente, así que el diálogo le avisa de que aprueba su propio plan. Cuando el plan pasa al workspace del equipo, lo revisa otra persona: allí se piden cambios con «Pedir cambios…» y lo aprueba un Test Manager que no sea el autor (capítulo 20).",
     covers: ["dialogs:src/modules/test-plan/ui/wizard/PlanReviewControls.tsx", "action:plan-approve"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
@@ -528,7 +528,7 @@ chapter("plan", () => {
     caption:
       "Al confirmar, el plan pasa a «Aprobado» sin cambiar de versión, y «Estado del plan» muestra quién lo aprobó y cuándo, aquí como «aprobación propia»; el PDF y el Excel lo llevan en la cabecera y el «Historial» lo apunta. Si luego cambias el contenido, un aviso lo dice antes de guardar, el plan vuelve a «En revisión» con una versión nueva y el historial indica que perdió la aprobación.",
     covers: ["action:plan-approved"],
-    focus: "aside.tpw-side",
+    focus: 'section[aria-labelledby="tpw-status-title"]',
     run: async () => {
       await byTestId("plan-approve-confirm").click();
       await waitForToast(P.review.toast.approve.replace("{{version}}", "").split("(")[0].trim());
@@ -556,7 +556,7 @@ chapter("plan", () => {
   step("reactivar-plan", {
     title: "Reactivar el plan",
     caption:
-      "«Reactivar» devuelve el plan a «En revisión» (a Borrador si nunca se envió). No recupera la aprobación anterior: hay que aprobarlo de nuevo. Liomar lo deja así, en revisión, para que lo revise su compañero de QA cuando compartan el proyecto (capítulo 21).",
+      "«Reactivar» devuelve el plan a «En revisión» (a Borrador si nunca se envió). No recupera la aprobación anterior: hay que aprobarlo de nuevo. Liomar lo deja así, en revisión, para que lo revise su compañero de QA cuando compartan el proyecto (capítulo 20).",
     covers: ["dialogs:src/modules/test-plan/ui/wizard/PlanReviewControls.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {

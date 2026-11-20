@@ -214,6 +214,7 @@ function chapterMarkdown(c, steps) {
   if (steps.length > 0) {
     lines.push("## Paso a paso", "");
     for (const s of steps) {
+      if (src.before[s.id]) lines.push(...src.before[s.id].split("\n").map((l) => (l ? `> ${l}` : ">")), "");
       lines.push(`### ${c.number}.${s.n}. ${s.title}`, "", s.caption, "");
       if (s.status === "skipped") lines.push(`> **Pendiente:** ${s.reason ?? "sin captura en esta versión"}.`, "");
       if (s.image) {
@@ -365,6 +366,8 @@ p, li { orphans: 3; widows: 3; }
 .group .inset-wrap { align-self: center; }
 .endblock { break-inside: avoid; }
 .note { background: var(--color-navy-100); border-left: 1.2mm solid var(--color-navy-500); padding: 2mm 3mm; border-radius: 1mm; margin: 2mm 0; }
+/* A lead-in (fuentes «### Antes del paso <id>») stays with its step. */
+.note.lead { break-inside: avoid; break-after: avoid; margin: 0 0 4mm; }
 .pending { background: #fdf3e2; border-left: 1.2mm solid var(--color-accent); padding: 2mm 3mm; border-radius: 1mm; margin: 2mm 0; }
 .tips { background: var(--color-surface-2); padding: 1mm 4mm; border-radius: 2mm; }
 .md-table { width: 100%; border-collapse: collapse; margin: 2mm 0 3mm; font-size: 9.5pt; break-inside: avoid; }
@@ -442,6 +445,8 @@ function chapterHtml(c, steps) {
   // Consecutive steps of one `group` (a before/after pair) print side by side.
   for (let i = 0; i < steps.length; i++) {
     const s = steps[i];
+    // A lead-in where the story jumps ahead, right before its step.
+    if (src.before[s.id]) parts.push(`<div class="note lead">${markdownToHtml(src.before[s.id])}</div>`);
     if (s.group && steps[i + 1]?.group === s.group) {
       const members = [];
       while (steps[i]?.group === s.group) members.push(steps[i++]);

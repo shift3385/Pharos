@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites name="pharos-e2e" tests="2" failures="1" errors="0" skipped="0" time="3.2">
-  <testsuite name="specs/acceso.spec.ts" timestamp="2026-11-03T22:10:00.000Z" tests="2" failures="1" skipped="0" errors="0" time="3.2">
+  <testsuite name="specs/acceso.spec.ts" timestamp="2026-11-16T22:10:00.000Z" tests="2" failures="1" skipped="0" errors="0" time="3.2">
     <testcase name="Acceso › entra con un correo y una contraseña válidos" classname="specs/acceso.spec.ts" time="1.9">
       <properties>
         <property name="test_id" value="PH-001"/>

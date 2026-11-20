@@ -39,7 +39,7 @@ En este manual, Liomar escribe los casos de acceso y de proyectos de Pharos:
   compartido «Iniciar sesión» y el dataset «Usuarios válidos».
 
 Liomar envía PH-001 a revisión y, en su espacio personal, lo aprueba él mismo.
-La revisión por otra persona, con Jorge, está en el capítulo 21.
+La revisión por otra persona, con Jorge, está en el capítulo 20.
 
 ## Revisión y aprobación
 
@@ -228,7 +228,7 @@ filas completos, y nombran su origen: «Paso compartido: Iniciar sesión (v2)» 
 - Capítulo 9, «Ciclos de prueba»: añadir casos a un ciclo.
 - Capítulo 11, «Ejecución manual»: ejecutar un caso fila por fila.
 - Capítulo 13, «Trazabilidad».
-- Capítulo 21, «Trabajo en equipo»: la revisión y la aprobación por otra
+- Capítulo 20, «Trabajo en equipo»: la revisión y la aprobación por otra
   persona.
 - Capítulo 17, «Asistente de IA»: sugerir casos y revisar las listas de un
   caso.

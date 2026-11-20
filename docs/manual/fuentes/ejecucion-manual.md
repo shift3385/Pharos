@@ -29,8 +29,9 @@ documento que resume una ronda de pruebas para quien decide.
 En este manual, Liomar repite a mano los casos de acceso de Pharos en el run
 «Regresión manual · 0.6.0-beta.1»:
 
-- PH-001 falla en el paso 3: Pharos se queda en la entrada con «Correo o
-  contraseña incorrectos.». Ese fallo ya tiene su defecto (capítulo 12).
+- PH-001 falla en el último paso, «Pulsar «Entrar»»: Pharos se queda en la
+  entrada con «Correo o contraseña incorrectos.». Ese fallo ya tiene su
+  defecto, que se registra desde el informe importado (capítulo 12).
 - PH-002 pasa en sus dos filas de ejemplos.
 - PH-005, el caso con el dataset «Usuarios válidos» (capítulo 8), se ejecuta
   una vez por fila: pasan las dos primeras cuentas y falla la tercera.

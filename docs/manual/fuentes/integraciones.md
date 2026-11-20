@@ -1,10 +1,10 @@
-# Integraciones (fuente del capítulo 20)
+# Integraciones (fuente del capítulo 21)
 
 Texto escrito a mano del capítulo. Los pasos (pie y captura) los genera el
-tour `e2e/tours/20-integraciones.tour.ts`. Las integraciones necesitan el
+tour `e2e/tours/21-integraciones.tour.ts`. Las integraciones necesitan el
 servidor y un workspace compartido ([ADR-0052](../../adr/0052-api-v1-tokens-y-webhooks.md)).
 
-Este texto se copia tal cual a `docs/manual/20-integraciones.md`: sus enlaces
+Este texto se copia tal cual a `docs/manual/21-integraciones.md`: sus enlaces
 se escriben como desde `docs/manual/` (`../api-v1.md`), no desde `fuentes/`.
 
 ## Para qué sirve
@@ -28,7 +28,7 @@ la app:
 
 **Antes de empezar:** todo esto vive en un workspace compartido. En este
 manual es «Equipo QA», donde Liomar llevó el proyecto «Pharos» y al que se
-unió su compañero Jorge L. Meneses Yero (capítulo 21, «Trabajo en equipo»).
+unió su compañero Jorge L. Meneses Yero (capítulo 20, «Trabajo en equipo»).
 Si trabajas solo, crea antes un workspace compartido y lleva a él el proyecto.
 
 Un token actúa siempre **en nombre de su dueño** y nunca puede más que su rol
@@ -115,13 +115,13 @@ según el idioma de Windows (o `--lang es`).
 - **No veo la pestaña «Integraciones».** Solo existe en un workspace
   compartido y con conexión al servidor. En tu workspace personal no hay
   integraciones: crea uno compartido desde el selector de workspace
-  (capítulo 21).
+  (capítulo 20).
 - **«Solo un Test Manager del workspace crea, rota o revoca tokens».** Pide
   a uno que cree el token de CI, o crea un token personal en «Mi perfil»
   para tu CLI.
 - **El proyecto no aparece al crear un token.** Sigue en tu workspace
   personal: llévalo al workspace con «Compartir con un workspace…» (menú «⋯»
-  de su fila en «Proyectos», capítulo 21).
+  de su fila en «Proyectos», capítulo 20).
 - **El CI responde 401 `token_inactive`.** El dueño del token salió del
   workspace o se desactivó su cuenta. Un Test Manager puede «Reasignar a mí»
   el token: el secreto del CI no cambia.
@@ -182,7 +182,7 @@ según el idioma de Windows (o `--lang es`).
 
 ## Véase también
 
-- Capítulo 21, «Trabajo en equipo»: el workspace compartido, sus miembros y
+- Capítulo 20, «Trabajo en equipo»: el workspace compartido, sus miembros y
   sus roles.
 - Capítulo 10, «Ejecuciones e importación de resultados»: lo que sube un CI
   aparece ahí, como una importación.

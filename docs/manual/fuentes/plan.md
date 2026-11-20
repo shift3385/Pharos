@@ -114,7 +114,7 @@ las acciones de **«Estado del plan»**, igual que en los casos (capítulo 8).
 | --- | --- | --- |
 | Borrador | «Enviar a revisión» | Pide una nota opcional para quien revise. El plan pasa a «En revisión». |
 | En revisión | «Aprobar versión N» | Pide confirmación. Queda quién aprobó, cuándo y qué versión. Aprobar no sube la versión. |
-| En revisión | «Pedir cambios…» | Lo usa quien revisa (capítulo 21). Pide un comentario obligatorio. El plan sigue en revisión, con el aviso «Cambios pedidos por…». |
+| En revisión | «Pedir cambios…» | Lo usa quien revisa (capítulo 20). Pide un comentario obligatorio. El plan sigue en revisión, con el aviso «Cambios pedidos por…». |
 | Cualquiera | «Marcar obsoleto» | El plan se conserva, pero deja de usarse y pierde la aprobación. |
 | Obsoleto | «Reactivar» | El plan vuelve a «En revisión» (a Borrador si nunca se envió). Hay que aprobarlo de nuevo. |
 
@@ -145,7 +145,7 @@ importa. Es el «Plan de pruebas de Pharos 0.6.0», qué se prueba de la propia
 aplicación en esta versión. Después repasa cada sección, completa el alcance y
 el cronograma, lo guarda, lo envía a revisión y lo aprueba en su workspace
 personal. Cuando comparte el proyecto con su equipo, su compañero de QA pide
-cambios y lo aprueba (capítulo 21).
+cambios y lo aprueba (capítulo 20).
 
 **En un workspace compartido**, editan el plan el Test Manager y el Test
 Analyst; un Viewer o un Product Owner solo lo ven y lo exportan. Si dos

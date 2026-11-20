@@ -8,7 +8,7 @@ import { $, browser, expect } from "@wdio/globals";
 import { email, signOut, userMenuTrigger } from "../support";
 import { PERSONA } from "../../scripts/manual/persona.mjs";
 import { DESKTOP, MOBILE, chapter, setViewport, step } from "./tour";
-import { button, byTestId, clearInput, dialog, es, scrollToTop, waitForText } from "./helpers";
+import { button, byTestId, clearInput, dialog, es, pointerAway, scrollToTop, waitForText } from "./helpers";
 
 /** The tour account (run-tours passes its e-mail and password). Liomar types
  *  his surname without its accent when he registers and corrects it in his
@@ -89,6 +89,8 @@ chapter("acceso", () => {
       await browser.keys("Escape");
       await $("#password").setValue(EXAMPLE_PASSWORD);
       await expect($("#password")).toHaveAttribute("type", "password");
+      // No hover left on the language selector of the step before.
+      await pointerAway();
     },
   });
 
@@ -235,7 +237,7 @@ chapter("acceso", () => {
   step("olvidaste-correo", {
     title: "Recuperar por correo",
     caption:
-      "En «Por correo» escribes tu correo y «Enviar enlace» te manda un enlace para elegir una contraseña nueva. Caduca en 30 minutos y sirve una vez; Pharos responde lo mismo exista o no la cuenta. Solo funciona si quien administra el servidor configuró el envío de correo: si no, como en este ejemplo, Pharos lo dice y te queda el código. En la app de escritorio, pega el enlace del correo en «¿Ya tienes el enlace?».",
+      "«Por correo» depende del servidor. Si no envía correo, como aquí, Pharos lo dice y te queda el código de recuperación; debajo siguen «¿Ya tienes el enlace?» y «Continuar», para quien ya recibió uno. En un servidor con correo configurado, esta pestaña pide tu correo y «Enviar enlace» te manda un enlace para elegir una contraseña nueva: caduca en 30 minutos y sirve una vez, y Pharos responde lo mismo exista o no la cuenta. En la app de escritorio, ese enlace se pega en «¿Ya tienes el enlace?».",
     covers: ["state:email-reset-off", "screen:reset-link"],
     focus: ".auth-form",
     run: async () => {
@@ -344,7 +346,7 @@ chapter("acceso", () => {
   step("perfil-preferencias", {
     title: "Preferencias: idioma y tema",
     caption:
-      "Al final de «Mi perfil», «Preferencias» guarda el idioma y el tema: claro, oscuro o «Según el sistema», que sigue el ajuste de Windows. Se aplican al momento y viajan con tu cuenta: tus otros equipos los toman al sincronizar («Se aplica en todos tus equipos»). Justo encima, «Tokens personales» crea los tokens para el CLI `pharos` y tus scripts (capítulo 20).",
+      "Al final de «Mi perfil», «Preferencias» guarda el idioma y el tema: claro, oscuro o «Según el sistema», que sigue el ajuste de Windows. Se aplican al momento y viajan con tu cuenta: tus otros equipos los toman al sincronizar («Se aplica en todos tus equipos»). Justo encima, «Tokens personales» crea los tokens para el CLI `pharos` y tus scripts (capítulo 21).",
     covers: ["action:profile-preferences"],
     focus: ".profile-prefs",
     run: async () => {

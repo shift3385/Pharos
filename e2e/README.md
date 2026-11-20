@@ -111,8 +111,8 @@ parts.
   `jorgeApprovesCase`…), never signed in to the app. His case reviews also
   send the notification his own Pharos would send (the server does not
   notify a case review by itself), so Liomar's bell shows them. He appears
-  in chapter 21 «Trabajo en equipo», which runs before chapter 20 (it makes
-  the team workspace and Jorge's Test Manager role that chapter 20 uses)
+  in chapter 20 «Trabajo en equipo», which runs before chapter 21 (it makes
+  the team workspace and Jorge's Test Manager role that chapter 21 uses)
   although the manual prints it after.
 - **«Administrador»** (`admin@pharos.test`): the server administrator.
   `people.ts` has its API helpers; `account-switch.ts` (`asAdmin`,

@@ -135,7 +135,7 @@ workspace en el que trabajas y, debajo, tu rol en él. La lista
   recuerda con un aviso de solo lectura, y el servidor rechaza cualquier
   cambio suyo. «¿Qué puede hacer cada rol?», al pie de «Miembros y roles»,
   resume los permisos.
-- **Paso a paso.** El capítulo 21, «Trabajo en equipo», recorre con Jorge
+- **Paso a paso.** El capítulo 20, «Trabajo en equipo», recorre con Jorge
   la invitación, los roles y la aprobación independiente.
 - **Reglas: «Aprobación independiente».** En «Miembros y roles», la sección
   «Reglas» dice quién aprueba planes y casos (capítulos 5 y 8). Activada, que
@@ -220,7 +220,7 @@ lo es.
 - **Revocar sus tokens…** Anula al momento todos los tokens de API de esa
   cuenta, personales y de proyecto, por ejemplo si se filtró uno. La
   confirmación los nombra; no se puede deshacer. Su CI deja de subir
-  resultados hasta que tenga un token nuevo (capítulo 20).
+  resultados hasta que tenga un token nuevo (capítulo 21).
 
 ## Lo que viaja con tu cuenta
 
@@ -318,7 +318,7 @@ lo es.
   hace la IA en cada pantalla.
 - Capítulo 19, «Si algo sale mal»: la conversión de los datos al actualizar
   y las pantallas de error de la base de datos.
-- Capítulo 21, «Trabajo en equipo»: invitar, roles y aprobación
+- Capítulo 20, «Trabajo en equipo»: invitar, roles y aprobación
   independiente, paso a paso.
 - [Glosario](../GLOSARIO.md): «Pestaña de Administración», «Plantilla»,
   «Papelera», «Registro de auditoría».

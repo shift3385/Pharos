@@ -88,9 +88,10 @@ chapter("proyectos", () => {
   step("cabecera", {
     title: "La cabecera del proyecto",
     caption:
-      "«Crear proyecto» lo crea y lo abre en su «Plan de pruebas», todavía vacío, porque es lo primero que conviene escribir (capítulo 5). Todas las secciones del proyecto comparten su cabecera: la insignia con el prefijo de sus claves (aquí «PH»), el nombre, el estado de su plan («Sin plan», «Plan borrador», «Plan en revisión», «Plan aprobado» o «Plan obsoleto»; el plan cuenta en cuanto se guarda, aunque el panel ya diga «Borrador») y una línea con sus casos, sus requisitos y «Fin del plan», la última fecha del calendario del plan, cuando el plan la tiene. A la derecha van los botones de la sección abierta (aquí, los del plan). En el móvil solo quedan los botones, para ganar espacio.",
+      "«Crear proyecto» lo crea y lo abre en su «Plan de pruebas», todavía sin guardar y con los valores por defecto de algunos pasos, porque es lo primero que conviene escribir (capítulo 5). Todas las secciones del proyecto comparten su cabecera: la insignia con el prefijo de sus claves (aquí «PH»), el nombre, el estado de su plan («Sin plan», «Plan borrador», «Plan en revisión», «Plan aprobado» o «Plan obsoleto»; el plan cuenta en cuanto se guarda, aunque el panel ya diga «Borrador») y una línea con sus casos, sus requisitos y «Fin del plan», la última fecha del calendario del plan, cuando el plan la tiene. A la derecha van los botones de la sección abierta (aquí, los del plan). En el móvil solo quedan los botones, para ganar espacio.",
     covers: ["screen:project-header"],
-    focus: "header.pj-header",
+    // The header alone: the empty plan it opens on is chapter 5's first picture.
+    shot: { element: "header.pj-header" },
     run: async () => {
       await button(W.create).click();
       await expect($(`h1=${PROJECT_A.name}`)).toBeDisplayed();
@@ -106,10 +107,15 @@ chapter("proyectos", () => {
     caption:
       "Para ir más rápido, en «Datos generales» escribe el nombre y pulsa Intro en lugar de «Crear proyecto». En este ejemplo, el segundo proyecto es «API de sincronización», el servidor con el que se sincroniza Pharos. Como el primero, se abre en su «Plan de pruebas».",
     covers: ["keyboard:project-create-enter"],
+    shot: { element: '[role="dialog"]' },
     run: async () => {
       await byTestId("nav-projects").click();
       await expect($(`h1=${es.projects.title}`)).toBeDisplayed();
       await startBlankProject(PROJECT_B.name);
+    },
+    after: async () => {
+      // The capture took the focus away from the name: back to it, then Intro.
+      await $("#pj-new-name").click();
       await browser.keys("Enter");
       await expect($(`h1=${PROJECT_B.name}`)).toBeDisplayed();
       await urlEndsWith("plan");
@@ -181,7 +187,7 @@ chapter("proyectos", () => {
   step("lista-proyectos", {
     title: "Todos los proyectos",
     caption:
-      "Con proyectos, la lista muestra arriba los «Recientes» (los últimos que abriste) y debajo la tabla de todos: el estado del plan, los casos, «Ejecutado» (los casos con resultado), la cobertura de requisitos y el último acceso. Son los proyectos del workspace elegido en el menú lateral (capítulo 2): aquí, los de «Personal». Busca por nombre o prefijo (en este ejemplo, «sincro» deja solo «API de sincronización») y cambia el orden con el menú de orden: «Último acceso», «Nombre (A–Z)», «Última modificación», «Fin del plan», «Progreso de ejecución», «Cobertura de requisitos» o «Defectos abiertos». Con muchos proyectos, la tabla se pagina de 5, 10 o 20.",
+      "Con proyectos, la lista muestra arriba los «Recientes» (los últimos que abriste) y debajo la tabla de todos: el estado del plan, los casos, «Ejecutado» (los casos con resultado), la cobertura de requisitos y el último acceso. Son los proyectos del workspace elegido en el menú lateral (capítulo 2): aquí, los de «Personal». Encima de la tabla, «Todos», «En curso» y «Cerrados» filtran por estado. Busca por nombre o prefijo (en este ejemplo, «sincro» deja solo «API de sincronización») y cambia el orden con el menú de orden: «Último acceso», «Nombre (A–Z)», «Última modificación», «Fin del plan», «Progreso de ejecución», «Cobertura de requisitos» o «Defectos abiertos». Con muchos proyectos, la tabla se pagina de 5, 10 o 20.",
     covers: ["action:projects-search", "action:projects-sort"],
     focus: [SEARCH, ".pj-table"],
     run: async () => {
@@ -211,7 +217,7 @@ chapter("proyectos", () => {
   step("menu-fila", {
     title: "Acciones de un proyecto",
     caption:
-      "El menú «⋯» de cada fila reúne las acciones del proyecto: «Abrir», «Ajustes del proyecto» (capítulo 14) y «Exportar proyecto (ZIP)». Cuando eres Test Manager de un workspace compartido, aparece además «Compartir con un workspace…», que lo lleva entero a ese workspace para trabajarlo con tu equipo (capítulo 21). Se recorre con ↑ ↓ y se cierra con Esc.",
+      "El menú «⋯» de cada fila reúne las acciones del proyecto: «Abrir», «Ajustes del proyecto» (capítulo 14) y «Exportar proyecto (ZIP)». Cuando eres Test Manager de un workspace compartido, aparece además «Compartir con un workspace…», que lo lleva entero a ese workspace para trabajarlo con tu equipo (capítulo 20). Se recorre con ↑ ↓ y se cierra con Esc.",
     covers: ["action:projects-row-menu"],
     focus: '[role="menu"]',
     run: async () => {

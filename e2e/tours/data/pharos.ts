@@ -179,7 +179,7 @@ export const CYCLE = {
       },
       {
         match: /cobertura/i,
-        text: "REQ-003 a REQ-012 se cubren en el Sprint 2, hasta el 6 de diciembre; lo asume Liomar, responsable de QA.",
+        text: "Los 8 requisitos sin cubrir (REQ-003 a REQ-005 y REQ-008 a REQ-012) se cubren en el Sprint 2, hasta el 6 de diciembre; lo asume Liomar, responsable de QA.",
       },
     ],
     otherJustification: "Se repite en la regresión de la beta.2, del 23 de noviembre; lo sigue Liomar, responsable de QA.",
@@ -198,13 +198,14 @@ export const CYCLE = {
  *  (fixtures/informe-adjuntos/: PH-001 fails, PH-002 passes). */
 export const RESULTS = { title: "Tests de acceso · con capturas", build: RELEASE.build, environment: RELEASE.environment };
 
-/** The manual run of chapter 11 (PH-001 fails at step 3, PH-002 passes,
+/** The manual run of chapter 11 (PH-001 fails at step 4, «Pulsar «Entrar»»:
+ *  the executor counts its precondition as step 1; PH-002 passes,
  *  PH-005 runs once per dataset row and its third row fails). */
 export const MANUAL_RUN = {
   title: `Regresión manual · ${RELEASE.build}`,
   build: RELEASE.build,
   environment: RELEASE.environment,
-  failed: { caseKey: "PH-001", step: 3, actual: "Se queda en la entrada con «Correo o contraseña incorrectos.»" },
+  failed: { caseKey: "PH-001", step: 4, actual: "Se queda en la entrada con «Correo o contraseña incorrectos.»" },
   passed: { caseKey: "PH-002" },
   dataset: { caseKey: LIBRARY.case.key, failedRow: LIBRARY.case.failedRow },
 };
@@ -274,7 +275,7 @@ export const PLAN = {
   ],
   scopeOut: ["Integración con Jira", "App móvil nativa"],
   assumptions: ["El servidor de staging está disponible de 8 a 20 h"],
-  constraints: ["Un equipo de QA de dos personas", "La versión sale el 30/11/2026"],
+  constraints: ["Un equipo de QA de dos personas", "La versión sale el 07/12/2026, al terminar el Sprint 2"],
   testLevels: ["integration", "system", "acceptance"],
   testTypes: ["functional", "security", "usability", "performance", "retest", "regression", "Pruebas de sincronización"],
   techniques: ["equivalencePartitioning", "boundaryValues", "stateTransition", "exploratory"],
@@ -309,7 +310,7 @@ export const PLAN = {
   ],
   milestones: [
     { name: "Congelación de código", date: "2026-11-25" },
-    { name: `Publicación de la ${RELEASE.version}`, date: "2026-11-30" },
+    { name: `Publicación de la ${RELEASE.version}`, date: "2026-12-07" },
   ],
   risks: [
     ["Una actualización de WebView2 rompe la automatización de escritorio", "Fijar la versión del controlador y revisarla en cada actualización"],
@@ -336,9 +337,8 @@ export const PLAN_ON_SCREEN = {
   reviewNote: `Primera versión del plan de la ${RELEASE.version}, importada de Excel.`,
 };
 
-/** The workspace of chapters 21 and 20. Chapter 21 (it runs before 20)
- *  creates it, shares «Pharos» into it and invites Jorge; chapter 20 gives
- *  its CI a token. */
+/** The workspace of chapters 20 and 21. Chapter 20 creates it, shares
+ *  «Pharos» into it and invites Jorge; chapter 21 gives its CI a token. */
 export const TEAM = {
   workspace: "Equipo QA",
   sharedProject: PROJECT_A.name,
@@ -346,8 +346,8 @@ export const TEAM = {
    *  but not plans (plan.approve is Test Manager only: server/src/modules/
    *  workspaces/roles.ts). A plan approval by Jorge needs «Cambiar el rol». */
   jorgeRole: "test_analyst" as const,
-  /** Chapter 21 raises him to Test Manager for the plan's review and leaves
-   *  him there (two Test Managers): chapter 20 needs his project token. */
+  /** Chapter 20 raises him to Test Manager for the plan's review and leaves
+   *  him there (two Test Managers): chapter 21 needs his project token. */
   jorgeFinalRole: "test_manager" as const,
   /** «Para quién» of the invitation (a note, never sent). */
   inviteNote: "Jorge, compañero de QA",
@@ -365,7 +365,7 @@ export const TEAM = {
   planNote: "Plan para el equipo: lo aprueba un Test Manager que no sea su autor.",
   /** The defect Liomar assigns to Jorge (DEFECTS.prefix). */
   assignedDefect: "prefix" as const,
-  /** Jorge's project token in chapter 20 («Reasignar a mí»). */
+  /** Jorge's project token in chapter 21 («Reasignar a mí»). */
   jorgeToken: "CI nocturno de Pharos",
 };
 

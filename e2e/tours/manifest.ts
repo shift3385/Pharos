@@ -186,7 +186,7 @@ export const PREREQUISITES: Prerequisite[] = [
   {
     id: "ciclo-ejecutado",
     contract:
-      "the cycle's two runs (Chrome and Edge) completed: PH-001 fails at step 3 and PH-002 passes (each example row) in both",
+      "the cycle's two runs (Chrome and Edge) completed: PH-001 fails at its last step («Pulsar «Entrar»») and PH-002 passes (each example row) in both",
     after: ["ciclo"],
     loader: "web API /api/results and /close on each run of the cycle + sync",
   },
@@ -219,7 +219,7 @@ export const PREREQUISITES: Prerequisite[] = [
   },
   {
     id: "jorge-en-equipo",
-    contract: "Jorge is a member of «Equipo QA», a Test Manager (invited as Test Analyst, raised for the plan's review in chapter 21)",
+    contract: "Jorge is a member of «Equipo QA», a Test Manager (invited as Test Analyst, raised for the plan's review in chapter 20)",
     madeBy: "equipo",
     after: ["equipo-qa", "cuenta-jorge"],
     loader: "an invitation made as Liomar and accepted through the API as Jorge, then his role set to Test Manager + sync",
@@ -257,9 +257,11 @@ export const CHAPTERS: Chapter[] = [
   { id: "ajustes", number: 14, title: "Ajustes del proyecto", file: "14-ajustes.tour.ts", status: "active", uses: ["proyectos"] },
   { id: "navegacion", number: 2, title: "La aplicación de un vistazo", file: "02-navegacion.tour.ts", status: "active", uses: ["prefijos"] },
   { id: "plan", number: 5, title: "Plan de pruebas", file: "05-plan.tour.ts", status: "active", uses: ["prefijos"] },
+  // Right after the plan, before requirements and cases exist: the project
+  // header shows what chapter 5 left (no requirements, no cases).
+  { id: "tablero", number: 6, title: "Tablero", file: "06-tablero.tour.ts", status: "active", uses: ["prefijos"] },
   { id: "requisitos", number: 7, title: "Requisitos", file: "07-requisitos.tour.ts", status: "active", uses: ["prefijos"] },
   { id: "casos", number: 8, title: "Casos de prueba", file: "08-casos.tour.ts", status: "active", uses: ["ajustes", "requisitos"] },
-  { id: "tablero", number: 6, title: "Tablero", file: "06-tablero.tour.ts", status: "active", uses: ["prefijos"] },
   { id: "ciclos", number: 9, title: "Ciclos de prueba", file: "09-ciclos.tour.ts", status: "active", uses: ["plan", "casos-base", "ajustes"] },
   { id: "ejecuciones", number: 10, title: "Ejecuciones e importación de resultados", file: "10-ejecuciones.tour.ts", status: "active", uses: ["casos-base", "ciclo", "caso-dataset"] },
   { id: "defectos", number: 12, title: "Defectos", file: "12-defectos.tour.ts", status: "active", uses: ["casos-base", "requisitos", "resultados", "ajustes"] },
@@ -295,12 +297,12 @@ export const CHAPTERS: Chapter[] = [
   { id: "errores", number: 19, title: "Si algo sale mal", file: "19-errores.tour.ts", status: "active", uses: ["cuenta-liomar"] },
   // Team work with Jorge (decision D-1): it creates «Equipo QA», shares
   // «Pharos» into it, invites Jorge, and shows members, roles, review and
-  // approval by another person. It runs before chapter 20 (which needs the
-  // shared workspace and Jorge's token) although the manual prints it after.
-  { id: "equipo", number: 21, title: "Trabajo en equipo", file: "21-equipo.tour.ts", status: "active", uses: ["cuenta-jorge", "plan", "casos-base", "defectos"] },
+  // approval by another person. It runs, and prints, before chapter 21, which
+  // needs the shared workspace and Jorge's Test Manager role.
+  { id: "equipo", number: 20, title: "Trabajo en equipo", file: "20-equipo.tour.ts", status: "active", uses: ["cuenta-jorge", "plan", "casos-base", "defectos"] },
   // INT-02/INT-03/INT-04 (ADR-0052): tokens, Conectar CI, webhooks, on the
-  // «Pharos» that chapter 21 shares into «Equipo QA».
-  { id: "integraciones", number: 20, title: "Integraciones", file: "20-integraciones.tour.ts", status: "active", uses: ["equipo-qa", "jorge-en-equipo"] },
+  // «Pharos» that chapter 20 shares into «Equipo QA».
+  { id: "integraciones", number: 21, title: "Integraciones", file: "21-integraciones.tour.ts", status: "active", uses: ["equipo-qa", "jorge-en-equipo"] },
 ];
 
 /** The chapters as the manual prints them (by `number`), without the preparation. */
@@ -679,7 +681,7 @@ export const INVENTORY: Item[] = [
   // ---- 10 · Administración --------------------------------------------------------------
   I("administracion", "route", "route:/admin", "Administración"),
   // Workspaces with roles (SYNC-07, ADR-0042). Members and invitations need a
-  // second account: Jorge's (people.ts), in chapter 21 «Trabajo en equipo».
+  // second account: Jorge's (people.ts), in chapter 20 «Trabajo en equipo».
   I("equipo", "route", "route:/workspaces/members", "Miembros y roles de un workspace"),
   I("equipo", "route", "route:/workspaces/join", "Unirse a un workspace con un código"),
   I("equipo", "dialog", "dialogs:src/modules/workspaces/ui/CreateWorkspaceDialog.tsx", "Crear workspace"),

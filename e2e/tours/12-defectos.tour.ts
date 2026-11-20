@@ -117,15 +117,16 @@ chapter("defectos", () => {
       const os = await field("Sistema operativo");
       await os.scrollIntoView({ block: "center" });
       await os.setValue(DEFECTS.prefix.os);
-      // The capture: from the title down to the expected and obtained results.
-      await scrollToTop((await field(F.field.title)).parentElement());
+      // The capture: from the «Detalles» heading down to the expected and
+      // obtained results.
+      await scrollToTop((await field(F.field.title)).parentElement(), 56);
     },
   });
 
   step("asignado", {
     title: "Asignado a",
     caption:
-      `Debajo, «Dónde se encontró» lleva la build y el entorno (en este ejemplo, ${RELEASE.build} en ${RELEASE.environment}), y «Asignado a» dice quién se ocupa del defecto: se elige entre los miembros activos del workspace, o «Sin asignar». En «Personal» el único miembro eres tú, así que Liomar se lo asigna a sí mismo; en un workspace compartido, la persona elegida recibe un aviso con el defecto (capítulo 21). En «Vínculos», marca los casos y los requisitos afectados: la matriz de trazabilidad (capítulo 13) los mostrará junto al defecto. Liomar marca el caso «Crear un proyecto» (PH-003) y el requisito REQ-002.`,
+      `Debajo, «Dónde se encontró» lleva la build y el entorno (en este ejemplo, ${RELEASE.build} en ${RELEASE.environment}), y «Asignado a» dice quién se ocupa del defecto: se elige entre los miembros activos del workspace, o «Sin asignar». En «Personal» el único miembro eres tú, así que Liomar se lo asigna a sí mismo; en un workspace compartido, la persona elegida recibe un aviso con el defecto (capítulo 20). En «Vínculos», marca los casos y los requisitos afectados: la matriz de trazabilidad (capítulo 13) los mostrará junto al defecto. Liomar marca el caso «Crear un proyecto» (PH-003) y el requisito REQ-002.`,
     focus: '//label[.//*[@data-testid="defect-assignee"]]',
     run: async () => {
       await chooseOption(byTestId("defect-assignee"), { text: `${PERSONA.first} ${PERSONA.last}` });
@@ -192,7 +193,7 @@ chapter("defectos", () => {
   step("prerrellenado", {
     title: "Prerrellenado desde el resultado",
     caption:
-      "El aviso azul de arriba indica de qué resultado nace el defecto. El editor trae el error como resultado obtenido y, como resultado esperado, el del paso que falló o, si no tiene, el del caso. Revisa el título y la severidad que propone y guarda. En este ejemplo, Liomar lo titula «Entrar con credenciales válidas muestra “Correo o contraseña incorrectos”» y lo marca como crítico: nadie puede entrar en la aplicación.",
+      "El aviso azul de arriba indica de qué resultado nace el defecto, y el editor llega ya relleno: más abajo, en «Reproducción», trae el error como resultado obtenido y, como esperado, el del paso que falló o, si no tiene, el del caso. Revisa el título y la severidad que propone y guarda. En este ejemplo, Liomar lo titula «Entrar con credenciales válidas muestra “Correo o contraseña incorrectos”» y lo marca como crítico: nadie puede entrar en la aplicación.",
     focus: ".df-banner",
     run: async () => {
       await $(D).$(`button*=${F.results.choose}`).click();
@@ -328,7 +329,7 @@ chapter("defectos", () => {
   step("escape", {
     title: "Un defecto que se escapó de las pruebas",
     caption:
-      `Si el defecto se encontró fuera de las pruebas, por ejemplo en producción o en una demostración, marca «Encontrado fuera de las pruebas» en «Dónde se encontró». Cuenta como escape del último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo dejó pasar, y la recogen la tendencia de ciclos del Inicio (capítulo 3) y el informe de go/no-go (capítulo 9). En este ejemplo, un usuario de la beta avisa de que el enlace del correo de bienvenida abre la versión anterior, y Liomar lo registra como escape, con lo que vio el usuario y la build y el entorno de la beta.`,
+      `Si el defecto se encontró fuera de las pruebas, por ejemplo en producción o en una demostración, marca «Encontrado fuera de las pruebas» en «Dónde se encontró». Cuenta como escape del último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo dejó pasar, y la recogen la tendencia de ciclos del Inicio (capítulo 3) y el informe de go/no-go (capítulo 9). En este ejemplo, un usuario de la beta avisa de que el enlace del correo de bienvenida abre la versión anterior, y Liomar lo registra como escape, con lo que vio el usuario y la build y el entorno de la beta. Como la «Regresión 0.6.0» aún no se ha cerrado (se cierra al final de la historia, capítulo 9), este escape no cuenta para ningún ciclo.`,
     focus: ".df-escaped",
     run: async () => {
       await clickButton(F.newDefect);
@@ -341,8 +342,12 @@ chapter("defectos", () => {
       const escaped = byTestId("defect-escaped");
       await escaped.click();
       await expect(escaped).toBeSelected();
-      // From the expected and obtained results down to the escape mark.
-      await scrollToTop((await field(F.field.expected)).parentElement());
+      // From the title down to the escape mark: the reader sees which defect.
+      await $(".df-escaped").scrollIntoView({ block: "end" });
+      await browser.execute(() => {
+        const content = document.querySelector(".app-shell__content");
+        if (content) content.scrollTop += 24;
+      });
     },
     after: async () => {
       await save();

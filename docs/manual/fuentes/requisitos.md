@@ -44,7 +44,7 @@ versión), ejecutar paso a paso con evidencias, registrar un defecto, la
 aprobación independiente, recuperar la cuenta y los tokens de CI.
 
 En un workspace compartido, escriben requisitos el Test Manager, el Test
-Analyst y el Product Owner; un Viewer solo los ve (capítulo 21).
+Analyst y el Product Owner; un Viewer solo los ve (capítulo 20).
 
 ## Atajos de teclado
 
