@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { InfoTip } from "@shared/ui/InfoTip";
 import type { GherkinLevel } from "../model/types";
 
 const LEVELS: GherkinLevel[] = ["basic", "outline", "advanced"];
@@ -22,13 +23,17 @@ export function LevelPicker({
   const { t } = useTranslation();
   return (
     <section className="tc-editor">
-      <header className="tc-editor__top">
+      {/* The head sits on a card like the case editor's chrome, and the
+          explanation behind a «?» beside the title (FIX-35). */}
+      <header className="tc-editor__top tc-body">
         <button type="button" className="tp-editor__back" onClick={onCancel}>
           ← {t("testCase.back")}
         </button>
         <h1>{t("testCase.level.pickTitle")}</h1>
+        <InfoTip id="tc-level-pick-help" label={t("testCase.level.pickTitle")}>
+          {t("testCase.level.pickSubtitle")}
+        </InfoTip>
       </header>
-      <p className="tp__subtitle">{t("testCase.level.pickSubtitle")}</p>
       <div className="tc-levels">
         {LEVELS.map((level) => {
           const prev = PREVIOUS[level];

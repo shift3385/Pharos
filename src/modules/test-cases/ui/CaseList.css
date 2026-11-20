@@ -407,6 +407,25 @@
   border-radius: var(--radius-lg);
 }
 
+/* The editor's chrome (nav bar, title strip, review panel), the AI note and
+   the head of the scenario-type picker: on the same surface as the form, in a
+   tighter card, so nothing is drawn over the background image (FIX-35). */
+.tc-chrome {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.tc-chrome .tc-review {
+  margin-block: 0;
+}
+
+.tc-ai-case.tc-body,
+.tc-editor__top.tc-body {
+  padding: 10px 16px;
+}
+
 .tc-meta-row {
   display: flex;
   flex-wrap: wrap;

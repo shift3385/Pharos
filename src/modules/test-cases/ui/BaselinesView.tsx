@@ -4,6 +4,7 @@ import { ArrowLeft, Camera, GitCompare } from "lucide-react";
 import { Alert } from "@shared/ui/Alert";
 import { Dialog } from "@shared/ui/Dialog";
 import { FormField } from "@shared/ui/FormField";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { LoadError } from "@shared/ui/LoadError";
 import { Select } from "@shared/ui/Select";
 import { StatusPill } from "@shared/ui/StatusPill";
@@ -20,6 +21,7 @@ import {
 import type { ListedCase } from "../model/caseList";
 import { CaseChanges } from "./CaseChanges";
 import { stampLabel, statusTone } from "./caseTones";
+import "./CaseList.css";
 import "./Baselines.css";
 
 /** The «Estado actual» side of a comparison. */
@@ -92,21 +94,25 @@ export function BaselinesView({
   }
 
   return (
-    <section className="bl" aria-labelledby="bl-title">
+    <section className="bl tc-body" aria-labelledby="bl-title">
       <div className="bl-head">
         <button type="button" className="ui-btn ui-btn--ghost" onClick={onClose}>
           <ArrowLeft size={16} aria-hidden="true" />
           {t("testCase.baselines.back")}
         </button>
-        <h2 id="bl-title" className="bl-title">
-          {t("testCase.baselines.title")}
-        </h2>
+        <div className="bl-titleline">
+          <h2 id="bl-title" className="bl-title">
+            {t("testCase.baselines.title")}
+          </h2>
+          <InfoTip id="bl-title-help" label={t("testCase.baselines.title")}>
+            {t("testCase.baselines.lead")}
+          </InfoTip>
+        </div>
         <button type="button" className="ui-btn ui-btn--primary" onClick={() => setCreating(true)} data-testid="baseline-new">
           <Camera size={16} aria-hidden="true" />
           {t("testCase.baselines.new")}
         </button>
       </div>
-      <p className="bl-lead">{t("testCase.baselines.lead")}</p>
       {failed && <LoadError message={t("testCase.baselines.loadFailed")} onRetry={() => void load()} />}
       {list && list.length === 0 && <p className="bl-empty">{t("testCase.baselines.empty")}</p>}
       {list && list.length > 0 && (
@@ -366,7 +372,7 @@ function BaselineCompare({
   const statusLabel = (s?: string) => (s ? t(`testCase.statusLabel.${s}`, { defaultValue: s }) : "—");
 
   return (
-    <section className="bl" aria-labelledby="bl-cmp-title">
+    <section className="bl tc-body" aria-labelledby="bl-cmp-title">
       <div className="bl-head">
         <button type="button" className="ui-btn ui-btn--ghost" onClick={onBack}>
           <ArrowLeft size={16} aria-hidden="true" />

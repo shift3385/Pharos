@@ -911,6 +911,11 @@
   font-size: var(--fs-ui);
   color: var(--color-text-secondary);
 }
+/* A review note is prose: the app's font, not the browser's monospace. */
+.tc-review__field textarea {
+  font-family: inherit;
+  font-size: var(--fs-ui);
+}
 .tc-review__error {
   margin: 0;
   font-size: var(--fs-caption);

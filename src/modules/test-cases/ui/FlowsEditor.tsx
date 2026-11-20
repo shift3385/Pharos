@@ -60,6 +60,7 @@ export function FlowsEditor({
     <div className="tc-flows">
       <CaseSection
         title={t("testCase.flow.background")}
+        info={t("testCase.flow.backgroundHint")}
         assist={
           <CaseListReview
             field="background"
@@ -74,7 +75,6 @@ export function FlowsEditor({
           />
         }
       >
-        <p className="tp-field__hint">{t("testCase.flow.backgroundHint")}</p>
         <StepListField
           label={t("testCase.flow.background")}
           items={background}
@@ -191,8 +191,10 @@ export function FlowsEditor({
             />
           </CaseSection>
 
-          <CaseSection title={t("testCase.examples.title")}>
-            <p className="tp-field__hint">{t("testCase.flow.examplesHint")}</p>
+          <CaseSection
+            title={t("testCase.examples.title")}
+            info={t("testCase.flow.examplesHint")}
+          >
             <ExamplesTable
               value={flow.examples ?? EMPTY}
               onChange={(v) => setFlow(i, { examples: v })}

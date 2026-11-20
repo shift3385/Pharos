@@ -59,7 +59,7 @@ export function ItemEditorFrame({
       : []),
   ];
   return (
-    <section className="lb-editor" aria-labelledby={`${hintId}-title`}>
+    <section className="lb-editor pj-card-box" aria-labelledby={`${hintId}-title`}>
       <div className="lb-editor__bar">
         <button
           type="button"
