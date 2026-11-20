@@ -151,7 +151,7 @@ const basis = z.enum(["stated", "inferred"]).catch("inferred");
 const kind = z.enum(["functional", "non-functional", "constraint"]).optional().catch(undefined);
 const lineNumber = z.coerce.number().int().min(1).optional().catch(undefined);
 
-/** One requirement a batch of project files shows (`req-extract@2`). Its
+/** One requirement a batch of project files shows (`req-extract@1`). Its
  *  `sources` are checked against what was sent in `usableCandidates`. */
 export const requirementCandidateSchema = z.object({
   title: line(200),
@@ -188,7 +188,7 @@ const optionalKey = z.preprocess(
   z.string().max(100).optional(),
 );
 
-/** The answer of `req-synthesis@2`: what to do with the candidates and the
+/** The answer of `req-synthesis@1`: what to do with the candidates and the
  *  existing requirements. Keys and candidate numbers are checked against what
  *  was sent in `usableRequirementProposals` (traceability). */
 export const requirementSynthesisSchema = z.object({
