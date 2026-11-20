@@ -298,6 +298,42 @@ fn a_defect_from_a_failed_result_is_prefilled_and_shares_its_evidence() {
 }
 
 #[test]
+fn a_draft_takes_the_case_expected_result_when_the_failed_step_has_none() {
+    // FIX-42: the case states its expected result once, not per step.
+    let c = device();
+    let p = new_project(&c);
+    let input: test_case::TestCaseInput = serde_json::from_value(json!({
+        "projectId": p, "title": "Sign in", "author": "Ada",
+        "data": {"steps": [{"text": "open"}, {"text": "sign in"}],
+                 "expectedResult": "Home opens"},
+        "userId": U
+    }))
+    .unwrap();
+    let case = test_case::insert_case(&c, &input).unwrap();
+    let run_input: runs::RunInput =
+        serde_json::from_value(json!({"projectId": p, "title": "Smoke", "userId": U})).unwrap();
+    let run = runs::insert_run(&c, &run_input).unwrap();
+    let item: runs::RunItemInput = serde_json::from_value(json!({"testCaseId": case})).unwrap();
+    let items = runs::add_items(&c, &run, U, &[item]).unwrap();
+    let data: String = c
+        .query_row("SELECT data FROM test_cases WHERE id = ?1", [&case], |r| {
+            r.get(0)
+        })
+        .unwrap();
+    let data: Value = serde_json::from_str(&data).unwrap();
+    let s1 = data["steps"][1]["id"].as_str().unwrap().to_string();
+    let result: runs::ResultInput = serde_json::from_value(json!({
+        "runItemId": items[0], "status": "failed", "userId": U,
+        "steps": [{"stepId": s1, "text": "sign in", "status": "failed", "actual": "Wrong password"}]
+    }))
+    .unwrap();
+    let rid = runs::record_result(&c, &result).unwrap();
+    let draft = draft_from_result(&c, &rid, None, U).unwrap();
+    assert_eq!(draft.expected.as_deref(), Some("Home opens"));
+    assert_eq!(draft.actual.as_deref(), Some("Wrong password"));
+}
+
+#[test]
 fn deleting_a_defect_takes_its_links_and_releases_its_evidence() {
     let c = device();
     let (_, _, rid) = failed_result(&c);

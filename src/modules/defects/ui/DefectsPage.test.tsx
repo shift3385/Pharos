@@ -183,6 +183,38 @@ describe("Defectos (DEF-01)", () => {
   });
 });
 
+describe("«Desde un resultado» names the case (FIX-42)", () => {
+  it("shows a linked imported result by its case and numbers attempts from 1", async () => {
+    setViewportWidth(1440);
+    results.mockResolvedValue([
+      {
+        resultId: "r9",
+        runId: "run3",
+        runKey: "RUN-003",
+        runTitle: "Regresión nocturna",
+        // Linked later from «Sin vincular»: no tag, so no caseKey of its own.
+        testCaseId: "c1",
+        caseKey: null,
+        testKey: "specs/acceso.spec.ts::Acceso › entra con credenciales",
+        attempt: 0,
+        status: "failed",
+        createdAt: "2026-11-19 23:31:00",
+      },
+    ]);
+    renderWithProviders(<DefectsPage projectId="p1" userId="u1" cases={cases} />);
+    await screen.findByRole("table");
+    await userEvent.click(screen.getByRole("button", { name: "Desde un resultado" }));
+    const dialog = screen.getByRole("dialog", { name: "Resultados que no pasaron" });
+    expect(await within(dialog).findByText("ATS_001 · Pago")).toBeInTheDocument();
+    expect(within(dialog).queryByText(/specs\/acceso/)).not.toBeInTheDocument();
+    expect(within(dialog).getByText(/intento 1 ·/)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/intento 0/)).not.toBeInTheDocument();
+    // The search finds it by the case's title too.
+    await userEvent.type(within(dialog).getByRole("searchbox"), "pago");
+    expect(within(dialog).getByRole("button", { name: "Elegir: RUN-003 ATS_001 · Pago" })).toBeInTheDocument();
+  });
+});
+
 describe("DefectEditor", () => {
   it("offers only the next statuses and asks for the resolution to close", async () => {
     setViewportWidth(1440);

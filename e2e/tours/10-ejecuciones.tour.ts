@@ -226,7 +226,7 @@ chapter("ejecuciones", () => {
   step("hallazgos", {
     title: "Los hallazgos de un run",
     caption:
-      "En el run aparecen las pestañas «Hallazgos» y «Métricas» cuando hay algo que mostrar. «Hallazgos» los agrupa por regla, con su severidad, su ubicación (archivo y línea, o página y elemento) y sus referencias (CWE, WCAG…). «Nuevo» marca los que no estaban en el run anterior de la misma herramienta. Los filtros dejan ver solo una severidad, los abiertos, los que esperan revisión («A revisar») o los ya triajados.",
+      "En el run aparecen las pestañas «Hallazgos» y «Métricas» cuando hay algo que mostrar. «Hallazgos» los agrupa por regla, con su severidad, su ubicación (archivo y línea, o página y elemento) y sus referencias (CWE, WCAG…). «Nuevo» marca los que no estaban en el run anterior de la misma herramienta. Los filtros dejan ver solo una severidad, los abiertos, los que esperan revisión («A revisar») o los ya triados.",
     covers: ["tabs:src/modules/runs/ui/RunDetail.tsx"],
     run: async () => {
       await clickButton(R.import.confirm, D);
@@ -249,7 +249,7 @@ chapter("ejecuciones", () => {
   step("triaje", {
     title: "Triaje de un hallazgo",
     caption:
-      "«Triaje» decide qué hacer con un hallazgo: falso positivo, riesgo aceptado o corregido, siempre con un motivo, o reabrirlo. La decisión vale para ese hallazgo en todos los runs del proyecto, así que el próximo análisis llega ya triajado, y las decisiones anteriores quedan en su historial. Aquí se acepta el riesgo de no tener HEALTHCHECK hasta la versión 0.7.0.",
+      "«Triaje» decide qué hacer con un hallazgo: falso positivo, riesgo aceptado o corregido, siempre con un motivo, o reabrirlo. La decisión vale para ese hallazgo en todos los runs del proyecto, así que el próximo análisis llega ya triado, y las decisiones anteriores quedan en su historial. Aquí se acepta el riesgo de no tener HEALTHCHECK hasta la versión 0.7.0.",
     covers: ["dialogs:src/modules/runs/ui/TriageDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -262,9 +262,9 @@ chapter("ejecuciones", () => {
   });
 
   step("triaje-hecho", {
-    title: "Hallazgo triajado",
+    title: "Hallazgo triado",
     caption:
-      "Al guardar, el hallazgo sale de «Abiertos» (ya no cuenta en la matriz ni en el informe) y aparece en «Triajados» con su estado.",
+      "Al guardar, el hallazgo sale de «Abiertos» (ya no cuenta en la matriz ni en el informe) y aparece en «Triados» con su estado.",
     shot: false,
     run: async () => {
       await $(D).$('[data-testid="triage-save"]').click();

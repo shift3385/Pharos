@@ -535,6 +535,12 @@ describe("runs on the web", () => {
   it("drafts a defect from a failed attempt, without evidence", async () => {
     const call = api(await tokenFor());
     const s = await seed(call);
+    // The case states its expected result once, not per step (FIX-42).
+    const kase = (await call("GET", `/api/test-cases/${s.simple.id}`)).body;
+    await call("PUT", `/api/test-cases/${s.simple.id}`, {
+      input: { ...kase, data: { ...kase.data, expectedResult: "The order is paid" } },
+      revision: kase.revision,
+    });
     await call("POST", "/api/runs", { input: { projectId: s.projectId, title: "M", build: "7", environment: "qa" }, items: [{ testCaseId: s.simple.id }] });
     const [item] = (await docs("run_item")).map((d) => d.entity_id);
     await call("POST", "/api/results", {
@@ -555,6 +561,7 @@ describe("runs on the web", () => {
       projectId: s.projectId,
       title: `${s.simple.key} · pay`,
       stepsToReproduce: "1. open\n2. pay",
+      expected: "The order is paid",
       actual: "card declined",
       foundInRunId: run.entity_id,
       foundInBuild: "7",

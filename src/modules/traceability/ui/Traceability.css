@@ -326,6 +326,14 @@
   text-overflow: ellipsis;
 }
 
+/* Matrix notes (FIX-42): whole words over as many lines as they need. */
+.tz-notes {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
 /* Matrix titles (NC-053): up to two lines before the ellipsis, so a title
    reads whole at desktop widths; the full text stays in the tooltip. */
 .tz-clamp {

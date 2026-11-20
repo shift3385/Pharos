@@ -152,10 +152,15 @@ describe("Trazabilidad (RED-V3)", () => {
     const tracks = table.style.getPropertyValue("--dt-cols");
     expect(tracks).toContain("minmax(140px,1.6fr)");
     expect(tracks).toContain("minmax(140px,1.7fr)");
-    expect(tracks).toContain("minmax(0,0.8fr)");
+    // FIX-42: the notes get a readable minimum and wrap instead of ending in «Defect…».
+    expect(tracks).toContain("minmax(120px,1fr)");
+    expect(tracks).not.toContain("minmax(0,0.8fr)");
     const titles = table.querySelectorAll(".tz-clamp");
     expect(titles.length).toBeGreaterThan(0);
     titles.forEach((title) => expect(title).toHaveAttribute("title", title.textContent ?? ""));
+    const notes = table.querySelectorAll(".tz-notes");
+    expect(notes.length).toBeGreaterThan(0);
+    expect(table.querySelector('[role="cell"] .tz-clip, td .tz-clip')).toBeNull();
   });
 
   it("«Mostrar solo huecos» counts and keeps only the uncovered requirements", async () => {

@@ -47,6 +47,7 @@ const api = vi.hoisted(() => ({
   metrics: vi.fn(),
   triage: vi.fn(),
   triageHistory: vi.fn(),
+  results: vi.fn(),
 }));
 vi.mock("../api/runsApi", () => ({ runsApi: api }));
 const platform = vi.hoisted(() => ({ desktop: true }));
@@ -261,6 +262,7 @@ beforeEach(async () => {
   api.findings.mockResolvedValue([]);
   api.metrics.mockResolvedValue([]);
   api.triageHistory.mockResolvedValue([]);
+  api.results.mockResolvedValue([]);
 });
 
 describe("run screen", () => {
@@ -273,7 +275,9 @@ describe("run screen", () => {
       "/projects/p/cycles?cycle=cy1",
     );
     expect(screen.getByText("1/2 ejecutados")).toBeInTheDocument();
-    expect(screen.getByText(/aún no se sincronizan/)).toBeInTheDocument();
+    // FIX-42: attachments sync since 0.5.0 (SYNC-04b).
+    expect(screen.getByText(/se sincronizan como el resto de los datos/)).toBeInTheDocument();
+    expect(screen.queryByText(/no se sincronizan/)).not.toBeInTheDocument();
     expect(screen.getAllByTestId("run-item-execute")).toHaveLength(2);
     await expectNoAxeViolations(container);
   });
@@ -691,6 +695,67 @@ describe("run screen", () => {
         expect(screen.getByTestId("exec-step-1-pass")).toHaveAttribute("aria-pressed", "false"),
       );
     });
+  });
+});
+
+describe("an imported run (FIX-42)", () => {
+  const imported = (over: Partial<ResultView>): ResultView =>
+    result({
+      shardId: "s1",
+      runItemId: null,
+      effectiveRunItemId: null,
+      testCaseId: null,
+      effectiveTestCaseId: "c3",
+      caseKey: "TC-003",
+      configurationLabel: null,
+      steps: [],
+      attributes: { name: "acceso por fila" },
+      ...over,
+    });
+
+  beforeEach(() => {
+    api.overview.mockResolvedValue(
+      overview({
+        run: run({ trigger: "import", status: "completed", finishedAt: "2026-11-04T10:00:00.000Z" }),
+        cycleKey: null,
+        cycleTitle: null,
+        configurationName: null,
+        items: [],
+        counts: { passed: 0, failed: 0, blocked: 0, skipped: 0, other: 0, notRun: 0, total: 0 },
+      }),
+    );
+    api.results.mockResolvedValue([
+      imported({ id: "x1", testKey: "k#1", exampleRow: 0, status: "passed" }),
+      imported({ id: "x2", testKey: "k#2", exampleRow: 1, status: "passed" }),
+      // Row 3 failed, then failed again: one test, two attempts.
+      imported({ id: "x3a", testKey: "k#3", exampleRow: 2, status: "failed", attempt: 0, isFinal: false }),
+      imported({ id: "x3b", testKey: "k#3", exampleRow: 2, status: "failed", attempt: 1 }),
+      imported({ id: "x4", testKey: "loose", effectiveTestCaseId: null, caseKey: null, status: "passed", attributes: { name: "sin caso" } }),
+    ]);
+  });
+
+  it("lists its results by case and row, counts them as executed and offers no «Añadir casos»", async () => {
+    const { container } = renderRun("/projects/p/runs/r1");
+    expect(await screen.findByText("4/4 ejecutados")).toBeInTheDocument();
+    const rows = await screen.findAllByTestId("run-imported-result");
+    expect(rows.map((r) => r.textContent)).toEqual([
+      "TC-003 BuscarFila 1",
+      "TC-003 BuscarFila 2",
+      "TC-003 BuscarFila 3",
+      "sin casoSin vincular",
+    ]);
+    expect(screen.queryByText(/Este run no tiene casos/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("run-add-cases")).not.toBeInTheDocument();
+    // Reopening stays: an open run takes more reports («Run abierto»).
+    expect(screen.getByTestId("run-reopen")).toBeInTheDocument();
+    await expectNoAxeViolations(container);
+  });
+
+  it("says a closed run with neither cases nor results has none, without «Añadir casos»", async () => {
+    api.results.mockResolvedValue([]);
+    renderRun("/projects/p/runs/r1");
+    expect(await screen.findByText("Este run no tiene casos ni resultados.")).toBeInTheDocument();
+    expect(screen.getByText("0/0 ejecutados")).toBeInTheDocument();
   });
 });
 

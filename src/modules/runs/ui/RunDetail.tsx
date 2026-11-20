@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { ArrowLeft, Info, ListPlus, Lock, Pencil, Play, RotateCcw, Trash2 } from "lucide-react";
 import { useAuth } from "@modules/auth";
-import type { FindingView, MetricView, RunItemRow, RunOverview } from "@shared/contracts/contract";
+import type { FindingView, MetricView, ResultView, RunItemRow, RunOverview } from "@shared/contracts/contract";
 import { isTauri } from "@shared/platform";
 import { DataTable, type DataColumn } from "@shared/ui/DataTable";
 import { Dialog } from "@shared/ui/Dialog";
@@ -25,6 +25,7 @@ import { ExecutionPanel } from "./ExecutionPanel";
 import { FindingsPanel } from "./FindingsPanel";
 import { MetricsPanel } from "./MetricsPanel";
 import { standingOf, thresholdsOf } from "../model/findings";
+import { importedRows, type ImportedRow } from "../model/importedRows";
 import "@shared/ui/buttons.css";
 import "@shared/ui/ConfirmDialog.css";
 import "./Execution.css";
@@ -60,6 +61,9 @@ export function RunDetail({
   // the run has some.
   const [findings, setFindings] = useState<FindingView[]>([]);
   const [metrics, setMetrics] = useState<MetricView[]>([]);
+  // The run's results: an imported one that fulfils no item of the run
+  // (an imported run has none) is listed apart and counted (FIX-42).
+  const [results, setResults] = useState<ResultView[]>([]);
   const [failed, setFailed] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
@@ -70,15 +74,17 @@ export function RunDetail({
   const refresh = useCallback(async () => {
     const request = ++latest.current;
     try {
-      const [o, f, m] = await Promise.all([
+      const [o, f, m, r] = await Promise.all([
         runsApi.overview(runId, userId),
         runsApi.findings(runId, userId).catch(() => [] as FindingView[]),
         runsApi.metrics(runId, userId).catch(() => [] as MetricView[]),
+        runsApi.results(runId, userId).catch(() => [] as ResultView[]),
       ]);
       if (request !== latest.current) return;
       setData(o);
       setFindings(f);
       setMetrics(m);
+      setResults(r);
       setFailed(false);
     } catch (e) {
       if (request !== latest.current) return;
@@ -95,6 +101,9 @@ export function RunDetail({
   const open = run?.status === "in_progress";
   const items = useMemo(() => data?.items ?? [], [data]);
   const shown = items.filter((i) => filter === "all" || i.status === filter);
+  const imported = useMemo(() => importedRows(results, cases), [results, cases]);
+  const importedShown = imported.filter((i) => filter === "all" || i.status === filter);
+  const importedRun = run?.trigger === "import";
   const extra = findings.length > 0 || metrics.length > 0;
   const tabParam = params.get("tab");
   const tab =
@@ -164,15 +173,19 @@ export function RunDetail({
     <div className="ex-run-actions">
       {open ? (
         <>
-          <button
-            type="button"
-            className="ui-btn"
-            onClick={() => setDialog("add")}
-            data-testid="run-add-cases"
-          >
-            <ListPlus size={16} aria-hidden="true" />
-            <span className="ui-btn__text">{t("execution.run.addCases")}</span>
-          </button>
+          {/* An imported run gets its results from reports (importing into
+              an open run), not from cases added by hand (FIX-42). */}
+          {!importedRun && (
+            <button
+              type="button"
+              className="ui-btn"
+              onClick={() => setDialog("add")}
+              data-testid="run-add-cases"
+            >
+              <ListPlus size={16} aria-hidden="true" />
+              <span className="ui-btn__text">{t("execution.run.addCases")}</span>
+            </button>
+          )}
           <button
             type="button"
             className="ui-btn"
@@ -267,7 +280,17 @@ export function RunDetail({
       </div>
     );
 
-  const c = data.counts;
+  // The items' targets plus the imported tests that fulfil no item, each by
+  // its final attempt (FIX-42).
+  const c = { ...data.counts };
+  for (const r of imported) {
+    c.total += 1;
+    if (r.status === "passed") c.passed += 1;
+    else if (r.status === "failed") c.failed += 1;
+    else if (r.status === "blocked") c.blocked += 1;
+    else if (r.status === "skipped") c.skipped += 1;
+    else c.other += 1;
+  }
   const executed = c.total - c.notRun;
   const share = (n: number) => (c.total ? (n * 100) / c.total : 0);
   const date = (s: string | null) => {
@@ -364,6 +387,56 @@ export function RunDetail({
     },
   ];
 
+  const importedColumns: DataColumn<ImportedRow>[] = [
+    {
+      id: "test",
+      header: t("execution.run.imported.test"),
+      width: "minmax(0,2.4fr)",
+      cell: (r) => (
+        <span className="rn-test" data-testid="run-imported-result">
+          {r.caseKey ? (
+            <span>
+              <span className="rn-mono rn-key">{r.caseKey}</span> {r.caseTitle ?? ""}
+            </span>
+          ) : (
+            <span>{r.name}</span>
+          )}
+          {(r.exampleRow !== null || !r.caseKey || r.configurationLabel) && (
+            <span className="tp-field__hint">
+              {[
+                r.exampleRow !== null ? t("execution.row", { n: r.exampleRow + 1 }) : null,
+                r.configurationLabel,
+                r.caseKey ? null : t("execution.run.imported.unlinked"),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+          )}
+        </span>
+      ),
+    },
+    {
+      id: "status",
+      header: t("runs.list.status"),
+      width: "minmax(120px,1fr)",
+      cell: (r) => (
+        <span className="rn-counts">
+          <StatusPill tone={statusTone(r.status)} dot>
+            {t(`runs.status.${r.status}`, r.status)}
+          </StatusPill>
+          {r.flaky && <StatusPill tone="warning">{t("execution.run.imported.flaky")}</StatusPill>}
+        </span>
+      ),
+    },
+    {
+      id: "attempts",
+      header: t("execution.run.attempts"),
+      width: "88px",
+      minView: "tablet",
+      cell: (r) => r.attempts,
+    },
+  ];
+
   const panel = itemId && (
     <ExecutionPanel
       key={itemId}
@@ -445,7 +518,7 @@ export function RunDetail({
           value={tab}
           onChange={setTab}
           items={[
-            { id: "cases", label: t("findings.tabs.cases"), badge: { count: items.length, tone: "muted" } },
+            { id: "cases", label: t("findings.tabs.cases"), badge: { count: items.length + imported.length, tone: "muted" } },
             ...(findings.length > 0
               ? [
                   {
@@ -504,7 +577,11 @@ export function RunDetail({
               options={(["all", "not_run", "failed", "blocked", "passed"] as Filter[]).map((f) => ({
                 value: f,
                 label: f === "all" ? t("runs.list.all") : f === "not_run" ? t("execution.notRun") : t(`runs.status.${f}`),
-                count: f === "all" ? items.length : items.filter((i) => i.status === f).length,
+                count:
+                  f === "all"
+                    ? items.length + imported.length
+                    : items.filter((i) => i.status === f).length +
+                      imported.filter((i) => i.status === f).length,
               }))}
             />
             {open && nextItem && !itemId && (
@@ -518,6 +595,7 @@ export function RunDetail({
                 <span className="ui-btn__text">{t("execution.run.executeNext")}</span>
               </button>
             )}
+            {(items.length > 0 || imported.length === 0) && (
             <DataTable
               className="dt-surface"
               label={t("execution.run.items")}
@@ -526,7 +604,11 @@ export function RunDetail({
               getRowId={(r) => r.item.id}
               empty={
                 <p className="tp-field__hint">
-                  {items.length === 0 ? t("execution.run.empty") : t("execution.run.emptyFilter")}
+                  {items.length > 0
+                    ? t("execution.run.emptyFilter")
+                    : open && !importedRun
+                      ? t("execution.run.empty")
+                      : t("execution.run.emptyClosed")}
                 </p>
               }
               mobileCard={(r) => (
@@ -541,6 +623,28 @@ export function RunDetail({
                 </div>
               )}
             />
+            )}
+            {imported.length > 0 && (
+              <>
+                {items.length > 0 && (
+                  <h3 className="ex-imported__title">{t("execution.run.imported.title")}</h3>
+                )}
+                <DataTable
+                  className="dt-surface"
+                  label={t("execution.run.imported.title")}
+                  rows={importedShown}
+                  columns={importedColumns}
+                  getRowId={(r) => r.id}
+                  empty={<p className="tp-field__hint">{t("execution.run.emptyFilter")}</p>}
+                  mobileCard={(r) => (
+                    <div className="rn-card">
+                      {importedColumns[0].cell(r)}
+                      <div className="rn-card__row">{importedColumns[1].cell(r)}</div>
+                    </div>
+                  )}
+                />
+              </>
+            )}
           </section>
         )}
         {panel}

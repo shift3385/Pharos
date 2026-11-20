@@ -221,7 +221,8 @@ export function ImportReportDialog({
           )}
           {outcome.attach.missing.length > 0 && (
             <p className="rn-warn">
-              {t("runs.import.done.missing", {
+              {/* Without a folder nothing was looked for in one (FIX-42). */}
+              {t(folder.length > 0 ? "runs.import.done.missing" : "runs.import.done.noFolder", {
                 count: outcome.attach.missing.length,
               })}
             </p>
@@ -244,6 +245,7 @@ export function ImportReportDialog({
             <FormField
               label={t("runs.import.file")}
               hint={t("runs.import.fileHint")}
+              info={t("runs.import.formats")}
               required
             >
               {(p) => (
@@ -422,9 +424,10 @@ export function ImportReportDialog({
             >
               {(preview.results > 0 || (preview.findings === 0 && preview.metrics === 0)) && (
                 <p className="cd__msg">
+                  {/* Linked and unlinked count attempts, as the sentence says (FIX-42). */}
                   {t("runs.import.previewSummary", {
-                    tests: preview.tests,
-                    results: preview.results,
+                    tests: t("runs.import.previewTests", { count: preview.tests }),
+                    attempts: t("runs.import.previewAttempts", { count: preview.results }),
                     linked: preview.linked,
                     unlinked: preview.unlinked,
                   })}
