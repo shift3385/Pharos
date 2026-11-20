@@ -4,6 +4,7 @@ import { ArrowLeft, Camera, GitCompare } from "lucide-react";
 import { Alert } from "@shared/ui/Alert";
 import { Dialog } from "@shared/ui/Dialog";
 import { FormField } from "@shared/ui/FormField";
+import { WholeKeys } from "@shared/ui/WholeKeys";
 import { InfoTip } from "@shared/ui/InfoTip";
 import { LoadError } from "@shared/ui/LoadError";
 import { Select } from "@shared/ui/Select";
@@ -287,14 +288,16 @@ function CreateBaselineDialog({
         ) : (
           left.length > 0 && (
             <Alert kind="warning" role="note">
-              {t("testCase.baselines.leftOut", {
-                count: left.length,
-                kept: kept.length,
-                keys: left
-                  .slice(0, 8)
-                  .map((c) => c.scenarioId)
-                  .join(", ") + (left.length > 8 ? "…" : ""),
-              })}
+              <WholeKeys
+                text={t("testCase.baselines.leftOut", {
+                  count: left.length,
+                  kept: kept.length,
+                  keys: left
+                    .slice(0, 8)
+                    .map((c) => c.scenarioId)
+                    .join(", ") + (left.length > 8 ? "…" : ""),
+                })}
+              />
             </Alert>
           )
         )}

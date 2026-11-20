@@ -44,6 +44,7 @@ export function CreateWorkspaceDialog({
   return (
     <Dialog labelledBy={`${id}-title`} describedBy={`${id}-hint`} onClose={onCancel} dismissable={!busy}>
       <form
+        className="ws-dialog-form"
         onSubmit={(e) => {
           e.preventDefault();
           void create();

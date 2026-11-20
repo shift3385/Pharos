@@ -1,3 +1,4 @@
+import { formatBytes } from "@shared/i18n/numbers";
 import {
   useEffect,
   useId,
@@ -67,7 +68,6 @@ interface Extracted {
 const ACCEPT =
   ".png,.jpg,.jpeg,.webp,.gif,.svg,.pdf,.zip,.excalidraw,.html,.htm,.md,image/*,application/pdf";
 
-const mb = (base64: number) => (base64 * 0.75) / (1024 * 1024);
 
 /** «Requisitos desde diseños» (IA-18, ADR-0037). The person drops, pastes or
  *  picks screenshots, sketches, PDF exports, an Excalidraw sketch or a Claude
@@ -521,7 +521,8 @@ export function RequirementsFromDesignModal({
               {t("traceability.fromDesign.summary", {
                 count: summary.attachments,
                 max: MAX_ATTACHMENTS,
-                mb: mb(summary.base64).toFixed(1),
+                // base64 carries 4 characters for every 3 bytes.
+                size: formatBytes(summary.base64 * 0.75),
                 tokens: summary.tokens.toLocaleString(i18n.resolvedLanguage),
               })}
             </p>

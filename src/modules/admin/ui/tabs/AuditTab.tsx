@@ -283,7 +283,14 @@ export function AuditTab() {
     {
       id: "changes",
       header: t("admin.audit.cols.changes"),
-      cell: (r) => <span className="aud-changes">{changesText(r, labels, t)}</span>,
+      cell: (r) => {
+        const text = changesText(r, labels, t);
+        return (
+          <span className="aud-changes" title={text}>
+            {text}
+          </span>
+        );
+      },
       width: "minmax(140px, 1.4fr)",
       minView: "desktop",
     },

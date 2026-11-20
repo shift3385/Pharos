@@ -191,10 +191,15 @@ export function KpiCard({
             !ready
               ? unknownNote
               : rate?.executed
-                ? t("dashboard.kpi.rateOf", {
-                    count: rate.executed,
-                    period: periodText,
-                  })
+                ? // On the board the note shares its line with «+N sin vincular»:
+                  // the short form, whole (FIX-46: «de 3 casos ejecutado…»).
+                  // The period is the page's, and the tooltip says it all.
+                  compact
+                  ? t("dashboard.kpi.rateOfShort", { count: rate.executed })
+                  : t("dashboard.kpi.rateOf", {
+                      count: rate.executed,
+                      period: periodText,
+                    })
                 : t("dashboard.kpi.rateEmpty", { period: periodText })
           }
           testId="kpi-rate"

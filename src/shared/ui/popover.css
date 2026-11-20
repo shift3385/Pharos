@@ -126,6 +126,13 @@
   color: var(--color-text-muted);
 }
 
+/* A value inside a label (a server address) keeps its own case (FIX-46):
+   «CONECTADO A localhost:3146», not «LOCALHOST:3146». */
+.menu__label-value {
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 .menu__sep {
   height: 1px;
   margin: 4px;

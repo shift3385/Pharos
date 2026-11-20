@@ -7,6 +7,7 @@ import { FormField } from "@shared/ui/FormField";
 import { InfoTip } from "@shared/ui/InfoTip";
 import { Select } from "@shared/ui/Select";
 import { useToast } from "@shared/ui/Toast";
+import { WholeKeys } from "@shared/ui/WholeKeys";
 import { tokensApi, type WorkspaceProject } from "../api/tokensApi";
 import { buildCiSnippet, CI_FORMATS, DEFAULT_CI_FORMATS, SHA_PLACEHOLDER, type CiFormat } from "../model/ciSnippet";
 import { tokenFailure } from "./failure";
@@ -15,14 +16,22 @@ import "./integrations.css";
 /** YAML, one block per line: a line too long for the card wraps under its
  *  own text, two columns in (a hanging indent), never at column 0, where it
  *  would read as other YAML (FIX-41). The text, newlines included, stays the
- *  same: «Copiar» copies `text`, and selecting it by hand gives it back. */
+ *  same: «Copiar» copies `text`, and selecting it by hand gives it back.
+ *  A line breaks only at a space: keys and versions stay whole, and a
+ *  trailing comment («# Pharos 0.6.0-beta.1») moves to the next line as a
+ *  whole (FIX-46). */
 export function IndentedLines({ text }: { text: string }) {
   const lines = text.split("\n");
   return lines.map((line, i) => {
     const hang = `${line.length - line.trimStart().length + 2}ch`;
+    const at = line.indexOf(" # ");
+    const code = at < 0 ? line : line.slice(0, at + 1);
+    const comment = at < 0 ? "" : line.slice(at + 1);
     return (
       <span key={i} className="int-snippet__line" style={{ paddingLeft: hang, textIndent: `-${hang}` }}>
-        {i < lines.length - 1 ? `${line}\n` : line}
+        <WholeKeys text={code} />
+        {comment && <span className="t-key">{comment}</span>}
+        {i < lines.length - 1 ? "\n" : ""}
       </span>
     );
   });

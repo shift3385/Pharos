@@ -3,6 +3,7 @@
 // them, so it takes them as they are.
 
 import type { Contract } from "@shared/contracts";
+import { formatBytes as sharedFormatBytes } from "@shared/i18n/numbers";
 
 export type EvidenceUsage = Contract.EvidenceUsage;
 export type EvidenceReport = Contract.EvidenceReport;
@@ -11,15 +12,8 @@ export type EvidenceDeleted = Contract.EvidenceDeleted;
 export type EvidenceOrphan = Contract.EvidenceOrphan;
 export type EvidenceProblem = Contract.EvidenceProblem;
 
-/** `1,2 MB` in the UI language (base 1024, as the 200 MB limit). */
+/** `1,2 MB` in the UI language (base 1024, as the 200 MB limit): the app's
+ *  one size format (FIX-46). */
 export function formatBytes(bytes: number, lang: string): string {
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let value = bytes;
-  let unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024;
-    unit += 1;
-  }
-  const n = new Intl.NumberFormat(lang, { maximumFractionDigits: unit === 0 ? 0 : 1 }).format(value);
-  return `${n} ${units[unit]}`;
+  return sharedFormatBytes(bytes, { lang });
 }

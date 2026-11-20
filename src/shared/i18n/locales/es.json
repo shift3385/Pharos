@@ -100,6 +100,10 @@
       "plan": "Planes de prueba",
       "case": "Casos de prueba"
     },
+    "kindOne": {
+      "plan": "Plan de pruebas",
+      "case": "Caso de prueba"
+    },
     "builtin": "Incluida",
     "shared": "Compartida",
     "sharedHint": "Importada antes de las cuentas: la ven todas las cuentas de este equipo y es de solo lectura. Para editarla, descárgala e impórtala de nuevo.",
@@ -598,7 +602,7 @@
       "cardShadow": "Sombra en las tarjetas",
       "cardShadowHint": "Una sombra ligera que separa las tarjetas del fondo.",
       "retention": "Retención de elementos borrados (días)",
-      "retentionHint": "Lo que borras se elimina definitivamente de este equipo tras estos días. Un borrado aún sin sincronizar espera al siguiente sync. El servidor tiene su propio plazo y conserva una marca de lo borrado.",
+      "retentionHint": "Lo que borras se elimina definitivamente de este equipo tras estos días. Un borrado aún sin sincronizar espera a la siguiente sincronización. El servidor tiene su propio plazo y conserva una marca de lo borrado.",
       "download": "Carpeta de descarga",
       "downloadCurrent": "Carpeta actual",
       "downloadDefault": "Descargas del sistema",
@@ -793,7 +797,7 @@
         "noProjects": "Todavía no tienes proyectos.",
         "current": "Ahora: {{days}}",
         "default": "Por defecto ({{days}})",
-        "days": "Días…",
+        "days": "Número de días",
         "daysLabel": "Días de retención de {{kind}}",
         "exceptions": "Nunca caduca",
         "exceptionsText": "La evidencia de la ejecución manual, la de un resultado final fallido o bloqueado, y la de un resultado vinculado a un defecto abierto. Tampoco caducan los adjuntos del tablero, de los defectos ni de los borradores.",
@@ -832,7 +836,7 @@
       },
       "check": {
         "title": "Verificar evidencias",
-        "desc": "Comprueba que cada archivo está y se descifra, y busca archivos que ninguna fila conoce. No borra nada por sí sola.",
+        "desc": "Comprueba que cada archivo está y se descifra, y busca archivos que ningún elemento usa. No borra nada por sí sola.",
         "action": "Verificación",
         "actionHint": "Lee y descifra cada archivo, así que puede tardar con muchas evidencias. Puedes seguir trabajando mientras tanto.",
         "run": "Verificar evidencias",
@@ -895,7 +899,7 @@
         "title": "No se pudieron comprobar ({{count}})",
         "desc": "Otro programa los tenía bloqueados, falta un permiso o cambiaron mientras se comprobaban (por ejemplo, al volver a adjuntarlos). Vuelve a verificar. No se marcan."
       },
-      "file": "Archivo {{id}}",
+      "file": "Archivo sin nombre ({{id}})",
       "noUses": "Sin adjuntos vigentes.",
       "useIn": "En {{project}}",
       "open": "Abrir {{section}}"
@@ -1565,7 +1569,7 @@
         "planner": "Tablero",
         "requirements": "Requisitos",
         "traceability": "Trazab.",
-        "settings": "Proyecto",
+        "settings": "Ajustes",
         "defects": "Defectos",
         "runs": "Ejec.",
         "library": "Biblio."
@@ -2429,7 +2433,7 @@
       "approveTitle": "Aprobar la versión {{version}}",
       "approveMessage": "Quedará como aprobada por {{name}} el {{date}}. Si después se edita el contenido, el plan vuelve a «En revisión» y habrá que aprobarlo de nuevo.",
       "approveAction": "Aprobar",
-      "selfApprovalNote": "Eres quien creó este plan. Este espacio de trabajo no pide aprobación independiente, así que puedes aprobarlo y quedará como aprobación propia en el plan, el historial y los exportes.",
+      "selfApprovalNote": "Eres quien creó este plan. Este workspace no pide aprobación independiente, así que puedes aprobarlo y quedará como aprobación propia en el plan, el historial y los exportes.",
       "return": "Pedir cambios…",
       "returnTitle": "Pedir cambios en el plan",
       "returnMessage": "El plan sigue en revisión. Quien lo creó verá tu comentario en «Estado del plan» y en el historial.",
@@ -2444,9 +2448,9 @@
       "reactivateMessage": "El plan vuelve a «En revisión» (o a Borrador si nunca se envió). No recupera la aprobación anterior.",
       "saveFirst": "Guarda los cambios antes de seguir con la revisión.",
       "notAllowed": {
-        "author": "Este espacio de trabajo pide aprobación independiente: aprueba un Test Manager que no sea el autor del plan.",
-        "role": "Solo un Test Manager aprueba planes en este espacio de trabajo.",
-        "notMember": "No eres miembro de este espacio de trabajo."
+        "author": "Este workspace pide aprobación independiente: aprueba un Test Manager que no sea el autor del plan.",
+        "role": "Solo un Test Manager aprueba planes en este workspace.",
+        "notMember": "No eres miembro de este workspace."
       },
       "banner": {
         "sent": "Enviado a revisión por {{name}} · {{date}}",
@@ -2829,7 +2833,7 @@
       "approveTitle": "Aprobar la versión {{version}}",
       "approveMessage": "Quedará como aprobada por {{name}} el {{date}}.",
       "approveAction": "Aprobar",
-      "selfApprovalNote": "Eres quien escribió este caso. Este espacio de trabajo no pide aprobación independiente, así que puedes aprobarlo y quedará como aprobación propia.",
+      "selfApprovalNote": "Eres quien escribió este caso. Este workspace no pide aprobación independiente, así que puedes aprobarlo y quedará como aprobación propia.",
       "return": "Pedir cambios…",
       "returnTitle": "Pedir cambios en {{key}}",
       "returnMessage": "El caso sigue en revisión. Quien lo escribió verá tu comentario hasta que guarde los cambios.",
@@ -2844,9 +2848,9 @@
       "reactivateMessage": "El caso vuelve a «En revisión» (o a Borrador si nunca se envió). Hay que aprobarlo de nuevo.",
       "saveFirst": "Guarda los cambios antes de seguir con la revisión.",
       "notAllowed": {
-        "author": "Este espacio de trabajo pide aprobación independiente: lo tiene que aprobar otra persona.",
+        "author": "Este workspace pide aprobación independiente: lo tiene que aprobar otra persona.",
         "role": "Tu rol no puede aprobar casos.",
-        "notMember": "No eres miembro de este espacio de trabajo."
+        "notMember": "No eres miembro de este workspace."
       },
       "banner": {
         "sent": "Enviado a revisión por {{name}} · {{date}}",
@@ -3040,6 +3044,8 @@
       "noneBlocked": "Ninguna bloqueada",
       "rateOf_one": "de {{count}} caso ejecutado · {{period}}",
       "rateOf_other": "de {{count}} casos ejecutados · {{period}}",
+      "rateOfShort_one": "de {{count}} caso",
+      "rateOfShort_other": "de {{count}} casos",
       "rateEmpty": "Sin ejecuciones: {{period}}",
       "rateError": "No disponible",
       "unlinked_one": "Además, {{count}} test sin vincular",
@@ -3063,6 +3069,13 @@
       "custom": "Rango personalizado…",
       "soonTitle": "Próximamente: usará los ciclos y rangos del plan",
       "compare": "Comparar con el periodo anterior",
+      "short": {
+        "today": "Hoy",
+        "7d": "7 días",
+        "14d": "14 días",
+        "30d": "30 días",
+        "month": "Este mes"
+      },
       "lower": {
         "today": "hoy",
         "7d": "últimos 7 días",
@@ -3170,6 +3183,7 @@
     "upcoming": {
       "title": "Próximas pruebas",
       "subtitle": "Según su último resultado, por prioridad",
+      "noProjects": "Crea un proyecto para ver sus próximas pruebas.",
       "viewAll": "Ver todas",
       "filters": "Estado de las pruebas",
       "notRun": "No ejecutadas",
@@ -3241,6 +3255,7 @@
       "help": "Una métrica en los últimos ciclos cerrados del proyecto, con las cifras congeladas al cerrar, y en el ciclo activo, en vivo (punteado). La línea verde es el objetivo del plan; el punto bajo cada ciclo es su veredicto. Avisa cuando la métrica empeora dos ciclos seguidos o se sale del objetivo.",
       "project": "Proyecto de la tendencia",
       "metric": "Métrica de la tendencia",
+      "noProjects": "Crea un proyecto para ver la tendencia de sus ciclos.",
       "empty": "Este proyecto aún no tiene ciclos cerrados ni activos. La tendencia aparece al cerrar el primero con «Cerrar ciclo…».",
       "chartLabel_one": "{{metric}} en {{count}} ciclo",
       "chartLabel_other": "{{metric}} en {{count}} ciclos",
@@ -3587,7 +3602,7 @@
       "remove": "Quitar {{name}}",
       "context": "Contexto del producto (opcional)",
       "contextPlaceholder": "Ej.: portal de clientes de un banco, rol cliente",
-      "summary": "{{count}} de {{max}} imágenes o PDF · {{mb}} MB · ≈ {{tokens}} tokens de entrada (estimación)",
+      "summary": "{{count}} de {{max}} imágenes o PDF · {{size}} · ≈ {{tokens}} tokens de entrada (estimación)",
       "over": {
         "attachments": "Como mucho {{max}} imágenes o PDF por análisis: desmarca algunas.",
         "size": "Las imágenes y los PDF pesan demasiado para un análisis: desmarca algunos.",
@@ -3838,8 +3853,7 @@
     "confirmBody": "Quien tenga esta clave y una copia de tus datos puede leerlos. Muéstrala solo cuando nadie mire tu pantalla.",
     "confirm": "Mostrar",
     "shownTitle": "Guarda esta clave ahora",
-    "guidePaper": "Escríbela en papel y guárdala en un lugar seguro, o",
-    "guideManager": "guárdala en un gestor de contraseñas.",
+    "guidePaper": "Escríbela en papel y guárdala en un lugar seguro, o guárdala en un gestor de contraseñas.",
     "guideRisk": "No la envíes por correo ni chat y no la guardes junto a la copia de tus datos.",
     "guideBackup": "Para restaurar en otro equipo necesitas esta clave y una copia de pharos.db (hecha con Pharos cerrado) y de la carpeta evidence. Pharos no puede recuperarla por ti.",
     "copy": "Copiar al portapapeles",
@@ -5409,7 +5423,6 @@
       "created": "Workspace «{{name}}» creado"
     },
     "members": {
-      "title": "Miembros · {{name}}",
       "invite": "Invitar",
       "person": "Persona",
       "email": "Correo",
@@ -5518,7 +5531,7 @@
       "independentHint": "Activada, quien aprueba un plan o un caso necesita el rol (Test Manager para planes; Test Manager o Test Analyst para casos) y no puede ser su autor. Desactivada, aprueba cualquiera que pueda editarlo, también el autor, y queda como aprobación propia.",
       "personalHint": "Trabajas solo: apruebas tus propios planes y casos, y quedan como aprobación propia. Para que apruebe otra persona, mueve el proyecto a un espacio compartido.",
       "personalLocked": "No se puede activar en tu espacio personal.",
-      "onlyManager": "Solo un Test Manager cambia las reglas del espacio de trabajo.",
+      "onlyManager": "Solo un Test Manager cambia las reglas del workspace.",
       "disableTitle": "¿Desactivar la aprobación independiente?",
       "disableConfirm": "En «{{workspace}}», cualquiera que pueda editar un plan o un caso podrá aprobarlo, también su autor, y quedará como aprobación propia. Las aprobaciones que ya existen no cambian.",
       "disable": "Desactivar",
@@ -5534,7 +5547,7 @@
   "integrations": {
     "tokens": {
       "projectTitle": "Tokens de proyecto",
-      "projectHint": "Sirven para que CI suba resultados a un proyecto. Un token nunca puede hacer más que la persona dueña de él.",
+      "projectHint": "Sirven para que el CI suba resultados a un proyecto. Un token nunca puede hacer más que la persona dueña de él.",
       "personalTitle": "Tokens personales",
       "personalHint": "Sirven para usar el CLI en tu equipo. Un token personal actúa como tú en los workspaces que elijas, con los permisos que tengas en cada uno.",
       "new": "Nuevo token…",
@@ -5583,19 +5596,19 @@
       "revoked": "«{{name}}» revocado",
       "rotate": "Rotar",
       "rotateTitle": "Rotar «{{name}}»",
-      "rotateBody": "Se crea un token nuevo con el mismo nombre, los mismos permisos y la misma caducidad. El anterior deja de funcionar ahora, o dentro de 24 horas para que dé tiempo a cambiarlo en CI.",
+      "rotateBody": "Se crea un token nuevo con el mismo nombre, los mismos permisos y la misma caducidad. El anterior deja de funcionar ahora, o dentro de 24 horas para que dé tiempo a cambiarlo en el CI.",
       "rotateNow": "Rotar ahora",
       "rotateOverlap": "Mantener el anterior 24 h",
       "reassign": "Reasignar",
       "reassignToMe": "Reasignar a mí",
       "reassignTitle": "Reasignarte «{{name}}»",
-      "reassignBody": "El token pasará a actuar con tus permisos en vez de con los de {{owner}}. El secreto no cambia, así que CI sigue funcionando.",
+      "reassignBody": "El token pasará a actuar con tus permisos en vez de con los de {{owner}}. El secreto no cambia, así que el CI sigue funcionando.",
       "reassigned": "«{{name}}» ahora es tuyo"
     },
     "scopes": {
       "projects_read": "Leer el proyecto",
-      "runs_read": "Leer runs y resultados",
-      "runs_write": "Subir resultados y cerrar runs",
+      "runs_read": "Leer ejecuciones y resultados",
+      "runs_write": "Subir resultados y cerrar ejecuciones",
       "cases_read": "Leer casos",
       "cycles_read": "Leer ciclos",
       "defects_read": "Leer defectos",
@@ -5678,6 +5691,13 @@
       "attempt": "intento {{n}}",
       "next": "Próximo intento",
       "answer": "Respuesta",
+      "deliveryError": {
+        "notFound": "No se encontró el servidor de destino ({{code}})",
+        "refused": "El servidor de destino rechazó la conexión ({{code}})",
+        "timeout": "El servidor de destino no respondió a tiempo ({{code}})",
+        "certificate": "El certificado del servidor de destino no es válido ({{code}})",
+        "reset": "El servidor de destino cortó la conexión ({{code}})"
+      },
       "redeliver": "Reintentar ahora",
       "requeued": "En cola para enviar de nuevo",
       "statuses": {
@@ -5693,9 +5713,9 @@
         "private": "Este servidor no permite enviar a direcciones de la red privada ni a sí mismo."
       },
       "events": {
-        "run_created": "Run creado",
+        "run_created": "Ejecución creada",
         "run_results_uploaded": "Resultados subidos",
-        "run_completed": "Run cerrado",
+        "run_completed": "Ejecución cerrada",
         "cycle_closed": "Ciclo cerrado",
         "defect_created": "Defecto creado",
         "defect_status_changed": "Defecto cambia de estado",

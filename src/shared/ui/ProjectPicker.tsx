@@ -4,6 +4,7 @@ import { ChevronsUpDown, Search } from "lucide-react";
 import { MenuItem, ResponsiveMenu } from "./Menu";
 import { useBreakpoint } from "./useBreakpoint";
 import { usePopover } from "./usePopover";
+import { prefixLabel } from "./prefixLabel";
 import "./projectPicker.css";
 
 export interface ProjectChoice {
@@ -75,7 +76,7 @@ export function ProjectMenu({
         {shown.length === 0 && <p className="project-menu__empty">{t("shell.noProjects")}</p>}
         {shown.map((p) => (
           <MenuItem key={p.id} selected={p.id === selectedId} onSelect={() => onSelect(p.id)}>
-            {p.caseIdPrefix && <span className="project-menu__prefix t-id">{p.caseIdPrefix}</span>} {p.name}
+            {p.caseIdPrefix && <span className="project-menu__prefix t-id">{prefixLabel(p.caseIdPrefix)}</span>} {p.name}
             {p.detail && <span className="project-menu__detail">{p.detail}</span>}
           </MenuItem>
         ))}
@@ -121,7 +122,7 @@ export function ProjectSelect({
         disabled={disabled}
         data-testid={testId}
       >
-        {current?.caseIdPrefix && <span className="project-menu__prefix t-id">{current.caseIdPrefix}</span>}
+        {current?.caseIdPrefix && <span className="project-menu__prefix t-id">{prefixLabel(current.caseIdPrefix)}</span>}
         <span className="project-select__name">{current?.name ?? "…"}</span>
         {current?.detail && <span className="project-menu__detail">{current.detail}</span>}
         <ChevronsUpDown size={14} aria-hidden="true" />

@@ -45,4 +45,17 @@ describe("ImportReportModal", () => {
     ]);
     expect(screen.getByText(/^Rendimiento, Rendimiento.*…$/)).toBeInTheDocument();
   });
+
+  // FIX-46: a detected date as the app writes dates, and each value whole in
+  // its tooltip (the list shows two lines of it).
+  it("writes a detected date as the app does and keeps the whole value in the tooltip", () => {
+    renderRows([
+      { labelKey: "testPlan.date", status: "filled", preview: "2026-11-16" },
+      { labelKey: "testPlan.fieldTitle", status: "filled", preview: "Plan de pruebas de la versión 0.6.0 de Pharos" },
+    ]);
+    const date = new Intl.DateTimeFormat("es", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(Date.UTC(2026, 10, 16)));
+    expect(screen.getByText(date)).toBeInTheDocument();
+    expect(screen.queryByText("2026-11-16")).toBeNull();
+    expect(screen.getByText(/^Plan de pruebas/)).toHaveAttribute("title", "Plan de pruebas de la versión 0.6.0 de Pharos");
+  });
 });

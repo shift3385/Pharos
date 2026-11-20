@@ -10,8 +10,10 @@
 
 import { serverApi } from "@modules/sync-offline";
 import { invoke, isTauri } from "@shared/platform";
+import { parseStamp } from "@shared/time/stamp";
 import type { Profile, ProfileInput } from "../model/types";
 import { pullPreference, savePreference } from "./accountPreferences";
+import { profileOwner, setProfileOwner } from "./profileOwner";
 
 export type SyncedLanguage = "es" | "en";
 export type SyncedTheme = "light" | "dark" | "system";
@@ -70,6 +72,7 @@ export function pushSynced(userId: string, key: SyncedKey, value: unknown): Prom
 }
 
 interface ServerUser {
+  id?: string;
   displayName: string;
   firstName: string;
   lastName: string;
@@ -79,8 +82,7 @@ interface ServerUser {
 /** SQLite's `YYYY-MM-DD HH:MM:SS` (UTC) or ISO, as milliseconds. */
 const millis = (s: string | undefined) => {
   if (!s) return 0;
-  const iso = s.includes("T") ? s : `${s.replace(" ", "T")}Z`;
-  const n = Date.parse(iso);
+  const n = parseStamp(s).getTime();
   return Number.isNaN(n) ? 0 : n;
 };
 
@@ -89,8 +91,11 @@ const names = (p: ProfileInput) => [p.displayName, p.firstName, p.lastName].join
 /**
  * The desktop's profile names and the account's: when they differ, the
  * newer change wins (the desktop's is sent, or the account's is kept here).
- * The web edits the account directly, so it has nothing to do. Offline,
- * nothing changes.
+ * The desktop keeps one profile per installation, so that rule only holds
+ * while the profile belongs to the account signed in: once another account
+ * signs in, the account's names replace the local ones and nothing is sent
+ * (FIX-46). The web edits the account directly, so it has nothing to do.
+ * Offline, nothing changes.
  */
 export async function syncProfileNames(): Promise<"sent" | "received" | "same" | "skipped"> {
   if (!isTauri()) return "skipped";
@@ -99,17 +104,20 @@ export async function syncProfileNames(): Promise<"sent" | "received" | "same" |
       invoke<Profile | null>("profile_get"),
       serverApi.get<ServerUser>("/auth/me"),
     ]);
-    if (!local) return "skipped";
-    if (names(local) === names(remote)) return "same";
-    const { displayName, firstName, lastName } = local;
-    if (millis(local.updatedAt) > millis(remote.updatedAt)) {
+    const owned = !!remote.id && profileOwner() === remote.id;
+    const equal = !!local && names(local) === names(remote);
+    if (owned && local && !equal && millis(local.updatedAt) > millis(remote.updatedAt)) {
+      const { displayName, firstName, lastName } = local;
       await serverApi.patch("/auth/me", { displayName, firstName, lastName });
       return "sent";
     }
-    await invoke("profile_upsert", {
-      input: { displayName: remote.displayName, firstName: remote.firstName, lastName: remote.lastName, role: local.role },
-    });
-    return "received";
+    if (!equal) {
+      await invoke("profile_upsert", {
+        input: { displayName: remote.displayName, firstName: remote.firstName, lastName: remote.lastName, role: local?.role },
+      });
+    }
+    if (remote.id) setProfileOwner(remote.id);
+    return equal ? "same" : "received";
   } catch {
     return "skipped";
   }

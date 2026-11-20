@@ -185,11 +185,15 @@
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
+/* The changed fields wrap (FIX-46: «Se quedó: Combinado · Descri…»); a very
+   long list stops at three lines, and the detail has it all. */
 .aud-changes {
-  color: var(--color-text-secondary);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: var(--color-text-secondary);
 }
 .aud-card {
   display: flex;
@@ -216,8 +220,10 @@
   justify-content: flex-end;
   background: var(--color-overlay);
 }
+/* Wide enough for «Antes» and «Después» side by side to read as text, not
+   one word per line (FIX-46). */
 .aud-detail {
-  width: min(460px, 100%);
+  width: min(680px, 100%);
   height: 100%;
   overflow-y: auto;
   display: flex;
@@ -297,8 +303,11 @@
   font-size: var(--fs-metadata);
   font-weight: var(--fw-semibold);
 }
+/* With table-layout: fixed the head row sets the widths: «Campo» narrow. */
+.aud-diff thead th:first-child {
+  width: 20%;
+}
 .aud-diff tbody th {
-  width: 28%;
   color: var(--color-text-secondary);
   font-weight: var(--fw-medium);
 }

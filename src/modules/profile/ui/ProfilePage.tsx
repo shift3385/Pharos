@@ -8,6 +8,7 @@ import { PersonalTokensSection } from "@modules/integrations";
 import { useWorkspace } from "@modules/workspaces";
 import { SUPPORTED_LANGUAGES, type Language } from "@shared/i18n";
 import { useTheme } from "@shared/theme/useTheme";
+import { parseStamp } from "@shared/time/stamp";
 import { InfoTip } from "@shared/ui/InfoTip";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { TruncatedText } from "@shared/ui/TruncatedText";
@@ -32,8 +33,10 @@ function initials(name: string): string {
  *  it (RED-V4), which then removes it from this page. */
 export function ProfilePage() {
   const { t, i18n } = useTranslation();
+  // The local store writes UTC with no zone: read it as UTC (FIX-46), or the
+  // times show hours off.
   const when = (iso: string) => {
-    const d = new Date(iso);
+    const d = parseStamp(iso);
     return Number.isNaN(d.getTime())
       ? iso
       : new Intl.DateTimeFormat(i18n.resolvedLanguage, {
@@ -65,7 +68,7 @@ export function ProfilePage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const stored = await profileApi.get().catch(() => null);
+      const stored = await profileApi.get(user?.id).catch(() => null);
       if (cancelled) return;
       if (stored) setProfile(stored);
       const source = stored ?? user;
@@ -93,7 +96,7 @@ export function ProfilePage() {
     event.preventDefault();
     setStatus("saving");
     try {
-      const saved = await profileApi.upsert(form);
+      const saved = await profileApi.upsert(form, user?.id);
       setProfile(saved);
       setStatus("saved");
       if (saved) {

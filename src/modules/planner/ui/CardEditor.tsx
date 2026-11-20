@@ -1,3 +1,4 @@
+import { formatBytes } from "@shared/i18n/numbers";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Paperclip, Trash2 } from "lucide-react";
@@ -201,7 +202,7 @@ export function CardEditor({
                     📎 {a.name}
                   </button>
                   <span className="pl-attach__size">
-                    {(a.size / 1024).toFixed(1)} KB
+                    {formatBytes(a.size)}
                   </span>
                   <button
                     type="button"

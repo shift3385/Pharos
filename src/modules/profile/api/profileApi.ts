@@ -1,6 +1,7 @@
 import { serverApi } from "@modules/sync-offline";
 import { invoke, isTauri } from "@shared/platform";
 import type { Profile, ProfileInput } from "../model/types";
+import { profileOwner, setProfileOwner } from "./profileOwner";
 
 /** The account as the server returns it (`/auth/me`). */
 interface ServerUser {
@@ -31,12 +32,23 @@ const toProfile = (u: ServerUser): Profile => ({
 // edits the account's names on the server (BASE-10); the role is not the
 // user's to change there.
 export const profileApi = {
-  async get(): Promise<Profile | null> {
-    if (isTauri()) return invoke<Profile | null>("profile_get");
+  /** The profile of `userId`. On the desktop the local profile is the one of
+   *  the last account that used it: for another account it is not returned,
+   *  and the caller shows the signed-in account's names (FIX-46). */
+  async get(userId?: string): Promise<Profile | null> {
+    if (isTauri()) {
+      if (userId && profileOwner() !== userId) return null;
+      return invoke<Profile | null>("profile_get");
+    }
     return toProfile(await serverApi.get<ServerUser>("/auth/me"));
   },
-  async upsert(input: ProfileInput): Promise<Profile | null> {
-    if (isTauri()) return invoke<Profile | null>("profile_upsert", { input });
+  /** Saves the names; on the desktop the local profile becomes `userId`'s. */
+  async upsert(input: ProfileInput, userId?: string): Promise<Profile | null> {
+    if (isTauri()) {
+      const saved = await invoke<Profile | null>("profile_upsert", { input });
+      if (userId) setProfileOwner(userId);
+      return saved;
+    }
     const { displayName, firstName, lastName } = input;
     return toProfile(
       await serverApi.patch<ServerUser>("/auth/me", { displayName, firstName, lastName }),

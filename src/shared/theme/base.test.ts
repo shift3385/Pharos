@@ -21,6 +21,16 @@ describe("base.css", () => {
     expect(css).toMatch(/input::-ms-reveal,\s*input::-ms-clear\s*\{\s*display:\s*none;\s*\}/);
   });
 
+  // FIX-46: no browser-blue checkbox or radio button anywhere.
+  it("gives checkboxes and radio buttons Pharos's navy", () => {
+    expect(css).toMatch(/input\[type="checkbox"\],\s*input\[type="radio"\]\s*\{\s*accent-color:\s*var\(--color-navy-500\);/);
+  });
+
+  // FIX-46: a textarea wrote in the browser's monospace.
+  it("writes fields in the body font", () => {
+    expect(css).toMatch(/input,\s*select,\s*textarea\s*\{\s*font-family:\s*inherit;/);
+  });
+
   it("leaves the browser's autofill button alone", () => {
     expect(css).not.toMatch(/credentials-auto-fill-button/);
   });

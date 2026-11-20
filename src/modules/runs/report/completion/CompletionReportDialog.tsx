@@ -297,7 +297,7 @@ export function CompletionReportDialog({
           </h3>
           <p className="cd__msg">
             {t("completionReport.subtitle")}
-            {report && <> · {report.documentId}</>}
+            {report && <> · <span className="t-key">{report.documentId}</span></>}
           </p>
         </header>
 

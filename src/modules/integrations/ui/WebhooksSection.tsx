@@ -18,7 +18,7 @@ import {
   type WebhookEvent,
   type WebhookInput,
 } from "../api/webhooksApi";
-import { tokenFailure } from "./failure";
+import { deliveryFailure, tokenFailure } from "./failure";
 import "@shared/ui/ConfirmDialog.css";
 import "./integrations.css";
 
@@ -463,7 +463,7 @@ function DeliveriesDialog({ workspaceId, hook, onClose }: { workspaceId: string;
                   <>
                     <dt>{t("integrations.webhooks.answer")}</dt>
                     <dd>
-                      {[current.lastStatus, current.lastDurationMs !== null ? `${current.lastDurationMs} ms` : null, current.lastError, current.lastResponse]
+                      {[current.lastStatus, current.lastDurationMs !== null ? `${current.lastDurationMs} ms` : null, current.lastError ? deliveryFailure(t, current.lastError) : null, current.lastResponse]
                         .filter((x) => x !== null && x !== "")
                         .join(" · ")}
                     </dd>

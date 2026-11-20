@@ -77,6 +77,15 @@ button {
   cursor: pointer;
 }
 
+/* Fields write in the body font: a textarea's default is the browser's
+   monospace (FIX-46: the plan's review note, the AI context, the template
+   prompt). A code field sets its own. */
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -179,6 +188,48 @@ button[aria-expanded="true"] .lucide-chevron-down {
 @media (prefers-reduced-motion: reduce) {
   button[aria-expanded] .lucide-chevron-down {
     transition: none !important;
+  }
+}
+
+/* Checkboxes and radio buttons in Pharos's navy, never the browser's own blue
+   (FIX-46): the same mark as the tables' selection boxes, in both themes. A
+   module that sets its own accent keeps it. */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--color-navy-500);
+}
+
+/* A scroll box with more below fades its lower edge (FIX-46), so a row or an
+   entry cut by the edge reads as «more below», never as a stray fragment (a
+   half-cut row in a list, the top of a hidden sidebar group showing as a
+   dot). The lowest half of the band is fully clear. The fade follows the
+   scroll: gone at the end, and absent when the box fits (no scroll, no
+   timeline). Add the class to the element that scrolls. */
+@property --scroll-fade {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes scroll-fade {
+  from {
+    --scroll-fade: 44px;
+  }
+  to {
+    --scroll-fade: 0px;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .u-scroll-fade {
+    mask-image: linear-gradient(
+      to bottom,
+      #000 calc(100% - var(--scroll-fade)),
+      transparent calc(100% - var(--scroll-fade) / 2)
+    );
+    animation: scroll-fade linear both;
+    animation-timeline: scroll(self);
+    animation-range: calc(100% - 44px) 100%;
   }
 }
 

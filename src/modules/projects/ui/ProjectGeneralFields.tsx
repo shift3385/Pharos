@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Check, Copy, Hash } from "lucide-react";
 import { FormField } from "@shared/ui/FormField";
 import { Select } from "@shared/ui/Select";
+import { WholeKeys } from "@shared/ui/WholeKeys";
 import type { Issue } from "@shared/validation";
 import { DIGITS, sampleKey } from "../model/numbering";
 
@@ -86,7 +87,7 @@ export function ProjectGeneralFields({
                 {t("projects.prefix.free")}
               </span>
             ) : (
-              prefixHint
+              prefixHint && <WholeKeys text={prefixHint} />
             )
           }
         >

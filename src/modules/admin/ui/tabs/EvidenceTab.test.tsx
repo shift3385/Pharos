@@ -208,7 +208,7 @@ describe("Administración → Evidencias", () => {
     expect(screen.getByTestId("evidence-damaged")).toHaveTextContent("Sin adjuntos vigentes.");
     // A recent orphan cannot be picked.
     const orphans = screen.getByTestId("evidence-orphans");
-    expect(within(orphans).getByRole("checkbox", { name: "Seleccionar Archivo cd2222222222" })).toBeDisabled();
+    expect(within(orphans).getByRole("checkbox", { name: "Seleccionar Archivo sin nombre (cd2222222222)" })).toBeDisabled();
     expect(within(orphans).getByText("Reciente")).toBeInTheDocument();
     expect(screen.getByTestId("evidence-repair")).toBeDisabled();
   });
@@ -218,7 +218,7 @@ describe("Administración → Evidencias", () => {
     renderTab();
     await user.click(await screen.findByTestId("evidence-verify"));
     const orphans = await screen.findByTestId("evidence-orphans");
-    await user.click(within(orphans).getByRole("checkbox", { name: "Seleccionar Archivo ab1111111111" }));
+    await user.click(within(orphans).getByRole("checkbox", { name: "Seleccionar Archivo sin nombre (ab1111111111)" }));
     await user.click(screen.getByTestId("evidence-repair"));
     const dialog = screen.getByRole("alertdialog", { name: "¿Borrar 1 archivo sin registro?" });
     expect(dialog).toHaveTextContent("no se pueden recuperar");
@@ -245,7 +245,7 @@ describe("Administración → Evidencias", () => {
     renderTab();
     await user.click(await screen.findByTestId("evidence-verify"));
     const orphans = await screen.findByTestId("evidence-orphans");
-    await user.click(within(orphans).getByRole("checkbox", { name: "Seleccionar Archivo ab1111111111" }));
+    await user.click(within(orphans).getByRole("checkbox", { name: "Seleccionar Archivo sin nombre (ab1111111111)" }));
     await user.click(screen.getByTestId("evidence-repair"));
     await user.click(screen.getByTestId("evidence-confirm"));
     expect(
@@ -363,7 +363,7 @@ describe("Administración → Evidencias", () => {
     renderTab();
     await user.click(await screen.findByTestId("evidence-verify"));
     const orphans = await screen.findByTestId("evidence-orphans");
-    await user.click(within(orphans).getByRole("checkbox", { name: "Seleccionar Archivo ab1111111111" }));
+    await user.click(within(orphans).getByRole("checkbox", { name: "Seleccionar Archivo sin nombre (ab1111111111)" }));
     await user.click(screen.getByTestId("evidence-repair"));
     await user.click(screen.getByTestId("evidence-confirm"));
     expect(await screen.findByText("Se borró 1 archivo (2 KB).", { exact: false })).toBeInTheDocument();

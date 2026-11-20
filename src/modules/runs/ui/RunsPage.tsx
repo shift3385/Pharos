@@ -1,4 +1,5 @@
 import { useContext, useEffect, useRef, useState } from "react";
+import { WholeKeys } from "@shared/ui/WholeKeys";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 import { Plus, Upload } from "lucide-react";
@@ -162,13 +163,16 @@ function RunsList({
         <span className="rn-test">
           <span>{r.title}</span>
           <span className="tp-field__hint">
-            {[
-              t(`runs.trigger.${r.trigger}`),
-              r.sourceTool,
-              r.build && t("runs.list.build", { build: r.build }),
-            ]
-              .filter(Boolean)
-              .join(" · ")}
+            {/* The build («0.6.0-beta.1») never breaks at its hyphen (FIX-46). */}
+            <WholeKeys
+              text={[
+                t(`runs.trigger.${r.trigger}`),
+                r.sourceTool,
+                r.build && t("runs.list.build", { build: r.build }),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            />
           </span>
         </span>
       ),

@@ -45,7 +45,8 @@ export function PeriodSelector({
   const descId = useId();
   const range = { ...previousRange(value, today), days: 0 };
   range.days = Math.round((range.to.getTime() - range.from.getTime()) / 86_400_000) + 1;
-  const menu = usePopover(useBreakpoint() === "mobile" ? "dialog" : "menu");
+  const mobile = useBreakpoint() === "mobile";
+  const menu = usePopover(mobile ? "dialog" : "menu");
   const soon = t("dashboard.period.soonTitle");
 
   return (
@@ -60,7 +61,18 @@ export function PeriodSelector({
       >
         <Calendar size={16} className="home-btn__icon" aria-hidden="true" />
         <span className="sr-only">{t("dashboard.period.trigger")}: </span>
-        <span className="home-btn__text">{t(`dashboard.period.${value}`)}</span>
+        {/* On a phone the short label, whole (FIX-46: «Últimos 14 …»); the
+            full one stays for screen readers. */}
+        {mobile ? (
+          <>
+            <span className="home-btn__text" aria-hidden="true">
+              {t(`dashboard.period.short.${value}`)}
+            </span>
+            <span className="sr-only">{t(`dashboard.period.${value}`)}</span>
+          </>
+        ) : (
+          <span className="home-btn__text">{t(`dashboard.period.${value}`)}</span>
+        )}
         {compare && (
           <span className="home-btn__badge" data-testid="home-period-compare">
             {t("dashboard.compare.badge")}

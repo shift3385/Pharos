@@ -1,3 +1,4 @@
+import { formatBytes } from "@shared/i18n/numbers";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link2, Paperclip, Trash2, X } from "lucide-react";
@@ -659,7 +660,7 @@ export function DefectEditor({
                     <button type="button" className="pl-attach__open" onClick={() => download(a)} disabled={a.purged}>
                       <Paperclip size={14} aria-hidden="true" /> {a.name}
                     </button>
-                    <span className="pl-attach__size">{(a.size / 1024).toFixed(1)} KB</span>
+                    <span className="pl-attach__size">{formatBytes(a.size)}</span>
                     <button
                       type="button"
                       className="pl-attach__del"

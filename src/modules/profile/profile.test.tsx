@@ -60,7 +60,7 @@ describe("profile page", () => {
       displayName: "QA",
       firstName: "Quality",
       lastName: "Analyst",
-    });
+    }, "test-user");
     expect(await screen.findByText("Guardado")).toBeInTheDocument();
     expect(screen.getByTestId("profile-revision")).toHaveTextContent("2");
   });
@@ -173,5 +173,17 @@ describe("profile page", () => {
       screen.queryByRole("heading", { name: "Clave de recuperación" }),
     ).not.toBeInTheDocument();
     await expectNoAxeViolations();
+  });
+});
+
+// FIX-46: the local store writes UTC with no zone («2026-11-20 15:00:00»);
+// the page shows it in local time, as every other date of the app.
+describe("profile audit times", () => {
+  it("reads a zone-less stored time as UTC", async () => {
+    await i18n.changeLanguage("es");
+    vi.mocked(profileApi.get).mockResolvedValue({ ...savedProfile, createdAt: "2026-11-20 15:00:00", updatedAt: "2026-11-20 15:00:00" });
+    renderWithProviders(<ProfilePage />);
+    const expected = new Intl.DateTimeFormat("es", { dateStyle: "medium", timeStyle: "short" }).format(new Date(Date.UTC(2026, 10, 20, 15)));
+    expect((await screen.findAllByText(expected)).length).toBe(2);
   });
 });

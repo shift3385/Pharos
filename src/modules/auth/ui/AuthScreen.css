@@ -51,7 +51,10 @@ html.auth-route body {
   padding: 32px 0;
 }
 
+/* The foot lines up with the form's right edge (FIX-46). */
 .auth-col__foot {
+  width: 100%;
+  max-width: 460px;
   display: flex;
   align-items: center;
   gap: 12px;
