@@ -76,7 +76,7 @@ beforeEach(async () => {
 describe("CardEditor attachments", () => {
   it("says the 200 MB limit next to the file input", async () => {
     editor();
-    expect(await screen.findByText("Hasta 200 MB por archivo. Se guardan cifrados en este equipo.")).toBeInTheDocument();
+    expect(await screen.findByText("Hasta 200 MB por archivo. Se guardan cifrados en este equipo y se sincronizan como el resto de los datos.")).toBeInTheDocument();
   });
 
   it("«Adjuntar archivos» is a Pharos button that opens the hidden picker (NC-037)", async () => {

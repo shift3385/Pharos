@@ -110,6 +110,10 @@ A plan stores catalog **keys** plus the team's own entries as typed
 - `import/planImport.ts` reads a plan sheet by its headers (es/en), not by
   cells, and maps labels or keys back to catalog keys (`«Confirmación
   (re-test)»`, `Confirmation (re-test)` and `retest` are all `retest`).
+  Its report shows catalog lists by their labels (`previewItems`), never the
+  stored keys. The milestones come back from the «Hitos» sheet the export
+  adds (`parseMilestoneSheet`, FIX-40); «Ciclos» is the project's and is
+  not read.
 
 ## Tests
 

@@ -703,6 +703,33 @@ describe("syncNow with workspaces (SYNC-07)", () => {
     expect(paths).toEqual(["/sync/push", "/sync/pull?since=0"]);
     expect(calls.some((c) => c.cmd === "workspaces_apply")).toBe(false);
   });
+
+  it("fills the mirror in the first sync of a new account, not one sync later (FIX-40)", async () => {
+    // A new sign-up: the device has never heard the server list workspaces.
+    const calls = fakeCore([]);
+    const paths: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) => {
+        const path = new URL(url).pathname + new URL(url).search;
+        paths.push(path);
+        if (path === "/workspaces")
+          return json({ workspaces: [{ id: PERSONAL, name: "Personal", kind: "personal", role: "test_manager", members: [] }] });
+        return json({ docs: [], cursor: 0, hasMore: false, features: ["workspaces"] });
+      }),
+    );
+    const changed = vi.fn();
+    window.addEventListener("pharos:workspaces", changed);
+    try {
+      await syncNow();
+    } finally {
+      window.removeEventListener("pharos:workspaces", changed);
+    }
+    // The pull of before, then the list the selector needs.
+    expect(paths).toEqual(["/sync/pull?since=0", "/workspaces"]);
+    expect(calls.find((c) => c.cmd === "workspaces_apply")?.args.workspaces).toHaveLength(1);
+    expect(changed).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("syncNow with attachments and templates (SYNC-04b)", () => {
