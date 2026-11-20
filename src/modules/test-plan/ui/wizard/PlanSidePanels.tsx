@@ -68,7 +68,9 @@ export function PlanStatusPanel({
           {status === "approved" && approval && (
             <>
               <dt>{t("testPlan.approval.by")}</dt>
-              <dd className="u-truncate" title={approval.byName} data-testid="plan-approved-by">
+              {/* Wraps, never cut: a name plus «aprobación propia» is wider
+                  than the panel at 1440 px (FIX-40). */}
+              <dd className="tpw-facts__wrap" data-testid="plan-approved-by">
                 {approval.byName}
                 {approval.selfApproved && ` · ${t("testPlan.review.banner.selfApproved")}`}
               </dd>

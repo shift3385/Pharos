@@ -11,7 +11,8 @@ import { ESTIMATION_TECHNIQUES, INDEPENDENCE_LEVELS } from "../model/catalogs";
 import { TECHNIQUE_REV } from "../model/catalogLabels";
 import { METRIC_UNIT, isMetricKind, newMetricId, type MetricOp, type MetricUnit } from "../model/metrics";
 import { STRATEGY_ROWS } from "../export/planStrategy";
-import type { ClosureCriterion, Estimation, PlanMetric, TestPlanData } from "../model/types";
+import { fromDisplay } from "../model/schedule";
+import type { ClosureCriterion, Estimation, PlanMetric, StoredMilestone, TestPlanData } from "../model/types";
 
 type Dict = Record<string, unknown>;
 const tp = (loc: unknown) => (loc as { testPlan: Dict }).testPlan;
@@ -58,6 +59,8 @@ function sheet(wb: ExcelJS.Workbook, names: string[]): ExcelJS.Worksheet | undef
 const cellText = (row: ExcelJS.Row, col: number): string => {
   const v = row.getCell(col).value;
   if (v === null || v === undefined) return "";
+  // A date Excel recognised (a milestone retyped in Excel): its ISO day.
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
   if (typeof v === "object" && "richText" in v) return v.richText.map((r) => r.text).join("").trim();
   if (typeof v === "object" && "text" in v) return String(v.text).trim();
   return String(v).trim();
@@ -182,4 +185,18 @@ export function parseStrategySheets(wb: ExcelJS.Workbook): Partial<TestPlanData>
       });
   }
   return data;
+}
+
+const MILESTONE_SHEET = both("milestones");
+
+/** The milestones of step 14, from the «Hitos» sheet a plan export adds
+ *  after the template's (EXP-03), whose own table holds the sprints only.
+ *  Undefined when the workbook has no such sheet. Before FIX-40 the import
+ *  read only the sprints, so milestones were lost on the way back. */
+export function parseMilestoneSheet(wb: ExcelJS.Workbook): StoredMilestone[] | undefined {
+  const ws = sheet(wb, MILESTONE_SHEET);
+  if (!ws) return undefined;
+  return rows(ws, 2)
+    .filter(([name, date]) => name || date)
+    .map(([name, date]) => ({ name, date: fromDisplay(date) ?? date }));
 }

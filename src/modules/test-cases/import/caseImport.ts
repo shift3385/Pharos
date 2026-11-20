@@ -166,6 +166,7 @@ export async function parseCaseXlsx(
     const raw = readValue(ws, label, "below");
     let filled = raw.trim().length > 0;
     let prev: string | undefined = raw ? preview(raw.replace(/\n/g, " · ")) : undefined;
+    let prevKey: string | undefined;
 
     switch (spec.kind) {
       case "text":
@@ -194,10 +195,12 @@ export async function parseCaseXlsx(
         scalar[spec.id] = key;
         filled = key.length > 0;
         prev = key || undefined;
+        // The report shows the label in the person's language, not «high».
+        prevKey = key ? `testCase.${spec.kind}Label.${key}` : undefined;
         break;
       }
     }
-    push({ labelKey: spec.labelKey, status: filled ? "filled" : "empty", preview: prev });
+    push({ labelKey: spec.labelKey, status: filled ? "filled" : "empty", preview: prev, previewKey: prevKey });
     await yieldFrame();
   }
 

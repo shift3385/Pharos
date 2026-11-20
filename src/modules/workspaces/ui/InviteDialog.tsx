@@ -77,7 +77,13 @@ export function InviteDialog({
         <p id={`${id}-hint`} className="cd__msg">
           {t("workspaces.invite.createdHint", { date })}
         </p>
-        <p className="ws-code" id={`${id}-code`} tabIndex={-1} aria-label={t("workspaces.invite.codeLabel")}>
+        <p
+          className="ws-code"
+          id={`${id}-code`}
+          tabIndex={-1}
+          aria-label={t("workspaces.invite.codeLabel")}
+          data-testid="invite-code"
+        >
           {created.code}
         </p>
         <p className="tp__muted">{t("workspaces.invite.server", { url: info.origin })}</p>

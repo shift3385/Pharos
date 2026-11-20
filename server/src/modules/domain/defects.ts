@@ -158,7 +158,9 @@ export function withLinks(ctx: LinkContext, doc: RemoteDoc): Payload {
     } else if (kind === "result" && found) {
       caseId = resultCase(ctx, found);
       const run = ctx.byId.get(`run:${str(found.payload, "runId")}`);
-      label = `${run ? str(run.payload, "runKey") : ""} · ${str(found.payload, "caseKey") || str(found.payload, "testKey")} #${String(found.payload.attempt ?? 0)}`;
+      // A retry is numbered as the run shows it (attempt 0 is the first, unnumbered).
+      const attempt = Number(found.payload.attempt ?? 0);
+      label = `${run ? str(run.payload, "runKey") : ""} · ${str(found.payload, "caseKey") || str(found.payload, "testKey")}${attempt > 0 ? ` #${attempt + 1}` : ""}`;
     }
     if (caseId && !caseIds.includes(caseId)) caseIds.push(caseId);
     out.push({ id: l.entityId, targetKind: kind, targetId: target, label });

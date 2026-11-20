@@ -187,7 +187,7 @@ export function WorkspaceMembersPage() {
               const self = m.userId === user?.id;
               const lastManager = m.role === "test_manager" && managers <= 1;
               return (
-                <tr key={m.userId} data-testid={`member-${m.userId}`}>
+                <tr key={m.userId} data-testid={`member-${m.userId}`} data-email={m.email}>
                   <td>
                     {nameOf(m)} {self && <span className="ui-badge">{t("workspaces.members.you")}</span>}
                     {m.disabled && (
@@ -201,6 +201,7 @@ export function WorkspaceMembersPage() {
                     {manager ? (
                       <Select<WorkspaceRole>
                         aria-label={t("workspaces.members.role")}
+                        data-testid={`member-role-${m.email}`}
                         value={m.role}
                         disabled={busy || lastManager}
                         title={lastManager ? t("workspaces.members.lastManager") : undefined}
@@ -226,6 +227,7 @@ export function WorkspaceMembersPage() {
                           disabled={busy || lastManager}
                           title={lastManager ? t("workspaces.members.lastManager") : undefined}
                           onClick={() => void remove(m)}
+                          data-testid={`member-${self ? "leave" : "remove"}-${m.email}`}
                         >
                           {self ? t("workspaces.members.leave") : t("workspaces.members.remove")}
                         </button>

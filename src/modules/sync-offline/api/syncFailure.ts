@@ -18,6 +18,7 @@ export type SyncAction =
   | "rejections-list"
   | "rejection-discard"
   | "blobs"
+  | "workspaces"
   | "compact";
 
 /**

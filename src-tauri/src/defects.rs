@@ -274,7 +274,7 @@ fn links_by_defect(
                       WHEN 'test_case' THEN (SELECT c.scenario_id FROM test_cases c WHERE c.id = l.target_id)
                       WHEN 'requirement' THEN (SELECT q.requirement_key FROM requirements q WHERE q.id = l.target_id)
                       WHEN 'result' THEN (SELECT r.run_key || ' · ' || coalesce(x.case_key, x.test_key)
-                                                 || ' #' || x.attempt
+                                                 || CASE WHEN x.attempt > 0 THEN ' #' || (x.attempt + 1) ELSE '' END
                                             FROM results x LEFT JOIN runs r ON r.id = x.run_id
                                            WHERE x.id = l.target_id)
                     END AS label
