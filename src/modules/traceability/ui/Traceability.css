@@ -294,6 +294,13 @@
   font-weight: var(--fw-semibold);
 }
 
+/* Title and its «?» on one line (FIX-37). */
+.tz-panel__head--tip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .tz-panel__head .tr__subtitle {
   margin-top: 4px;
   font-size: 12.5px;
@@ -660,11 +667,11 @@
   align-self: flex-end;
 }
 
-.tz-filters__hint {
-  flex-basis: 100%;
-  margin: 0;
-  font-size: 12px;
-  color: var(--color-text-muted);
+/* The filters' help behind a «?», level with the fields (FIX-37). */
+.tz-filters__help {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
 }
 
 .tz-result {
@@ -1137,13 +1144,22 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* On a card, as the KPIs above it (FIX-37): over the background image the
+   strip was drawn on the photo and «Bajo 0/0» vanished in the beam. */
 .tz-bands {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 6px 20px;
   margin: 0;
-  padding: 0;
+  padding: 12px 16px;
   list-style: none;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+:where(:root[data-card-shadow]) .tz-bands {
+  box-shadow: var(--shadow-2);
 }
 
 .tz-bands__row {

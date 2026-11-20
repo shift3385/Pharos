@@ -2,6 +2,8 @@
    tokens only. No design in docs/rediseno: the shared primitives laid out
    here; three views by the app container (SPEC §2): from 1280 px the items
    and the executor side by side, below it the executor takes the section. */
+/* «← Ejecuciones» on its own small surface (FIX-37): over the background image
+   the bare link was grey text on the photo. Same pill as «← Ciclos». */
 .ex-back {
   display: inline-flex;
   align-items: center;
@@ -10,6 +12,14 @@
   color: var(--color-text-secondary);
   align-self: flex-start;
   min-height: 32px;
+  padding: 4px 12px 4px 10px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+}
+.ex-back:hover {
+  color: var(--color-text-primary);
 }
 .ex-run-actions {
   display: flex;
@@ -230,8 +240,16 @@
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
   color: var(--color-text-secondary);
-  overflow-wrap: anywhere;
+  /* Words stay whole (FIX-37): «anywhere» split values such as
+     «contra/seña-mala»; only a word longer than the line breaks. */
+  overflow-wrap: break-word;
   margin: 0;
+}
+/* The chip shows the first value on one line; the whole row is in its title. */
+.ex-target__row {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .ex-subtitle {
   margin: 0;

@@ -524,9 +524,12 @@ export function MatrixView({
       <BandBars coverage={coverage} />
 
       <section className="tz-panel" aria-labelledby="tz-matrix-title">
-        <div className="tz-panel__head">
+        <div className="tz-panel__head tz-panel__head--tip">
           <h3 id="tz-matrix-title">{t("traceability.matrix.title")}</h3>
-          <p className="tr__subtitle">{t("traceability.matrix.subtitle")}</p>
+          {/* Behind a «?» (FIX-37), not a standing line. */}
+          <InfoTip id="tz-matrix-help" label={t("traceability.matrix.title")}>
+            {t("traceability.matrix.subtitle")}
+          </InfoTip>
         </div>
         {matrix.rows.length === 0 ? (
           <p className="tz-empty">

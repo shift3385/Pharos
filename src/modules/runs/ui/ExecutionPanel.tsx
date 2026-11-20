@@ -38,6 +38,7 @@ import type {
 } from "@shared/contracts/contract";
 import { isTauri } from "@shared/platform";
 import { Dialog } from "@shared/ui/Dialog";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { Select } from "@shared/ui/Select";
 import { useToast } from "@shared/ui/Toast";
@@ -1066,7 +1067,10 @@ export function ExecutionPanel({
                   <ClipboardPaste size={14} aria-hidden="true" />
                   <span className="ui-btn__text">{t("execution.paste")}</span>
                 </button>
-                <span className="tp-field__hint">{t("execution.captureHint")}</span>
+                {/* Behind a «?» beside «Pegar captura» (FIX-37). */}
+                <InfoTip id="ex-capture-help" label={t("execution.paste")}>
+                  {t("execution.captureHint")}
+                </InfoTip>
               </div>
               ) : (
                 <p className="tp-field__hint ex-result__files" data-testid="exec-attach-desktop-only">

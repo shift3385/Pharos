@@ -247,6 +247,7 @@ function RunsList({
       <h2 className="sr-only">{t("projects.tab.runs")}</h2>
       {!inHeader && <div className="rn-actions">{actions}</div>}
       <Tabs
+        className="rn-tabs"
         label={t("projects.tab.runs")}
         variant="underline"
         value={tab}
@@ -321,7 +322,7 @@ function RunsList({
           </div>
         ) : !isTauri() ? (
           // Imports and their tray stay on the desktop (EJE-06, Q4).
-          <p className="tp-field__hint" role="note" data-testid="runs-unlinked-desktop-only">
+          <p className="tp-field__hint rn-note" role="note" data-testid="runs-unlinked-desktop-only">
             {t("execution.web.importDesktopOnly")}
           </p>
         ) : (

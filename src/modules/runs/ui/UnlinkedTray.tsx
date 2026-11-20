@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { UnlinkedTest } from "@shared/contracts/contract";
 import { DataTable, type DataColumn } from "@shared/ui/DataTable";
 import { FilterChips } from "@shared/ui/FilterChips";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { useToast } from "@shared/ui/Toast";
 import { useConfirm } from "@shared/ui/useConfirm";
@@ -77,7 +78,7 @@ export function UnlinkedTray({
     x.mappedCaseId ? (
       <button
         type="button"
-        className="ui-btn ui-btn--small ui-btn--ghost"
+        className="ui-btn ui-btn--small"
         onClick={() => void unlink(x)}
       >
         {t("runs.tray.unlink")}
@@ -139,7 +140,9 @@ export function UnlinkedTray({
   return (
     <div className="rn-tray">
       {confirmDialog}
-      <p className="tp-field__hint">{t("runs.tray.intro")}</p>
+      {/* The intro behind a «?» (FIX-37): as a standing line it was grey
+          text on the background image. */}
+      <div className="rn-tray__bar">
       <FilterChips
         label={t("runs.tray.filter")}
         value={filter}
@@ -162,6 +165,10 @@ export function UnlinkedTray({
           },
         ]}
       />
+      <InfoTip id="rn-tray-help" label={t("runs.tabs.unlinked")}>
+        {t("runs.tray.intro")}
+      </InfoTip>
+      </div>
       <DataTable
         className="dt-surface"
         label={t("runs.tray.title")}
