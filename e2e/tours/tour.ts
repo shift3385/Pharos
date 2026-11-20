@@ -16,7 +16,7 @@
 // `covers` names the inventory items of e2e/tours/manifest.ts the step
 // exercises; `npm run check:manual` reads them statically, so they must be
 // string literals.
-import { appendFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { foreignNames } from "../../scripts/manual/persona.mjs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -134,6 +134,18 @@ async function focusBox(selectors: string[], origin: string | null): Promise<Foc
 }
 
 let current: { id: ChapterId; n: number; failed: string | null; prepError: string | null } | null = null;
+
+/** Where a chapter's steps go: its own id and numbering, or, for the second
+ *  part of a chapter (`partOf`), that chapter's id with the numbers after
+ *  the steps of its first part's tour file (also in a run without it). */
+export function stepTarget(id: ChapterId): { chapter: ChapterId; offset: number } {
+  const meta = CHAPTERS.find((c) => c.id === id);
+  if (!meta?.partOf) return { chapter: id, offset: 0 };
+  const parent = CHAPTERS.find((c) => c.id === meta.partOf);
+  if (!parent?.file) throw new Error(`chapter ${id} is part of ${meta.partOf}, which has no tour file`);
+  const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), parent.file), "utf8");
+  return { chapter: parent.id, offset: (source.match(/^\s*step\("/gm) ?? []).length };
+}
 /** The window size the next captures must have (setViewport changes it). */
 let target: Viewport = DESKTOP;
 
@@ -270,7 +282,8 @@ export function chapter(id: ChapterId, body: () => void) {
   if (!meta) throw new Error(`chapter ${id} is not in e2e/tours/manifest.ts`);
   describe(`Tour ${meta.number} · ${meta.title}`, () => {
     before(async () => {
-      current = { id, n: 0, failed: null, prepError: null };
+      const target = stepTarget(id);
+      current = { id: target.chapter, n: target.offset, failed: null, prepError: null };
       await stabilise();
       await setViewport(DESKTOP);
       try {

@@ -167,6 +167,31 @@ export const CYCLE = {
   /** The first two base cases, assigned to Liomar. */
   caseKeys: ["PH-001", "PH-002"],
   assignee: "Liomar Rodríguez",
+  /** How Liomar closes it (chapter 9, after the results of chapters 10 and 11
+   *  and the defects of chapter 12): PH-001 fails in every run and the login
+   *  defect is critical and open, so the version does not go out. */
+  gate: {
+    verdict: "noGo" as const,
+    justifications: [
+      {
+        match: /crític/i,
+        text: "No se acepta: el defecto crítico del acceso impide entrar con credenciales válidas. Se corrige para la beta.2 y se repite la regresión; lo sigue Liomar, responsable de QA.",
+      },
+      {
+        match: /cobertura/i,
+        text: "REQ-003 a REQ-012 se cubren en el Sprint 2, hasta el 6 de diciembre; lo asume Liomar, responsable de QA.",
+      },
+    ],
+    otherJustification: "Se repite en la regresión de la beta.2, del 23 de noviembre; lo sigue Liomar, responsable de QA.",
+    /** The manual criteria: PH-001, the critical case, was run (and failed);
+     *  the demo was not held with the access broken. */
+    manual: [
+      { match: /Casos críticos ejecutados/i, met: true },
+      { match: /Satisfacción/i, met: false },
+    ],
+    lessons:
+      "Pedir al equipo de plataforma el entorno de staging una semana antes de la regresión, y una prueba de humo del acceso antes de abrir el ciclo.",
+  },
 };
 
 /** The report chapter 10 imports into the cycle, with its captures

@@ -39,6 +39,7 @@ export type ChapterId =
   | "trazabilidad"
   | "ajustes"
   | "ciclos"
+  | "ciclos-cierre"
   | "defectos"
   | "ejecuciones"
   | "administracion"
@@ -64,6 +65,8 @@ export type Prereq =
   | "hallazgos"
   | "ejecucion-manual"
   | "defectos"
+  | "ciclo-ejecutado"
+  | "ciclo-cerrado"
   | "requisitos-api"
   | "cuenta-jorge"
   | "equipo-qa"
@@ -181,6 +184,21 @@ export const PREREQUISITES: Prerequisite[] = [
     loader: "web API POST /api/defects with its links + sync",
   },
   {
+    id: "ciclo-ejecutado",
+    contract:
+      "the cycle's two runs (Chrome and Edge) completed: PH-001 fails at step 3 and PH-002 passes (each example row) in both",
+    after: ["ciclo"],
+    loader: "web API /api/results and /close on each run of the cycle + sync",
+  },
+  {
+    id: "ciclo-cerrado",
+    contract:
+      "the cycle «Regresión 0.6.0» closed with its quality gate (verdict No-go), its closure report saved and approved",
+    madeBy: "ciclos-cierre",
+    after: ["ciclo-ejecutado", "resultados", "defectos"],
+    loader: "«Cerrar ciclo…» and «Informe de cierre» on screen, without captures",
+  },
+  {
     id: "requisitos-api",
     contract: "the requirements of «API de sincronización» (fixtures/pharos/requisitos-api-sincronizacion.csv)",
     after: ["prefijos"],
@@ -217,8 +235,13 @@ export interface Chapter {
   status: "active" | "pending";
   /** Why the chapter has no tour yet (shown in the manual and by the check). */
   pending?: string;
-  /** False for the preparation tour, which is not a chapter. */
+  /** False for the preparation tour, which is not a chapter, and for the
+   *  second part of a chapter (`partOf`). */
   inManual?: boolean;
+  /** The second part of a chapter that must run later than the first one
+   *  (it needs data later chapters make): its steps print in that chapter,
+   *  numbered after the first part's, with its captures in its folder. */
+  partOf?: ChapterId;
   /** The prerequisites this chapter reads and is not about, prepared before
    *  it starts (PREREQUISITES). Each one's `madeBy` chapter must run
    *  earlier, so a full run loads nothing. */
@@ -251,11 +274,24 @@ export const CHAPTERS: Chapter[] = [
     status: "active",
     uses: ["requisitos", "casos-base", "caso-dataset", "resultados", "hallazgos", "ejecucion-manual", "defectos"],
   },
+  // The closing of the cycle of chapter 9 (its quality gate and closure
+  // report), on the results of chapters 10 and 11 and the defects of 12:
+  // nobody closes a cycle before running it. Printed in chapter 9.
+  {
+    id: "ciclos-cierre",
+    number: 9,
+    title: "Ciclos de prueba (cierre)",
+    file: "09-ciclos-cierre.tour.ts",
+    status: "active",
+    inManual: false,
+    partOf: "ciclos",
+    uses: ["plan", "ciclo-ejecutado", "resultados", "hallazgos", "ejecucion-manual", "defectos"],
+  },
   { id: "administracion", number: 15, title: "Administración", file: "15-administracion.tour.ts", status: "active", uses: ["plan", "requisitos", "cuenta-jorge"] },
   { id: "ia", number: 17, title: "Asistente de IA", file: "17-ia.tour.ts", status: "active", uses: ["plan", "requisitos", "casos-base", "requisitos-api"] },
   { id: "movil", number: 18, title: "Pantallas estrechas y móvil", file: "18-movil.tour.ts", status: "active", uses: ["plan", "casos-base"] },
-  { id: "inicio", number: 3, title: "Inicio", file: "03-inicio.tour.ts", status: "active", uses: ["plan", "resultados", "ejecucion-manual", "defectos"] },
-  { id: "evidencias", number: 16, title: "Evidencias", file: "16-evidencias.tour.ts", status: "active", uses: ["resultados", "ejecucion-manual", "defectos"] },
+  { id: "inicio", number: 3, title: "Inicio", file: "03-inicio.tour.ts", status: "active", uses: ["plan", "resultados", "ejecucion-manual", "defectos", "ciclo-cerrado"] },
+  { id: "evidencias", number: 16, title: "Evidencias", file: "16-evidencias.tour.ts", status: "active", uses: ["resultados", "ejecucion-manual", "defectos", "ciclo-cerrado"] },
   { id: "errores", number: 19, title: "Si algo sale mal", file: "19-errores.tour.ts", status: "active", uses: ["cuenta-liomar"] },
   // Team work with Jorge (decision D-1): it creates «Equipo QA», shares
   // «Pharos» into it, invites Jorge, and shows members, roles, review and

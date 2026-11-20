@@ -1,7 +1,10 @@
 // Chapter 9 — Ciclos de prueba (manual v2, MAN-03): the cycle «Regresión
 // 0.6.0» of «Pharos» (what runs, where, against which build), adding cases one
 // by one and by filter, assigning, reordering, executing it into runs (one per
-// configuration), its status report, cloning, deleting and the list on a phone.
+// configuration), cloning, deleting and the list on a phone. Its closing (the
+// status report on real results, the quality gate and the closure report) is
+// 09-ciclos-cierre.tour.ts, which runs after chapters 10 to 13 and prints at
+// the end of this chapter.
 import { $, $$, browser, expect } from "@wdio/globals";
 import { DESKTOP, MOBILE, chapter, setViewport, step } from "./tour";
 import {
@@ -14,7 +17,6 @@ import {
   openProject,
   openSection,
   pickDate,
-  selectOption,
   tf,
   typeDate,
   waitForText,
@@ -157,7 +159,7 @@ chapter("ciclos", () => {
 
   step("runs", {
     title: "Los runs del ciclo",
-    caption: "Los runs creados aparecen en la pestaña «Runs» (con su configuración, su estado y su inicio) y en «Ejecuciones» (capítulo 10), listos para registrar resultados. Un clic en su clave abre el run para ejecutarlo paso a paso (capítulo 11).",
+    caption: "Los runs creados aparecen en la pestaña «Runs» (con su configuración, su estado y su inicio) y en «Ejecuciones» (capítulo 10), listos para registrar resultados. Un clic en su clave abre el run para ejecutarlo paso a paso (capítulo 11). El ciclo sigue «Activo» mientras se ejecuta: se cierra cuando ya tiene resultados, como se ve al final de este capítulo.",
     covers: ["tabs:src/modules/cycles/ui/CycleDetail.tsx"],
     run: async () => {
       await clickButton(tf("cycles.execute.confirm_other", { count: 2 }), D);
@@ -167,136 +169,12 @@ chapter("ciclos", () => {
     },
   });
 
-  step("informe-ciclo", {
-    title: "Informe de estado de un ciclo",
-    caption: "«Informe de estado» en la cabecera del ciclo abre el informe con el alcance ya puesto en ese ciclo: el progreso cuenta cada caso en cada configuración, como la pestaña «Elementos». El informe completo, con sus exportaciones a Excel y PDF, se explica en el capítulo 11.",
-    covers: ["action:cycle-report"],
-    shot: { element: D },
-    run: async () => {
-      await $('[data-testid="cycle-report"]').click();
-      await expect($('[data-testid="status-report"]')).toBeDisplayed();
-      await waitForText(es.statusReport.section.identification);
-    },
-  });
-
-  step("cerrar-ciclo", {
-    title: "Cerrar el ciclo: el quality gate",
-    caption:
-      "Un ciclo se cierra con «Cerrar ciclo…», nunca desde «Editar». Pharos evalúa los criterios de salida del plan sobre los resultados del ciclo. Cada criterio obligatorio que no se cumple, o que no tiene datos, pide una justificación de al menos 20 caracteres: por qué se acepta el riesgo, quién lo asume y cuándo se resuelve. Los criterios que Pharos no mide solo (aquí, «Casos críticos ejecutados» y «Satisfacción del producto en la demo») se marcan a mano con «Cumple» o «No cumple», y los orientativos solo informan. En este ejemplo, Liomar cierra el ciclo antes de registrar resultados, para ver el cierre: por eso los criterios medidos no se cumplen y cada uno lleva su justificación. Si algún obligatorio falla, eliges «Go con riesgos» (la versión puede salir) o «No-go» (no sale). Al pie se ve quién firma y cuándo: queda en Auditoría. Cerrar un ciclo también avisa en las notificaciones del equipo y a los webhooks del proyecto (capítulo 20).",
-    covers: ["dialogs:src/modules/runs/gate/CloseCycleDialog.tsx"],
-    shot: { element: D },
-    run: async () => {
-      if (await $('[data-testid="status-report"]').isExisting()) {
-        await browser.keys("Escape");
-        await $(".cd-overlay").waitForExist({ reverse: true });
-      }
-      await $('[data-testid="cycle-close"]').click();
-      await $('[data-testid="gate-banner"]').waitForDisplayed();
-      // One justification per criterion, with who takes the risk and when
-      // it is resolved.
-      for (const row of await $$(`${D} .gate-item`)) {
-        const box = row.$("textarea");
-        if (!(await box.isExisting())) continue;
-        const name = await row.$(".gate-row__name").getText();
-        await box.setValue(
-          /cobertura/i.test(name)
-            ? "Se acepta: REQ-003 a REQ-012 se cubren en el Sprint 2; lo asume Liomar, responsable de QA, hasta el 4 de diciembre."
-            : "Se acepta: lo asume Liomar, responsable de QA; los casos pendientes se ejecutan en la regresión del 23 de noviembre.",
-        );
-      }
-      for (const b of await $$(`${D} .gate-mark button`)) if ((await b.getText()) === es.gate.met) await b.click();
-      const risks = $('[data-testid="gate-verdict-goWithRisks"]');
-      if (await risks.isExisting()) await risks.click();
-    },
-  });
-
-  step("cierre-sin-guardar", {
-    title: "Salir del cierre sin cerrar",
-    caption:
-      "Si sales con Esc o «Cancelar» después de escribir una justificación o marcar un criterio, Pharos pregunta antes de descartarlo: «Seguir editando» vuelve al cierre tal como estaba.",
-    covers: ["dialogs:src/modules/runs/gate/CloseCycleDialog.tsx"],
-    shot: { element: '[role="alertdialog"]' },
-    run: async () => {
-      await browser.keys("Escape");
-      await expect($('[role="alertdialog"]')).toBeDisplayed();
-    },
-    after: async () => {
-      await $('[role="alertdialog"]').$(`button=${es.dialog.unsaved.keep}`).click();
-      await expect($('[role="alertdialog"]')).not.toBeExisting();
-      await expect($('[data-testid="gate-banner"]')).toBeDisplayed();
-    },
-  });
-
-  step("ciclo-cerrado", {
-    title: "El veredicto del ciclo",
-    caption:
-      "«Cerrar ciclo» guarda la decisión con las cifras de ese momento, congeladas: el ciclo queda «Cerrado», con su veredicto al lado, y ya no admite casos ni ejecuciones hasta que lo reabras desde «Editar». Su informe de estado empieza ahora por «Decisión de salida», con cada criterio, su justificación y las métricas frente al ciclo anterior, también en Excel y PDF. Inicio lo suma a «Tendencia de ciclos».",
-    covers: ["action:cycle-verdict"],
-    run: async () => {
-      await $('[data-testid="gate-close"]').click();
-      await waitForToast(es.gate.closedToast.split("{{")[0].trim());
-      await expect($('[data-testid="cycle-verdict"]')).toBeDisplayed();
-    },
-  });
-
-  step("informe-cierre", {
-    title: "El informe de cierre",
-    caption:
-      "En un ciclo cerrado, «Cerrar ciclo…» deja paso a «Informe de cierre»: el informe final de la ronda según ISO/IEC/IEEE 29119-3, con su ID (TCR-…). Pharos rellena lo que sabe del cierre: las desviaciones respecto al plan (fecha de fin, casos sin ejecutar, criterios que no se cumplen), la «Decisión de salida» con sus justificaciones, lo que bloqueó el avance, las métricas frente al ciclo anterior y al objetivo del plan, los riesgos residuales (los defectos abiertos, los hallazgos abiertos y los umbrales de rendimiento incumplidos de sus runs, y los requisitos sin cubrir o sin pasar, por riesgo), los entregables y los activos reutilizables. Tú escribes el resumen, las lecciones aprendidas y los comentarios de cada apartado, marcas los entregables del plan y pulsas «Guardar»: queda en el ciclo, se sincroniza y sale en Excel y PDF.",
-    covers: ["dialogs:src/modules/runs/report/completion/CompletionReportDialog.tsx"],
-    shot: { element: D },
-    run: async () => {
-      await $('[data-testid="cycle-completion-report"]').click();
-      await expect($('[data-testid="completion-report"]')).toBeDisplayed();
-      await waitForText(es.completionReport.section.deviations);
-      await $('[data-testid="completion-lessons"]').setValue(
-        "Pedir al equipo de plataforma el entorno de staging una semana antes de la regresión.",
-      );
-      await $('[data-testid="completion-save"]').click();
-      await waitForToast(es.completionReport.savedToast);
-      // The capture starts at the report's title and ID.
-      await $(`${D} .cd__title`).scrollIntoView({ block: "start" });
-    },
-  });
-
-  step("aprobar-informe-cierre", {
-    title: "Aprobar el informe de cierre",
-    caption:
-      "Con todo guardado, «Aprobar informe» pide confirmación y deja tu nombre y la fecha en el apartado «Aprobación», en la cabecera del PDF y en el Excel. Si después cambias un texto, el informe pierde la aprobación al guardar. Si reabres el ciclo y lo vuelves a cerrar, el informe sigue al cierre nuevo: conserva los textos, pero hay que aprobarlo otra vez.",
-    covers: ["dialogs:src/modules/runs/report/completion/CompletionReportDialog.tsx"],
-    shot: { element: '[role="alertdialog"]' },
-    run: async () => {
-      await $('[data-testid="completion-approve"]').click();
-      await expect($('[data-testid="completion-approve-confirm"]')).toBeDisplayed();
-    },
-    // The later chapters import into this cycle and record results in its
-    // runs (10, 11): approve, close the report and reopen the cycle, as
-    // «Editar» allows, so they find it open.
-    after: async () => {
-      await $('[data-testid="completion-approve-confirm"]').click();
-      await waitForToast(es.completionReport.approvedToast);
-      await browser.keys("Escape");
-      await $(".cd-overlay").waitForExist({ reverse: true });
-      await clickButton(Y.edit);
-      await expect(dialog()).toBeDisplayed();
-      await selectOption(Y.field.status, Y.status.active, D);
-      await clickButton(Y.save, D);
-      await $(D).waitForExist({ reverse: true });
-      await expect($('[data-testid="cycle-verdict"]')).not.toBeExisting();
-      await expect($('[data-testid="cycle-close"]')).toBeDisplayed();
-    },
-  });
-
   step("clonar", {
     title: "Clonar y eliminar un ciclo",
     caption:
-      "Tras aprobar el informe, Liomar reabre el ciclo desde «Editar» (Estado: «Activo»), porque en los capítulos 10 y 11 registrará en él los resultados de la regresión; por eso vuelve a decir «Activo». El menú «⋯» del ciclo lo clona, con sus elementos y sin resultados, útil para repetir una regresión en la siguiente versión (el clon se abre solo); también lo elimina, tras confirmar.",
+      "El menú «⋯» del ciclo lo clona, con sus elementos y sin resultados, útil para repetir una regresión en la siguiente versión (el clon se abre solo); también lo elimina, tras confirmar.",
     covers: ["dialogs:src/modules/cycles/ui/CycleDetail.tsx"],
     run: async () => {
-      if (await $('[data-testid="status-report"]').isExisting()) {
-        await browser.keys("Escape");
-        await $(".cd-overlay").waitForExist({ reverse: true });
-      }
       await $(`button[aria-label="${Y.moreActions}"]`).click();
       await expect(menuItem(Y.clone)).toBeDisplayed();
     },

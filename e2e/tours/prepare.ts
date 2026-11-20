@@ -62,6 +62,48 @@ type Doc = Record<string, unknown> & { id: string; revision?: number };
 const projectA = () => liomar.project(PROJECT_A.name);
 const projectB = () => liomar.project(PROJECT_B.name);
 
+/** The cycle of chapter 9 (its key, as the list shows it). */
+async function cycleKey(): Promise<string | null> {
+  const cycle = (await liomar.cycles((await projectA()).id)).find((c) => c.title === CYCLE.title);
+  return (cycle?.cycleKey as string | undefined) ?? null;
+}
+
+/** The runs «Ejecutar» made for the cycle (one per configuration), not the
+ *  report chapter 10 imports into it. */
+async function cycleRuns(): Promise<Doc[]> {
+  const cycle = (await liomar.cycles((await projectA()).id)).find((c) => c.title === CYCLE.title);
+  if (!cycle) return [];
+  const runs = await liomar.get<Doc[]>(`/api/cycles/${cycle.id}/runs`);
+  return runs.filter((r) => r.title !== RESULTS.title && r.trigger !== "import");
+}
+
+/**
+ * The quality gate of «Cerrar ciclo…» filled as chapter 9 fills it
+ * (CYCLE.gate): a justification for each mandatory criterion that is not
+ * met, the manual criteria marked, the verdict chosen. Leaves the dialog
+ * open, ready for «Cerrar ciclo». Used by chapter 9's closing and by the
+ * «ciclo-cerrado» loader.
+ */
+export async function closeCycleGate() {
+  await $('[data-testid="cycle-close"]').click();
+  await $('[data-testid="gate-banner"]').waitForDisplayed();
+  for (const row of await $$(`${D} .gate-item`)) {
+    const name = await row.$(".gate-row__name").getText();
+    const box = row.$("textarea");
+    if (await box.isExisting()) {
+      const j = CYCLE.gate.justifications.find((x) => x.match.test(name));
+      await box.setValue(j?.text ?? CYCLE.gate.otherJustification);
+    }
+    const mark = CYCLE.gate.manual.find((x) => x.match.test(name));
+    if (mark) {
+      const label = mark.met ? es.gate.met : es.gate.notMet;
+      for (const b of await row.$$(".gate-mark button")) if ((await b.getText()) === label) await b.click();
+    }
+  }
+  const verdict = $(`[data-testid="gate-verdict-${CYCLE.gate.verdict}"]`);
+  if (await verdict.isExisting()) await verdict.click();
+}
+
 async function caseIds(): Promise<Map<string, Doc>> {
   const p = await projectA();
   return new Map((await liomar.cases(p.id)).map((c) => [String(c.scenarioId), c]));
@@ -494,6 +536,71 @@ const LOADERS: Record<Prereq, Loader> = {
           links: [{ targetKind: "test_case", targetId: ids.get(login.caseKey)?.id }],
         });
       }
+    },
+  },
+
+  "ciclo-ejecutado": {
+    check: async () => {
+      const runs = await cycleRuns();
+      return runs.length >= 2 && runs.every((r) => r.status === "completed");
+    },
+    load: async () => {
+      for (const run of await cycleRuns()) {
+        if (run.status === "completed") continue;
+        const overview = await liomar.get<{ items: { item: Doc; caseKey: string }[] }>(`/api/runs/${run.id}/overview`);
+        const now = new Date().toISOString();
+        for (const { item, caseKey } of overview.items) {
+          // One attempt per target (PH-002 runs once per example row).
+          const detail = await liomar.get<{ targets: { flowId: string | null; exampleRowId: string | null }[] }>(`/api/run-items/${item.id}`);
+          for (const target of detail.targets) {
+            const failed = caseKey === MANUAL_RUN.failed.caseKey;
+            await liomar.post("/api/results", {
+              input: {
+                runItemId: item.id,
+                attemptId: randomUUID(),
+                flowId: target.flowId,
+                exampleRowId: target.exampleRowId,
+                status: failed ? "failed" : "passed",
+                startedAt: now,
+                finishedAt: now,
+                ...(failed ? { errorMessage: MANUAL_RUN.failed.actual } : {}),
+              },
+            });
+          }
+        }
+        const fresh = await liomar.get<Doc>(`/api/runs/${run.id}`);
+        await liomar.post(`/api/runs/${run.id}/close`, { status: "completed", revision: fresh.revision });
+      }
+    },
+  },
+
+  "ciclo-cerrado": {
+    check: async () => {
+      const cycle = (await liomar.cycles((await projectA()).id)).find((c) => c.title === CYCLE.title);
+      const report = (cycle?.data as { completionReport?: { approval?: unknown } } | undefined)?.completionReport;
+      return cycle?.status === "closed" && Boolean(report?.approval);
+    },
+    load: async () => {
+      await openProject(PROJECT_A.name);
+      await openSection("cycles");
+      await $("button.cy-key").waitForDisplayed();
+      await $(`button.cy-key=${(await cycleKey()) ?? ""}`).click();
+      await $("#cy-detail-title").waitForDisplayed();
+      if (await $('[data-testid="cycle-close"]').isExisting()) {
+        await closeCycleGate();
+        await $('[data-testid="gate-close"]').click();
+        await waitForToast(es.gate.closedToast.split("{{")[0].trim());
+      }
+      await $('[data-testid="cycle-completion-report"]').click();
+      await $('[data-testid="completion-report"]').waitForDisplayed();
+      await $('[data-testid="completion-lessons"]').setValue(CYCLE.gate.lessons);
+      await $('[data-testid="completion-save"]').click();
+      await waitForToast(es.completionReport.savedToast);
+      await $('[data-testid="completion-approve"]').click();
+      await $('[data-testid="completion-approve-confirm"]').click();
+      await waitForToast(es.completionReport.approvedToast);
+      await browser.keys("Escape");
+      await $(".cd-overlay").waitForExist({ reverse: true });
     },
   },
 

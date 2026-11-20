@@ -190,8 +190,17 @@ export async function check({ fromRun = false, env = process.env } = {}) {
   // chapter's number (`--spec 08` finds chapter 8).
   const numbers = new Map();
   for (const c of CHAPTERS) {
-    if (numbers.has(c.number)) errors.push(`chapters ${numbers.get(c.number)} and ${c.id} share number ${c.number}`);
-    numbers.set(c.number, c.id);
+    // The second part of a chapter (`partOf`) shares its number and prints in it.
+    if (c.partOf) {
+      const parent = CHAPTERS.find((p) => p.id === c.partOf);
+      if (!parent) errors.push(`chapter ${c.id} is part of unknown chapter ${c.partOf}`);
+      else if (parent.number !== c.number) errors.push(`chapter ${c.id} is part of ${parent.id} but has number ${c.number}`);
+      else if (CHAPTERS.indexOf(parent) > CHAPTERS.indexOf(c)) errors.push(`chapter ${c.id} must run after ${parent.id}, its first part`);
+      if (c.inManual !== false) errors.push(`chapter ${c.id} is part of ${c.partOf}: set inManual: false`);
+    } else {
+      if (numbers.has(c.number)) errors.push(`chapters ${numbers.get(c.number)} and ${c.id} share number ${c.number}`);
+      numbers.set(c.number, c.id);
+    }
     if (c.file && !c.file.startsWith(`${String(c.number).padStart(2, "0")}-`)) {
       errors.push(`chapter ${c.id} is number ${c.number} but its tour file is ${c.file}`);
     }
