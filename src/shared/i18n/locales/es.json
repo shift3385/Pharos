@@ -2042,7 +2042,7 @@
       "statusReports": "Informes de estado",
       "summaryReports": "Informes de resumen/finalización",
       "defectReports": "Informes de defectos",
-      "uatSignoff": "Sign-off de UAT",
+      "uatSignoff": "Acta de aceptación (UAT)",
       "testData": "Datos de prueba",
       "incidentReports": "Informes de incidentes",
       "testDesignSpec": "Especificación de diseño de pruebas",
@@ -2094,7 +2094,7 @@
       "schedule": "Sprints e hitos del ciclo de pruebas. Haz clic en el día de inicio y después en el de fin para crear un sprint (Esc cancela). Selecciona un sprint y arrastra sus extremos para cambiar las fechas, o edítalas en su fila. En «Hito», haz clic en un día para añadir un hito.",
       "risks": "Riesgos que pueden afectar a las pruebas y cómo se mitigan.",
       "communication": "Cómo y cuándo se informa del avance.",
-      "closure": "Condiciones que deben cumplirse para cerrar el ciclo.",
+      "closure": "Condiciones que deben cumplirse para cerrar el ciclo. Los criterios medidos por una métrica se evalúan solos al cerrar un ciclo; su texto se escribe desde la métrica.",
       "purpose": "Objetivos de prueba que persigue el plan y para qué sirve.",
       "conclusion": "Valoración frente a objetivos y criterios de salida, riesgos abiertos y decisión.",
       "assumptions": "Lo que se da por hecho al planificar y los límites que el equipo no puede cambiar (plazos, personas, normas). Si un supuesto deja de cumplirse, revisa el plan.",
@@ -2131,7 +2131,8 @@
       "exportPdf": "Exportar .pdf",
       "exportPdfDesc": "Documento listo para firmar",
       "exportXlsx": "Exportar .xlsx",
-      "exportXlsxDesc": "Editable en Excel"
+      "exportXlsxDesc": "Editable en Excel",
+      "history": "Historial en el documento: {{mode}}"
     },
     "panel": {
       "title": "Estado del plan",
@@ -2393,11 +2394,11 @@
     "metricsNone": "Todavía no hay métricas. Añade una del catálogo o una propia.",
     "closureLink": {
       "label": "Medido por",
+      "target": "Objetivo",
       "none": "Sin métrica · se marca a mano",
       "blocking": "Bloqueante",
       "advisory": "Orientativo",
-      "blockingTip": "Un criterio bloqueante en «No cumple» pide justificación para cerrar el ciclo; uno orientativo solo se informa.",
-      "hint": "Los criterios medidos por una métrica se evalúan solos al cerrar un ciclo. El texto se escribe desde la métrica."
+      "blockingTip": "Un criterio bloqueante en «No cumple» pide justificación para cerrar el ciclo; uno orientativo solo se informa."
     },
     "approval": {
       "by": "Aprobado por",
@@ -2413,6 +2414,7 @@
       "title": "Historial",
       "created": "Creación del plan",
       "approved": "Aprobado por {{name}}",
+      "sent": "Enviado a revisión por {{name}}",
       "lostApproval": "pierde la aprobación",
       "none": "Aún no hay cambios guardados.",
       "someone": "Otra cuenta"
@@ -2447,7 +2449,7 @@
       "obsoleteApproved": "El plan pierde la aprobación y deja de usarse. Si lo reactivas, vuelve a revisión y hay que aprobarlo de nuevo.",
       "reactivate": "Reactivar",
       "reactivateTitle": "Reactivar el plan",
-      "reactivateMessage": "El plan vuelve a «En revisión» (o a Borrador si nunca se envió). No recupera la aprobación anterior.",
+      "reactivateMessage": "El plan vuelve a «En revisión» (o a «Borrador» si nunca se envió). No recupera la aprobación anterior.",
       "saveFirst": "Guarda los cambios antes de seguir con la revisión.",
       "notAllowed": {
         "author": "Este workspace pide aprobación independiente: aprueba un Test Manager que no sea el autor del plan.",
@@ -2535,10 +2537,11 @@
     "suggest": {
       "button": "✨ Sugerir pruebas",
       "disabled": "Necesitas IA configurada y un plan en el proyecto",
-      "title": "Sugerir pruebas con IA",
+      "title": "Sugerir casos con IA",
       "loading": "Generando sugerencias a partir del plan…",
       "empty": "No se generaron sugerencias. Revisa que el plan tenga tipos/niveles y que la IA responda.",
-      "create": "Crear {{count}}",
+      "create_one": "Crear {{count}} caso",
+      "create_other": "Crear {{count}} casos",
       "creating": "Creando…"
     },
     "exportDone": "Guardado en {{name}}",
@@ -2587,21 +2590,21 @@
       "advanced": {
         "name": "Avanzado",
         "keywords": "Background · Rule · varios Scenario",
-        "desc": "Un Feature completo con varios escenarios. Se escribe directamente en el editor Gherkin."
+        "desc": "Un Feature completo: precondiciones comunes y varios flujos, en el formulario o en Gherkin."
       },
       "includes": "Incluye"
     },
     "examples": {
       "title": "Examples (tabla de datos)",
-      "hint": "Cada columna es un <placeholder> que puedes usar en los pasos; cada fila es una ejecución.",
+      "hint": "Cada columna es un marcador (<nombre>) que puedes usar en los pasos; cada fila es una ejecución.",
       "emptyHint": "Aún no hay columnas. Añade la primera para empezar la tabla.",
       "columnName": "nombre_columna",
       "addColumn": "+ Columna",
       "addRow": "+ Fila",
       "removeColumn": "Quitar columna",
       "removeRow": "Quitar fila",
-      "placeholders": "Placeholders detectados en los pasos",
-      "orphanColumns": "Columnas sin placeholder en los pasos: {{cols}}",
+      "placeholders": "Marcadores detectados en los pasos",
+      "orphanColumns": "Columnas sin marcador en los pasos: {{cols}}",
       "columnN": "Columna {{n}}",
       "actions": "Acciones"
     },
@@ -2847,7 +2850,7 @@
       "obsoleteApproved": "El caso pierde la aprobación y deja de usarse. Si lo reactivas, vuelve a revisión y hay que aprobarlo de nuevo.",
       "reactivate": "Reactivar",
       "reactivateTitle": "Reactivar {{key}}",
-      "reactivateMessage": "El caso vuelve a «En revisión» (o a Borrador si nunca se envió). Hay que aprobarlo de nuevo.",
+      "reactivateMessage": "El caso vuelve a «En revisión» (o a «Borrador» si nunca se envió). Hay que aprobarlo de nuevo.",
       "saveFirst": "Guarda los cambios antes de seguir con la revisión.",
       "notAllowed": {
         "author": "Este workspace pide aprobación independiente: lo tiene que aprobar otra persona.",
@@ -2866,7 +2869,7 @@
       },
       "editingReviewed": "Este caso está en revisión. Si guardas cambios en el contenido, sigue en revisión.",
       "editingApproved": "Este caso está aprobado. Si guardas cambios en el contenido, vuelve a revisión con una versión nueva y hay que aprobarlo de nuevo.",
-      "changesSince": "Cambios desde la revisión {{revision}} ({{status}})",
+      "changesSince": "Cambios desde el {{date}} ({{status}})",
       "toast": {
         "send": "{{key}} enviado a revisión",
         "approve": "Versión {{version}} de {{key}} aprobada",
@@ -3441,7 +3444,7 @@
       "delete": "Eliminar {{key}}",
       "deleteTitle": "Eliminar requisito",
       "deleteWarning": "Se eliminará {{key}}. Su ID no se reutilizará: los casos que lo enlazan lo mostrarán como requisito desconocido.",
-      "deleteConfirm": "Eliminar",
+      "deleteConfirm": "Sí, eliminar",
       "deletedToast": "{{key}} eliminado",
       "cases": "Casos",
       "actions": "Acciones",
@@ -3561,9 +3564,12 @@
     },
     "gaps": {
       "title": "Huecos de trazabilidad",
-      "casesWithoutRequirement": "Casos sin requisito",
-      "unknownLinks": "Casos que enlazan un requisito inexistente",
-      "defectsWithoutCase": "Defectos sin caso vinculado",
+      "casesWithoutRequirement_one": "Caso sin requisito",
+      "casesWithoutRequirement_other": "Casos sin requisito",
+      "unknownLinks_one": "Caso que enlaza un requisito inexistente",
+      "unknownLinks_other": "Casos que enlazan un requisito inexistente",
+      "defectsWithoutCase_one": "Defecto sin caso vinculado",
+      "defectsWithoutCase_other": "Defectos sin caso vinculado",
       "subtitle": "Lo que rompe la cadena requisito ↔ caso ↔ defecto",
       "migrateHint_one": "{{count}} ID aparece en el texto libre de Trazabilidad de tus casos y puede convertirse en vínculo.",
       "migrateHint_other": "{{count}} IDs aparecen en el texto libre de Trazabilidad de tus casos y pueden convertirse en vínculos."
@@ -3575,10 +3581,10 @@
       "include": "Incluir",
       "found": "Encontrado",
       "willCreate": "se creará",
-      "summary": "Se crearán {{links}} vínculos y {{creates}} requisitos nuevos.",
+      "summary": "Vínculos que se crearán: {{links}} · requisitos nuevos: {{creates}}.",
       "apply": "Aplicar",
       "applying": "Aplicando…",
-      "doneToast": "Migración aplicada: {{links}} vínculos, {{creates}} requisitos nuevos"
+      "doneToast": "Migración aplicada · vínculos: {{links}} · requisitos nuevos: {{creates}}"
     },
     "fromDesign": {
       "open": "Requisitos desde diseños",
@@ -3760,7 +3766,7 @@
         "config": "Configuración",
         "other": "Otros"
       },
-      "sendWhat": "Se enviarán {{files}} archivos (≈ {{tokens}} tokens) en {{calls}} llamadas.",
+      "sendWhat": "Se enviarán {{files}} archivos (≈ {{tokens}} tokens, contados sobre el texto ya leído) en {{calls}} llamadas.",
       "neverSent": "Nunca se envían dependencias, builds, archivos ocultos, binarios ni archivos con secretos (.env, claves, certificados).",
       "redacted_one": "{{count}} línea con aspecto de secreto se sustituye por «[secreto omitido]» ({{files}} archivos)",
       "redacted_other": "{{count}} líneas con aspecto de secreto se sustituyen por «[secreto omitido]» ({{files}} archivos)",
@@ -4457,7 +4463,9 @@
     "resolutionDialog": {
       "title": "Cerrar {{key}}",
       "rejectTitle": "Rechazar {{key}}",
+      "moveTitle": "Mover {{key}} a «{{status}}»",
       "message": "«{{title}}» pasa a «{{status}}». Indica la resolución.",
+      "messagePlain": "«{{title}}» pasa a «{{status}}».",
       "fixedInBuild": "Corregido en la build (opcional)",
       "confirm": "Aplicar",
       "cancel": "Cancelar"
@@ -4479,6 +4487,7 @@
       "actual": "Resultado obtenido",
       "severity": "Severidad",
       "severityHint": "Impacto en el sistema. La prioridad es la urgencia del arreglo.",
+      "priorityHint": "Urgencia del arreglo. La severidad es el impacto en el sistema.",
       "priority": "Prioridad",
       "status": "Estado",
       "foundInBuild": "Build",
@@ -4513,7 +4522,8 @@
     "results": {
       "loadFailed": "No se pudieron cargar los resultados.",
       "title": "Resultados que no pasaron",
-      "pickToCreate": "Elige el intento fallido del que nace el defecto: se rellenan los pasos de la revisión ejecutada, lo obtenido, la build y el entorno, y se añaden sus evidencias.",
+      "pickToCreate": "Elige el intento fallido del que nace el defecto.",
+      "pickToCreateHelp": "El defecto nuevo se rellena con los pasos de la revisión ejecutada, lo obtenido, la build y el entorno, y se añaden sus evidencias.",
       "pickToLink": "Elige el intento que quieres vincular a este defecto.",
       "empty": "No hay resultados fallidos en los runs de este proyecto.",
       "search": "Buscar por run, caso o test…",
@@ -5963,8 +5973,8 @@
     },
     "impact": {
       "title": "Guardar «{{name}}» como v{{version}}",
-      "message_one": "Este cambio actualiza {{count}} caso que sigue la última versión. Guarda una revisión nueva con la causa «{{name}} v{{version}}».",
-      "message_other": "Este cambio actualiza {{count}} casos que siguen la última versión. Cada uno guarda una revisión nueva con la causa «{{name}} v{{version}}».",
+      "message_one": "Este cambio actualiza {{count}} caso que sigue la última versión. Guarda una revisión nueva con el motivo «{{name}} v{{version}}».",
+      "message_other": "Este cambio actualiza {{count}} casos que siguen la última versión. Cada uno guarda una revisión nueva con el motivo «{{name}} v{{version}}».",
       "draft": "En Borrador · siguen igual",
       "reviewed": "En revisión · siguen en revisión",
       "approved": "Aprobados · vuelven a En revisión",
@@ -6039,7 +6049,7 @@
       "loadFailed": "No se pudo cargar la biblioteca.",
       "none": "La biblioteca no tiene pasos compartidos activos. Créalos en la sección Biblioteca.",
       "choose": "Elegir",
-      "argsHelp": "Vacío: el parámetro pasa al caso. Un literal (ana@acme.test) se escribe en la copia. Otro parámetro (<cliente>) lo renombra.",
+      "argsHelp": "Vacío: el parámetro pasa al caso. Un literal (liomar.qa@pharos.test) se escribe en la copia. Otro parámetro (<cliente>) lo renombra.",
       "noParams": "Este paso compartido no tiene parámetros.",
       "argPlaceholder": "Vacío: pasa al caso",
       "argOf": "Argumento de <{{name}}>",

@@ -539,7 +539,7 @@ function ImportMenu({
         id={menu.id}
         label={label}
         title={label}
-        className="cl-io"
+        className="cl-io tr-io"
       >
         <MenuItem icon={Upload} onSelect={onImport} description={t("traceability.io.importHint")}>
           {t("traceability.io.importCsv")}

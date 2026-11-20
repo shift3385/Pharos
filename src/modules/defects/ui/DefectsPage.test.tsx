@@ -208,7 +208,10 @@ describe("«Desde un resultado» names the case (FIX-42)", () => {
     await screen.findByRole("table");
     await userEvent.click(screen.getByRole("button", { name: "Desde un resultado" }));
     const dialog = screen.getByRole("dialog", { name: "Resultados que no pasaron" });
-    expect(await within(dialog).findByText("ATS_001 · Pago")).toBeInTheDocument();
+    // FIX-44: the key in monospace, the title in the body font.
+    const caseName = (_: string, el: Element | null) => el?.classList.contains("df-picker__case") === true && el.textContent === "ATS_001 · Pago";
+    expect(await within(dialog).findByText(caseName)).toBeInTheDocument();
+    expect(within(dialog).getByText("ATS_001")).toHaveClass("df-picker__key");
     expect(within(dialog).queryByText(/specs\/acceso/)).not.toBeInTheDocument();
     expect(within(dialog).getByText(/intento 1 ·/)).toBeInTheDocument();
     expect(within(dialog).queryByText(/intento 0/)).not.toBeInTheDocument();
@@ -217,7 +220,7 @@ describe("«Desde un resultado» names the case (FIX-42)", () => {
     expect(within(dialog).getByRole("button", { name: "Elegir: RUN-003 ATS_001 · Pago" })).toBeInTheDocument();
     // FIX-43: the case's name is whole (it wraps, never «Pa…»), and the
     // prefill banner names the result the same way, not by its test path.
-    expect(within(dialog).getByText("ATS_001 · Pago")).toHaveClass("df-picker__case");
+    expect(within(dialog).getByText(caseName)).toHaveClass("df-picker__case");
     draftFromResult.mockResolvedValue({ projectId: "p1", userId: "u1", title: "t", data: {}, fromResult: { resultId: "r9" } });
     await userEvent.click(within(dialog).getByRole("button", { name: "Elegir: RUN-003 ATS_001 · Pago" }));
     const banner = await screen.findByRole("status");

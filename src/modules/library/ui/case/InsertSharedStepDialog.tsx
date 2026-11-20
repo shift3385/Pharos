@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { Dialog } from "@shared/ui/Dialog";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { LoadError } from "@shared/ui/LoadError";
 import { libraryApi } from "../../api/libraryApi";
 import {
@@ -86,6 +87,7 @@ export function InsertSharedStepDialog({
   };
 
   const params = picked ? paramsOfItem(picked.definition) : [];
+  const argsHelp = picked !== null && params.length > 0;
   const title = editing
     ? t("library.insert.editTitle", {
         name: editing.name ?? picked?.name ?? "",
@@ -102,16 +104,27 @@ export function InsertSharedStepDialog({
       initialFocus={picked ? undefined : searchRef}
       className="cd lb-insert"
     >
-      <h3 id={`${id}-title`} className="cd__title">
-        {title}
-      </h3>
-      <p id={`${id}-msg`} className="cd__msg">
-        {!picked
-          ? t("library.insert.pickHelp")
-          : params.length > 0
-            ? t("library.insert.argsHelp")
-            : t("library.insert.noParams")}
-      </p>
+      {argsHelp ? (
+        // How an argument works is long, secondary help: it sits behind the
+        // title's «?» instead of taking the dialog's first lines (FIX-44).
+        <div className="ui-title-row">
+          <h3 id={`${id}-title`} className="cd__title">
+            {title}
+          </h3>
+          <InfoTip id={`${id}-msg`} label={title}>
+            {t("library.insert.argsHelp")}
+          </InfoTip>
+        </div>
+      ) : (
+        <>
+          <h3 id={`${id}-title`} className="cd__title">
+            {title}
+          </h3>
+          <p id={`${id}-msg`} className="cd__msg">
+            {!picked ? t("library.insert.pickHelp") : t("library.insert.noParams")}
+          </p>
+        </>
+      )}
       {failed ? (
         <LoadError
           message={t("library.insert.loadFailed")}

@@ -3,11 +3,18 @@ import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { logClientError } from "@shared/diagnostics";
 import { Dialog } from "@shared/ui/Dialog";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { LoadError } from "@shared/ui/LoadError";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { defectsApi } from "../api/defectsApi";
 import { resultName as nameOf } from "../model/resultName";
 import type { LinkableItem, ResultCandidate } from "../model/types";
+
+/** «PH-001 · Iniciar sesión» as its key and its title. */
+const keyAndTitle = (name: string): string[] => {
+  const at = name.indexOf(" · ");
+  return at < 0 ? [name] : [name.slice(0, at), name.slice(at + 3)];
+};
 
 /**
  * Picks a failed attempt of the project's runs (newest first): to create a
@@ -74,9 +81,18 @@ export function ResultPickerDialog({
 
   return (
     <Dialog labelledBy={`${id}-title`} describedBy={`${id}-msg`} onClose={onClose} initialFocus={inputRef} className="cd df-picker">
-      <h3 id={`${id}-title`} className="cd__title">
-        {t("defects.results.title")}
-      </h3>
+      {/* One short line; what the new defect takes from the attempt is
+          behind the title's «?» (FIX-44). */}
+      <div className="ui-title-row">
+        <h3 id={`${id}-title`} className="cd__title">
+          {t("defects.results.title")}
+        </h3>
+        {purpose === "create" && (
+          <InfoTip id={`${id}-help`} label={t("defects.results.title")}>
+            {t("defects.results.pickToCreateHelp")}
+          </InfoTip>
+        )}
+      </div>
       <p id={`${id}-msg`} className="cd__msg">
         {purpose === "create" ? t("defects.results.pickToCreate") : t("defects.results.pickToLink")}
       </p>
@@ -109,8 +125,18 @@ export function ResultPickerDialog({
             <li key={r.resultId} className="df-picker__item">
               <div className="df-picker__what">
                 <span className="df-key">{r.runKey}</span>
+                {/* Monospace for the key only; the title in the body font
+                    (FIX-44). */}
                 <span className="df-picker__case" title={r.testKey}>
-                  {nameOf(r, caseById)}
+                  {keyAndTitle(nameOf(r, caseById)).map((part, i) =>
+                    i === 0 ? (
+                      <span key={i} className="df-picker__key">
+                        {part}
+                      </span>
+                    ) : (
+                      <span key={i}>{` · ${part}`}</span>
+                    ),
+                  )}
                 </span>
                 <StatusPill tone={r.status === "failed" ? "error" : "warning"} dot>
                   {t(`defects.resultStatus.${r.status}`, { defaultValue: r.status })}

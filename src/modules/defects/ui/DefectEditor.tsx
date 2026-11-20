@@ -14,6 +14,7 @@ import { capabilities } from "@shared/platform";
 import { saveVia } from "@shared/export/saveFile";
 import { ListField } from "@shared/ui/fields";
 import { InfoTip } from "@shared/ui/InfoTip";
+import { FormField } from "@shared/ui/FormField";
 import { notify, unlessReported } from "@shared/ui/notify";
 import { Select } from "@shared/ui/Select";
 import { useToast } from "@shared/ui/Toast";
@@ -421,27 +422,28 @@ export function DefectEditor({
             )}
           </label>
           <div className="tc-form__grid df-grid">
-            <label className="tp-field">
-              <span>{t("defects.field.severity")}</span>
-              <Select<DefectSeverity>
-                value={form.severity}
-                aria-describedby={`${uid}-sev-hint`}
-                onChange={(severity) => update({ severity })}
-                options={DEFECT_SEVERITIES.map((s) => ({ value: s, label: t(`defects.severity.${s}`) }))}
-              />
-              {/* Under its own field, not after the whole row (NC-051). */}
-              <span id={`${uid}-sev-hint`} className="tp-field__hint">
-                {t("defects.field.severityHint")}
-              </span>
-            </label>
-            <label className="tp-field">
-              <span>{t("defects.field.priority")}</span>
-              <Select<DefectPriority>
-                value={form.priority}
-                onChange={(priority) => update({ priority })}
-                options={DEFECT_PRIORITIES.map((p) => ({ value: p, label: t(`defects.priority.${p}`) }))}
-              />
-            </label>
+            {/* What severity and priority mean sits behind each label's «?»,
+                not as standing text under the field (FIX-44). */}
+            <FormField label={t("defects.field.severity")} info={t("defects.field.severityHint")}>
+              {(p) => (
+                <Select<DefectSeverity>
+                  {...p}
+                  value={form.severity}
+                  onChange={(severity) => update({ severity })}
+                  options={DEFECT_SEVERITIES.map((s) => ({ value: s, label: t(`defects.severity.${s}`) }))}
+                />
+              )}
+            </FormField>
+            <FormField label={t("defects.field.priority")} info={t("defects.field.priorityHint")}>
+              {(p) => (
+                <Select<DefectPriority>
+                  {...p}
+                  value={form.priority}
+                  onChange={(priority) => update({ priority })}
+                  options={DEFECT_PRIORITIES.map((v) => ({ value: v, label: t(`defects.priority.${v}`) }))}
+                />
+              )}
+            </FormField>
             <label className="tp-field">
               <span>{t("defects.field.status")}</span>
               <Select<DefectStatus>
@@ -539,18 +541,23 @@ export function DefectEditor({
             </label>
             {/* DOC-06 (D4): an escape is marked by hand; the trend and the
                 go/no-go report count it against the cycle closed before. */}
-            <label className="df-escaped">
-              <input
-                type="checkbox"
-                checked={form.escaped}
-                data-testid="defect-escaped"
-                onChange={(e) => update({ escaped: e.target.checked })}
-              />
-              <span>
-                {t("defects.field.escaped")}
-                <small>{t("defects.field.escapedHint")}</small>
-              </span>
-            </label>
+            {/* What counts as an escape sits behind a «?» (FIX-44); the
+                checkbox still announces it. */}
+            <div className="df-escaped">
+              <label className="df-escaped__label">
+                <input
+                  type="checkbox"
+                  checked={form.escaped}
+                  data-testid="defect-escaped"
+                  aria-describedby={`${uid}-escaped-help`}
+                  onChange={(e) => update({ escaped: e.target.checked })}
+                />
+                <span>{t("defects.field.escaped")}</span>
+              </label>
+              <InfoTip id={`${uid}-escaped-help`} label={t("defects.field.escaped")}>
+                {t("defects.field.escapedHint")}
+              </InfoTip>
+            </div>
           </div>
         </section>
 
@@ -645,9 +652,18 @@ export function DefectEditor({
         )}
 
         <section className="df-section" aria-labelledby={`${uid}-att`}>
-          <h3 id={`${uid}-att`} className="df-section__title">
-            {t("defects.section.attachments")}
-          </h3>
+          {/* The size limit and where files are kept: behind the title's «?»,
+              still announced by «Adjuntar archivos» (FIX-44). */}
+          <div className="df-section__head">
+            <h3 id={`${uid}-att`} className="df-section__title">
+              {t("defects.section.attachments")}
+            </h3>
+            {desktop && current && (
+              <InfoTip id={`${uid}-limit`} label={t("defects.section.attachments")}>
+                {t("planner.attachLimit", { mb: MAX_ATTACHMENT_MB })}
+              </InfoTip>
+            )}
+          </div>
           {!desktop ? (
             <p className="tp-field__hint">{t("defects.webOnlyDesktop")}</p>
           ) : !current ? (
@@ -692,9 +708,6 @@ export function DefectEditor({
                 aria-label={t("defects.section.attachments")}
                 onChange={(e) => void addFiles(e.target.files)}
               />
-              <p id={`${uid}-limit`} className="tp-field__hint">
-                {t("planner.attachLimit", { mb: MAX_ATTACHMENT_MB })}
-              </p>
             </div>
           )}
         </section>

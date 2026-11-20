@@ -360,7 +360,7 @@ export function MatrixView({
       width: "minmax(128px,1.6fr)",
       cell: (l) =>
         l.first && (
-          <span className="tz-clamp" title={l.row.requirementTitle}>
+          <span className="tz-title" title={l.row.requirementTitle}>
             {l.row.requirementTitle}
           </span>
         ),
@@ -383,7 +383,7 @@ export function MatrixView({
       width: "minmax(128px,1.7fr)",
       cell: (l) =>
         l.row.caseId ? (
-          <span className="tz-clamp" title={l.row.caseTitle}>
+          <span className="tz-title" title={l.row.caseTitle}>
             {l.row.caseTitle}
           </span>
         ) : (
@@ -589,11 +589,11 @@ export function MatrixView({
           </div>
           <div className="tz-gaps__grid">
             <GapTile
-              label={t("traceability.gaps.casesWithoutRequirement")}
+              label={t("traceability.gaps.casesWithoutRequirement", { count: gaps.casesWithoutRequirement.length })}
               items={gaps.casesWithoutRequirement.map((c) => ({ id: c.id, code: c.scenarioId, text: c.title }))}
             />
             <GapTile
-              label={t("traceability.gaps.unknownLinks")}
+              label={t("traceability.gaps.unknownLinks", { count: gaps.unknownLinks.length })}
               items={gaps.unknownLinks.map((l) => ({
                 id: `${l.caseId}-${l.requirementKey}`,
                 code: l.scenarioId,
@@ -601,7 +601,7 @@ export function MatrixView({
               }))}
             />
             <GapTile
-              label={t("traceability.gaps.defectsWithoutCase")}
+              label={t("traceability.gaps.defectsWithoutCase", { count: gaps.defectsWithoutCase.length })}
               items={gaps.defectsWithoutCase.map((d) => ({ id: d.id, code: defectLabel(d), text: d.title }))}
             />
           </div>

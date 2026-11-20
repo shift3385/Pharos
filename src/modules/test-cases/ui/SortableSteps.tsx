@@ -18,6 +18,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useId, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { DeleteButton } from "@shared/ui/fields";
+import { TextArea } from "@shared/ui/TextArea";
 import type { Step } from "../model/types";
 import { newStepId } from "../model/steps";
 
@@ -63,11 +64,18 @@ function SortableStep({
         <span className="tc-step__n" aria-hidden="true">
           {start + index + 1}
         </span>
-        <input
+        {/* A step is one line of text, but a long one wraps and the field
+            grows instead of cutting it (FIX-44); Enter does not break it. */}
+        <TextArea
           id={inputId}
+          size="cell"
+          className="tc-step__text"
           aria-label={name}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(e.target.value.replace(/\r?\n/g, " "))}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.preventDefault();
+          }}
         />
         <DeleteButton itemLabel={name} needsConfirm={value.trim() !== ""} onDelete={onRemove} />
       </div>

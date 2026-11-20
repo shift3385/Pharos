@@ -377,11 +377,12 @@
   font-size: var(--fs-caption);
   color: var(--color-text-muted);
 }
-.tc-step input {
+/* The step's text: a one-line field that wraps and grows (TextArea `cell`)
+   so a long step is never cut (FIX-44). */
+.tc-step .tc-step__text {
   flex: 1;
   min-width: 0;
-  height: 38px;
-  padding: 0 var(--space-3);
+  padding-inline: var(--space-3);
   font-family: inherit;
   font-size: var(--fs-ui);
   color: var(--color-text-primary);
@@ -476,10 +477,19 @@
 .tc-examples__table td {
   padding: 2px;
 }
+/* A column's name with its «Quitar columna» inside the field's right end, so
+   the header field is as wide as the column's cells below it (FIX-44: the
+   button beside it made the header narrower than the data). */
 .tc-examples__head {
-  display: flex;
-  align-items: center;
-  gap: 2px;
+  position: relative;
+}
+.tc-examples__table .tc-examples__head input {
+  padding-right: 28px;
+}
+.tc-examples__head .tc-examples__delcol {
+  position: absolute;
+  top: 0;
+  right: 2px;
 }
 .tc-examples__table input {
   width: 100%;
@@ -780,6 +790,9 @@
 }
 .tc-suggest__list {
   list-style: none;
+  /* Flush with the dialog's text, as «Generar casos» (FIX-44). */
+  margin: 0;
+  padding-left: 0;
   max-height: 340px;
   overflow-y: auto;
   display: flex;
@@ -795,6 +808,9 @@
   display: flex;
   gap: var(--space-2);
   align-items: flex-start;
+}
+.tc-suggest__check input {
+  accent-color: var(--color-navy-500);
 }
 .tc-suggest__check > span {
   display: flex;
@@ -843,9 +859,12 @@
   color: var(--color-navy-500);
   white-space: nowrap;
 }
+/* The title takes the chip's whole width (the field's) before it is cut;
+   the chip is never wider than the field (FIX-44: cut at 28ch with room to
+   spare). */
 .tc-reqs__title {
+  min-width: 0;
   overflow: hidden;
-  max-width: 28ch;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

@@ -1,9 +1,8 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import Editor from "react-simple-code-editor";
-import Prism from "prismjs";
-import "prismjs/components/prism-gherkin";
-import { ArrowLeftRight, Copy, FileCode, PencilLine } from "lucide-react";
+import { ArrowLeftRight, CircleCheck, Copy, FileCode, PencilLine } from "lucide-react";
+import { highlightGherkin } from "@shared/gherkin/highlight";
 import { InfoTip } from "@shared/ui/InfoTip";
 import { useToast } from "@shared/ui/Toast";
 import "@shared/ui/buttons.css";
@@ -42,7 +41,7 @@ const KEYBOARD_KEYS: { label: string; insert: string; name?: string }[] = [
   { label: "⇥", insert: "  ", name: "indent" },
 ];
 
-const highlight = (code: string) => Prism.highlight(code, Prism.languages.gherkin, "gherkin");
+const highlight = highlightGherkin;
 /** One span per line, so CSS can number them (mobile editing). */
 const numbered = (code: string) =>
   code
@@ -55,12 +54,16 @@ function FileBar({
   fileName,
   status,
   icon = "file",
+  compactStatus,
   value,
   children,
 }: {
   fileName: string;
-  status?: ReactNode;
+  status?: string;
   icon?: "file" | "edit";
+  /** The state as an icon (its words for the screen reader and the
+   *  tooltip), so a narrow bar keeps the whole file name (FIX-44). */
+  compactStatus?: boolean;
   value: string;
   children?: ReactNode;
 }) {
@@ -73,7 +76,15 @@ function FileBar({
       <span className="tc-gherkin__file" title={fileName}>
         {fileName}
       </span>
-      {status && <span className="tc-gherkin__status">{status}</span>}
+      {status &&
+        (compactStatus ? (
+          <span className="tc-gherkin__status" title={status}>
+            <CircleCheck size={15} aria-hidden="true" />
+            <span className="sr-only">{status}</span>
+          </span>
+        ) : (
+          <span className="tc-gherkin__status">{status}</span>
+        ))}
       <span className="tc-gherkin__spacer" />
       {children}
       <button
@@ -110,7 +121,7 @@ export function GherkinEditor({
   onChange: (next: string) => void;
   /** Shows the file bar (`PCL-0142.feature`, state, copy). */
   fileName?: string;
-  status?: ReactNode;
+  status?: string;
   keyboardBar?: boolean;
 }) {
   const { t } = useTranslation();
@@ -220,13 +231,13 @@ export function GherkinReadView({
 }: {
   value: string;
   fileName: string;
-  status?: ReactNode;
+  status?: string;
   onEdit: () => void;
 }) {
   const { t } = useTranslation();
   return (
     <div className="tc-gherkin tc-gherkin--read">
-      <FileBar fileName={fileName} status={status} value={value}>
+      <FileBar fileName={fileName} status={status} compactStatus value={value}>
         <button type="button" className="ui-btn ui-btn--small" onClick={onEdit}>
           <PencilLine size={15} aria-hidden="true" />
           {t("testCase.gherkin.edit")}

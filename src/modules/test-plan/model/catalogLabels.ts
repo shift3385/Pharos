@@ -12,6 +12,8 @@ type Translate = (key: string) => string;
 export const DELIVERABLE_REV = reverse(
   esLocale.testPlan.deliverableLabel,
   enLocale.testPlan.deliverableLabel,
+  // Spanish labels of earlier versions, still in exported files (FIX-44).
+  { uatSignoff: "Sign-off de UAT" },
 );
 /** Brand name (any case) or key → tool key. */
 export const TOOL_REV = reverse(TOOL_NAMES);
