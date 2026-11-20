@@ -12,6 +12,22 @@ import { buildCiSnippet, CI_FORMATS, DEFAULT_CI_FORMATS, SHA_PLACEHOLDER, type C
 import { tokenFailure } from "./failure";
 import "./integrations.css";
 
+/** YAML, one block per line: a line too long for the card wraps under its
+ *  own text, two columns in (a hanging indent), never at column 0, where it
+ *  would read as other YAML (FIX-41). The text, newlines included, stays the
+ *  same: «Copiar» copies `text`, and selecting it by hand gives it back. */
+export function IndentedLines({ text }: { text: string }) {
+  const lines = text.split("\n");
+  return lines.map((line, i) => {
+    const hang = `${line.length - line.trimStart().length + 2}ch`;
+    return (
+      <span key={i} className="int-snippet__line" style={{ paddingLeft: hang, textIndent: `-${hang}` }}>
+        {i < lines.length - 1 ? `${line}\n` : line}
+      </span>
+    );
+  });
+}
+
 /** Copies `text`; when the clipboard is refused, selects the element so the
  *  person can copy it by hand. */
 async function copyOrSelect(text: string, elementId: string): Promise<boolean> {
@@ -128,7 +144,7 @@ export function ConnectCiSection({ workspace, manager }: { workspace: { id: stri
               </button>
             </div>
             <pre id={`${id}-yaml`} tabIndex={-1} className="int-snippet" data-testid="ci-yaml">
-              {yaml}
+              <IndentedLines text={yaml} />
             </pre>
             {placeholder && <Alert kind="info">{t("integrations.ci.placeholder", { placeholder: SHA_PLACEHOLDER })}</Alert>}
             <p className="int-subtitle">{t("integrations.ci.stepsTitle")}</p>

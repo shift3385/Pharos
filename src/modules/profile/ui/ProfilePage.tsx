@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Cloud, LogOut, Monitor, Moon, Sun } from "lucide-react";
-import { useAuth } from "@modules/auth";
+import { personName, useAuth } from "@modules/auth";
 import { SyncIndicator } from "@modules/sync-offline";
 import { PersonalTokensSection } from "@modules/integrations";
 import { useWorkspace } from "@modules/workspaces";
@@ -105,13 +105,12 @@ export function ProfilePage() {
     }
   }
 
-  const fullName = [
-    profile?.firstName ?? user?.firstName,
-    profile?.lastName ?? user?.lastName,
-  ]
-    .filter(Boolean)
-    .join(" ");
-  const shownName = fullName || user?.displayName || "";
+  // The one name of a person across the app (FIX-41): the display name.
+  const shownName = personName({
+    displayName: profile?.displayName ?? user?.displayName,
+    firstName: profile?.firstName ?? user?.firstName,
+    lastName: profile?.lastName ?? user?.lastName,
+  });
 
   return (
     <section className="profile screen-root" aria-labelledby="profile-title">

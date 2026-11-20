@@ -327,12 +327,16 @@
   background: var(--color-border);
   border-radius: var(--radius-pill);
 }
-/* In split view the Gherkin editor fills the full height of the form column. */
-.tc-split .tc-gherkin {
-  height: 100%;
-}
-.tc-split .tc-gherkin__editor {
-  height: 100%;
+/* In split view the Gherkin stays in view beside the form (FIX-41): it
+   sticks to the top while the form scrolls, as tall as its text up to the
+   window, with its own scroll. Stretched to the form's height it left an
+   empty column beside the lower half of a long case. */
+.tc-split__pane--gherkin {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: calc(100dvh - var(--topbar-height, 64px) - 48px);
+  overflow-y: auto;
 }
 
 /* ---- Sortable steps ---- */
@@ -734,6 +738,12 @@
   }
   .tc-split__divider {
     display: none;
+  }
+  /* One column: the Gherkin follows the form, nothing sticks. */
+  .tc-split__pane--gherkin {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
   }
 }
 [data-viewport="mobile"] .tc-form__grid {

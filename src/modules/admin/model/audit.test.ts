@@ -8,7 +8,9 @@ import {
   filtersFromParams,
   filtersToParams,
   lineDiff,
+  memberNames,
   parseActor,
+  reviewEvent,
   periodBounds,
   summaryEntries,
   toQuery,
@@ -137,5 +139,38 @@ describe("audit element names and field keys (AUD-01 polish)", () => {
   it("labels a first-level data field like the field itself", () => {
     expect(fieldKey("data.aiProvenance")).toBe("aiProvenance");
     expect(fieldKey("title")).toBe("title");
+  });
+});
+
+describe("review steps and people in the audit (FIX-41)", () => {
+  const sent = { state: "pending", sentBy: "u1", sentAt: "2026-11-19T23:27:00Z", revision: 2, version: "1.0" };
+  const returned = { ...sent, state: "changesRequested", returnedBy: "u2", returnedAt: "2026-11-19T23:28:00Z", comment: "Paso 3" };
+  const answered = { ...returned, state: "pending" };
+  const approval = { by: "u2", at: "2026-11-19T23:29:00Z", version: "1.0" };
+  const update = (changes: object) => ({ action: "update", changes: JSON.stringify(changes) });
+
+  it("tells sending, «Pedir cambios» and approving from a plain edit", () => {
+    expect(reviewEvent(update({ "data.review": [null, sent], status: ["draft", "reviewed"] }))).toBe("sent");
+    expect(reviewEvent(update({ "data.review": [sent, returned] }))).toBe("changesRequested");
+    expect(reviewEvent(update({ review: [answered, { ...answered, state: "approved" }], approval: [null, approval] }))).toBe(
+      "approved",
+    );
+    // Answering a «Pedir cambios» with an edit is an edit.
+    expect(reviewEvent(update({ "data.review": [returned, answered], "data.steps": [[], ["x"]] }))).toBeNull();
+    expect(reviewEvent(update({ title: ["a", "b"] }))).toBeNull();
+    expect(reviewEvent({ action: "create", changes: JSON.stringify({ "data.review": [null, sent] }) })).toBeNull();
+  });
+
+  it("names the members of the account's workspaces", () => {
+    const names = memberNames(
+      [
+        { members: [{ userId: "u1", name: "Liomar QA" }] },
+        { members: [{ userId: "u1", name: "otro" }, { userId: "db0715", name: "Jorge L. Meneses Yero" }] },
+      ],
+      (m) => m.name,
+    );
+    expect(names.get("db0715")).toBe("Jorge L. Meneses Yero");
+    expect(names.get("u1")).toBe("Liomar QA");
+    expect(names.has("nadie")).toBe(false);
   });
 });

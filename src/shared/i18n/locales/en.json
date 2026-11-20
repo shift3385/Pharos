@@ -981,7 +981,34 @@
         "risks": "Risks",
         "lifecycle": "Lifecycle",
         "closures": "Closures",
-        "links": "Links"
+        "links": "Links",
+        "review": "Review",
+        "approval": "Approval",
+        "version": "Version",
+        "caseType": "Case type",
+        "automationStatus": "Automation",
+        "scenarioId": "Scenario ID",
+        "custom": "Custom fields",
+        "requirementKeys": "Linked requirements",
+        "traceability": "Other references",
+        "mappedUseCase": "Mapped use case",
+        "gherkinLevel": "Gherkin level",
+        "expectedResult": "Expected result",
+        "postconditions": "Postconditions",
+        "acceptanceCriteria": "Acceptance criteria",
+        "testData": "Test data",
+        "notes": "Notes",
+        "examples": "Examples",
+        "background": "Shared precondition",
+        "flows": "Flows",
+        "featureSource": "Gherkin",
+        "featureTags": "Feature tags",
+        "scenarioTags": "Scenario tags",
+        "dataRequirements": "Data requirements",
+        "environmentRequirements": "Environment requirements",
+        "sharedRefs": "Shared steps",
+        "datasetRefs": "Datasets",
+        "caseDate": "Case date"
       },
       "summary": {
         "created": "Created",
@@ -1141,6 +1168,11 @@
         "account_enabled": "Account enabled",
         "test_manager_succession": "New Test Manager (account disabled)",
         "merged": "Combined"
+      },
+      "reviewEvents": {
+        "sent": "Sent to review",
+        "changesRequested": "Changes requested",
+        "approved": "Approved"
       }
     },
     "users": {
@@ -2687,7 +2719,19 @@
         "added": "added",
         "removed": "removed",
         "changed": "changed",
-        "moved": "moved"
+        "moved": "moved",
+        "added_f": "added",
+        "removed_f": "removed",
+        "changed_f": "changed",
+        "moved_f": "moved",
+        "added_mpl": "added",
+        "removed_mpl": "removed",
+        "changed_mpl": "changed",
+        "moved_mpl": "moved",
+        "added_fpl": "added",
+        "removed_fpl": "removed",
+        "changed_fpl": "changed",
+        "moved_fpl": "moved"
       },
       "field": {
         "title": "Title",
@@ -2707,7 +2751,21 @@
         "acceptanceCriteria": "Acceptance criterion",
         "requirementKeys": "Requirement",
         "examples": "Examples",
-        "flows": "Flow"
+        "flows": "Flow",
+        "checks": "Check"
+      },
+      "gender": {
+        "description": "f",
+        "testData": "mpl",
+        "dataRequirements": "mpl",
+        "environmentRequirements": "mpl",
+        "notes": "fpl",
+        "traceability": "fpl",
+        "background": "f",
+        "preconditions": "f",
+        "postconditions": "f",
+        "examples": "mpl",
+        "checks": "f"
       }
     },
     "baselines": {
@@ -4251,7 +4309,8 @@
       "externalHint": "To note the issue in another tool. Jira sync is coming in a future version.",
       "labels": "Labels",
       "escaped": "Found outside the tests (escape)",
-      "escapedHint": "In production, for example. It counts as an escape of the last cycle closed before it was reported."
+      "escapedHint": "In production, for example. It counts as an escape of the last cycle closed before it was reported.",
+      "unassigned": "Unassigned"
     },
     "links": {
       "cases": "Test cases",
@@ -5198,7 +5257,7 @@
         "expired": "Expired"
       },
       "revoke": "Revoke",
-      "noInvitations": "No invitations.",
+      "noInvitations": "No pending invitations.",
       "roles": "What can each role do?",
       "none": "No shared workspaces yet. Create one or join with a code from the workspace switcher.",
       "disabled": "Disabled",

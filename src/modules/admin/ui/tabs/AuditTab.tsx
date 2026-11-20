@@ -201,6 +201,7 @@ export function AuditTab() {
     ],
     actor: labels.actor,
     action: labels.action,
+    event: labels.event,
     entity: labels.entity,
     device: labels.device,
     field: labels.field,
@@ -273,7 +274,7 @@ export function AuditTab() {
     {
       id: "action",
       header: t("admin.audit.cols.action"),
-      cell: (r) => <ActionPill action={r.action} label={labels.action(r.action)} />,
+      cell: (r) => <ActionPill action={labels.eventKey(r)} label={labels.event(r)} />,
       width: "minmax(100px, 0.7fr)",
     },
     { id: "element", header: t("admin.audit.cols.element"), cell: element, width: "minmax(170px, 1.6fr)" },
@@ -296,7 +297,7 @@ export function AuditTab() {
   const mobileCard = (r: AuditRow) => (
     <div className="aud-card">
       <div className="aud-card__top">
-        <ActionPill action={r.action} label={labels.action(r.action)} />
+        <ActionPill action={labels.eventKey(r)} label={labels.event(r)} />
         {when(r.at)}
       </div>
       {element(r)}

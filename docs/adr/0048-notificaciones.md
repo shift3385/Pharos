@@ -94,7 +94,9 @@
       al enviar, devolver y volver a enviar.
     - `defect.assigned`: al guardar un defecto cuyo responsable cambia a una
       cuenta. Hoy el responsable es texto libre, así que solo notifica cuando
-      W dé un selector de miembros.
+      W dé un selector de miembros. *Hecho en FIX-41:* «Asignado a» elige un
+      miembro del workspace actual y guarda su cuenta; un nombre escrito antes
+      se conserva y no avisa a nadie.
     - `cycle.closed`: al cerrar un ciclo, a los miembros del workspace.
   - **El panel.** Por día («Hoy», «Ayer», la fecha), filtro «Sin leer», una
     acción directa por fila y «Marcar todo como leído»; el número sin leer en

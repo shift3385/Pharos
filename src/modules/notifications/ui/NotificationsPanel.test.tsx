@@ -1,5 +1,8 @@
 // RED-W2: the panel groups by day, filters unread, marks read and runs each
 // row's direct action.
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -79,8 +82,10 @@ describe("NotificationsPanel", () => {
     ]);
     expect(screen.getByRole("heading", { name: "Hoy" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Ayer" })).toBeInTheDocument();
-    expect(screen.getByText("Ana Torres te asignó BM-DEF-031 El saldo no se refresca")).toBeInTheDocument();
-    expect(screen.getByText("Ana Torres aprobó BM-CP-0139 Login")).toBeInTheDocument();
+    const texts = [...document.querySelectorAll(".np-row__text")].map((e) => e.textContent);
+    expect(texts).toEqual(["Ana Torres te asignó BM-DEF-031 El saldo no se refresca", "Ana Torres aprobó BM-CP-0139 Login"]);
+    // A key is one unbreakable piece (FIX-41): never «BM-/DEF-031».
+    expect([...document.querySelectorAll(".np-row__key")].map((e) => e.textContent)).toEqual(["BM-DEF-031", "BM-CP-0139"]);
     expect(screen.getByRole("radio", { name: "Sin leer · 1" })).toBeInTheDocument();
   });
 
@@ -124,5 +129,12 @@ describe("NotificationsPanel", () => {
     expect(screen.getByText("Estás al día")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Marcar todo como leído" })).toBeDisabled();
     await expectNoAxeViolations(container);
+  });
+
+  it("is wider than the shell's 320 px panels and keeps keys whole (FIX-41)", () => {
+    // Two classes: one would lose to the shell's `.topbar__panel`, which loads later.
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "NotificationsPanel.css"), "utf8");
+    expect(css).toMatch(/\.topbar__panel\.topbar__panel--notifications \{\s*width: 400px;/);
+    expect(css).toMatch(/\.np-row__key \{\s*white-space: nowrap;/);
   });
 });

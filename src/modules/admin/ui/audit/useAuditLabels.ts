@@ -1,7 +1,17 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "@modules/auth";
-import { deviceKind, fieldKey, parseActor, shortId, type AuditChain } from "../../model/audit";
+import { personName, useAuth } from "@modules/auth";
+import { useWorkspace } from "@modules/workspaces";
+import {
+  deviceKind,
+  fieldKey,
+  memberNames,
+  parseActor,
+  reviewEvent,
+  shortId,
+  type AuditChain,
+  type AuditRow,
+} from "../../model/audit";
 
 /** The translated names Administración › Auditoría shows for raw values:
  *  actors, actions, element types, fields, devices and chain breaks. Unknown
@@ -9,13 +19,16 @@ import { deviceKind, fieldKey, parseActor, shortId, type AuditChain } from "../.
 export function useAuditLabels(thisDevice: string) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { workspaces } = useWorkspace();
   return useMemo(() => {
+    // The other members by name, as «Miembros» shows them (FIX-41).
+    const names = memberNames(workspaces, personName);
     const actor = (raw: string) => {
       const { kind, id } = parseActor(raw);
       if (kind === "user") {
         if (!id) return t("admin.audit.actor.signedOut");
-        if (user && id === user.id) return user.displayName || t("admin.audit.actor.you");
-        return t("admin.audit.actor.user", { id: shortId(id) });
+        if (user && id === user.id) return personName(user) || t("admin.audit.actor.you");
+        return names.get(id) ?? t("admin.audit.actor.user", { id: shortId(id) });
       }
       if (kind === "agent") return t("admin.audit.actor.agent", { id });
       if (kind === "ci") return t("admin.audit.actor.ci", { id });
@@ -27,6 +40,16 @@ export function useAuditLabels(thisDevice: string) {
     };
     const isMe = (raw: string) => user != null && raw === `user:${user.id}`;
     const action = (a: string) => t(`admin.audit.actions.${a}`, { defaultValue: a });
+    /** What an event did: a step of the review flow by its name («Enviado
+     *  a revisión», «Cambios pedidos», «Aprobado»), else its action. */
+    const eventKey = (row: Pick<AuditRow, "action" | "changes">) => {
+      const review = reviewEvent(row);
+      return review ? `review.${review}` : row.action;
+    };
+    const event = (row: Pick<AuditRow, "action" | "changes">) => {
+      const review = reviewEvent(row);
+      return review ? t(`admin.audit.reviewEvents.${review}`) : action(row.action);
+    };
     const entity = (e: string) => t(`admin.audit.entities.${e}`, { defaultValue: e });
     const field = (f: string) => t(`admin.audit.fields.${fieldKey(f)}`, { defaultValue: fieldKey(f) });
     const device = (id: string) => {
@@ -37,8 +60,8 @@ export function useAuditLabels(thisDevice: string) {
       c.broken
         ? t(`admin.audit.integrity.break.${c.broken.kind}`, { seq: c.broken.seq, expected: c.broken.expected ?? "" })
         : t("admin.audit.integrity.chainOk");
-    return { actor, isMe, action, entity, field, device, chainBreak };
-  }, [t, user, thisDevice]);
+    return { actor, isMe, action, event, eventKey, entity, field, device, chainBreak };
+  }, [t, user, thisDevice, workspaces]);
 }
 
 export type AuditLabels = ReturnType<typeof useAuditLabels>;

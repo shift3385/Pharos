@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "@modules/auth";
+import { personName, useAuth } from "@modules/auth";
 import { notify } from "@modules/notifications";
 import type { CycleClosure, ExecutionSummary } from "@shared/contracts/contract";
 import { Dialog } from "@shared/ui/Dialog";
@@ -246,7 +246,7 @@ export function CloseCycleDialog({
       <div className="cd__actions gate-actions">
         <span className="gate-who">
           {t("gate.signs", {
-            name: user?.displayName || user?.email || "—",
+            name: personName(user) || "—",
             at: new Date().toLocaleString(i18n.resolvedLanguage, { dateStyle: "short", timeStyle: "short" }),
           })}
         </span>

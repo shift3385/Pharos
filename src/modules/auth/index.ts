@@ -14,6 +14,7 @@ export {
 } from "./api/accountApi";
 export { ApiError, NetworkError } from "./api/authApi";
 export type { AuthUser } from "./model/types";
+export { personName, type NamedPerson } from "./model/personName";
 
 import { defaultSessionStore } from "./state/session-store";
 import { renewSession as renew } from "./state/sessionRenewal";

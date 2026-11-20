@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
-import { useAuth } from "@modules/auth";
+import { personName, useAuth } from "@modules/auth";
 import { Alert } from "@shared/ui/Alert";
 import { Select } from "@shared/ui/Select";
 import { Switch } from "@shared/ui/Switch";
@@ -12,13 +12,15 @@ import { isTauri } from "@shared/platform";
 import { useToast } from "@shared/ui/Toast";
 import { useConfirm } from "@shared/ui/useConfirm";
 import { workspacesApi, type Invitation, type Member } from "../api/workspacesApi";
+import { openInvitations } from "../model/invitations";
 import { can, ROLE_ORDER, type WorkspaceRole } from "../model/roles";
 import { failureMessage } from "./failure";
 import { InviteDialog } from "./InviteDialog";
 import { useWorkspace } from "./workspaceContext";
 import "./workspaces.css";
 
-const nameOf = (m: Member) => m.displayName || [m.firstName, m.lastName].filter(Boolean).join(" ") || m.email;
+// The one name of a person across the app (FIX-41).
+const nameOf = (m: Member) => personName(m);
 
 /** «Miembros y roles» (SYNC-07, boceto 2). Everyone sees the members; only a
  *  Test Manager changes roles, removes people and handles invitations. The
@@ -51,7 +53,7 @@ export function WorkspaceMembersPage() {
     }
     if (manager) {
       try {
-        setInvitations(await workspacesApi.invitations(workspace.id));
+        setInvitations(openInvitations(await workspacesApi.invitations(workspace.id)));
       } catch {
         setInvitations([]);
       }

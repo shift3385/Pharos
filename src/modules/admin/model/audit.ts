@@ -343,3 +343,50 @@ export function elementName(row: AuditRow): string | null {
 /** A field's key for its label: `data.<key>` (the first level of a JSON
  *  column, `journal::diff`) is labelled like `<key>`. */
 export const fieldKey = (field: string) => (field.startsWith("data.") ? field.slice(5) : field);
+
+// ---- Review events ---------------------------------------------------------
+
+/** A step of the review flow (CAS-02, PLN-08) an update records. */
+export type ReviewEvent = "sent" | "changesRequested" | "approved";
+
+const asRecord = (v: unknown): Record<string, unknown> | null =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+
+/** The review step an «Editado» event of a case or a plan really is, from
+ *  its `review` and `approval` changes: a new approval, a new «Pedir
+ *  cambios», or a new submission. Null for any other edit (FIX-41). */
+export function reviewEvent(row: Pick<AuditRow, "action" | "changes">): ReviewEvent | null {
+  if (row.action !== "update") return null;
+  const diff = diffRows(row.changes);
+  const pair = (key: string) => {
+    const d = diff.find((x) => fieldKey(x.field) === key);
+    return d ? { before: asRecord(d.before), after: asRecord(d.after) } : null;
+  };
+  const approval = pair("approval");
+  if (approval?.after && approval.after.at !== approval.before?.at) return "approved";
+  const review = pair("review");
+  const after = review?.after;
+  if (!review || !after) return null;
+  const before = review.before;
+  if ((after.state === "changesRequested" || after.state === "returned") && after.returnedAt !== before?.returnedAt) {
+    return "changesRequested";
+  }
+  if (after.state === "pending" && after.sentAt && after.sentAt !== before?.sentAt) return "sent";
+  return null;
+}
+
+/** Who each account is, by user id, from the members of the workspaces the
+ *  signed-in account belongs to: the audit names them (FIX-41). */
+export function memberNames<M extends { userId: string }>(
+  workspaces: { members: M[] }[],
+  name: (m: M) => string,
+): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const w of workspaces) {
+    for (const m of w.members ?? []) {
+      const n = name(m);
+      if (n && !out.has(m.userId)) out.set(m.userId, n);
+    }
+  }
+  return out;
+}

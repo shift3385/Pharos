@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "@modules/auth";
+import { personName, useAuth } from "@modules/auth";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { testPlanApi } from "../../api/testPlanApi";
 import { isRevision, planSaves, type PlanSave } from "../../export/planHistory";
@@ -48,7 +48,7 @@ export function PlanTimeline({ plan, limit = 4 }: { plan: TestPlan; limit?: numb
   if (saves === null) return null;
   if (saves.length === 0) return <p className="tp__muted">{t("testPlan.timeline.none")}</p>;
 
-  const names: Record<string, string> = user ? { [user.id]: `${user.firstName} ${user.lastName}`.trim() } : {};
+  const names: Record<string, string> = user ? { [user.id]: personName(user) } : {};
   const approval = plan.data.approval;
   if (approval) names[approval.by] ??= approval.byName;
   const nameOf = (actor: string) => names[actor] || t("testPlan.timeline.someone");

@@ -10,6 +10,7 @@ import { renderWithProviders, i18n } from "@test/utils";
 import { expectNoAxeViolations } from "@test/axe";
 import { ToastProvider } from "@shared/ui/Toast";
 import type { AuditRow, AuditVerify } from "../../model/audit";
+import { WorkspaceContext } from "@modules/workspaces";
 import { AuditTab } from "./AuditTab";
 
 const api = vi.hoisted(() => ({ list: vi.fn(), facets: vi.fn(), verify: vi.fn() }));
@@ -178,5 +179,55 @@ describe("Administración › Auditoría (AUD-01)", () => {
     render();
     expect(await screen.findByText(/Ningún evento coincide con los filtros/)).toBeInTheDocument();
     expect(screen.getByTestId("audit-export")).toBeDisabled();
+  });
+
+  it("names a teammate, his review step and its fields (FIX-41)", async () => {
+    const jorge = "db071500-0000-4000-8000-000000000000";
+    const review = { state: "pending", sentBy: ME, sentAt: "2026-11-19T23:27:00Z", revision: 2, version: "1.0" };
+    api.list.mockResolvedValue({
+      total: 1,
+      events: [
+        row({
+          actor: `user:${jorge}`,
+          onBehalfOf: null,
+          deviceId: "web",
+          entityKey: "PH-004",
+          changes: JSON.stringify({
+            "data.approval": [null, { by: jorge, at: "2026-11-19T23:29:00Z", version: "1.0" }],
+            "data.review": [review, { ...review, state: "approved" }],
+            status: ["reviewed", "approved"],
+          }),
+        }),
+      ],
+    });
+    const team = {
+      id: "ws-t",
+      name: "Equipo QA",
+      kind: "shared" as const,
+      role: "test_manager" as const,
+      members: [
+        { userId: jorge, email: "jorge@pharos.test", displayName: "", firstName: "Jorge L.", lastName: "Meneses Yero", role: "test_analyst" as const, addedAt: null },
+      ],
+    };
+    renderWithProviders(
+      <WorkspaceContext.Provider
+        value={{ available: true, workspaces: [team], current: team, setCurrent: () => {}, role: "test_manager", can: () => true, reload: async () => {} }}
+      >
+        <ToastProvider>
+          <AuditTab />
+        </ToastProvider>
+      </WorkspaceContext.Provider>,
+      { route: "/admin?tab=audit" },
+    );
+    expect(await screen.findByText("PH-004")).toBeInTheDocument();
+    expect(screen.getByText("Jorge L. Meneses Yero")).toBeInTheDocument();
+    expect(screen.queryByText(/^Usuario /)).toBeNull();
+    expect(screen.getByText("Aprobado")).toBeInTheDocument();
+    expect(screen.queryByText("Editado")).toBeNull();
+    // The fields by their names, never «approval, review».
+    await userEvent.click(screen.getByTestId("audit-row-e1"));
+    const diff = within(await screen.findByRole("dialog")).getByRole("table", { name: "Cambios campo a campo" });
+    for (const name of ["Aprobación", "Revisión", "Estado"]) expect(within(diff).getByText(name)).toBeInTheDocument();
+    expect(within(diff).queryByText(/^(approval|review)$/)).toBeNull();
   });
 });

@@ -68,7 +68,7 @@ export function AuditDetail({
     <Dialog labelledBy={titleId} onClose={onClose} className="aud-detail" overlayClassName="aud-detail-overlay">
       <header className="aud-detail__head">
         <h2 id={titleId} className="t-card-title aud-detail__title">
-          <ActionPill action={row.action} label={labels.action(row.action)} />
+          <ActionPill action={labels.eventKey(row)} label={labels.event(row)} />
           <span>{key}</span>
         </h2>
         <button type="button" className="ui-iconbtn" onClick={onClose} aria-label={t("common.close")}>

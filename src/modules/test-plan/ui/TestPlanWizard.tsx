@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
-import { useAuth } from "@modules/auth";
+import { personName, useAuth } from "@modules/auth";
 import { logClientError } from "@shared/diagnostics";
 import type { ExportTable } from "@shared/export/extraTables";
 import { LoadError } from "@shared/ui/LoadError";
@@ -186,7 +186,7 @@ export function TestPlanWizard({
   const { dialog: leaveDialog } = useUnsavedChangesGuard(dirty, {
     message: t("testPlan.leaveMessage"),
   });
-  const author = plan?.author ?? (user ? `${user.firstName} ${user.lastName}` : "");
+  const author = plan?.author ?? personName(user);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => (f ? { ...f, [key]: value } : f));
@@ -258,7 +258,7 @@ export function TestPlanWizard({
     if (exportHistory === "revisions" && plan) {
       const { loadHistoryTable } = await import("../export/planHistory");
       const names: Record<string, string> = user
-        ? { [user.id]: `${user.firstName} ${user.lastName}`.trim() }
+        ? { [user.id]: personName(user) }
         : {};
       history = (await loadHistoryTable(plan, userId, names, t)) ?? undefined;
     }
