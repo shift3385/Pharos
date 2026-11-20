@@ -409,6 +409,13 @@
   text-align: right;
 }
 
+/* A value that may be longer than the panel (who approved, and whether it
+   was their own plan): it wraps instead of being cut (FIX-40). */
+.tpw-facts dd.tpw-facts__wrap {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 .tpw-side .tp-revs__item {
   grid-template-columns: auto minmax(0, 1fr);
 }
@@ -646,17 +653,19 @@
   list-style: none;
 }
 
-/* The field and «Añadir» share a line; the field gives way. */
 /* The «Otro …» field sits at the foot of «Propios», level with the bottom
-   of its row; the team's entries fill the room above it (UX-34). */
+   of its row; the team's entries fill the room above it (UX-34). The field
+   and «Añadir» share a line when the column has room for the whole
+   placeholder; in a narrower column «Añadir» goes under the field, which
+   never shrinks below its placeholder («Otro tipo de…», FIX-40). */
 .tpw-cols .tpw-cols__add {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   margin-top: auto;
   padding-top: 6px;
 }
 
 .tpw-cols .tpw-cols__add .tpw-input {
-  flex: 1 1 auto;
+  flex: 1 1 12em;
 }
 
 .tpw-cols .tpw-cols__add .header-action {
@@ -1569,6 +1578,9 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  /* The rows follow the step's own width, not the window's (FIX-40): beside
+     the side panels the step is far narrower than the app. */
+  container-type: inline-size;
 }
 
 .tpw-metrics__list {
@@ -1677,9 +1689,12 @@
   gap: 4px;
 }
 
+/* Narrow: metric and objective on rows of their own, then «Cómo se mide»,
+   «Criterio de salida» and the delete button on one line. */
 @container (max-width: 719.98px) {
   .tpw-metrics__row {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto 38px;
+    align-items: center;
   }
 
   .tpw-metrics__cell--metric,

@@ -1,7 +1,7 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog } from "./Dialog";
-import type { DetectionRow } from "@shared/import/xlsx";
+import { preview, type DetectionRow } from "@shared/import/xlsx";
 import "./ConfirmDialog.css";
 import "./ImportReportModal.css";
 
@@ -68,7 +68,9 @@ export function ImportReportModal({
                   ? t("importReport.rows", { count: r.count })
                   : r.previewKey
                     ? t(r.previewKey)
-                    : (r.preview ?? t("importReport.blank"))}
+                    : r.previewItems?.length
+                      ? preview(r.previewItems.map((it) => (it.key ? t(it.key, { defaultValue: it.text }) : it.text)).join(", "))
+                      : (r.preview ?? t("importReport.blank"))}
             </span>
           </li>
         ))}

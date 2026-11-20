@@ -628,6 +628,9 @@ describe("plan wizard · review flow (PLN-07, PLN-08)", () => {
     // A transition is not a save.
     expect(testPlanApi.update).not.toHaveBeenCalled();
     expect(await within(panel).findByTestId("plan-approved-by")).toHaveTextContent("Laura Méndez · aprobación propia");
+    // Wraps, never cut with «…» (FIX-40).
+    expect(within(panel).getByTestId("plan-approved-by")).toHaveClass("tpw-facts__wrap");
+    expect(within(panel).getByTestId("plan-approved-by")).not.toHaveClass("u-truncate");
     expect(within(panel).queryByRole("button", { name: /Aprobar versión/ })).not.toBeInTheDocument();
     expect(within(panel).getByRole("button", { name: "Marcar obsoleto" })).toBeInTheDocument();
   });
