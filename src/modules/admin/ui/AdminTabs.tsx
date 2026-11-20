@@ -28,8 +28,8 @@ const ICONS: Record<AdminTab, LucideIcon> = {
 
 /**
  * The grouped tabs of Administración (SPEC §8): Recursos · Aplicación ·
- * Cuenta y datos · Soporte, as pills in one strip that scrolls sideways when
- * it does not fit. One `tablist`: ←/→ move through every tab across groups,
+ * Cuenta y datos · Soporte, as pills in one strip that wraps onto another
+ * line when it does not fit (on the phone it scrolls sideways, FIX-39). One `tablist`: ←/→ move through every tab across groups,
  * Inicio/Fin jump to the ends (roving tabindex, automatic activation). Each
  * tab is described by its group's label.
  */

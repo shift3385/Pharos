@@ -49,7 +49,7 @@
       "submit": "Open with the key",
       "opening": "Opening…",
       "invalid": "The key has a typo: check each group and try again.",
-      "wrong": "The key is valid, but it does not open this database: it is another key, or the file is damaged. Make sure it is the one for this computer; if it is, a pharos.db.enc.bak-… copy may open with it (README, Recovery key).",
+      "wrong": "The key is valid, but it does not open this database: it is another key, or the file is damaged. Make sure it is the one for this computer; if it is, a pharos.db.bak-… copy may open with it (README, Recovery key).",
       "failed": "Could not open with the key: {{detail}}"
     }
   },
@@ -108,7 +108,7 @@
     "importedToast": "Template imported: “{{name}}”",
     "updatedToast": "Template updated",
     "deleteTitle": "Delete template",
-    "deleteWarning": "Delete the template “{{name}}”? This cannot be undone.",
+    "deleteWarning": "The template “{{name}}” goes to the trash. You can restore it from Administration › General › Trash until it is deleted for good.",
     "form": {
       "createTitle": "Import template",
       "editTitle": "Edit template",
@@ -461,8 +461,8 @@
       "legacyDiscardConfirm_other": "Discard the {{count}} items without downloading them? They cannot be recovered.",
       "legacySavedConfirm_one": "Remove {{count}} item from this browser? Check first that the downloaded file is in your downloads.",
       "legacySavedConfirm_other": "Remove the {{count}} items from this browser? Check first that the downloaded file is in your downloads.",
-      "merged": "Someone changed this item while you were editing it. It was combined with your changes, which touched other fields, and saved.",
-      "mergeTitle": "Someone changed the same fields while you were editing",
+      "merged": "This item changed on another device or someone else changed it while you were editing it. It was combined with your changes, which touched other fields, and saved.",
+      "mergeTitle": "The same fields changed on another device or someone else changed them while you were editing",
       "mergeIntro": "What does not collide is already combined. Choose what stays in each field and it is saved; or go back to the form without saving.",
       "mergeCancel": "Go back without saving"
     },
@@ -579,8 +579,8 @@
       }
     },
     "accountDisabled": "Your account is disabled on the server. Sync is stopped; your data and pending changes stay on this device and are sent if an administrator enables it again.",
-    "autoMerged_one": "Changes from someone else were combined in {{count}} item. Nothing was lost; it is in the audit log.",
-    "autoMerged_other": "Changes from others were combined in {{count}} items. Nothing was lost; it is in the audit log."
+    "autoMerged_one": "Your changes were combined with ones made at the same time on another device or by someone else in {{count}} item. Nothing was lost; it is in the audit log.",
+    "autoMerged_other": "Your changes were combined with ones made at the same time on another device or by someone else in {{count}} items. Nothing was lost; it is in the audit log."
   },
   "admin": {
     "title": "Administration",
@@ -753,7 +753,7 @@
       "desktopOnly": "Evidence is stored encrypted on this device: its usage and verification are only in the desktop app.",
       "usage": {
         "title": "Evidence store",
-        "desc": "Attachments are stored encrypted in the evidence folder, next to the database, and do not sync yet.",
+        "desc": "Attachments are stored encrypted in the evidence folder, next to the database. They sync with your workspace: each file is uploaded once and the other devices download it after syncing. Those of a manual run in progress wait until you save the result.",
         "total": "Size",
         "totalValue_one": "{{size}} · {{count}} file",
         "totalValue_other": "{{size}} · {{count}} files",
@@ -1140,7 +1140,11 @@
         "account_disabled": "Account disabled",
         "account_enabled": "Account enabled",
         "test_manager_succession": "New Test Manager (account disabled)",
-        "merged": "Combined"
+        "merged": "Combined",
+        "local": "Mine",
+        "remote": "The server's",
+        "true": "Yes",
+        "false": "No"
       }
     },
     "users": {
@@ -3607,7 +3611,7 @@
   },
   "recoveryKey": {
     "title": "Recovery key",
-    "intro": "The local database is encrypted and its key lives only in this computer's credential store. If you lose it (new PC, reinstalled Windows), only the recovery key together with your copy of pharos.db.enc brings your data back.",
+    "intro": "The local database is encrypted and its key lives only in this computer's credential store. If you lose it (new PC, reinstalled Windows), only the recovery key together with your copy of pharos.db and of the evidence folder brings your data back.",
     "lastShown": "Last shown: {{date}}",
     "desktopOnly": "Only available in the desktop app.",
     "show": "Show recovery key",
@@ -3619,7 +3623,7 @@
     "guidePaper": "Write it on paper and keep it somewhere safe, or",
     "guideManager": "store it in a password manager.",
     "guideRisk": "Do not send it by email or chat, and do not keep it next to the copy of your data.",
-    "guideBackup": "To restore on another computer you need this key and a copy of pharos.db.enc (and of the evidence/ folder once it exists). Pharos cannot recover it for you.",
+    "guideBackup": "To restore on another computer you need this key and a copy of pharos.db (made with Pharos closed) and of the evidence folder. Pharos cannot recover it for you.",
     "copy": "Copy to clipboard",
     "copied": "Copied",
     "copiedHint": "Paste it into your password manager, then copy something else to clear the clipboard.",

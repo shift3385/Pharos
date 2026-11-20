@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { ChevronsUpDown, CircleUser, LogOut, Moon, Settings2, Sun } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { SyncIndicator } from "@modules/sync-offline";
+import { useWorkspaceMenu } from "@modules/workspaces";
 import { useServerInfo } from "@modules/server-picker";
 import { isTauri } from "@shared/platform";
 import { serverHost } from "@shared/platform/serverUrl";
@@ -24,7 +25,7 @@ function initials(name: string): string {
  * sesión. It opens up from the sidebar foot (`variant="sidebar"`), to the
  * right from the icon strip (`"rail"`) and as a bottom sheet on mobile
  * (`"mobile"`, where it also holds the theme switch and the sync status that
- * the desktop shows in the top bar).
+ * the desktop shows in the top bar, and the sidebar's workspace selector).
  */
 export function UserMenu({ variant }: { variant: "sidebar" | "rail" | "mobile" }) {
   const { t, i18n } = useTranslation();
@@ -34,6 +35,8 @@ export function UserMenu({ variant }: { variant: "sidebar" | "rail" | "mobile" }
   // On mobile the menu is a bottom sheet, a dialog.
   const menu = usePopover(useBreakpoint() === "mobile" ? "dialog" : "menu");
   const server = useServerInfo();
+  // On mobile there is no sidebar: its workspace selector lives here (FIX-39).
+  const workspace = useWorkspaceMenu();
   if (!user) return null;
 
   const name = user.displayName;
@@ -95,6 +98,13 @@ export function UserMenu({ variant }: { variant: "sidebar" | "rail" | "mobile" }
           )
         }
       >
+        {variant === "mobile" && workspace && (
+          <>
+            <MenuLabel>{t("workspaces.switcher.label")}</MenuLabel>
+            {workspace.items}
+            <MenuSeparator />
+          </>
+        )}
         <MenuItem icon={CircleUser} onSelect={() => navigate("/profile")}>
           {t("shell.myProfile")}
         </MenuItem>
@@ -131,6 +141,7 @@ export function UserMenu({ variant }: { variant: "sidebar" | "rail" | "mobile" }
           {t("auth.logout")}
         </MenuItem>
       </ResponsiveMenu>
+      {variant === "mobile" && workspace?.dialog}
     </div>
   );
 }
