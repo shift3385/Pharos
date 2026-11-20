@@ -1,4 +1,6 @@
+import i18next from "i18next";
 import type { FindingsSummary } from "@shared/contracts/contract";
+import { formatMetric } from "../model/findings";
 import type { ReportTable } from "./statusReport";
 
 // «Hallazgos y rendimiento» (ING-06, F5b): the findings and thresholds of
@@ -29,6 +31,8 @@ export function findingsSection(
   /** Case id → its visible key (TC-001). */
   caseKey: (caseId: string) => string,
   t: Translate,
+  /** The report's language; the app's when left out. */
+  lang?: string,
 ): FindingsSection | null {
   if (!f) return null;
   const open = SEVERITIES.reduce((n, k) => n + f.open[k], 0);
@@ -39,8 +43,9 @@ export function findingsSection(
     findingsLine: t("statusReport.findings.line", {
       count: open,
       bySeverity: bySeverity || "—",
-      new: f.new,
-      triaged: f.triaged,
+      // «1 nuevo · 2 triados» (FIX-47).
+      new: t("statusReport.findings.new", { count: f.new }),
+      triaged: t("statusReport.findings.triaged", { count: f.triaged }),
       review: f.review,
     }),
     thresholdsLine: f.thresholdsTotal
@@ -74,7 +79,10 @@ export function findingsSection(
         m.runKey,
         metricName(m),
         m.threshold,
-        m.unit ? `${m.value} ${m.unit}` : String(m.value),
+        // As the run's «Métricas» tab shows it (FIX-47): a rate as a
+        // percentage («1,02 %», not «0.0102 ratio»), durations in ms or s,
+        // the number in the report's language.
+        formatMetric({ value: m.value, unit: m.unit ?? "" }, lang ?? i18next.resolvedLanguage ?? i18next.language ?? "es"),
         m.caseId ? caseKey(m.caseId) : "—",
       ]),
     },

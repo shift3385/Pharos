@@ -21,7 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
-import { groupByDay, isPrimary, targetOf } from "../model/group";
+import { groupByDay, isPrimary, targetOf, type Target } from "../model/group";
 import type { AppNotification } from "../model/types";
 import { useNotifications } from "../state/notificationsContext";
 import "./NotificationsPanel.css";
@@ -85,9 +85,15 @@ export function NotificationsPanel({ onDone, showTitle = true }: { onDone: () =>
         ? t("notifications.yesterday")
         : day.toLocaleDateString(lng, { weekday: "long", day: "numeric", month: "short" });
 
+  // A conflict's notification once every conflict is resolved: nothing left
+  // to open (FIX-47).
+  const conflictsOpen = ctx?.conflicts ?? 0;
+  const targetFor = (n: AppNotification) =>
+    n.kind === "sync.conflict" && conflictsOpen === 0 ? null : targetOf(n);
+
   const open = (n: AppNotification) => {
     if (!n.readAt) ctx?.markRead([n.id]);
-    const target = targetOf(n);
+    const target = targetFor(n);
     if (!target) return;
     onDone();
     if (target.kind === "conflicts") ctx?.openConflicts();
@@ -138,7 +144,7 @@ export function NotificationsPanel({ onDone, showTitle = true }: { onDone: () =>
               <h3 className="np__day-title">{dayLabel(g.id, g.day)}</h3>
               <ul className="np__items">
                 {g.items.map((n) => (
-                  <Row key={n.id} n={n} time={timeOf(n, lng, now)} onOpen={open} />
+                  <Row key={n.id} n={n} target={targetFor(n)} time={timeOf(n, lng, now)} onOpen={open} />
                 ))}
               </ul>
             </section>
@@ -169,11 +175,20 @@ function withKey(text: string, key: string | undefined): ReactNode {
   );
 }
 
-function Row({ n, time, onOpen }: { n: AppNotification; time: string; onOpen: (n: AppNotification) => void }) {
+function Row({
+  n,
+  target,
+  time,
+  onOpen,
+}: {
+  n: AppNotification;
+  target: Target | null;
+  time: string;
+  onOpen: (n: AppNotification) => void;
+}) {
   const { t } = useTranslation();
   const look = ICONS[n.kind] ?? { icon: Bell, tone: "neutral" };
   const Icon = look.icon;
-  const target = targetOf(n);
   const unread = !n.readAt;
   const count = typeof n.data?.count === "number" ? n.data.count : 1;
   const text = t(`notifications.kind.${n.kind}`, {

@@ -102,6 +102,19 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     });
   }, [conflicts, userId]);
 
+  // Every conflict resolved (FIX-47): nothing is left to review, so their
+  // notifications stop counting on the bell. Only a drop to zero seen while
+  // the app runs does it: the first value (0 until the first count arrives)
+  // says nothing.
+  const cleared = useRef<number | null>(null);
+  useEffect(() => {
+    const before = cleared.current;
+    cleared.current = conflicts;
+    if (before === null || before === 0 || conflicts > 0 || !userId) return;
+    const ids = items.filter((n) => n.kind === "sync.conflict" && !n.readAt).map((n) => n.id);
+    if (ids.length) void markNotificationsRead(userId, ids);
+  }, [conflicts, items, userId]);
+
   const markRead = useCallback(
     (ids: string[]) => {
       if (ids.length) void markNotificationsRead(userId, ids);
@@ -112,8 +125,8 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const openConflicts = useCallback(() => sync?.openConflicts(), [sync]);
 
   const value = useMemo<NotificationsValue>(
-    () => ({ items, unread: unreadCount(items), refresh, markRead, markAllRead, openConflicts }),
-    [items, refresh, markRead, markAllRead, openConflicts],
+    () => ({ items, unread: unreadCount(items), refresh, markRead, markAllRead, openConflicts, conflicts }),
+    [items, refresh, markRead, markAllRead, openConflicts, conflicts],
   );
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
 }

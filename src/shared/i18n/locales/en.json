@@ -5040,8 +5040,12 @@
       "value": "Value"
     },
     "findings": {
-      "line_one": "{{count}} open finding ({{bySeverity}}) · {{new}} new · {{triaged}} triaged · {{review}} to review",
-      "line_other": "{{count}} open findings ({{bySeverity}}) · {{new}} new · {{triaged}} triaged · {{review}} to review",
+      "line_one": "{{count}} open finding ({{bySeverity}}) · {{new}} · {{triaged}} · {{review}} to review",
+      "line_other": "{{count}} open findings ({{bySeverity}}) · {{new}} · {{triaged}} · {{review}} to review",
+      "new_one": "{{count}} new",
+      "new_other": "{{count}} new",
+      "triaged_one": "{{count}} triaged",
+      "triaged_other": "{{count}} triaged",
       "thresholds": "Thresholds: {{passed}} of {{total}} met",
       "noFailed": "Every threshold is met."
     },
@@ -5065,7 +5069,11 @@
     "summaryHint": "Filled in from the numbers; you can change it.",
     "recommendationsLabel": "Recommendations",
     "recommendationsPlaceholder": "What you propose: continue, close the cycle, repeat tests…",
-    "autoSummary": "{{executed}} of {{total}} {{unit}} have been executed: {{pct}}, {{rate}}. There are {{open}} open defects, {{critical}} critical. Exit criteria: {{met}} of {{all}} met.",
+    "autoSummary": "{{executed}} of {{total}} {{unit}} have been executed: {{pct}}, {{rate}}. {{defects}}, {{critical}}. Exit criteria: {{met}} of {{all}} met.",
+    "openDefects_one": "There is {{count}} open defect",
+    "openDefects_other": "There are {{count}} open defects",
+    "openCritical_one": "{{count}} critical",
+    "openCritical_other": "{{count}} critical",
     "withRate": "with a pass rate of {{rate}}",
     "noRate": "with no pass rate yet",
     "sheet": {

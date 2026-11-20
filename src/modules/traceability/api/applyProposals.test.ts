@@ -8,7 +8,7 @@ import type { Requirement, RequirementInput } from "../model/types";
 import type { RequirementProposal } from "../proposals/types";
 import { applyRequirementProposals } from "./applyProposals";
 
-const provenance = { provider: "ollama" as const, model: "m", generatedAt: "2026-11-07T00:00:00Z", prompt: "req-synthesis@1" };
+const provenance = { provider: "ollama" as const, model: "m", generatedAt: "2026-11-07T00:00:00Z", prompt: "req-synthesis@2" };
 
 const req = (key: string, revision = 2, extra: Partial<Requirement> = {}): Requirement => ({
   id: `id-${key}`,
@@ -96,6 +96,25 @@ describe("applyRequirementProposals", () => {
         { kind: "file", path: "new.md" },
       ],
     });
+  });
+
+  it("reads a requirement written by @1 as it is, and marks what @2 changes with @2 (FIX-47, ADR-0036)", async () => {
+    // Stored provenance is never migrated: the old id stays on what it wrote.
+    const older = { ...provenance, prompt: "req-synthesis@1" };
+    const current = req("REQ-001", 2, { data: { aiProvenance: { requirement: older }, sources: [] } });
+    const untouched = req("REQ-002", 2, { data: { aiProvenance: { requirement: older } } });
+    const api = fakeApi([current, untouched]);
+    const accepted: RequirementProposal[] = [
+      { id: 1, action: "improve", key: "REQ-001", revision: 2, description: "New", reason: "r", sources: [] },
+    ];
+    const r = await applyRequirementProposals({ ...base, accepted, existing: [current, untouched] }, api);
+    expect(r.updated).toBe(1);
+    expect(api.update).toHaveBeenCalledTimes(1);
+    const [id, input] = api.update.mock.calls[0];
+    expect(id).toBe("id-REQ-001");
+    expect(input.data?.aiProvenance).toEqual({ requirement: provenance });
+    expect(provenance.prompt).toBe("req-synthesis@2");
+    expect(untouched.data?.aiProvenance?.requirement.prompt).toBe("req-synthesis@1");
   });
 
   it("skips what changed or went since the answer, and what cases link", async () => {

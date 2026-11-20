@@ -176,3 +176,23 @@
   - El contenido del proyecto puede intentar dar órdenes al modelo (prompt injection).
     Va siempre entre etiquetas `<data>` neutralizadas, la salida se valida con un
     esquema, el modelo no tiene herramientas y nada se aplica sin la persona.
+
+## Versión 2 de los prompts (FIX-47, 2026-11-20)
+
+Aprobado por el usuario el 2026-11-20. Precisión sobre el «prompt versionado»,
+sin cambiar la decisión.
+
+- **Qué cambió.** `req-extract@2` y `req-synthesis@2` piden el requisito en el
+  idioma de la persona: en español, «El sistema deberá …»; en inglés, «The system
+  shall …». La versión 1 pedía siempre «The system shall …», y el modelo escribía
+  «el sistema shall …» dentro de un texto en español (FIX-45).
+- **Por qué sube la versión.** FIX-45 cambió el texto y dejó el identificador `@1`.
+  La procedencia de cada requisito guarda el identificador para saber con qué
+  instrucciones salió, así que un mismo identificador no puede nombrar dos textos.
+  Lo generado desde FIX-45 hasta esta versión lleva `@1` aunque siguió el texto
+  nuevo; no hay forma de distinguirlo y se deja así.
+- **Datos.** No hay migración: lo generado antes conserva `@1` en su procedencia.
+  Quien lee la procedencia (la marca «IA · pendiente de revisión», el formulario
+  del requisito, `applyRequirementProposals`) acepta cualquier versión. Las
+  menciones de `@1` de las secciones anteriores describen la versión 1.
+- La importación desde diseños (IA-18) guarda `requirements-from-design@1+req-synthesis@2`.

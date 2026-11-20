@@ -5040,8 +5040,12 @@
       "value": "Valor"
     },
     "findings": {
-      "line_one": "{{count}} hallazgo abierto ({{bySeverity}}) · {{new}} nuevos · {{triaged}} triados · {{review}} a revisar",
-      "line_other": "{{count}} hallazgos abiertos ({{bySeverity}}) · {{new}} nuevos · {{triaged}} triados · {{review}} a revisar",
+      "line_one": "{{count}} hallazgo abierto ({{bySeverity}}) · {{new}} · {{triaged}} · {{review}} a revisar",
+      "line_other": "{{count}} hallazgos abiertos ({{bySeverity}}) · {{new}} · {{triaged}} · {{review}} a revisar",
+      "new_one": "{{count}} nuevo",
+      "new_other": "{{count}} nuevos",
+      "triaged_one": "{{count}} triado",
+      "triaged_other": "{{count}} triados",
       "thresholds": "Umbrales: {{passed}} de {{total}} cumplidos",
       "noFailed": "Todos los umbrales se cumplen."
     },
@@ -5065,7 +5069,11 @@
     "summaryHint": "Se rellena con las cifras; puedes cambiarlo.",
     "recommendationsLabel": "Recomendaciones",
     "recommendationsPlaceholder": "Qué propones: seguir, cerrar el ciclo, repetir pruebas…",
-    "autoSummary": "Se han ejecutado {{executed}} de {{total}} {{unit}}: {{pct}}, {{rate}}. Hay {{open}} defectos abiertos, {{critical}} críticos. Criterios de salida: {{met}} de {{all}} cumplidos.",
+    "autoSummary": "Se han ejecutado {{executed}} de {{total}} {{unit}}: {{pct}}, {{rate}}. {{defects}}, {{critical}}. Criterios de salida: {{met}} de {{all}} cumplidos.",
+    "openDefects_one": "Hay {{count}} defecto abierto",
+    "openDefects_other": "Hay {{count}} defectos abiertos",
+    "openCritical_one": "{{count}} crítico",
+    "openCritical_other": "{{count}} críticos",
     "withRate": "con una tasa de éxito de {{rate}}",
     "noRate": "sin tasa de éxito todavía",
     "sheet": {

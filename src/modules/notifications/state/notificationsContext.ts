@@ -11,6 +11,9 @@ export interface NotificationsValue {
   markAllRead: () => void;
   /** Opens the sync conflicts (a conflict's direct action). */
   openConflicts: () => void;
+  /** Sync conflicts still open: with none, a conflict's notification has
+   *  nothing left to resolve and shows no «Resolver» (FIX-47). */
+  conflicts: number;
 }
 
 export const NotificationsContext = createContext<NotificationsValue | null>(null);

@@ -109,7 +109,7 @@ export function MetricsPanel({ metrics }: { metrics: MetricView[] }) {
   return (
     <div className="fd" data-testid="metrics-panel">
       {thresholds.total > 0 && (
-        <p className="fd-kpi" data-testid="metrics-thresholds">
+        <p className="ui-card fd-kpi" data-testid="metrics-thresholds">
           <strong className={thresholds.failed.length ? "fd-bad" : undefined}>
             {t("findings.metric.thresholdsMet", {
               passed: thresholds.passed,

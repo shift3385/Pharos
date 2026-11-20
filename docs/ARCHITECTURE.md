@@ -85,8 +85,8 @@ backend; data-compatibility rules for migrations and sync): `docs/VERSIONING.md`
   IA-17 ([ADR-0036](adr/0036-requisitos-desde-un-proyecto.md)): Rust picks and
   walks a project folder (`project_scan.rs`, crate `ignore`, fixed exclusions,
   secret lines replaced) and hands the webview an inventory, then the numbered
-  text of the chosen files; `req-extract@1` runs per batch (two at a time) and
-  `req-synthesis@1` compares the candidates with the existing requirements.
+  text of the chosen files; `req-extract@2` runs per batch (two at a time) and
+  `req-synthesis@2` compares the candidates with the existing requirements.
   `traceability/proposals` checks the answer against what was sent and is the
   contract shared with IA-18 (images and designs); `requirements.data`
   (migration 0038) keeps the AI provenance, with the prompt version, and the

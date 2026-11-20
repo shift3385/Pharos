@@ -113,8 +113,7 @@ export function autoSummary(
   lang?: string,
   exit?: { met: number; all: number },
 ): string {
-  const met = exit?.met ?? s.exitCriteria.filter((c) => c.met === true).length;
-  return t("statusReport.autoSummary", {
+  const met = exit?.met ?? s.exitCriteria.filter((c) => c.met === true).length;  return t("statusReport.autoSummary", {
     executed: s.progress.executed,
     total: s.progress.total,
     unit: t(`statusReport.unit.${s.progressUnit}`),
@@ -123,8 +122,9 @@ export function autoSummary(
       s.passRate === null
         ? t("statusReport.noRate")
         : t("statusReport.withRate", { rate: pct(s.passRate, lang) }),
-    open: s.defects.open,
-    critical: s.defects.openBySeverity.critical,
+    // «Hay 1 defecto abierto, 1 crítico», «Hay 3 defectos abiertos, 2 críticos» (FIX-47).
+    defects: t("statusReport.openDefects", { count: s.defects.open }),
+    critical: t("statusReport.openCritical", { count: s.defects.openBySeverity.critical }),
     met,
     all: exit?.all ?? s.exitCriteria.length,
   });
@@ -299,7 +299,7 @@ export function buildStatusReport(
       ],
       rows: issues,
     },
-    findings: findingsSection(s.findings, (id) => cases.get(id)?.scenarioId ?? id, t),
+    findings: findingsSection(s.findings, (id) => cases.get(id)?.scenarioId ?? id, t, ctx.lang),
     cases: {
       headers: [
         t("statusReport.col.case"),

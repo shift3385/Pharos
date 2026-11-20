@@ -2,9 +2,9 @@
 // the "skill" — and their calls. Two steps, as the other generators: a strict
 // prompt, then the answer validated whole against its schema (ADR-0023).
 //
-//   req-extract@1    one batch of project files → candidate requirements, each
+//   req-extract@2    one batch of project files → candidate requirements, each
 //                    with the files and lines it rests on.
-//   req-synthesis@1  every candidate (of any source: a project here, images
+//   req-synthesis@2  every candidate (of any source: a project here, images
 //                    and designs in IA-18) + the existing requirements →
 //                    proposals: new, improve, merge (possible duplicate),
 //                    remove (redundant).
@@ -24,12 +24,13 @@ import type { AiResult } from "./aiApi";
 import { asData } from "./generators";
 import { aiJson } from "./structured";
 
-// FIX-45: the requirement is worded in the user's language («El sistema
-// deberá …»); the English «The system shall …» made the model write «el
-// sistema shall …» inside Spanish text. Whether this deserves a new version
-// (@2) in the provenance is left to the owners of ADR-0036.
-export const REQ_EXTRACT_PROMPT = "req-extract@1";
-export const REQ_SYNTHESIS_PROMPT = "req-synthesis@1";
+// @2 (FIX-47, ADR-0036 note of 2026-11-20): the requirement is worded in the
+// user's language («El sistema deberá …», FIX-45); @1 always asked for the
+// English «The system shall …», which made the model write «el sistema
+// shall …» inside Spanish text. Requirements written before keep `@1` in
+// their provenance: both ids stay valid there and nothing is migrated.
+export const REQ_EXTRACT_PROMPT = "req-extract@2";
+export const REQ_SYNTHESIS_PROMPT = "req-synthesis@2";
 
 const languageOf = (lang: string) =>
   lang.startsWith("es") ? "Spanish" : "English";

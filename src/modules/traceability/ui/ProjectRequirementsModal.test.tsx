@@ -160,7 +160,7 @@ describe("ProjectRequirementsModal", () => {
         title: "Pay with a saved card",
         priority: "high",
         data: {
-          aiProvenance: { requirement: { ...provenance, prompt: "req-synthesis@1" } },
+          aiProvenance: { requirement: { ...provenance, prompt: "req-synthesis@2" } },
           sources: [{ kind: "file", path: "README.md", startLine: 1, endLine: 1 }],
         },
       });

@@ -75,7 +75,7 @@ Propuestas de la IA · 14                                    [Marcar todo] [Ning
 Viven en `src/modules/ai/api/requirementPrompts.ts`, con la versión en una
 constante. Comparten `systemRules()` y `asData()` con los demás generadores.
 
-### `req-extract@1` (un lote)
+### `req-extract@2` (un lote)
 
 - **Rol:** «Eres un analista de requisitos sénior (ISO/IEC/IEEE 29148, ISTQB)».
 - **Material:** `<data>`, con cada archivo como `=== ruta ===` y sus líneas numeradas
@@ -102,7 +102,7 @@ constante. Comparten `systemRules()` y `asData()` con los demás generadores.
  "reason":"si no hay ninguno, por qué"}
 ```
 
-### `req-synthesis@1` (común con la pista de imágenes)
+### `req-synthesis@2` (común con la pista de imágenes)
 
 - **Material:**
   - Los candidatos numerados (`C1…Cn`) con su base.
@@ -151,7 +151,7 @@ Contrato común con IA-18 (tipos, filtro, vista, aplicar y `AiSendNotice`): la n
 `contrato-propuestas-requisitos.md` (v2). Lo que sigue es lo que guarda IA-17.
 
 - `requirements.data` (JSON), con este contenido:
-  - `aiProvenance`: `{ requirement: AiProvenance & { prompt?: "req-synthesis@1" } }`;
+  - `aiProvenance`: `{ requirement: AiProvenance & { prompt?: "req-synthesis@2" } }`;
   - `sources`: `RequirementSource[]`.
 - La revisión humana usa `markReviewed`, como en los casos: con «Marcar revisado» en
   el formulario y después «Guardar».

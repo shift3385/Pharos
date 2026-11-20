@@ -506,6 +506,7 @@ export function buildCompletionReport(
       s.findings,
       (id) => s.cases.find((c) => c.caseId === id)?.scenarioId ?? id,
       t,
+      lang,
     ),
     risksNote: ctx.texts.risks,
     deliverables: {
