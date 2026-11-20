@@ -34,7 +34,7 @@ import {
   waitForText,
   waitForToast,
 } from "./helpers";
-import { jorgeAcceptsInvitation, jorgeApprovesCase, jorgeApprovesPlan, jorgeMembership, jorgeRequestsChangesOnCase, jorgeRequestsChangesOnPlan } from "./people";
+import { jorgeAcceptsInvitation, jorgeApprovesCase, jorgeApprovesPlan, jorgeRequestsChangesOnCase, jorgeRequestsChangesOnPlan } from "./people";
 import { chapter, step } from "./tour";
 import { syncNow } from "../support";
 
@@ -46,7 +46,11 @@ const PERSONAL = "Personal";
 const JORGE = TEAMMATE.alias;
 const CASE = TEAM.reviewCase;
 const CASE_TITLE = "Humo de la versión 0.6.0";
+const ASSIGNEE = '[data-testid="defect-assignee"]';
 const ASSIGNEE_LABEL = `//label[.//span[normalize-space(.)="${es.defects.field.assignee}"]]`;
+/** Jorge's row in «Miembros y roles» (by his e-mail), and the invitations. */
+const JORGE_ROW = `tr[data-email="${TEAMMATE.email}"]`;
+const INVITATIONS = '[aria-labelledby="ws-invitations"]';
 const D = '[role="dialog"]';
 const ASK = '[role="alertdialog"]';
 
@@ -81,12 +85,6 @@ async function openPlanStep(id: keyof typeof P.step) {
   await expect($("h2.tpw__title")).toHaveText(P.step[id]);
 }
 
-/** Jorge's row in «Miembros y roles». */
-async function jorgeRow() {
-  const m = await jorgeMembership(WS);
-  if (!m) throw new Error("Jorge is not a member of the team workspace");
-  return byTestId(`member-${m.userId}`);
-}
 
 chapter("equipo", () => {
   step("workspace-equipo", {
@@ -210,15 +208,14 @@ chapter("equipo", () => {
   step("miembros", {
     title: "Jorge, en el equipo",
     caption:
-      "De vuelta en «Miembros y roles», Jorge L. Meneses Yero aparece como Test Analyst y su invitación consta como «Aceptada». Como Test Manager, Liomar puede cambiar el rol de cada miembro en la columna «Rol» o quitarlo del workspace; el workspace nunca se queda sin un Test Manager.",
-    focus: ".ws-table-wrap",
+      "De vuelta en «Miembros y roles», Jorge L. Meneses Yero aparece como Test Analyst, con su correo y el día en que se unió. Su invitación ya no figura en «Invitaciones pendientes», que solo lista las que siguen sin usar o han caducado: ahora dice «No hay invitaciones pendientes.». Como Test Manager, Liomar puede cambiar el rol de cada miembro en la columna «Rol» o quitarlo del workspace; el workspace nunca se queda sin un Test Manager.",
+    focus: [".ws-table-wrap", INVITATIONS],
     run: async () => {
       await openMembers();
-      await browser.waitUntil(async () => (await $(".ws-table").getText()).includes(JORGE), {
-        timeout: 30_000,
-        timeoutMsg: "Jorge never appeared among the members",
-      });
-      await waitForText(W.members.statuses.accepted);
+      await $(JORGE_ROW).waitForDisplayed({ timeout: 30_000, timeoutMsg: "Jorge never appeared among the members" });
+      await expect(byTestId(`member-role-${TEAMMATE.email}`)).toHaveText(expect.stringContaining(W.roles[TEAM.jorgeRole]));
+      await $(INVITATIONS).scrollIntoView({ block: "end" });
+      await expect($(INVITATIONS)).toHaveText(expect.stringContaining(W.members.noInvitations));
     },
   });
 
@@ -386,9 +383,8 @@ chapter("equipo", () => {
     focus: ".ws-table-wrap",
     toast: true,
     run: async () => {
-      const row = await jorgeRow();
       await openMembers();
-      await chooseOption(row.$(`[aria-label="${W.members.role}"]`), { text: W.roles[TEAM.jorgeFinalRole] });
+      await chooseOption(byTestId(`member-role-${TEAMMATE.email}`), { text: W.roles[TEAM.jorgeFinalRole] });
       await waitForToast(tf("workspaces.members.roleChanged", { name: JORGE, role: W.roles[TEAM.jorgeFinalRole] }));
     },
   });
@@ -409,23 +405,21 @@ chapter("equipo", () => {
 
   step("asignar", {
     title: "Asignar trabajo a Jorge",
-    caption: `Cada defecto tiene «Asignado a», un texto libre con quien se ocupa de él. Liomar abre «${DEFECTS[TEAM.assignedDefect].title}» en «Defectos», escribe «Jorge L. Meneses Yero» y guarda. Del mismo modo, «Asignar a», al añadir casos a un ciclo, reparte su ejecución.`,
+    caption: `En un workspace compartido, «Asignado a» de un defecto elige entre los miembros activos del workspace (o «Sin asignar»). Liomar abre «${DEFECTS[TEAM.assignedDefect].title}» en «Defectos», elige «Jorge L. Meneses Yero» y guarda. Jorge recibe en su Pharos el aviso «Liomar QA te asignó…», con la clave y el título del defecto; en la campana de Liomar no aparece, porque el aviso es para quien recibe el trabajo. Del mismo modo, «Asignar a», al añadir casos a un ciclo, reparte su ejecución.`,
     focus: ASSIGNEE_LABEL,
     run: async () => {
       await openProject(PROJECT_A.name);
       await openSection("defects");
       await $(`button.df-open*=${DEFECTS[TEAM.assignedDefect].title}`).click();
       await expect($(".tp-editor__save")).toBeDisplayed();
-      const input = $(`${ASSIGNEE_LABEL}//input`);
-      await input.scrollIntoView({ block: "center" });
-      await input.setValue(JORGE);
+      await chooseOption($(ASSIGNEE), { text: JORGE });
       await $(".tp-editor__save").click();
       await waitForToast(es.defects.savedToast);
       await waitForSettled();
       // Saving goes back to the list: open it again to show the field saved.
       if (!(await $(".tp-editor__save").isExisting())) await $(`button.df-open*=${DEFECTS[TEAM.assignedDefect].title}`).click();
-      await $(`${ASSIGNEE_LABEL}//input`).scrollIntoView({ block: "center" });
-      await expect($(`${ASSIGNEE_LABEL}//input`)).toHaveValue(JORGE);
+      await $(ASSIGNEE).scrollIntoView({ block: "center" });
+      await expect($(ASSIGNEE)).toHaveText(expect.stringContaining(JORGE));
     },
     after: sync,
   });
@@ -455,18 +449,18 @@ chapter("equipo", () => {
   step("auditoria", {
     title: "La auditoría del equipo",
     caption: `En «Administración › Auditoría», el Test Manager de un workspace compartido ve también lo que hicieron los demás miembros. Buscando «${CASE.key}», el historial del caso muestra quién hizo cada cosa: el envío a revisión de Liomar, y la petición de cambios y la aprobación de Jorge L. Meneses Yero.`,
-    // App defect (reported 2026-11-19): the desktop audit names Jorge
-    // «Usuario <id>» and lists his review as a plain «Editado» with raw field
-    // names («approval, review»). Unskip once it shows his name.
-    skip: "pendiente de una corrección de la app: la Auditoría del escritorio aún no muestra el nombre de los demás miembros",
     focus: '[data-testid="audit-tab"]',
     run: async () => {
       await openAdminTab("audit");
       await byTestId("audit-search").setValue(CASE.key);
-      await browser.waitUntil(async () => (await byTestId("audit-tab").getText()).includes(JORGE), {
-        timeout: 20_000,
-        timeoutMsg: "the audit does not show Jorge's review of the case",
-      });
+      const A = es.admin.audit.reviewEvents;
+      await browser.waitUntil(
+        async () => {
+          const text = await byTestId("audit-tab").getText();
+          return text.includes(JORGE) && text.includes(A.sent) && text.includes(A.changesRequested) && text.includes(A.approved);
+        },
+        { timeout: 20_000, timeoutMsg: "the audit does not show Jorge's review of the case" },
+      );
     },
   });
 
@@ -477,9 +471,8 @@ chapter("equipo", () => {
     covers: ["dialogs:src/modules/workspaces/ui/WorkspaceMembersPage.tsx"],
     shot: { element: ASK },
     run: async () => {
-      const row = await jorgeRow();
       await openMembers();
-      await row.$(`button=${W.members.remove}`).click();
+      await byTestId(`member-remove-${TEAMMATE.email}`).click();
       await expect($(ASK)).toBeDisplayed();
     },
     after: async () => {
