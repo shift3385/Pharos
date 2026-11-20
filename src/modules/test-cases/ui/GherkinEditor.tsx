@@ -4,6 +4,7 @@ import Editor from "react-simple-code-editor";
 import Prism from "prismjs";
 import "prismjs/components/prism-gherkin";
 import { ArrowLeftRight, Copy, FileCode, PencilLine } from "lucide-react";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { useToast } from "@shared/ui/Toast";
 import "@shared/ui/buttons.css";
 import "./TestCase.css";
@@ -168,6 +169,13 @@ export function GherkinEditor({
           )}
         </button>
       ))}
+      {/* The editor's keyboard help sits behind a «?» at the end of the
+          keyword bar; its text stays the textarea's description (FIX-35). */}
+      {!keyboardBar && (
+        <InfoTip id={`${id}-keys`} label={t("testCase.gherkinEditor")}>
+          {t("testCase.gherkinKeys")}
+        </InfoTip>
+      )}
     </div>
   );
 
@@ -180,9 +188,11 @@ export function GherkinEditor({
       <label htmlFor={`${id}-ta`} className="sr-only">
         {t("testCase.gherkinEditor")}
       </label>
-      <p id={`${id}-keys`} className={keyboardBar ? "sr-only" : "tp-field__hint"}>
-        {t("testCase.gherkinKeys")}
-      </p>
+      {keyboardBar && (
+        <p id={`${id}-keys`} className="sr-only">
+          {t("testCase.gherkinKeys")}
+        </p>
+      )}
       <Editor
         textareaId={`${id}-ta`}
         value={value}

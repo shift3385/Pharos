@@ -1,4 +1,6 @@
-/* Suite baselines (CAS-02, ADR-0047): list, creation and comparison. */
+/* Suite baselines (CAS-02, ADR-0047): list, creation and comparison.
+   Both views sit on the case module's card (`tc-body`), so the counts and
+   tables are never drawn over the background image (FIX-35). */
 .bl {
   display: grid;
   gap: var(--space-3);
@@ -10,13 +12,20 @@
   gap: var(--space-2);
   align-items: center;
 }
+/* The title with its «?» help, taking the head's free space. */
+.bl-titleline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 1 1 auto;
+  min-width: 0;
+}
 .bl-title {
   margin: 0;
   flex: 1 1 auto;
   font-size: var(--fs-ui);
   font-weight: var(--fw-semibold);
 }
-.bl-lead,
 .bl-empty {
   margin: 0;
   color: var(--color-text-secondary);
@@ -90,6 +99,9 @@
 .bl-pair > * {
   flex: 1 1 220px;
   min-width: 0;
+}
+.bl-titleline > .bl-title {
+  flex: 0 1 auto;
 }
 .bl-pair > .bl-vs {
   flex: 0 0 auto;
