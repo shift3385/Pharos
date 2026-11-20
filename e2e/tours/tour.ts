@@ -58,9 +58,11 @@ export interface StepSpec {
   /** Keep the newest toast in the capture (it is what the step shows). By
    *  default toasts are hidden: they carry stale messages and local paths. */
   toast?: boolean;
-  /** The control the step is about (MAN-02): CSS/WDIO selector(s), their
-   *  union box. The manual outlines it in the capture and, in the PDF, adds a
-   *  magnified inset when it is small in a big screen. */
+  /** The control the step is about (MAN-02): CSS/WDIO selector(s). The
+   *  manual outlines its zone in the capture and, in the PDF, adds a «Detalle»
+   *  cut-out when it is small in a big screen (scripts/manual/focus.mjs). With
+   *  several elements (a trigger and its menu), each one is outlined and the
+   *  cut-out shows their union. */
   focus?: string | string[];
   /** Consecutive steps with the same key print side by side in the PDF (a
    *  before/after pair). */
@@ -93,6 +95,8 @@ export interface StepRecord {
   status: "passed" | "failed" | "skipped";
   reason?: string;
   focus?: FocusBox;
+  /** With several focused elements, each one's box (`focus` is their union). */
+  focusParts?: FocusBox[];
   /** The step declared a focus that was not displayed at capture time. */
   focusMissing?: boolean;
   /** Other people or accounts the capture showed (NC-052; only in report mode). */
@@ -100,10 +104,11 @@ export interface StepRecord {
   group?: string;
 }
 
-/** The union box of `selectors` in the capture's pixels: relative to the
+/** The boxes of `selectors` in the capture's pixels: relative to the
  *  viewport (page shots) or to `origin` (element shots), times the device
- *  pixel ratio. Null when none is displayed. */
-async function focusBox(selectors: string[], origin: string | null): Promise<FocusBox | null> {
+ *  pixel ratio. `box` is their union; `parts` each displayed element's box
+ *  when there are several. Null when none is displayed. */
+async function focusBox(selectors: string[], origin: string | null): Promise<{ box: FocusBox; parts: FocusBox[] } | null> {
   const boxes: FocusBox[] = [];
   for (const sel of selectors) {
     for (const el of await $$(sel)) {
@@ -121,16 +126,19 @@ async function focusBox(selectors: string[], origin: string | null): Promise<Foc
     const r = o ? document.querySelector(o)?.getBoundingClientRect() : null;
     return { dpr: window.devicePixelRatio || 1, ox: r?.left ?? 0, oy: r?.top ?? 0 };
   }, origin);
-  const x0 = Math.min(...boxes.map((b) => b.x));
-  const y0 = Math.min(...boxes.map((b) => b.y));
-  const x1 = Math.max(...boxes.map((b) => b.x + b.w));
-  const y1 = Math.max(...boxes.map((b) => b.y + b.h));
-  return {
+  const px = (x0: number, y0: number, x1: number, y1: number): FocusBox => ({
     x: Math.round((x0 - ox) * dpr),
     y: Math.round((y0 - oy) * dpr),
     w: Math.round((x1 - x0) * dpr),
     h: Math.round((y1 - y0) * dpr),
-  };
+  });
+  const box = px(
+    Math.min(...boxes.map((b) => b.x)),
+    Math.min(...boxes.map((b) => b.y)),
+    Math.max(...boxes.map((b) => b.x + b.w)),
+    Math.max(...boxes.map((b) => b.y + b.h)),
+  );
+  return { box, parts: boxes.length > 1 ? boxes.map((b) => px(b.x, b.y, b.x + b.w, b.y + b.h)) : [] };
 }
 
 let current: { id: ChapterId; n: number; failed: string | null; prepError: string | null } | null = null;
@@ -336,6 +344,7 @@ export function step(id: string, spec: StepSpec) {
       const shot = spec.shot ?? "page";
       let image: string | null = null;
       let focus: FocusBox | null = null;
+      let focusParts: FocusBox[] = [];
       let focusMissing = false;
       let foreign: string[] = [];
       if (shot !== false) {
@@ -349,7 +358,9 @@ export function step(id: string, spec: StepSpec) {
           await browser.execute(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
           if (spec.focus) {
             const selectors = Array.isArray(spec.focus) ? spec.focus : [spec.focus];
-            focus = await focusBox(selectors, shot === "page" ? null : shot.element);
+            const found = await focusBox(selectors, shot === "page" ? null : shot.element);
+            focus = found?.box ?? null;
+            focusParts = found?.parts ?? [];
             // Not fatal: the step still proves its action. The manual build
             // lists these steps so the selector gets fixed.
             if (!focus) {
@@ -375,6 +386,7 @@ export function step(id: string, spec: StepSpec) {
         viewport: size,
         status: "passed",
         ...(focus ? { focus } : {}),
+        ...(focusParts.length ? { focusParts } : {}),
         ...(focusMissing ? { focusMissing } : {}),
         ...(foreign.length ? { foreignNames: foreign } : {}),
       });

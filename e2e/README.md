@@ -144,11 +144,18 @@ step("nuevo", {
 });
 ```
 
-- **`focus`** (one selector or several, their union box): the tour records
-  the box in capture pixels; the manual draws an amber outline (Faro
-  Nocturno's accent) into the PNG and, in the PDF only, adds a magnified
-  «Detalle» inset cropped by CSS from the same file, beside the capture or
-  below it for a wide strip, and none when the control is already big. Use it
+- **`focus`** (one selector or several): the tour records, in capture pixels,
+  the union box (`focus`) and, with several elements, each one's box
+  (`focusParts`, e.g. a trigger and the menu it opened). At build time
+  (`scripts/manual/focus.mjs`) the manual turns them into *zones* (the
+  element plus a margin by kind: room for a small icon button, tight for a
+  panel or popover, each edge snapped to quiet pixels so it does not cut a
+  word), draws one amber outline (Faro Nocturno's accent) round their union
+  into the PNG and keeps the zones in `docs/manual/pasos.json`. In the PDF
+  only, a «Detalle» cut-out follows the capture (beside it, level with the
+  zone, or below it for a wide strip; none when the zone is already big): an
+  inline SVG that shows the same file through a clip inside that outline,
+  with a single amber frame of its own, so no second line ever shows. Use it
   when a step is about one control in a big screen. A focus not displayed at
   capture time is a warning (`focusMissing`), listed by the manual build.
 - **`group`**: a before/after pair (e.g. the password hidden, then shown). With

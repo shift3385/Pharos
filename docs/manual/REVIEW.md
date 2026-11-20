@@ -38,11 +38,18 @@ tener una explicación.
       contraseña, mover una tarjeta): dos pasos con el mismo `group`, que el PDF
       imprime uno junto a otro.
 - [ ] **Énfasis** (MAN-02): un paso sobre un control pequeño en una pantalla
-      grande lleva `focus`; el contorno ámbar rodea ese control y el recuadro
-      «Detalle» del PDF lo amplía. Ningún paso de la ejecución avisa de
-      «focus not displayed» (lo lista `build-manual`). En GitHub el Markdown
-      muestra solo el contorno: el «Detalle» es del PDF (se recorta por CSS de
-      la misma imagen, sin archivos de más).
+      grande lleva `focus`; un solo contorno ámbar marca su zona en la
+      captura (el control y un margen; con varios elementos, p. ej. un botón y
+      su menú, el contorno rodea su unión) y el PDF añade debajo o al lado el
+      recorte «Detalle»: esa misma zona ampliada, con **un solo borde**. Nunca
+      se ve una doble raya (el borde del recorte y, dentro, el contorno de la
+      captura), ni el recorte corta a medias palabras o tarjetas vecinas que
+      un margen algo distinto habría dejado fuera, ni el recorte queda en otra
+      página que su captura. Ningún paso de la ejecución avisa de «focus not
+      displayed» (lo lista `build-manual`). En GitHub el Markdown muestra solo
+      la captura con su contorno: el «Detalle» es del PDF (un SVG que recorta
+      la misma imagen por dentro del contorno, sin archivos de más; ver
+      `scripts/manual/focus.mjs`).
 - [ ] Ningún paso repite la captura de otro (p. ej. iniciar sesión y la
       primera pantalla de entrada).
 

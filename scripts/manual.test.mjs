@@ -13,7 +13,7 @@ import { arrayLiteral, check, countDialogs, coversIn, hasViewSwitch, prerequisit
 import { findAiKey } from "./manual/ai-key.mjs";
 import { inline, leftoverTable, markdownToHtml, tableCells } from "./manual/markdown.mjs";
 import { printWithEdge, settled, sweepProfiles } from "./manual/edge-print.mjs";
-import { focusLayout, FOCUS_COLOR, groupInset, insetStyle } from "./manual/focus.mjs";
+import { cutout, cutoutSvg, focusLayout, focusZone, focusZones, FOCUS_COLOR, groupInset, quietBand, sameFocusPixels } from "./manual/focus.mjs";
 import { acquireLock, lockMessage, pidAlive, releaseLock, UNREADABLE_GRACE_MS } from "./manual/run-lock.mjs";
 import { changedShare, decodePng, drawFocus, encodePng, quantize } from "./manual/png.mjs";
 import { needlesFor, scanForSecret } from "./manual/secret-scan.mjs";
@@ -231,17 +231,91 @@ test("drawFocus outlines a box in one exact colour that the palette keeps (MAN-0
   assert.ok(encodePng(again).equals(encodePng(drawFocus(image(120, 80, () => [0, 0, 0, 255]), { x: 40, y: 30, w: 30, h: 20 }))));
 });
 
-test("focusLayout: an inset beside small controls, below wide strips, none for big areas (MAN-02)", () => {
-  const beside = focusLayout(1440, 900, { x: 480, y: 820, w: 100, h: 30 });
+test("drawFocus around several boxes draws one outline round their union (MAN-02)", () => {
+  const img = image(200, 120, () => [255, 255, 255, 255]);
+  // A trigger and the menu it opened, overlapping.
+  drawFocus(img, [{ x: 20, y: 20, w: 40, h: 30 }, { x: 40, y: 40, w: 120, h: 60 }], { color: FOCUS_COLOR, stroke: 4, pad: 0, radius: 10 });
+  const amber = (x, y) => FOCUS_COLOR.every((v, c) => img.data[(y * 200 + x) * 4 + c] === v);
+  assert.ok(amber(40, 21), "the trigger's top edge");
+  assert.ok(amber(100, 41), "the menu's top edge, right of the trigger");
+  assert.ok(!amber(50, 41), "no line inside the union, where the two overlap");
+  assert.ok(!amber(45, 48), "no line inside the union");
+});
+
+test("focusZone: context by element kind, snapped to quiet pixels, inside the capture (MAN-02)", () => {
+  // A 34 px icon button grows to a readable zone; a panel gets a tight margin.
+  const icon = focusZone(1440, 900, { x: 700, y: 400, w: 34, h: 34 });
+  assert.ok(icon.w >= 150 && icon.h >= 72);
+  const panel = focusZone(1440, 900, { x: 300, y: 200, w: 400, h: 300 });
+  assert.equal(panel.x, 288, "12 px: the cut-out keeps 6 px of air");
+  // Near the capture's edge the margin moves to the other side: same size.
+  const corner = focusZone(1440, 900, { x: 1370, y: 13, w: 38, h: 38 });
+  assert.equal(corner.x + corner.w, 1440);
+  assert.equal(corner.y, 0);
+  assert.equal(corner.w, icon.w);
+  // Text a few px above the default top edge: the edge moves to quiet pixels.
+  const img = image(400, 200, (x, y) => (y >= 96 && y <= 99 && x % 3 === 0 ? [0, 0, 0, 255] : [255, 255, 255, 255]));
+  const snapped = focusZone(400, 200, { x: 100, y: 112, w: 200, h: 30 }, img);
+  assert.ok(quietBand(img, snapped.x, snapped.y, snapped.x + snapped.w, snapped.y + 7), "the top band is quiet");
+  assert.ok(snapped.y > 99 || snapped.y + 7 <= 96, "it does not run through the text");
+  assert.deepEqual(focusZones(1440, 900, null), []);
+  const parts = [
+    { x: 10, y: 10, w: 20, h: 20 },
+    { x: 40, y: 30, w: 170, h: 80 },
+  ];
+  assert.equal(focusZones(1440, 900, { x: 10, y: 10, w: 200, h: 100 }, parts).length, 2, "one zone per focused element");
+  // A menu 4 px above its trigger: the trigger's zone reaches into the menu's,
+  // so one outline goes round both (no two frames side by side).
+  const [menu, trigger] = focusZones(1440, 900, { x: 100, y: 100, w: 200, h: 134 }, [
+    { x: 100, y: 100, w: 200, h: 100 },
+    { x: 100, y: 204, w: 90, h: 30 },
+  ]);
+  assert.ok(trigger.y < menu.y + menu.h - 10, "the zones overlap past the rounded corners");
+});
+
+test("focusLayout: a cut-out beside small zones, below wide strips, none for big areas (MAN-02)", () => {
+  const beside = focusLayout(1440, 900, focusZones(1440, 900, { x: 480, y: 820, w: 100, h: 30 }));
   assert.equal(beside.mode, "beside");
   assert.ok(beside.crop.y + beside.crop.h <= 900, "the crop stays inside the capture");
-  assert.ok(beside.mag >= 1.4);
-  assert.equal(focusLayout(1440, 900, { x: 300, y: 10, w: 640, h: 40 }).mode, "below");
-  assert.equal(focusLayout(1440, 900, { x: 100, y: 100, w: 900, h: 600 }), null, "a whole panel needs no inset");
-  assert.equal(focusLayout(1440, 900, null), null);
-  const style = insetStyle(1440, 900, beside);
-  assert.match(style, /background-size:\d+\.\d{3}% auto/);
-  assert.match(style, /^width:\d+mm;height:[\d.]+mm;/);
+  assert.ok(beside.mag >= 1.4 && beside.mag <= 3, "enlarged, never blown up");
+  assert.ok(beside.topMm > 0, "level with its zone, low in the capture");
+  assert.equal(focusLayout(1440, 900, focusZones(1440, 900, { x: 300, y: 10, w: 640, h: 40 })).mode, "below");
+  assert.equal(focusLayout(1440, 900, focusZones(1440, 900, { x: 100, y: 100, w: 900, h: 600 })), null, "a whole panel needs none");
+  assert.equal(focusLayout(1440, 900, []), null);
+});
+
+test("the cut-out stays clear of the outline: one frame, no second line (MAN-02)", () => {
+  const zone = { x: 100, y: 50, w: 300, h: 80 };
+  const img = image(600, 300, () => [255, 255, 255, 255]);
+  drawFocus(img, zone, { color: FOCUS_COLOR, stroke: 4, pad: 0, radius: 10 });
+  const cut = cutout(zone);
+  // Every pixel the rounded clip can show, plus the ring image smoothing reads.
+  const near = (x, y) => {
+    const cx = Math.min(Math.max(x + 0.5, cut.x + cut.r), cut.x + cut.w - cut.r);
+    const cy = Math.min(Math.max(y + 0.5, cut.y + cut.r), cut.y + cut.h - cut.r);
+    return Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= cut.r + 1;
+  };
+  let amber = 0;
+  let seen = 0;
+  for (let y = cut.y - 2; y <= cut.y + cut.h + 1; y++) {
+    for (let x = cut.x - 2; x <= cut.x + cut.w + 1; x++) {
+      if (!near(x, y)) continue;
+      seen++;
+      if (FOCUS_COLOR.every((v, c) => img.data[(y * 600 + x) * 4 + c] === v)) amber++;
+    }
+  }
+  assert.ok(seen > cut.w * cut.h);
+  assert.equal(amber, 0);
+  const layout = focusLayout(1440, 900, [zone]);
+  const svg = cutoutSvg("file:///a.png", 1440, 900, layout, { id: "cut-x", label: "Detalle: x" });
+  assert.ok(svg.includes(`viewBox="${cut.x} ${cut.y} ${cut.w} ${cut.h}"`), "cropped in capture pixels");
+  assert.match(svg, /<clipPath id="cut-x"><rect [^>]*rx="[\d.]+"\/><\/clipPath>/);
+  assert.equal((svg.match(/<image /g) ?? []).length, 1);
+  // A committed capture whose outline moved is not «unchanged».
+  const moved = image(600, 300, () => [255, 255, 255, 255]);
+  drawFocus(moved, { ...zone, y: 52 }, { color: FOCUS_COLOR, stroke: 4, pad: 0, radius: 10 });
+  assert.equal(sameFocusPixels(img, moved), false);
+  assert.equal(sameFocusPixels(img, img), true);
 });
 
 test("routePaths refuses a <Route> it cannot read", () => {
@@ -432,12 +506,12 @@ test("prerequisites: built on earlier ones, made on screen before every chapter 
   assert.match(prerequisiteErrors([{ id: "a", uses: ["x"] }], prereqs, prerequisiteClosure).join(), /unknown prerequisite x/);
 });
 
-test("groupInset: a wide control keeps a column-wide inset under its half-width capture (MAN-02)", () => {
-  // At full width this strip needs no inset of its own; in a column it does.
-  const inset = groupInset(1440, 900, { x: 56, y: 411, w: 460, h: 52 }, 85);
+test("groupInset: a wide control keeps a column-wide cut-out under its half-width capture (MAN-02)", () => {
+  // At full width this strip needs no cut-out of its own; in a column it does.
+  const inset = groupInset(1440, 900, focusZones(1440, 900, { x: 56, y: 411, w: 460, h: 52 }), 85);
   assert.equal(inset.mode, "below");
-  assert.equal(inset.insetMm, 85);
+  assert.ok(inset.insetMm > 80 && inset.insetMm <= 85, "about the column's width");
   assert.ok(inset.mag >= 2.5, "readable: at least 2.5× the capture");
   assert.ok(inset.crop.x >= 0 && inset.crop.x + inset.crop.w <= 1440);
-  assert.equal(groupInset(1440, 900, null, 85), null);
+  assert.equal(groupInset(1440, 900, [], 85), null);
 });

@@ -332,18 +332,21 @@ export function changedShare(a, b, tolerance = 8) {
  * Draws the manual's focus outline (MAN-02) into an RGBA image, in place: a
  * rounded rectangle `pad` px outside `rect` ({x, y, w, h} in image pixels),
  * `stroke` px wide, in one exact colour (pass it to encodePng's `reserve`).
- * Pure integer geometry, so the same rect always gives the same pixels.
+ * `rect` may be a list: the outline then goes around their union (no line
+ * where two of them overlap). Pure integer geometry, so the same rects always
+ * give the same pixels.
  */
 export function drawFocus(img, rect, { color = [242, 163, 60], stroke = 4, pad = 6, radius = 10 } = {}) {
   const { width, height, data } = img;
-  const x0 = Math.round(rect.x) - pad;
-  const y0 = Math.round(rect.y) - pad;
-  const x1 = Math.round(rect.x + rect.w) + pad;
-  const y1 = Math.round(rect.y + rect.h) + pad;
-  const r = Math.min(radius, Math.floor((x1 - x0) / 2), Math.floor((y1 - y0) / 2));
-  // Squared distance of (px, py) to the rounded rectangle's outline, as
-  // "inside the outer shape and outside the inner one".
-  const inside = (px, py, inset) => {
+  const shapes = (Array.isArray(rect) ? rect : [rect]).map((q) => {
+    const x0 = Math.round(q.x) - pad;
+    const y0 = Math.round(q.y) - pad;
+    const x1 = Math.round(q.x + q.w) + pad;
+    const y1 = Math.round(q.y + q.h) + pad;
+    return { x0, y0, x1, y1, r: Math.min(radius, Math.floor((x1 - x0) / 2), Math.floor((y1 - y0) / 2)) };
+  });
+  // Whether (px, py) is inside a rounded rectangle shrunk by `inset`.
+  const inside = ({ x0, y0, x1, y1, r }, px, py, inset) => {
     const ax = x0 + inset;
     const ay = y0 + inset;
     const bx = x1 - inset;
@@ -356,9 +359,11 @@ export function drawFocus(img, rect, { color = [242, 163, 60], stroke = 4, pad =
     const dy = py - cy;
     return dx * dx + dy * dy <= rr * rr;
   };
-  for (let py = Math.max(0, y0); py < Math.min(height, y1); py++) {
-    for (let px = Math.max(0, x0); px < Math.min(width, x1); px++) {
-      if (inside(px, py, 0) && !inside(px, py, stroke)) {
+  for (const box of shapes) {
+    for (let py = Math.max(0, box.y0); py < Math.min(height, box.y1); py++) {
+      for (let px = Math.max(0, box.x0); px < Math.min(width, box.x1); px++) {
+        // On the outline: inside this shape, inside no shape's inner part.
+        if (!inside(box, px, py, 0) || shapes.some((s) => inside(s, px, py, stroke))) continue;
         const i = (py * width + px) * 4;
         data[i] = color[0];
         data[i + 1] = color[1];

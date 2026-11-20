@@ -29,7 +29,7 @@ import { changedShare, decodePng, drawFocus, encodePng } from "./manual/png.mjs"
 import { escapeHtml, leftoverTable, markdownToHtml } from "./manual/markdown.mjs";
 import { AFTER_STEPS, keyboardAppendix, parseSource, pdfNamedDests, pdfPageCount } from "./manual/sources.mjs";
 import { printWithEdge, sweepProfiles } from "./manual/edge-print.mjs";
-import { focusLayout, FOCUS_COLOR, groupInset, insetStyle } from "./manual/focus.mjs";
+import { cutoutSvg, focusLayout, focusZones, FOCUS_COLOR, FOCUS_RADIUS, FOCUS_STROKE, groupInset, sameFocusPixels } from "./manual/focus.mjs";
 import { foreignNames } from "./manual/persona.mjs";
 
 const repoDir = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -82,20 +82,23 @@ function importImages(steps) {
     if (!s.image || s.keptFromBefore) continue;
     // Compared as it would be committed (palette PNG), so the quantisation
     // itself never counts as a change.
-    // A step about one control gets its outline drawn into the capture
-    // (MAN-02), in one exact colour the palette keeps as it is.
+    // A step about one control gets the outline of its zones (the control,
+    // or each focused element, with some quiet context: focus.mjs) drawn into
+    // the capture (MAN-02), in one exact colour the palette keeps as it is.
+    // The zones are kept in the step: the PDF's cut-out crops inside them.
     const pixels = decodePng(readFileSync(join(runDir, "img", s.image)));
-    if (s.focus) drawFocus(pixels, s.focus, { color: FOCUS_COLOR });
+    if (s.focus) {
+      s.zones = focusZones(pixels.width, pixels.height, s.focus, s.focusParts, pixels);
+      drawFocus(pixels, s.zones, { color: FOCUS_COLOR, stroke: FOCUS_STROKE, pad: 0, radius: FOCUS_RADIUS });
+    }
     const encoded = encodePng(pixels, { reserve: [FOCUS_COLOR] });
     const fresh = decodePng(encoded);
     const target = join(imgDir, s.image);
     if (existsSync(target)) {
       const old = decodePng(readFileSync(target));
-      // An outline around a small control is below the threshold: the committed
-      // image must already have it where this run draws it.
-      const ring = s.focus ? (Math.round(s.focus.y) - 5) * old.width + Math.round(s.focus.x + s.focus.w / 2) : -1;
-      const hasOutline = !s.focus || FOCUS_COLOR.every((v, c) => old.data[ring * 4 + c] === v);
-      if (hasOutline && changedShare(old, fresh) <= THRESHOLD) {
+      // An outline is below the threshold: the committed image must have it
+      // exactly where this run draws it (and nowhere else).
+      if (sameFocusPixels(old, fresh) && changedShare(old, fresh) <= THRESHOLD) {
         kept++;
         continue;
       }
@@ -141,7 +144,7 @@ function loadSteps() {
   const order = new Map(CHAPTERS.map((c) => [c.id, c.number]));
   const clean = steps
     .filter((s) => s.status !== "failed")
-    .map(({ chapter, n, id, title, caption, covers, image, viewport, status, reason, focus, group }) => ({
+    .map(({ chapter, n, id, title, caption, covers, image, viewport, status, reason, focus, zones, group }) => ({
       chapter,
       n,
       id,
@@ -153,6 +156,7 @@ function loadSteps() {
       status,
       ...(reason ? { reason } : {}),
       ...(focus ? { focus } : {}),
+      ...(zones?.length ? { zones } : {}),
       ...(group ? { group } : {}),
     }))
     .sort((a, b) => order.get(a.chapter) - order.get(b.chapter) || a.n - b.n);
@@ -347,16 +351,18 @@ p, li { orphans: 3; widows: 3; }
 .focus { display: flex; gap: 3mm; align-items: flex-start; justify-content: center; }
 .focus.below { flex-direction: column; align-items: center; gap: 2.5mm; }
 .focus .shot { max-width: none; margin: 0; }
-.inset { flex: none; border: 0.6mm solid var(--color-accent); border-radius: 2mm; background-repeat: no-repeat;
-  box-shadow: 0 1mm 2.5mm rgba(16,24,40,.14); }
-.inset-wrap { display: flex; flex-direction: column; gap: 1mm; }
-.inset-label { font-size: 8pt; font-weight: 600; color: var(--color-navy-500); text-transform: uppercase; letter-spacing: 0.4pt; }
+/* The «Detalle» cut-out: an SVG with its one frame inside (focus.mjs); no
+   CSS border or shadow, which would not follow a cut-out of two pieces. */
+.cutout-box { flex: none; line-height: 0; }
+.cutout { display: block; }
+.inset-wrap { flex: none; display: flex; flex-direction: column; gap: 1mm; align-items: flex-start; }
+.inset-label { font-size: 8pt; line-height: 3.5mm; height: 3.5mm; font-weight: 600; color: var(--color-navy-500); text-transform: uppercase; letter-spacing: 0.4pt; }
 .group { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; break-inside: avoid; margin: 0 0 7mm; }
 .group .step { margin: 0; }
 .group .shot { max-width: 100%; }
 .group .focus.below { gap: 1.5mm; }
 .group .focus .shot { width: 100% !important; box-sizing: border-box; }
-.group .inset-wrap { width: 100%; }
+.group .inset-wrap { align-self: center; }
 .endblock { break-inside: avoid; }
 .note { background: var(--color-navy-100); border-left: 1.2mm solid var(--color-navy-500); padding: 2mm 3mm; border-radius: 1mm; margin: 2mm 0; }
 .pending { background: #fdf3e2; border-left: 1.2mm solid var(--color-accent); padding: 2mm 3mm; border-radius: 1mm; margin: 2mm 0; }
@@ -373,9 +379,10 @@ function htmlDocument(body) {
 <style>${fontFaces()}\n${tokens()}\n${STYLE}</style></head><body>${body}</body></html>`;
 }
 
-/** Rewrites a relative Markdown link of a source (from docs/manual/) for the PDF. */
+/** Rewrites a relative Markdown link of a source (from docs/manual/) for the
+ *  PDF (a `file:` URL is a capture: the cut-outs' SVG `<image href>`). */
 function absoluteLinks(html) {
-  return html.replace(/href="(?!https?:|#|mailto:)([^"]+)"/g, (_, href) => {
+  return html.replace(/href="(?!https?:|#|mailto:|file:)([^"]+)"/g, (_, href) => {
     const target = relative(repoDir, join(manualDir, href)).replaceAll("\\", "/");
     return `href="${REPO_URL}/${target}"`;
   });
@@ -389,8 +396,8 @@ function pngSize(file) {
 
 const stepAnchor = (c, s) => `paso-${c.id}-${s.id}`;
 
-/** One column of a `.group`: the text width minus the 5 mm gap, halved, minus
- *  the inset's own border. */
+/** One column of a `.group`: the text width minus the 5 mm gap, halved, with
+ *  a little room to spare. */
 const GROUP_COLUMN_MM = 85;
 
 function stepHtml(c, s, src, { grouped = false } = {}) {
@@ -401,13 +408,18 @@ function stepHtml(c, s, src, { grouped = false } = {}) {
     const mobile = s.viewport?.width && s.viewport.width < 768;
     const { w, h } = pngSize(file);
     const alt = escapeHtml(s.title);
-    // A step about one control of a big screen: the capture (its outline is
-    // drawn into the PNG) plus a magnified inset cropped from the same file.
+    // A step about one control of a big screen: the capture, with its zones
+    // outlined in the PNG, then the «Detalle» cut-out: the same file seen
+    // through a clip inside that outline, with one frame of its own
+    // (focus.mjs). Only with the zones the outline was drawn around: without
+    // them (an old step) a crop could catch the outline: a second line.
     const layout =
-      !mobile && w >= 1440 && s.focus ? (grouped ? groupInset(w, h, s.focus, GROUP_COLUMN_MM) : focusLayout(w, h, s.focus)) : null;
+      !mobile && w >= 1440 && s.zones ? (grouped ? groupInset(w, h, s.zones, GROUP_COLUMN_MM) : focusLayout(w, h, s.zones)) : null;
     if (layout) {
       const url = fileUrl(file);
-      const inset = `<div class="inset-wrap"><span class="inset-label">Detalle</span><div class="inset" role="img" aria-label="Detalle: ${alt}" style="background-image:url(&quot;${url}&quot;);${insetStyle(w, h, layout)}"></div></div>`;
+      const svg = cutoutSvg(escapeHtml(url), w, h, layout, { id: `cut-${c.id}-${s.id}`, label: `Detalle: ${alt}` });
+      const top = layout.topMm ? ` style="margin-top:${layout.topMm}mm"` : "";
+      const inset = `<div class="inset-wrap"${top}><span class="inset-label">Detalle</span><div class="cutout-box">${svg}</div></div>`;
       parts.push(`<div class="focus ${layout.mode}"><img class="shot" style="width:${layout.imageMm}mm" src="${url}" alt="${alt}">${inset}</div>`);
     } else {
       // An element capture (a dialog) keeps its proportion to the 1440 px
