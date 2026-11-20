@@ -39,9 +39,16 @@
   color: var(--color-text-muted);
 }
 
+/* «Sin defectos todavía» on a card, as the list (FIX-37): over the background
+   image it was muted text on the photo. */
 .df-empty {
-  padding: 32px 0;
+  margin: 0;
+  padding: 32px 16px;
+  color: var(--color-text-secondary);
   text-align: center;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
 .df-nomatch {
@@ -115,6 +122,12 @@
   flex-direction: column;
   gap: 6px;
   min-width: 0;
+}
+
+/* A phone card is a row of the list's surface, not a card of its own: no
+   second frame from «Sombra en las tarjetas» (FIX-37). */
+:where(:root[data-card-shadow]) .df-mcard {
+  box-shadow: none;
 }
 
 .df-mcard__top {
@@ -280,6 +293,24 @@
   min-width: 0;
 }
 
+/* «← Volver · Nuevo defecto · Guardar» on a card, as the sections below
+   (FIX-37): over the background image the header was drawn on the photo. It
+   wraps instead of overflowing on a phone. */
+.df-editor__top {
+  flex-wrap: wrap;
+  row-gap: 8px;
+  padding: 10px 16px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.df-editor__top > h2 {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .df-form {
   gap: 20px;
 }
@@ -296,6 +327,12 @@
 
 .df-section > .ui-btn {
   align-self: flex-start;
+}
+
+.df-section__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .df-section__title {

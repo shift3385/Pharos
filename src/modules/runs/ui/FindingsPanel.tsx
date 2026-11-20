@@ -94,7 +94,7 @@ export function FindingsPanel({
       </div>
 
       {groups.length === 0 ? (
-        <p className="tp-field__hint">{t("findings.empty")}</p>
+        <p className="tp-field__hint rn-note">{t("findings.empty")}</p>
       ) : (
         <div className="fd__groups">
           {groups.map((g, i) => (

@@ -70,22 +70,93 @@
   flex: 1 1 100%;
 }
 
+/* «← Ciclos» on its own small surface (FIX-37): over the background image the
+   bare link was grey text on the photo. Same pill as «← Ejecuciones». */
 .cy-back {
   display: inline-flex;
   align-items: center;
   align-self: flex-start;
   gap: 6px;
-  padding: 4px 0;
+  min-height: 32px;
+  padding: 4px 12px 4px 10px;
   font: inherit;
   font-size: var(--fs-caption);
   color: var(--color-text-secondary);
-  background: none;
-  border: 0;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
   cursor: pointer;
 }
 
 .cy-back:hover {
   color: var(--color-text-primary);
+}
+
+/* ---- Surfaces (FIX-37) ----
+   Every region of the cycle screens sits on a card, as «Proyectos» (.pj-all):
+   the page title, filter and list; the cycle's header; its tabs and lists. */
+.cy-sheet {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.cy-sheet--head {
+  gap: 8px;
+  padding: clamp(14px, 2cqi, 20px);
+  overflow: visible;
+}
+
+.cy-sheet__bar {
+  padding: 14px 16px 10px;
+}
+
+.cy-sheet__heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cy-sheet__filters {
+  max-width: 100%;
+  padding: 0 16px 12px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cy-sheet__tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cy-sheet__tabs > .tabs {
+  min-width: 0;
+}
+
+.cy-sheet .cy-toolbar {
+  padding: 12px 16px 0;
+}
+
+.cy-sheet .cy-empty {
+  margin: 12px 16px;
+}
+
+/* The card carries the shadow of «Sombra en las tarjetas»; the panel and the
+   phone rows inside it are not cards of their own. */
+:where(:root[data-card-shadow]) .cy-sheet {
+  box-shadow: var(--shadow-2);
+}
+
+:where(:root[data-card-shadow]) :is(.cy-panel, .cy-mcard) {
+  box-shadow: none;
 }
 
 .cy-detail__titlerow {
@@ -101,8 +172,7 @@
 }
 
 .cy-detail__meta,
-.cy-detail__desc,
-.cy-note {
+.cy-detail__desc {
   margin: 4px 0 0;
   font-size: var(--fs-caption);
   color: var(--color-text-secondary);
@@ -111,10 +181,6 @@
 .cy-detail__desc {
   color: var(--color-text-primary);
   white-space: pre-wrap;
-}
-
-.cy-note {
-  margin: 0;
 }
 
 .cy-empty {

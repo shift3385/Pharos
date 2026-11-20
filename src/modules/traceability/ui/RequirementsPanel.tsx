@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Pencil, Sparkles, Trash2 } from "lucide-react";
 import { DataTable, type DataColumn } from "@shared/ui/DataTable";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { isPendingReview } from "@modules/ai";
 import { PriorityFlag } from "@shared/ui/PriorityFlag";
@@ -114,9 +115,12 @@ export function RequirementsPanel({
 
   return (
     <section className="tz-panel" aria-labelledby="tz-req-title">
-      <div className="tz-panel__head">
+      <div className="tz-panel__head tz-panel__head--tip">
         <h3 id="tz-req-title">{t("traceability.requirement.listTitle")}</h3>
-        <p className="tr__subtitle">{t("traceability.requirement.listSubtitle")}</p>
+        {/* Behind a «?» (FIX-37), not a standing line. */}
+        <InfoTip id="tz-req-help" label={t("traceability.requirement.listTitle")}>
+          {t("traceability.requirement.listSubtitle")}
+        </InfoTip>
       </div>
       <DataTable
         rows={requirements}
