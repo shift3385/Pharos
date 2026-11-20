@@ -431,7 +431,9 @@ describe("run screen", () => {
     await user.click(await screen.findByTestId("run-close"));
     const dialog = await screen.findByRole("dialog", { name: "Cerrar el run" });
     expect(within(dialog).getByText("Queda 1 ejecución sin hacer.")).toBeInTheDocument();
-    await user.click(within(dialog).getByLabelText("Cancelado"));
+    // «Cerrar como» is the segmented control: a named radio group (FIX-37).
+    const closeAs = within(dialog).getByRole("radiogroup", { name: "Cerrar como" });
+    await user.click(within(closeAs).getByRole("radio", { name: "Cancelado" }));
     await user.click(within(dialog).getByTestId("run-close-confirm"));
     // Cancelling always discards the drafts.
     await waitFor(() =>

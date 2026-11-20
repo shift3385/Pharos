@@ -12,6 +12,7 @@ import { usePopover } from "@shared/ui/usePopover";
 import { useToast } from "@shared/ui/Toast";
 import { useConfirm } from "@shared/ui/useConfirm";
 import { FormSkeleton } from "@shared/ui/Skeleton";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { LoadError } from "@shared/ui/LoadError";
 import { cycleApi } from "../api/cycleApi";
 import {
@@ -440,6 +441,9 @@ export function CycleDetail({
         <ArrowLeft size={16} aria-hidden="true" />
         {t("cycles.back")}
       </button>
+      {/* The header on its own card (FIX-37): over the background image the
+          title, meta line and actions were drawn on the photo. */}
+      <div className="cy-sheet cy-sheet--head">
       <div className="cy-page__head">
         <div className="cy-detail__heading">
           <div className="cy-detail__titlerow">
@@ -525,7 +529,9 @@ export function CycleDetail({
               {t("cycles.clone")}
             </MenuItem>
             <MenuSeparator />
-            <MenuItem onSelect={() => setDialog("delete")}>{t("cycles.delete")}</MenuItem>
+            <MenuItem tone="danger" onSelect={() => setDialog("delete")}>
+              {t("cycles.delete")}
+            </MenuItem>
           </Menu>
         </div>
       </div>
@@ -534,6 +540,7 @@ export function CycleDetail({
           {t("cycles.execute.goneHint", { keys: gone.join(", ") })}
         </p>
       )}
+      </div>
       {progress && (
         <div className="cy-summary">
           <ProgressBar summary={progress.summary} />
@@ -547,6 +554,9 @@ export function CycleDetail({
           </ul>
         </div>
       )}
+      {/* Tabs and their list on one card (FIX-37). */}
+      <div className="cy-sheet">
+      <div className="cy-sheet__tabs">
       <Tabs
         label={t("cycles.tabsLabel")}
         variant="underline"
@@ -558,6 +568,12 @@ export function CycleDetail({
           { id: "runs", label: t("cycles.tab.runs"), badge: { count: runs.length, tone: "muted" } },
         ]}
       />
+      {tab === "runs" && (
+        <InfoTip id="cy-runs-help" label={t("cycles.tab.runs")}>
+          {t("cycles.runs.hint")}
+        </InfoTip>
+      )}
+      </div>
       {tab === "items" ? (
         <TabPanel id="items" idPrefix="cy-" className="cy-panel">
           <div className="cy-toolbar">
@@ -571,7 +587,6 @@ export function CycleDetail({
             </button>
           </div>
           <DataTable
-            className="dt-surface"
             rows={items}
             columns={itemColumns}
             getRowId={(i) => i.id}
@@ -618,9 +633,7 @@ export function CycleDetail({
         </TabPanel>
       ) : (
         <TabPanel id="runs" idPrefix="cy-" className="cy-panel">
-          <p className="cy-note">{t("cycles.runs.hint")}</p>
           <DataTable
-            className="dt-surface"
             rows={runs}
             columns={runColumns}
             getRowId={(r) => r.id}
@@ -629,6 +642,7 @@ export function CycleDetail({
           />
         </TabPanel>
       )}
+      </div>
 
       {dialog === "edit" && (
         <CycleDialog

@@ -30,7 +30,8 @@
 
 .gate-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 88px 88px 132px;
+  /* The last column fits «Cumple | No cumple» on one line (FIX-37). */
+  grid-template-columns: minmax(0, 1fr) 80px 80px 156px;
   gap: var(--space-2);
   align-items: center;
   padding: var(--space-2) 0;
@@ -74,6 +75,8 @@
 
 .gate-mark button {
   padding: 2px var(--space-2);
+  font-family: inherit;
+  white-space: nowrap;
   font-size: var(--fs-metadata);
   color: var(--color-text-primary);
   background: var(--color-surface-1);
@@ -92,6 +95,25 @@
   padding: var(--space-2) var(--space-3) var(--space-3);
   background: color-mix(in srgb, var(--color-error) 6%, var(--color-surface-1));
   border-bottom: 1px solid var(--color-border);
+}
+
+/* The justification in the app's field style (FIX-37): the bare textarea
+   took the browser's monospace font and no padding. */
+.gate-just textarea {
+  width: 100%;
+  padding-inline: var(--space-3);
+  font-family: inherit;
+  font-size: var(--fs-ui);
+  color: var(--color-text-primary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+}
+
+.gate-just textarea:focus {
+  outline: none;
+  border-color: var(--color-navy-500);
+  box-shadow: 0 0 0 2px var(--color-focus);
 }
 
 .gate-just__label {

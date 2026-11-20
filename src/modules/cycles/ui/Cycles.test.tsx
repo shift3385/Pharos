@@ -188,6 +188,12 @@ describe("Ciclos", () => {
     expect(within(table).getByRole("button", { name: "CYC-001" })).toBeInTheDocument();
     expect(table).toHaveTextContent("Activo");
     expect(table).toHaveTextContent("2/4 · 25 %");
+    // FIX-37: title, filter and table share one card; the subtitle is behind a «?».
+    const title = screen.getByRole("heading", { name: "Ciclos de prueba" });
+    expect(title.closest(".cy-sheet")).toContainElement(table);
+    expect(screen.getByRole("button", { name: "Más información: Ciclos de prueba" })).toHaveAccessibleDescription(
+      i18n.t("cycles.subtitle"),
+    );
     await expectNoAxeViolations();
     await userEvent.click(screen.getByRole("button", { name: "Nuevo ciclo" }));
     const dialog = screen.getByRole("dialog", { name: "Nuevo ciclo" });
