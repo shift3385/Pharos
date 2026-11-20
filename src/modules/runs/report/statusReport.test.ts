@@ -7,7 +7,7 @@ import { evaluateExitCriteria, criterionValue } from "../model/exitCriteria";
 import { CLOSED, SUMMARY } from "./__fixtures__/summary";
 import { buildReportXlsx, type ReportLabels } from "./reportXlsx";
 import { reportDocDefinition } from "./reportPdf";
-import { autoSummary, buildStatusReport, reportFileName } from "./statusReport";
+import { autoSummary, buildStatusReport, pct, reportFileName } from "./statusReport";
 
 const t = (k: string, o?: Record<string, unknown>) => i18n.t(k, o);
 const ctx = {
@@ -52,16 +52,16 @@ describe("status report model (EJE-03)", () => {
   it("builds the 29119-3 sections from the derivation", () => {
     const r = buildStatusReport(SUMMARY, ctx, t);
     expect(r.identification).toContainEqual(["Ejecuciones incluidas", "RUN-002, RUN-001"]);
-    expect(r.progress).toContainEqual(["% ejecutado", "75.0 %"]);
+    expect(r.progress).toContainEqual(["% ejecutado", "75 %"]);
     expect(r.progress).toContainEqual(["Tasa de éxito", "33.3 %"]);
     expect(r.results.rows).toContainEqual(["Por confirmar", "1"]);
     expect(r.defects.rows[0]).toEqual(["Crítica", "1", "1"]);
     expect(r.defectsNote).toBe("a fecha de hoy");
-    expect(r.coverageLine).toBe("Cobertura de requisitos: 2 de 2 (100.0 %).");
+    expect(r.coverageLine).toBe("Cobertura de requisitos: 2 de 2 (100 %).");
     // TRZ-04: the project's bands and the coverage weighted by risk.
     expect(r.bandsLine).toBe("Bandas del proyecto: bajo 1–4, medio 5–12, alto 13–25 (probabilidad × impacto).");
     expect(r.weightedLine).toBe(
-      "Cobertura ponderada por riesgo: 100.0 % (aprobada: 16.7 %). Cada requisito pesa su nivel de riesgo; todos están evaluados.",
+      "Cobertura ponderada por riesgo: 100 % (aprobada: 16.7 %). Cada requisito pesa su nivel de riesgo; todos están evaluados.",
     );
     expect(r.weightedRows).toEqual([
       ["Cobertura ponderada", 1],
@@ -94,7 +94,7 @@ describe("status report model (EJE-03)", () => {
 
   it("prefills the summary from the numbers", () => {
     expect(autoSummary(SUMMARY, t)).toBe(
-      "Se han ejecutado 3 de 4 casos (75.0 %), con una tasa de éxito de 33.3 %. Hay 1 defectos abiertos, 1 críticos. Criterios de salida: 1 de 3 cumplidos.",
+      "Se han ejecutado 3 de 4 casos (75 %), con una tasa de éxito de 33.3 %. Hay 1 defectos abiertos, 1 críticos. Criterios de salida: 1 de 3 cumplidos.",
     );
   });
 
@@ -217,5 +217,11 @@ describe("execution API helpers", () => {
     expect(from).toBe(localDayStart("2026-11-01"));
     expect(to).toBe(new Date(2026, 10, 6).getTime());
     expect(periodOf(null, null)).toEqual({ from: null, to: null });
+  });
+});
+
+describe("pct", () => {
+  it("shows a decimal only when there is one (no «0.0 %»)", () => {
+    expect([pct(0), pct(1), pct(1 / 3), pct(0.5), pct(null)]).toEqual(["0 %", "100 %", "33.3 %", "50 %", "—"]);
   });
 });
