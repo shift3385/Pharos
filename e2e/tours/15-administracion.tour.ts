@@ -2,8 +2,8 @@
 // templates (download, import, delete), general settings (theme, language,
 // background, download folder, trash), sync (now, automatic, the silent
 // field-by-field merge, a conflict, its notification and the merge panel),
-// security (recovery key), diagnostics, the audit, the AI key in the web and
-// the workspace rules. Example: Liomar, QA and Test Manager of his own
+// security (recovery key), diagnostics, the audit and the AI key in the web
+// (the workspace rules are in chapter 21). Example: Liomar, QA and Test Manager of his own
 // workspace, sets up his Pharos.
 //
 // The last block is for whoever administers the server: the app signs in as
@@ -32,12 +32,14 @@ import {
   dialog,
   es,
   field,
+  hasText,
   PROJECT_A,
   menuItem,
   openAdminTab,
   openProject,
   openSection,
   repoDir,
+  scrollToTop,
   tf,
   waitForText,
   waitForToast,
@@ -159,6 +161,8 @@ chapter("administracion", () => {
       await chooseFile('input[type="file"][accept=".xlsx"]', newestDownload(".xlsx"));
       await expect(dialog()).toBeDisplayed();
       await (await field(es.templates.form.name, D)).setValue("Plan de pruebas · Pharos (propia)");
+      await (await field(es.templates.form.description, D)).setValue("El plan de una versión de Pharos, con el alcance por módulo y los criterios de salida del equipo.");
+      await (await field(es.templates.form.usagePrompt, D)).setValue("Úsala para el plan de pruebas de una versión de Pharos: un apartado por módulo y los criterios de salida de la regresión.");
     },
   });
 
@@ -223,14 +227,24 @@ chapter("administracion", () => {
   step("papelera", {
     title: "Papelera",
     caption:
-      "Al final de «General», la «Papelera» reúne lo que has borrado en este equipo y aún no se ha eliminado para siempre: el número de elementos, su desglose por tipo (proyectos, casos, requisitos, defectos…) y, en cada fila, cuándo se borró y en cuántos días se eliminará según la retención. Marca filas para «Restaurar» (vuelven a su sitio con su clave y su historial, y se sincronizan) o «Eliminar para siempre»; un proyecto vuelve con lo que se borró con él. «Vaciar papelera» pide confirmación y conserva lo que tiene cambios sin sincronizar. En la web no se guarda lo borrado: la papelera está en la app de escritorio. Aquí están la plantilla que Liomar acaba de eliminar y el requisito REQ-007 que borró en el capítulo 7.",
+      "Al final de «General», la «Papelera» reúne lo que has borrado en este equipo y aún no se ha eliminado para siempre: el número de elementos, su desglose por tipo (proyectos, casos, requisitos, defectos…) y, en cada fila, cuándo se borró y en cuántos días se eliminará según la retención. Marca filas para «Restaurar» (vuelven a su sitio con su clave y su historial, y se sincronizan) o «Eliminar para siempre»; un proyecto vuelve con lo que se borró con él. «Vaciar papelera» pide confirmación y conserva lo que tiene cambios sin sincronizar. En la web no se guarda lo borrado: la papelera está en la app de escritorio. En la lista están, entre otros, el requisito REQ-007, que Liomar borró en el capítulo 7, y la plantilla que acaba de eliminar.",
     covers: ["dialogs:src/modules/admin/ui/TrashSection.tsx"],
     focus: '[data-testid="admin-trash"]',
     run: async () => {
       await openAdminTab("general");
-      await byTestId("admin-trash").scrollIntoView({ block: "center" });
       await expect(byTestId("trash-table")).toBeDisplayed();
       await waitForText("REQ-007");
+      // The card on top and its list scrolled to the end: REQ-007 and the
+      // template, above the save bar.
+      await scrollToTop('[data-testid="admin-trash"]');
+      await browser.execute(() => {
+        const card = document.querySelector('[data-testid="admin-trash"]');
+        for (const el of card ? Array.from(card.querySelectorAll<HTMLElement>("*")) : [])
+          if (el.scrollHeight > el.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowY)) el.scrollTop = el.scrollHeight;
+      });
+      for (const name of ["Plan de pruebas · Pharos (propia)", "REQ-007"])
+        if (!(await $('[data-testid="trash-table"]').$(hasText(name)).isDisplayed({ withinViewport: true })))
+          throw new Error(`«${name}» is not in view in the trash`);
       await browser.action("pointer").move({ origin: "viewport", x: 700, y: 40 }).perform();
     },
     after: async () => {
@@ -245,7 +259,7 @@ chapter("administracion", () => {
   step("sincronizacion", {
     title: "Sincronización",
     caption:
-      "Pharos trabaja sin conexión: guarda todo en este equipo y lo sincroniza con el servidor al iniciar sesión, al recuperar la conexión, cada pocos minutos si lo activas y cuando pulsas «Sincronizar ahora» (también al pie del menú lateral). Esta pestaña muestra el estado, la cuenta, los cambios pendientes de enviar y si hay conflictos que revisar. «Sincronizar ahora» envía y recibe al momento y avisa de cuántos cambios fueron (↑) y vinieron (↓). Una vez al día, después de sincronizar, Pharos borra de su registro interno los cambios que el servidor ya tiene, para que la base de datos no crezca sin necesidad: tus datos, su historial y la auditoría siguen igual.",
+      "Pharos trabaja sin conexión: guarda todo en este equipo y lo sincroniza con el servidor al iniciar sesión, al recuperar la conexión, cada pocos minutos si lo activas y cuando pulsas «Sincronizar ahora» (también al pie del menú lateral). Esta pestaña muestra el estado, la cuenta, los cambios pendientes de enviar (si los hay) y si hay conflictos que revisar. «Sincronizar ahora» envía y recibe al momento y avisa de cuántos cambios fueron (↑) y vinieron (↓). Una vez al día, después de sincronizar, Pharos borra de su registro interno los cambios que el servidor ya tiene, para que la base de datos no crezca sin necesidad: tus datos, su historial y la auditoría siguen igual.",
     covers: ["admin:sync", "action:sync-now"],
     run: async () => {
       await openAdminTab("sync");
@@ -278,7 +292,8 @@ chapter("administracion", () => {
     title: "Cambios en campos distintos: se combinan solos",
     caption:
       "Si el mismo elemento se cambia en dos sitios antes de sincronizar, Pharos lo combina campo a campo. En este ejemplo, Liomar completa desde su portátil la descripción del requisito REQ-006 («Si cambian el mismo campo, Pharos pregunta cuál queda.») y, en este equipo, sin sincronizar entre medias, su título («…con el servidor»). Al sincronizar, como tocó campos distintos, Pharos se queda con los dos cambios sin preguntar: el requisito tiene el título nuevo y la descripción del portátil. Un aviso lo dice («Se combinaron tus cambios con los hechos a la vez en otro equipo o por otra persona en 1 elemento…»), y el elemento queda en «Auditoría» como «Conflicto resuelto», con «Se quedó: Combinado».",
-    shot: { element: D },
+    toast: true,
+    focus: [".toast-stack .toast:last-child", `button.tz-open*=${SYNC_REQ.title}`],
     run: async () => {
       // The other device: Liomar's laptop, through the tour API.
       await editOnOtherDevice(
@@ -291,6 +306,10 @@ chapter("administracion", () => {
       await retitleRequirement(`${SYNC_REQ.title} con el servidor`);
       await clickButton(es.sync.now);
       await waitForToast(es.sync.autoMerged_one.split("{{")[0], 30_000);
+      // The picture: the notice over the list, with REQ-006's new title.
+      await expect($(`button.tz-open*=${SYNC_REQ.title} con el servidor`)).toBeDisplayed();
+    },
+    after: async () => {
       // Both changes are there.
       await openRequirement(SYNC_REQ.title);
       await expect(await field(es.traceability.requirement.title, D)).toHaveValue(`${SYNC_REQ.title} con el servidor`);
@@ -370,11 +389,23 @@ chapter("administracion", () => {
   step("seguridad", {
     title: "Seguridad · clave de recuperación",
     caption:
-      "Los datos de este equipo (el archivo pharos.db y la carpeta evidence) están cifrados y su clave vive en el almacén de credenciales de Windows. «Mostrar clave de recuperación» la enseña tras pedir confirmación: con esa clave y una copia de tus datos puedes recuperarlos en otro equipo si este falla. Guárdala ahora, no cuando la necesites.",
-    covers: ["admin:security", "dialogs:src/modules/profile/ui/RecoveryKeySection.tsx"],
-    shot: { element: D },
+      "Los datos de este equipo (el archivo pharos.db y la carpeta evidence) están cifrados y su clave vive en el almacén de credenciales de Windows. «Mostrar clave de recuperación» la enseña: con esa clave y una copia de tus datos puedes recuperarlos en otro equipo si este falla. Guárdala ahora, no cuando la necesites.",
+    covers: ["admin:security"],
+    focus: `button=${es.recoveryKey.show}`,
     run: async () => {
       await openAdminTab("security");
+      await expect($(`button=${es.recoveryKey.show}`)).toBeDisplayed();
+      await scrollAllToTop();
+      await browser.action("pointer").move({ origin: "viewport", x: 700, y: 40 }).perform();
+    },
+  });
+
+  step("clave-confirmar", {
+    title: "Antes de mostrarla",
+    caption: "«Mostrar clave de recuperación» pide confirmación antes de enseñar la clave: muéstrala solo cuando nadie más vea tu pantalla.",
+    covers: ["dialogs:src/modules/profile/ui/RecoveryKeySection.tsx"],
+    shot: false,
+    run: async () => {
       await clickButton(es.recoveryKey.show);
       await expect(dialog()).toBeDisplayed();
     },
@@ -383,7 +414,7 @@ chapter("administracion", () => {
   step("clave-mostrada", {
     title: "Guarda la clave",
     caption:
-      "La clave aparece en grupos de caracteres (en este manual, difuminada). Cópiala a un gestor de contraseñas o escríbela en papel y guárdala en un lugar seguro; marca «Ya la he guardado» y cierra. Quien tenga la clave y una copia de tus datos puede leerlos: no la compartas.",
+      "Al confirmar, la clave aparece en grupos de caracteres (en este manual, difuminada). Cópiala a un gestor de contraseñas o escríbela en papel y guárdala en un lugar seguro; marca «Ya la he guardado» y cierra. Quien tenga la clave y una copia de tus datos puede leerlos: no la compartas.",
     covers: ["dialogs:src/modules/profile/ui/RecoveryKeySection.tsx"],
     shot: { element: D },
     mask: ['[data-testid="recovery-key"]'],
@@ -528,6 +559,8 @@ chapter("administracion", () => {
       await waitForToast(W.toast.on.split("{{")[0]);
       await expect(webSwitch()).toHaveAttribute("aria-checked", "true");
       await waitForText(W.facts.inWeb);
+      // The whole card above the save bar.
+      await scrollToTop('[data-testid="ai-web-access"]', 120);
     },
   });
 
@@ -586,21 +619,6 @@ chapter("administracion", () => {
         raw.onlineModels = { ...(raw.onlineModels ?? {}), gemini: "gemini-2.0-flash" };
         localStorage.setItem("pharos.ai.config", JSON.stringify(raw));
       });
-    },
-  });
-
-  step("reglas-workspace", {
-    title: "Reglas: aprobación independiente",
-    caption:
-      "«Miembros y roles», en el selector de workspace, tiene la sección «Reglas». «Aprobación independiente» decide quién aprueba planes y casos: activada, quien tiene el rol (Test Manager para planes; Test Manager o Test Analyst para casos) y no es el autor; desactivada, cualquiera que pueda editar, también el autor, y queda como aprobación propia. Solo un Test Manager la cambia, y apagarla pide confirmación. En el workspace Personal está siempre desactivada, porque trabajas solo: el interruptor se ve, pero no se puede activar. En un workspace compartido, lo normal es tenerla activada (capítulo 21).",
-    covers: ["action:workspace-rules"],
-    focus: '[data-testid="workspace-rules"]',
-    run: async () => {
-      await byTestId("workspace-switcher").waitForDisplayed({ timeout: 30_000 });
-      await byTestId("workspace-switcher").click();
-      await byTestId("workspace-members").click();
-      await expect(byTestId("workspace-rules")).toBeDisplayed();
-      await expect(byTestId("workspace-independent-approval")).toBeDisabled();
     },
   });
 

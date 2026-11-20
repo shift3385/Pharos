@@ -12,11 +12,15 @@
 /** The release under test. */
 export const RELEASE = { version: "0.6.0", build: "0.6.0-beta.1", environment: "staging" };
 
-/** The two projects of chapter 4 (prefixes set in chapter 14). */
+/** The two projects of chapter 4. Liomar shortens the prefix Pharos suggests
+ *  for «Pharos» («PHA-») to «PH-» when he creates it; «API-» is the one
+ *  suggested for the second. */
 export const PROJECT_A = { name: "Pharos", prefix: "PH", suggestedPrefix: "PHA" };
 export const PROJECT_B = { name: "API de sincronización", prefix: "API" };
-/** The project chapter 4 creates and deletes (never a prerequisite). */
-export const TEMP_PROJECT = "Proyecto de prueba";
+/** The project chapter 4 creates from the settings of «Pharos» and deletes
+ *  (never a prerequisite): the next version, made too early. */
+/** No «Pharos» in its name: the tours find «Pharos» by a partial match. */
+export const TEMP_PROJECT = { name: "Versión 0.7.0", prefix: "V07" };
 
 /** Custom fields of chapter 14 (`fieldKey` as the app derives it from the
  *  label: keyFromLabel in src/modules/custom-fields/model/validate.ts). */
@@ -30,7 +34,7 @@ export const CUSTOM_FIELDS = {
  *  made and archived on screen; it is not a prerequisite). */
 export const CONFIGURATIONS = [
   { name: "Chrome · Windows 11", attributes: { browser: "Chrome", os: "Windows 11", device: "Escritorio", locale: "es-ES" }, matchLabels: ["chromium", "Desktop Chrome"] },
-  { name: "Edge · Windows 11", attributes: { browser: "Edge" }, matchLabels: ["msedge"] },
+  { name: "Edge · Windows 11", attributes: { browser: "Edge", os: "Windows 11", device: "Escritorio", locale: "es-ES" }, matchLabels: ["msedge"] },
 ];
 
 /** Requirements of chapter 7: REQ-001 typed by hand, the rest from
@@ -46,11 +50,11 @@ export const REQUIREMENTS: { key: string; title: string; description: string; pr
   },
   { key: "REQ-002", title: "Crear un proyecto con su prefijo", description: "Quien prueba crea un proyecto y elige el prefijo con el que se numeran sus casos.", priority: "Alta" },
   { key: "REQ-003", title: "Guardar el plan con historial de revisiones", description: "Cada guardado del plan de pruebas crea una revisión que se puede consultar y restaurar.", priority: "Media" },
-  { key: "REQ-004", title: "Importar resultados JUnit", description: "Un informe JUnit se importa como run y vincula cada test a su caso por la propiedad test_id.", priority: "Alta" },
+  { key: "REQ-004", title: "Importar resultados JUnit", description: "Un informe JUnit se importa como ejecución y vincula cada test a su caso por la propiedad test_id.", priority: "Alta" },
   { key: "REQ-005", title: "Exportar la matriz de trazabilidad a .xlsx", description: "La matriz se exporta con requisitos, casos, estados y defectos.", priority: "Media" },
   { key: "REQ-006", title: "Trabajar sin conexión y sincronizar", description: "Los cambios hechos sin conexión se envían al servidor cuando vuelve la conexión; si dos personas cambian campos distintos, se combinan sin preguntar.", priority: "Alta" },
   { key: "REQ-007", title: "Imprimir el plan desde el navegador", description: "La versión web imprime el plan con el diálogo de impresión del navegador.", priority: "Baja", deletedOnScreen: true },
-  { key: "REQ-008", title: "Ejecutar un caso paso a paso con evidencias", description: "En un run manual, cada paso se marca como pasa, falla, bloqueado u omitido y el intento guarda sus capturas cifradas.", priority: "Alta" },
+  { key: "REQ-008", title: "Ejecutar un caso paso a paso con evidencias", description: "En una ejecución manual, cada paso se marca como pasa, falla, bloqueado u omitido y el intento guarda sus capturas cifradas.", priority: "Alta" },
   { key: "REQ-009", title: "Registrar un defecto desde un resultado fallido", description: "Desde un intento fallido se crea un defecto ya vinculado a su caso, con los pasos y el resultado obtenido.", priority: "Media" },
   { key: "REQ-010", title: "Aprobación independiente de casos y planes", description: "En un workspace con aprobación independiente, aprueba quien tiene el rol y no es el autor.", priority: "Media" },
   { key: "REQ-011", title: "Recuperar la cuenta con un código", description: "Quien olvida su contraseña entra con uno de sus códigos de recuperación, que solo vale una vez.", priority: "Alta" },
@@ -74,6 +78,7 @@ export const BASE_CASES = [
     title: "Iniciar sesión con credenciales válidas",
     level: "basic",
     priority: "high",
+    preconditions: ["La cuenta de prueba existe en el servidor de staging"],
     steps: ["Abrir Pharos sin una sesión iniciada", "Escribir el correo y la contraseña de una cuenta de prueba", "Pulsar «Entrar»"],
     expectedResult: "Se abre «Inicio» con el saludo «Hola» y el nombre de la cuenta.",
     requirementKeys: ["REQ-001"],
@@ -101,8 +106,15 @@ export const BASE_CASES = [
     title: "Crear un proyecto",
     level: "advanced",
     priority: "medium",
+    /** Shared preconditions (the Background of the scenarios). */
+    background: ["Hay una sesión iniciada en Pharos"],
     mainFlow: ["Abrir «Proyectos» y pulsar «Nuevo proyecto»", "Escribir el nombre y pulsar «Crear»"],
-    altFlow: { name: "Nombre vacío", steps: ["Pulsar «Crear» sin escribir el nombre", "Leer el aviso bajo el campo"] },
+    mainExpected: "El proyecto se crea y se abre en su «Plan de pruebas».",
+    altFlow: {
+      name: "Nombre vacío",
+      steps: ["Pulsar «Crear» sin escribir el nombre", "Leer el aviso bajo el campo"],
+      expected: "Aparece «Este campo es obligatorio.» y no se crea ningún proyecto.",
+    },
     requirementKeys: ["REQ-002"],
     custom: {},
   },
@@ -227,7 +239,7 @@ export const PLAN = {
   version: "0.6",
   planDate: "2026-11-16",
   summary:
-    "Plan de pruebas de la versión 0.6.0 de Pharos, la app de gestión de pruebas que funciona sin conexión y se sincroniza con su servidor. Cubre la biblioteca del proyecto, la importación de informes (Allure, TRX, SARIF, axe y k6), las integraciones (tokens, webhooks y el CLI `pharos`) y la nueva base de datos local cifrada.",
+    "Plan de pruebas de la versión 0.6.0 de Pharos, la app de gestión de pruebas que funciona sin conexión y se sincroniza con su servidor. Cubre la biblioteca del proyecto, la importación de informes (Allure, TRX, SARIF, axe y k6), las integraciones (tokens, webhooks y el CLI pharos) y la nueva base de datos local cifrada.",
   scopeIn: [
     "Acceso y cuentas",
     "Plan, requisitos, casos y la biblioteca del proyecto",
@@ -258,7 +270,14 @@ export const PLAN = {
   independence: "team" as const,
   independenceNote: "Quien prueba una función no la ha programado, y cada caso lo aprueba otra persona.",
   training: [["Importar informes de Allure y TRX", "Antes del primer ciclo"]] as [string, string][],
-  estimation: { technique: "threePoint" as const, optimistic: 12, likely: 18, pessimistic: 30, budget: "Horas de QA de la versión; sin licencias de pago." },
+  estimation: {
+    technique: "threePoint" as const,
+    optimistic: 12,
+    likely: 18,
+    pessimistic: 30,
+    budget: "Horas de QA de la versión; sin licencias de pago.",
+    notes: "La regresión de la 0.5.0 llevó 17 persona-días; se suman la biblioteca del proyecto y la conversión de los datos locales.",
+  },
   sprints: [
     { name: "Sprint 1", start: "2026-11-09", end: "2026-11-22" },
     { name: "Sprint 2", start: "2026-11-23", end: "2026-12-06" },
@@ -331,10 +350,10 @@ export const AI_MATERIAL = {
   folder: "proyecto-api-sincronizacion",
   folderProject: PROJECT_B.name,
   sketch: "boceto-notificaciones.png",
-  sketchContext: "App de escritorio Pharos (gestión de pruebas), rol responsable de QA; sin nombres de personas",
+  sketchContext: "App de escritorio Pharos (gestión de pruebas); los usuarios se nombran por su rol, como el responsable de QA",
   /** The context of «Requisitos desde un proyecto» (the AI must not invent
    *  people: the persona check fails on any other name). */
-  folderContext: "API de sincronización de Pharos (gestión de pruebas sin conexión); sin nombres de personas",
+  folderContext: "API de sincronización de Pharos (gestión de pruebas sin conexión); los usuarios se nombran por su rol",
   /** The requirements «API de sincronización» already has before the AI
    *  proposes more (fixtures/pharos/requisitos-api-sincronizacion.csv). */
   requirementsCsv: "requisitos-api-sincronizacion.csv",

@@ -28,6 +28,7 @@ import {
   openAdminTab,
   openProject,
   openSection,
+  pointerAway,
   switchWorkspace,
   tf,
   waitForSettled,
@@ -146,14 +147,17 @@ chapter("equipo", () => {
   step("miembros-solo", {
     title: "Miembros y roles",
     caption:
-      "«Miembros y roles», en el selector, abre la página del workspace. La pestaña «Miembros» lista a cada persona con su correo, su rol y desde cuándo está; debajo, las «Reglas» del workspace y las invitaciones pendientes. «¿Qué puede hacer cada rol?» resume los cinco roles: Test Manager, Test Analyst, Automation Engineer, Product Owner y Viewer (solo lectura). Por ahora Liomar es el único miembro.",
+      "«Miembros y roles», en el selector, abre la página del workspace. La pestaña «Miembros» lista a cada persona con su correo, su rol y desde cuándo está; debajo, las «Reglas» del workspace y las invitaciones pendientes. Al pie, «¿Qué puede hacer cada rol?» se despliega con un resumen de los cinco roles: Test Manager, Test Analyst, Automation Engineer, Product Owner y Viewer (solo lectura). Por ahora Liomar es el único miembro.",
     covers: ["route:/workspaces/members"],
     run: async () => {
       await openMembers();
-      await $(`summary=${W.members.roles}`).click();
-      await expect($(".ws-roles")).toBeDisplayed();
-      // The five roles whole, at the bottom of the window.
-      await $(".ws-roles").scrollIntoView({ block: "end" });
+      await expect($(`summary=${W.members.roles}`)).toBeDisplayed();
+      // The page from its head: the title, the tabs and «Invitar».
+      await pointerAway();
+      await browser.execute(() => {
+        const content = document.querySelector(".app-shell__content");
+        if (content) content.scrollTop = 0;
+      });
     },
   });
 
@@ -222,8 +226,8 @@ chapter("equipo", () => {
   step("aprobacion-independiente", {
     title: "Aprobación independiente",
     caption:
-      "En la misma página, «Reglas»: un workspace compartido nace con «Aprobación independiente» activada. Un caso lo aprueba un Test Manager o un Test Analyst que no sea su autor, y un plan, un Test Manager que no sea su autor. Solo un Test Manager la cambia, y desactivarla pide confirmación: entonces cualquiera que pueda editar algo puede aprobarlo, también el autor, y queda como «aprobación propia». Las aprobaciones que ya existen no cambian. Liomar cancela: la regla sigue activada.",
-    covers: ["dialogs:src/modules/workspaces/ui/WorkspaceMembersPage.tsx"],
+      "En la misma página, «Reglas»: un workspace compartido nace con «Aprobación independiente» activada. Un caso lo aprueba un Test Manager o un Test Analyst que no sea su autor, y un plan, un Test Manager que no sea su autor. Solo un Test Manager la cambia, y desactivarla pide confirmación: entonces cualquiera que pueda editar algo puede aprobarlo, también el autor, y queda como «aprobación propia». Las aprobaciones que ya existen no cambian. En el workspace Personal está siempre desactivada, porque allí trabajas solo. Liomar cancela: la regla sigue activada.",
+    covers: ["dialogs:src/modules/workspaces/ui/WorkspaceMembersPage.tsx", "action:workspace-rules"],
     shot: { element: ASK },
     run: async () => {
       await byTestId("workspace-rules").scrollIntoView({ block: "center" });
@@ -331,7 +335,11 @@ chapter("equipo", () => {
       }
       await expect(byTestId("plan-approve")).toBeDisabled();
       await waitForText(P.review.notAllowed.author);
-      await byTestId("plan-review").scrollIntoView({ block: "center" });
+      await pointerAway();
+      await browser.execute(() => {
+        const content = document.querySelector(".app-shell__content");
+        if (content) content.scrollTop = 0;
+      });
     },
     after: sync,
   });
@@ -393,13 +401,17 @@ chapter("equipo", () => {
     title: "Otra persona aprueba el plan",
     caption:
       "Jorge, ya Test Manager, aprueba el plan desde su equipo. Tras sincronizar, «Estado del plan» muestra «Aprobado» con su nombre y la fecha, sin «aprobación propia»; el «Historial» y los exportes del plan lo recogen también.",
-    focus: '[data-testid="plan-review"]',
+    focus: '[data-testid="plan-approved-by"]',
     run: async () => {
       await jorgeApprovesPlan(PROJECT_A.name);
       await sync();
       await openPlanStep("roles");
       await expect(byTestId("plan-approved-by")).toHaveText(expect.stringContaining(JORGE));
-      await byTestId("plan-review").scrollIntoView({ block: "center" });
+      await pointerAway();
+      await browser.execute(() => {
+        const content = document.querySelector(".app-shell__content");
+        if (content) content.scrollTop = 0;
+      });
     },
   });
 
@@ -427,7 +439,7 @@ chapter("equipo", () => {
   step("notificaciones", {
     title: "Lo que te llega del equipo",
     caption:
-      "La campana de la barra superior reúne lo que el equipo hizo y te concierne, agrupado por día: aquí, que Jorge L. Meneses Yero se unió a «Equipo QA», que devolvió el caso con cambios y que lo aprobó. Cada aviso lleva su acción directa («Ver miembros», «Abrir caso»…). «Marcar todo como leído» los da por vistos; se guardan 90 días.",
+      "La campana de la barra superior reúne lo que el equipo hizo y te concierne, agrupado por día: aquí, entre otros avisos, que Jorge L. Meneses Yero se unió a «Equipo QA», que devolvió el caso con cambios y que lo aprobó. Cada aviso lleva su acción directa («Ver miembros», «Abrir caso»…). «Marcar todo como leído» los da por vistos; se guardan 90 días.",
     focus: '[data-testid="notifications-panel"]',
     run: async () => {
       // The bell pulls from the server after every sync.
@@ -449,7 +461,7 @@ chapter("equipo", () => {
   step("auditoria", {
     title: "La auditoría del equipo",
     caption: `En «Administración › Auditoría», el Test Manager de un workspace compartido ve también lo que hicieron los demás miembros, con su nombre. Liomar busca «${CASE.key}»: cada paso de la revisión del caso sale por su nombre, «Enviado a revisión» (Liomar), «Cambios pedidos» y «Aprobado» (Jorge L. Meneses Yero), con los campos que cambió («Aprobación, Revisión, Estado»).`,
-    focus: '[data-testid="audit-tab"]',
+    focus: ['[data-testid="audit-search"]', '(//*[starts-with(@data-testid,"audit-row-")])[position()<=4]'],
     run: async () => {
       await openAdminTab("audit");
       await byTestId("audit-search").setValue(CASE.key);
@@ -463,17 +475,32 @@ chapter("equipo", () => {
       );
       // The case's own rows in view (the search also lists other elements).
       // The search applies after a pause: every row is the case's.
+      // The search applies after a 300 ms pause and then reloads the list
+      // (the URL gets `q=`; the list is busy while it loads). Settled when
+      // the list, not busy, stays the same over three polls. The search also
+      // matches other elements that mention the case (the run of chapter 11
+      // that included it), so not every row is the case's: the newest are.
+      let last = "";
+      let same = 0;
       await browser.waitUntil(
         async () => {
+          const q = decodeURIComponent(/[?&]q=([^&#]*)/.exec(await browser.getUrl())?.[1] ?? "");
+          const busy = await $('[data-testid="audit-tab"] [aria-busy="true"]').isExisting();
           const rows = await $$('[data-testid^="audit-row-"]');
-          for (const r of rows) if (!(await r.getText()).includes(CASE.key)) return false;
-          return rows.length > 0;
+          const now = `${q}|${rows.length}|${rows.length ? await rows[0].getText() : ""}`;
+          same = !busy && q === CASE.key && now === last ? same + 1 : 0;
+          last = now;
+          return same >= 2;
         },
-        { timeout: 10_000, timeoutMsg: "the audit search did not leave the case's rows alone" },
+        { timeout: 20_000, interval: 400, timeoutMsg: "the audit search never settled" },
       );
-      // The oldest is at the bottom: in view with the search box above.
-      const caseRow = $(`(//*[starts-with(@data-testid,"audit-row-")][contains(normalize-space(.),"${CASE.key}")])[last()]`);
-      await caseRow.scrollIntoView({ block: "end" });
+      // The newest row is Jorge's approval of the case.
+      await expect($('[data-testid^="audit-row-"]')).toHaveText(expect.stringContaining(CASE.key));
+      // From the top: the search box and the steps of the review.
+      await browser.execute(() => {
+        const content = document.querySelector(".app-shell__content");
+        if (content) content.scrollTop = 0;
+      });
     },
   });
 

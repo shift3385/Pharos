@@ -1,8 +1,8 @@
 // Chapter 14 — Ajustes del proyecto (manual v2, MAN-03): the name and case
 // numbering, custom fields of cases and defects, configurations, and copying
 // fields to a second project. It runs right after chapter 4 (which makes the
-// projects): the prefix, the fields and the configurations are what the next
-// chapters use.
+// projects with their prefixes): the fields and the configurations are what
+// the next chapters use.
 import { $, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
 import {
@@ -10,7 +10,6 @@ import {
   PROJECT_B,
   acceptConfirm,
   button,
-  chooseOption,
   clickButton,
   dialog,
   es,
@@ -25,35 +24,26 @@ import {
   waitForToast,
 } from "./helpers";
 
-async function setPrefix(prefix: string) {
-  await openSection("settings");
-  await $("#pj-prefix").setValue(prefix);
-  await chooseOption($("#pj-digits"), { value: "3" });
-  await button(es.projects.save).click();
-  await waitForToast(es.projects.savedToast);
-}
-
 chapter("ajustes", () => {
   step("ajustes", {
     title: "Ajustes del proyecto: prefijo de los casos",
     caption:
-      "«Ajustes del proyecto», en el menú lateral, permite cambiar el nombre y cómo se numeran sus casos: el prefijo (en este ejemplo, Liomar acorta a «PH-» el «PHA-» que Pharos sugirió al crearlo) y el número de dígitos. La vista previa muestra cómo quedará el ID del siguiente caso (PH-001). Elige el prefijo pronto: es el que verás en informes, defectos y exportaciones. «Guardar» lo confirma con «Ajustes actualizados».",
-    toast: true,
-    covers: ["section:settings", "action:project-settings-save"],
+      "«Ajustes del proyecto», en el menú lateral, permite cambiar el nombre y cómo se numeran sus casos: el prefijo (en este ejemplo, «PH-», el que Liomar eligió al crear el proyecto en el capítulo 4) y el número de dígitos. La vista previa muestra cómo quedará el ID del siguiente caso (PH-001). Elige el prefijo pronto: es el que verás en informes, defectos y exportaciones. «Guardar» confirma cada cambio con «Ajustes actualizados».",
+    covers: ["section:settings"],
     focus: ".pj-settings__preview",
     run: async () => {
       await openProject(PROJECT_A.name);
-      await setPrefix(`${PROJECT_A.prefix}-`);
+      await openSection("settings");
+      await expect($("#pj-prefix")).toHaveValue(`${PROJECT_A.prefix}-`);
       await expect($(".pj-settings__preview")).toHaveText(expect.stringContaining(`${PROJECT_A.prefix}-`));
-      // FIX-11: the sidebar switcher shows the new prefix at once, without navigating.
-      await expect($(".sidebar__project-badge")).toHaveText(`${PROJECT_A.prefix}-`);
     },
   });
 
   step("prefijo-solapado", {
     title: "Un prefijo que se solapa",
     caption:
-      "Dos proyectos no pueden usar prefijos que se solapen: iguales (sin contar el guion o el guion bajo final, ni mayúsculas) o uno que empiece por el otro, como «PH-» y «PHA-», porque «PHA-001» también empieza por «PH». Si escribes uno así, el campo dice con qué proyecto choca (en este ejemplo, «API-» es el de «API de sincronización») y «Guardar» no guarda hasta que lo cambies.",
+      "Dos proyectos no pueden usar prefijos que se solapen: iguales (sin contar el guion o el guion bajo final, ni mayúsculas) o uno que empiece por el otro, como «PH-» y «PHA-», porque «PHA-001» también empieza por «PH». Si escribes uno así, el campo dice con qué proyecto choca (en este ejemplo, «API-» es el de «API de sincronización») y «Guardar» no guarda hasta que lo cambies. Liomar vuelve a «PH-» y guarda.",
+    covers: ["action:project-settings-save"],
     focus: "#pj-prefix",
     run: async () => {
       await $("#pj-prefix").setValue(`${PROJECT_B.prefix}-`);
@@ -61,6 +51,10 @@ chapter("ajustes", () => {
     },
     after: async () => {
       await $("#pj-prefix").setValue(`${PROJECT_A.prefix}-`);
+      await button(es.projects.save).click();
+      await waitForToast(es.projects.savedToast);
+      // FIX-11: the sidebar switcher shows the prefix at once.
+      await expect($(".sidebar__project-badge")).toHaveText(`${PROJECT_A.prefix}-`);
     },
   });
 
@@ -127,7 +121,7 @@ chapter("ajustes", () => {
   step("campo-creado", {
     title: "El campo, en la lista",
     caption:
-      "«Crear campo» lo guarda y aparece en la lista; desde ese momento, los casos del proyecto pueden usarlo (capítulo 8). Se reordena arrastrando o con el menú de cada campo: ese es el orden en que se ve en el editor.",
+      "«Crear campo» lo guarda y aparece en la lista; desde ese momento, los casos del proyecto pueden usarlo (capítulo 8). Liomar crea también «Regresión crítica», un campo sí/no para marcar los casos de la regresión imprescindible. Se reordena arrastrando o con el menú de cada campo: ese es el orden en que se ve en el editor.",
     toast: true,
     covers: ["action:custom-field-create"],
     focus: '[data-testid="custom-fields-card"]',
@@ -236,14 +230,17 @@ chapter("ajustes", () => {
       await dialog().$(`button=${es.configurations.save}`).click();
       await waitForToast(tf("configurations.savedToast", { name: "Chrome · Windows 11" }));
       const card = $('[data-testid="configurations-card"]');
-      for (const [name, browserName, label] of [
-        ["Edge · Windows 11", "Edge", "msedge"],
-        ["Safari · macOS", "Safari", "webkit"],
+      for (const [name, browserName, os, label] of [
+        ["Edge · Windows 11", "Edge", "Windows 11", "msedge"],
+        ["Safari · macOS", "Safari", "macOS", "webkit"],
       ]) {
         await card.$(`button=${es.configurations.new}`).click();
         const d = '[role="dialog"]';
         await (await field(es.configurations.name, d)).setValue(name);
         await (await field(es.configurations.attr.browser, d)).setValue(browserName);
+        await (await field(es.configurations.attr.os, d)).setValue(os);
+        await (await field(es.configurations.attr.device, d)).setValue("Escritorio");
+        await (await field(es.configurations.attr.locale, d)).setValue("es-ES");
         await (await field(es.configurations.labels, d)).click();
         await browser.keys([...label, "Enter"]);
         await dialog().$(`button=${es.configurations.save}`).click();
@@ -264,7 +261,8 @@ chapter("ajustes", () => {
     shot: { element: '[role="dialog"]' },
     run: async () => {
       await openProject(PROJECT_B.name);
-      await setPrefix(`${PROJECT_B.prefix}-`);
+      await openSection("settings");
+      await expect($("#pj-prefix")).toHaveValue(`${PROJECT_B.prefix}-`);
       const card = $('[data-testid="custom-fields-card"]');
       await card.scrollIntoView();
       await card.$(`button=${es.customFields.copy}`).click();

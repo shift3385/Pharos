@@ -14,12 +14,19 @@ chapter("navegacion", () => {
   step("estructura", {
     title: "La pantalla de Pharos",
     caption:
-      "Todas las pantallas comparten la misma estructura. A la izquierda, el menú lateral: arriba, el selector de workspace («Personal», con tu rol); debajo, «Inicio» y «Proyectos»; dentro de un proyecto, el bloque «Proyecto activo» con sus secciones; «Administración» en «Configuración» y, al pie, la sincronización y tu menú de usuario. Arriba del todo, el logotipo y el nombre «Pharos», que abren «Acerca de Pharos»; en el borde derecho del menú, a media altura, la pestaña que lo contrae. Arriba, la barra con la ruta (migas de pan), el buscador, las notificaciones y el cambio de tema. El resto es el contenido de la sección abierta: en este ejemplo, el «Tablero» del proyecto «Pharos».",
-    covers: ["screen:shell"],
+      "Todas las pantallas comparten la misma estructura. A la izquierda, el menú lateral: arriba, el selector de workspace («Personal», con tu rol); debajo, «Inicio» y «Proyectos»; dentro de un proyecto, el bloque «Proyecto activo» con sus secciones; «Administración» en «Configuración» y, al pie, la sincronización y tu menú de usuario. Arriba del todo, el logotipo y el nombre «Pharos», que abren «Acerca de Pharos»; en el borde derecho del menú, a media altura, la pestaña que lo contrae. Arriba, la barra con la ruta (migas de pan), el buscador, las notificaciones y el cambio de tema. El buscador (o Ctrl+K, ⌘K en Mac) abre un panel que de momento solo avisa de que la búsqueda global llega en una próxima versión: mientras tanto, cada lista tiene su propio buscador y, en los casos, Ctrl+P salta a uno concreto (capítulo 8). El resto es el contenido de la sección abierta: en este ejemplo, el «Tablero» del proyecto «Pharos».",
+    covers: ["screen:shell", "keyboard:ctrl-k", "dialogs:src/app/layout/TopbarControls.tsx"],
     run: async () => {
       await openProject(PROJECT_A.name);
       await expect($(PROJECT_GROUP)).toBeDisplayed();
       await expect($("nav.crumbs")).toBeDisplayed();
+    },
+    after: async () => {
+      // Ctrl+K opens the search panel (still «próxima versión»); Esc closes it.
+      await browser.keys(["Control", "k"]);
+      await expect($(".topbar__panel")).toBeDisplayed();
+      await browser.keys("Escape");
+      await expect($(".topbar__panel")).not.toBeDisplayed();
     },
   });
 
@@ -59,21 +66,23 @@ chapter("navegacion", () => {
   step("menu-proyecto", {
     title: "Las secciones y el proceso de prueba",
     caption:
-      "El bloque «Proyecto activo» va en el orden del proceso de prueba: cada sección sirve a una de sus actividades, como resume la tabla de debajo. La sección abierta queda resaltada. Al abrir un proyecto existente, Pharos entra en su «Tablero»; uno recién creado se abre en su «Plan de pruebas».",
+      "El bloque «Proyecto activo» va en el orden del proceso de prueba: cada sección sirve a una de sus actividades, como resume la tabla de debajo. Un clic en una sección la abre y la deja resaltada: aquí, «Plan de pruebas». Al abrir un proyecto existente, Pharos entra en su «Tablero»; uno recién creado se abre en su «Plan de pruebas».",
     covers: ["action:project-nav"],
     focus: PROJECT_GROUP,
     run: async () => {
       for (const section of ["plan", "planner", "requirements", "cases", "library", "cycles", "runs", "defects", "traceability", "settings"]) {
         await expect(byTestId(`nav-project-${section}`)).toBeDisplayed();
       }
-      await expect(byTestId("nav-project-planner")).toHaveAttribute("aria-current", "page");
+      await byTestId("nav-project-plan").click();
+      await expect(byTestId("nav-project-plan")).toHaveAttribute("aria-current", "page");
+      await expect(byTestId("plan-wizard")).toBeDisplayed();
     },
   });
 
   step("cambiar-proyecto", {
     title: "Cambiar de proyecto",
     caption:
-      "El selector de la parte superior del bloque, con el prefijo y el nombre del proyecto, salta a otro proyecto sin volver a la lista. Escribe para filtrar (útil con muchos proyectos), muévete con ↑ ↓ y elige con Intro o con un clic. Pharos abre la misma sección en el otro proyecto: si estabas en su «Tablero», llegas al «Tablero» del nuevo. «Ver todos los proyectos», al pie, abre la lista.",
+      "El selector de la parte superior del bloque, con el prefijo y el nombre del proyecto, salta a otro proyecto sin volver a la lista. Escribe para filtrar (útil con muchos proyectos), muévete con ↑ ↓ y elige con Intro o con un clic. Pharos abre la misma sección en el otro proyecto: si estabas en su «Plan de pruebas», llegas al «Plan de pruebas» del nuevo. «Ver todos los proyectos», al pie, abre la lista.",
     covers: ["action:project-switcher"],
     focus: ['[data-testid="project-switcher"]', '[role="menu"]'],
     run: async () => {
@@ -86,27 +95,14 @@ chapter("navegacion", () => {
   step("migas", {
     title: "Dónde estás: las migas de pan",
     caption:
-      "Tras elegir «API de sincronización», la barra superior muestra la ruta: «Proyectos › API de sincronización › Tablero». Cada tramo, menos el último, es un enlace: «Proyectos» vuelve a la lista. Si un nombre es muy largo, se recorta con «…» y se lee entero al pasar el ratón.",
+      "Tras elegir «API de sincronización», la barra superior muestra la ruta: «Proyectos › API de sincronización › Plan de pruebas». Cada tramo, menos el último, es un enlace: «Proyectos» vuelve a la lista. Si un nombre es muy largo, se recorta con «…» y se lee entero al pasar el ratón.",
     covers: ["action:breadcrumbs"],
     focus: "nav.crumbs",
     run: async () => {
       await menuItem(PROJECT_B.name).click();
       await expect($(`h1=${PROJECT_B.name}`)).toBeDisplayed();
       await expect($("nav.crumbs")).toHaveText(expect.stringContaining(PROJECT_B.name));
-      await expect(byTestId("nav-project-planner")).toHaveAttribute("aria-current", "page");
-    },
-  });
-
-  step("busqueda", {
-    title: "Buscar (Ctrl+K)",
-    caption:
-      "El buscador de la barra superior, o Ctrl+K desde cualquier pantalla (⌘K en Mac), será la búsqueda global de casos, requisitos y proyectos. En esta versión todavía no busca: el panel avisa de que llega en una próxima versión. Mientras tanto, cada lista tiene su propio buscador y, en los casos, Ctrl+P salta a uno concreto (capítulo 8). Esc cierra el panel.",
-    covers: ["keyboard:ctrl-k", "dialogs:src/app/layout/TopbarControls.tsx"],
-    focus: ".topbar__panel",
-    run: async () => {
-      await openProject(PROJECT_A.name);
-      await browser.keys(["Control", "k"]);
-      await expect($(".topbar__panel")).toBeDisplayed();
+      await expect(byTestId("nav-project-plan")).toHaveAttribute("aria-current", "page");
     },
   });
 
@@ -117,8 +113,6 @@ chapter("navegacion", () => {
     covers: ["dialogs:src/app/layout/TopbarControls.tsx"],
     focus: ".topbar__panel",
     run: async () => {
-      await browser.keys("Escape");
-      await expect($(".topbar__panel")).not.toBeDisplayed();
       await byTestId("notifications-trigger").click();
       await expect(byTestId("notifications-panel")).toBeDisplayed();
     },

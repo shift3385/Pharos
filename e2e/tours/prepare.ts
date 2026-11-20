@@ -42,7 +42,7 @@ import {
   SCANS,
   TEAM,
 } from "./data/pharos";
-import { button, chooseFile, chooseOption, clickButton, es, field, openProject, openSection, recordToasts, repoDir, tf, waitForSettled, waitForText, waitForToast, xpathString } from "./helpers";
+import { button, chooseFile, chooseOption, clickButton, es, field, openProject, openSection, recordToasts, tf, waitForSettled, waitForText, waitForToast, xpathString } from "./helpers";
 import { LIOMAR_PASSWORD, ensureWorkspace, inviteCode, jorge, jorgeAcceptsInvitation, jorgeMembership, liomar, setMemberRole, shareProject } from "./people";
 import { PREREQUISITES, prerequisiteClosure, type ChapterId, type Prereq } from "./manifest";
 
@@ -132,8 +132,10 @@ async function importReport(file: string, title: string): Promise<string> {
   return key;
 }
 
-/** The axe audit of Pharos's «Nuevo requisito» dialog (chapter 10). */
-export const AXE_REPORT = join(repoDir, "packages", "formats", "src", "fixtures", "axe", "pharos-dialog.json");
+/** The axe audit of Pharos's «Nuevo requisito» dialog (chapter 10): the
+ *  packages/formats/src/fixtures/axe/pharos-dialog.json sample with axe-core's
+ *  Spanish locale texts (axe-core/locales/es.json). */
+export const AXE_REPORT = join(pharosFixtures, "informes", "axe-dialogo-nuevo-requisito.json");
 
 // ---- The loaders ------------------------------------------------------------------
 
@@ -159,11 +161,10 @@ const LOADERS: Record<Prereq, Loader> = {
     },
     load: async () => {
       const names = (await liomar.projects()).map((p) => p.name);
-      // With the prefix the app suggests on creating them (chapter 4: «PHA-»
-      // and «API-»), so chapter 14 finds what it finds in a full run.
-      const suggested = (p: typeof PROJECT_A | typeof PROJECT_B) => `${"suggestedPrefix" in p ? p.suggestedPrefix : p.prefix}-`;
+      // With the prefixes chapter 4 gives them («PH-», shortened from the
+      // suggested «PHA-», and «API-»).
       for (const p of [PROJECT_A, PROJECT_B]) {
-        if (!names.includes(p.name)) await liomar.post("/api/projects", { name: p.name, caseIdPrefix: suggested(p), caseIdDigits: 3 });
+        if (!names.includes(p.name)) await liomar.post("/api/projects", { name: p.name, caseIdPrefix: `${p.prefix}-`, caseIdDigits: 3 });
       }
     },
   },

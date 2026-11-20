@@ -54,7 +54,7 @@ Estos atajos funcionan en cualquier pantalla. Cada capítulo explica los suyos.
 
 | Tecla | Qué hace |
 | --- | --- |
-| Ctrl+K (⌘K en Mac) | Abre la búsqueda. No actúa si hay un diálogo abierto |
+| Ctrl+K (⌘K en Mac) | Abre el panel de búsqueda (la búsqueda global llega en una próxima versión). No actúa si hay un diálogo abierto |
 | Tab / Mayús+Tab | Pasa al control siguiente o al anterior. El primer Tab de cada pantalla muestra «Saltar al contenido», que lleva directamente al contenido sin recorrer el menú |
 | Intro o Espacio | Pulsa el botón o el enlace enfocado |
 | Esc | Cierra el menú, panel o diálogo abierto y devuelve el foco al botón que lo abrió. En una confirmación normal equivale a «Cancelar»; las confirmaciones críticas (las que borran algo guardado) solo responden a sus botones |

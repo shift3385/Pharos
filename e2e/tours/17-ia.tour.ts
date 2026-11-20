@@ -33,6 +33,7 @@ import {
   openAdminTab,
   openProject,
   openSection,
+  scrollToTop,
   tf,
   waitForText,
   waitForToast,
@@ -65,7 +66,7 @@ chapter("ia", () => {
   step("sin-configurar", {
     title: "Sin IA configurada",
     caption:
-      "La IA es opcional. Mientras no configures un proveedor (o Ollama), los botones de IA aparecen deshabilitados y explican por qué; el resto de Pharos funciona igual.",
+      "La IA es opcional. Mientras no configures un proveedor (o Ollama), los botones de IA, como «Sugerir casos con IA», aparecen deshabilitados; el resto de Pharos funciona igual.",
     covers: ["ai:disabled-without-key"],
     focus: `button*=${es.testCase.list.suggest}`,
     run: async () => {
@@ -118,7 +119,11 @@ chapter("ia", () => {
       await expect(byTestId(`ai-provider-${provider}`)).toBeDisplayed();
       // The card carries the «En uso» mark, and the keychain holds the key.
       await expect(byTestId(`ai-provider-${provider}`).$('[data-testid="ai-in-use"]')).toBeDisplayed();
-      await byTestId(`ai-provider-${provider}`).scrollIntoView({ block: "start" });
+      // From the top: «Usar», the provider cards with «Conectado» and the ✓.
+      await browser.execute(() => {
+        const content = document.querySelector(".app-shell__content");
+        if (content) content.scrollTop = 0;
+      });
       const stored = await browser.execute(async (p: string) => {
         const w = window as unknown as { __TAURI_INTERNALS__: { invoke: (c: string, a: object) => Promise<boolean> } };
         return w.__TAURI_INTERNALS__.invoke("ai_key_status", { provider: p });
@@ -134,6 +139,7 @@ chapter("ia", () => {
     covers: ["ai:test-connection"],
     skip: AI_SKIP,
     mask: ["#ai-key"],
+    focus: ".ai-test__ok",
     run: async () => {
       aiCall();
       await clickButton(X.test);
@@ -141,6 +147,22 @@ chapter("ia", () => {
       await browser.waitUntil(async () => success.test((await $(".ai-test__ok").getText()).trim()), {
         timeout: AI_TIMEOUT,
         timeoutMsg: "the connection test did not answer «Respuesta en N ms»",
+      });
+      await browser.execute(() => {
+        const content = document.querySelector(".app-shell__content");
+        if (content) content.scrollTop = 0;
+      });
+      // The answer just above the save bar; the window itself never scrolls
+      // (the top bar stays whole).
+      await browser.execute(() => {
+        const content = document.querySelector<HTMLElement>(".app-shell__content");
+        const ok = document.querySelector(".ai-test__ok");
+        if (content && ok) content.scrollTop += Math.max(0, ok.getBoundingClientRect().bottom - (window.innerHeight - 110));
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        const shell = document.querySelector<HTMLElement>(".app-shell");
+        if (shell) shell.scrollTop = 0;
       });
     },
   });
@@ -260,7 +282,7 @@ chapter("ia", () => {
   step("desde-disenos-propuestas", {
     title: "Las propuestas desde el boceto",
     caption:
-      "Las propuestas se revisan igual que las de un proyecto. La fuente de cada una es la imagen, con un recuadro en la zona de la que sale el requisito. Los criterios de aceptación van uno por bloque y, si siguen Gherkin, con una palabra clave por línea en negrita (Given, When, Then). Abajo, «Guardar las imágenes como adjunto de los requisitos» viene desmarcada (Pharos no guarda las imágenes salvo que lo pidas); Liomar la marca para guardarlas cifradas junto a cada requisito y verlas después.",
+      "Las propuestas se revisan igual que las de un proyecto. La fuente de cada una es la imagen, con un recuadro en la zona de la que sale el requisito. Los criterios de aceptación van uno por bloque (los que la IA escribe en Gherkin se muestran con una palabra clave por línea, en negrita). Abajo, «Guardar las imágenes como adjunto de los requisitos» viene desmarcada (Pharos no guarda las imágenes salvo que lo pidas); Liomar la marca para guardarlas cifradas junto a cada requisito y verlas después.",
     skip: AI_SKIP,
     shot: { element: D },
     run: async () => {
@@ -275,7 +297,7 @@ chapter("ia", () => {
   step("fuente-imagen", {
     title: "La imagen de la que sale un requisito",
     caption:
-      "Con la casilla marcada, abre un requisito («Editar requisito») y despliega «Fuente»: verás la miniatura de la imagen con la zona marcada. Púlsala para verla a tamaño completo; «Cerrar» o Esc vuelven. Si no se guardó, «Fuente» lo dice («La imagen no se guardó en Pharos.»). Las imágenes guardadas cuentan en «Administración › Evidencias» como «Requisitos» y solo se ven en la app de escritorio.",
+      "La imagen a tamaño completo, con la zona de la que sale el requisito marcada. Se llega así: con la casilla marcada, abre un requisito («Editar requisito»), despliega «Fuente» y pulsa la miniatura; «Cerrar» o Esc vuelven. Si no se guardó, «Fuente» lo dice («La imagen no se guardó en Pharos.»). Las imágenes guardadas cuentan en «Administración › Evidencias» como «Requisitos» y solo se ven en la app de escritorio.",
     covers: ["dialogs:src/modules/traceability/ui/RequirementSources.tsx"],
     skip: AI_SKIP,
     shot: { element: ".tr-design__viewer" },
@@ -323,14 +345,19 @@ chapter("ia", () => {
       aiCall();
       await $(".assist__btn").click();
       await waitForText(X.assist.previewTitle, AI_TIMEOUT);
-      await $(".assist__preview").scrollIntoView({ block: "center" });
+      // From the top, so «Estado del plan» starts below the top bar.
+      await browser.execute(() => {
+        const content = document.querySelector(".app-shell__content");
+        if (content) content.scrollTop = 0;
+      });
+      if (!(await $(".assist__preview").isDisplayed({ withinViewport: true }))) await $(".assist__preview").scrollIntoView({ block: "end" });
     },
   });
 
   step("borrador-usado", {
     title: "Lo que escribió la IA queda marcado",
     caption:
-      "«Usar» pasa el borrador al campo, donde puedes corregirlo como cualquier texto; se guarda con el plan («Guardar»). Junto al campo queda la marca «IA · pendiente de revisión» hasta que alguien lo lea y pulse «Marcar revisado». Al pasar el cursor por la marca se ve qué proveedor y qué modelo lo generaron (en este ejemplo, Claude y su modelo): así se sabe, también después, qué IA escribió cada cosa.",
+      "«Usar» pasa el borrador al campo, donde puedes corregirlo como cualquier texto; se guarda con el plan («Guardar»). Junto al campo queda la marca «IA · pendiente de revisión» hasta que alguien lo lea y pulse «Marcar revisado». La marca también guarda qué proveedor y qué modelo lo generaron (en este ejemplo, Claude y su modelo), que se leen al pasar el cursor por ella: así se sabe, también después, qué IA escribió cada cosa.",
     // Uses the draft «asistir» asked for: without a key both are skipped.
     skip: AI_SKIP,
     focus: ".ai-prov",
@@ -353,13 +380,14 @@ chapter("ia", () => {
       "En «Riesgos y mitigación», «Sugerir riesgos con IA» propone riesgos con su mitigación, un buen punto de partida que conviene revisar: marca los que te sirvan y pulsa «Añadir».",
     covers: ["ai:suggest-risks"],
     skip: AI_SKIP,
-    focus: ".assist__preview",
+    focus: [`button*=${es.testPlan.suggestRisks}`, ".assist__preview"],
     run: async () => {
       await goToPlanStep("risks");
       aiCall();
       await clickButton(es.testPlan.suggestRisks);
       await waitForText(X.structured.proposals, AI_TIMEOUT);
-      await $(".assist__preview").scrollIntoView({ block: "center" });
+      // The button and the proposals under it, below the top bar.
+      await scrollToTop(`button*=${es.testPlan.suggestRisks}`);
     },
   });
 
@@ -414,8 +442,15 @@ chapter("ia", () => {
       await browser.keys("Escape");
       await $("a.cl-title*=Iniciar sesión").click();
       aiCall();
-      await $(`button[title="${es.testCase.aiReview.preconditions.suggest}"]`).click();
-      await waitForText(X.structured.proposals, AI_TIMEOUT);
+      // «Sugerir» on an empty list, «Revisar» once the case has preconditions.
+      const pre = es.testCase.aiReview.preconditions;
+      await $(`button[title="${pre.suggest}"], button[title="${pre.review}"]`).click();
+      // The proposals, or the AI's failure notice (said in the error).
+      await browser.waitUntil(async () => (await $(".assist__preview").isExisting()) || (await $(".assist__failure").isExisting()), {
+        timeout: AI_TIMEOUT,
+        timeoutMsg: "the AI review of the preconditions never answered",
+      });
+      if (await $(".assist__failure").isExisting()) throw new Error(`the AI review failed: ${await $(".assist__failure").getText()}`);
       await $(".assist__preview").scrollIntoView({ block: "center" });
     },
   });

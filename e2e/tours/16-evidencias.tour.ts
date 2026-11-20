@@ -95,7 +95,7 @@ chapter("evidencias", () => {
 
   step("retencion-acortar", {
     title: "Acortar la retención",
-    caption: "Un plazo más corto que el actual pide confirmación y dice cuántos archivos caducarían en la próxima pasada (al arrancar o tras sincronizar). Los resultados se conservan; los archivos caducados no se recuperan. Por eso es una confirmación crítica: Esc no la cierra; solo responden «Cancelar» y el botón de confirmar. En este ejemplo, Liomar baja los registros a 7 días.",
+    caption: "Un plazo más corto que el actual pide confirmación y dice cuántos archivos caducarían en la próxima pasada (al arrancar o tras sincronizar). Los resultados se conservan; los archivos caducados no se recuperan. Por eso es una confirmación crítica: Esc no la cierra; solo responden «Cancelar» y el botón de confirmar. En este ejemplo, Liomar baja los registros a 7 días; Pharos no tiene registros adjuntos con más de 7 días, así que no caduca ninguno («0 archivos caducarían»).",
     covers: ["dialogs:src/modules/admin/ui/tabs/EvidenceRetentionSection.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
@@ -122,6 +122,9 @@ chapter("evidencias", () => {
     title: "Verificar las evidencias",
     caption:
       "«Verificar evidencias» comprueba que cada archivo está y se descifra, y busca archivos que ningún elemento usa, los huérfanos. No borra nada por sí sola; puedes seguir trabajando mientras tanto. Al terminar, el informe dice cuántos archivos comprobó y muestra en bloques lo que encontró: aquí, «Archivos sin registro (1)», un huérfano.",
+    // The «Verificar evidencias» card alone: the page ends with it, so a
+    // page shot would cut the retention rows above it.
+    shot: { element: '[data-testid="evidence-check"]' },
     focus: '[data-testid="evidence-report"]',
     run: async () => {
       await byTestId("evidence-verify").click();

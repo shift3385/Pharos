@@ -27,7 +27,8 @@ sirve para abrir tus datos en un equipo nuevo (capítulo 15).
 **El servidor.** En la app de escritorio, encima del correo aparece
 «Servidor: …», el servidor al que se envían tu correo y tu contraseña.
 
-- Si trabajas solo en tu equipo, dice «Este equipo (localhost:3000)».
+- Si trabajas solo en tu equipo, dice «Este equipo» y la dirección del servidor
+  que corre en él.
 - Para trabajar con tu equipo, pulsa **«Cambiar»** y escribe la dirección que
   te dé quien administra Pharos, por ejemplo `https://pharos.miempresa.com`.
   - Pharos comprueba el servidor antes de guardarlo. Si algo falla, el

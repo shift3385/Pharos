@@ -26,6 +26,7 @@ import {
   keyboardDrag,
   openProject,
   openSection,
+  scrollToTop,
   selectOption,
   tf,
   waitForSettled,
@@ -94,7 +95,7 @@ chapter("defectos", () => {
   step("nuevo", {
     title: "Rellenar el defecto",
     caption:
-      `Un buen defecto permite reproducir el fallo sin preguntar a nadie. Rellena el título, la severidad (el impacto en el sistema) y la prioridad (la urgencia del arreglo), los pasos para reproducirlo, el resultado esperado y el obtenido, y dónde se encontró (build y entorno). En «Vínculos», marca los casos y los requisitos afectados: la matriz de trazabilidad (capítulo 13) los mostrará junto al defecto. Los campos propios del proyecto aparecen al final (aquí, «Sistema operativo», creado en el capítulo 14). En este ejemplo, Liomar registra que, al cambiar el prefijo en los ajustes, el menú lateral sigue mostrando el anterior: severidad mayor, prioridad media, build ${RELEASE.build}, vinculado al caso «Crear un proyecto» (PH-003) y al requisito REQ-002.`,
+      "Un buen defecto permite reproducir el fallo sin preguntar a nadie. En «Detalles», rellena el título, la severidad (el impacto en el sistema) y la prioridad (la urgencia del arreglo); en «Reproducción», los pasos para reproducirlo, el resultado esperado y el obtenido. En este ejemplo, Liomar registra que, al cambiar el prefijo en los ajustes, el menú lateral sigue mostrando el anterior: severidad mayor, prioridad media, y los tres pasos que lo provocan.",
     covers: ["action:defect-create", "action:defect-links", "action:defect-custom-fields"],
     run: async () => {
       await (await field(F.field.title)).setValue(PREFIX_BUG);
@@ -116,28 +117,28 @@ chapter("defectos", () => {
       const os = await field("Sistema operativo");
       await os.scrollIntoView({ block: "center" });
       await os.setValue(DEFECTS.prefix.os);
-      // The capture shows the filled details, at the top of the editor (not
-      // under the top bar).
-      await (await field(F.field.title)).scrollIntoView({ block: "center" });
+      // The capture: from the title down to the expected and obtained results.
+      await scrollToTop((await field(F.field.title)).parentElement());
     },
   });
 
   step("asignado", {
     title: "Asignado a",
     caption:
-      "«Asignado a», en «Dónde se encontró», dice quién se ocupa del defecto: se elige entre los miembros activos del workspace, o «Sin asignar». En «Personal» el único miembro eres tú, así que Liomar se lo asigna a sí mismo; en un workspace compartido, la persona elegida recibe un aviso con el defecto (capítulo 21).",
+      `Debajo, «Dónde se encontró» lleva la build y el entorno (en este ejemplo, ${RELEASE.build} en ${RELEASE.environment}), y «Asignado a» dice quién se ocupa del defecto: se elige entre los miembros activos del workspace, o «Sin asignar». En «Personal» el único miembro eres tú, así que Liomar se lo asigna a sí mismo; en un workspace compartido, la persona elegida recibe un aviso con el defecto (capítulo 21). En «Vínculos», marca los casos y los requisitos afectados: la matriz de trazabilidad (capítulo 13) los mostrará junto al defecto. Liomar marca el caso «Crear un proyecto» (PH-003) y el requisito REQ-002.`,
     focus: '//label[.//*[@data-testid="defect-assignee"]]',
     run: async () => {
       await chooseOption(byTestId("defect-assignee"), { text: PERSONA.alias });
       await expect(byTestId("defect-assignee")).toHaveText(expect.stringContaining(PERSONA.alias));
-      await byTestId("defect-assignee").scrollIntoView({ block: "center" });
+      // «Dónde se encontró» on top, «Vínculos» with the marked case below.
+      await scrollToTop('section.df-section:has([data-testid="defect-assignee"])');
     },
   });
 
   step("evidencias", {
     title: "Evidencias",
     caption:
-      "Una vez guardado el defecto, «Evidencias» admite capturas, vídeos o registros que muestran el fallo, de hasta 200 MB cada uno: «Adjuntar archivos» abre el selector de archivos (en este ejemplo, una captura del menú lateral). Se guardan cifrados y llegan a los demás equipos del espacio de trabajo al sincronizar; un clic en el nombre descarga una copia. Quien tiene el rol Viewer no puede adjuntar.",
+      `Una vez guardado el defecto, «Evidencias» admite capturas, vídeos o registros que muestran el fallo, de hasta 200 MB cada uno: «Adjuntar archivos» abre el selector de archivos (en este ejemplo, una captura del menú lateral). Se guardan cifrados y llegan a los demás equipos del espacio de trabajo al sincronizar; un clic en el nombre descarga una copia. Quien tiene el rol Viewer no puede adjuntar. Encima, «Campos personalizados» trae los campos propios del proyecto: aquí, «Sistema operativo», creado en el capítulo 14, con ${DEFECTS.prefix.os}.`,
     covers: ["upload:src/modules/defects/ui/DefectEditor.tsx"],
     focus: ".pl-attach",
     run: async () => {
@@ -199,6 +200,11 @@ chapter("defectos", () => {
       await (await field(F.field.title)).setValue(LOGIN_BUG);
       await selectOption(F.field.severity, F.severity.critical);
       await selectOption(F.field.priority, F.priority.critical);
+      // The page from its top: the project head, the banner and the title.
+      await browser.execute(() => {
+        const content = document.querySelector(".app-shell__content");
+        if (content) content.scrollTop = 0;
+      });
     },
   });
 
@@ -278,9 +284,11 @@ chapter("defectos", () => {
     run: async () => {
       await keyboardDrag(handleOf(PREFIX_BUG), { until: tf("defects.board.drag.over", { defect: PREFIX_BUG, column: F.status.other }) });
       await expect(dialog()).toBeDisplayed();
+      // Liomar's choice, in the picture.
+      await $(D).$(`label*=${F.status.deferred}`).click();
+      await expect($(D).$(`label*=${F.status.deferred}`).$("input")).toBeSelected();
     },
     after: async () => {
-      await $(D).$(`label*=${F.status.deferred}`).click();
       await clickButton(F.resolutionDialog.confirm, D);
       await $(".cd-overlay").waitForExist({ reverse: true });
     },
@@ -320,16 +328,21 @@ chapter("defectos", () => {
   step("escape", {
     title: "Un defecto que se escapó de las pruebas",
     caption:
-      "Si el defecto se encontró fuera de las pruebas, por ejemplo en producción o en una demostración, marca «Encontrado fuera de las pruebas (escape)» en «Detalles». Cuenta como escape del último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo dejó pasar, y la recogen la tendencia de ciclos del Inicio (capítulo 3) y el informe de go/no-go (capítulo 9). En este ejemplo, un usuario de la beta avisa de que el enlace del correo de bienvenida abre la versión anterior, y Liomar lo registra como escape.",
+      `Si el defecto se encontró fuera de las pruebas, por ejemplo en producción o en una demostración, marca «Encontrado fuera de las pruebas (escape)» en «Dónde se encontró». Cuenta como escape del último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo dejó pasar, y la recogen la tendencia de ciclos del Inicio (capítulo 3) y el informe de go/no-go (capítulo 9). En este ejemplo, un usuario de la beta avisa de que el enlace del correo de bienvenida abre la versión anterior, y Liomar lo registra como escape, con lo que vio el usuario y la build y el entorno de la beta.`,
     focus: ".df-escaped",
     run: async () => {
       await clickButton(F.newDefect);
       await (await field(F.field.title)).setValue(ESCAPE);
       await selectOption(F.field.severity, F.severity.minor);
+      await (await field(F.field.expected)).setValue(`El enlace abre Pharos ${RELEASE.build}.`);
+      await (await field(F.field.actual)).setValue("El enlace «Abrir Pharos» del correo de bienvenida abre la versión 0.5.0.");
+      await (await field(F.field.foundInBuild)).setValue(RELEASE.build);
+      await (await field(F.field.foundInEnvironment)).setValue("beta pública");
       const escaped = byTestId("defect-escaped");
-      await escaped.scrollIntoView({ block: "center" });
       await escaped.click();
       await expect(escaped).toBeSelected();
+      // From the expected and obtained results down to the escape mark.
+      await scrollToTop((await field(F.field.expected)).parentElement());
     },
     after: async () => {
       await save();
@@ -340,7 +353,7 @@ chapter("defectos", () => {
   step("reabrir", {
     title: "Corregir, confirmar y reabrir",
     caption:
-      "El camino de un defecto corregido, en el tablero o con el campo «Estado» del editor (que solo ofrece los estados siguientes): «En curso» mientras se arregla, «Corregido» cuando el equipo de desarrollo lo da por resuelto y «Por confirmar» mientras QA vuelve a probarlo. Si la prueba pasa, va a «Cerrado»; si no, se reabre: vuelve a «Abierto» desde «Por confirmar» (o desde «Cerrado»). Pharos apunta la primera vez que llega a «Corregido» y cuántas veces se reabre, y con eso calcula el tiempo de corrección y la reapertura de cada ciclo (capítulos 3 y 9). En este ejemplo, Liomar comprueba el arreglo del enlace, sigue abriendo la versión anterior y lo reabre.",
+      "El camino de un defecto corregido, en el tablero o con el campo «Estado» del editor (que solo ofrece los estados siguientes): «En curso» mientras se arregla, «Corregido» cuando el equipo de desarrollo lo da por resuelto y «Por confirmar» mientras QA vuelve a probarlo. Si la prueba pasa, va a «Cerrado»; si no, se reabre: vuelve a «Abierto» desde «Por confirmar» (o desde «Cerrado»). Pharos apunta la primera vez que llega a «Corregido» y cuántas veces se reabre, y con eso calcula el tiempo de corrección y la reapertura de cada ciclo (capítulos 3 y 9). En este ejemplo, Liomar lleva el defecto del enlace por esos estados desde el editor; al volver a probarlo, el enlace sigue abriendo la versión anterior, así que lo reabre y en el tablero está otra vez en «Abierto».",
     focus: 'section.df-col[data-column="open"] article.df-card',
     run: async () => {
       // Through the editor's «Estado», which offers only the next states: the

@@ -182,7 +182,7 @@ chapter("ciclos", () => {
   step("cerrar-ciclo", {
     title: "Cerrar el ciclo: el quality gate",
     caption:
-      "Un ciclo se cierra con «Cerrar ciclo…», nunca desde «Editar». Pharos evalúa los criterios de salida del plan sobre los resultados del ciclo. Cada criterio obligatorio que no se cumple, o que no tiene datos, pide una justificación de al menos 20 caracteres: por qué se acepta el riesgo, quién lo asume y cuándo se resuelve. Los criterios manuales («Visto bueno del PO») se marcan a mano y los orientativos solo se muestran. Si algún obligatorio falla, eliges «Go con riesgos» (la versión puede salir) o «No-go» (no sale). Al pie se ve quién firma y cuándo: queda en Auditoría. Cerrar un ciclo también avisa en las notificaciones del equipo y a los webhooks del proyecto (capítulo 20).",
+      "Un ciclo se cierra con «Cerrar ciclo…», nunca desde «Editar». Pharos evalúa los criterios de salida del plan sobre los resultados del ciclo. Cada criterio obligatorio que no se cumple, o que no tiene datos, pide una justificación de al menos 20 caracteres: por qué se acepta el riesgo, quién lo asume y cuándo se resuelve. Los criterios que Pharos no mide solo (aquí, «Casos críticos ejecutados» y «Satisfacción del producto en la demo») se marcan a mano con «Cumple» o «No cumple», y los orientativos solo informan. En este ejemplo, Liomar cierra el ciclo antes de registrar resultados, para ver el cierre: por eso los criterios medidos no se cumplen y cada uno lleva su justificación. Si algún obligatorio falla, eliges «Go con riesgos» (la versión puede salir) o «No-go» (no sale). Al pie se ve quién firma y cuándo: queda en Auditoría. Cerrar un ciclo también avisa en las notificaciones del equipo y a los webhooks del proyecto (capítulo 20).",
     covers: ["dialogs:src/modules/runs/gate/CloseCycleDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -192,8 +192,18 @@ chapter("ciclos", () => {
       }
       await $('[data-testid="cycle-close"]').click();
       await $('[data-testid="gate-banner"]').waitForDisplayed();
-      for (const box of await $$(`${D} textarea`))
-        await box.setValue("Se acepta: los casos pendientes se ejecutan en la regresión de la semana que viene.");
+      // One justification per criterion, with who takes the risk and when
+      // it is resolved.
+      for (const row of await $$(`${D} .gate-item`)) {
+        const box = row.$("textarea");
+        if (!(await box.isExisting())) continue;
+        const name = await row.$(".gate-row__name").getText();
+        await box.setValue(
+          /cobertura/i.test(name)
+            ? "Se acepta: REQ-003 a REQ-012 se cubren en el Sprint 2; lo asume Liomar, responsable de QA, hasta el 4 de diciembre."
+            : "Se acepta: lo asume Liomar, responsable de QA; los casos pendientes se ejecutan en la regresión del 23 de noviembre.",
+        );
+      }
       for (const b of await $$(`${D} .gate-mark button`)) if ((await b.getText()) === es.gate.met) await b.click();
       const risks = $('[data-testid="gate-verdict-goWithRisks"]');
       if (await risks.isExisting()) await risks.click();
@@ -280,7 +290,7 @@ chapter("ciclos", () => {
   step("clonar", {
     title: "Clonar y eliminar un ciclo",
     caption:
-      "El menú «⋯» del ciclo lo clona, con sus elementos y sin resultados, útil para repetir una regresión en la siguiente versión (el clon se abre solo); también lo elimina, tras confirmar.",
+      "Tras aprobar el informe, Liomar reabre el ciclo desde «Editar» (Estado: «Activo»), porque en los capítulos 10 y 11 registrará en él los resultados de la regresión; por eso vuelve a decir «Activo». El menú «⋯» del ciclo lo clona, con sus elementos y sin resultados, útil para repetir una regresión en la siguiente versión (el clon se abre solo); también lo elimina, tras confirmar.",
     covers: ["dialogs:src/modules/cycles/ui/CycleDetail.tsx"],
     run: async () => {
       if (await $('[data-testid="status-report"]').isExisting()) {
@@ -325,7 +335,7 @@ chapter("ciclos", () => {
   step("movil", {
     title: "Los ciclos en el móvil",
     caption:
-      "En el móvil, cada ciclo es una tarjeta con su clave, su estado, su título, sus fechas y su progreso; un toque lo abre. Dentro, cada elemento es también una tarjeta, con su asignado editable y una pastilla de resultado por configuración.",
+      "En el móvil, cada ciclo es una tarjeta con su clave, su estado, su título, sus fechas y su progreso; un toque lo abre.",
     covers: ["platform:mobile-cycles"],
     run: async () => {
       await setViewport(MOBILE);

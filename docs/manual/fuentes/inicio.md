@@ -113,7 +113,8 @@ salieras desde otra pantalla.
 - **La tasa de éxito dice «—» y «Sin ejecuciones».** En el periodo elegido no
   hay resultados. Amplía el periodo («Últimos 30 días») o ejecuta casos
   (capítulos 10 y 11).
-- **Bajo la tasa de éxito pone «Además, N tests sin vincular».** Son tests
+- **La tasa de éxito dice «+N sin vincular»** (en el móvil, «Además, N tests
+  sin vincular»). Son tests
   importados que aún esperan en la bandeja «Sin vincular» (capítulo 10). La
   tasa, como el progreso de cada proyecto, cuenta casos, así que no los
   incluye. Vincúlalos a su caso desde «Ejecuciones» y entrarán en la tasa.

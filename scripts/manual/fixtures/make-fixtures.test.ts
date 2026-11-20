@@ -183,9 +183,10 @@ describe("case-study fixtures (e2e/tours/fixtures/pharos)", () => {
       if (c.level === "advanced") {
         data = {
           gherkinLevel: "advanced",
+          background: stepsOf([...c.background]),
           flows: reconcileFlows(undefined, [
-            { name: t("testCase.flow.mainName"), steps: [...c.mainFlow], expectedResult: "" },
-            { name: c.altFlow.name, steps: [...c.altFlow.steps], expectedResult: "" },
+            { name: t("testCase.flow.mainName"), steps: [...c.mainFlow], expectedResult: c.mainExpected },
+            { name: c.altFlow.name, steps: [...c.altFlow.steps], expectedResult: c.altFlow.expected },
           ]),
         };
       } else if (c.level === "outline") {
@@ -198,7 +199,12 @@ describe("case-study fixtures (e2e/tours/fixtures/pharos)", () => {
       } else if ("checklist" in c) {
         data = { gherkinLevel: "basic", steps: stepsOf([...c.checklist]), traceability: c.otherReferences };
       } else {
-        data = { gherkinLevel: "basic", steps: stepsOf([...c.steps]), expectedResult: c.expectedResult };
+        data = {
+          gherkinLevel: "basic",
+          ...("preconditions" in c ? { preconditions: stepsOf([...c.preconditions]) } : {}),
+          steps: stepsOf([...c.steps]),
+          expectedResult: c.expectedResult,
+        };
       }
       data = { ...data, requirementKeys: [...c.requirementKeys], custom };
       const tc: TestCase = {

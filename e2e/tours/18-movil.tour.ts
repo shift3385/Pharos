@@ -4,7 +4,7 @@
 // on a phone. Example: Liomar checks his Pharos project from a phone.
 import { $, browser, expect } from "@wdio/globals";
 import { DESKTOP, MOBILE, chapter, step, setViewport } from "./tour";
-import { PROJECT_A, byTestId, clickButton, es } from "./helpers";
+import { PROJECT_A, byTestId, clickButton, es, scrollToTop } from "./helpers";
 
 /** Moves the pointer to the sheet's grip, so no row of a sheet is shot hovered. */
 async function restMouse() {
@@ -31,7 +31,7 @@ chapter("movil", () => {
 
   step("movil-busqueda", {
     title: "Buscar en el móvil",
-    caption: "La lupa convierte la barra superior en un campo de búsqueda; la flecha (o Esc) la cierra.",
+    caption: "La lupa convierte la barra superior en un campo de búsqueda; la flecha (o Esc) la cierra. La búsqueda global de casos, requisitos y proyectos llega en una próxima versión, y el campo lo avisa.",
     covers: ["platform:mobile-search"],
     run: async () => {
       await byTestId("search-trigger").click();
@@ -42,7 +42,7 @@ chapter("movil", () => {
   step("movil-notificaciones", {
     title: "Notificaciones en el móvil",
     caption:
-      "En el móvil, la campana de la barra superior abre las notificaciones como una hoja desde abajo, con lo mismo que en el escritorio: los avisos agrupados por día, el filtro «Sin leer», «Marcar todo como leído» y la acción de cada aviso. Aquí Liomar está al día, y la hoja dice qué verá en ella. La ✕ o un toque fuera la cierran.",
+      "En el móvil, la campana de la barra superior abre las notificaciones como una hoja desde abajo, con lo mismo que en el escritorio: los avisos agrupados por día, el filtro «Sin leer», «Marcar todo como leído» y la acción de cada aviso. Sin avisos, la hoja dice qué aparecerá en ella. La ✕ o un toque fuera la cierran.",
     covers: ["dialogs:src/app/layout/TopbarControls.tsx"],
     run: async () => {
       await browser.keys("Escape");
@@ -69,7 +69,7 @@ chapter("movil", () => {
 
   step("movil-proyecto", {
     title: "Secciones del proyecto en el móvil",
-    caption: "Dentro de un proyecto, sus diez secciones (Plan, Tablero, Requisitos, Casos, Biblioteca, Ciclos, Ejecuciones, Defectos, Trazabilidad y Ajustes) se recorren con las píldoras bajo el título, que se desplazan de lado; la flecha de la barra superior vuelve a Proyectos.",
+    caption: "Dentro de un proyecto, sus diez secciones (Plan, Tablero, Requisitos, Casos, Biblioteca, Ciclos, Ejecuciones, Defectos, Trazabilidad y Ajustes) se recorren con las píldoras bajo el título, que se desplazan de lado; la flecha de la barra superior vuelve a Proyectos. En este ejemplo, Liomar abre «Trazabilidad»: en el móvil, cada requisito es una tarjeta con sus casos.",
     covers: ["platform:mobile-project-pills"],
     run: async () => {
       await browser.keys("Escape");
@@ -77,6 +77,18 @@ chapter("movil", () => {
       await byTestId("nav-projects").click();
       await $(`a*=${PROJECT_A.name}`).click();
       await expect($("nav.project-pills")).toBeDisplayed();
+      const pill = $("nav.project-pills").$('[data-testid="nav-project-traceability"]');
+      await pill.click();
+      await expect(pill).toHaveAttribute("aria-current", "page");
+      await $(".tz-cards").waitForDisplayed();
+      // The pills scrolled sideways to the open section; the page at its
+      // first requirement card.
+      await browser.execute(() => {
+        const nav = document.querySelector<HTMLElement>("nav.project-pills");
+        const cur = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+        if (nav && cur) nav.scrollLeft += cur.getBoundingClientRect().left - nav.getBoundingClientRect().left - (nav.clientWidth - cur.offsetWidth) / 2;
+      });
+      await scrollToTop(".tz-cards");
     },
   });
 

@@ -1,11 +1,11 @@
 ID;Título;Descripción;Prioridad
 REQ-002;Crear un proyecto con su prefijo;Quien prueba crea un proyecto y elige el prefijo con el que se numeran sus casos.;Alta
 REQ-003;Guardar el plan con historial de revisiones;Cada guardado del plan de pruebas crea una revisión que se puede consultar y restaurar.;Media
-REQ-004;Importar resultados JUnit;Un informe JUnit se importa como run y vincula cada test a su caso por la propiedad test_id.;Alta
+REQ-004;Importar resultados JUnit;Un informe JUnit se importa como ejecución y vincula cada test a su caso por la propiedad test_id.;Alta
 REQ-005;Exportar la matriz de trazabilidad a .xlsx;La matriz se exporta con requisitos, casos, estados y defectos.;Media
 REQ-006;Trabajar sin conexión y sincronizar;"Los cambios hechos sin conexión se envían al servidor cuando vuelve la conexión; si dos personas cambian campos distintos, se combinan sin preguntar.";Alta
 REQ-007;Imprimir el plan desde el navegador;La versión web imprime el plan con el diálogo de impresión del navegador.;Baja
-REQ-008;Ejecutar un caso paso a paso con evidencias;En un run manual, cada paso se marca como pasa, falla, bloqueado u omitido y el intento guarda sus capturas cifradas.;Alta
+REQ-008;Ejecutar un caso paso a paso con evidencias;En una ejecución manual, cada paso se marca como pasa, falla, bloqueado u omitido y el intento guarda sus capturas cifradas.;Alta
 REQ-009;Registrar un defecto desde un resultado fallido;Desde un intento fallido se crea un defecto ya vinculado a su caso, con los pasos y el resultado obtenido.;Media
 REQ-010;Aprobación independiente de casos y planes;En un workspace con aprobación independiente, aprueba quien tiene el rol y no es el autor.;Media
 REQ-011;Recuperar la cuenta con un código;Quien olvida su contraseña entra con uno de sus códigos de recuperación, que solo vale una vez.;Alta

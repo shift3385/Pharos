@@ -127,7 +127,7 @@ chapter("integraciones", () => {
   step("token-reasignar", {
     title: "Reasignar un token de otra persona",
     caption:
-      "Jorge, el otro Test Manager del workspace, creó desde su equipo el token «CI nocturno de Pharos» para el CI de cada noche: su fila dice que es suyo. Un token actúa con los permisos de su dueño; si Jorge sale del workspace o se desactiva su cuenta, deja de funcionar y los Test Manager reciben un aviso. «Reasignar a mí» lo pasa a quien lo pulsa, después de confirmar: el secreto no cambia, así que el CI sigue funcionando sin tocar nada.",
+      "Jorge, el otro Test Manager del workspace, creó desde su equipo el token «CI nocturno de Pharos» para el CI de cada noche. Un token actúa con los permisos de su dueño; si Jorge sale del workspace o se desactiva su cuenta, deja de funcionar y los Test Manager reciben un aviso. «Reasignar a mí» lo pasa a quien lo pulsa, después de confirmar: el secreto no cambia, así que el CI sigue funcionando sin tocar nada.",
     covers: ["dialogs:src/modules/integrations/ui/ProjectTokensSection.tsx"],
     shot: { element: CONFIRM },
     run: async () => {

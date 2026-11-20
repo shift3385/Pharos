@@ -44,6 +44,9 @@ async function back() {
   await expect($('section.pl-col[data-status="backlog"]')).toBeDisplayed();
 }
 
+/** The priority filter as a bottom sheet (a dialog on a phone). */
+const prioritySheet = () => $(`//*[@role="dialog"][.//*[normalize-space(.)="${es.planner.priorityLabel.critical}"]]`);
+
 chapter("tablero", () => {
   step("tablero", {
     title: "El tablero",
@@ -168,7 +171,7 @@ chapter("tablero", () => {
   step("filtrar", {
     title: "Filtrar y buscar tarjetas",
     caption:
-      "Con muchas tarjetas, filtra por tipo («Todas», «Tareas», «Datos de prueba», con su número) y por prioridad, o busca por título, clave o etiqueta sin preocuparte por los acentos (en este ejemplo, «regresion» deja una sola tarjeta). Los filtros solo cambian lo que ves: las tarjetas siguen en su columna.",
+      "Con muchas tarjetas, filtra por tipo («Todas», «Tareas», «Datos de prueba», con su número) y por prioridad, o busca por título o etiqueta sin preocuparte por los acentos (en este ejemplo, «regresion» deja una sola tarjeta). Los filtros solo cambian lo que ves: las tarjetas siguen en su columna.",
     covers: ["action:planner-filter"],
     run: async () => {
       await $(`button.chips__chip*=${L.filter.test_data}`).click();
@@ -205,14 +208,18 @@ chapter("tablero", () => {
   step("movil", {
     title: "El tablero en el móvil",
     caption:
-      "En el móvil, las columnas se recorren deslizando de lado y los filtros (tipo, búsqueda y prioridad) quedan arriba; el menú de prioridad se abre como una hoja desde abajo. «Nueva tarjeta» está en la fila de botones de la sección.",
+      "En el móvil, las columnas se recorren deslizando de lado y los filtros (tipo, búsqueda y prioridad) quedan arriba. «Nueva tarjeta» está en la fila de botones de la sección. El menú de prioridad, como todas las listas de Pharos en el móvil, se abre como una hoja desde abajo: elige con un toque o ciérrala deslizándola hacia abajo.",
     covers: ["platform:mobile-planner"],
     run: async () => {
       await setViewport(MOBILE);
       await expect($("section.pl-col")).toBeDisplayed();
-      await expect($(`button*=${L.priority}`)).toBeDisplayed();
+      await $(`button.fmb*=${L.priority}`).click();
+      // On a phone the menu is a bottom sheet (a dialog).
+      await expect(prioritySheet()).toBeDisplayed();
     },
     after: async () => {
+      await browser.keys("Escape");
+      await expect(prioritySheet()).not.toBeDisplayed();
       await setViewport(DESKTOP);
     },
   });

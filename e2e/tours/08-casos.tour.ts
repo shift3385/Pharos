@@ -29,6 +29,7 @@ import {
   openProject,
   openSection,
   pickFromMenu,
+  scrollToTop,
   selectOption,
   tf,
   waitForSettled,
@@ -82,6 +83,26 @@ async function fillSteps(label: string, steps: string[]) {
     }
     await input.setValue(text);
   }
+}
+
+/** Adds rows to a list field (Precondiciones, Background…: group labelled
+ *  `label`). */
+async function fillList(label: string, items: readonly string[]) {
+  const group = $(`[role="group"][aria-label="${label}"]`);
+  for (const text of items) {
+    const before = (await group.$$("input")).length;
+    await group.$(".tp-list-field__add").click();
+    const inputs = await atLeast(`[role="group"][aria-label="${label}"] input`, before + 1);
+    await inputs[inputs.length - 1].setValue(text);
+  }
+}
+
+/** The editor from its top: the case header, its classification and title. */
+async function pageTop() {
+  await browser.execute(() => {
+    document.querySelector(".app-shell__content")?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
+  });
 }
 
 /** A meta menu (Prioridad / Automatización) → an option. */
@@ -161,30 +182,29 @@ chapter("casos", () => {
   step("caso-basico", {
     title: "Un caso básico",
     caption:
-      "Rellena el caso: el título (en este ejemplo, «Iniciar sesión con credenciales válidas»), las precondiciones, los pasos (cada uno con «+ Añadir paso»; la papelera de un paso lo quita, tras confirmarlo si tiene texto) y el resultado esperado, los que muestra la captura. Más arriba se clasifica: prioridad, tipo de caso, automatización, nivel y versión. El estado (borrador, en revisión, aprobado u obsoleto) no se elige aquí: lo mueve la revisión, más adelante en este capítulo. En «Requisitos vinculados», «Vincular un requisito…» lo enlaza con lo que comprueba (en este ejemplo, REQ-001): el caso lleva el tag @REQ-001 en su Gherkin y la matriz lo cuenta como cubierto. Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, PH-001).",
+      "Arriba del formulario se clasifica el caso: prioridad (aquí, «Alta»), tipo de caso, automatización, nivel y versión. El estado (borrador, en revisión, aprobado u obsoleto) no se elige aquí: lo mueve la revisión, más adelante en este capítulo. Debajo va el título (en este ejemplo, «Iniciar sesión con credenciales válidas») y, en «Requisitos vinculados», «Vincular un requisito…» lo enlaza con lo que comprueba (aquí, REQ-001): el caso lleva el tag @REQ-001 en su Gherkin y la matriz lo cuenta como cubierto. Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, PH-001).",
     covers: ["action:case-create-basic", "action:case-meta", "action:case-requirement-link"],
+    focus: ["#tc-title", `[aria-label="${tf("testCase.requirements.remove", { key: "REQ-001" })}"]`],
     run: async () => {
       await editorView();
       // FIX-12: the ID placeholder carries the project's own prefix.
       await expect($(`input[placeholder="${tf("testCase.scenarioIdAuto", { prefix: `${PROJECT_A.prefix}-` })}"]`)).toBeDisplayed();
-      await $("#tc-title").setValue("Iniciar sesión con credenciales válidas");
-      await fillSteps(C.steps, [
-        "Abrir Pharos sin una sesión iniciada",
-        "Escribir el correo y la contraseña de una cuenta de prueba",
-        "Pulsar «Entrar»",
-      ]);
-      await (await field(C.expectedResult)).setValue("Se abre «Inicio» con el saludo «Hola» y el nombre de la cuenta.");
+      await $("#tc-title").setValue(BASE_CASES[0].title);
+      await fillList(C.preconditions, BASE_CASES[0].preconditions);
+      await fillSteps(C.steps, [...BASE_CASES[0].steps]);
+      await (await field(C.expectedResult)).setValue(BASE_CASES[0].expectedResult);
       await setMeta(C.priority, C.priorityLabel.high);
       await linkRequirement("REQ-001");
-      // The capture shows the steps and the result the caption explains.
-      await $(`[role="group"][aria-label="${C.steps}"]`).scrollIntoView({ block: "center" });
+      // The capture shows the classification, the title and the link; the
+      // next one, the body of the case.
+      await pageTop();
     },
   });
 
   step("campos-personalizados", {
-    title: "Campos personalizados en el caso",
+    title: "Campos personalizados, pasos y resultado",
     caption:
-      "Los campos personalizados del proyecto (capítulo 14) aparecen al final del editor, en «Campos personalizados». Sirven para clasificar los casos con lo que tu equipo necesite y luego filtrar por ello (en este ejemplo, «Navegador», una selección, y «Regresión crítica», un sí/no). Si uno es obligatorio, el caso no se guarda sin él. «Guardar» confirma con «Caso de prueba guardado» y la cabecera del proyecto pasa a «1 caso».",
+      "Más abajo, en «Campos personalizados», van los campos propios del proyecto (capítulo 14): sirven para clasificar los casos con lo que tu equipo necesite y luego filtrar por ello (en este ejemplo, «Navegador», una selección, y «Regresión crítica», un sí/no); si uno es obligatorio, el caso no se guarda sin él. Después, el cuerpo del caso: las precondiciones, lo que debe cumplirse antes de empezar (aquí, que la cuenta de prueba exista); los pasos, cada uno con «+ Añadir paso» (la papelera de un paso lo quita, tras confirmarlo si tiene texto), y el resultado esperado. «Guardar» confirma con «Caso de prueba guardado» y la cabecera del proyecto pasa a «1 caso».",
     covers: ["action:case-custom-fields"],
     focus: "section.cf-section",
     run: async () => {
@@ -195,8 +215,10 @@ chapter("casos", () => {
       await saveCase();
       await expect($(".tc-nav__state")).toHaveAttribute("data-state", "saved");
       // FIX-13: the header counts the new case without leaving the section.
-      // Saving reloads the editor at the top: the capture shows the fields.
-      await section.scrollIntoView({ block: "center" });
+      // Saving reloads the editor at the top: the capture starts at the
+      // fields, with the preconditions, the steps and the result below.
+      await editorView();
+      await scrollToTop("section.cf-section");
       await expect($(".pj-header__meta")).toHaveText(new RegExp(String.raw`(^|\D)${es.projects.header.cases_one}(\s|$)`));
     },
   });
@@ -248,29 +270,41 @@ chapter("casos", () => {
       for (let i = 0; i < Math.min(values.length, cells.length); i++) await cells[i].setValue(values[i]);
       await linkRequirement("REQ-001");
       await saveCase();
-      // The capture shows the «Examples» table the caption explains.
-      await $("table.tc-examples__table").scrollIntoView({ block: "center" });
+      // The capture starts at «Pasos de prueba» and shows the «Examples»
+      // table the caption explains.
+      await editorView();
+      await scrollToTop(`[role="group"][aria-label="${C.steps}"]`, 56);
     },
   });
 
   step("flujos", {
     title: "Un caso «Avanzado» con flujos alternos",
     caption:
-      "El nivel «Avanzado» añade precondiciones compartidas (Background), que se cumplen antes de cada flujo, y flujos alternativos además del principal, cada uno con su nombre, sus pasos y su resultado (en este ejemplo, el caso «Crear un proyecto» con el flujo alterno «Nombre vacío»). En Gherkin, cada flujo es un Scenario. «+ Añadir flujo alterno» crea otro y la papelera junto al nombre lo quita. Cada flujo puede llevar su propia tabla de ejemplos.",
+      "El nivel «Avanzado» añade precondiciones compartidas (Background), que se cumplen antes de cada flujo (aquí, que haya una sesión iniciada), y flujos alternativos además del principal, cada uno con su nombre, sus pasos y su resultado (en este ejemplo, el caso «Crear un proyecto» con el flujo alterno «Nombre vacío»). En Gherkin, cada flujo es un Scenario. «+ Añadir flujo alterno» crea otro y la papelera junto al nombre lo quita. Cada flujo puede llevar su propia tabla de ejemplos.",
     covers: ["action:case-flows"],
+    focus: [`[role="group"][aria-label="${C.flow.background}"]`, ".tc-flow__del"],
     run: async () => {
+      const c = BASE_CASES[2];
       await backToList();
       await newCase("advanced");
-      await $("#tc-title").setValue("Crear un proyecto");
-      await fillSteps(`${C.flow.steps} · ${C.flow.mainName}`, ["Abrir «Proyectos» y pulsar «Nuevo proyecto»", "Escribir el nombre y pulsar «Crear»"]);
+      await $("#tc-title").setValue(c.title);
+      await fillList(C.flow.background, c.background);
+      await fillSteps(`${C.flow.steps} · ${C.flow.mainName}`, [...c.mainFlow]);
       const flowName = `input[aria-label="${C.flow.namePlaceholder}"]`;
       const flowsBefore = (await $$(flowName)).length;
       await $("button.tc-flow__add").click();
       const names = await atLeast(flowName, flowsBefore + 1);
-      await names[names.length - 1].setValue("Nombre vacío");
-      await fillSteps(`${C.flow.steps} · Nombre vacío`, ["Pulsar «Crear» sin escribir el nombre", "Leer el aviso bajo el campo"]);
+      await names[names.length - 1].setValue(c.altFlow.name);
+      await fillSteps(`${C.flow.steps} · ${c.altFlow.name}`, [...c.altFlow.steps]);
+      // Each flow with its expected result (its Then).
+      const results = await atLeast('textarea[id^="tc-flow-"][id$="-expected"]', 2);
+      await results[0].setValue(c.mainExpected);
+      await results[1].setValue(c.altFlow.expected);
       await linkRequirement("REQ-002");
       await saveCase();
+      // The flows editor from the Background, in the form alone.
+      await editorView();
+      await scrollToTop(`[role="group"][aria-label="${C.flow.background}"]`, 56);
     },
   });
 
@@ -279,7 +313,7 @@ chapter("casos", () => {
     caption:
       "Con «Tipo de caso: Checklist», los pasos se convierten en una lista de comprobaciones sin Given/When/Then y sin Gherkin. Es útil para revisiones rápidas, como una prueba de humo o una revisión de accesibilidad, donde lo que importa es no olvidar nada (en este ejemplo, «Humo de la versión 0.6.0»). Los pasos y el Gherkin que tuviera se conservan, ocultos, por si vuelves a «Estándar». En «Otras referencias (texto libre)» se puede citar algo sin vincularlo (aquí, REQ-006): el capítulo 13 enseña a convertirlo en un vínculo.",
     covers: ["action:case-checklist"],
-    focus: `[role="group"][aria-label="${C.checklist.items}"]`,
+    focus: ['[data-testid="tc-case-type"]', "#tc-title"],
     run: async () => {
       await backToList();
       await newCase("basic");
@@ -289,8 +323,9 @@ chapter("casos", () => {
       // A reference written by hand, which «Migrar trazabilidad» (chapter 13) turns into a link.
       await (await field(C.otherReferences)).setValue("Relacionado con REQ-006");
       await saveCase();
-      // The capture shows the checklist items.
-      await $(`[role="group"][aria-label="${C.checklist.items}"]`).scrollIntoView({ block: "center" });
+      // From the top of the form: the title, «Tipo de caso: Checklist», the
+      // references and the items.
+      await pageTop();
     },
   });
 
@@ -484,15 +519,16 @@ chapter("casos", () => {
       await saveCase();
       await editorView();
       await expect(byTestId("shared-step-block")).toBeDisplayed();
-      await byTestId("shared-step-block").scrollIntoView({ block: "center" });
       await expect($$(".lb-bound tbody tr")).toBeElementsArrayOfSize(3);
+      // From «Pasos de prueba»: the shared block and the whole dataset table.
+      await scrollToTop(`[role="group"][aria-label="${C.steps}"]`, 56);
     },
   });
 
   step("aviso-impacto", {
     title: "Cambiar un paso compartido: el aviso de impacto",
     caption:
-      "Al guardar un cambio de un paso compartido o de un dataset que usan casos, Pharos avisa antes: «Guardar «Iniciar sesión» como v2», cuántos casos se actualizan, por estado, y cuáles. Los casos aprobados vuelven a «En revisión», como al editarlos a mano; los fijados en una versión no cambian. En este ejemplo, Liomar completa el resultado esperado del paso 3 y se actualiza un caso en borrador.",
+      "Al guardar un cambio de un paso compartido o de un dataset que usan casos, Pharos avisa antes: «Guardar «Iniciar sesión» como v2», cuántos casos se actualizan, por estado, y cuáles. Los casos aprobados vuelven a «En revisión», como al editarlos a mano; los fijados en una versión no cambian. En este ejemplo, Liomar precisa el resultado esperado del paso 3 (añade «con el nombre de la cuenta») y se actualiza un caso en borrador.",
     covers: ["dialogs:src/modules/library/ui/ImpactDialog.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -525,7 +561,7 @@ chapter("casos", () => {
   step("lista", {
     title: "La lista de casos",
     caption:
-      "Con casos, la tabla muestra ID, título, requisito, prioridad, estado, «Ejecución» y fecha de la última edición. «Ejecución» es el último resultado de cada caso, el mismo que la matriz (capítulo 13): «Pasa», «Falla», «Bloqueado», «Omitido» o «Por confirmar»; «—» si aún no tiene ninguno. Si un caso tiene contenido sugerido por IA que nadie ha revisado, su estado (normalmente «Borrador») lleva un ✨ y un borde discontinuo, y al pasar el puntero lo explica. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, resultado («Ejecución», con «Sin resultados» para los que aún no se han ejecutado), tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta. El filtro «Por revisar» deja los casos en revisión que puedes aprobar, y un caso al que le pidieron cambios lleva la marca «Cambios pedidos». Haz clic en la cabecera de una columna para ordenar por ella. En este ejemplo, «credenciales» deja los dos casos de acceso.",
+      "Con casos, la tabla muestra ID, título, requisito, prioridad, nivel, estado, «Ejecución» y fecha de la última edición. «Ejecución» es el último resultado de cada caso, el mismo que la matriz (capítulo 13): «Pasa», «Falla», «Bloqueado», «Omitido» o «Por confirmar»; «—» si aún no tiene ninguno. Si un caso tiene contenido sugerido por IA que nadie ha revisado, su estado (normalmente «Borrador») lleva un ✨ y un borde discontinuo, y al pasar el puntero lo explica. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, resultado («Ejecución», con «Sin resultados» para los que aún no se han ejecutado), tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta. El filtro «Por revisar» deja los casos en revisión que puedes aprobar, y un caso al que le pidieron cambios lleva la marca «Cambios pedidos». Haz clic en la cabecera de una columna para ordenar por ella. En este ejemplo, «credenciales» deja los dos casos de acceso.",
     covers: ["action:cases-search", "action:cases-filter", "action:cases-sort"],
     run: async () => {
       // From the library, where the steps above end.
@@ -540,13 +576,13 @@ chapter("casos", () => {
   step("sin-coincidencias", {
     title: "Ningún caso coincide",
     caption:
-      "Si la búsqueda o los filtros no dejan ningún caso, la lista lo dice y ofrece «Quitar filtros» para volver a verlos todos.",
+      "Si la búsqueda o los filtros no dejan ningún caso, la lista lo dice y ofrece «Quitar filtros» para volver a verlos todos. En este ejemplo, Pharos aún no tiene ningún caso sobre «exportar a pdf».",
     covers: ["state:cases-no-match"],
     focus: "button=Quitar filtros",
     run: async () => {
       await clearInput(`input[placeholder="${C.list.search}"]`);
       await $('button.dt__sort*=' + C.list.col.title).click();
-      await $(`input[placeholder="${C.list.search}"]`).setValue("no-existe-xyz");
+      await $(`input[placeholder="${C.list.search}"]`).setValue("exportar a pdf");
       await expect($(`button=${C.list.clearFilters}`)).toBeDisplayed();
     },
   });
@@ -643,7 +679,7 @@ chapter("casos", () => {
   step("importar", {
     title: "Importar un caso desde .xlsx",
     caption:
-      "Para traer un caso escrito en Excel, «Importar / Exportar → Importar .xlsx» lee una plantilla rellenada o un caso exportado antes. El informe enseña qué campos se reconocieron, con la prioridad y el estado en tu idioma («Alta», «Borrador»), y «Aplicar» abre el editor con esos datos, todavía sin guardar. Las claves de «Trazabilidad» que son requisitos del proyecto vuelven como vínculos, no como texto libre.",
+      "Para traer un caso escrito en Excel, «Importar / Exportar → Importar .xlsx» lee una plantilla rellenada o un caso exportado antes. El informe enseña qué campos se reconocieron, con la prioridad y el estado en tu idioma («Alta», «Borrador»), y «Aplicar al formulario» abre el editor con esos datos, todavía sin guardar. Las claves de «Trazabilidad» que son requisitos del proyecto vuelven como vínculos, no como texto libre.",
     covers: ["upload:src/modules/test-cases/ui/TestCasesPage.tsx", "dialogs:src/modules/test-cases/ui/TestCasesPage.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -762,7 +798,7 @@ chapter("casos", () => {
   step("devolver-caso", {
     title: "Pedir cambios en un caso",
     caption:
-      "Si el caso no está listo, «Pedir cambios…» deja un comentario y el caso sigue en revisión: Borrador es solo el principio. El comentario es obligatorio: sin él, el diálogo dice «Escribe qué hay que cambiar.». Quien escribió el caso lo verá en un aviso «Cambios pedidos por…», y en la lista el caso lleva la marca «Cambios pedidos». Cuando guarde los cambios, el aviso pasa a «Cambios guardados tras la petición de…» y el caso se puede aprobar.",
+      "Si el caso no está listo, «Pedir cambios…» deja un comentario y el caso sigue en revisión. El comentario es obligatorio: sin él, el diálogo dice «Escribe qué hay que cambiar.». Quien escribió el caso lo verá en un aviso «Cambios pedidos por…», y en la lista el caso lleva la marca «Cambios pedidos». Cuando guarde los cambios, el aviso pasa a «Cambios guardados tras la petición de…» y el caso se puede aprobar.",
     covers: ["action:case-review-return", "dialogs:src/modules/test-cases/ui/CaseReviewPanel.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
@@ -796,15 +832,17 @@ chapter("casos", () => {
   step("reactivar", {
     title: "Reactivar un caso obsoleto",
     caption:
-      "Un caso obsoleto se puede «Reactivar»: vuelve a «En revisión» (a Borrador si nunca se envió) y hay que aprobarlo otra vez. En este ejemplo, PH-002 ya se había enviado, así que vuelve a «En revisión».",
+      "Al confirmar, la cabecera del caso dice «Obsoleto» y sus acciones de revisión se reducen a «Reactivar». Reactivarlo pide confirmación y lo devuelve a «En revisión» (a Borrador si nunca se envió); hay que aprobarlo otra vez. En este ejemplo, PH-002 ya se había enviado, así que vuelve a «En revisión».",
     covers: ["dialogs:src/modules/test-cases/ui/CaseReviewPanel.tsx"],
-    shot: { element: '[role="alertdialog"]' },
+    focus: [".tc-review", "#tc-title"],
     run: async () => {
       await acceptConfirm();
-      await clickButton(C.review.reactivate, ".tc-review");
-      await expect($('[role="alertdialog"]')).toBeDisplayed();
+      await expect($(`button=${C.review.reactivate}`)).toBeDisplayed();
+      await pageTop();
     },
     after: async () => {
+      await clickButton(C.review.reactivate, ".tc-review");
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
       await acceptConfirm();
     },
   });

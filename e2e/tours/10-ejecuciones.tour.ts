@@ -21,7 +21,8 @@ import {
   fixturesDir,
   openProject,
   openSection,
-  repoDir,
+  openInfoTip,
+  scrollToTop,
   tf,
   waitForText,
   waitForToast,
@@ -32,10 +33,11 @@ import { LIBRARY, RELEASE, RESULTS, SCANS } from "./data/pharos";
 
 const R = es.runs;
 const D = '[role="dialog"]';
-/** The ING-01 sample: a Playwright (playwright-bdd) JUnit report with a
- *  failed example and a retry (packages/formats/src/fixtures). */
-const REPORT = join(repoDir, "packages", "formats", "src", "fixtures", "ing01", "single", "pw-junit.xml");
 const INFORMES = join(pharosFixtures, "informes");
+/** The ING-01 sample (packages/formats/src/fixtures/ing01/single/pw-junit.xml):
+ *  a Playwright (playwright-bdd) JUnit report with a failed example and a
+ *  retry, with its test names in proper Spanish. */
+const REPORT = join(INFORMES, "regresion-nocturna.junit.xml");
 const F = es.findings;
 
 /** The run key the import summary names (`RUN-012`). */
@@ -46,17 +48,27 @@ async function importedRunKey(): Promise<string> {
   return key;
 }
 
-/** «Importar informe» → a file → its format detected and the preview ready. */
-async function chooseReport(file: string, format: string) {
+/** «Importar informe»: the dialog open, no file chosen yet. */
+async function openImport() {
   await openSection("runs");
   await clickButton(R.import.open);
   await expect(dialog()).toBeDisplayed();
+}
+
+/** A file in the open import dialog → its format detected and the preview ready. */
+async function pickReport(file: string, format: string) {
   await $(D).$('input[type="file"]:not([webkitdirectory])').setValue(file);
   await waitForText(format);
   await browser.waitUntil(async () => $(D).$(`button=${R.import.confirm}`).isEnabled(), {
     timeout: 30_000,
     timeoutMsg: `the preview of ${file} never got ready`,
   });
+}
+
+/** «Importar informe» → a file → its format detected and the preview ready. */
+async function chooseReport(file: string, format: string) {
+  await openImport();
+  await pickReport(file, format);
 }
 
 /** «Importar» → the summary → «Cerrar» → the new run opened. */
@@ -92,23 +104,29 @@ chapter("ejecuciones", () => {
   step("importar", {
     title: "Importar un informe",
     caption:
-      "«Importar informe» trae a Pharos los resultados de tu automatización: tests, hallazgos y métricas. La lista de formatos está tras el «?» del campo «Informe»: los tests de JUnit XML, CTRF, JSON de Playwright, Cucumber Messages (NDJSON), Pharos Run JSON, .NET (TRX), Allure (la carpeta `allure-results` comprimida en un .zip) y Xcode (el JSON de `xcresulttool`); los hallazgos de SARIF y axe, y las métricas del resumen de k6. Admite hasta 200 MB (50 MB si es JSON o XML). Pulsa «Elegir archivo…»: el formato se detecta por el contenido, y Pharos rellena el título, la build, el commit, la rama y el entorno con lo que trae el informe; corrígelos si hace falta. En este ejemplo, el JUnit de la regresión nocturna de Pharos con Playwright. Solo en la app de escritorio.",
+      "«Importar informe» trae a Pharos los resultados de tu automatización: tests, hallazgos y métricas. La lista de formatos está tras el «?» del campo «Informe»: los tests de JUnit XML, CTRF, JSON de Playwright, Cucumber Messages (NDJSON), Pharos Run JSON, .NET (TRX), Allure (la carpeta `allure-results` comprimida en un .zip) y Xcode (el JSON de `xcresulttool`); los hallazgos de SARIF y axe, y las métricas del resumen de k6. Admite hasta 200 MB (50 MB si es JSON o XML). Solo en la app de escritorio.",
     covers: ["dialogs:src/modules/runs/ui/ImportReportDialog.tsx", "upload:src/modules/runs/ui/ImportReportDialog.tsx"],
-    shot: { element: D },
+    focus: ".infotip__bubble:not([hidden])",
     run: async () => {
-      await chooseReport(REPORT, R.format.junit);
-      await (await field(R.field.title, D)).setValue("Regresión nocturna · Playwright");
-      await (await field(R.field.build, D)).setValue(RELEASE.build);
-      await (await field(R.field.environment, D)).setValue(RELEASE.environment);
+      await openImport();
+      await openInfoTip("Informe", D);
     },
   });
 
   step("vista-previa", {
     title: "Vista previa antes de importar",
     caption:
-      "La vista previa dice cuántos tests trae el informe y en cuántos intentos, y cuántos de esos intentos se vinculan a un caso y cuántos quedarán «sin vincular», con los avisos que haya. Un test se vincula solo si lleva la clave de un caso: en Cucumber, Playwright o CTRF, como tag (@PH-001); en JUnit, con la propiedad test_id; en TRX, con su categoría ([TestCategory(\"PH-001\")]); en Allure, con la etiqueta `tag` o un enlace `tms`. Este informe no la lleva, así que sus 4 tests irán a la bandeja. Nada se guarda hasta pulsar «Importar». Si el archivo ya se importó, Pharos lo dice y no duplica nada.",
+      "Pulsa «Elegir archivo…»: el formato se detecta por el contenido, y Pharos rellena el título, la build, el commit, la rama y el entorno con lo que trae el informe; corrígelos si hace falta. En este ejemplo, el JUnit de la regresión nocturna de Pharos con Playwright. Abajo, la vista previa dice cuántos tests trae el informe y en cuántos intentos, y cuántos de esos intentos se vinculan a un caso y cuántos quedarán «sin vincular», con los avisos que haya. Un test se vincula solo si lleva la clave de un caso: en Cucumber, Playwright o CTRF, como tag (@PH-001); en JUnit, con la propiedad test_id; en TRX, con su categoría ([TestCategory(\"PH-001\")]); en Allure, con la etiqueta `tag` o un enlace `tms`. Este informe no la lleva, así que sus 4 tests irán a la bandeja. Nada se guarda hasta pulsar «Importar». Si el archivo ya se importó, Pharos lo dice y no duplica nada.",
     shot: { element: D },
+    focus: `${D} [aria-label="${R.import.preview}"]`,
     run: async () => {
+      // A click elsewhere closes the tip of the previous step.
+      await $(D).$(".cd__title").click();
+      await $(".infotip__bubble:not([hidden])").waitForExist({ reverse: true });
+      await pickReport(REPORT, R.format.junit);
+      await (await field(R.field.title, D)).setValue("Regresión nocturna · Playwright");
+      await (await field(R.field.build, D)).setValue(RELEASE.build);
+      await (await field(R.field.environment, D)).setValue(RELEASE.environment);
       await $(D).$(`[aria-label="${R.import.preview}"]`).scrollIntoView({ block: "center" });
       await expect(dialog()).toHaveText(expect.stringContaining("tests"));
     },
@@ -138,6 +156,7 @@ chapter("ejecuciones", () => {
       "Si el informe enlaza capturas, vídeos o trazas por su ruta, Pharos pide la «Carpeta de adjuntos» (por ejemplo, test-results): busca cada archivo por su nombre y lo guarda, cifrado, como evidencia del resultado. En este ejemplo, un JUnit de dos tests de acceso, vinculados a PH-001 y PH-002 por su test_id, con la captura de un fallo. «Ciclo» hace que el run nuevo sea del ciclo «Regresión 0.6.0»: sus resultados cuentan en el progreso del ciclo sin editar nada después (los ciclos cerrados no se ofrecen). «Run abierto» añade los resultados a un run en curso, para los shards de una misma ejecución.",
     covers: ["action:import-attachments-folder", "action:import-into-cycle"],
     shot: { element: D },
+    focus: ["button*=Elegir carpeta", '[data-testid="import-cycle"]'],
     run: async () => {
       await chooseReport(join(fixturesDir, "informe-adjuntos", "junit.xml"), R.format.junit);
       // msedgedriver uploads a whole folder into a webkitdirectory input.
@@ -149,6 +168,8 @@ chapter("ejecuciones", () => {
       const cycle = $(D).$('[data-testid="import-cycle"]');
       await chooseOption(cycle, { index: 1 });
       await waitForText(tf("runs.import.attachments_one", { count: 1 }));
+      // From the top of the dialog: the folder and the cycle, above the preview.
+      await scrollToTop(`${D} .cd__title`);
     },
   });
 
@@ -183,11 +204,11 @@ chapter("ejecuciones", () => {
   step("vincular", {
     title: "Vincular un test a un caso",
     caption:
-      "«Vincular…» abre el buscador de casos: busca por clave o título (en este ejemplo, el test «Login con credenciales validas» de la regresión nocturna es el caso «Iniciar sesión con credenciales válidas»), elige el caso y pulsa «Vincular». Desde ese momento, todos sus resultados, pasados y futuros, cuentan para el caso; los resultados en sí no cambian.",
+      "«Vincular…» abre el buscador de casos: busca por clave o título (en este ejemplo, el test «Login con credenciales válidas» de la regresión nocturna es el caso «Iniciar sesión con credenciales válidas»), elige el caso y pulsa «Vincular». Desde ese momento, todos sus resultados, pasados y futuros, cuentan para el caso; los resultados en sí no cambian.",
     covers: ["dialogs:src/modules/runs/ui/LinkCaseDialog.tsx"],
     shot: { element: D },
     run: async () => {
-      await $(`//button[contains(., ${JSON.stringify(R.tray.linkAction)}) and contains(., "Login con credenciales validas")]`).click();
+      await $(`//button[contains(., ${JSON.stringify(R.tray.linkAction)}) and contains(., "Login con credenciales válidas")]`).click();
       await expect(dialog()).toBeDisplayed();
       await (await field(R.tray.search, D)).setValue("Iniciar sesión");
       await $(D).$('input[type="radio"]').click();
@@ -260,7 +281,7 @@ chapter("ejecuciones", () => {
   step("allure", {
     title: "Importar resultados de Allure (.zip)",
     caption:
-      "De Allure, comprime la carpeta `allure-results` y elige el .zip. Los reintentos son intentos del mismo test: uno que pasa tras fallar queda *flaky*. La etiqueta `tag` (`@PH-001`) o un enlace `tms` vinculan el test a su caso, y sus adjuntos se guardan como evidencias. En este ejemplo, la vista previa de los tests de acceso de Pharos con Allure: PH-001 trae su enlace `tms` y una captura, y PH-002 pasa en el segundo intento.",
+      "De Allure, comprime la carpeta `allure-results` y elige el .zip. Los reintentos son intentos del mismo test: uno que pasa tras fallar queda *flaky*. La etiqueta `tag` (`@PH-001`) o un enlace `tms` vinculan el test a su caso, y sus adjuntos se guardan como evidencias. En este ejemplo, los tests de acceso de Pharos con Allure: la vista previa cuenta 2 tests en 3 intentos, los 3 vinculados a su caso, y 1 adjunto.",
     shot: { element: D },
     run: async () => {
       await chooseReport(join(INFORMES, SCANS.allure.file), R.format.allure);
@@ -284,7 +305,7 @@ chapter("ejecuciones", () => {
   step("importar-sarif", {
     title: "Importar hallazgos de seguridad (SARIF)",
     caption:
-      "Un SARIF (Semgrep, Trivy, ZAP, CodeQL, ESLint…), un informe de axe o el resumen de k6 no traen tests, sino hallazgos o métricas, y la vista previa los cuenta. En este ejemplo, Semgrep analizó el servidor de Pharos y encontró dos problemas: uno de severidad media, que la respuesta de /auth/login delata si un correo tiene cuenta, y otro bajo, una cadena de formato construida con una variable. El primero lleva el tag @PH-002, así que queda vinculado al caso «Rechazar credenciales no válidas».",
+      "Un SARIF (Semgrep, Trivy, ZAP, CodeQL, ESLint…), un informe de axe o el resumen de k6 no traen tests, sino hallazgos o métricas, y la vista previa los cuenta. En este ejemplo, Semgrep analizó el servidor de Pharos y encontró dos problemas: uno de severidad media, que la respuesta de /auth/login delata si un correo tiene cuenta, y otro bajo, una cadena de formato construida con una variable. El primero lleva el tag @PH-002: la matriz de trazabilidad (capítulo 13) lo cuenta en el caso «Rechazar credenciales no válidas».",
     shot: { element: D },
     run: async () => {
       await chooseReport(join(INFORMES, SCANS.sarif.file), R.format.sarif);
@@ -349,7 +370,7 @@ chapter("ejecuciones", () => {
   step("axe", {
     title: "Importar un informe de accesibilidad (axe)",
     caption:
-      "Un informe de axe (axe-core, @axe-core/playwright…) trae las reglas de accesibilidad incumplidas en cada página, con su nivel WCAG. En este ejemplo, la auditoría del diálogo «Nuevo requisito» de Pharos trae una infracción grave, la página sin título (`document-title`), y una regla «A revisar», el contraste de color: axe no pudo decidirla, así que no cuenta como abierta hasta que alguien la mire y decida en «Triaje».",
+      "Un informe de axe (axe-core, @axe-core/playwright…) trae las reglas de accesibilidad incumplidas en cada página, con su nivel WCAG. En este ejemplo, la auditoría del diálogo «Nuevo requisito» de Pharos trae una infracción de severidad alta, la página sin título (`document-title`), y una regla «A revisar», el contraste de color: axe no pudo decidirla, así que no cuenta como abierta hasta que alguien la mire y decida en «Triaje».",
     run: async () => {
       await chooseReport(AXE_REPORT, R.format.axe);
       await (await field(R.field.title, D)).setValue(SCANS.axe.title);
@@ -377,6 +398,8 @@ chapter("ejecuciones", () => {
       await expect($('[data-testid="metrics-thresholds"]')).toHaveText(
         expect.stringContaining(tf("findings.metric.thresholdsMet", { passed: 3, total: 4 })),
       );
+      // The thresholds line on top, down to «Ver todas» and the k6 checks.
+      await scrollToTop('[data-testid="metrics-panel"]');
     },
   });
 
@@ -384,7 +407,8 @@ chapter("ejecuciones", () => {
     title: "Hallazgos en la lista de runs",
     caption:
       "La lista de runs marca cada análisis con sus hallazgos abiertos, en el color del peor, y cada prueba de carga con sus umbrales incumplidos; un run que solo trae hallazgos o métricas ya no dice «Sin resultados». Fuera del run cuenta el último análisis de cada herramienta: lo que ya no aparece en él se da por corregido.",
-    focus: '[data-testid="runs-list"]',
+    // The three runs on top: the k6 load test and the two analyses.
+    focus: '[data-testid="runs-list"] tr.dt__row:nth-child(-n+3)',
     run: async () => {
       await openSection("runs");
       await waitForText(tf("runs.list.thresholdsFailed_one", { count: 1 }));

@@ -11,7 +11,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { $, $$, browser, expect } from "@wdio/globals";
 import { DESKTOP, MOBILE, chapter, setViewport, step } from "./tour";
-import { PROJECT_A, byTestId, chooseFile, clickButton, es, field, fixturesDir, openProject, openSection, tf, waitForText, waitForToast } from "./helpers";
+import { PROJECT_A, byTestId, chooseFile, clickButton, es, field, fixturesDir, openProject, openSection, pointerAway, scrollToTop, tf, waitForText, waitForToast } from "./helpers";
 import { CYCLE, LIBRARY, MANUAL_RUN } from "./data/pharos";
 
 const E = es.execution;
@@ -45,12 +45,22 @@ async function execute(caseKey: string) {
   await expect(byTestId("exec-panel")).toBeDisplayed();
 }
 
-/** Marks every step of the open target and saves it (`fail`: the last step fails). */
-async function markAndSave(fail: boolean) {
+/** Marks every step of the open target (`fail`: the last step fails). */
+async function markSteps(fail: boolean) {
   const steps = (await $$('[data-testid^="exec-step-"][data-testid$="-pass"]')).length;
   for (let i = 1; i <= steps; i++) await byTestId(`exec-step-${i}-${fail && i === steps ? "fail" : "pass"}`).click();
+}
+
+/** Saves the open target's attempt. */
+async function saveAttempt(fail: boolean) {
   await byTestId("exec-save").click();
   await waitForToast(tf("execution.recorded", { status: es.runs.status[fail ? "failed" : "passed"] }));
+}
+
+/** Marks every step of the open target and saves it (`fail`: the last step fails). */
+async function markAndSave(fail: boolean) {
+  await markSteps(fail);
+  await saveAttempt(fail);
 }
 
 chapter("ejecucion-manual", () => {
@@ -79,7 +89,7 @@ chapter("ejecucion-manual", () => {
   step("pantalla-run", {
     title: "La pantalla del run",
     caption:
-      "La pantalla del run muestra su cabecera (clave, título, estado, origen, entorno, build, configuración, ciclo y fechas), el progreso («0/3 ejecutados») y sus elementos, que se filtran por resultado. Un caso Outline, con flujos o con dataset se ejecuta una vez por fila o por flujo (en este ejemplo, PH-002 tiene dos filas de ejemplos y PH-005, las tres filas de su dataset); el progreso cuenta el caso una vez. Arriba, «Añadir casos», «Editar datos», «Cerrar run» y «Eliminar run»; «Ejecutar el siguiente» abre el primer elemento pendiente. Un run con hallazgos o métricas tiene además las pestañas «Hallazgos» y «Métricas» (capítulo 10).",
+      "La pantalla del run muestra su cabecera (clave, título, estado, origen, entorno, build, configuración, ciclo y fechas), el progreso y sus elementos, que se filtran por resultado. Un caso Outline, con flujos o con dataset se ejecuta una vez por fila o por flujo, y cada fila o flujo cuenta como una ejecución: en este ejemplo, PH-002 tiene dos filas de ejemplos y PH-005, las tres filas de su dataset, así que el progreso dice «0/6 ejecutados». Arriba, «Añadir casos», «Editar datos», «Cerrar run» y «Eliminar run»; «Ejecutar el siguiente» abre el primer elemento pendiente. Un run con hallazgos o métricas tiene además las pestañas «Hallazgos» y «Métricas» (capítulo 10).",
     covers: ["route:/projects/:projectId/runs/:runId", "screen:manual-run"],
     run: async () => {
       await byTestId("run-cases-confirm").click();
@@ -87,6 +97,7 @@ chapter("ejecucion-manual", () => {
       await browser.waitUntil(async () => (await $$('[data-testid="run-item-execute"]')).length >= 3, {
         timeoutMsg: "the run has no items to execute",
       });
+      await waitForText(tf("execution.run.progress", { executed: 0, total: 6 }));
     },
   });
 
@@ -146,7 +157,7 @@ chapter("ejecucion-manual", () => {
     caption:
       "Con el foco en un paso o en el resultado, Ctrl+V pega la imagen del portapapeles como evidencia, sin guardarla antes en un archivo: haz la captura con Win+Mayús+S (⌘⇧4 en Mac) y pega. «Pegar captura» hace lo mismo con un clic. La imagen se llama «captura-» con la fecha y la hora y aparece como una ficha más, junto a la captura del fallo.",
     covers: ["action:exec-paste"],
-    focus: ".ex-result",
+    focus: '[data-testid="exec-panel"] .ex-file',
     run: async () => {
       // The earlier attachment's toast must be gone, or it would pass for this one.
       await browser.waitUntil(async () => !(await $("body").getText()).includes(E.attached_one), {
@@ -166,9 +177,19 @@ chapter("ejecucion-manual", () => {
         target?.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
       }, MANUAL_RUN.failed.step);
       await browser.waitUntil(async () => (await $$(".ex-file")).length > before, { timeoutMsg: "the pasted image was not attached" });
+      // No hover state in the picture; then the same framing as «Adjuntar
+      // evidencias»: both captures in view.
+      await pointerAway();
       await $(".ex-result__files").scrollIntoView({ block: "center" });
-      // Away from «Atajos», so no hover state stays in the picture.
-      await $(".ex-head__title").moveTo();
+      await $(".ex-file__name*=captura-fallo-acceso").waitForDisplayed();
+      let pasted: WebdriverIO.Element | null = null;
+      for (const name of await $$(".ex-file__name")) {
+        const text = await name.getText();
+        if (text.startsWith("captura-") && !text.includes("fallo")) pasted = name;
+      }
+      if (!pasted) throw new Error("the pasted capture has no chip");
+      if (!(await pasted.isDisplayed({ withinViewport: true }))) await pasted.scrollIntoView({ block: "center" });
+      if (!(await pasted.isDisplayed({ withinViewport: true }))) throw new Error("the pasted capture is not in view");
     },
   });
 
@@ -195,16 +216,15 @@ chapter("ejecucion-manual", () => {
   step("guardar", {
     title: "Guardar el resultado",
     caption:
-      "«Guardar resultado (Falla)» (o Ctrl+Enter) registra el intento con el estado que resulta de los pasos; el selector «Resultado» permite fijar otro a mano. Los pasos sin marcar se guardan como Omitido, y el aviso lo dice antes. Un intento guardado no cambia: repetir la prueba crea otro intento («Intento 2»), así que el historial de lo que pasó se conserva en «Intentos», debajo.",
-    focus: ".ex-result",
+      "«Guardar resultado (Falla)» (o Ctrl+Enter) registra el intento con el estado que resulta de los pasos; el selector «Resultado» permite fijar otro a mano. Los pasos sin marcar se guardan como Omitido, y el aviso lo dice antes. Al guardar, el intento aparece en «Intentos», debajo, con su estado, su fecha y sus evidencias, y el ejecutor queda listo para otro. Un intento guardado no cambia: repetir la prueba crea otro intento («Intento 2»), así que el historial de lo que pasó se conserva.",
+    focus: ".ex-attempts",
     run: async () => {
       await expect(byTestId("exec-save")).toHaveText(expect.stringContaining(es.runs.status.failed));
-      await $(".ex-result__actions").scrollIntoView({ block: "center" });
-    },
-    after: async () => {
       await byTestId("exec-save").click();
       await waitForToast(E.recorded.split("{{")[0]);
       await expect(byTestId("exec-create-defect")).toBeDisplayed();
+      // The saved attempt, with the end of the (now empty) draft above it.
+      await scrollToTop(".ex-attempts", 420);
     },
   });
 
@@ -215,9 +235,10 @@ chapter("ejecucion-manual", () => {
     run: async () => {
       await byTestId("exec-create-defect").click();
       await expect($(".tp-editor__save")).toBeDisplayed();
-      // The capture shows the prefilled reproduction, below the title.
-      const steps = await field(es.defects.field.steps);
-      await steps.scrollIntoView({ block: "center" });
+      // The capture starts at the top of the editor: its origin, the title
+      // and the prefilled fields below.
+      await expect(await field(es.defects.field.steps)).toHaveValue(expect.stringContaining("1."));
+      await scrollToTop(".df-editor");
     },
     // Not saved: the login failure already has its defect (chapter 12).
     after: async () => {
@@ -254,19 +275,28 @@ chapter("ejecucion-manual", () => {
         await $$("button.ex-target")[row].click();
         await markAndSave(false);
       }
-      // PH-005: one execution per dataset row, the last one fails.
+      // PH-005: one execution per dataset row; the failing one is marked
+      // last and saved after the capture, so the picture shows its marks.
       await execute(MANUAL_RUN.dataset.caseKey);
       const targets = await $$("button.ex-target");
       await expect(targets[0]).toHaveText(expect.stringContaining(tf("execution.rowOf", { n: 1, total: LIBRARY.dataset.rows })));
+      const failed = MANUAL_RUN.dataset.failedRow - 1;
       for (let row = 0; row < LIBRARY.dataset.rows; row++) {
+        if (row === failed) continue;
         await $$("button.ex-target")[row].click();
         await expect($$("button.ex-target")[row]).toHaveAttribute("aria-current", "true");
-        await markAndSave(row + 1 === MANUAL_RUN.dataset.failedRow);
+        await markAndSave(false);
       }
+      await $$("button.ex-target")[failed].click();
+      await expect($$("button.ex-target")[failed]).toHaveAttribute("aria-current", "true");
+      await markSteps(true);
       await expect($(".ex-shared")).toHaveText(expect.stringContaining(tf("execution.sharedBlock", { name: LIBRARY.step.name, version: 2 })));
-      // The capture shows the rows with their results and the shared block.
-      await $$("button.ex-target")[MANUAL_RUN.dataset.failedRow - 1].click();
-      await $(".ex-targets").scrollIntoView({ block: "start" });
+      // The executor from its head: the case, the rows and the marked steps.
+      await pointerAway();
+      await scrollToTop('[data-testid="exec-panel"]');
+    },
+    after: async () => {
+      await saveAttempt(true);
     },
   });
 
@@ -322,6 +352,18 @@ chapter("ejecucion-manual", () => {
           (await $('[data-testid="run-item-execute"]').isDisplayed().catch(() => false)),
         { timeoutMsg: "neither the executor nor the item list shows on a phone" },
       );
+      // The strip of rows scrolled to the selected one, so no chip is cut.
+      await browser.execute(() => {
+        const chip = document.querySelector<HTMLElement>('button.ex-target[aria-current="true"]');
+        const strip = chip?.parentElement?.closest<HTMLElement>(".ex-targets");
+        if (!chip || !strip) return;
+        let scroller: HTMLElement | null = chip.parentElement;
+        while (scroller && scroller !== strip.parentElement && scroller.scrollWidth <= scroller.clientWidth + 1) scroller = scroller.parentElement;
+        if (!scroller || scroller === strip.parentElement) return;
+        const s = scroller.getBoundingClientRect();
+        const c = chip.getBoundingClientRect();
+        scroller.scrollLeft += c.right - s.right;
+      });
     },
     // Liomar has run everything: the run ends completed (the prerequisite of
     // chapters 3, 13 and 16).
@@ -336,7 +378,7 @@ chapter("ejecucion-manual", () => {
   step("informe-estado", {
     title: "Informe de estado",
     caption:
-      "En «Ejecuciones» (o en la cabecera de un ciclo), «Informe de estado» genera el informe de estado de pruebas (ISO/IEC/IEEE 29119-3) del proyecto, de un ciclo o del plan, entre las fechas que elijas en «Desde» y «Hasta» (con el selector de fechas de Pharos del capítulo 5: «Hasta» abre en el mes de «Desde» y no deja elegir un día anterior). Sus secciones: identificación, progreso, resultados por estado, defectos por severidad (a fecha de hoy), cobertura y riesgos (con la cobertura ponderada por riesgo), los criterios de salida del plan (cumple / no cumple / sin datos), bloqueos, resumen y recomendaciones. Si hay análisis o pruebas de carga (capítulo 10), «7.1 Hallazgos y rendimiento» cuenta los hallazgos abiertos por severidad, los nuevos, los triados, los que esperan revisión y los umbrales cumplidos e incumplidos; con un ciclo cerrado, el informe empieza por su «Decisión de salida» (capítulo 9). El resumen se rellena solo con las cifras y se puede cambiar; en este ejemplo, Liomar escribe sus recomendaciones. Los dos se guardan solo en este equipo y van en las exportaciones.",
+      "En «Ejecuciones» (o en la cabecera de un ciclo), «Informe de estado» genera el informe de estado de pruebas (ISO/IEC/IEEE 29119-3) del proyecto, de un ciclo o del plan, entre las fechas que elijas en «Desde» y «Hasta» (con el selector de fechas de Pharos del capítulo 5: «Hasta» abre en el mes de «Desde» y no deja elegir un día anterior). Sus secciones: identificación, progreso, resultados por estado, defectos por severidad (a fecha de hoy), cobertura y riesgos (con la cobertura ponderada por riesgo), los criterios de salida del plan (cumple / no cumple / sin datos), bloqueos, resumen y recomendaciones. Con un ciclo cerrado, el informe empieza por su «Decisión de salida» (capítulo 9).",
     covers: ["dialogs:src/modules/runs/report/StatusReportDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -345,11 +387,23 @@ chapter("ejecucion-manual", () => {
       await expect(byTestId("status-report")).toBeDisplayed();
       await waitForText(es.statusReport.section.exit);
       await waitForText(es.statusReport.section.findings);
+      // The capture starts at the top of the report.
+      await $(`${D} .cd__title`).scrollIntoView({ block: "start" });
+    },
+  });
+
+  step("informe-recomendaciones", {
+    title: "Hallazgos, resumen y recomendaciones",
+    caption:
+      "Si hay análisis o pruebas de carga (capítulo 10), «7.1 Hallazgos y rendimiento» cuenta los hallazgos abiertos por severidad, los nuevos, los triados, los que esperan revisión y los umbrales cumplidos e incumplidos. El resumen se rellena solo con las cifras y se puede cambiar; las recomendaciones las escribes tú: en este ejemplo, Liomar pide repetir lo que falló cuando se corrija. Los dos se guardan solo en este equipo y van en las exportaciones.",
+    shot: { element: D },
+    focus: `${D} [data-testid="report-recommendations"]`,
+    run: async () => {
       await byTestId("report-recommendations").setValue(
         `Repetir PH-001 y la tercera fila de PH-005 cuando se corrija el fallo de acceso, y cerrar el ciclo «${CYCLE.title}».`,
       );
-      // The capture starts at the top of the report.
-      await $(`${D} .cd__title`).scrollIntoView({ block: "start" });
+      // From «7.1 Hallazgos y rendimiento» down to the recommendations.
+      await scrollToTop($(D).$(`h4=${es.statusReport.section.findings}`));
     },
   });
 

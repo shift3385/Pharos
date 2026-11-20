@@ -27,6 +27,7 @@ import {
   menuItem,
   openProject,
   openSection,
+  scrollToTop,
   waitForToast,
 } from "./helpers";
 
@@ -72,7 +73,7 @@ chapter("plan", () => {
   step("asistente", {
     title: "El asistente del plan",
     caption:
-      "El plan de pruebas dice qué se prueba, cómo, con qué medios, quién y cuándo. Pharos lo redacta con un asistente de 22 pasos que sigue la norma ISO/IEC/IEEE 29119-3 y el apartado 5.1.1 de ISTQB CTFL v4: «Plan de pruebas», la primera sección del proyecto. A la izquierda, la lista de pasos con una ✓ en los completos y el porcentaje de avance; en el centro, el paso actual, con «Paso N de 22» y si hay cambios sin guardar; a la derecha, «Estado del plan» (estado, versión, autor, última actualización y las acciones de revisión) y el «Historial» de sus últimos cambios. No hace falta seguir el orden: salta a cualquier paso desde la lista. En este ejemplo, «Pharos» todavía no tiene plan («Sin plan», en la cabecera del proyecto).",
+      "El plan de pruebas dice qué se prueba, cómo, con qué medios, quién y cuándo. Pharos lo redacta con un asistente de 22 pasos que sigue la norma ISO/IEC/IEEE 29119-3 y el apartado 5.1.1 de ISTQB CTFL v4: «Plan de pruebas», la primera sección del proyecto. A la izquierda, la lista de pasos con una ✓ en los completos y el porcentaje de avance; en el centro, el paso actual, con «Paso N de 22» y si hay cambios sin guardar; a la derecha, «Estado del plan». No hace falta seguir el orden: salta a cualquier paso desde la lista. En este ejemplo, «Pharos» todavía no tiene plan («Sin plan», en la cabecera del proyecto).",
     covers: ["section:plan"],
     run: async () => {
       await openProject(PROJECT_A.name);
@@ -111,10 +112,10 @@ chapter("plan", () => {
   step("guardar", {
     title: "Guardar el plan",
     caption:
-      "«Guardar», en la cabecera, guarda el plan desde cualquier paso (en el último, «Finalizar plan» hace lo mismo): aparece el aviso «Plan de pruebas guardado», la línea de estado pasa a «Guardado · ahora mismo» y la cabecera del proyecto pasa de «Sin plan» a «Plan borrador». Guarda a menudo: cada guardado con cambios sube la versión y crea una revisión a la que puedes volver; guardar sin cambios avisa de que no hay nada que guardar.",
+      "«Guardar», en la cabecera, guarda el plan desde cualquier paso (en el último, «Finalizar plan» hace lo mismo): aparece el aviso «Plan de pruebas guardado», la línea de estado pasa a «Guardado · ahora mismo» y la cabecera del proyecto pasa de «Sin plan» a «Plan borrador». Guarda a menudo: cada guardado con cambios sube la versión y crea una revisión a la que puedes volver; guardar sin cambios avisa de que no hay nada que guardar. Con el plan guardado, el panel de la derecha muestra «Estado del plan» (estado, versión, autor, última actualización y las acciones de revisión) y, debajo, el «Historial» de sus últimos cambios.",
     toast: true,
     covers: ["action:plan-save"],
-    focus: "header.pj-header",
+    focus: ["header.pj-header", "aside.tpw-side"],
     run: async () => {
       await button(P.save).click();
       await waitForToast(P.savedToast);
@@ -185,7 +186,7 @@ chapter("plan", () => {
   step("supuestos", {
     title: "Paso 4 · Supuestos y restricciones",
     caption:
-      "Dos listas, una junto a otra. Los supuestos son lo que se da por hecho al planificar (aquí, que el servidor de staging esté disponible de 8 a 20 h); si uno deja de cumplirse, hay que revisar el plan. Las restricciones son los límites que el equipo no puede cambiar (un equipo de QA de dos personas, la fecha de la versión). Con un motor de IA, «Sugerir supuestos y restricciones con IA» propone elementos de las dos listas a partir del plan, y eliges cuáles añadir.",
+      "Dos listas, una debajo de otra. Los supuestos son lo que se da por hecho al planificar (aquí, que el servidor de staging esté disponible de 8 a 20 h); si uno deja de cumplirse, hay que revisar el plan. Las restricciones son los límites que el equipo no puede cambiar (un equipo de QA de dos personas, la fecha de la versión). Con un motor de IA, «Sugerir supuestos y restricciones con IA» propone elementos de las dos listas a partir del plan, y eliges cuáles añadir.",
     covers: ["wizard:assumptions"],
     run: async () => {
       await next("assumptions");
@@ -249,7 +250,7 @@ chapter("plan", () => {
   step("entregables", {
     title: "Paso 8 · Entregables",
     caption:
-      "Los entregables son los documentos y artefactos que el equipo de pruebas se compromete a producir. La lista sigue la documentación de ISO/IEC/IEEE 29119-3, en columnas: gestión de pruebas, especificación, datos y entorno, ejecución y resultados, y aceptación. Las casillas marcadas son lo acordado con el proyecto; el plan deja constancia de ese acuerdo y sirve de referencia al cerrar el ciclo. Lo acordado que no está en la lista va en la sexta columna, «Propios» (aquí, «Informe de accesibilidad WCAG 2.2»), con su ✕ para quitarlo.",
+      "Los entregables son los documentos y artefactos que el equipo de pruebas se compromete a producir. La lista sigue la documentación de ISO/IEC/IEEE 29119-3, en seis grupos: gestión de pruebas, especificación, datos y entorno, ejecución y resultados, aceptación y, el último, «Propios». Las casillas marcadas son lo acordado con el proyecto; el plan deja constancia de ese acuerdo y sirve de referencia al cerrar el ciclo. Lo acordado que no está en la lista va en «Propios» (aquí, «Informe de accesibilidad WCAG 2.2»), con su ✕ para quitarlo.",
     covers: ["wizard:deliverables"],
     focus: ".tpw-deliv",
     run: async () => {
@@ -293,6 +294,8 @@ chapter("plan", () => {
     run: async () => {
       await next("roles");
       await expect(byTestId("plan-independence").$(`input[value="${PLAN.independence}"]`)).toBeSelected();
+      // The roles, the scale and the training row, all above the step footer.
+      await byTestId("plan-independence").scrollIntoView({ block: "center" });
     },
   });
 
@@ -317,7 +320,9 @@ chapter("plan", () => {
       await next("schedule");
       await expect($('[role="grid"].tps-grid')).toBeDisplayed();
       await atLeast("section.tps-list .tps-row", PLAN.sprints.length);
-      await $(".tps-card").scrollIntoView({ block: "start" });
+      // The step's card from its top («Paso 15 de 22» and the title), just
+      // below the top bar.
+      await scrollToTop(".tpw__form");
     },
   });
 
@@ -348,15 +353,10 @@ chapter("plan", () => {
       await browser.keys(["Control", "a"]);
       await browser.keys([...PLAN_ON_SCREEN.milestone.name]);
       await expect(fresh).toHaveValue(PLAN_ON_SCREEN.milestone.name);
-      // The calendar from its top and, below, the three milestones (two from
-      // the Excel, FIX-40); the pointer off the controls without scrolling.
-      await $(".tps-card").scrollIntoView({ block: "start" });
-      // «Sprint / Hito» whole under the top bar.
-      await browser.execute(() => {
-        let el = document.querySelector(".tps-card")?.parentElement ?? null;
-        while (el && el.scrollHeight <= el.clientHeight) el = el.parentElement;
-        (el ?? document.scrollingElement)?.scrollBy(0, -24);
-      });
+      // The calendar card from its top («Sprint / Hito» whole, below the top
+      // bar) and, below, the three milestones (two from the Excel, FIX-40);
+      // the pointer off the controls without scrolling.
+      await scrollToTop(".tps-card", 8);
       await browser.action("pointer").move({ origin: "viewport", x: 1270, y: 760 }).perform();
     },
   });
@@ -386,10 +386,13 @@ chapter("plan", () => {
     title: "Paso 19 · Métricas y objetivos medibles",
     caption: `Qué se mide y qué objetivo debe alcanzar, una fila por métrica: su comparador (≥, >, ≤, <, =), su objetivo y su unidad. Un plan trae cuatro de partida: casos ejecutados ≥ 95 %, tasa de éxito ≥ 90 %, defectos críticos abiertos = 0 y cobertura de requisitos ≥ 90 %. Las del catálogo (también densidad de defectos por cada 100 casos, defectos escapados, tiempo de corrección en días, reapertura e inestables) las mide Pharos y su unidad es fija; una propia lleva nombre y unidad y se valora a mano (aquí, «${PLAN.ownMetric.name}» ≥ ${PLAN.ownMetric.target}). «Criterio de salida» la lleva a los criterios de cierre, para que cuente al cerrar un ciclo.`,
     covers: ["wizard:metrics"],
-    focus: ".tpw-metrics",
+    focus: ".tpw-metrics__list > li:last-child",
     run: async () => {
       await next("metrics");
       await atLeast('[data-testid="plan-metric"]', 5);
+      // The own metric, the last row, in view above the step footer.
+      await $(".tpw-metrics__list > li:last-child").scrollIntoView({ block: "center" });
+      await expect($(".tpw-metrics__list > li:last-child input")).toHaveValue(PLAN.ownMetric.name);
     },
   });
 
@@ -398,12 +401,17 @@ chapter("plan", () => {
     caption:
       "Los criterios de cierre (paso 20) son los criterios de salida del plan. «Medido por» dice qué métrica mide cada uno: entonces su texto sale de la métrica y se evalúa solo al cerrar un ciclo (el Inicio también los muestra, capítulo 3). Sin métrica, el criterio es texto libre y se marca a mano (aquí, «Casos críticos ejecutados» al «100 %»). Cada uno es «Bloqueante» (por defecto: en «No cumple» pide una justificación para cerrar el ciclo) u «Orientativo» (solo se informa). Con un motor de IA, «Sugerir criterios con IA» propone criterios ligados a los riesgos del plan. El paso 21 recoge el propósito del documento.",
     covers: ["wizard:closure", "wizard:purpose"],
+    focus: ".tpw-closure__list > li:last-child",
     run: async () => {
       await next("closure");
       await atLeast('[data-testid="plan-criterion-blocking"]', 4);
       await next("purpose");
       await expect(await field(P.purpose)).toHaveValue(PLAN.purpose);
       await goToStep("closure");
+      // The free-text criterion, the last row, in view above the step footer.
+      const free = $(".tpw-closure__list > li:last-child");
+      await expect(free.$("textarea")).toHaveValue(PLAN.closure[0][0]);
+      await free.scrollIntoView({ block: "center" });
     },
   });
 
@@ -434,13 +442,16 @@ chapter("plan", () => {
   step("revisiones", {
     title: "Revisiones del plan",
     caption:
-      "Liomar pulsa «Seguir editando» y «Guardar». Cada guardado con cambios sube la versión y crea una revisión, una copia fechada del plan. El panel «Historial», junto al formulario (o debajo en pantallas estrechas), enseña los últimos cambios: estado, versión, fecha, quién y qué pasos tocó (aquí, «Alcance» y «Cronograma»). Su enlace «Revisiones» abre la lista con el número, el título y la fecha de cada copia, la más reciente arriba.",
+      "Liomar pulsa «Seguir editando» y «Guardar». Cada guardado con cambios sube la versión y crea una revisión, una copia fechada del plan. El panel «Historial», junto al formulario (o debajo en pantallas estrechas), enseña los últimos cambios: estado, versión, fecha, quién y qué pasos tocó (aquí, la versión nueva con «Alcance» y «Cronograma», encima de la creación del plan). Su enlace «Revisiones» abre la lista de esas copias, con su número, su título y su fecha, la más reciente arriba.",
     covers: ["dialogs:src/modules/test-plan/ui/wizard/PlanSidePanels.tsx"],
-    shot: { element: '[role="dialog"]' },
+    focus: 'section[aria-labelledby="tpw-revs-title"]',
     run: async () => {
       await $('[role="alertdialog"]').$(`button=${es.dialog.unsaved.keep}`).click();
       await button(P.save).click();
       await waitForToast(P.savedToast);
+      await top();
+    },
+    after: async () => {
       await $('section[aria-labelledby="tpw-revs-title"]').$(`button=${P.revisions}`).click();
       await atLeast('[role="dialog"] .tp-revs__restore', 1);
     },
@@ -467,7 +478,7 @@ chapter("plan", () => {
   step("exportar", {
     title: "Exportar el plan",
     caption:
-      "«Importar / Exportar», en la cabecera, ofrece el plan en .pdf, maquetado y listo para firmar, o en .xlsx, editable en Excel y que «Importar .xlsx» vuelve a leer. Al pie, el menú indica qué historial lleva el documento: «Solo la versión vigente» o «Historial de revisiones», según «Ajustes del proyecto» (capítulo 14). Se exporta lo que ves, aunque no esté guardado. El archivo va a tu carpeta de descarga (Administración › General, capítulo 15) y un aviso dice su nombre.",
+      "«Importar / Exportar», en la cabecera, ofrece el plan en .pdf, maquetado y listo para firmar, o en .xlsx, editable en Excel y que «Importar .xlsx» vuelve a leer. Qué historial lleva el documento («Solo la versión vigente» o «Historial de revisiones») lo decide «Ajustes del proyecto» (capítulo 14). Se exporta lo que ves, aunque no esté guardado. El archivo va a tu carpeta de descarga (Administración › General, capítulo 15) y un aviso dice su nombre.",
     covers: ["action:plan-export"],
     focus: '[role="menu"]',
     run: async () => {

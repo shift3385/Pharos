@@ -37,7 +37,7 @@ falte:
 - **Un criterio obligatorio que no se cumple**, o que no tiene datos para
   medirse, pide una **justificación** de al menos 20 caracteres: por qué se
   acepta el riesgo, quién lo asume y cuándo se resuelve.
-- **Un criterio manual** (por ejemplo, «Visto bueno del PO») se marca a mano:
+- **Un criterio manual** (por ejemplo, «Casos críticos ejecutados») se marca a mano:
   «Cumple» o «No cumple».
 - **Un criterio orientativo** se muestra y queda en el informe, pero no
   bloquea.

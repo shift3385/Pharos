@@ -489,3 +489,54 @@ export async function switchWorkspace(name: string) {
     { timeout: 30_000, interval: 1_000, timeoutMsg: `the switcher never offered «${name}»` },
   );
 }
+
+/** Scrolls only vertically (never sideways, unlike scrollIntoView) so the
+ *  top of `target` sits `gap` px below the top of its scroller (the page
+ *  content, under the top bar, or a dialog's body). Horizontal scrollers
+ *  around it are put back to the left edge. */
+export async function scrollToTop(target: string | WebdriverIO.Element | ReturnType<typeof $>, gap = 16) {
+  const el = typeof target === "string" ? await $(target) : await target;
+  await el.waitForExist();
+  await browser.execute(
+    (node: HTMLElement, g: number) => {
+      const scrolls = (p: HTMLElement, axis: "Y" | "X") => {
+        const o = getComputedStyle(p)[axis === "Y" ? "overflowY" : "overflowX"];
+        return /(auto|scroll)/.test(o) && (axis === "Y" ? p.scrollHeight > p.clientHeight + 1 : p.scrollWidth > p.clientWidth + 1);
+      };
+      for (let p = node.parentElement; p; p = p.parentElement) if (scrolls(p, "X")) p.scrollLeft = 0;
+      let s = node.parentElement;
+      while (s && !scrolls(s, "Y")) s = s.parentElement;
+      const scroller = s ?? (document.scrollingElement as HTMLElement);
+      const top = s ? s.getBoundingClientRect().top : 0;
+      scroller.scrollTop += node.getBoundingClientRect().top - top - g;
+    },
+    el as unknown as HTMLElement,
+    gap,
+  );
+  await browser.execute(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
+}
+
+/** Opens the «?» tip (InfoTip) whose label contains `label`, inside `scope`,
+ *  and keeps it open for the capture: the bubble takes the focus, so the
+ *  capture's blur of the active element does not close it. */
+export async function openInfoTip(label: string, scope = "body") {
+  const tip = await $(scope).$(`button.infotip[aria-label*=${JSON.stringify(label)}]`);
+  await tip.click();
+  await browser.waitUntil(
+    async () =>
+      browser.execute((id: string | null) => {
+        const bubble = id ? document.getElementById(id) : null;
+        if (!bubble || bubble.hidden) return false;
+        bubble.focus();
+        return true;
+      }, await tip.getAttribute("aria-describedby")),
+    { timeoutMsg: `the «?» tip of «${label}» did not open` },
+  );
+}
+
+/** Moves the pointer onto the top bar, so no hover state stays in the
+ *  capture (unlike `moveTo`, it scrolls nothing). */
+export async function pointerAway() {
+  const width = await browser.execute(() => window.innerWidth);
+  await browser.action("pointer").move({ x: Math.round(width * 0.45), y: 30, origin: "viewport" }).perform();
+}

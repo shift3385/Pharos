@@ -102,7 +102,7 @@ export const PREREQUISITES: Prerequisite[] = [
   {
     id: "prefijos",
     contract: "prefixes PH- and API- (3 digits)",
-    madeBy: "ajustes",
+    madeBy: "proyectos",
     after: ["proyectos"],
     loader: "web API PUT /api/projects/:id + sync",
   },
@@ -660,7 +660,7 @@ export const INVENTORY: Item[] = [
   I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/WebhooksSection.tsx", "Nuevo y editar webhook, su secreto, entregas, rotar y borrar (INT-03)"),
   I("administracion", "dialog", "dialogs:src/modules/integrations/ui/AdminRevokeTokens.tsx", "Revocar todos los tokens de una cuenta (administrador)"),
   // PLN-08 (ADR-0049): «Aprobación independiente», seen from one account.
-  I("administracion", "action", "action:workspace-rules", "«Reglas»: aprobación independiente del workspace (PLN-08)"),
+  I("equipo", "action", "action:workspace-rules", "«Reglas»: aprobación independiente del workspace (PLN-08)"),
   I("administracion", "tab", "admin:ai", "Motor de IA"),
   I("administracion", "tab", "tabs:src/modules/admin/ui/AdminTabs.tsx", "Pestañas de Administración"),
   I("administracion", "dialog", "dialogs:src/modules/ai/ui/AiEngineTab.tsx", "Descartar o reemplazar la clave de IA (confirmaciones)"),
