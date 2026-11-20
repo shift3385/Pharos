@@ -40,8 +40,21 @@ nivel de todos los evaluados; los requisitos sin riesgo evaluado quedan fuera
 y se cuentan aparte. La **aprobada** hace la misma cuenta con los requisitos
 que tienen todos sus casos ejecutados y en Pasa.
 
-En este manual, Liomar revisa qué está probado de Pharos 0.3.0 cuando ya
-tiene la importación de JUnit, la ejecución manual y los dos defectos.
+Un caso con **dataset** (capítulo 8) se ejecuta una vez por fila y pasa solo
+si pasan todas sus filas. Un resultado importado cae en su fila por la
+propiedad `example_row` (capítulo 10).
+
+Los **hallazgos** de los análisis de seguridad y accesibilidad (capítulo 10)
+también llegan a la matriz: un caso con hallazgos abiertos en el último
+análisis de cada herramienta lleva una insignia con cuántos son, en el color
+del peor, y el interruptor **«Con hallazgos abiertos»** deja solo los
+requisitos con algún caso así. Un hallazgo triajado (falso positivo, riesgo
+aceptado o corregido) ya no cuenta. Un umbral de k6 incumplido en una métrica
+vinculada a un caso lo marca como fallido.
+
+En este manual, Liomar revisa qué está probado de Pharos 0.6.0 cuando ya
+tiene los informes importados y los análisis del capítulo 10, la ejecución
+manual del capítulo 11 y los defectos del capítulo 12.
 
 ## Atajos de teclado
 

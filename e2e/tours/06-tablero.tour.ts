@@ -6,6 +6,7 @@
 import { join } from "node:path";
 import { $, $$, browser, expect } from "@wdio/globals";
 import { DESKTOP, MOBILE, chapter, setViewport, step } from "./tour";
+import { RELEASE } from "./data/pharos";
 import {
   chooseFile,
   PROJECT_A,
@@ -59,7 +60,7 @@ chapter("tablero", () => {
   step("nueva-tarjeta", {
     title: "Nueva tarjeta",
     caption:
-      "«Nueva tarjeta», en la cabecera, abre el editor: el tipo (tarea, defecto o datos de prueba), la prioridad (baja, media, alta o crítica), el título, que es obligatorio, una descripción y etiquetas. En este ejemplo, Liomar prepara las cuentas de prueba de Pharos: «Preparar cuentas de prueba sintéticas», de tipo datos de prueba y prioridad alta. «Guardar» la deja en Backlog; una vez guardada, admite adjuntos.",
+      "«Nueva tarjeta», en la cabecera, abre el editor: el tipo (tarea o datos de prueba), la prioridad (baja, media, alta o crítica), el título, que es obligatorio, una descripción y etiquetas. En este ejemplo, Liomar prepara las cuentas de prueba de Pharos: «Preparar cuentas de prueba sintéticas», de tipo datos de prueba y prioridad alta, con la etiqueta «0.6.0» de la versión que prueba. «Guardar» la deja en Backlog; una vez guardada, admite adjuntos. Los defectos no van aquí: tienen su propia sección (capítulo 12).",
     covers: ["action:card-create"],
     run: async () => {
       await clickButton(L.newCard);
@@ -67,13 +68,17 @@ chapter("tablero", () => {
       await selectOption(L.kind, L.kindLabel.test_data);
       await selectOption(L.priority, L.priorityLabel.high);
       await (await field("Descripción")).setValue("Una cuenta por persona del equipo en el servidor de staging, con sus proyectos de ejemplo; ningún dato real.");
+      const labels = $(`[role="group"][aria-label="${L.labels}"]`);
+      await labels.$(".tp-list-field__add").click();
+      await labels.$("input").setValue(RELEASE.version);
+      await $(".tp-editor__save").moveTo();
     },
   });
 
   step("adjunto", {
     title: "Adjuntar archivos a una tarjeta",
     caption:
-      "Con la tarjeta guardada, «Adjuntar archivos», en «Adjuntos», acepta archivos de hasta 200 MB (en este ejemplo, «cuentas-de-prueba.csv» con las cuentas del equipo). Se guardan cifrados en este equipo; un clic en el nombre lo guarda en tu carpeta de descarga, y la papelera («Quitar: nombre del archivo») lo quita. Los adjuntos solo están en la app de escritorio.",
+      "Con la tarjeta guardada, «Adjuntar archivos», en «Adjuntos», acepta archivos de hasta 200 MB (en este ejemplo, «cuentas-de-prueba.csv» con las cuentas del equipo). Se guardan cifrados y llegan a tus otros equipos y a los miembros del workspace al sincronizar; un archivo que aún no ha llegado lo dice al abrirlo. Un clic en el nombre lo guarda en tu carpeta de descarga, y la papelera («Quitar: nombre del archivo») lo quita. Los adjuntos se añaden desde la app de escritorio.",
     covers: ["upload:src/modules/planner/ui/CardEditor.tsx"],
     focus: ".pl-attach__open",
     run: async () => {
@@ -155,6 +160,8 @@ chapter("tablero", () => {
       const handle = $(`[aria-label="${tf("planner.drag.handle", { card: REVIEW_CARD })}"]`);
       await keyboardDrag(handle, { until: tf("planner.drag.over", { card: REVIEW_CARD, column: L.column.in_progress }) });
       await expect($('section.pl-col[data-status="in_progress"]').$(`article.pl-card*=${REVIEW_CARD}`)).toBeExisting();
+      // The pointer is left over the card that moved up: no hover border.
+      await $("h1").moveTo();
     },
   });
 
@@ -175,7 +182,7 @@ chapter("tablero", () => {
   step("eliminar", {
     title: "Eliminar una tarjeta",
     caption:
-      "La papelera de la tarjeta pide confirmación («¿Eliminar la tarjeta?») antes de borrarla con sus adjuntos. Esc no cierra este aviso: solo «Cancelar».",
+      "La papelera de la tarjeta pide confirmación («¿Eliminar la tarjeta?») antes de borrarla con sus adjuntos. Esc no cierra este aviso: solo «Cancelar». En la app de escritorio, la tarjeta eliminada queda en la Papelera (Administración › General, capítulo 15) y se puede restaurar hasta que se cumple su plazo.",
     covers: ["dialogs:src/modules/planner/ui/PlannerBoard.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
@@ -186,7 +193,7 @@ chapter("tablero", () => {
 
   step("eliminada", {
     title: "Tarjeta eliminada",
-    caption: "Al confirmar, la tarjeta desaparece del tablero.",
+    caption: "Al confirmar, la tarjeta desaparece del tablero y pasa a la Papelera.",
     shot: false,
     run: async () => {
       await clickButton(L.deleteConfirm, '[role="alertdialog"]');

@@ -88,7 +88,7 @@ chapter("proyectos", () => {
   step("cabecera", {
     title: "La cabecera del proyecto",
     caption:
-      "Todas las secciones del proyecto comparten su cabecera: la insignia con el prefijo de sus claves (aquí «PHA», el que Pharos sugirió; Liomar lo acorta a «PH» en el capítulo 14), el nombre, el estado de su plan («Sin plan», «Plan borrador», «Plan aprobado»…) y una línea con sus casos, sus requisitos y la fecha de cierre del ciclo, cuando el plan la tiene. A la derecha van los botones de la sección abierta (aquí, los del plan). En el móvil solo quedan los botones, para ganar espacio.",
+      "Todas las secciones del proyecto comparten su cabecera: la insignia con el prefijo de sus claves (aquí «PHA», el que Pharos sugirió; Liomar lo acorta a «PH» en el capítulo 14), el nombre, el estado de su plan («Sin plan», «Plan borrador», «Plan en revisión», «Plan aprobado» o «Plan obsoleto») y una línea con sus casos, sus requisitos y la fecha de cierre del ciclo, cuando el plan la tiene. A la derecha van los botones de la sección abierta (aquí, los del plan). En el móvil solo quedan los botones, para ganar espacio.",
     covers: ["screen:project-header"],
     focus: "header.pj-header",
     run: async () => {
@@ -175,7 +175,7 @@ chapter("proyectos", () => {
   step("lista-proyectos", {
     title: "Todos los proyectos",
     caption:
-      "Con proyectos, la lista muestra arriba los «Recientes» (los últimos que abriste) y debajo la tabla de todos: el estado del plan, los casos, la cobertura de requisitos y el último acceso. Busca por nombre o prefijo (en este ejemplo, «sincro» deja solo «API de sincronización») y cambia el orden con el menú de orden: último acceso, nombre, última modificación, cierre del ciclo o cobertura. Con muchos proyectos, la tabla se pagina de 5, 10 o 20.",
+      "Con proyectos, la lista muestra arriba los «Recientes» (los últimos que abriste) y debajo la tabla de todos: el estado del plan, los casos, «Ejecutado» (los casos con resultado), la cobertura de requisitos y el último acceso. Son los proyectos del workspace elegido en el menú lateral (capítulo 2): aquí, los de «Personal». Busca por nombre o prefijo (en este ejemplo, «sincro» deja solo «API de sincronización») y cambia el orden con el menú de orden: último acceso, nombre, última modificación, cierre del ciclo, progreso de ejecución o cobertura de requisitos. Con muchos proyectos, la tabla se pagina de 5, 10 o 20.",
     covers: ["action:projects-search", "action:projects-sort"],
     focus: [SEARCH, ".pj-table"],
     run: async () => {
@@ -205,7 +205,7 @@ chapter("proyectos", () => {
   step("menu-fila", {
     title: "Acciones de un proyecto",
     caption:
-      "El menú «⋯» de cada fila reúne las acciones del proyecto: «Abrir», «Ajustes del proyecto» (capítulo 14) y «Exportar proyecto (ZIP)». Se recorre con ↑ ↓ y se cierra con Esc.",
+      "El menú «⋯» de cada fila reúne las acciones del proyecto: «Abrir», «Ajustes del proyecto» (capítulo 14) y «Exportar proyecto (ZIP)». Cuando eres Test Manager de un workspace compartido, aparece además «Compartir con un workspace…», que lo lleva entero a ese workspace para trabajarlo con tu equipo (capítulo 21). Se recorre con ↑ ↓ y se cierra con Esc.",
     covers: ["action:projects-row-menu"],
     focus: '[role="menu"]',
     run: async () => {
@@ -218,7 +218,7 @@ chapter("proyectos", () => {
   step("exportar-zip", {
     title: "Exportar un proyecto",
     caption:
-      "«Exportar proyecto (ZIP)» reúne en un solo archivo el plan en PDF, los casos en .xlsx y .feature y la matriz de trazabilidad: sirve como copia o para entregar el trabajo a alguien que no usa Pharos. Una ventana muestra el progreso («Generando archivos…», «Comprimiendo el ZIP…») y no se puede cerrar hasta que termina; al acabar, un aviso dice cuántos archivos se exportaron y en qué carpeta (la carpeta de descarga de «Administración › General»).",
+      "«Exportar proyecto (ZIP)» reúne en un solo archivo el plan de pruebas (.pdf y .xlsx) y cada caso de prueba (.xlsx y .pdf): sirve como copia o para entregar el trabajo a alguien que no usa Pharos. Una ventana muestra el progreso («Generando archivos…», «Comprimiendo el ZIP…») y no se puede cerrar hasta que termina; al acabar, un aviso dice cuántos archivos se exportaron y en qué carpeta (la carpeta de descarga de «Administración › General»).",
     covers: ["dialogs:src/modules/projects/ui/ExportProgressModal.tsx"],
     shot: false, // the toast shows a local path
     run: async () => {
@@ -242,7 +242,7 @@ chapter("proyectos", () => {
   step("eliminar-proyecto", {
     title: "Eliminar un proyecto",
     caption:
-      "«Eliminar proyecto», al pie de sus ajustes, borra el proyecto con todo lo que contiene. Por eso el diálogo cuenta antes lo que se perderá (planes, casos, requisitos, tarjetas) y, para evitar un borrado por error, pide escribir el prefijo (o el nombre) antes de habilitar «Sí, eliminar todo». Esc no lo cierra: solo «Cancelar». Si quieres conservar una copia, exporta antes el ZIP.",
+      "«Eliminar proyecto», al pie de sus ajustes, borra el proyecto con todo lo que contiene. Por eso el diálogo cuenta antes lo que se perderá (planes, casos, requisitos, tarjetas) y, para evitar un borrado por error, pide escribir el prefijo (o el nombre) antes de habilitar «Sí, eliminar todo». Esc no lo cierra: solo «Cancelar». En la app de escritorio, el proyecto va a la Papelera (Administración › General, capítulo 15) y se puede restaurar con todo lo que se borró con él hasta que se cumpla su plazo; en la web no se recupera. Para una copia fuera de Pharos, exporta antes el ZIP.",
     covers: ["dialogs:src/modules/projects/ui/ProjectSettings.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
@@ -260,7 +260,7 @@ chapter("proyectos", () => {
 
   step("eliminado", {
     title: "Proyecto eliminado",
-    caption: "Al confirmar, Pharos vuelve a la lista de proyectos, que ya no lo muestra, y avisa de que se eliminó.",
+    caption: "Al confirmar, Pharos vuelve a la lista de proyectos, que ya no lo muestra, y avisa de que se eliminó. Mientras esté en la Papelera, se puede restaurar.",
     shot: false,
     run: async () => {
       await button(es.projects.deleteConfirm).click();

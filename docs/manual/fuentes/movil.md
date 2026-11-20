@@ -21,16 +21,21 @@ En el móvil:
   (en Inicio, el logotipo), la lupa, las notificaciones y tu avatar;
 - la **barra inferior** lleva Inicio, Proyectos, Admin (Administración) y
   Perfil;
-- dentro de un proyecto, sus nueve secciones se recorren con **píldoras** bajo
-  el título;
+- las **notificaciones** (la campana de la barra superior) se abren como una
+  hoja desde abajo, con los mismos días, el filtro «Sin leer» y la acción de
+  cada una;
+- dentro de un proyecto, sus diez secciones (Plan, Tablero, Requisitos,
+  Casos, Biblioteca, Ciclos, Ejecuciones, Defectos, Trazabilidad y Ajustes)
+  se recorren con **píldoras** bajo el título;
 - las **tablas** pasan a tarjetas y ocultan las columnas menos importantes;
 - los **menús y filtros** se abren como hojas desde abajo, con la ✕ para
   cerrarlas.
 
 Es la misma aplicación, con los mismos datos: lo que se hace en el escritorio
 se puede hacer en el móvil, salvo lo que depende del equipo (adjuntar
-archivos, la clave de recuperación, las evidencias, «Listar modelos» de la IA
-o «Requisitos desde un proyecto»), que es de la app de escritorio.
+archivos, la clave de recuperación, la papelera, las evidencias, «Listar
+modelos» y «Usar esta clave también en la web» de la IA, «Requisitos desde
+un proyecto» o el CLI `pharos`), que es de la app de escritorio.
 
 En este manual, Liomar repasa su proyecto Pharos desde el móvil.
 

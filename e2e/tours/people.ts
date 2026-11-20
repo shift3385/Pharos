@@ -333,7 +333,38 @@ type ReviewAction = "send" | "approve" | "return" | "obsolete" | "reactivate";
  *  approve cases; never his own, with «Aprobación independiente»). */
 export async function jorgeReviewsCase(projectName: string, key: string, action: ReviewAction, comment?: string) {
   const c = await jorge.caseByKey(projectName, key);
-  return jorge.post(`/api/test-cases/${c.id}/review`, { action, comment, userName: TEAMMATE.alias, revision: c.revision });
+  const saved = await jorge.post<Doc>(`/api/test-cases/${c.id}/review`, { action, comment, userName: TEAMMATE.alias, revision: c.revision });
+  // The author as the list reports it (its first revision): the review answer
+  // gives the reviewer as `createdBy`, which his desktop would not (it keeps
+  // the case's own author).
+  if (saved) await jorgeNotifiesCaseReview({ ...saved, createdBy: c.createdBy }, action, String((await jorge.get<Doc>(`/api/projects/${(await jorge.project(projectName)).id}`)).workspaceId ?? ""));
+  return saved;
+}
+
+/** What Jorge's Pharos does after a review it made: tell the case's author
+ *  (src/modules/test-cases/api/testCaseApi.ts `announceReview` →
+ *  notifications/model/caseReview.ts `notificationOfReview`). The server
+ *  does not notify a case review by itself. */
+async function jorgeNotifiesCaseReview(saved: Doc, action: ReviewAction, workspaceId: string) {
+  const kind = action === "approve" ? "case.approved" : action === "return" ? "case.changes_requested" : null;
+  const author = typeof saved.createdBy === "string" ? saved.createdBy : "";
+  if (!kind) return;
+  if (!author || author === jorge.userId) throw new Error(`the case's author is unknown or is Jorge (${author || "none"}): nobody to notify`);
+  const data = (saved.data ?? {}) as { review?: { comment?: string; returnedAt?: string }; approval?: { at?: string } };
+  const at = (kind === "case.approved" ? data.approval?.at : data.review?.returnedAt) ?? new Date().toISOString();
+  const sent = await jorge.post<{ delivered: number }>("/api/notifications", {
+    input: {
+      kind,
+      to: { userIds: [author] },
+      // The project's workspace on the server (the one membership is checked in).
+      workspaceId: workspaceId || null,
+      projectId: saved.projectId ?? null,
+      subject: { entity: "test_case", id: saved.id, key: saved.scenarioId, title: saved.title },
+      data: { version: saved.version, at, ...(kind === "case.changes_requested" && data.review?.comment ? { comment: data.review.comment } : {}) },
+      dedupeKey: `${saved.id}:${saved.revision}:${kind}`,
+    },
+  });
+  if (!sent?.delivered) throw new Error(`the server delivered Jorge's ${kind} notification to nobody (author ${author}, workspace ${workspaceId || "none"})`);
 }
 export const jorgeApprovesCase = (projectName: string, key: string, comment?: string) => jorgeReviewsCase(projectName, key, "approve", comment);
 export const jorgeRequestsChangesOnCase = (projectName: string, key: string, comment: string) =>

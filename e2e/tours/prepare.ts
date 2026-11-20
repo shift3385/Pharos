@@ -21,7 +21,7 @@ import { randomUUID } from "node:crypto";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { $, browser, expect } from "@wdio/globals";
+import { $, $$, browser, expect } from "@wdio/globals";
 import { PERSONA, TEAMMATE } from "../../scripts/manual/persona.mjs";
 import { syncNow, userMenuTrigger } from "../support";
 import {
@@ -31,6 +31,7 @@ import {
   CUSTOM_FIELDS,
   CYCLE,
   DEFECTS,
+  LIBRARY,
   LIVE_REQUIREMENTS,
   MANUAL_RUN,
   PLAN,
@@ -38,10 +39,11 @@ import {
   PROJECT_B,
   REQUIREMENT_RISK,
   RESULTS,
+  SCANS,
   TEAM,
 } from "./data/pharos";
-import { button, chooseFile, chooseOption, clickButton, es, field, openProject, openSection, recordToasts, tf, waitForSettled, waitForText, waitForToast } from "./helpers";
-import { LIOMAR_PASSWORD, ensureWorkspace, inviteCode, jorge, jorgeAcceptsInvitation, jorgeMembership, liomar, shareProject } from "./people";
+import { button, chooseFile, chooseOption, clickButton, es, field, openProject, openSection, recordToasts, repoDir, tf, waitForSettled, waitForText, waitForToast, xpathString } from "./helpers";
+import { LIOMAR_PASSWORD, ensureWorkspace, inviteCode, jorge, jorgeAcceptsInvitation, jorgeMembership, liomar, setMemberRole, shareProject } from "./people";
 import { PREREQUISITES, prerequisiteClosure, type ChapterId, type Prereq } from "./manifest";
 
 const toursDir = dirname(fileURLToPath(import.meta.url));
@@ -109,6 +111,27 @@ async function importCase(file: string, requirementKeys: readonly string[]) {
   await clickButton(es.testCase.nav.allCases);
 }
 
+/** «Importar informe» of a report or scan into «Pharos» (no cycle), with its
+ *  title; returns the run key the summary names. */
+async function importReport(file: string, title: string): Promise<string> {
+  const R = es.runs;
+  await openProject(PROJECT_A.name);
+  await openSection("runs");
+  await clickButton(R.import.open);
+  await expect($(D)).toBeDisplayed();
+  await $(D).$('input[type="file"]:not([webkitdirectory])').setValue(file);
+  await browser.waitUntil(async () => $(D).$(`button=${R.import.confirm}`).isEnabled(), { timeout: 30_000, timeoutMsg: `${file} was not ready to import` });
+  await (await field(R.field.title, D)).setValue(title);
+  await clickButton(R.import.confirm, D);
+  await $(".rn-done").waitForDisplayed({ timeout: 60_000 });
+  const key = /[A-Z][A-Z0-9]*-\d+/.exec(await $(".rn-done").getText())?.[0] ?? "";
+  await clickButton(es.common.close, D);
+  return key;
+}
+
+/** The axe audit of Pharos's «Nuevo requisito» dialog (chapter 10). */
+export const AXE_REPORT = join(repoDir, "packages", "formats", "src", "fixtures", "axe", "pharos-dialog.json");
+
 // ---- The loaders ------------------------------------------------------------------
 
 const LOADERS: Record<Prereq, Loader> = {
@@ -133,7 +156,12 @@ const LOADERS: Record<Prereq, Loader> = {
     },
     load: async () => {
       const names = (await liomar.projects()).map((p) => p.name);
-      for (const p of [PROJECT_A, PROJECT_B]) if (!names.includes(p.name)) await liomar.post("/api/projects", { name: p.name });
+      // With the prefix the app suggests on creating them (chapter 4: «PHA-»
+      // and «API-»), so chapter 14 finds what it finds in a full run.
+      const suggested = (p: typeof PROJECT_A | typeof PROJECT_B) => `${"suggestedPrefix" in p ? p.suggestedPrefix : p.prefix}-`;
+      for (const p of [PROJECT_A, PROJECT_B]) {
+        if (!names.includes(p.name)) await liomar.post("/api/projects", { name: p.name, caseIdPrefix: suggested(p), caseIdDigits: 3 });
+      }
     },
   },
 
@@ -251,6 +279,65 @@ const LOADERS: Record<Prereq, Loader> = {
     },
   },
 
+  "caso-dataset": {
+    check: async () => (await liomar.cases((await projectA()).id)).some((c) => c.title === LIBRARY.case.title),
+    load: async () => {
+      // The library of chapter 8 through its own screens, without captures:
+      // the shared step (v1, then v2), the dataset from its CSV, the case.
+      const L = es.library;
+      const C = es.testCase;
+      await openProject(PROJECT_A.name);
+      await openSection("library");
+      await clickButton(L.newStep);
+      await (await field(L.field.name, ".lb-editor")).setValue(LIBRARY.step.name);
+      await (await field(L.field.description, ".lb-editor")).setValue(LIBRARY.step.description);
+      for (const [i, text] of LIBRARY.step.steps.entries()) {
+        const input = $(`input[aria-label="${tf("library.step.n", { n: i + 1 })}"]`);
+        if (!(await input.isExisting())) await clickButton(`+ ${L.step.add}`, ".lb-editor");
+        await input.setValue(text);
+      }
+      const last = $(`input[aria-label="${L.step.expected} · ${tf("library.step.n", { n: LIBRARY.step.steps.length })}"]`);
+      await last.setValue(LIBRARY.step.lastExpected);
+      await clickButton(L.editor.save, ".lb-editor__actions");
+      await waitForToast(tf("library.toast.created", { name: LIBRARY.step.name }));
+      await last.addValue(LIBRARY.step.lastExpectedAdded);
+      await clickButton(L.editor.save, ".lb-editor__actions");
+      await $(".lb-version=v2").waitForDisplayed({ timeout: 15_000 });
+      await clickButton(L.editor.back, ".lb-editor__bar");
+      await $(`button[role="tab"]*=${L.tab.datasets}`).click();
+      await clickButton(L.newDataset);
+      await (await field(L.field.name, ".lb-editor")).setValue(LIBRARY.dataset.name);
+      await chooseFile('.lb-editor input[type="file"]', join(toursDir, "fixtures", LIBRARY.dataset.file));
+      await waitForToast(tf("library.dataset.imported", { rows: LIBRARY.dataset.rows, columns: LIBRARY.dataset.columns }));
+      await clickButton(L.editor.save, ".lb-editor__actions");
+      await waitForToast(tf("library.toast.created", { name: LIBRARY.dataset.name }));
+      await openSection("cases");
+      await clickButton(C.new);
+      await $(`.//button[contains(@class,"tc-level-card")][.//*[normalize-space(.)=${xpathString(C.level.outline.name)}]]`).click();
+      await $("#tc-title").setValue(LIBRARY.case.title);
+      const group = $(`[role="group"][aria-label="${C.steps}"]`);
+      const first = group.$(`[aria-label="${tf("testCase.stepN", { n: 1 })}"]`);
+      if (!(await first.isExisting())) await group.$(`.//button[contains(normalize-space(.),${xpathString(C.addStep)})]`).click();
+      await first.setValue(LIBRARY.case.firstStep);
+      await (await field(C.expectedResult)).setValue(LIBRARY.case.expectedResult);
+      await clickButton(L.insert.open);
+      await $(D).$(`.//li[.//b[normalize-space(.)=${xpathString(LIBRARY.step.name)}]]//button`).click();
+      await clickButton(L.insert.confirm, D);
+      await $('[data-testid="shared-step-block"]').waitForDisplayed();
+      await clickButton(L.bind.open);
+      await $(D).$(`.//li[.//b[normalize-space(.)=${xpathString(LIBRARY.dataset.name)}]]//button`).click();
+      await $(".lb-bound").waitForDisplayed();
+      for (const key of LIBRARY.case.requirementKeys) {
+        await chooseOption($('[data-testid="requirement-add"]'), { value: key });
+        await expect($(`[aria-label="${tf("testCase.requirements.remove", { key })}"]`)).toBeDisplayed();
+      }
+      await clickButton(C.save, ".tc-nav");
+      await waitForToast(C.savedToast);
+      await waitForSettled();
+      await clickButton(C.nav.allCases);
+    },
+  },
+
   ciclo: {
     check: async () => (await liomar.cycles((await projectA()).id)).some((c) => c.title === CYCLE.title),
     load: async () => {
@@ -298,6 +385,34 @@ const LOADERS: Record<Prereq, Loader> = {
     },
   },
 
+  hallazgos: {
+    check: async () => {
+      const titles = (await liomar.runs((await projectA()).id)).map((r) => r.title);
+      return [SCANS.sarif.title, SCANS.axe.title, SCANS.k6.title].every((t) => titles.includes(t));
+    },
+    load: async () => {
+      const titles = (await liomar.runs((await projectA()).id)).map((r) => r.title);
+      const informes = join(pharosFixtures, "informes");
+      if (!titles.includes(SCANS.sarif.title)) {
+        const key = await importReport(join(informes, SCANS.sarif.file), SCANS.sarif.title);
+        // Chapter 10 triages one finding as a false positive.
+        await $(`[data-testid="run-row-${key}"]`).click();
+        await $(`[role="tab"]*=${es.findings.tabs.findings}`).click();
+        await $('[data-testid="findings-panel"]').waitForDisplayed();
+        for (const g of await $$('[data-testid="finding-rule"]')) {
+          if ((await g.getAttribute("open")) === null) await g.$("summary").click();
+        }
+        await $(`.fd-rule*=${SCANS.sarif.triagedRule}`).$('[data-testid="finding-triage"]').click();
+        await $(D).$('[data-testid="triage-false_positive"] input').click();
+        await $(D).$('[data-testid="triage-reason"]').setValue(SCANS.sarif.triageReason);
+        await $(D).$('[data-testid="triage-save"]').click();
+        await $(D).waitForDisplayed({ reverse: true });
+      }
+      if (!titles.includes(SCANS.axe.title)) await importReport(AXE_REPORT, SCANS.axe.title);
+      if (!titles.includes(SCANS.k6.title)) await importReport(join(informes, SCANS.k6.file), SCANS.k6.title);
+    },
+  },
+
   "ejecucion-manual": {
     check: async () => (await liomar.runs((await projectA()).id)).some((r) => r.title === MANUAL_RUN.title && r.status === "completed"),
     load: async () => {
@@ -305,15 +420,17 @@ const LOADERS: Record<Prereq, Loader> = {
       const ids = await caseIds();
       const run = await liomar.post<Doc>("/api/runs", {
         input: { projectId: p.id, title: MANUAL_RUN.title, build: MANUAL_RUN.build, environment: MANUAL_RUN.environment },
-        items: [MANUAL_RUN.failed.caseKey, MANUAL_RUN.passed.caseKey].map((k) => ({ testCaseId: ids.get(k)?.id })),
+        items: [MANUAL_RUN.failed.caseKey, MANUAL_RUN.passed.caseKey, MANUAL_RUN.dataset.caseKey].map((k) => ({ testCaseId: ids.get(k)?.id })),
       });
       const overview = await liomar.get<{ items: { item: Doc; caseKey: string }[] }>(`/api/runs/${run.id}/overview`);
       const now = new Date().toISOString();
       for (const { item, caseKey } of overview.items) {
-        const failed = caseKey === MANUAL_RUN.failed.caseKey;
-        // One attempt per target: an Outline case runs once per example row.
+        // One attempt per target: an Outline case runs once per example row,
+        // a case with a dataset once per dataset row (the last one fails).
         const detail = await liomar.get<{ targets: { flowId: string | null; exampleRowId: string | null }[] }>(`/api/run-items/${item.id}`);
-        for (const target of detail.targets) {
+        for (const [n, target] of detail.targets.entries()) {
+          const failed =
+            caseKey === MANUAL_RUN.failed.caseKey || (caseKey === MANUAL_RUN.dataset.caseKey && n + 1 === MANUAL_RUN.dataset.failedRow);
           await liomar.post("/api/results", {
             input: {
               runItemId: item.id,
@@ -409,9 +526,10 @@ const LOADERS: Record<Prereq, Loader> = {
   },
 
   "jorge-en-equipo": {
-    check: async () => (await jorgeMembership(TEAM.workspace)) !== null,
+    check: async () => (await jorgeMembership(TEAM.workspace))?.role === TEAM.jorgeFinalRole,
     load: async () => {
-      await jorgeAcceptsInvitation(await inviteCode(TEAM.jorgeRole, TEAM.workspace));
+      if (!(await jorgeMembership(TEAM.workspace))) await jorgeAcceptsInvitation(await inviteCode(TEAM.jorgeRole, TEAM.workspace));
+      await setMemberRole(TEAMMATE, TEAM.jorgeFinalRole, TEAM.workspace);
     },
   },
 };

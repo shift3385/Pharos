@@ -34,7 +34,12 @@ En este manual, Liomar escribe los casos de acceso y de proyectos de Pharos:
 - «Rechazar credenciales no válidas» (PH-002, Outline con dos ejemplos);
 - «Crear un proyecto» (PH-003, avanzado, con el flujo alterno «Nombre
   vacío»);
-- la checklist «Humo de la versión 0.3.0» (PH-004).
+- la checklist «Humo de la versión 0.6.0» (PH-004);
+- «Acceso con usuarios de prueba» (PH-005), que usa la biblioteca: el paso
+  compartido «Iniciar sesión» y el dataset «Usuarios válidos».
+
+Liomar envía PH-001 a revisión y, en su espacio personal, lo aprueba él mismo.
+La revisión por otra persona, con Jorge, está en el capítulo 21.
 
 ## Revisión y aprobación
 
@@ -129,8 +134,8 @@ revisión** y sube su versión. Antes de guardar el cambio en la biblioteca, un
 aviso dice cuántos casos se actualizan y cuántos aprobados volverán a revisión.
 Si un caso no debe moverse, fíjalo en su versión antes.
 
-**Un dataset de 3 filas da 3 resultados.** Al añadir el caso a un run, el
-diálogo muestra «3 filas · Usuarios válidos (v1)». En la ejecución, cada fila
+**Un dataset de 3 filas da 3 resultados.** Al añadir el caso a un run
+(capítulo 11), el diálogo muestra «3 filas · Usuarios válidos (v1)». En la ejecución, cada fila
 es una ejecución propia («Flujo principal · Fila 2 de 3», con el primer valor
 de la fila, qa.web@pharos.test), con sus valores resaltados en los pasos, y los
 pasos insertados aparecen bajo «Paso compartido · Iniciar sesión · v2». Cada
@@ -211,6 +216,8 @@ filas completos, y nombran su origen: «Paso compartido: Iniciar sesión (v2)» 
   cuando añades casos sin aprobar (capítulo 9).
 - Antes de una versión, congela su regresión en una baseline. Después,
   «Comparar» con el estado actual dice qué casos cambiaron desde entonces.
+- Un caso eliminado va a la Papelera (Administración › General, capítulo 15)
+  y se restaura con su clave y su historial mientras dure la retención.
 - Exporta los .feature para tu proyecto de automatización: cada escenario
   lleva el tag de su caso, y los resultados importados se vinculan solos por
   ese tag o por la propiedad `test_id` (capítulo 10).
@@ -219,7 +226,10 @@ filas completos, y nombran su origen: «Paso compartido: Iniciar sesión (v2)» 
 
 - Capítulo 7, «Requisitos».
 - Capítulo 9, «Ciclos de prueba»: añadir casos a un ciclo.
+- Capítulo 11, «Ejecución manual»: ejecutar un caso fila por fila.
 - Capítulo 13, «Trazabilidad».
+- Capítulo 21, «Trabajo en equipo»: la revisión y la aprobación por otra
+  persona.
 - Capítulo 17, «Asistente de IA»: sugerir casos y revisar las listas de un
   caso.
 - [Guía de pruebas de la beta](../guia-beta.md), apartado 4.3.

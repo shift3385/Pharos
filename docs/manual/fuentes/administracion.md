@@ -17,13 +17,14 @@ agrupadas:
     web» sube una copia cifrada de la clave a tu servidor para usar la IA en
     la web (capítulo 17).
   - **Plantillas:** las de plan y de caso, las incluidas con Pharos y las
-    tuyas.
+    tuyas, que viajan con tu workspace (editarlas requiere ser Test Manager
+    o Test Analyst).
 - **Aplicación**
   - **General:** tema, idioma, fondo, sombra de las tarjetas, carpeta de
     descarga, retención de lo borrado y la papelera.
-  - **Usuarios** (solo si eres administrador del servidor): las cuentas del
-    servidor, restablecer contraseñas, nombrar o quitar administradores y
-    desactivar o reactivar cuentas.
+  - **Usuarios** (solo si administras el servidor): las cuentas del
+    servidor, restablecer contraseñas, nombrar o quitar administradores,
+    desactivar o reactivar cuentas y revocar sus tokens.
 - **Cuenta y datos**
   - **Sincronización:** estado, cuenta, conflictos, «Sincronizar ahora» y la
     sincronización automática.
@@ -33,7 +34,9 @@ agrupadas:
     en tu nombre o el sistema), el antes y el después, la comprobación de que
     el registro está íntegro y la exportación a Excel o CSV.
 - **Soporte**
-  - **Diagnóstico:** un ZIP para informar de un fallo.
+  - **Diagnóstico:** un ZIP para informar de un fallo, con la versión, el
+    sistema, los registros recientes y, solo como números, cuánto ocupan el
+    registro de cambios y la auditoría.
 
 Se abre desde el menú de tu avatar o desde «Administración», en el menú
 lateral, bajo «Configuración». La pestaña abierta queda en la dirección de la página.
@@ -43,10 +46,47 @@ aviso, y nada de lo que propone se aplica sin que lo aceptes. Las claves de IA
 se guardan cifradas en el almacén de credenciales de Windows, nunca en un
 archivo, y no se incluyen en exportaciones ni diagnósticos.
 
-En este manual, Liomar deja preparado su Pharos: una plantilla de plan
-propia, la sincronización, su clave de recuperación guardada y el diagnóstico
-a mano por si algo falla. Al final repasa en «Auditoría» lo que ha cambiado
-hoy.
+En este manual, Liomar, QA y Test Manager de su workspace, deja preparado su
+Pharos: una plantilla de plan propia, la sincronización (con un cambio que
+se combina solo y un conflicto que resuelve campo a campo), su clave de
+recuperación guardada y el diagnóstico a mano por si algo falla, y repasa en
+«Auditoría» lo que ha cambiado hoy. Liomar no administra el servidor, así
+que no ve «Usuarios»: la última parte del capítulo la recorre la cuenta
+«Administrador», que gestiona la cuenta de su compañero Jorge L. Meneses
+Yero.
+
+## Notificaciones
+
+La **campana** de la barra superior abre las notificaciones, agrupadas por
+día: invitaciones, revisiones de casos, defectos asignados, ciclos cerrados,
+cambios en los miembros de un workspace, avisos de tu cuenta (por ejemplo,
+que un administrador generó un enlace para restablecer tu contraseña) y
+conflictos de sincronización. Un número sobre la campana dice cuántas hay
+sin leer.
+
+- «Sin leer» filtra las pendientes y «Marcar todo como leído» las da por
+  vistas.
+- Cada notificación lleva su acción: «Revisar», «Ver defecto», «Resolver»…
+- Se guardan 90 días.
+
+## Copias de seguridad y datos de este equipo
+
+- Tus datos viven en este equipo, en la carpeta de datos de Pharos: el
+  archivo `pharos.db` (cifrado) y la carpeta `evidence` (los adjuntos,
+  también cifrados). Para una copia de seguridad, **cierra Pharos** y copia
+  los dos juntos; guarda aparte tu clave de recuperación.
+- **Al actualizar desde la 0.5,** la primera vez que abres la 0.6 Pharos
+  convierte tus datos al nuevo formato («Actualizando el formato de tus
+  datos») y antes guarda el archivo anterior, intacto, como
+  `pharos.db.enc.bak-…`. Pasa una sola vez. Si falta espacio en el disco,
+  lo dice y no cambia nada (capítulo 19).
+- **Varias ventanas y el CLI.** Puedes tener dos ventanas de Pharos abiertas
+  y usar el CLI `pharos` a la vez: lo que guarda una aparece en la otra en
+  unos segundos, sin tocar lo que estés escribiendo.
+- **La base de datos crece menos.** Una vez al día, después de sincronizar,
+  Pharos borra de su registro interno los cambios que el servidor ya tiene.
+  No se pierde nada: tus datos, su historial y la auditoría siguen igual. El
+  diagnóstico dice cuánto ocupan ese registro y la auditoría.
 
 ## La papelera
 
@@ -72,7 +112,8 @@ workspace en el que trabajas y, debajo, tu rol en él. La lista
 - **Personal.** Es tu workspace. Todos tus proyectos empiezan aquí, y en la
   primera sincronización con un servidor que tiene workspaces, los proyectos
   de este equipo pasan a él. Antes, Pharos guarda una copia de seguridad de
-  tus datos (`pharos.db.enc.bak-…-workspaces`).
+  tus datos (`pharos.db.bak-…-workspaces`; con una versión anterior a la
+  0.6, `pharos.db.enc.bak-…-workspaces`).
 - **Crear workspace.** Abre el selector y elige «Crear workspace». Tú serás
   su Test Manager.
 - **Invitar.** En «Miembros y roles», «Invitar» crea un código de un solo
@@ -94,6 +135,8 @@ workspace en el que trabajas y, debajo, tu rol en él. La lista
   recuerda con un aviso de solo lectura, y el servidor rechaza cualquier
   cambio suyo. «¿Qué puede hacer cada rol?», al pie de «Miembros y roles»,
   resume los permisos.
+- **Paso a paso.** El capítulo 21, «Trabajo en equipo», recorre con Jorge
+  la invitación, los roles y la aprobación independiente.
 - **Reglas: «Aprobación independiente».** En «Miembros y roles», la sección
   «Reglas» dice quién aprueba planes y casos (capítulos 5 y 8). Activada, que
   es lo normal en un workspace compartido, aprueba quien tiene el rol (Test
@@ -108,7 +151,7 @@ workspace en el que trabajas y, debajo, tu rol en él. La lista
   combina campo a campo: si cambiasteis campos distintos (tú el título, ella
   la prioridad; tú un paso, ella otro), se queda con los dos y no pregunta.
   Un aviso dice cuántos elementos se combinaron, y cada uno queda en la
-  auditoría como «Conflicto resuelto · Combinado».
+  auditoría como «Conflicto resuelto».
   - Solo pregunta por lo que choca: el mismo campo cambiado de dos formas,
     un paso que uno borró y el otro editó, o los pasos reordenados de dos
     maneras distintas. En el panel de conflictos eliges, campo a campo, «Mi
@@ -132,9 +175,12 @@ workspace en el que trabajas y, debajo, tu rol en él. La lista
 
 ## Usuarios del servidor
 
-El **administrador del servidor** es un rol de todo el servidor, no de un
-workspace: un Test Manager no lo es por serlo, y ser administrador no da
-acceso a los proyectos de nadie.
+Este apartado es para **quien administra el servidor** de Pharos, no para el
+trabajo diario de QA. El **administrador del servidor** es un rol de todo el
+servidor, no de un workspace: un Test Manager no lo es por serlo, y ser
+administrador no da acceso a los proyectos de nadie. En este manual lo es la
+cuenta «Administrador», la primera que se registró en el servidor; Liomar no
+lo es.
 
 - **Quién lo es.** La primera cuenta que se registró en el servidor (en un
   servidor que ya existía, la más antigua), las que nombre otro administrador
@@ -170,6 +216,10 @@ acceso a los proyectos de nadie.
   - No puedes desactivarte a ti ni al último administrador activo.
 - **Reactivar cuenta.** La persona vuelve a entrar con su contraseña y
   conserva sus roles; si nombraste un sucesor, también lo sigue siendo.
+- **Revocar sus tokens…** Anula al momento todos los tokens de API de esa
+  cuenta, personales y de proyecto, por ejemplo si se filtró uno. La
+  confirmación los nombra; no se puede deshacer. Su CI deja de subir
+  resultados hasta que tenga un token nuevo (capítulo 20).
 
 ## Lo que viaja con tu cuenta
 
@@ -205,7 +255,6 @@ acceso a los proyectos de nadie.
   equipo y en el servidor.
 - **«Tu cuenta está desactivada en el servidor» al sincronizar.** Lo mismo:
   la sincronización se para y tus cambios pendientes esperan en el equipo.
-
 - **«No detectado (¿está en ejecución?)» en Ollama.** Ollama no está
   instalado o no está abierto en este equipo. Ábrelo y pulsa «Reintentar», o
   usa un proveedor online.
@@ -231,8 +280,9 @@ acceso a los proyectos de nadie.
   o se restauró a mano una copia `.bak` en este equipo. Pharos no repara el
   registro: «Ver evento» lleva a ese cambio; exporta la auditoría y el
   diagnóstico si necesitas investigarlo.
-- **«Auditoría» no muestra cambios de otra persona.** Hasta que lleguen los
-  roles del equipo, cada cuenta ve solo sus propios cambios.
+- **«Auditoría» no muestra cambios de otra persona.** La pestaña lista los
+  cambios de tu cuenta; la auditoría de todo un workspace compartido solo la
+  ve su Test Manager.
 - **«Ningún evento coincide con los filtros».** El periodo por defecto son
   los últimos 30 días: elige «Todo» o quita algún filtro.
 
@@ -246,8 +296,9 @@ acceso a los proyectos de nadie.
 ## Consejos
 
 - Guarda la **clave de recuperación** el primer día: si cambias de equipo o
-  reinstalas Windows, solo ella y una copia de `pharos.db.enc` devuelven tus
-  datos. Pharos no puede recuperarla por ti.
+  reinstalas Windows, solo ella y una copia de `pharos.db` (hecha con Pharos
+  cerrado) y de la carpeta `evidence` devuelven tus datos. Pharos no puede
+  recuperarla por ti.
 - Pulsa **«Probar conexión»** antes de guardar una clave nueva: si responde, se
   guarda sin preguntar y sabes que funciona.
 - Activa la **sincronización automática** si trabajas en varios equipos; en
@@ -264,5 +315,9 @@ acceso a los proyectos de nadie.
 - Capítulo 16, «Evidencias»: la pestaña «Evidencias».
 - Capítulo 17, «Asistente de IA»: cómo saber qué modelo está activo y qué
   hace la IA en cada pantalla.
+- Capítulo 19, «Si algo sale mal»: la conversión de los datos al actualizar
+  y las pantallas de error de la base de datos.
+- Capítulo 21, «Trabajo en equipo»: invitar, roles y aprobación
+  independiente, paso a paso.
 - [Glosario](../GLOSARIO.md): «Pestaña de Administración», «Plantilla»,
   «Papelera», «Registro de auditoría».

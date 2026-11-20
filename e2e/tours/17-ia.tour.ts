@@ -1,9 +1,16 @@
 // Chapter 17 — Asistente de IA (manual v2, MAN-03). Liomar works with Claude
 // (the provider of the tour key). These steps call a real AI provider, so they
-// run only when the user has set PHAROS_TOURS_AI_KEY in their own environment
-// (CI: a repository secret, only in the non-required `manual` job). Without
-// it they are skipped and the manual and `check:manual` list them as pending;
-// nothing is ever faked.
+// run only with a key: PHAROS_TOURS_AI_KEY in the environment, or
+// ANTHROPIC_API_KEY in the `.env` of this checkout or of the main checkout
+// (scripts/manual/ai-key.mjs; CI: a repository secret, only in the
+// non-required `manual` job). Without one they are skipped and the manual and
+// `check:manual` list them as pending; nothing is ever faked.
+//
+// The material is all Pharos (AI_MATERIAL in data/pharos.ts): the folder is
+// an excerpt of Pharos's own sync API and the sketch is of its notifications
+// panel. AI output varies from run to run: the captions describe the kind of
+// proposal, never its text, and the contexts ask for no people's names (the
+// persona check fails a capture that shows one).
 //
 // The key never goes through the UI, a file or a log: it is handed to the
 // app's own keychain command (`ai_key_set`) inside the isolated tour profile,
@@ -35,9 +42,9 @@ import { pharosFixtures } from "./prepare";
 
 const X = es.ai;
 const D = '[role="dialog"]';
-const AI_TIMEOUT = 90_000;
+const AI_TIMEOUT = 150_000;
 /** Reading a folder or a sketch and comparing: a minute or two (MAN-03). */
-const DESIGN_TIMEOUT = 240_000;
+const DESIGN_TIMEOUT = 420_000;
 
 /** Opens every «Criterios de aceptación», «Supuestos» and «Preguntas
  *  abiertas» of the proposals, so the capture shows them. */
@@ -60,6 +67,7 @@ chapter("ia", () => {
     caption:
       "La IA es opcional. Mientras no configures un proveedor (o Ollama), los botones de IA aparecen deshabilitados y explican por qué; el resto de Pharos funciona igual.",
     covers: ["ai:disabled-without-key"],
+    focus: `button*=${es.testCase.list.suggest}`,
     run: async () => {
       await openProject(PROJECT_A.name);
       await openSection("cases");
@@ -76,6 +84,7 @@ chapter("ia", () => {
     covers: ["ai:configure"],
     skip: AI_SKIP,
     mask: ["#ai-key"],
+    focus: `[data-testid="ai-provider-${AI.provider}"]`,
     run: async () => {
       const provider = AI.provider;
       const model = AI.model || CHEAP_MODELS[provider];
@@ -109,6 +118,7 @@ chapter("ia", () => {
       await expect(byTestId(`ai-provider-${provider}`)).toBeDisplayed();
       // The card carries the «En uso» mark, and the keychain holds the key.
       await expect(byTestId(`ai-provider-${provider}`).$('[data-testid="ai-in-use"]')).toBeDisplayed();
+      await byTestId(`ai-provider-${provider}`).scrollIntoView({ block: "start" });
       const stored = await browser.execute(async (p: string) => {
         const w = window as unknown as { __TAURI_INTERNALS__: { invoke: (c: string, a: object) => Promise<boolean> } };
         return w.__TAURI_INTERNALS__.invoke("ai_key_status", { provider: p });
@@ -165,7 +175,7 @@ chapter("ia", () => {
   step("desde-proyecto", {
     title: "Requisitos desde un proyecto: la carpeta",
     caption:
-      "«Requisitos desde un proyecto (IA)» abre su diálogo; «Elegir carpeta…» abre el selector de carpetas de Windows. Elige la carpeta de un proyecto en marcha o de su documentación: aquí, la de la Billetera SafeGuard, con su README, dos documentos y algo de código y de pruebas. Pharos lista lo que leería, agrupado por tipo, sin enviar nada todavía. Desmarca lo que no quieras enviar; las dependencias, los builds, los archivos ocultos, los binarios y los archivos con secretos nunca se envían. Abajo ves cuántos archivos, cuántos tokens (aproximados) y cuántas llamadas a la IA supone, y puedes ajustar el presupuesto y añadir un contexto («p. ej. tienda online, rol cliente»).",
+      "«Requisitos desde un proyecto (IA)» abre su diálogo; «Elegir carpeta…» abre el selector de carpetas de Windows. Elige la carpeta de un proyecto en marcha o de su documentación: aquí, un extracto del propio Pharos, su API de sincronización, con su README, dos documentos, el código que combina los cambios y sus pruebas. Pharos lista lo que leería, agrupado por tipo, sin enviar nada todavía. Desmarca lo que no quieras enviar; las dependencias, los builds, los archivos ocultos, los binarios y los archivos con secretos nunca se envían. Abajo ves cuántos archivos, cuántos tokens (aproximados) y cuántas llamadas a la IA supone, y puedes ajustar el presupuesto y añadir un contexto que ayude a la IA (en este ejemplo, que es la API de sincronización de Pharos).",
     covers: ["dialogs:src/modules/traceability/ui/ProjectRequirementsModal.tsx"],
     skip: AI_SKIP,
     shot: { element: D },
@@ -176,6 +186,7 @@ chapter("ia", () => {
       await clickButton(es.traceability.fromProject.pick, D);
       await waitForText(es.traceability.fromProject.continue, 30_000);
       await expect(dialog()).toHaveText(expect.stringContaining("README.md"));
+      await $(`${D} .tz-scan__field--wide input`).setValue(AI_MATERIAL.folderContext);
     },
   });
 
@@ -194,7 +205,7 @@ chapter("ia", () => {
   step("desde-proyecto-propuestas", {
     title: "Las propuestas desde el proyecto",
     caption:
-      "La IA lee los archivos por lotes («Analizando: lote 1 de 1…»; «Detener» para) y compara lo que encuentra con los requisitos que ya tiene el proyecto. Propone requisitos nuevos, mejoras de los que ya existen, posibles duplicados y requisitos que sobran, cada uno con su motivo, su fuente (el archivo y las líneas) y sus criterios de aceptación. «Escrito en la fuente» es lo que el material dice; «Inferido», una deducción con sus supuestos y sus preguntas abiertas, para que la confirmes. Marca lo que quieras y pulsa «Aplicar N cambios»: lo aplicado queda «IA · pendiente de revisión».",
+      "La IA lee los archivos por lotes («Analizando: lote 1 de N…»; «Detener» lo para) y compara lo que encuentra con los requisitos que ya tiene el proyecto. Propone requisitos nuevos, mejoras de los que ya existen, posibles duplicados y requisitos que sobran, cada uno con su motivo, su fuente (el archivo y las líneas) y sus criterios de aceptación. «Escrito en la fuente» es lo que el material dice; «Inferido», una deducción con sus supuestos y sus preguntas abiertas, para que la confirmes. Marca lo que quieras y pulsa «Aplicar N cambios»: lo aplicado queda «IA · pendiente de revisión».",
     covers: ["dialogs:src/modules/traceability/ui/RequirementProposalsReview.tsx"],
     skip: AI_SKIP,
     shot: { element: D },
@@ -210,7 +221,7 @@ chapter("ia", () => {
   step("desde-disenos", {
     title: "Requisitos desde diseños: el material",
     caption:
-      "Tras aplicar, «Importar › Requisitos desde diseños» parte de lo que se ve: capturas, bocetos, PDF, un dibujo de Excalidraw o la carpeta o el ZIP de un proyecto de Claude Design (desde Figma o Canva, exporta los frames como PNG o PDF). Arrástralos, pega una captura con Ctrl+V o usa «Elegir archivos» o «Elegir carpeta». Aquí, el boceto a mano de dos pantallas de la billetera: el acceso y el inicio. Cada imagen muestra su tamaño y una estimación de tokens; añádele una nota («alta, paso 2») y escribe el contexto del producto: la IA acierta más. Se envían como mucho 8 imágenes o PDF por análisis, y el aviso dice a qué proveedor van.",
+      "Tras aplicar, «Importar › Requisitos desde diseños» parte de lo que se ve: capturas, bocetos, PDF, un dibujo de Excalidraw o la carpeta o el ZIP de un proyecto de Claude Design (desde Figma o Canva, exporta los frames como PNG o PDF). Arrástralos, pega una captura con Ctrl+V o usa «Elegir archivos» o «Elegir carpeta». Aquí, un boceto del panel de notificaciones de Pharos, que aún no tiene requisitos. Cada imagen muestra su tamaño y una estimación de tokens; añádele una nota (aquí, «campana y panel de notificaciones») y escribe el contexto del producto: la IA acierta más. Se envían como mucho 8 imágenes o PDF por análisis, y el aviso dice a qué proveedor van.",
     covers: [
       "dialogs:src/modules/traceability/ui/RequirementsFromDesignModal.tsx",
       "upload:src/modules/traceability/ui/RequirementsFromDesignModal.tsx",
@@ -249,7 +260,7 @@ chapter("ia", () => {
   step("desde-disenos-propuestas", {
     title: "Las propuestas desde el boceto",
     caption:
-      "Las propuestas se revisan igual que las de un proyecto. La fuente de cada una es la imagen, con un recuadro en la zona de la que sale el requisito. Los criterios de aceptación van uno por bloque y, si siguen Gherkin, con una palabra clave por línea en negrita (Given, When, Then). Abajo, «Guardar las imágenes como adjunto de los requisitos» (desmarcada: Pharos no guarda las imágenes salvo que lo pidas) las guarda cifradas junto a cada requisito, para verlas después.",
+      "Las propuestas se revisan igual que las de un proyecto. La fuente de cada una es la imagen, con un recuadro en la zona de la que sale el requisito. Los criterios de aceptación van uno por bloque y, si siguen Gherkin, con una palabra clave por línea en negrita (Given, When, Then). Abajo, «Guardar las imágenes como adjunto de los requisitos» viene desmarcada (Pharos no guarda las imágenes salvo que lo pidas); Liomar la marca para guardarlas cifradas junto a cada requisito y verlas después.",
     skip: AI_SKIP,
     shot: { element: D },
     run: async () => {
@@ -271,14 +282,28 @@ chapter("ia", () => {
     run: async () => {
       await $('[data-testid="req-proposals-apply"]').click();
       await dialog().waitForExist({ reverse: true, timeout: 60_000 });
-      // A requirement the sketch proposed: the last one in the list.
+      // A requirement the sketch proposed and that kept its image: the
+      // newest ones are last; an improvement of an older one may have none.
       const rows = await $$("button.tz-open");
-      await rows[rows.length - 1].click();
-      await expect(dialog()).toBeDisplayed();
-      const sources = $('[data-testid="requirement-sources"]');
-      await sources.$("summary").click();
-      await sources.$("button.tr-design__open").waitForDisplayed({ timeout: 15_000 });
-      await sources.$("button.tr-design__open").click();
+      let found = false;
+      for (let i = rows.length - 1; i >= Math.max(0, rows.length - 8) && !found; i--) {
+        await (await $$("button.tz-open"))[i].click();
+        await expect(dialog()).toBeDisplayed();
+        const sources = $('[data-testid="requirement-sources"]');
+        if (await sources.isExisting()) {
+          await sources.$("summary").click();
+          found = await sources
+            .$("button.tr-design__open")
+            .waitForDisplayed({ timeout: 3_000 })
+            .then(() => true, () => false);
+        }
+        if (!found) {
+          await browser.keys("Escape");
+          await dialog().waitForExist({ reverse: true });
+        }
+      }
+      if (!found) throw new Error("no requirement kept the sketch as its source image");
+      await $('[data-testid="requirement-sources"]').$("button.tr-design__open").click();
       await $(".tr-design__viewer").waitForDisplayed({ timeout: 10_000 });
     },
     after: async () => {
@@ -292,11 +317,13 @@ chapter("ia", () => {
     caption: "En los campos de texto del plan, el botón de IA (✨, «Asistir con IA») propone un borrador breve a partir del resto del plan, con lo que pide el syllabus ISTQB para esa sección. En «Conclusión», valora el plan frente a sus objetivos y criterios de salida, y no inventa resultados. Revisa el «Borrador de la IA» y pulsa «Usar» o «Descartar»: nada se aplica solo, y lo aceptado queda marcado como generado por IA.",
     covers: ["ai:assist-field"],
     skip: AI_SKIP,
+    focus: ".assist__preview",
     run: async () => {
       await goToPlanStep("purpose");
       aiCall();
       await $(".assist__btn").click();
       await waitForText(X.assist.previewTitle, AI_TIMEOUT);
+      await $(".assist__preview").scrollIntoView({ block: "center" });
     },
   });
 
@@ -311,6 +338,7 @@ chapter("ia", () => {
       await clickButton(X.assist.use);
       await expect($(".ai-prov")).toBeDisplayed();
       await expect($(".ai-prov__label")).toHaveAttribute("title", expect.stringContaining(es.ai.provenance.provider[AI.provider]));
+      await $(".ai-prov").scrollIntoView({ block: "center" });
     },
     // The plan keeps the accepted draft: saved, so leaving does not ask.
     after: async () => {
@@ -325,11 +353,13 @@ chapter("ia", () => {
       "En «Riesgos y mitigación», «Sugerir riesgos con IA» propone riesgos con su mitigación, un buen punto de partida que conviene revisar: marca los que te sirvan y pulsa «Añadir».",
     covers: ["ai:suggest-risks"],
     skip: AI_SKIP,
+    focus: ".assist__preview",
     run: async () => {
       await goToPlanStep("risks");
       aiCall();
       await clickButton(es.testPlan.suggestRisks);
       await waitForText(X.structured.proposals, AI_TIMEOUT);
+      await $(".assist__preview").scrollIntoView({ block: "center" });
     },
   });
 
@@ -379,12 +409,14 @@ chapter("ia", () => {
       "En el editor de un caso, cada lista tiene su botón de IA (✨) junto a su título; su nombre aparece al pasar el cursor. «Sugerir precondiciones» las propone a partir del resto del caso, y con la lista ya escrita pasa a «Revisar precondiciones». Igual en pasos, postcondiciones y criterios, en cada flujo de un caso avanzado y en las comprobaciones de una checklist. La revisión propone añadir, reformular o eliminar, y cada propuesta dice por qué. Reformular y eliminar empiezan sin marcar: solo se aplican si los marcas. Datos de prueba y Notas no llevan IA.",
     covers: ["ai:suggest-preconditions"],
     skip: AI_SKIP,
+    focus: ".assist__preview",
     run: async () => {
       await browser.keys("Escape");
       await $("a.cl-title*=Iniciar sesión").click();
       aiCall();
       await $(`button[title="${es.testCase.aiReview.preconditions.suggest}"]`).click();
       await waitForText(X.structured.proposals, AI_TIMEOUT);
+      await $(".assist__preview").scrollIntoView({ block: "center" });
     },
   });
 

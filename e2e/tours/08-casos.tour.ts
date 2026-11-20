@@ -2,9 +2,10 @@
 // app under test. The list, the three scenario levels (basic, Outline,
 // advanced with flows), checklists, linking each case to the requirements of
 // chapter 7, the Gherkin view, custom fields, reordering steps with the
-// keyboard, walking the cases, «Ir a un caso» (Ctrl+P), revisions, export /
-// import, bulk delete, the Gherkin on a phone and, last, the project library
-// (shared steps and datasets, CAS-01): a case that uses both, run row by row.
+// keyboard, the project library (shared steps and datasets, CAS-01) and the
+// case that uses both (PH-005; chapter 11 runs it row by row), walking the
+// cases, «Ir a un caso» (Ctrl+P), revisions, export / import, bulk delete
+// (to the Papelera), review, baselines and the Gherkin on a phone.
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { $, $$, browser, expect } from "@wdio/globals";
@@ -36,16 +37,14 @@ import {
   xpathString,
   chooseOption,
 } from "./helpers";
-import { BASE_CASES } from "./data/pharos";
+import { BASE_CASES, LIBRARY, RELEASE } from "./data/pharos";
 
 const C = es.testCase;
 const L = es.library;
 /** The library items and the case of «Biblioteca» (CAS-01). */
-const STEP_NAME = "Iniciar sesión";
-const DATASET_NAME = "Usuarios válidos";
-const CASE_TITLE = "Acceso con usuarios de prueba";
-/** The key the library case got (read from the run's case picker). */
-let libraryCaseKey = "";
+const STEP_NAME = LIBRARY.step.name;
+const DATASET_NAME = LIBRARY.dataset.name;
+const CASE_TITLE = LIBRARY.case.title;
 const downloadsDir = process.env.PHAROS_TOURS_DOWNLOADS ?? "";
 
 function newestDownload(ext: string): string {
@@ -62,6 +61,14 @@ async function newCase(level: "basic" | "outline" | "advanced") {
   await clickButton(C.new);
   await $(`.//button[contains(@class,"tc-level-card")][.//*[normalize-space(.)=${xpathString(C.level[level].name)}]]`).click();
   await expect($("#tc-title")).toBeDisplayed();
+  await editorView();
+}
+
+/** The «Editor» view: a new case opens split with its Gherkin on wide
+ *  screens; the form alone reads better in the captures. */
+async function editorView() {
+  const editor = $('[role="radiogroup"] button[data-value="editor"]');
+  if ((await editor.isExisting()) && (await editor.getAttribute("aria-checked")) !== "true") await editor.click();
 }
 
 /** Fills the steps of a step list (group labelled `label`). */
@@ -157,6 +164,7 @@ chapter("casos", () => {
       "Rellena el caso: el título (en este ejemplo, «Iniciar sesión con credenciales válidas»), las precondiciones, los pasos (cada uno con «+ Añadir paso»; la papelera de un paso lo quita, tras confirmarlo si tiene texto) y el resultado esperado, los que muestra la captura. Más arriba se clasifica: prioridad, tipo de caso, automatización, nivel y versión. El estado (borrador, en revisión, aprobado u obsoleto) no se elige aquí: lo mueve la revisión, más adelante en este capítulo. En «Requisitos vinculados», «Vincular un requisito…» lo enlaza con lo que comprueba (en este ejemplo, REQ-001): el caso lleva el tag @REQ-001 en su Gherkin y la matriz lo cuenta como cubierto. Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, PH-001).",
     covers: ["action:case-create-basic", "action:case-meta", "action:case-requirement-link"],
     run: async () => {
+      await editorView();
       // FIX-12: the ID placeholder carries the project's own prefix.
       await expect($(`input[placeholder="${tf("testCase.scenarioIdAuto", { prefix: `${PROJECT_A.prefix}-` })}"]`)).toBeDisplayed();
       await $("#tc-title").setValue("Iniciar sesión con credenciales válidas");
@@ -223,6 +231,7 @@ chapter("casos", () => {
     caption:
       "Un caso «Básico avanzado» (Scenario Outline) prueba el mismo escenario con varios datos. En los pasos, los valores que cambian se escriben como marcadores entre ángulos (en este ejemplo, `<correo>` y `<contraseña>`), y Pharos crea solo una columna por marcador en la tabla «Examples»: cada fila es una ejecución del escenario (aquí, una contraseña equivocada y un correo sin cuenta). «+ Columna» y «+ Fila» amplían la tabla; la papelera quita una fila o una columna. Si una columna no tiene su marcador en los pasos, Pharos lo avisa.",
     covers: ["action:case-outline"],
+    focus: "table.tc-examples__table",
     run: async () => {
       await $('[role="radiogroup"]').$('button[data-value="editor"]').click();
       await backToList();
@@ -239,6 +248,8 @@ chapter("casos", () => {
       for (let i = 0; i < Math.min(values.length, cells.length); i++) await cells[i].setValue(values[i]);
       await linkRequirement("REQ-001");
       await saveCase();
+      // The capture shows the «Examples» table the caption explains.
+      await $("table.tc-examples__table").scrollIntoView({ block: "center" });
     },
   });
 
@@ -266,8 +277,9 @@ chapter("casos", () => {
   step("checklist", {
     title: "Un caso de tipo checklist",
     caption:
-      "Con «Tipo de caso: Checklist», los pasos se convierten en una lista de comprobaciones sin Given/When/Then y sin Gherkin. Es útil para revisiones rápidas, como una prueba de humo o una revisión de accesibilidad, donde lo que importa es no olvidar nada (en este ejemplo, «Humo de la versión 0.3.0»). Los pasos y el Gherkin que tuviera se conservan, ocultos, por si vuelves a «Estándar». En «Otras referencias (texto libre)» se puede citar algo sin vincularlo (aquí, REQ-006): el capítulo 13 enseña a convertirlo en un vínculo.",
+      "Con «Tipo de caso: Checklist», los pasos se convierten en una lista de comprobaciones sin Given/When/Then y sin Gherkin. Es útil para revisiones rápidas, como una prueba de humo o una revisión de accesibilidad, donde lo que importa es no olvidar nada (en este ejemplo, «Humo de la versión 0.6.0»). Los pasos y el Gherkin que tuviera se conservan, ocultos, por si vuelves a «Estándar». En «Otras referencias (texto libre)» se puede citar algo sin vincularlo (aquí, REQ-006): el capítulo 13 enseña a convertirlo en un vínculo.",
     covers: ["action:case-checklist"],
+    focus: `[role="group"][aria-label="${C.checklist.items}"]`,
     run: async () => {
       await backToList();
       await newCase("basic");
@@ -277,6 +289,8 @@ chapter("casos", () => {
       // A reference written by hand, which «Migrar trazabilidad» (chapter 13) turns into a link.
       await (await field(C.otherReferences)).setValue("Relacionado con REQ-006");
       await saveCase();
+      // The capture shows the checklist items.
+      await $(`[role="group"][aria-label="${C.checklist.items}"]`).scrollIntoView({ block: "center" });
     },
   });
 
@@ -293,18 +307,233 @@ chapter("casos", () => {
     },
   });
 
+  // ---- Biblioteca: pasos compartidos y datasets (CAS-01, ADR-0055) ----------------
+  // Right after the four base cases, so the case it makes («Acceso con
+  // usuarios de prueba») is PH-005 in a full run and when the `caso-dataset`
+  // loader makes it. It stays in draft and out of the «Alta» filter of
+  // chapter 9; chapter 11 runs it row by row.
+
+  step("biblioteca", {
+    title: "La Biblioteca del proyecto",
+    caption:
+      "«Biblioteca», en el menú lateral después de «Casos de prueba», guarda lo que se repite en muchos casos. Tiene dos pestañas: «Pasos compartidos», unos pasos con nombre que se insertan en los casos, y «Datasets», tablas de datos con nombre que se vinculan a la tabla de ejemplos de un caso. Cada pestaña tiene su buscador, su botón «Nuevo…» y «Mostrar obsoletos». Mientras está vacía, la pestaña lo dice.",
+    covers: ["section:library", "tabs:src/modules/library/ui/LibraryPage.tsx"],
+    run: async () => {
+      await openProject(PROJECT_A.name);
+      await openSection("library");
+      await expect($(`button[role="tab"]*=${L.tab.steps}`)).toHaveAttribute("aria-selected", "true");
+      await expect($("p.lb-empty")).toBeDisplayed();
+    },
+  });
+
+  step("paso-compartido", {
+    title: "Un paso compartido con parámetros",
+    caption:
+      "«Nuevo paso compartido» pide el nombre (en este ejemplo, «Iniciar sesión»), una descripción opcional y los pasos, cada uno con su resultado esperado opcional; las flechas los reordenan y la papelera quita uno. Lo que cambia de un caso a otro se escribe entre ángulos, como en un Outline: `<usuario>` y `<clave>`. Pharos los lista a la derecha, en «Parámetros», donde se les puede dar un valor que se propone al insertarlos. «Guardar» lo crea como v1.",
+    focus: [".lb-editor", ".lb-params"],
+    run: async () => {
+      await clickButton(L.newStep);
+      await (await field(L.field.name, ".lb-editor")).setValue(STEP_NAME);
+      await (await field(L.field.description, ".lb-editor")).setValue(LIBRARY.step.description);
+      for (const [i, text] of LIBRARY.step.steps.entries()) {
+        const input = $(`input[aria-label="${tf("library.step.n", { n: i + 1 })}"]`);
+        if (!(await input.isExisting())) await clickButton(`+ ${L.step.add}`, ".lb-editor");
+        await input.setValue(text);
+      }
+      await $(`input[aria-label="${L.step.expected} · ${tf("library.step.n", { n: 3 })}"]`).setValue(LIBRARY.step.lastExpected);
+      // One row per parameter found in the steps (<usuario>, <clave>).
+      await expect($$(".lb-params tbody tr")).toBeElementsArrayOfSize(2);
+    },
+    after: async () => {
+      await clickButton(L.editor.save, ".lb-editor__actions");
+      await waitForToast(tf("library.toast.created", { name: STEP_NAME }));
+      await expect($(".lb-version=v1")).toBeDisplayed();
+    },
+  });
+
+  step("descartar-cambios", {
+    title: "Salir con cambios sin guardar",
+    caption:
+      "Si vuelves a la lista («← Biblioteca») con cambios sin guardar, Pharos pregunta antes de perderlos: «Descartar» los tira y «Cancelar» te deja seguir editando.",
+    covers: ["dialogs:src/modules/library/ui/useItemEditor.tsx"],
+    shot: { element: '[role="alertdialog"]' },
+    run: async () => {
+      await (await field(L.field.description, ".lb-editor")).addValue(" Sin terminar.");
+      await clickButton(L.editor.back, ".lb-editor__bar");
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
+    },
+    after: async () => {
+      await acceptConfirm(L.discard.title);
+      await expect($("button.lb-open=" + STEP_NAME)).toBeDisplayed();
+    },
+  });
+
+  step("dataset-importar", {
+    title: "Un dataset importado de un CSV",
+    caption:
+      "En la pestaña «Datasets», «Nuevo dataset» abre una rejilla: una columna por parámetro y una fila por cada juego de datos. Se escribe en ella, se pega un bloque copiado de una hoja de cálculo (Ctrl+V; en un dataset vacío, la primera fila da los nombres de las columnas) o se importa con «Importar CSV o xlsx…». En este ejemplo, «Usuarios válidos» trae de un CSV las columnas `usuario` y `clave` y tres cuentas de prueba. Un dataset no es un almacén de secretos: usa cuentas de prueba, nunca contraseñas reales.",
+    covers: ["upload:src/modules/library/ui/DatasetEditor.tsx"],
+    focus: ".lb-grid-wrap",
+    run: async () => {
+      await $(`button[role="tab"]*=${L.tab.datasets}`).click();
+      await clickButton(L.newDataset);
+      await (await field(L.field.name, ".lb-editor")).setValue(DATASET_NAME);
+      await chooseFile('.lb-editor input[type="file"]', join(fixturesDir, LIBRARY.dataset.file));
+      await waitForToast(tf("library.dataset.imported", { rows: LIBRARY.dataset.rows, columns: LIBRARY.dataset.columns }));
+      await expect($$("table.lb-grid tbody tr")).toBeElementsArrayOfSize(3);
+    },
+  });
+
+  step("dataset-reemplazar", {
+    title: "Reemplazar los datos al importar",
+    caption:
+      "Si la rejilla ya tiene filas, importar otro archivo pregunta antes de reemplazarlas. Las filas conservan su identificador por posición, así que los casos que eligieron filas concretas siguen apuntando a las mismas. «Cancelar» deja la rejilla como estaba.",
+    covers: ["dialogs:src/modules/library/ui/DatasetEditor.tsx"],
+    shot: { element: '[role="alertdialog"]' },
+    run: async () => {
+      await chooseFile('.lb-editor input[type="file"]', join(fixturesDir, LIBRARY.dataset.file));
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
+    },
+    after: async () => {
+      await dismissConfirm(L.dataset.replaceTitle);
+      await clickButton(L.editor.save, ".lb-editor__actions");
+      await waitForToast(tf("library.toast.created", { name: DATASET_NAME }));
+    },
+  });
+
+  step("eliminar-elemento", {
+    title: "Eliminar un elemento de la biblioteca",
+    caption:
+      "«Eliminar» quita de la biblioteca un paso compartido o un dataset con todas sus versiones, después de confirmarlo. Solo se puede mientras ningún caso lo use; si alguno lo usa, el botón queda desactivado y la alternativa es «Marcar obsoleto», que lo deja de ofrecer al insertar sin tocar los casos. En este ejemplo, Liomar cancela: va a usar el dataset.",
+    covers: ["dialogs:src/modules/library/ui/useItemEditor.tsx"],
+    shot: { element: '[role="alertdialog"]' },
+    run: async () => {
+      await clickButton(L.editor.delete, ".lb-editor__actions");
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
+    },
+    after: async () => {
+      await dismissConfirm();
+    },
+  });
+
+  step("insertar-paso", {
+    title: "Insertar un paso compartido en un caso",
+    caption:
+      "En un caso básico o «Básico avanzado», «Insertar paso compartido…», bajo los pasos, abre la lista de la biblioteca. Tras «Elegir», el diálogo muestra sus pasos y un campo por parámetro. Un argumento vacío deja el parámetro tal cual, y su valor sale de la tabla de datos del caso; un literal (una cuenta concreta) se escribe en la copia del caso; otro parámetro entre ángulos lo renombra. «Dónde va» elige entre los pasos y las precondiciones. En este ejemplo, el caso «Acceso con usuarios de prueba» deja los dos argumentos vacíos.",
+    covers: ["dialogs:src/modules/library/ui/case/InsertSharedStepDialog.tsx"],
+    shot: { element: '[role="dialog"]' },
+    run: async () => {
+      await openSection("cases");
+      await newCase("outline");
+      await $("#tc-title").setValue(CASE_TITLE);
+      await fillSteps(C.steps, [LIBRARY.case.firstStep]);
+      await (await field(C.expectedResult)).setValue(LIBRARY.case.expectedResult);
+      await clickButton(L.insert.open);
+      await expect(dialog()).toBeDisplayed();
+      await dialog().$(`.//li[.//b[normalize-space(.)=${xpathString(STEP_NAME)}]]//button`).click();
+      // The arguments view: one field per parameter.
+      await expect(dialog().$$(".lb-field input")).toBeElementsArrayOfSize(2);
+    },
+    after: async () => {
+      await clickButton(L.insert.confirm, '[role="dialog"]');
+      await expect(byTestId("shared-step-block")).toBeDisplayed();
+    },
+  });
+
+  step("vincular-dataset", {
+    title: "Vincular un dataset al caso",
+    caption:
+      "En la tabla de ejemplos, «Vincular dataset…» ofrece los datasets activos del proyecto, con sus filas y sus columnas. Al vincular uno, sus filas pasan a ser la tabla de datos del caso: una fila, una ejecución. Las columnas se emparejan con los parámetros por su nombre.",
+    covers: ["dialogs:src/modules/library/ui/case/DatasetDialogs.tsx"],
+    shot: { element: '[role="dialog"]' },
+    run: async () => {
+      await clickButton(L.bind.open);
+      await expect(dialog()).toBeDisplayed();
+      await expect(dialog().$(`.//b[normalize-space(.)=${xpathString(DATASET_NAME)}]`)).toBeDisplayed();
+    },
+    after: async () => {
+      await dialog().$(`.//li[.//b[normalize-space(.)=${xpathString(DATASET_NAME)}]]//button`).click();
+      await expect($(".lb-bound")).toBeDisplayed();
+    },
+  });
+
+  step("elegir-filas", {
+    title: "Elegir las filas del dataset",
+    caption:
+      "«Elegir filas…», en la tabla vinculada, deja ejecutar solo algunas filas del dataset (por ejemplo, una sola cuenta para una prueba de humo). En este ejemplo se usan las tres.",
+    covers: ["dialogs:src/modules/library/ui/case/DatasetDialogs.tsx"],
+    shot: { element: '[role="dialog"]' },
+    run: async () => {
+      await clickButton(L.bind.chooseRows, ".lb-bound");
+      await expect(dialog()).toBeDisplayed();
+      await expect(dialog().$$('input[type="checkbox"]')).toBeElementsArrayOfSize(3);
+    },
+    after: async () => {
+      await clickButton(L.rows.confirm, '[role="dialog"]');
+      await dialog().waitForExist({ reverse: true });
+    },
+  });
+
+  step("caso-con-biblioteca", {
+    title: "El caso con su paso compartido y su dataset",
+    caption:
+      "El caso muestra los pasos insertados como un bloque («Paso compartido · Iniciar sesión», con su versión) y la tabla vinculada, de solo lectura, con «Dataset · Usuarios válidos». Un bloque nuevo sigue la última versión: si alguien cambia el paso o el dataset en la biblioteca, el caso se actualiza solo. «Fijar en vN» lo deja en esa versión, «Abrir en la biblioteca» lleva a editarlo y «Desvincular» convierte los pasos o las filas en propios del caso. Liomar lo vincula a REQ-001, como los otros casos de acceso, y al guardarlo recibe la clave PH-005.",
+    focus: [".lb-bound", '[data-testid="shared-step-block"]'],
+    run: async () => {
+      for (const key of LIBRARY.case.requirementKeys) await linkRequirement(key);
+      await saveCase();
+      await editorView();
+      await expect(byTestId("shared-step-block")).toBeDisplayed();
+      await byTestId("shared-step-block").scrollIntoView({ block: "center" });
+      await expect($$(".lb-bound tbody tr")).toBeElementsArrayOfSize(3);
+    },
+  });
+
+  step("aviso-impacto", {
+    title: "Cambiar un paso compartido: el aviso de impacto",
+    caption:
+      "Al guardar un cambio de un paso compartido o de un dataset que usan casos, Pharos avisa antes: «Guardar «Iniciar sesión» como v2», cuántos casos se actualizan, por estado, y cuáles. Los casos aprobados vuelven a «En revisión», como al editarlos a mano; los fijados en una versión no cambian. En este ejemplo, Liomar completa el resultado esperado del paso 3 y se actualiza un caso en borrador.",
+    covers: ["dialogs:src/modules/library/ui/ImpactDialog.tsx"],
+    shot: { element: '[role="dialog"]' },
+    run: async () => {
+      await openSection("library");
+      await $(`button.lb-open=${STEP_NAME}`).click();
+      const expected = $(`input[aria-label="${L.step.expected} · ${tf("library.step.n", { n: 3 })}"]`);
+      await expect(expected).toHaveValue(LIBRARY.step.lastExpected);
+      await expected.addValue(LIBRARY.step.lastExpectedAdded);
+      await clickButton(L.editor.save, ".lb-editor__actions");
+      await expect($(".lb-impact")).toBeDisplayed();
+    },
+    after: async () => {
+      await clickButton(tf("library.impact.confirm_one", { count: 1 }), '[role="dialog"]');
+      await waitForToast(tf("library.toast.updatedCases_one", { count: 1, version: 2 }));
+    },
+  });
+
+  step("usado-en", {
+    title: "Dónde se usa y sus versiones",
+    caption:
+      "Cada elemento tiene tres pestañas: «Pasos» (o «Datos»), su contenido; «Usado en», los casos que lo usan, separados entre los que siguen la última versión y los fijados; y «Versiones», cada versión guardada, que se puede abrir para ver qué tenía. Cada cambio del contenido sube la versión (v1, v2…).",
+    covers: ["tabs:src/modules/library/ui/ItemEditorFrame.tsx"],
+    run: async () => {
+      await expect($(".lb-version=v2")).toBeDisplayed();
+      await $(`button[role="tab"]*=${tf("library.editor.usedIn", { count: 1 })}`).click();
+      await waitForText(CASE_TITLE);
+    },
+  });
+
   step("lista", {
     title: "La lista de casos",
     caption:
-      "Con casos, la tabla muestra ID, título, requisito, prioridad, estado, «Ejecución» y fecha de la última edición. «Ejecución» es el último resultado de cada caso, el mismo que la matriz (capítulo 13): «Pasa», «Falla», «Bloqueado», «Omitido» o «Por confirmar»; «—» si aún no tiene ninguno. Si un caso tiene contenido sugerido por IA que nadie ha revisado, su estado (normalmente «Borrador») lleva un ✨ y un borde discontinuo, y al pasar el puntero lo explica. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, resultado («Ejecución», con «Sin resultados» para los que aún no se han ejecutado), tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta. Haz clic en la cabecera de una columna para ordenar por ella. En este ejemplo, «credenciales» deja los dos casos de acceso.",
+      "Con casos, la tabla muestra ID, título, requisito, prioridad, estado, «Ejecución» y fecha de la última edición. «Ejecución» es el último resultado de cada caso, el mismo que la matriz (capítulo 13): «Pasa», «Falla», «Bloqueado», «Omitido» o «Por confirmar»; «—» si aún no tiene ninguno. Si un caso tiene contenido sugerido por IA que nadie ha revisado, su estado (normalmente «Borrador») lleva un ✨ y un borde discontinuo, y al pasar el puntero lo explica. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, resultado («Ejecución», con «Sin resultados» para los que aún no se han ejecutado), tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta. El filtro «Por revisar» deja los casos en revisión que puedes aprobar, y un caso al que le pidieron cambios lleva la marca «Cambios pedidos». Haz clic en la cabecera de una columna para ordenar por ella. En este ejemplo, «credenciales» deja los dos casos de acceso.",
     covers: ["action:cases-search", "action:cases-filter", "action:cases-sort"],
     run: async () => {
-      await backToList();
-      await rows((n) => n >= 4, "at least 4 cases");
+      // From the library, where the steps above end.
+      await openSection("cases");
+      await expect($("section.cl")).toBeDisplayed();
+      await rows((n) => n >= 5, "at least 5 cases");
       await $(`input[placeholder="${C.list.search}"]`).setValue("credenciales");
       await rows((n) => n === 2, "2 cases matching «credenciales»");
-      await clearInput(`input[placeholder="${C.list.search}"]`);
-      await $('button.dt__sort*=' + C.list.col.title).click();
     },
   });
 
@@ -315,6 +544,8 @@ chapter("casos", () => {
     covers: ["state:cases-no-match"],
     focus: "button=Quitar filtros",
     run: async () => {
+      await clearInput(`input[placeholder="${C.list.search}"]`);
+      await $('button.dt__sort*=' + C.list.col.title).click();
       await $(`input[placeholder="${C.list.search}"]`).setValue("no-existe-xyz");
       await expect($(`button=${C.list.clearFilters}`)).toBeDisplayed();
     },
@@ -323,14 +554,15 @@ chapter("casos", () => {
   step("recorrer", {
     title: "Editar y recorrer los casos",
     caption:
-      "Con un caso abierto, la barra superior indica su posición en la lista (por ejemplo, «2 de 3») y sus flechas pasan al anterior o al siguiente respetando el filtro activo, para revisar varios casos seguidos sin volver a la lista. El orden del recorrido se fija al abrir el caso, aunque la lista cambie. A la derecha, el estado de guardado avisa si hay cambios sin guardar; si sales con cambios, Pharos pregunta antes de perderlos.",
+      "Con un caso abierto, la barra superior indica su posición en la lista («N de M») y sus flechas pasan al anterior o al siguiente respetando el filtro activo, para revisar varios casos seguidos sin volver a la lista. El orden del recorrido se fija al abrir el caso, aunque la lista cambie. A la derecha, el estado de guardado avisa si hay cambios sin guardar; si sales con cambios, Pharos pregunta antes de perderlos.",
     covers: ["action:case-walk", "action:case-edit"],
     focus: ".tc-nav",
     run: async () => {
       await clickButton(C.list.clearFilters);
       await $("a.cl-title*=Iniciar sesión").click();
       await expect($("#tc-title")).toBeDisplayed();
-      await $("#tc-title").addValue(" (escritorio)");
+      // An edit that leaves the title as the later chapters know it.
+      await (await field("Caso de uso mapeado")).setValue("Entrar en Pharos");
       await saveCase();
       const before = await $(".tc-nav__pos").getText();
       const steps = await atLeast(".tc-nav__step", 1);
@@ -346,7 +578,7 @@ chapter("casos", () => {
   step("ir-a-caso", {
     title: "Ir a un caso (Ctrl+P)",
     caption:
-      "«Ir a un caso…» (o Ctrl+P, ⌘P en Mac, desde el editor) abre un buscador: escribe parte del ID, del título o de un requisito, muévete con ↑ ↓ y pulsa Intro para abrirlo sin pasar por la lista; Esc lo cierra. En este ejemplo, «credenciales» encuentra los dos casos de acceso.",
+      "«Ir a un caso…» (o Ctrl+P, ⌘P en Mac, desde el editor) abre un buscador: escribe parte del ID, del título o de un requisito, muévete con ↑ ↓ y pulsa Intro para abrirlo sin pasar por la lista; Esc lo cierra. En este ejemplo, «credenciales no» encuentra el caso «Rechazar credenciales no válidas».",
     covers: ["keyboard:ctrl-p", "dialogs:src/modules/test-cases/ui/GoToCaseDialog.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -420,6 +652,8 @@ chapter("casos", () => {
       await backToList();
       await chooseFile('input[type="file"][accept=".xlsx"]', newestDownload(".xlsx"));
       await expect(dialog()).toBeDisplayed();
+      // The capture shows the finished report, not the detection in progress.
+      await $(`button=${es.importReport.apply}`).waitForEnabled({ timeout: 30_000 });
     },
   });
 
@@ -441,7 +675,7 @@ chapter("casos", () => {
   step("exportar-feature", {
     title: "Exportar todos los .feature",
     caption:
-      "«Importar / Exportar › Exportar .feature» genera un ZIP con un archivo .feature por caso, listo para un proyecto de automatización con playwright-bdd o Cucumber; cada escenario lleva el tag de su ID (@PH-001) y de sus requisitos. Las checklists se omiten porque no tienen Gherkin, y el aviso lo dice.",
+      "«Importar / Exportar › Exportar .feature» genera un ZIP con un archivo .feature por caso, listo para un proyecto de automatización con playwright-bdd o Cucumber; cada escenario lleva el tag de su ID (@PH-001) y de sus requisitos. Un caso que usa la biblioteca lleva sus pasos y sus filas completos, con un comentario que nombra su origen («# Paso compartido: Iniciar sesión (v2)», «# Dataset: Usuarios válidos (v1)»). Las checklists se omiten porque no tienen Gherkin, y el aviso lo dice.",
     covers: ["action:cases-export-features"],
     shot: false,
     run: async () => {
@@ -454,7 +688,7 @@ chapter("casos", () => {
   step("seleccion", {
     title: "Acciones con varios casos",
     caption:
-      "Marca uno o varios casos con su casilla (en este ejemplo, la copia importada): aparece una barra con el número de casos seleccionados (también los de otras páginas) y lo que puedes hacer con todos a la vez: exportarlos a .feature, eliminarlos o «Quitar selección».",
+      "Marca uno o varios casos con su casilla (en este ejemplo, la copia importada): aparece una barra con el número de casos seleccionados (también los de otras páginas) y lo que puedes hacer con todos a la vez: exportarlos a .feature, enviarlos a revisión («Enviar a revisión» envía los que están en borrador), congelarlos en una baseline («Congelar en baseline»), eliminarlos o «Quitar selección».",
     covers: ["action:cases-bulk"],
     focus: ".cl-bulk",
     run: async () => {
@@ -480,19 +714,19 @@ chapter("casos", () => {
   step("eliminado", {
     title: "Casos eliminados",
     caption:
-      "Al confirmar, un aviso dice cuántos casos se eliminaron y la lista deja de mostrarlos.",
+      "Al confirmar, un aviso dice cuántos casos se eliminaron y la lista deja de mostrarlos. Los casos eliminados pasan a la Papelera (Administración › General, capítulo 15), desde donde se restauran con su clave y su historial mientras dure la retención.",
     shot: false,
     run: async () => {
       await clickButton(C.list.deleteConfirm, '[role="alertdialog"]');
       await expect($('[role="alertdialog"]')).not.toBeExisting();
-      await rows((n) => n === 4, "the 4 remaining cases");
+      await rows((n) => n === 5, "the 5 remaining cases");
     },
   });
 
   step("enviar-revision", {
     title: "Enviar un caso a revisión",
     caption:
-      "Bajo la cabecera de un caso guardado están las acciones de su revisión. «Enviar a revisión» pide una nota opcional para quien revise y pasa el caso a «En revisión». Si alguien edita el contenido antes de aprobarlo, vuelve a Borrador. Con cambios sin guardar, las acciones esperan a que guardes.",
+      "Bajo la cabecera de un caso guardado están las acciones de su revisión. «Enviar a revisión» pide una nota opcional para quien revise y pasa el caso a «En revisión». Si alguien edita el título o el contenido antes de aprobarlo, el caso sigue «En revisión» con una versión nueva. Con cambios sin guardar, las acciones esperan a que guardes. En este ejemplo, Liomar envía PH-001 con una nota.",
     covers: ["action:case-review-send", "dialogs:src/modules/test-cases/ui/CaseReviewPanel.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
@@ -507,13 +741,17 @@ chapter("casos", () => {
   step("aprobar-caso", {
     title: "Aprobar un caso",
     caption:
-      "Quien revisa ve quién envió el caso y su nota, y, si había una versión anterior aprobada o enviada, qué cambió desde entonces. «Pedir cambios…» deja un comentario obligatorio y el caso sigue en revisión. «Aprobar versión N» pide confirmación y deja quién aprobó, cuándo y qué versión. Liomar trabaja en su espacio personal, que no pide aprobación independiente, así que aprueba su propio caso y queda como «aprobación propia»; en un espacio compartido con la regla activada, lo aprobaría un Test Manager o un Test Analyst que no sea el autor.",
+      "Quien revisa ve quién envió el caso y su nota, y, si había una versión anterior aprobada o enviada, qué cambió desde entonces. «Pedir cambios…» deja un comentario obligatorio y el caso sigue en revisión. «Aprobar versión N» pide confirmación y deja quién aprobó, cuándo y qué versión. Liomar trabaja en su espacio personal, que no pide aprobación independiente, así que puede aprobar su propio caso y queda como «aprobación propia». En un espacio compartido con «Aprobación independiente» lo aprueba otra persona: el capítulo 21 enseña a Jorge revisando y aprobando los casos de Liomar.",
     covers: ["action:case-review-approve", "dialogs:src/modules/test-cases/ui/CaseReviewPanel.tsx"],
     focus: ".tc-review",
     run: async () => {
       await byTestId("case-send-review-confirm").click();
       await waitForToast(tf("testCase.review.toast.send", { key: "PH-001" }).split(" ")[0]);
       await byTestId("case-approve").waitForEnabled();
+      // The capture shows the review waiting for approval; approving follows.
+      await $(".tc-review").scrollIntoView({ block: "center" });
+    },
+    after: async () => {
       await byTestId("case-approve").click();
       await expect($('[role="alertdialog"]')).toBeDisplayed();
       await byTestId("case-approve-confirm").click();
@@ -558,7 +796,7 @@ chapter("casos", () => {
   step("reactivar", {
     title: "Reactivar un caso obsoleto",
     caption:
-      "Un caso obsoleto se puede «Reactivar»: vuelve a Borrador y, para aprobarlo otra vez, hay que enviarlo a revisión.",
+      "Un caso obsoleto se puede «Reactivar»: vuelve a «En revisión» (a Borrador si nunca se envió) y hay que aprobarlo otra vez. En este ejemplo, PH-002 ya se había enviado, así que vuelve a «En revisión».",
     covers: ["dialogs:src/modules/test-cases/ui/CaseReviewPanel.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
@@ -582,7 +820,7 @@ chapter("casos", () => {
       await byTestId("cases-baselines").click();
       await byTestId("baseline-new").click();
       await expect(dialog()).toBeDisplayed();
-      await byTestId("baseline-name").setValue("Regresión 0.5.0");
+      await byTestId("baseline-name").setValue(`Regresión ${RELEASE.version}`);
     },
   });
 
@@ -621,273 +859,4 @@ chapter("casos", () => {
     },
   });
 
-  // ---- Biblioteca: pasos compartidos y datasets (CAS-01, ADR-0055) ----------------
-  // Last in the chapter, so the captures of the steps above keep their numbers.
-  // The case it makes («Acceso con usuarios de prueba») stays in draft and
-  // out of the «Alta» filter of chapter 9; the run it executes is deleted at
-  // the end, so the later chapters count the same results as before.
-
-  step("biblioteca", {
-    title: "La Biblioteca del proyecto",
-    caption:
-      "«Biblioteca», en el menú lateral después de «Casos de prueba», guarda lo que se repite en muchos casos. Tiene dos pestañas: «Pasos compartidos», unos pasos con nombre que se insertan en los casos, y «Datasets», tablas de datos con nombre que se vinculan a la tabla de ejemplos de un caso. Cada pestaña tiene su buscador, su botón «Nuevo…» y «Mostrar obsoletos». Mientras está vacía, la pestaña lo dice.",
-    covers: ["section:library", "tabs:src/modules/library/ui/LibraryPage.tsx"],
-    run: async () => {
-      await openProject(PROJECT_A.name);
-      await openSection("library");
-      await expect($(`button[role="tab"]*=${L.tab.steps}`)).toHaveAttribute("aria-selected", "true");
-      await expect($("p.lb-empty")).toBeDisplayed();
-    },
-  });
-
-  step("paso-compartido", {
-    title: "Un paso compartido con parámetros",
-    caption:
-      "«Nuevo paso compartido» pide el nombre (en este ejemplo, «Iniciar sesión»), una descripción opcional y los pasos, cada uno con su resultado esperado opcional; las flechas los reordenan y la papelera quita uno. Lo que cambia de un caso a otro se escribe entre ángulos, como en un Outline: `<usuario>` y `<clave>`. Pharos los lista a la derecha, en «Parámetros», donde se les puede dar un valor que se propone al insertarlos. «Guardar» lo crea como v1.",
-    focus: ".lb-side",
-    run: async () => {
-      await clickButton(L.newStep);
-      await (await field(L.field.name, ".lb-editor")).setValue(STEP_NAME);
-      await (await field(L.field.description, ".lb-editor")).setValue("Entrar en Pharos con una cuenta de prueba.");
-      const texts = ["Escribir <usuario> en «Correo electrónico»", "Escribir <clave> en «Contraseña»", "Pulsar «Entrar»"];
-      for (const [i, text] of texts.entries()) {
-        const input = $(`input[aria-label="${tf("library.step.n", { n: i + 1 })}"]`);
-        if (!(await input.isExisting())) await clickButton(`+ ${L.step.add}`, ".lb-editor");
-        await input.setValue(text);
-      }
-      await $(`input[aria-label="${L.step.expected} · ${tf("library.step.n", { n: 3 })}"]`).setValue("Se abre «Inicio»");
-      // One row per parameter found in the steps (<usuario>, <clave>).
-      await expect($$(".lb-params tbody tr")).toBeElementsArrayOfSize(2);
-    },
-    after: async () => {
-      await clickButton(L.editor.save, ".lb-editor__actions");
-      await waitForToast(tf("library.toast.created", { name: STEP_NAME }));
-      await expect($(".lb-version=v1")).toBeDisplayed();
-    },
-  });
-
-  step("descartar-cambios", {
-    title: "Salir con cambios sin guardar",
-    caption:
-      "Si vuelves a la lista («← Biblioteca») con cambios sin guardar, Pharos pregunta antes de perderlos: «Descartar» los tira y «Cancelar» te deja seguir editando.",
-    covers: ["dialogs:src/modules/library/ui/useItemEditor.tsx"],
-    shot: { element: '[role="alertdialog"]' },
-    run: async () => {
-      await (await field(L.field.description, ".lb-editor")).addValue(" Sin terminar.");
-      await clickButton(L.editor.back, ".lb-editor__bar");
-      await expect($('[role="alertdialog"]')).toBeDisplayed();
-    },
-    after: async () => {
-      await acceptConfirm(L.discard.title);
-      await expect($("button.lb-open=" + STEP_NAME)).toBeDisplayed();
-    },
-  });
-
-  step("dataset-importar", {
-    title: "Un dataset importado de un CSV",
-    caption:
-      "En la pestaña «Datasets», «Nuevo dataset» abre una rejilla: una columna por parámetro y una fila por cada juego de datos. Se escribe en ella, se pega un bloque copiado de una hoja de cálculo (Ctrl+V; en un dataset vacío, la primera fila da los nombres de las columnas) o se importa con «Importar CSV o xlsx…». En este ejemplo, «Usuarios válidos» trae de un CSV las columnas `usuario` y `clave` y tres cuentas de prueba. Un dataset no es un almacén de secretos: usa cuentas de prueba, nunca contraseñas reales.",
-    covers: ["upload:src/modules/library/ui/DatasetEditor.tsx"],
-    focus: ".lb-grid-wrap",
-    run: async () => {
-      await $(`button[role="tab"]*=${L.tab.datasets}`).click();
-      await clickButton(L.newDataset);
-      await (await field(L.field.name, ".lb-editor")).setValue(DATASET_NAME);
-      await chooseFile('.lb-editor input[type="file"]', join(fixturesDir, "usuarios-validos.csv"));
-      await waitForToast(tf("library.dataset.imported", { rows: 3, columns: 2 }));
-      await expect($$("table.lb-grid tbody tr")).toBeElementsArrayOfSize(3);
-    },
-  });
-
-  step("dataset-reemplazar", {
-    title: "Reemplazar los datos al importar",
-    caption:
-      "Si la rejilla ya tiene filas, importar otro archivo pregunta antes de reemplazarlas. Las filas conservan su identificador por posición, así que los casos que eligieron filas concretas siguen apuntando a las mismas. «Cancelar» deja la rejilla como estaba.",
-    covers: ["dialogs:src/modules/library/ui/DatasetEditor.tsx"],
-    shot: { element: '[role="alertdialog"]' },
-    run: async () => {
-      await chooseFile('.lb-editor input[type="file"]', join(fixturesDir, "usuarios-validos.csv"));
-      await expect($('[role="alertdialog"]')).toBeDisplayed();
-    },
-    after: async () => {
-      await dismissConfirm(L.dataset.replaceTitle);
-      await clickButton(L.editor.save, ".lb-editor__actions");
-      await waitForToast(tf("library.toast.created", { name: DATASET_NAME }));
-    },
-  });
-
-  step("eliminar-elemento", {
-    title: "Eliminar un elemento de la biblioteca",
-    caption:
-      "«Eliminar» quita de la biblioteca un paso compartido o un dataset con todas sus versiones, después de confirmarlo. Solo se puede mientras ningún caso lo use; si alguno lo usa, el botón queda desactivado y la alternativa es «Marcar obsoleto», que lo deja de ofrecer al insertar sin tocar los casos. En este ejemplo, Liomar cancela: va a usar el dataset.",
-    covers: ["dialogs:src/modules/library/ui/useItemEditor.tsx"],
-    shot: { element: '[role="alertdialog"]' },
-    run: async () => {
-      await clickButton(L.editor.delete, ".lb-editor__actions");
-      await expect($('[role="alertdialog"]')).toBeDisplayed();
-    },
-    after: async () => {
-      await dismissConfirm();
-    },
-  });
-
-  step("insertar-paso", {
-    title: "Insertar un paso compartido en un caso",
-    caption:
-      "En un caso básico o «Básico avanzado», «Insertar paso compartido…», bajo los pasos, abre la lista de la biblioteca. Tras «Elegir», el diálogo muestra sus pasos y un campo por parámetro. Un argumento vacío deja el parámetro tal cual, y su valor sale de la tabla de datos del caso; un literal (una cuenta concreta) se escribe en la copia del caso; otro parámetro entre ángulos lo renombra. «Dónde va» elige entre los pasos y las precondiciones. En este ejemplo, el caso «Acceso con usuarios de prueba» deja los dos argumentos vacíos.",
-    covers: ["dialogs:src/modules/library/ui/case/InsertSharedStepDialog.tsx"],
-    shot: { element: '[role="dialog"]' },
-    run: async () => {
-      await openSection("cases");
-      await newCase("outline");
-      await $("#tc-title").setValue(CASE_TITLE);
-      await fillSteps(C.steps, ["Abrir Pharos sin una sesión iniciada"]);
-      await (await field(C.expectedResult)).setValue("Se abre «Inicio» con el nombre de la cuenta.");
-      await clickButton(L.insert.open);
-      await expect(dialog()).toBeDisplayed();
-      await dialog().$(`.//li[.//b[normalize-space(.)=${xpathString(STEP_NAME)}]]//button`).click();
-      // The arguments view: one field per parameter.
-      await expect(dialog().$$(".lb-field input")).toBeElementsArrayOfSize(2);
-    },
-    after: async () => {
-      await clickButton(L.insert.confirm, '[role="dialog"]');
-      await expect(byTestId("shared-step-block")).toBeDisplayed();
-    },
-  });
-
-  step("vincular-dataset", {
-    title: "Vincular un dataset al caso",
-    caption:
-      "En la tabla de ejemplos, «Vincular dataset…» ofrece los datasets activos del proyecto, con sus filas y sus columnas. Al vincular uno, sus filas pasan a ser la tabla de datos del caso: una fila, una ejecución. Las columnas se emparejan con los parámetros por su nombre.",
-    covers: ["dialogs:src/modules/library/ui/case/DatasetDialogs.tsx"],
-    shot: { element: '[role="dialog"]' },
-    run: async () => {
-      await clickButton(L.bind.open);
-      await expect(dialog()).toBeDisplayed();
-      await expect(dialog().$(`.//b[normalize-space(.)=${xpathString(DATASET_NAME)}]`)).toBeDisplayed();
-    },
-    after: async () => {
-      await dialog().$(`.//li[.//b[normalize-space(.)=${xpathString(DATASET_NAME)}]]//button`).click();
-      await expect($(".lb-bound")).toBeDisplayed();
-    },
-  });
-
-  step("elegir-filas", {
-    title: "Elegir las filas del dataset",
-    caption:
-      "«Elegir filas…», en la tabla vinculada, deja ejecutar solo algunas filas del dataset (por ejemplo, una sola cuenta para una prueba de humo). En este ejemplo se usan las tres.",
-    covers: ["dialogs:src/modules/library/ui/case/DatasetDialogs.tsx"],
-    shot: { element: '[role="dialog"]' },
-    run: async () => {
-      await clickButton(L.bind.chooseRows, ".lb-bound");
-      await expect(dialog()).toBeDisplayed();
-      await expect(dialog().$$('input[type="checkbox"]')).toBeElementsArrayOfSize(3);
-    },
-    after: async () => {
-      await clickButton(L.rows.confirm, '[role="dialog"]');
-      await dialog().waitForExist({ reverse: true });
-    },
-  });
-
-  step("caso-con-biblioteca", {
-    title: "El caso con su paso compartido y su dataset",
-    caption:
-      "El caso muestra los pasos insertados como un bloque («Paso compartido · Iniciar sesión», con su versión) y la tabla vinculada, de solo lectura, con «Dataset · Usuarios válidos». Un bloque nuevo sigue la última versión: si alguien cambia el paso o el dataset en la biblioteca, el caso se actualiza solo. «Fijar en vN» lo deja en esa versión, «Abrir en la biblioteca» lleva a editarlo y «Desvincular» convierte los pasos o las filas en propios del caso. «Guardar» guarda el caso.",
-    focus: [".lb-bound", '[data-testid="shared-step-block"]'],
-    run: async () => {
-      await saveCase();
-      await expect(byTestId("shared-step-block")).toBeDisplayed();
-      await $(".lb-bound").scrollIntoView({ block: "center" });
-      await expect($$(".lb-bound tbody tr")).toBeElementsArrayOfSize(3);
-    },
-  });
-
-  step("aviso-impacto", {
-    title: "Cambiar un paso compartido: el aviso de impacto",
-    caption:
-      "Al guardar un cambio de un paso compartido o de un dataset que usan casos, Pharos avisa antes: «Guardar «Iniciar sesión» como v2», cuántos casos se actualizan, por estado, y cuáles. Los casos aprobados vuelven a «En revisión», como al editarlos a mano; los fijados en una versión no cambian. En este ejemplo, Liomar completa el resultado esperado del paso 3 y se actualiza un caso en borrador.",
-    covers: ["dialogs:src/modules/library/ui/ImpactDialog.tsx"],
-    shot: { element: '[role="dialog"]' },
-    run: async () => {
-      await openSection("library");
-      await $(`button.lb-open=${STEP_NAME}`).click();
-      const expected = $(`input[aria-label="${L.step.expected} · ${tf("library.step.n", { n: 3 })}"]`);
-      await expect(expected).toHaveValue("Se abre «Inicio»");
-      await expected.addValue(" con el nombre de la cuenta");
-      await clickButton(L.editor.save, ".lb-editor__actions");
-      await expect($(".lb-impact")).toBeDisplayed();
-    },
-    after: async () => {
-      await clickButton(tf("library.impact.confirm_one", { count: 1 }), '[role="dialog"]');
-      await waitForToast(tf("library.toast.updatedCases_one", { count: 1, version: 2 }));
-    },
-  });
-
-  step("usado-en", {
-    title: "Dónde se usa y sus versiones",
-    caption:
-      "Cada elemento tiene tres pestañas: «Pasos» (o «Datos»), su contenido; «Usado en», los casos que lo usan, separados entre los que siguen la última versión y los fijados; y «Versiones», cada versión guardada, que se puede abrir para ver qué tenía. Cada cambio del contenido sube la versión (v1, v2…).",
-    covers: ["tabs:src/modules/library/ui/ItemEditorFrame.tsx"],
-    run: async () => {
-      await expect($(".lb-version=v2")).toBeDisplayed();
-      await $(`button[role="tab"]*=${tf("library.editor.usedIn", { count: 1 })}`).click();
-      await waitForText(CASE_TITLE);
-    },
-  });
-
-  step("run-con-dataset", {
-    title: "Un caso con dataset en un run",
-    caption:
-      "Al añadir el caso a un run, el selector de casos dice cuántas filas trae y de qué dataset: «3 filas · Usuarios válidos (v1)». Cada fila será una ejecución propia.",
-    shot: { element: '[role="dialog"]' },
-    run: async () => {
-      await openSection("runs");
-      await byTestId("run-new").click();
-      await byTestId("run-new-title").setValue("Acceso con usuarios de prueba");
-      await byTestId("run-cases-search").setValue("usuarios de prueba");
-      const hint = $('[data-testid^="run-case-dataset-"]');
-      await expect(hint).toHaveText(tf("execution.picker.dataset_other", { count: 3, name: DATASET_NAME, version: 1 }));
-      libraryCaseKey = ((await hint.getAttribute("data-testid")) ?? "").replace("run-case-dataset-", "");
-      await byTestId(`run-case-${libraryCaseKey}`).click();
-    },
-  });
-
-  step("ejecutar-filas", {
-    title: "Ejecutar cada fila del dataset",
-    caption:
-      "En el ejecutor, cada fila es una ejecución con su propio resultado: «Flujo principal · Fila 1 de 3», «Fila 2 de 3»… con el primer valor de la fila al lado. Los valores de la fila aparecen resaltados en los pasos, y los pasos insertados llevan encima «Paso compartido · Iniciar sesión · v2». En este ejemplo pasan las dos primeras cuentas y la tercera falla al pulsar «Entrar». Cada resultado recuerda el dataset y la versión de cada paso compartido; el progreso del run cuenta el caso una vez.",
-    focus: ".ex-targets",
-    run: async () => {
-      if (await byTestId("run-cases-confirm").isExisting()) await byTestId("run-cases-confirm").click();
-      else await clickButton(es.execution.newRun.create, '[role="dialog"]');
-      await browser.waitUntil(async () => /\/runs\/[^/?]+/.test(await browser.getUrl()), { timeoutMsg: "the run screen did not open" });
-      await $(`[data-testid="run-item-execute"][data-case-key="${libraryCaseKey}"]`).click();
-      await expect(byTestId("exec-panel")).toBeDisplayed();
-      const targets = await atLeast("button.ex-target", 3);
-      await expect(targets[0]).toHaveText(expect.stringContaining(tf("execution.rowOf", { n: 1, total: 3 })));
-      for (let row = 0; row < 3; row++) {
-        await $$("button.ex-target")[row].click();
-        await expect($$("button.ex-target")[row]).toHaveAttribute("aria-current", "true");
-        const steps = (await $$('[data-testid^="exec-step-"][data-testid$="-pass"]')).length;
-        for (let i = 1; i <= steps; i++) {
-          await byTestId(`exec-step-${i}-${row === 2 && i === steps ? "fail" : "pass"}`).click();
-        }
-        await byTestId("exec-save").click();
-        await waitForToast(tf("execution.recorded", { status: es.runs.status[row === 2 ? "failed" : "passed"] }));
-      }
-      await expect($(".ex-shared")).toHaveText(expect.stringContaining(tf("execution.sharedBlock", { name: STEP_NAME, version: 2 })));
-      // The capture shows the rows with their results and the shared block.
-      await $(".ex-targets").scrollIntoView({ block: "start" });
-    },
-    // The run only shows the rows: deleting it keeps the results the later
-    // chapters count (the matrix, Inicio) as they were.
-    after: async () => {
-      await byTestId("run-delete").click();
-      await byTestId("run-delete-confirm").waitForEnabled();
-      await byTestId("run-delete-confirm").click();
-      await browser.waitUntil(async () => /\/runs\/?(\?|$)/.test(await browser.getUrl()), {
-        timeoutMsg: "the runs list did not open after deleting the run",
-      });
-    },
-  });
 });

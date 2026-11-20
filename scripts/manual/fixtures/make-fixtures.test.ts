@@ -53,8 +53,10 @@ async function settle(name: string, fresh: Uint8Array | string, same: (committed
   await same(readFileSync(file));
 }
 
-/** Content without the ids an import gives anew. */
-const content = (v: unknown) => JSON.parse(JSON.stringify(v, (k, x) => (k === "id" ? undefined : x)));
+/** Content without the ids an import gives anew (a criterion's metric link
+ *  is kept as «linked»: the metric ids are new on each import). */
+const content = (v: unknown) =>
+  JSON.parse(JSON.stringify(v, (k, x) => (k === "id" ? undefined : k === "metricId" && x ? "linked" : x)));
 
 // ---- Requirements --------------------------------------------------------------
 
@@ -132,11 +134,16 @@ describe("case-study fixtures (e2e/tours/fixtures/pharos)", () => {
       purpose: PLAN.purpose,
       conclusion: PLAN.conclusion,
     };
-    const { buffer } = await buildPlanXlsx(toExportable(form, AUTHOR, t, "es"), "es");
+    // With `t`: the strategy, metrics and criteria sheets are found by their
+    // translated names on import («Estrategia 29119-3»…), not by their keys.
+    const { buffer } = await buildPlanXlsx(toExportable(form, AUTHOR, t, "es"), "es", t);
     const fresh = new Uint8Array(buffer as ArrayBuffer);
     const parsed = async (b: ArrayBuffer | Uint8Array) => content((await parsePlanXlsx(b instanceof Uint8Array ? b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) : b, PLAN.file, AUTHOR)).input);
     const mine = await parsed(fresh);
     expect(mine.title).toBe(PLAN.title);
+    // The strategy sheet was read back (assumptions, techniques, estimation…).
+    expect(mine.data.assumptions).toEqual(PLAN.assumptions);
+    expect(mine.data.techniques).toEqual(PLAN.techniques);
     await settle(PLAN.file, fresh, async (c) => expect(await parsed(new Uint8Array(c))).toEqual(mine));
   });
 

@@ -1,11 +1,26 @@
 // Chapter 15 — Administración (manual v2, MAN-03): the AI engine screen,
 // templates (download, import, delete), general settings (theme, language,
-// background, download folder), sync (now, automatic, conflicts), security
-// (recovery key) and diagnostics. Example: Liomar sets up his Pharos.
+// background, download folder, trash), sync (now, automatic, the silent
+// field-by-field merge, a conflict, its notification and the merge panel),
+// security (recovery key), diagnostics, the audit, the AI key in the web and
+// the workspace rules. Example: Liomar, QA and Test Manager of his own
+// workspace, sets up his Pharos.
+//
+// The last block is for whoever administers the server: the app signs in as
+// «Administrador» (account-switch.ts), shows «Usuarios» acting on Jorge's
+// account (reset link, administrator role, tokens, disable and re-enable;
+// nothing is deleted and Jorge's password stays valid) and comes back to
+// Liomar. Liomar is not a server administrator, so he never sees «Usuarios».
+//
+// The second device of the sync steps is Liomar's own other computer, played
+// through the tour API (people.ts): at this point of the manual «Pharos» is in
+// his Personal workspace, where nobody else can edit it.
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { $, $$, browser, expect } from "@wdio/globals";
-import { editOnOtherDevice } from "./people";
+import { PERSONA, TEAMMATE } from "../../scripts/manual/persona.mjs";
+import { signInAs } from "./account-switch";
+import { editOnOtherDevice, jorgeCreatesPersonalToken } from "./people";
 import { chapter, step } from "./tour";
 import {
   acceptConfirm,
@@ -26,11 +41,18 @@ import {
   tf,
   waitForText,
   waitForToast,
+  xpathString,
 } from "./helpers";
 
 const A = es.admin;
+const U = es.admin.users;
 const D = '[role="dialog"]';
 const downloadsDir = process.env.PHAROS_TOURS_DOWNLOADS ?? "";
+
+/** The requirement of the sync steps (fitting: it is about syncing). */
+const SYNC_REQ = { key: "REQ-006", title: "Trabajar sin conexión y sincronizar" };
+/** What Liomar's laptop adds to REQ-006's description in the silent merge. */
+const MERGED_SENTENCE = "Si cambian el mismo campo, Pharos pregunta cuál queda.";
 
 function newestDownload(ext: string): string {
   const files = readdirSync(downloadsDir)
@@ -41,19 +63,61 @@ function newestDownload(ext: string): string {
   return join(downloadsDir, files[0].f);
 }
 
+/** Every scrolled container back to its top (a page shot from its title). */
+async function scrollAllToTop() {
+  await browser.execute(() => {
+    window.scrollTo(0, 0);
+    for (const el of document.querySelectorAll<HTMLElement>("*")) if (el.scrollTop > 0) el.scrollTop = 0;
+  });
+}
+
+/** Opens a requirement of «Pharos» by the start of its title. */
+async function openRequirement(titleStart: string) {
+  await openProject(PROJECT_A.name);
+  await openSection("requirements");
+  await $(`button.tz-open*=${titleStart}`).click();
+  await expect(dialog()).toBeDisplayed();
+}
+
+/** Saves the open requirement with a new title. */
+async function retitleRequirement(title: string) {
+  await (await field(es.traceability.requirement.title, D)).setValue(title);
+  await clickButton(es.traceability.requirement.save, D);
+  await waitForToast(es.traceability.requirement.savedToast);
+  await $(D).waitForExist({ reverse: true });
+}
+
+// ---- «Usuarios» (server administrator) -------------------------------------
+// Rows are found by the account's e-mail (the per-row test ids are on their
+// way: user-row-<email>, user-reset, user-grant, user-revoke, user-disable,
+// user-enable, user-revoke-tokens).
+const userRow = (email: string) => $(`//tr[td[normalize-space()=${xpathString(email)}]]`);
+const rowButton = (email: string, text: string) =>
+  $(`//tr[td[normalize-space()=${xpathString(email)}]]//button[normalize-space()=${xpathString(text)}]`);
+
 chapter("administracion", () => {
+  // Safety net: whatever happens in the administrator block, the next
+  // chapter finds the app signed in as Liomar (a no-op when it already is).
+  after(async () => {
+    // A dialog left open by a failed step would block the sign-out.
+    for (let i = 0; i < 3 && (await $('[role="dialog"], [role="alertdialog"]').isExisting()); i++) await browser.keys("Escape");
+    await signInAs("liomar");
+  });
+
   step("motor-ia", {
     title: "Administración · Motor de IA",
     caption:
-      "«Administración» (en el menú de tu avatar o en el menú lateral) reúne la configuración de la aplicación en pestañas agrupadas: «Recursos» (Motor de IA, Plantillas), «Aplicación» (General), «Cuenta y datos» (Sincronización, Seguridad, Evidencias) y «Soporte» (Diagnóstico). En «Motor de IA» eliges cómo usar la IA (automático, solo online o solo local), el proveedor online, su clave y el modelo, o un modelo local con Ollama para trabajar sin internet. La IA es opcional: sin ella, los botones de asistencia se desactivan con un aviso y nada de lo que propone se aplica sin que lo aceptes.",
+      "«Administración» (en el menú de tu avatar o en el menú lateral) reúne la configuración de la aplicación en pestañas agrupadas: «Recursos» (Motor de IA, Plantillas), «Aplicación» (General y, si administras el servidor, Usuarios), «Cuenta y datos» (Sincronización, Seguridad, Evidencias, Auditoría) y «Soporte» (Diagnóstico). Liomar no administra el servidor, así que no ve «Usuarios». En «Motor de IA» eliges cómo usar la IA (automático, solo online o solo local), el proveedor online, su clave y el modelo, o un modelo local con Ollama para trabajar sin internet. La IA es opcional: sin ella, los botones de asistencia se desactivan con un aviso y nada de lo que propone se aplica sin que lo aceptes.",
     covers: ["route:/admin", "admin:ai", "state:ollama-offline", "tabs:src/modules/admin/ui/AdminTabs.tsx"],
     mask: ["#ai-key"],
-    focus: "[role=\"tablist\"]",
+    focus: '[role="tablist"]',
     run: async () => {
       await openAdminTab("ai");
       await expect(byTestId("ai-provider-gemini")).toBeDisplayed();
+      await expect(byTestId("admin-tab-users")).not.toBeExisting();
       // Without Ollama on this machine, its card says so instead of failing.
       await waitForText(es.ai.ollamaOffline);
+      await scrollAllToTop();
     },
   });
 
@@ -76,7 +140,7 @@ chapter("administracion", () => {
   step("plantillas", {
     title: "Plantillas",
     caption:
-      "«Plantillas» guarda las plantillas de plan y de caso: las incluidas con Pharos y las tuyas. Sirven para trabajar fuera de la aplicación: descarga una en .xlsx, rellénala en Excel (o pásala a quien no usa Pharos) e impórtala después en un plan (capítulo 5) o en un caso (capítulo 8).",
+      "«Plantillas» guarda las plantillas de plan y de caso: las incluidas con Pharos y las tuyas, que viajan con tu workspace (editarlas requiere ser Test Manager o Test Analyst). Sirven para trabajar fuera de la aplicación: descarga una en .xlsx, rellénala en Excel (o pásala a quien no usa Pharos) e impórtala después en un plan (capítulo 5) o en un caso (capítulo 8).",
     covers: ["admin:templates", "action:template-download"],
     run: async () => {
       await openAdminTab("templates");
@@ -122,24 +186,36 @@ chapter("administracion", () => {
   step("general", {
     title: "General",
     caption:
-      "«General» reúne los ajustes de la aplicación en este equipo. El tema (claro, oscuro o según el sistema), el idioma y la carpeta de las exportaciones se guardan al momento. El fondo viene con una imagen predeterminada que puedes cambiar o quitar; al mover su opacidad ves el resultado antes de pulsar «Guardar ajustes». También eliges la retención de los elementos borrados.",
-    covers: ["admin:general", "upload:src/modules/admin/ui/tabs/GeneralTab.tsx"],
+      "«General» reúne los ajustes de la aplicación en este equipo. El tema (claro, oscuro o según el sistema), el idioma y la carpeta de las exportaciones se guardan al momento. El fondo viene con una imagen predeterminada que puedes cambiar o quitar; al mover su opacidad ves el resultado detrás de la página antes de pulsar «Guardar ajustes», y un aviso dice qué queda «Por guardar». También eliges la retención de los elementos borrados.",
+    covers: ["admin:general"],
+    focus: "#adm-opacity",
     run: async () => {
       await clickButton(es.common.confirmDelete, '[role="alertdialog"]');
       await $('[role="alertdialog"]').waitForExist({ reverse: true });
       await openAdminTab("general");
       await expect(byTestId("download-dir")).toBeDisplayed();
-      await chooseFile('input[type="file"][accept="image/*"]', join(repoDir, "src-tauri", "pharos-icon-source.png"));
+      const slider = $("#adm-opacity");
+      const before = await slider.getValue();
+      await browser.execute(() => document.getElementById("adm-opacity")?.focus());
+      // Up to about 80 %: the photo behind the page shows stronger at once.
+      for (let i = 0; i < 100 && Number(await slider.getValue()) < 80; i++) await browser.keys("ArrowRight");
+      await browser.waitUntil(async () => (await slider.getValue()) !== before, { timeoutMsg: "the opacity did not move" });
+      await waitForText(A.general.pending.message.split("{{")[0]);
+      // From the page title: «Apariencia» fits whole under the tabs.
+      await scrollAllToTop();
+      // The pointer off the controls: nothing is shot hovered.
+      await browser.action("pointer").move({ origin: "viewport", x: 700, y: 40 }).perform();
     },
   });
 
   step("cambios-sin-guardar", {
     title: "Cambiar de pestaña con cambios sin guardar",
     caption:
-      "Si cambias de pestaña sin «Guardar ajustes», Pharos pregunta si descartas los cambios (en este ejemplo se descartan y el fondo vuelve a ser el de siempre).",
-    covers: ["dialogs:src/modules/admin/ui/AdminPage.tsx"],
+      "«Elegir imagen» cambia el fondo por una imagen tuya, también como borrador. Si cambias de pestaña sin «Guardar ajustes», Pharos pregunta si descartas los cambios (en este ejemplo se descartan: el fondo y su opacidad vuelven a ser los de siempre).",
+    covers: ["upload:src/modules/admin/ui/tabs/GeneralTab.tsx", "dialogs:src/modules/admin/ui/AdminPage.tsx"],
     shot: false,
     run: async () => {
+      await chooseFile('input[type="file"][accept="image/*"]', join(repoDir, "src-tauri", "pharos-icon-source.png"));
       await byTestId("admin-tab-sync").click();
       await acceptConfirm();
       await expect(byTestId("admin-tab-sync")).toHaveAttribute("aria-selected", "true");
@@ -149,39 +225,29 @@ chapter("administracion", () => {
   step("papelera", {
     title: "Papelera",
     caption:
-      "Al final de «General», la «Papelera» reúne lo que has borrado en este equipo y aún no se ha eliminado para siempre: el número de elementos, su desglose por tipo (proyectos, casos, requisitos, defectos…) y, en cada fila, cuándo se borró y en cuántos días se eliminará según la retención. Marca filas para «Restaurar» (vuelven a su sitio con su clave y su historial, y se sincronizan) o «Eliminar para siempre»; un proyecto vuelve con lo que se borró con él. «Vaciar papelera» pide confirmación y conserva lo que tiene cambios sin sincronizar. En la web no se guarda lo borrado: la papelera está en la app de escritorio.",
+      "Al final de «General», la «Papelera» reúne lo que has borrado en este equipo y aún no se ha eliminado para siempre: el número de elementos, su desglose por tipo (proyectos, casos, requisitos, defectos…) y, en cada fila, cuándo se borró y en cuántos días se eliminará según la retención. Marca filas para «Restaurar» (vuelven a su sitio con su clave y su historial, y se sincronizan) o «Eliminar para siempre»; un proyecto vuelve con lo que se borró con él. «Vaciar papelera» pide confirmación y conserva lo que tiene cambios sin sincronizar. En la web no se guarda lo borrado: la papelera está en la app de escritorio. Aquí están la plantilla que Liomar acaba de eliminar y el requisito REQ-007 que borró en el capítulo 7.",
     covers: ["dialogs:src/modules/admin/ui/TrashSection.tsx"],
     focus: '[data-testid="admin-trash"]',
     run: async () => {
       await openAdminTab("general");
-      await byTestId("admin-trash").scrollIntoView();
+      await byTestId("admin-trash").scrollIntoView({ block: "center" });
       await expect(byTestId("trash-table")).toBeDisplayed();
-      await byTestId("trash-empty").click();
-      await expect($('[role="alertdialog"]')).toBeDisplayed();
+      await waitForText("REQ-007");
+      await browser.action("pointer").move({ origin: "viewport", x: 700, y: 40 }).perform();
     },
     after: async () => {
+      // «Vaciar papelera» asks first; Liomar keeps his trash.
+      await byTestId("trash-empty").click();
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
       await clickButton(es.common.cancel, '[role="alertdialog"]');
       await $('[role="alertdialog"]').waitForExist({ reverse: true });
-    },
-  });
-
-  step("usuarios", {
-    title: "Usuarios del servidor",
-    caption:
-      "«Usuarios», en el grupo «Aplicación», solo la ve un administrador del servidor: la primera cuenta que se registró en él (aquí, la de Liomar), las que nombre otro administrador y las que configure quien gestiona el servidor (PHAROS_ADMINS). Lista todas las cuentas del servidor, con su correo, su alta y si tienen códigos de recuperación, y en cada fila «Restablecer contraseña…» (un enlace de un solo uso que dura 24 horas; el administrador nunca ve ni pone la contraseña) y «Hacer administrador» o «Quitar administrador». No da acceso a los proyectos de nadie: es un rol de todo el servidor, distinto del Test Manager de un workspace. En tu propia fila no hay «Restablecer contraseña» (la tuya se cambia en «Mi perfil»), y como Liomar es el único administrador, su «Quitar administrador» está deshabilitado.",
-    covers: ["admin:users"],
-    focus: ".usr-table",
-    run: async () => {
-      await openAdminTab("users");
-      await expect(byTestId("admins-count")).toBeDisplayed();
-      await expect($(".usr-table")).toBeDisplayed();
     },
   });
 
   step("sincronizacion", {
     title: "Sincronización",
     caption:
-      "Pharos trabaja sin conexión: guarda todo en este equipo y lo sincroniza con el servidor al iniciar sesión, al recuperar la conexión, cada pocos minutos si lo activas y cuando pulsas «Sincronizar ahora» (también al pie del menú lateral). Esta pestaña muestra el estado, la cuenta, los cambios pendientes de enviar y si hay conflictos que revisar. «Sincronizar ahora» envía y recibe al momento y avisa de cuántos cambios fueron (↑) y vinieron (↓).",
+      "Pharos trabaja sin conexión: guarda todo en este equipo y lo sincroniza con el servidor al iniciar sesión, al recuperar la conexión, cada pocos minutos si lo activas y cuando pulsas «Sincronizar ahora» (también al pie del menú lateral). Esta pestaña muestra el estado, la cuenta, los cambios pendientes de enviar y si hay conflictos que revisar. «Sincronizar ahora» envía y recibe al momento y avisa de cuántos cambios fueron (↑) y vinieron (↓). Una vez al día, después de sincronizar, Pharos borra de su registro interno los cambios que el servidor ya tiene, para que la base de datos no crezca sin necesidad: tus datos, su historial y la auditoría siguen igual.",
     covers: ["admin:sync", "action:sync-now"],
     run: async () => {
       await openAdminTab("sync");
@@ -200,48 +266,88 @@ chapter("administracion", () => {
       await expect(byTestId("admin-sync-interval")).not.toBeExisting();
       await byTestId("admin-sync-auto").click();
       await expect(byTestId("admin-sync-interval")).toBeDisplayed();
+      await browser.action("pointer").move({ origin: "viewport", x: 700, y: 40 }).perform();
     },
     // Off again: an automatic sync must not land in the middle of the
-    // conflict the next step stages.
+    // conflict the next steps stage.
     after: async () => {
       await byTestId("admin-sync-auto").click();
       await expect(byTestId("admin-sync-interval")).not.toBeExisting();
     },
   });
 
-  step("conflicto-otro-equipo", {
-    title: "Un cambio en dos equipos",
+  step("cambios-combinados", {
+    title: "Cambios en campos distintos: se combinan solos",
     caption:
-      "Si el mismo dato se cambia en dos equipos antes de sincronizar (en este ejemplo, el título del requisito REQ-002), el segundo que sincroniza recibe un conflicto: Pharos no pisa ninguno de los dos cambios, avisa y te deja decidir.",
-    shot: false,
+      "Si el mismo elemento se cambia en dos sitios antes de sincronizar, Pharos lo combina campo a campo. En este ejemplo, Liomar completa desde su portátil la descripción del requisito REQ-006 («Si cambian el mismo campo, Pharos pregunta cuál queda.») y, en este equipo, sin sincronizar entre medias, su título («…con el servidor»). Al sincronizar, como tocó campos distintos, Pharos se queda con los dos cambios sin preguntar: el requisito tiene el título nuevo y la descripción del portátil. Un aviso dice cuántos elementos se combinaron, y cada uno queda en «Auditoría» como «Conflicto resuelto».",
+    shot: { element: D },
     run: async () => {
-      // The other device: the tour's own API, as a second Pharos would.
+      // The other device: Liomar's laptop, through the tour API.
       await editOnOtherDevice(
         "requirement",
-        (p) => p.requirementKey === "REQ-002",
-        (p) => ({ ...p, title: "Crear un proyecto con su prefijo (editado en otro equipo)" }),
+        (p) => p.requirementKey === SYNC_REQ.key,
+        (p) => ({ ...p, description: `${String(p.description ?? "")} ${MERGED_SENTENCE}`.trim() }),
       );
-      // This device: the same requirement, edited before syncing.
-      await openProject(PROJECT_A.name);
-      await openSection("requirements");
-      await $("button.tz-open*=Crear un proyecto con su prefijo").click();
-      await (await field(es.traceability.requirement.title, D)).setValue("Crear un proyecto con su prefijo · versión de este equipo");
-      await clickButton(es.traceability.requirement.save, D);
-      await waitForToast(es.traceability.requirement.savedToast);
+      // This device: the same requirement, another field, before syncing.
+      await openRequirement(SYNC_REQ.title);
+      await retitleRequirement(`${SYNC_REQ.title} con el servidor`);
+      await clickButton(es.sync.now);
+      await waitForToast(es.sync.autoMerged_one.split("{{")[0], 30_000);
+      // Both changes are there.
+      await openRequirement(SYNC_REQ.title);
+      await expect(await field(es.traceability.requirement.title, D)).toHaveValue(`${SYNC_REQ.title} con el servidor`);
+      await browser.waitUntil(async () => (await $(D).getText()).includes(MERGED_SENTENCE) || (await $(`${D} textarea`).getValue()).includes(MERGED_SENTENCE), {
+        timeoutMsg: "the other device's description did not arrive",
+      });
+    },
+  });
+
+  step("conflicto-otro-equipo", {
+    title: "El mismo campo cambiado en dos equipos",
+    caption:
+      "Si en cambio los dos cambian el mismo campo, Pharos no pisa ninguno de los dos: lo que no choca se combina y por lo que choca pregunta. En este ejemplo, desde el portátil Liomar cambia el título y la descripción de REQ-006 y, en este equipo, otra vez el título. Al sincronizar, «Sincronizar ahora» avisa de que hay un conflicto por revisar.",
+    shot: false,
+    run: async () => {
+      await browser.keys("Escape");
+      await $(D).waitForExist({ reverse: true });
+      await editOnOtherDevice(
+        "requirement",
+        (p) => p.requirementKey === SYNC_REQ.key,
+        (p) => ({
+          ...p,
+          title: `${SYNC_REQ.title} al recuperar la conexión`,
+          description: `${String(p.description ?? "")} Lo resuelto queda en la auditoría.`.trim(),
+        }),
+      );
+      await openRequirement(SYNC_REQ.title);
+      await retitleRequirement(`${SYNC_REQ.title} campo a campo`);
       await clickButton(es.sync.now);
       await waitForToast(tf("sync.conflictToast_one", { count: 1 }), 30_000);
+    },
+  });
+
+  step("notificaciones", {
+    title: "Notificaciones",
+    caption:
+      "La campana de la barra superior abre las notificaciones, agrupadas por día: invitaciones, revisiones, defectos asignados, ciclos cerrados, cambios en los miembros, avisos de la cuenta y conflictos. Un número sobre la campana dice cuántas hay sin leer; «Sin leer» las filtra y «Marcar todo como leído» las da por vistas. Cada una lleva su acción: aquí, «1 conflicto de sincronización por revisar» con «Resolver». Se guardan 90 días.",
+    focus: '[data-testid="notifications-panel"]',
+    run: async () => {
+      await byTestId("notifications-trigger").click();
+      await expect(byTestId("notifications-panel")).toBeDisplayed();
+      await browser.waitUntil(async () => (await $$('[data-testid="notification-row"][data-kind="sync.conflict"]')).length > 0, {
+        timeoutMsg: "no sync conflict notification",
+      });
     },
   });
 
   step("conflictos", {
     title: "Revisar conflictos",
     caption:
-      "«Sincronización → Revisar conflictos» (o el aviso del menú lateral) muestra solo los campos que chocan: lo que cada equipo cambió en campos distintos ya está combinado. En cada campo eliges tu versión o la del servidor, una junto a otra, y «Aplicar»; «La mía en todo» y «La del servidor en todo» conservan una versión entera.",
+      "«Resolver» (o «Sincronización › Revisar conflictos», o el aviso «Conflictos» del menú lateral) abre el panel de conflictos. Solo muestra los campos que chocan, con tu versión y la del servidor una junto a otra; lo que cambió en campos distintos ya está combinado, y el panel lo dice («Se combinó 1 campo sin preguntar»: aquí, la descripción del portátil). En cada campo eliges una versión y pulsas «Aplicar»; «La mía en todo» y «La del servidor en todo» conservan una versión entera.",
     covers: ["dialogs:src/modules/sync-offline/ui/ConflictPanel.tsx"],
     shot: { element: D },
     run: async () => {
-      await openAdminTab("sync");
-      await clickButton(tf("admin.sync.review_other", { count: 1 }));
+      await $('[data-testid="notification-row"][data-kind="sync.conflict"]').$(`button=${es.notifications.action.resolve}`).click();
       await expect($("#cp-title")).toBeDisplayed();
     },
   });
@@ -249,12 +355,12 @@ chapter("administracion", () => {
   step("conflicto-resuelto", {
     title: "Conflicto resuelto",
     caption:
-      "Al aplicar, el conflicto desaparece de la lista («Conflicto resuelto») y lo elegido se sincroniza con el resto de tus equipos. Aquí, el título del servidor.",
+      "Al aplicar, el conflicto desaparece de la lista («Conflicto resuelto») y lo elegido se sincroniza con el resto de tus equipos. Aquí Liomar se queda con su título («…campo a campo»), y la descripción del portátil se conserva.",
     shot: false,
     run: async () => {
       // SYNC-02: the title changed on both sides, so the panel asks for it.
       const title = es.sync.conflict.fields.title;
-      await $(`${D} input[aria-label="${title}: ${es.sync.conflict.remote}"]`).click();
+      await $(`${D} input[aria-label="${title}: ${es.sync.conflict.local}"]`).click();
       await clickButton(es.sync.conflict.apply, D);
       await waitForToast(es.sync.conflict.resolved);
       // The panel's own «Cerrar» (Esc may land on a re-rendering list).
@@ -266,7 +372,7 @@ chapter("administracion", () => {
   step("seguridad", {
     title: "Seguridad · clave de recuperación",
     caption:
-      "La base de datos de este equipo está cifrada y su clave vive en el almacén de credenciales de Windows. «Mostrar clave de recuperación» la enseña tras pedir confirmación: con esa clave y una copia de tus datos puedes recuperarlos en otro equipo si este falla. Guárdala ahora, no cuando la necesites.",
+      "Los datos de este equipo (el archivo pharos.db y la carpeta evidence) están cifrados y su clave vive en el almacén de credenciales de Windows. «Mostrar clave de recuperación» la enseña tras pedir confirmación: con esa clave y una copia de tus datos puedes recuperarlos en otro equipo si este falla. Guárdala ahora, no cuando la necesites.",
     covers: ["admin:security", "dialogs:src/modules/profile/ui/RecoveryKeySection.tsx"],
     shot: { element: D },
     run: async () => {
@@ -292,7 +398,7 @@ chapter("administracion", () => {
   step("diagnostico", {
     title: "Diagnóstico",
     caption:
-      "Si algo falla, «Exportar diagnóstico» guarda un ZIP con la versión, el sistema y el registro de la aplicación, para adjuntarlo al informar del problema. Nunca incluye tus datos ni tus claves.",
+      "Si algo falla, «Exportar diagnóstico» guarda un ZIP con la versión, el sistema y el registro de la aplicación y, solo como números, cuánto ocupan el registro de cambios y la auditoría, para adjuntarlo al informar del problema. Nunca incluye tus datos ni tus claves.",
     covers: ["admin:diagnostics", "action:diagnostics-export"],
     run: async () => {
       await $(`label*=${es.recoveryKey.savedCheck}`).click();
@@ -300,6 +406,7 @@ chapter("administracion", () => {
       await openAdminTab("diagnostics");
       await clickButton(es.diagnostics.export);
       await waitForToast(tf("diagnostics.exported", { file: "" }).trim(), 30_000);
+      await browser.action("pointer").move({ origin: "viewport", x: 700, y: 40 }).perform();
     },
   });
 
@@ -320,13 +427,14 @@ chapter("administracion", () => {
   step("auditoria-detalle", {
     title: "El antes y el después de un cambio",
     caption:
-      "Pulsa un elemento de la lista para ver el cambio campo a campo: lo que había, tachado en rojo, y lo que hay ahora, en verde. Una importación o un borrado en cascada muestra sus recuentos. «Ver todo su historial» lista todos los cambios de ese elemento; «Copiar como JSON» copia el evento tal como se guardó.",
+      "Pulsa un elemento de la lista para ver el cambio campo a campo: lo que había, tachado en rojo, y lo que hay ahora, en verde. Una importación o un borrado en cascada muestra sus recuentos. «Ver todo su historial» lista todos los cambios de ese elemento; «Copiar como JSON» copia el evento tal como se guardó. Aquí, el conflicto de REQ-006 que Liomar acaba de resolver: «Conflicto resuelto», con la descripción que llegó del portátil.",
     covers: ["dialogs:src/modules/admin/ui/audit/AuditDetail.tsx"],
-    shot: { element: D },
+    focus: D,
     run: async () => {
       await $('[data-testid^="audit-row-"]').click();
       await expect(dialog()).toBeDisplayed();
       await waitForText(A.audit.detail.linkOk);
+      await waitForText(SYNC_REQ.key);
     },
   });
 
@@ -346,6 +454,20 @@ chapter("administracion", () => {
     },
   });
 
+  // Obviously fake placeholders, in the tour's isolated keychain profile: the
+  // AI steps only exercise warnings and never reach a provider. IA-12
+  // (ADR-0034): the tour API runs with a throwaway AI_VAULT_KEY
+  // (run-tours.mjs), so uploading the key never reaches a provider either.
+  const keyCommand = (cmd: string, args: object) =>
+    browser.execute(
+      async (c: string, a: object) => {
+        const w = window as unknown as { __TAURI_INTERNALS__: { invoke: (c: string, a: object) => Promise<unknown> } };
+        await w.__TAURI_INTERNALS__.invoke(c, a);
+      },
+      cmd,
+      args,
+    );
+
   step("ia-reemplazar-clave", {
     title: "Reemplazar una clave de IA guardada",
     caption:
@@ -353,17 +475,6 @@ chapter("administracion", () => {
     covers: ["dialogs:src/modules/ai/ui/AiEngineTab.tsx"],
     shot: false,
     run: async () => {
-      // Obviously fake placeholders, in the tour's isolated keychain profile:
-      // this step only exercises the warning and never reaches a provider.
-      const keyCommand = (cmd: string, args: object) =>
-        browser.execute(
-          async (c: string, a: object) => {
-            const w = window as unknown as { __TAURI_INTERNALS__: { invoke: (c: string, a: object) => Promise<unknown> } };
-            await w.__TAURI_INTERNALS__.invoke(c, a);
-          },
-          cmd,
-          args,
-        );
       await keyCommand("ai_key_set", { provider: "gemini", key: "clave-de-ejemplo" });
       await openAdminTab("ai");
       await $("#ai-key").setValue("otra-clave-de-ejemplo");
@@ -381,20 +492,8 @@ chapter("administracion", () => {
     },
   });
 
-  // IA-12 (ADR-0034). The tour API runs with a throwaway AI_VAULT_KEY
-  // (run-tours.mjs) and the key is an obviously fake placeholder in the
-  // tour's isolated keychain: uploading it never reaches a provider.
   const W = es.ai.web;
   const webSwitch = () => byTestId("ai-web-switch");
-  const keyCommand = (cmd: string, args: object) =>
-    browser.execute(
-      async (c: string, a: object) => {
-        const w = window as unknown as { __TAURI_INTERNALS__: { invoke: (c: string, a: object) => Promise<unknown> } };
-        await w.__TAURI_INTERNALS__.invoke(c, a);
-      },
-      cmd,
-      args,
-    );
   /** Opens Motor de IA afresh, so the switch reads the key and the server again. */
   const reopenAi = async () => {
     await openAdminTab("general");
@@ -495,7 +594,7 @@ chapter("administracion", () => {
   step("reglas-workspace", {
     title: "Reglas: aprobación independiente",
     caption:
-      "«Miembros y roles», en el selector de workspace, tiene la sección «Reglas». «Aprobación independiente» decide quién aprueba planes y casos: activada, quien tiene el rol (Test Manager para planes; Test Manager o Test Analyst para casos) y no es el autor; desactivada, cualquiera que pueda editar, también el autor, y queda como aprobación propia. Solo un Test Manager la cambia, y apagarla pide confirmación. En el workspace Personal está siempre desactivada, porque trabajas solo: el interruptor se ve, pero no se puede activar. En un workspace compartido, lo normal es tenerla activada.",
+      "«Miembros y roles», en el selector de workspace, tiene la sección «Reglas». «Aprobación independiente» decide quién aprueba planes y casos: activada, quien tiene el rol (Test Manager para planes; Test Manager o Test Analyst para casos) y no es el autor; desactivada, cualquiera que pueda editar, también el autor, y queda como aprobación propia. Solo un Test Manager la cambia, y apagarla pide confirmación. En el workspace Personal está siempre desactivada, porque trabajas solo: el interruptor se ve, pero no se puede activar. En un workspace compartido, lo normal es tenerla activada (capítulo 21).",
     covers: ["action:workspace-rules"],
     focus: '[data-testid="workspace-rules"]',
     run: async () => {
@@ -504,6 +603,146 @@ chapter("administracion", () => {
       await byTestId("workspace-members").click();
       await expect(byTestId("workspace-rules")).toBeDisplayed();
       await expect(byTestId("workspace-independent-approval")).toBeDisabled();
+    },
+  });
+
+  // ---- For whoever administers the server ----------------------------------
+
+  step("usuarios", {
+    title: "Para quien administra el servidor: «Usuarios»",
+    caption:
+      "Esta parte es para quien administra el servidor de Pharos, no para el trabajo diario de QA. «Usuarios», en el grupo «Aplicación», solo la ve un administrador del servidor: la primera cuenta que se registró en él (aquí, la cuenta «Administrador», con la que se entra para estos pasos), las que nombre otro administrador y las que configure quien gestiona el servidor (PHAROS_ADMINS). Es un rol de todo el servidor, distinto del Test Manager de un workspace, y no da acceso a los proyectos de nadie. La lista muestra todas las cuentas, con su correo, su alta, si tienen códigos de recuperación («Sin códigos»: si olvidan la contraseña, solo un administrador puede ayudarles) y su estado. En tu propia fila («Tú») no hay «Restablecer contraseña»: la tuya se cambia en «Mi perfil».",
+    covers: ["admin:users"],
+    focus: ".usr-table",
+    run: async () => {
+      // Jorge has a personal token for his CLI (made from his own computer).
+      await jorgeCreatesPersonalToken("CLI de Jorge");
+      await signInAs("admin");
+      await openAdminTab("users");
+      await expect(byTestId("admins-count")).toBeDisplayed();
+      await expect(userRow(TEAMMATE.email)).toBeDisplayed();
+      await expect(userRow(PERSONA.email)).toBeDisplayed();
+      await scrollAllToTop();
+    },
+  });
+
+  step("usuario-restablecer", {
+    title: "Restablecer la contraseña de otra cuenta",
+    caption:
+      "Si Jorge olvida su contraseña y no le quedan códigos de recuperación, «Restablecer contraseña…» en su fila explica qué pasará y, con «Generar enlace», crea un enlace de un solo uso que dura 24 horas. Si el servidor envía correo, «Enviar por correo» se lo manda y tú no lo ves; si no, o si eliges «Prefiero entregarlo yo», se muestra una sola vez (en este manual, difuminado): cópialo y dáselo por un canal privado. Como este servidor no tiene dirección web configurada, aquí es un código que Jorge pega en «¿Olvidaste tu contraseña?» de su app. Nunca ves ni pones su contraseña. Al usarlo se cierran todas sus sesiones; Jorge recibe un aviso y queda en la auditoría de los dos.",
+    covers: ["dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "action:admin-reset"],
+    shot: { element: D },
+    mask: ['[data-testid="admin-reset-link"]'],
+    run: async () => {
+      await rowButton(TEAMMATE.email, U.reset).click();
+      await expect(dialog()).toBeDisplayed();
+      await clickButton(U.resetConfirm, D);
+      // With e-mail on the server, it asks how to deliver it first.
+      const myself = $(D).$(`button=${U.deliverMyself}`);
+      await browser.waitUntil(async () => (await byTestId("admin-reset-link").isExisting()) || (await myself.isExisting()), {
+        timeoutMsg: "no reset link and no delivery choice",
+      });
+      if (await myself.isExisting()) await myself.click();
+      await expect(byTestId("admin-reset-link")).toBeDisplayed();
+    },
+    after: async () => {
+      // Not used: Jorge's password stays as it is.
+      await clickButton(U.done, D);
+      await $(D).waitForExist({ reverse: true });
+    },
+  });
+
+  step("usuario-hacer-admin", {
+    title: "Nombrar a otro administrador",
+    caption:
+      "«Hacer administrador» pide confirmación y explica qué podrá hacer: ver todas las cuentas, restablecer contraseñas y nombrar o quitar administradores, sin acceso a los proyectos de nadie. La persona recibe un aviso.",
+    covers: ["dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "action:admin-grant"],
+    shot: { element: '[role="alertdialog"], [role="dialog"]' },
+    run: async () => {
+      await rowButton(TEAMMATE.email, U.grant).click();
+      await expect(dialog()).toBeDisplayed();
+      await waitForText(tf("admin.users.grantTitle", { name: TEAMMATE.alias }));
+    },
+    after: async () => {
+      await clickButton(U.grantConfirm, '[role="alertdialog"], [role="dialog"]');
+      await waitForToast(tf("admin.users.granted", { name: TEAMMATE.alias }));
+    },
+  });
+
+  step("usuario-quitar-admin", {
+    title: "Quitar el rol de administrador",
+    caption:
+      "«Quitar administrador» también pide confirmación y avisa a la persona. Siempre tiene que quedar un administrador: el botón del último sale deshabilitado.",
+    covers: ["dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "action:admin-revoke"],
+    shot: false,
+    run: async () => {
+      await rowButton(TEAMMATE.email, U.revoke).click();
+      await clickButton(U.revokeConfirm, '[role="alertdialog"], [role="dialog"]');
+      await waitForToast(tf("admin.users.revoked", { name: TEAMMATE.alias }));
+      await expect(rowButton(TEAMMATE.email, U.grant)).toBeDisplayed();
+    },
+  });
+
+  step("usuario-revocar-tokens", {
+    title: "Revocar los tokens de una cuenta",
+    caption:
+      "«Revocar sus tokens…» anula de una vez todos los tokens de API de esa cuenta, personales y de proyecto, por ejemplo si se filtró uno. La confirmación los nombra (aquí, «CLI de Jorge») y avisa de que no se puede deshacer: los CI que los usan dejan de subir resultados hasta que tengan uno nuevo.",
+    covers: ["dialogs:src/modules/integrations/ui/AdminRevokeTokens.tsx"],
+    shot: { element: '[role="alertdialog"], [role="dialog"]' },
+    run: async () => {
+      await rowButton(TEAMMATE.email, es.integrations.admin.button).click();
+      await expect(dialog()).toBeDisplayed();
+      await waitForText("CLI de Jorge");
+    },
+    after: async () => {
+      await clickButton(tf("integrations.admin.confirm_one", { count: 1 }), '[role="alertdialog"], [role="dialog"]');
+      await waitForToast(tf("integrations.admin.done_one", { count: 1, name: TEAMMATE.alias }));
+    },
+  });
+
+  step("usuario-desactivar", {
+    title: "Desactivar una cuenta",
+    caption:
+      "Cuando alguien deja el equipo, «Desactivar cuenta…» cierra al momento todas sus sesiones (web, escritorio y API) sin borrar nada: sus datos, su autoría y su auditoría se conservan, y lo que tenga en su equipo se queda allí. Puedes escribir un motivo, que solo ven los administradores, y confirmas escribiendo su correo. Si fuera el único Test Manager activo de un workspace compartido, aquí mismo eliges quién pasa a serlo. No puedes desactivarte a ti ni al último administrador activo.",
+    covers: ["dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "dialogs:src/modules/admin/ui/tabs/DisableAccountDialog.tsx", "action:admin-disable"],
+    shot: { element: D },
+    run: async () => {
+      await rowButton(TEAMMATE.email, U.disable).click();
+      await expect(dialog()).toBeDisplayed();
+      await (await field(U.disableReason, D)).setValue("Baja temporal");
+      await (await field(tf("admin.users.disableConfirmLabel", { email: TEAMMATE.email }), D)).setValue(TEAMMATE.email);
+      await expect($(D).$(`button=${U.disableConfirm}`)).toBeEnabled();
+    },
+    after: async () => {
+      await clickButton(U.disableConfirm, D);
+      await waitForToast(tf("admin.users.disabled", { name: TEAMMATE.alias }));
+    },
+  });
+
+  step("usuarios-desactivadas", {
+    title: "Cuentas desactivadas",
+    caption:
+      "La lista muestra primero las cuentas activas; «Desactivadas» y «Todas» enseñan las demás. Una cuenta desactivada lleva «Desactivada · fecha»; al pasar el ratón, quién la desactivó y por qué. Si Jorge intenta entrar, Pharos le dice que su cuenta está desactivada.",
+    focus: '[data-testid="users-status"]',
+    run: async () => {
+      await byTestId("users-status").$(`button*=${U.status.disabled}`).click();
+      await expect(userRow(TEAMMATE.email)).toBeDisplayed();
+      await expect(rowButton(TEAMMATE.email, U.enable)).toBeDisplayed();
+      await browser.action("pointer").move({ origin: "viewport", x: 700, y: 40 }).perform();
+    },
+  });
+
+  step("usuario-reactivar", {
+    title: "Reactivar una cuenta",
+    caption:
+      "«Reactivar cuenta» pide confirmación y la devuelve: Jorge vuelve a entrar con su contraseña y conserva sus roles; sus sesiones anteriores no vuelven. Con esto termina la parte del administrador: la app vuelve a la sesión de Liomar.",
+    covers: ["dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "action:admin-enable"],
+    shot: false,
+    run: async () => {
+      await rowButton(TEAMMATE.email, U.enable).click();
+      await clickButton(U.enableConfirm, '[role="alertdialog"], [role="dialog"]');
+      await waitForToast(tf("admin.users.enabled", { name: TEAMMATE.alias }));
+      await signInAs("liomar");
     },
   });
 });

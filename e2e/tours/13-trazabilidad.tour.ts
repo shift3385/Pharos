@@ -1,14 +1,15 @@
 // Chapter 13 — Trazabilidad (manual v2, MAN-03): the matrix that joins the
 // requirements of chapter 7, the cases of chapter 8, their latest results
 // (the JUnit import of chapter 10, the manual run of chapter 11) and the
-// defects of chapter 12. Coverage, the latest result and its run, the result
-// filters, the order by risk, the gaps, migrating free-text references and
+// defects of chapter 12. Coverage, the latest result and its run, a case with
+// a dataset, the result filters, the order by risk, the gaps, the open
+// findings of the scans of chapter 10, migrating free-text references and
 // exporting. It runs after the executions and the defects, so the matrix has
-// something to show. Example: Liomar checks what is tested of Pharos 0.3.0.
+// something to show. Example: Liomar checks what is tested of Pharos 0.6.0.
 import { $, $$, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
 import { PROJECT_A, byTestId, chooseOption, clickButton, dialog, es, openProject, openSection, tf, waitForText, waitForToast } from "./helpers";
-import { RELEASE } from "./data/pharos";
+import { CYCLE, LIBRARY, SCANS } from "./data/pharos";
 
 const T = es.traceability;
 const D = '[role="dialog"]';
@@ -17,7 +18,7 @@ chapter("trazabilidad", () => {
   step("matriz", {
     title: "La matriz de trazabilidad",
     caption:
-      "«Trazabilidad», al final del menú del proyecto, responde a «¿está probado cada requisito?». Arriba, las cifras: cuántos requisitos hay, cuántos están cubiertos (con al menos un caso), cuántos no y la cobertura. Debajo, la matriz: cada requisito con su prioridad, los casos que lo verifican, el estado de prueba de cada caso y sus defectos. Un requisito sin ningún caso sale en rojo. Va al final del menú porque mide el resultado de todo lo anterior: es la vista que enseñar cuando alguien pregunta qué se ha probado. En este ejemplo, Liomar revisa la 0.3.0 de Pharos después de la importación del capítulo 10, la ejecución manual del capítulo 11 y los defectos del capítulo 12.",
+      "«Trazabilidad», al final del menú del proyecto, responde a «¿está probado cada requisito?». Arriba, las cifras: cuántos requisitos hay, cuántos están cubiertos (con al menos un caso), cuántos no y la cobertura. Debajo, la matriz: cada requisito con su prioridad, los casos que lo verifican, el estado de prueba de cada caso y sus defectos. Un requisito sin ningún caso sale en rojo. Va al final del menú porque mide el resultado de todo lo anterior: es la vista que enseñar cuando alguien pregunta qué se ha probado. En este ejemplo, Liomar revisa la 0.6.0 de Pharos después de las importaciones del capítulo 10, la ejecución manual del capítulo 11 y los defectos del capítulo 12.",
     covers: ["section:traceability", "screen:matrix"],
     run: async () => {
       await openProject(PROJECT_A.name);
@@ -39,16 +40,28 @@ chapter("trazabilidad", () => {
     },
   });
 
+  step("dataset", {
+    title: "Un caso con dataset en la matriz",
+    caption:
+      `Un caso con dataset (capítulo 8) se ejecuta una vez por fila, y en la matriz pasa solo si pasan todas sus filas. En este ejemplo, «${LIBRARY.case.title}» (${LIBRARY.case.key}) verifica REQ-001 junto a los otros dos casos de acceso y falla: en la ejecución manual del capítulo 11, la tercera cuenta no entra.`,
+    focus: `[data-testid="trace-result-${LIBRARY.case.key}"]`,
+    run: async () => {
+      const row = $(`[data-testid="trace-result-${LIBRARY.case.key}"]`);
+      await row.waitForDisplayed();
+      await row.scrollIntoView({ block: "center" });
+    },
+  });
+
   step("filtros", {
     title: "Filtrar los resultados",
     caption:
-      "Sobre la matriz, los filtros de resultados limitan el estado de prueba a las ejecuciones de un ciclo, una configuración, una build o un entorno: la foto de una ronda concreta. Los requisitos y los casos no cambian; solo qué resultados cuentan. Los filtros quedan en la dirección de la página, así que se pueden guardar o compartir, y «Quitar filtros» vuelve a todos. En este ejemplo, Liomar mira solo la build 0.3.0-rc1.",
+      `Sobre la matriz, los filtros de resultados limitan el estado de prueba a las ejecuciones de un ciclo, una configuración, una build o un entorno: la foto de una ronda concreta. Los requisitos y los casos no cambian; solo qué resultados cuentan. Los filtros quedan en la dirección de la página, así que se pueden guardar o compartir, y «Quitar filtros» vuelve a todos. En este ejemplo, Liomar mira solo el ciclo «${CYCLE.title}»: cuenta el informe importado en el ciclo (capítulo 10), y PH-005, que no se ejecutó en él, queda «No ejecutado».`,
     covers: ["action:matrix-filters"],
-    focus: '[data-testid="trace-filter-build"]',
+    focus: '[data-testid="trace-filter-cycle"]',
     run: async () => {
-      const build = $('[data-testid="trace-filter-build"]');
-      await chooseOption(build, { value: RELEASE.build });
-      await browser.waitUntil(async () => (await browser.getUrl()).includes("build="), { timeoutMsg: "the filter is not in the URL" });
+      const cycle = $('[data-testid="trace-filter-cycle"]');
+      await chooseOption(cycle, { index: 1 });
+      await browser.waitUntil(async () => (await browser.getUrl()).includes("cycle"), { timeoutMsg: "the filter is not in the URL" });
       await browser.waitUntil(async () => (await $$("tbody tr")).length > 0, { timeoutMsg: "the filtered matrix has no rows" });
     },
   });
@@ -60,7 +73,7 @@ chapter("trazabilidad", () => {
     shot: false,
     run: async () => {
       await byTestId("trace-filters-clear").click();
-      await browser.waitUntil(async () => !(await browser.getUrl()).includes("build="), { timeoutMsg: "the filters were not cleared" });
+      await browser.waitUntil(async () => !(await browser.getUrl()).includes("cycle"), { timeoutMsg: "the filters were not cleared" });
       await $('[data-testid="trace-run-link"]').click();
       await browser.waitUntil(async () => /\/runs\/[^/?]+/.test(await browser.getUrl()), { timeoutMsg: "the run screen did not open" });
       await browser.back();
@@ -87,7 +100,7 @@ chapter("trazabilidad", () => {
     caption:
       "«Cobertura ponderada» pesa cada requisito por su nivel de riesgo (probabilidad × impacto): cubrir uno de nivel 20 cuenta cinco veces más que uno de nivel 4, así un hueco en lo más arriesgado se nota más que en lo trivial. Debajo pone la «aprobada» (los requisitos con todos sus casos ejecutados y en Pasa) y cuántos requisitos sin evaluar quedan fuera; el ⓘ enseña la cuenta y las bandas del proyecto (capítulo 14). Bajo las cifras, una barra por banda —alto, medio, bajo y sin evaluar— dice cuántos requisitos de cada una tienen caso. Sigue los filtros de ciclo, configuración, build y entorno, como el informe de estado.",
     covers: ["action:matrix-weighted"],
-    focus: ['[data-testid="tz-weighted"]', '[data-testid="tz-bands"]'],
+    focus: '[data-testid="tz-weighted"]',
     run: async () => {
       await expect(byTestId("tz-weighted")).toBeDisplayed();
       await browser.waitUntil(async () => (await byTestId("tz-weighted").getText()).includes("%"), {
@@ -102,9 +115,27 @@ chapter("trazabilidad", () => {
     caption:
       "«Mostrar solo huecos» deja los requisitos sin ningún caso, lo primero que conviene resolver antes de cerrar un ciclo. Debajo, «Huecos de trazabilidad» reúne lo que rompe la cadena requisito ↔ caso ↔ defecto: casos sin requisito, casos que enlazan un requisito inexistente y defectos sin caso vinculado.",
     covers: ["action:matrix-gaps"],
+    focus: [".tz-gaps-toggle[data-on]", "section.tz-gaps"],
     run: async () => {
       await $(`label*=${T.matrix.onlyGaps}`).click();
       await expect($(`button[role="switch"][aria-checked="true"]`)).toBeExisting();
+      // The «Huecos de trazabilidad» panel, below the matrix.
+      await $("section.tz-gaps").scrollIntoView({ block: "center" });
+    },
+  });
+
+  step("hallazgos", {
+    title: "Casos con hallazgos abiertos",
+    caption:
+      `Un caso con hallazgos abiertos en el último análisis de cada herramienta (capítulo 10) lleva una insignia con cuántos son, en el color del peor; al pasar el puntero dice su severidad. «Con hallazgos abiertos» deja solo los requisitos con algún caso así. En este ejemplo, el análisis de Semgrep vinculó a ${SCANS.sarif.linkedCase} un hallazgo de severidad media: la respuesta de /auth/login delata si un correo tiene cuenta. El que Liomar triajó como falso positivo ya no cuenta.`,
+    focus: `[data-testid="trace-findings-${SCANS.sarif.linkedCase}"]`,
+    run: async () => {
+      await $(`label*=${T.matrix.onlyGaps}`).click();
+      await $(`label*=${tf("traceability.matrix.onlyFindings_one", { count: 1 }).split(" (")[0]}`).click();
+      const badge = $(`[data-testid="trace-findings-${SCANS.sarif.linkedCase}"]`);
+      await badge.waitForDisplayed();
+      await expect(badge).toHaveText(tf("traceability.findings.badge_one", { count: 1 }));
+      await badge.scrollIntoView({ block: "center" });
     },
   });
 
@@ -115,7 +146,7 @@ chapter("trazabilidad", () => {
     covers: ["dialogs:src/modules/traceability/ui/MigrateTraceabilityModal.tsx"],
     shot: { element: D },
     run: async () => {
-      await $(`label*=${T.matrix.onlyGaps}`).click();
+      await $(`label*=${tf("traceability.matrix.onlyFindings_one", { count: 1 }).split(" (")[0]}`).click();
       const migrate = $(`button*=${T.migrate.button.split(" (")[0]}`);
       await migrate.scrollIntoView({ block: "center" });
       await migrate.click();

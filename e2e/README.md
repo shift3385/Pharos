@@ -64,15 +64,18 @@ before the database and the build.
 
 A chapter declares in `uses` (`manifest.ts`) the named data it reads and is
 not about: `cuenta-liomar`, `proyectos`, `prefijos`, `ajustes`, `plan`,
-`requisitos`, `casos-base`, `ciclo`, `resultados`, `ejecucion-manual`,
-`defectos`, `requisitos-api`, `cuenta-jorge`, `equipo-qa`,
+`requisitos`, `casos-base`, `caso-dataset`, `ciclo`, `resultados`,
+`hallazgos`, `ejecucion-manual`, `defectos`, `requisitos-api`,
+`cuenta-jorge`, `equipo-qa`,
 `jorge-en-equipo` (`PREREQUISITES`: each with its contract, the chapter that
 makes it on screen and how it is loaded). Before the chapter's first step,
 `ensure` (`prepare.ts`) syncs, checks each one against the server as Liomar
 and loads what is missing, idempotently:
 
 - through the **app's own importers**, driven without captures, when one
-  exists: the requirements CSV, the plan and case `.xlsx`, the results report;
+  exists: the requirements CSV, the plan and case `.xlsx`, the results
+  report, the scans of chapter 10 (SARIF with its triage, axe, k6) and the
+  project library (shared step, dataset and the case that uses them);
 - else through the **server's web API as Liomar** («Pharos Web») or the
   account API, then a sync: projects, prefixes, custom fields,
   configurations, the cycle and its runs, the manual run, defects, Jorge's
@@ -95,7 +98,12 @@ compared with its loaders' contract (a warning on drift).
 - **Liomar** (`liomar.qa@pharos.test`): the app's account in every chapter.
 - **Jorge L. Meneses Yero** (`jorge.meneses@pharos.test`): only through the
   API (`people.ts`: `registerJorge`, `jorgeAcceptsInvitation`,
-  `jorgeApprovesCase`…), never signed in to the app.
+  `jorgeApprovesCase`…), never signed in to the app. His case reviews also
+  send the notification his own Pharos would send (the server does not
+  notify a case review by itself), so Liomar's bell shows them. He appears
+  in chapter 21 «Trabajo en equipo», which runs before chapter 20 (it makes
+  the team workspace and Jorge's Test Manager role that chapter 20 uses)
+  although the manual prints it after.
 - **«Administrador»** (`admin@pharos.test`): the server administrator.
   `people.ts` has its API helpers; `account-switch.ts` (`asAdmin`,
   `signInAs`) signs the app in with it for chapter 15's administration block

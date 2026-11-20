@@ -77,8 +77,10 @@ proyecto y la clave del ciclo). Tiene once apartados:
    flaky o de una revisión anterior, más tus comentarios.
 6. **Medidas de prueba:** las métricas congeladas al cerrar, frente al ciclo
    anterior y al objetivo del plan (capítulo 5), y si se alcanza.
-7. **Riesgos residuales:** los defectos del ciclo que siguen abiertos hoy y
-   los requisitos sin cubrir o sin pasar, del riesgo más alto al más bajo.
+7. **Riesgos residuales:** los defectos del ciclo que siguen abiertos hoy,
+   los hallazgos abiertos y los umbrales de rendimiento incumplidos de sus
+   runs (capítulo 10), y los requisitos sin cubrir o sin pasar, del riesgo
+   más alto al más bajo.
 8. **Entregables:** los que guarda Pharos y los del plan, que marcas como
    entregados.
 9. **Activos reutilizables:** casos, configuraciones y datos de prueba.
@@ -96,10 +98,11 @@ textos, pero hay que guardarlo y aprobarlo otra vez.
 informe completo y las hojas «Decisión», «Medidas», «Riesgos residuales»,
 «Entregables» y «Casos».
 
-En este manual, Liomar prepara la «Regresión 0.3.0» de Pharos:
+En este manual, Liomar prepara la «Regresión 0.6.0» de Pharos, la del plan
+«Plan de pruebas de Pharos 0.6.0» (capítulo 5):
 
-- **Build y entorno:** 0.3.0-rc1, en staging.
-- **Fechas:** del 9 al 20 de noviembre.
+- **Build y entorno:** 0.6.0-beta.1, en staging.
+- **Fechas:** del 9 al 20 de noviembre, en el Sprint 1.
 - **Configuraciones:** Chrome y Edge.
 - **Casos:** dos añadidos a mano y los de prioridad alta, añadidos por
   filtro.
@@ -134,7 +137,7 @@ En este manual, Liomar prepara la «Regresión 0.3.0» de Pharos:
   «Ejecutar».
 - **«N configuraciones aún no han llegado a este equipo y se saltaron.»**
   Sincroniza y vuelve a ejecutar para crear sus runs.
-- **«No aprobado» en un elemento.** El caso está en borrador o revisado. Se
+- **«No aprobado» en un elemento.** El caso está en borrador o en revisión. Se
   ejecuta igual, pero conviene aprobarlo antes (capítulo 8).
 - **«No se pudieron cargar los ciclos.»** Pulsa «Reintentar».
 - **«Este ciclo ya no existe.»** Se eliminó, quizá en otro equipo. Vuelve a la
@@ -167,6 +170,11 @@ En este manual, Liomar prepara la «Regresión 0.3.0» de Pharos:
 - Aprueba los casos antes de añadirlos: el ciclo avisa de los que no lo están.
 - «Clonar» prepara la siguiente ronda con los mismos elementos y sin
   resultados.
+- Un ciclo eliminado va a la Papelera (Administración › General, capítulo
+  15) y se restaura mientras dure la retención; sus runs siguen en
+  «Ejecuciones».
+- Cerrar un ciclo avisa en las notificaciones del equipo y a los webhooks
+  del proyecto (capítulo 20).
 - Al importar un informe de la automatización (capítulo 10), elige el ciclo:
   sus resultados cuentan en el progreso sin editar nada después.
 - «Informe de estado», en la cabecera del ciclo, resume esa ronda (progreso

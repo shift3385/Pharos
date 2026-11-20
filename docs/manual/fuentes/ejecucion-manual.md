@@ -26,9 +26,18 @@ resultados alimentan:
 Desde aquí se sale también el **informe de estado** (ISO/IEC/IEEE 29119-3), el
 documento que resume una ronda de pruebas para quien decide.
 
-En este manual, Liomar repite a mano los dos casos de acceso de Pharos. PH-001
-falla en el paso 3: Pharos se queda en la entrada con «Correo o contraseña
-incorrectos.». De ese fallo saca un defecto, que sigue en el capítulo 12.
+En este manual, Liomar repite a mano los casos de acceso de Pharos en el run
+«Regresión manual · 0.6.0-beta.1»:
+
+- PH-001 falla en el paso 3: Pharos se queda en la entrada con «Correo o
+  contraseña incorrectos.». Ese fallo ya tiene su defecto (capítulo 12).
+- PH-002 pasa en sus dos filas de ejemplos.
+- PH-005, el caso con el dataset «Usuarios válidos» (capítulo 8), se ejecuta
+  una vez por fila: pasan las dos primeras cuentas y falla la tercera.
+
+Las evidencias de un intento se guardan cifradas. Mientras ejecutas son un
+borrador de este equipo; al guardar el resultado se sincronizan con los demás
+equipos del espacio de trabajo.
 
 ## Atajos de teclado
 
@@ -93,7 +102,8 @@ funcionan «?» y Ctrl+Mayús+N.
 - Escribe siempre lo obtenido en un paso que falla: es lo primero que leerá
   quien tenga que corregirlo, y pasa al defecto.
 - Si solo quieres dejar de ejecutar un run, ciérralo como «Cancelado» en vez
-  de eliminarlo.
+  de eliminarlo. Un run eliminado va a la Papelera (Administración › General,
+  capítulo 15) y se restaura mientras dure la retención.
 - En la matriz de trazabilidad gana siempre el último resultado final, sea de
   un run manual o de un informe importado: repetir la prueba a mano después de
   un informe de Playwright cambia lo que muestra la matriz.
@@ -103,6 +113,10 @@ funcionan «?» y Ctrl+Mayús+N.
 - En el informe de estado, los defectos se cuentan «a fecha de hoy», no por el
   periodo elegido. El resumen y las recomendaciones se guardan solo en este
   equipo, pero van en el Excel y en el PDF.
+- Si el proyecto tiene análisis de seguridad o accesibilidad, o pruebas de
+  carga (capítulo 10), el informe añade «7.1 Hallazgos y rendimiento»: los
+  hallazgos abiertos por severidad, los nuevos, los triajados, los que
+  esperan revisión y los umbrales cumplidos e incumplidos.
 
 ## Véase también
 

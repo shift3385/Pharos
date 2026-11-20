@@ -41,7 +41,7 @@ chapter("inicio", () => {
   step("resumen", {
     title: "Tu Inicio",
     caption:
-      "«Inicio» es lo primero que ves al entrar: un resumen de todos tus proyectos abiertos. Arriba, en una sola línea, el saludo y la fecha; a la derecha, el periodo de los datos, «Nuevo proyecto» y el engranaje para personalizarlo. Debajo, cuatro tarjetas con las cifras clave y cuatro paneles: la ejecución por proyecto, las próximas pruebas, los criterios de salida y las ejecuciones diarias. Ningún panel se desplaza por dentro: una lista muestra las filas que caben y termina en «+N más». Se actualiza solo cada vez que llegan datos de otro equipo.",
+      "«Inicio» es lo primero que ves al entrar: un resumen de todos tus proyectos abiertos. Arriba, en una sola línea, el saludo y la fecha; a la derecha, el periodo de los datos, «Nuevo proyecto» y el engranaje para personalizarlo. Debajo, cuatro tarjetas con las cifras clave y cinco paneles: la ejecución por proyecto, las próximas pruebas, los criterios de salida, las ejecuciones diarias y la tendencia de ciclos. Ningún panel se desplaza por dentro: una lista muestra las filas que caben y termina en «+N más». Se actualiza solo cuando llegan datos de otro equipo, de otra ventana de Pharos o del CLI `pharos`.",
     covers: ["route:/", "state:home-metrics"],
     run: async () => {
       await goHome();
@@ -121,7 +121,7 @@ chapter("inicio", () => {
   step("ayuda", {
     title: "La ayuda de cada panel",
     caption:
-      "Junto al título de cada panel, el botón «?» explica qué muestra: «Ejecución por proyecto», el último resultado de cada caso en cada proyecto abierto; «Próximas pruebas», qué ejecutar según su último resultado y por prioridad; «Criterios de salida», los definidos en el plan de pruebas; y «Ejecuciones diarias», qué cuenta como intento. Se abre al pasar el ratón, con un clic o con el teclado (Tab), y se cierra con Esc.",
+      "Junto al título de cada panel, el botón «?» explica qué muestra: «Ejecución por proyecto», el último resultado de cada caso en cada proyecto abierto; «Próximas pruebas», qué ejecutar según su último resultado y por prioridad; «Criterios de salida», los definidos en el plan de pruebas; «Ejecuciones diarias», qué cuenta como intento; y «Tendencia de ciclos», qué métrica sigue. Se abre al pasar el ratón, con un clic o con el teclado (Tab), y se cierra con Esc.",
     covers: ["action:home-gadget-help"],
     focus: ['[aria-label="Más información: Ejecución por proyecto"]', '[role="tooltip"]'],
     run: async () => {

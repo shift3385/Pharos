@@ -299,6 +299,11 @@ const childEnv = {
   // https://ci.ejemplo.test/…, never resolves (.test is reserved), so
   // «Enviar prueba» shows a failed delivery and nothing leaves the machine.
   WEBHOOK_SECRETS_KEY: randomBytes(32).toString("base64"),
+  // Three accounts sign in many times a minute (the app, the loaders and the
+  // API sessions of people.ts; chapter 15 switches to «Administrador» and
+  // back): the default 10 sign-ins per minute per IP made later chapters fail
+  // with HTTP 429. No tour exercises the limit itself.
+  LOGIN_RATE_LIMIT_MAX: "1000",
 };
 let exitCode = 1;
 

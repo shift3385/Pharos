@@ -53,7 +53,7 @@ chapter("ajustes", () => {
   step("prefijo-solapado", {
     title: "Un prefijo que se solapa",
     caption:
-      "Dos proyectos no pueden usar prefijos que se solapen: iguales (sin contar el guion o el guion bajo final, ni mayúsculas) o uno que empiece por el otro, como «PH-» y «PHA-», porque «PHA-001» también empieza por «PH». Si escribes uno así, el campo dice con qué proyecto choca (en este ejemplo, «API-» es el de «API de sincronización») y «Guardar» no guarda hasta que lo cambies. Los proyectos que ya compartían prefijo de una versión anterior (todos empezaban con «ATS_») pueden seguir guardando su nombre; el aviso solo aparece al cambiar el prefijo.",
+      "Dos proyectos no pueden usar prefijos que se solapen: iguales (sin contar el guion o el guion bajo final, ni mayúsculas) o uno que empiece por el otro, como «PH-» y «PHA-», porque «PHA-001» también empieza por «PH». Si escribes uno así, el campo dice con qué proyecto choca (en este ejemplo, «API-» es el de «API de sincronización») y «Guardar» no guarda hasta que lo cambies.",
     focus: "#pj-prefix",
     run: async () => {
       await $("#pj-prefix").setValue(`${PROJECT_B.prefix}-`);
@@ -130,6 +130,7 @@ chapter("ajustes", () => {
       "«Crear campo» lo guarda y aparece en la lista; desde ese momento, los casos del proyecto pueden usarlo (capítulo 8). Se reordena arrastrando o con el menú de cada campo: ese es el orden en que se ve en el editor.",
     toast: true,
     covers: ["action:custom-field-create"],
+    focus: '[data-testid="custom-fields-card"]',
     run: async () => {
       await dialog().$(`button=${es.customFields.dialog.create}`).click();
       await waitForToast(tf("customFields.savedToast", { label: "Navegador" }));
@@ -139,7 +140,7 @@ chapter("ajustes", () => {
       await selectOption(es.customFields.dialog.type, es.customFields.type.boolean, '[role="dialog"]');
       await dialog().$(`button=${es.customFields.dialog.create}`).click();
       await waitForToast(tf("customFields.savedToast", { label: "Regresión crítica" }));
-      await $('[data-testid="custom-fields-card"]').scrollIntoView();
+      await $('[data-testid="custom-fields-card"]').scrollIntoView({ block: "center" });
     },
   });
 
@@ -148,6 +149,7 @@ chapter("ajustes", () => {
     caption:
       "Un campo no se borra, para no perder lo que ya se escribió en él: se archiva desde su menú («Archivar») y sus valores se conservan. «Mostrar archivados» lo enseña y «Desarchivar» lo recupera.",
     covers: ["action:custom-field-archive"],
+    focus: '[data-testid="custom-fields-card"]',
     run: async () => {
       const card = $('[data-testid="custom-fields-card"]');
       await card.$(`button=${es.customFields.new}`).click();
@@ -159,7 +161,7 @@ chapter("ajustes", () => {
       await waitForToast(tf("customFields.archivedToast", { label: "Sprint antiguo" }));
       await card.$(`label*=${es.customFields.showArchived}`).click();
       await expect(card.$(hasText(es.customFields.archived))).toBeDisplayed();
-      await card.scrollIntoView();
+      await card.scrollIntoView({ block: "center" });
     },
   });
 
@@ -184,6 +186,7 @@ chapter("ajustes", () => {
     caption:
       "El selector «Casos / Defectos» de la tarjeta elige de qué entidad son los campos. Con «Defectos», «Nuevo campo» crea un campo que aparece en el editor de cada defecto (en este ejemplo, «Sistema operativo»). Los campos de casos y de defectos son independientes, y «Copiar de otro proyecto» copia los de la entidad elegida.",
     covers: ["action:custom-field-defect"],
+    focus: '[data-testid="custom-fields-card"]',
     run: async () => {
       const card = $('[data-testid="custom-fields-card"]');
       await card.scrollIntoView();
@@ -194,7 +197,7 @@ chapter("ajustes", () => {
       await dialog().$(`button=${es.customFields.dialog.create}`).click();
       await waitForToast(tf("customFields.savedToast", { label: "Sistema operativo" }));
       await expect(card.$(hasText("Sistema operativo"))).toBeDisplayed();
-      await card.scrollIntoView();
+      await card.scrollIntoView({ block: "center" });
     },
   });
 
@@ -228,6 +231,7 @@ chapter("ajustes", () => {
     caption:
       "«Guardar» la añade a la lista. En este ejemplo hay dos activas (Chrome y Edge); una tercera se archivó desde su menú y solo se ve con «Mostrar archivadas»: así deja de ofrecerse en ciclos nuevos sin perder su historia.",
     covers: ["action:configuration-create", "action:configuration-archive"],
+    focus: '[data-testid="configurations-card"]',
     run: async () => {
       await dialog().$(`button=${es.configurations.save}`).click();
       await waitForToast(tf("configurations.savedToast", { name: "Chrome · Windows 11" }));
@@ -248,7 +252,7 @@ chapter("ajustes", () => {
       await card.$(`button[aria-label="${tf("configurations.actions", { name: "Safari · macOS" })}"]`).click();
       await menuItem(es.configurations.archive).click();
       await waitForToast(tf("configurations.archivedToast", { name: "Safari · macOS" }));
-      await card.scrollIntoView();
+      await card.scrollIntoView({ block: "center" });
     },
   });
 

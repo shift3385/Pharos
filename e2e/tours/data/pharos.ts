@@ -121,6 +121,31 @@ export const BASE_CASES = [
   },
 ] as const;
 
+/** The project library of chapter 8 (CAS-01) and the case that uses it,
+ *  PH-005 (made right after the four base cases). The shared step ends at v2
+ *  (chapter 8 completes its last expected result); the dataset is
+ *  fixtures/usuarios-validos.csv (three test accounts). */
+export const LIBRARY = {
+  step: {
+    name: "Iniciar sesión",
+    description: "Entrar en Pharos con una cuenta de prueba.",
+    steps: ["Escribir <usuario> en «Correo electrónico»", "Escribir <clave> en «Contraseña»", "Pulsar «Entrar»"],
+    lastExpected: "Se abre «Inicio»",
+    /** What chapter 8 adds to the last expected result (v1 → v2). */
+    lastExpectedAdded: " con el nombre de la cuenta",
+  },
+  dataset: { name: "Usuarios válidos", file: "usuarios-validos.csv", rows: 3, columns: 2 },
+  case: {
+    key: "PH-005",
+    title: "Acceso con usuarios de prueba",
+    firstStep: "Abrir Pharos sin una sesión iniciada",
+    expectedResult: "Se abre «Inicio» con el nombre de la cuenta.",
+    requirementKeys: ["REQ-001"],
+    /** The row that fails in chapter 11 and in the JUnit of chapter 10. */
+    failedRow: 3,
+  },
+};
+
 /** The cycle of chapter 9 and its runs (one per configuration). */
 export const CYCLE = {
   title: "Regresión 0.6.0",
@@ -136,13 +161,38 @@ export const CYCLE = {
  *  (fixtures/informe-adjuntos/: PH-001 fails, PH-002 passes). */
 export const RESULTS = { title: "Tests de acceso · con capturas", build: RELEASE.build, environment: RELEASE.environment };
 
-/** The manual run of chapter 11 (PH-001 fails at step 3, PH-002 passes). */
+/** The manual run of chapter 11 (PH-001 fails at step 3, PH-002 passes,
+ *  PH-005 runs once per dataset row and its third row fails). */
 export const MANUAL_RUN = {
   title: `Regresión manual · ${RELEASE.build}`,
   build: RELEASE.build,
   environment: RELEASE.environment,
   failed: { caseKey: "PH-001", step: 3, actual: "Se queda en la entrada con «Correo o contraseña incorrectos.»" },
   passed: { caseKey: "PH-002" },
+  dataset: { caseKey: LIBRARY.case.key, failedRow: LIBRARY.case.failedRow },
+};
+
+/** The scans chapter 10 imports besides the test reports (ING-06), all in
+ *  fixtures/pharos/informes/ except the axe audit, a real one of Pharos's own
+ *  «Nuevo requisito» dialog (packages/formats/src/fixtures/axe/). */
+export const SCANS = {
+  /** Two findings: one tagged @PH-002 (the case gets the matrix badge), one
+   *  triaged as a false positive on screen. */
+  sarif: {
+    file: "semgrep-servidor.sarif",
+    title: "Análisis Semgrep · servidor",
+    linkedCase: "PH-002",
+    triagedRule: "unsafe-formatstring",
+    triageReason: "La cadena de formato es una constante del módulo; no viene de la petición.",
+  },
+  axe: { title: "Accesibilidad · diálogo «Nuevo requisito»" },
+  /** One threshold fails (failed requests over 1 %); the login sub-metric is
+   *  linked to PH-001 and passes. */
+  k6: { file: "k6-api-pharos.json", title: "Carga · API de Pharos, 5 usuarios" },
+  /** A JUnit with `example_row`: PH-005 row by row (row 3 fails). */
+  datasetJunit: { file: "acceso-por-fila.junit.xml", title: "Acceso por fila · usuarios de prueba" },
+  allure: { file: "allure-acceso.zip", title: "Tests de acceso · Allure" },
+  trx: { file: "api-v1-dotnet.trx" },
 };
 
 /** The defects of chapter 12 that later chapters read. */
@@ -185,7 +235,7 @@ export const PLAN = {
     "Sincronización entre equipos y workspaces",
     "Integraciones: tokens, webhooks y el CLI",
   ],
-  scopeOut: ["Integración con Jira (llega con INT-05)", "App móvil nativa"],
+  scopeOut: ["Integración con Jira", "App móvil nativa"],
   assumptions: ["El servidor de staging está disponible de 8 a 20 h"],
   constraints: ["Un equipo de QA de dos personas", "La versión sale el 30/11/2026"],
   testLevels: ["integration", "system", "acceptance"],
@@ -198,7 +248,7 @@ export const PLAN = {
   environmentRequirements: "PC con Windows 11 y 8 GB de RAM, WebView2 actualizado y acceso al servidor de staging.",
   tools: ["playwright", "webdriverio", "k6", "github-actions"],
   automationStrategy:
-    "Regresión de escritorio con WebdriverIO y tauri-driver en cada PR; la web con Playwright cada noche; los informes se suben a Pharos con `pharos upload`; humo manual de cada versión.",
+    "Regresión de escritorio con WebdriverIO y tauri-driver en cada PR; la web con Playwright cada noche; los informes se suben a Pharos con «pharos upload»; humo manual de cada versión.",
   testDataManagement: "Cuentas y proyectos de prueba creados por script en staging; ningún dato real de clientes.",
   defectManagement: "Defectos en el propio Pharos, con severidad y prioridad; triaje diario del equipo de QA.",
   roles: [
@@ -233,8 +283,18 @@ export const PLAN = {
   conclusion: `Pendiente de la regresión del ciclo «Regresión ${RELEASE.version}».`,
 };
 
-/** The workspace of chapters 20 and 21. Chapter 20 creates it and shares
- *  «Pharos» into it; chapter 21 invites Jorge. */
+/** What chapter 5 changes on screen in the imported plan (the fixture and
+ *  the `plan` loader do not have it): a scope row the 0.6.0 risks call for,
+ *  and a milestone marked with the keyboard (from the day before). */
+export const PLAN_ON_SCREEN = {
+  scopeIn: "Conversión de los datos locales de la 0.5 a la 0.6",
+  milestone: { name: "Versión candidata", date: "2026-11-27", from: "2026-11-26" },
+  reviewNote: `Primera versión del plan de la ${RELEASE.version}, importada de Excel.`,
+};
+
+/** The workspace of chapters 21 and 20. Chapter 21 (it runs before 20)
+ *  creates it, shares «Pharos» into it and invites Jorge; chapter 20 gives
+ *  its CI a token. */
 export const TEAM = {
   workspace: "Equipo QA",
   sharedProject: PROJECT_A.name,
@@ -242,6 +302,27 @@ export const TEAM = {
    *  but not plans (plan.approve is Test Manager only: server/src/modules/
    *  workspaces/roles.ts). A plan approval by Jorge needs «Cambiar el rol». */
   jorgeRole: "test_analyst" as const,
+  /** Chapter 21 raises him to Test Manager for the plan's review and leaves
+   *  him there (two Test Managers): chapter 20 needs his project token. */
+  jorgeFinalRole: "test_manager" as const,
+  /** «Para quién» of the invitation (a note, never sent). */
+  inviteNote: "Jorge, compañero de QA",
+  /** The case Liomar sends to Jorge's review, his request and the change. */
+  reviewCase: {
+    key: "PH-004",
+    sendNote: "Lista para revisar: la checklist de humo de la 0.6.0.",
+    changes: "Añade una comprobación de la campana de notificaciones.",
+    newItem: "La campana muestra las notificaciones del workspace",
+  },
+  /** Jorge's request on the plan, and the row Liomar adds to answer it. */
+  planChanges: "Falta en «Roles» quién aprueba el plan en el equipo.",
+  planRole: ["Test Manager del workspace", "Aprueba el plan; con la aprobación independiente, nunca el que lo escribió"] as [string, string],
+  /** The note of «Enviar a revisión» when the plan is still a draft. */
+  planNote: "Plan para el equipo: lo aprueba un Test Manager que no sea su autor.",
+  /** The defect Liomar assigns to Jorge (DEFECTS.prefix). */
+  assignedDefect: "prefix" as const,
+  /** Jorge's project token in chapter 20 («Reasignar a mí»). */
+  jorgeToken: "CI nocturno de Pharos",
 };
 
 /** The material of «Requisitos desde un proyecto» and «Requisitos desde
@@ -250,7 +331,10 @@ export const AI_MATERIAL = {
   folder: "proyecto-api-sincronizacion",
   folderProject: PROJECT_B.name,
   sketch: "boceto-notificaciones.png",
-  sketchContext: "App de escritorio Pharos (gestión de pruebas), rol responsable de QA",
+  sketchContext: "App de escritorio Pharos (gestión de pruebas), rol responsable de QA; sin nombres de personas",
+  /** The context of «Requisitos desde un proyecto» (the AI must not invent
+   *  people: the persona check fails on any other name). */
+  folderContext: "API de sincronización de Pharos (gestión de pruebas sin conexión); sin nombres de personas",
   /** The requirements «API de sincronización» already has before the AI
    *  proposes more (fixtures/pharos/requisitos-api-sincronizacion.csv). */
   requirementsCsv: "requisitos-api-sincronizacion.csv",

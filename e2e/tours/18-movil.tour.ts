@@ -6,6 +6,11 @@ import { $, browser, expect } from "@wdio/globals";
 import { DESKTOP, MOBILE, chapter, step, setViewport } from "./tour";
 import { PROJECT_A, byTestId, clickButton, es } from "./helpers";
 
+/** Moves the pointer to the sheet's grip, so no row of a sheet is shot hovered. */
+async function restMouse() {
+  await browser.action("pointer").move({ origin: "viewport", x: 195, y: 58 }).perform();
+}
+
 chapter("movil", () => {
   step("movil-inicio", {
     title: "En el móvil: barra inferior",
@@ -16,6 +21,11 @@ chapter("movil", () => {
       await setViewport(MOBILE);
       await byTestId("nav-dashboard").click();
       await expect($("nav.bottom-nav")).toBeDisplayed();
+      // Inicio from its top: the KPI tiles whole under the top bar.
+      await browser.execute(() => {
+        window.scrollTo(0, 0);
+        for (const el of document.querySelectorAll("main, .app-main, [data-scroll-root]")) (el as HTMLElement).scrollTop = 0;
+      });
     },
   });
 
@@ -32,7 +42,7 @@ chapter("movil", () => {
   step("movil-notificaciones", {
     title: "Notificaciones en el móvil",
     caption:
-      "En el móvil, la campana de la barra superior abre las notificaciones como una hoja desde abajo, con los mismos días, el filtro «Sin leer» y la acción de cada una. La ✕ o un toque fuera la cierran.",
+      "En el móvil, la campana de la barra superior abre las notificaciones como una hoja desde abajo, con lo mismo que en el escritorio: los avisos agrupados por día, el filtro «Sin leer», «Marcar todo como leído» y la acción de cada aviso. Aquí Liomar está al día, y la hoja dice qué verá en ella. La ✕ o un toque fuera la cierran.",
     covers: ["dialogs:src/app/layout/TopbarControls.tsx"],
     run: async () => {
       await browser.keys("Escape");
@@ -43,7 +53,7 @@ chapter("movil", () => {
 
   step("movil-proyecto", {
     title: "Secciones del proyecto en el móvil",
-    caption: "Dentro de un proyecto, sus secciones (Plan, Tablero, Requisitos, Casos, Ciclos, Ejecuciones, Defectos, Trazabilidad y Ajustes) se recorren con las píldoras bajo el título, que se desplazan de lado; la flecha de la barra superior vuelve a Proyectos.",
+    caption: "Dentro de un proyecto, sus diez secciones (Plan, Tablero, Requisitos, Casos, Biblioteca, Ciclos, Ejecuciones, Defectos, Trazabilidad y Ajustes) se recorren con las píldoras bajo el título, que se desplazan de lado; la flecha de la barra superior vuelve a Proyectos.",
     covers: ["platform:mobile-project-pills"],
     run: async () => {
       await browser.keys("Escape");
@@ -62,6 +72,7 @@ chapter("movil", () => {
       await $("nav.project-pills").$('[data-testid="nav-project-cases"]').click();
       await clickButton(es.testCase.list.filters);
       await expect($(".bs")).toBeDisplayed();
+      await restMouse();
     },
   });
 
@@ -74,6 +85,7 @@ chapter("movil", () => {
       await $("nav.project-pills").$('[data-testid="nav-project-plan"]').click();
       await clickButton(es.testPlan.nav.showSteps);
       await expect($(".bs")).toBeDisplayed();
+      await restMouse();
     },
   });
 

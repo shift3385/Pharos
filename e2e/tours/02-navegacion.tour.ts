@@ -14,12 +14,29 @@ chapter("navegacion", () => {
   step("estructura", {
     title: "La pantalla de Pharos",
     caption:
-      "Todas las pantallas comparten la misma estructura. A la izquierda, el menú lateral: «Inicio» y «Proyectos» arriba; dentro de un proyecto, el bloque «Proyecto activo» con sus secciones; «Administración» en «Configuración» y, al pie, la sincronización y tu menú de usuario. Arriba del todo, el logotipo y el nombre «Pharos», que abren «Acerca de Pharos»; en el borde derecho del menú, a media altura, la pestaña que lo contrae. Arriba, la barra con la ruta (migas de pan), el buscador, las notificaciones y el cambio de tema. El resto es el contenido de la sección abierta: en este ejemplo, el «Tablero» del proyecto «Pharos».",
+      "Todas las pantallas comparten la misma estructura. A la izquierda, el menú lateral: arriba, el selector de workspace («Personal», con tu rol); debajo, «Inicio» y «Proyectos»; dentro de un proyecto, el bloque «Proyecto activo» con sus secciones; «Administración» en «Configuración» y, al pie, la sincronización y tu menú de usuario. Arriba del todo, el logotipo y el nombre «Pharos», que abren «Acerca de Pharos»; en el borde derecho del menú, a media altura, la pestaña que lo contrae. Arriba, la barra con la ruta (migas de pan), el buscador, las notificaciones y el cambio de tema. El resto es el contenido de la sección abierta: en este ejemplo, el «Tablero» del proyecto «Pharos».",
     covers: ["screen:shell"],
     run: async () => {
       await openProject(PROJECT_A.name);
       await expect($(PROJECT_GROUP)).toBeDisplayed();
       await expect($("nav.crumbs")).toBeDisplayed();
+    },
+  });
+
+  step("workspace", {
+    title: "El selector de workspace",
+    caption:
+      "Un workspace es un espacio de trabajo con sus proyectos y sus personas. El selector de la parte de arriba del menú lateral dice en cuál estás y con qué rol: al entrar, «Personal», tu espacio propio, donde eres Test Manager. Despliégalo para cambiar a otro workspace, «Crear workspace», «Unirse con un código…» o abrir «Miembros y roles». «Proyectos» y el selector de proyecto muestran solo los proyectos del workspace elegido. Los workspaces compartidos con tu equipo se explican en los capítulos 20 y 21.",
+    covers: ["action:workspace-switcher"],
+    focus: ['[data-testid="workspace-switcher"]', '[role="menu"]'],
+    run: async () => {
+      await byTestId("workspace-switcher").click();
+      await expect(byTestId("workspace-create")).toBeDisplayed();
+      await expect(byTestId("workspace-members")).toBeDisplayed();
+    },
+    after: async () => {
+      await browser.keys("Escape");
+      await expect(byTestId("workspace-create")).not.toBeDisplayed();
     },
   });
 
@@ -96,7 +113,7 @@ chapter("navegacion", () => {
   step("notificaciones", {
     title: "Notificaciones",
     caption:
-      "La campana, junto al buscador, abre tus notificaciones: lo que otras personas hacen y te afecta (una invitación, un caso que te envían a revisar o que te aprueban, un defecto que te asignan, un ciclo que se cierra, quién entra o sale de tu workspace) y los conflictos de sincronización de este equipo. Se agrupan por día, el número rojo de la campana cuenta las que no has leído, «Sin leer» las filtra y cada una tiene su acción directa («Revisar», «Ver defecto», «Resolver»…). Abrirla la marca como leída; «Marcar todo como leído» las marca todas, también en tus otros equipos. Se guardan 90 días. Los avisos de lo que haces tú (guardado, exportado, sincronizado) siguen apareciendo un momento abajo a la derecha.",
+      "La campana, junto al buscador, abre tus notificaciones: lo que otras personas hacen y te afecta (una invitación, un caso que te envían a revisar o que te aprueban, un defecto que te asignan, un ciclo que se cierra, quién entra o sale de tu workspace) y los conflictos de sincronización de este equipo. Se agrupan por día, el número rojo de la campana cuenta las que no has leído, «Sin leer» las filtra y cada una tiene su acción directa («Revisar», «Ver defecto», «Resolver»…). Abrirla la marca como leída; «Marcar todo como leído» las marca todas, también en tus otros equipos. Se guardan 90 días. Mientras Liomar trabaja solo, el panel dice «Estás al día»: lo de otras personas llega al compartir un workspace con el equipo (capítulo 21). Los avisos de lo que haces tú (guardado, exportado, sincronizado) siguen apareciendo un momento abajo a la derecha.",
     covers: ["dialogs:src/app/layout/TopbarControls.tsx"],
     focus: ".topbar__panel",
     run: async () => {
@@ -110,7 +127,7 @@ chapter("navegacion", () => {
   step("tema", {
     title: "Tema claro u oscuro",
     caption:
-      "El botón de la luna, a la derecha de la barra superior, pasa Pharos al tema oscuro («Faro Nocturno»); en el tema oscuro es un sol y vuelve al claro. Se aplica al momento y se recuerda en este equipo. En «Administración › General» (capítulo 15) hay además la opción «Según el sistema», que sigue el ajuste de Windows.",
+      "El botón de la luna, a la derecha de la barra superior, pasa Pharos al tema oscuro («Faro Nocturno»); en el tema oscuro es un sol y vuelve al claro. Se aplica al momento y viaja con tu cuenta a tus otros equipos. En «Mi perfil › Preferencias» (capítulo 1) y en «Administración › General» (capítulo 15) hay además la opción «Según el sistema», que sigue el ajuste de Windows.",
     covers: ["action:theme-toggle"],
     focus: '[data-testid="theme-toggle"]',
     run: async () => {
@@ -126,7 +143,7 @@ chapter("navegacion", () => {
   step("sincronizar", {
     title: "La sincronización, al pie del menú",
     caption:
-      "Al pie del menú lateral, un punto de color y una palabra dicen cómo está la sincronización con el servidor: «Sincronizado», «Cambios pendientes (N)», «Sin conexión» o «Conflictos (N)». Pharos sincroniza solo al entrar y cuando vuelve la conexión (y, si activas «Sincronización automática» en Administración › Sincronización, capítulo 15, cada pocos minutos); «Sincronizar ahora» lo hace al momento y avisa de cuántos cambios envió (↑) y recibió (↓). Mientras sincroniza, también cuando lo hace solo, las flechas del botón giran y el punto se vuelve un anillo; si tu sistema pide reducir el movimiento, las flechas no giran y basta el anillo. Con conflictos aparece «Revisar conflictos» (capítulo 15).",
+      "Al pie del menú lateral, un punto de color y una palabra dicen cómo está la sincronización con el servidor: «Sincronizado», «Cambios pendientes (N)», «Sin conexión» o «Conflictos (N)». Pharos sincroniza solo al entrar y cuando vuelve la conexión (y, si activas «Sincronización automática» en Administración › Sincronización, capítulo 15, cada pocos minutos); «Sincronizar ahora» lo hace al momento y avisa de cuántos cambios envió (↑) y recibió (↓). Mientras sincroniza, también cuando lo hace solo, las flechas del botón giran y el punto se vuelve un anillo; si tu sistema pide reducir el movimiento, las flechas no giran y basta el anillo. Con conflictos aparece «Revisar conflictos» (capítulo 15). Lo que guarda otra ventana de Pharos o el CLI `pharos` en este equipo aparece solo en unos segundos, sin sincronizar.",
     covers: ["action:sync-indicator"],
     toast: true,
     focus: ".sidebar .sync",
@@ -158,7 +175,7 @@ chapter("navegacion", () => {
   step("tableta", {
     title: "Pantallas medianas: la tira de iconos",
     caption:
-      "Pharos se adapta al ancho de la ventana. Por debajo de 1280 px (una tableta, o la ventana a media pantalla), el menú lateral es siempre la tira de iconos, el buscador se reduce a la lupa (Ctrl+K sigue funcionando), las tablas ocultan sus columnas menos importantes y lo que no cabe, como las columnas del Tablero, se desplaza de lado. Si la ventana es baja, desplaza la tira para llegar a tu avatar. Por debajo de 600 px pasa al diseño del móvil, con una barra inferior (capítulo 18).",
+      "Pharos se adapta al ancho de la ventana. Por debajo de 1280 px (una tableta, o la ventana a media pantalla), el menú lateral es siempre la tira de iconos, el buscador se reduce a la lupa (Ctrl+K sigue funcionando), las tablas ocultan sus columnas menos importantes y lo que no cabe, como las columnas del Tablero, se desplaza de lado. Si la ventana es baja y no caben todas las secciones, la tira de secciones se desplaza; la sincronización y tu avatar quedan siempre a la vista, abajo. Por debajo de 600 px pasa al diseño del móvil, con una barra inferior (capítulo 18).",
     covers: ["platform:tablet-icon-strip"],
     run: async () => {
       await setViewport(TABLET);

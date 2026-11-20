@@ -31,11 +31,11 @@ import {
   waitForText,
   waitForToast,
 } from "./helpers";
-import { RELEASE } from "./data/pharos";
+import { DEFECTS, RELEASE } from "./data/pharos";
 
 const F = es.defects;
-const PREFIX_BUG = "El menú lateral sigue mostrando el prefijo anterior";
-const LOGIN_BUG = "Entrar con credenciales válidas muestra «Correo o contraseña incorrectos»";
+const PREFIX_BUG = DEFECTS.prefix.title;
+const LOGIN_BUG = DEFECTS.login.title;
 const DUPLICATE = "Entrar falla con credenciales válidas (duplicado)";
 const ESCAPE = "El enlace del correo de bienvenida abre la versión anterior";
 const D = '[role="dialog"]';
@@ -92,19 +92,17 @@ chapter("defectos", () => {
   step("nuevo", {
     title: "Rellenar el defecto",
     caption:
-      "Un buen defecto permite reproducir el fallo sin preguntar a nadie. Rellena el título, la severidad (el impacto en el sistema) y la prioridad (la urgencia del arreglo), los pasos para reproducirlo, el resultado esperado y el obtenido, y dónde se encontró (build y entorno). En «Vínculos», marca los casos y los requisitos afectados: la matriz de trazabilidad (capítulo 13) los mostrará junto al defecto. Los campos propios del proyecto aparecen al final (aquí, «Sistema operativo», creado en el capítulo 14). En este ejemplo, Liomar registra que, al cambiar el prefijo en los ajustes, el menú lateral sigue mostrando el anterior: severidad mayor, prioridad media, build 0.3.0-rc1, vinculado al caso «Crear un proyecto» (PH-003) y al requisito REQ-002.",
+      `Un buen defecto permite reproducir el fallo sin preguntar a nadie. Rellena el título, la severidad (el impacto en el sistema) y la prioridad (la urgencia del arreglo), los pasos para reproducirlo, el resultado esperado y el obtenido, y dónde se encontró (build y entorno). En «Vínculos», marca los casos y los requisitos afectados: la matriz de trazabilidad (capítulo 13) los mostrará junto al defecto. Los campos propios del proyecto aparecen al final (aquí, «Sistema operativo», creado en el capítulo 14). En este ejemplo, Liomar registra que, al cambiar el prefijo en los ajustes, el menú lateral sigue mostrando el anterior: severidad mayor, prioridad media, build ${RELEASE.build}, vinculado al caso «Crear un proyecto» (PH-003) y al requisito REQ-002.`,
     covers: ["action:defect-create", "action:defect-links", "action:defect-custom-fields"],
     run: async () => {
       await (await field(F.field.title)).setValue(PREFIX_BUG);
       await selectOption(F.field.severity, F.severity.major);
       await selectOption(F.field.priority, F.priority.medium);
-      await (await field(F.field.steps)).setValue(
-        "1. Abrir «Ajustes del proyecto» de «Pharos».\n2. Cambiar el prefijo de «PHA-» a «PH-» y pulsar «Guardar».\n3. Mirar el selector de proyecto del menú lateral.",
-      );
-      await (await field(F.field.expected)).setValue("El selector muestra «PH-» al momento.");
-      await (await field(F.field.actual)).setValue("Sigue mostrando «PHA-» hasta cambiar de sección.");
+      await (await field(F.field.steps)).setValue(DEFECTS.prefix.steps);
+      await (await field(F.field.expected)).setValue(DEFECTS.prefix.expected);
+      await (await field(F.field.actual)).setValue(DEFECTS.prefix.actual);
       await (await field(F.field.foundInBuild)).setValue(RELEASE.build);
-      await (await field(F.field.foundInEnvironment)).setValue("staging");
+      await (await field(F.field.foundInEnvironment)).setValue(RELEASE.environment);
       for (const label of ["Crear un proyecto", "REQ-002"]) {
         const box = $(`label*=${label}`);
         if (await box.isExisting()) {
@@ -115,16 +113,17 @@ chapter("defectos", () => {
       // The defect field created in chapter 14 (FLD-03).
       const os = await field("Sistema operativo");
       await os.scrollIntoView({ block: "center" });
-      await os.setValue("Windows 11");
-      // The capture shows the filled details, at the top of the editor.
-      await $(".tp-editor__back").scrollIntoView({ block: "start" });
+      await os.setValue(DEFECTS.prefix.os);
+      // The capture shows the filled details, at the top of the editor (not
+      // under the top bar).
+      await (await field(F.field.title)).scrollIntoView({ block: "center" });
     },
   });
 
   step("evidencias", {
     title: "Evidencias",
     caption:
-      "Una vez guardado el defecto, «Evidencias» admite capturas, vídeos o registros que muestran el fallo, de hasta 200 MB cada uno: «Adjuntar archivos» abre el selector de archivos (en este ejemplo, una captura del menú lateral). Se guardan cifrados en este equipo; un clic en el nombre descarga una copia.",
+      "Una vez guardado el defecto, «Evidencias» admite capturas, vídeos o registros que muestran el fallo, de hasta 200 MB cada uno: «Adjuntar archivos» abre el selector de archivos (en este ejemplo, una captura del menú lateral). Se guardan cifrados y llegan a los demás equipos del espacio de trabajo al sincronizar; un clic en el nombre descarga una copia. Quien tiene el rol Viewer no puede adjuntar.",
     covers: ["upload:src/modules/defects/ui/DefectEditor.tsx"],
     focus: ".pl-attach",
     run: async () => {
@@ -159,7 +158,7 @@ chapter("defectos", () => {
   step("desde-resultado", {
     title: "Un defecto desde un resultado fallido",
     caption:
-      "Cuando una prueba falla, lo más rápido es crear el defecto desde su resultado. «Desde un resultado» lista los intentos que no pasaron en los runs del proyecto (en este ejemplo, la prueba automática de acceso del informe JUnit importado en el capítulo 10). Al elegir uno, el editor se rellena con el error y el defecto queda vinculado a ese resultado y a su caso, así que la trazabilidad no depende de copiar y pegar.",
+      "Cuando una prueba falla, lo más rápido es crear el defecto desde su resultado. «Desde un resultado» lista los intentos que no pasaron en los runs del proyecto con su run y su test, y se buscan por run, caso o test (en este ejemplo, «con capturas» deja la prueba automática de acceso del informe JUnit importado en el capítulo 10). Al elegir uno, el editor se rellena con el error y el defecto queda vinculado a ese resultado y a su caso, así que la trazabilidad no depende de copiar y pegar.",
     covers: ["dialogs:src/modules/defects/ui/ResultPickerDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -167,6 +166,11 @@ chapter("defectos", () => {
       await clickButton(F.fromResult);
       await expect(dialog()).toBeDisplayed();
       await expect($(D).$(`button*=${F.results.choose}`)).toBeDisplayed();
+      // The JUnit with captures (PH-001), not the dataset row that also failed.
+      await $(D).$("input").setValue("con capturas");
+      await browser.waitUntil(async () => (await $(D).$$(`button*=${F.results.choose}`)).length === 1, {
+        timeoutMsg: "the search did not leave the access test alone",
+      });
     },
   });
 
@@ -254,7 +258,7 @@ chapter("defectos", () => {
   step("otros", {
     title: "Rechazar o aplazar un defecto",
     caption:
-      "Al soltar un defecto en «Otros», Pharos pregunta a qué estado pasa: «Rechazado» pide la resolución (duplicado, no reproducible, no se corregirá, funciona según el diseño…) y «Aplazado» lo deja abierto para más adelante. Al soltarlo en «Cerrado», pide la resolución y, si quieres, la build en la que se corrigió, para saber desde qué versión volver a probar. En este ejemplo, Liomar aplaza el del menú lateral a la 0.4.0: es molesto, pero no bloquea la entrega.",
+      "Al soltar un defecto en «Otros», Pharos pregunta a qué estado pasa: «Rechazado» pide la resolución (duplicado, no reproducible, no se corregirá, funciona según el diseño…) y «Aplazado» lo deja abierto para más adelante. Al soltarlo en «Cerrado», pide la resolución y, si quieres, la build en la que se corrigió, para saber desde qué versión volver a probar. En este ejemplo, Liomar aplaza el del menú lateral a la versión siguiente: es molesto, pero no bloquea la entrega.",
     covers: ["dialogs:src/modules/defects/ui/TransitionDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -288,7 +292,8 @@ chapter("defectos", () => {
 
   step("eliminado", {
     title: "Defecto eliminado",
-    caption: "Al confirmar, el defecto desaparece de la lista. Si no se pudiera eliminar, un aviso lo dice y el defecto sigue ahí.",
+    caption:
+      "Al confirmar, el defecto desaparece de la lista y pasa a la Papelera (Administración › General, capítulo 15): desde allí se restaura, sin sus adjuntos, mientras dure la retención. Si no se pudiera eliminar, un aviso lo dice y el defecto sigue ahí.",
     shot: false,
     run: async () => {
       await acceptConfirm();
@@ -322,7 +327,7 @@ chapter("defectos", () => {
     title: "Corregir, confirmar y reabrir",
     caption:
       "El camino de un defecto corregido, en el tablero o con el campo «Estado» del editor (que solo ofrece los estados siguientes): «En curso» mientras se arregla, «Corregido» cuando el equipo de desarrollo lo da por resuelto y «Por confirmar» mientras QA vuelve a probarlo. Si la prueba pasa, va a «Cerrado»; si no, se reabre: vuelve a «Abierto» desde «Por confirmar» (o desde «Cerrado»). Pharos apunta la primera vez que llega a «Corregido» y cuántas veces se reabre, y con eso calcula el tiempo de corrección y la reapertura de cada ciclo (capítulos 3 y 9). En este ejemplo, Liomar comprueba el arreglo del enlace, sigue abriendo la versión anterior y lo reabre.",
-    focus: 'section.df-col[data-column="open"]',
+    focus: 'section.df-col[data-column="open"] article.df-card',
     run: async () => {
       // Through the editor's «Estado», which offers only the next states: the
       // same lifecycle as the board, one save per change.

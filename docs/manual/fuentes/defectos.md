@@ -18,8 +18,9 @@ corrija y se pueda volver a probar. Cada defecto lleva:
 - **Vínculos** con los casos, los requisitos y los resultados de los que nace.
   La matriz de trazabilidad (capítulo 13), el informe de estado (capítulo 11)
   y el Inicio (capítulo 3) los cuentan.
-- **Evidencias:** capturas, vídeos o registros, guardados cifrados en este
-  equipo.
+- **Evidencias:** capturas, vídeos o registros, guardados cifrados y
+  sincronizados con los demás equipos del espacio de trabajo. Quien tiene el
+  rol Viewer no puede adjuntar.
 
 Su **ciclo de vida**: Nuevo → Abierto → En curso → Corregido → Por confirmar →
 Cerrado, y además Rechazado (con su resolución) o Aplazado. Rechazado y
@@ -40,14 +41,21 @@ marca «Encontrado fuera de las pruebas (escape)». Cuenta como escape del
 último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo
 dejó pasar.
 
-En este manual, Liomar registra dos defectos de Pharos:
+En este manual, Liomar registra tres defectos de Pharos:
 
 - **«El menú lateral sigue mostrando el prefijo anterior»** (mayor, media),
   escrito a mano, con su captura y vinculado al caso PH-003 y al requisito
-  REQ-002. Lo aplaza a la 0.4.0.
+  REQ-002. Lo aplaza a la versión siguiente.
 - **«Entrar con credenciales válidas muestra “Correo o contraseña
   incorrectos”»** (crítico), creado desde el resultado fallido de la prueba
-  automática de acceso que importó en el capítulo 10.
+  automática de acceso que importó en el capítulo 10. Es el mismo fallo que
+  encuentra a mano en el capítulo 11, así que allí no crea otro.
+- **«El enlace del correo de bienvenida abre la versión anterior»** (menor),
+  un escape que avisa un usuario de la beta; lo reabre al volver a probarlo.
+
+Un defecto registrado dos veces por error se elimina: va a la Papelera
+(Administración › General, capítulo 15), desde donde se restaura, sin sus
+adjuntos, mientras dure la retención.
 
 ## Atajos de teclado
 

@@ -58,8 +58,10 @@ export type Prereq =
   | "plan"
   | "requisitos"
   | "casos-base"
+  | "caso-dataset"
   | "ciclo"
   | "resultados"
+  | "hallazgos"
   | "ejecucion-manual"
   | "defectos"
   | "requisitos-api"
@@ -134,6 +136,14 @@ export const PREREQUISITES: Prerequisite[] = [
     loader: "«Importar .xlsx» of each fixtures/pharos/casos/*.xlsx, link its requirement, «Guardar»",
   },
   {
+    id: "caso-dataset",
+    contract:
+      "the library of «Pharos» (the shared step «Iniciar sesión» at v2, the dataset «Usuarios válidos» with 3 rows) and the case «Acceso con usuarios de prueba» (PH-005, Outline, linked to REQ-001) that uses both",
+    madeBy: "casos",
+    after: ["casos-base"],
+    loader: "the library's own screens and «Nuevo caso» (insert the shared step, bind the dataset, link REQ-001), without captures",
+  },
+  {
     id: "ciclo",
     contract: "the cycle «Regresión 0.6.0» with PH-001 and PH-002, executed into one run per configuration",
     madeBy: "ciclos",
@@ -148,10 +158,19 @@ export const PREREQUISITES: Prerequisite[] = [
     loader: "«Importar informe» of fixtures/informe-adjuntos/junit.xml with its captures, into the cycle",
   },
   {
-    id: "ejecucion-manual",
-    contract: "the completed manual run «Regresión manual · 0.6.0-beta.1» (PH-001 fails, PH-002 passes)",
-    madeBy: "ejecucion-manual",
+    id: "hallazgos",
+    contract:
+      "the scans of chapter 10 in «Pharos»: «Análisis Semgrep · servidor» (a finding linked to PH-002 open, one triaged as a false positive), «Accesibilidad · diálogo «Nuevo requisito»» (axe) and «Carga · API de Pharos, 5 usuarios» (k6, one threshold failed)",
+    madeBy: "ejecuciones",
     after: ["casos-base"],
+    loader: "«Importar informe» of fixtures/pharos/informes/semgrep-servidor.sarif (then its triage), the axe sample and k6-api-pharos.json",
+  },
+  {
+    id: "ejecucion-manual",
+    contract:
+      "the completed manual run «Regresión manual · 0.6.0-beta.1» (PH-001 fails, PH-002 passes, PH-005 passes its first two dataset rows and fails the third)",
+    madeBy: "ejecucion-manual",
+    after: ["casos-base", "caso-dataset"],
     loader: "web API /api/runs, /api/results and /close + sync",
   },
   {
@@ -176,16 +195,16 @@ export const PREREQUISITES: Prerequisite[] = [
   {
     id: "equipo-qa",
     contract: "the shared workspace «Equipo QA» (Liomar its Test Manager) with «Pharos» in it",
-    madeBy: "integraciones",
+    madeBy: "equipo",
     after: ["prefijos"],
     loader: "API POST /workspaces and /move-project as Liomar + sync",
   },
   {
     id: "jorge-en-equipo",
-    contract: "Jorge is a Test Analyst of «Equipo QA»",
+    contract: "Jorge is a member of «Equipo QA», a Test Manager (invited as Test Analyst, raised for the plan's review in chapter 21)",
     madeBy: "equipo",
     after: ["equipo-qa", "cuenta-jorge"],
-    loader: "an invitation made as Liomar and accepted through the API as Jorge + sync",
+    loader: "an invitation made as Liomar and accepted through the API as Jorge, then his role set to Test Manager + sync",
   },
 ];
 
@@ -219,9 +238,9 @@ export const CHAPTERS: Chapter[] = [
   { id: "casos", number: 8, title: "Casos de prueba", file: "08-casos.tour.ts", status: "active", uses: ["ajustes", "requisitos"] },
   { id: "tablero", number: 6, title: "Tablero", file: "06-tablero.tour.ts", status: "active", uses: ["prefijos"] },
   { id: "ciclos", number: 9, title: "Ciclos de prueba", file: "09-ciclos.tour.ts", status: "active", uses: ["plan", "casos-base", "ajustes"] },
-  { id: "ejecuciones", number: 10, title: "Ejecuciones e importación de resultados", file: "10-ejecuciones.tour.ts", status: "active", uses: ["casos-base", "ciclo"] },
+  { id: "ejecuciones", number: 10, title: "Ejecuciones e importación de resultados", file: "10-ejecuciones.tour.ts", status: "active", uses: ["casos-base", "ciclo", "caso-dataset"] },
   { id: "defectos", number: 12, title: "Defectos", file: "12-defectos.tour.ts", status: "active", uses: ["casos-base", "requisitos", "resultados", "ajustes"] },
-  { id: "ejecucion-manual", number: 11, title: "Ejecución manual", file: "11-ejecucion-manual.tour.ts", status: "active", uses: ["casos-base", "ajustes"] },
+  { id: "ejecucion-manual", number: 11, title: "Ejecución manual", file: "11-ejecucion-manual.tour.ts", status: "active", uses: ["casos-base", "ajustes", "caso-dataset", "hallazgos"] },
   // After the runs, the imports and the defects: the matrix shows their
   // results and defects (MAN-03).
   {
@@ -230,7 +249,7 @@ export const CHAPTERS: Chapter[] = [
     title: "Trazabilidad",
     file: "13-trazabilidad.tour.ts",
     status: "active",
-    uses: ["requisitos", "casos-base", "resultados", "ejecucion-manual", "defectos"],
+    uses: ["requisitos", "casos-base", "caso-dataset", "resultados", "hallazgos", "ejecucion-manual", "defectos"],
   },
   { id: "administracion", number: 15, title: "Administración", file: "15-administracion.tour.ts", status: "active", uses: ["plan", "requisitos", "cuenta-jorge"] },
   { id: "ia", number: 17, title: "Asistente de IA", file: "17-ia.tour.ts", status: "active", uses: ["plan", "requisitos", "casos-base", "requisitos-api"] },
@@ -238,13 +257,14 @@ export const CHAPTERS: Chapter[] = [
   { id: "inicio", number: 3, title: "Inicio", file: "03-inicio.tour.ts", status: "active", uses: ["plan", "resultados", "ejecucion-manual", "defectos"] },
   { id: "evidencias", number: 16, title: "Evidencias", file: "16-evidencias.tour.ts", status: "active", uses: ["resultados", "ejecucion-manual", "defectos"] },
   { id: "errores", number: 19, title: "Si algo sale mal", file: "19-errores.tour.ts", status: "active", uses: ["cuenta-liomar"] },
-  // INT-02/INT-03/INT-04 (ADR-0052): tokens, Conectar CI, webhooks. It
-  // creates «Equipo QA» and shares «Pharos» into it.
-  { id: "integraciones", number: 20, title: "Integraciones", file: "20-integraciones.tour.ts", status: "active", uses: ["prefijos"] },
-  // Team work with Jorge (decision D-1): members and roles, the invitation,
-  // review and approval by another person. Last: it works on the «Pharos»
-  // that chapter 20 shares into «Equipo QA».
-  { id: "equipo", number: 21, title: "Trabajo en equipo", file: "21-equipo.tour.ts", status: "active", uses: ["equipo-qa", "cuenta-jorge", "plan", "casos-base"] },
+  // Team work with Jorge (decision D-1): it creates «Equipo QA», shares
+  // «Pharos» into it, invites Jorge, and shows members, roles, review and
+  // approval by another person. It runs before chapter 20 (which needs the
+  // shared workspace and Jorge's token) although the manual prints it after.
+  { id: "equipo", number: 21, title: "Trabajo en equipo", file: "21-equipo.tour.ts", status: "active", uses: ["cuenta-jorge", "plan", "casos-base", "defectos"] },
+  // INT-02/INT-03/INT-04 (ADR-0052): tokens, Conectar CI, webhooks, on the
+  // «Pharos» that chapter 21 shares into «Equipo QA».
+  { id: "integraciones", number: 20, title: "Integraciones", file: "20-integraciones.tour.ts", status: "active", uses: ["equipo-qa", "jorge-en-equipo"] },
 ];
 
 /** The chapters as the manual prints them (by `number`), without the preparation. */
@@ -316,12 +336,12 @@ const I = (chapter: ChapterId, kind: ItemKind, id: string, label: string, extra:
 
 const WEB_ONLY = "Solo existe en la versión web; los tours recorren la app de escritorio.";
 
-const WORKSPACES_PENDING =
-  "pendiente del capítulo 21 «Trabajo en equipo», que lo recorre con la cuenta de Jorge (NC-052 enmendada); mientras tanto lo cubren la validación de 0.5.0 con dos personas (SYNC-07) y los tests de la UI y del servidor";
-
 export const INVENTORY: Item[] = [
   // ---- 1 · Acceso y cuenta ------------------------------------------------------
   I("acceso", "screen", "screen:login", "Pantalla «Iniciar sesión»"),
+  // The server line and panel of the desktop sign-in (SEC-10, 0.5.0).
+  I("acceso", "screen", "screen:server-line", "Línea «Servidor: …» de la pantalla de entrada (escritorio)"),
+  I("acceso", "dialog", "dialogs:src/modules/server-picker/ui/ServerPanel.tsx", "«Servidor»: cambiar el servidor al que te conectas"),
   I("acceso", "state", "state:login-error", "Error de credenciales al entrar"),
   I("acceso", "action", "action:show-password", "Mostrar u ocultar la contraseña"),
   I("acceso", "action", "action:login-language", "Idioma desde la entrada"),
@@ -365,6 +385,7 @@ export const INVENTORY: Item[] = [
   I("navegacion", "screen", "screen:shell", "Estructura de la pantalla: menú lateral, barra superior y contenido"),
   I("navegacion", "action", "action:project-nav", "Secciones del proyecto en el orden del proceso de prueba (UX-21)"),
   I("navegacion", "action", "action:project-switcher", "Cambiar de proyecto desde el menú lateral"),
+  I("navegacion", "action", "action:workspace-switcher", "Selector de workspace del menú lateral: workspace, rol, crear, unirse y miembros (SYNC-07)"),
   I("navegacion", "action", "action:breadcrumbs", "Migas de pan de la barra superior"),
   I("navegacion", "dialog", "dialogs:src/app/layout/TopbarControls.tsx", "Búsqueda, panel de notificaciones y su hoja en el móvil"),
   I("navegacion", "keyboard", "keyboard:ctrl-k", "Ctrl+K abre la búsqueda"),
@@ -622,25 +643,21 @@ export const INVENTORY: Item[] = [
   I("administracion", "route", "route:/admin", "Administración"),
   // Workspaces with roles (SYNC-07, ADR-0042). Members and invitations need a
   // second account: Jorge's (people.ts), in chapter 21 «Trabajo en equipo».
-  I("equipo", "route", "route:/workspaces/members", "Miembros y roles de un workspace", { pending: WORKSPACES_PENDING }),
-  I("equipo", "route", "route:/workspaces/join", "Unirse a un workspace con un código", { pending: WORKSPACES_PENDING }),
-  I("integraciones", "dialog", "dialogs:src/modules/workspaces/ui/CreateWorkspaceDialog.tsx", "Crear workspace"),
-  I("equipo", "dialog", "dialogs:src/modules/workspaces/ui/InviteDialog.tsx", "Invitar a un workspace (código de un solo uso)", { pending: WORKSPACES_PENDING }),
-  I("integraciones", "dialog", "dialogs:src/modules/workspaces/ui/ShareProjectDialog.tsx", "Compartir un proyecto con un workspace"),
-  I("equipo", "dialog", "dialogs:src/modules/workspaces/ui/WorkspaceMembersPage.tsx", "Quitar a un miembro o salir de un workspace", { pending: WORKSPACES_PENDING }),
+  I("equipo", "route", "route:/workspaces/members", "Miembros y roles de un workspace"),
+  I("equipo", "route", "route:/workspaces/join", "Unirse a un workspace con un código"),
+  I("equipo", "dialog", "dialogs:src/modules/workspaces/ui/CreateWorkspaceDialog.tsx", "Crear workspace"),
+  I("equipo", "dialog", "dialogs:src/modules/workspaces/ui/InviteDialog.tsx", "Invitar a un workspace (código de un solo uso)"),
+  I("equipo", "dialog", "dialogs:src/modules/workspaces/ui/ShareProjectDialog.tsx", "Compartir un proyecto con un workspace"),
+  I("equipo", "dialog", "dialogs:src/modules/workspaces/ui/WorkspaceMembersPage.tsx", "Quitar a un miembro o salir de un workspace"),
   // INT-02 (ADR-0052): API tokens. The manual chapter «Integraciones» comes
   // with track A's A4, together with the upload and its curl examples.
   I("integraciones", "tab", "tabs:src/modules/workspaces/ui/WorkspaceMembersPage.tsx", "Pestañas del workspace (Miembros / Integraciones)"),
-  I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/ProjectTokensSection.tsx", "Revocar o reasignar un token de proyecto", {
-    skip: "«Reasignar» solo aparece en el token de otra persona o en uno inactivo: pendiente de un paso con el token de Jorge (NC-052 enmendada); la tabla y «Revocar» salen en el capítulo 20. Mientras tanto, lo cubren server/tests/api.tokens.test.ts y src/modules/integrations/ui/integrations.test.tsx.",
-  }),
+  I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/ProjectTokensSection.tsx", "Revocar o reasignar un token de proyecto"),
   I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/TokenDialogs.tsx", "Nuevo token, token creado (una sola vez) y rotar"),
   I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/PersonalTokensSection.tsx", "Revocar un token personal"),
   I("integraciones", "section", "section:connect-ci", "Conectar CI: el paso de GitHub Actions (INT-04)"),
   I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/WebhooksSection.tsx", "Nuevo y editar webhook, su secreto, entregas, rotar y borrar (INT-03)"),
-  I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/AdminRevokeTokens.tsx", "Revocar todos los tokens de una cuenta (administrador)", {
-    pending: "Pendiente de un paso con la cuenta de Jorge y sus tokens (NC-052 enmendada). Mientras tanto, lo cubren server/tests/api.tokens.test.ts y src/modules/integrations/ui/integrations.test.tsx.",
-  }),
+  I("administracion", "dialog", "dialogs:src/modules/integrations/ui/AdminRevokeTokens.tsx", "Revocar todos los tokens de una cuenta (administrador)"),
   // PLN-08 (ADR-0049): «Aprobación independiente», seen from one account.
   I("administracion", "action", "action:workspace-rules", "«Reglas»: aprobación independiente del workspace (PLN-08)"),
   I("administracion", "tab", "admin:ai", "Motor de IA"),
@@ -669,31 +686,17 @@ export const INVENTORY: Item[] = [
   }),
   // The server administrator (SEC-11) and reset by an administrator (SEC-09); ADR-0045.
   I("administracion", "tab", "admin:users", "Usuarios del servidor (solo administradores)"),
-  I("administracion", "dialog", "dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "Restablecer la contraseña de otra cuenta; nombrar o quitar administradores", {
-    pending: "Pendiente de los pasos con la cuenta de Jorge en «Usuarios» (capítulo 15, NC-052 enmendada). Mientras tanto, lo cubren server/tests/admin.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
-  }),
-  I("administracion", "action", "action:admin-reset", "Restablecer la contraseña de otra cuenta (enlace de un solo uso)", {
-    pending: "Pendiente de los pasos con la cuenta de Jorge en «Usuarios» (capítulo 15, NC-052 enmendada). Mientras tanto, lo cubren server/tests/admin.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
-  }),
+  I("administracion", "dialog", "dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "Restablecer la contraseña de otra cuenta; nombrar o quitar administradores"),
+  I("administracion", "action", "action:admin-reset", "Restablecer la contraseña de otra cuenta (enlace de un solo uso)"),
   I("administracion", "action", "action:admin-reset-email", "Enviar el enlace por correo (el administrador no lo ve)", {
     skip: "Necesita un servidor con SMTP; la API del tour no envía correo (el valor por defecto). Lo cubren server/tests/admin.test.ts con un buzón en memoria y src/modules/admin/ui/tabs/UsersTab.test.tsx.",
   }),
-  I("administracion", "action", "action:admin-grant", "Nombrar a otro administrador", {
-    pending: "Pendiente de los pasos con la cuenta de Jorge en «Usuarios» (capítulo 15, NC-052 enmendada). Mientras tanto, lo cubren server/tests/admin.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
-  }),
-  I("administracion", "action", "action:admin-revoke", "Quitar el rol de administrador", {
-    pending: "Pendiente de los pasos con la cuenta de Jorge en «Usuarios» (capítulo 15, NC-052 enmendada). Mientras tanto, lo cubren server/tests/admin.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
-  }),
+  I("administracion", "action", "action:admin-grant", "Nombrar a otro administrador"),
+  I("administracion", "action", "action:admin-revoke", "Quitar el rol de administrador"),
   // Disabling an account (SEC-12; ADR-0045 amendment B).
-  I("administracion", "dialog", "dialogs:src/modules/admin/ui/tabs/DisableAccountDialog.tsx", "Desactivar una cuenta: motivo, sucesor del último Test Manager y confirmación", {
-    pending: "Pendiente de los pasos con la cuenta de Jorge en «Usuarios» (capítulo 15, NC-052 enmendada). Mientras tanto, lo cubren server/tests/account-disable.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
-  }),
-  I("administracion", "action", "action:admin-disable", "Desactivar una cuenta", {
-    pending: "Pendiente de los pasos con la cuenta de Jorge en «Usuarios» (capítulo 15, NC-052 enmendada). Mientras tanto, lo cubren server/tests/account-disable.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
-  }),
-  I("administracion", "action", "action:admin-enable", "Reactivar una cuenta desactivada", {
-    pending: "Pendiente de los pasos con la cuenta de Jorge en «Usuarios» (capítulo 15, NC-052 enmendada). Mientras tanto, lo cubren server/tests/account-disable.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
-  }),
+  I("administracion", "dialog", "dialogs:src/modules/admin/ui/tabs/DisableAccountDialog.tsx", "Desactivar una cuenta: motivo, sucesor del último Test Manager y confirmación"),
+  I("administracion", "action", "action:admin-disable", "Desactivar una cuenta"),
+  I("administracion", "action", "action:admin-enable", "Reactivar una cuenta desactivada"),
   I("administracion", "tab", "admin:sync", "Sincronización"),
   I("administracion", "action", "action:sync-now", "Sincronizar ahora"),
   I("administracion", "action", "action:sync-auto", "Sincronización automática y su intervalo"),

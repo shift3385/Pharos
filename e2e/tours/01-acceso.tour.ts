@@ -1,6 +1,7 @@
-// Chapter 1 — Acceso y cuenta (manual v2, MAN-03): the sign-in screen and its
-// errors, creating an account, the sign-in screen on a phone, signing in and
-// out, the user menu and the profile. The example: Liomar Rodríguez, QA lead
+// Chapter 1 — Acceso y cuenta (manual v2, MAN-03): the sign-in screen, its
+// server line and its errors, creating an account with its recovery codes,
+// the sign-in screen on a phone, account recovery, signing in and out, the
+// user menu and the profile (account security, preferences). The example: Liomar Rodríguez, QA lead
 // of Pharos, creates his own account here and tests Pharos itself with it in
 // every chapter (NC-052: the one person and account of the manual).
 import { $, browser, expect } from "@wdio/globals";
@@ -22,6 +23,13 @@ const REVEAL = `button[aria-label="${es.auth.showPassword}"]`;
 const USER_MENU = '[data-testid="user-menu-trigger"]';
 const SAVED_CHECK = `label=${es.recoveryCodes.saved}`;
 
+/** The sidebar says «Sincronizado» (no «Sincronizando…» in the capture). */
+const syncIdle = () =>
+  browser.waitUntil(async () => (await $(".sidebar .sync").getText()).includes(es.sync.synced), {
+    timeout: 20_000,
+    timeoutMsg: "the sync never went idle",
+  });
+
 chapter("acceso", () => {
   step("pantalla-entrada", {
     title: "La pantalla de entrada",
@@ -40,10 +48,29 @@ chapter("acceso", () => {
     },
   });
 
+  step("servidor", {
+    title: "El servidor al que te conectas",
+    caption:
+      "Encima del correo, la línea «Servidor» dice adónde van tu correo y tu contraseña; si trabajas solo en tu equipo, «Este equipo» y su dirección (en tu caso, localhost:3000). «Cambiar» abre «Servidor», donde escribes la dirección https:// que te dé quien administra Pharos y pulsas «Conectar»: Pharos comprueba el servidor antes de quedarse con él. Si ya entraste en otros, «Usados en este equipo» los lista para elegirlos con un clic. «Cancelar» o Esc vuelven sin cambiar nada. En la versión web no aparece: su servidor es el que la sirve.",
+    covers: ["screen:server-line", "dialogs:src/modules/server-picker/ui/ServerPanel.tsx"],
+    focus: '[data-testid="server-panel"]',
+    run: async () => {
+      await expect(byTestId("server-line")).toBeDisplayed();
+      await byTestId("server-change").click();
+      await expect(byTestId("server-panel")).toBeDisplayed();
+      await expect($("#server-address")).toBeDisplayed();
+    },
+    after: async () => {
+      await button(es.server.panel.cancel).click();
+      await expect(byTestId("server-panel")).not.toBeExisting();
+      await expect(byTestId("server-line")).toBeDisplayed();
+    },
+  });
+
   step("idioma-entrada", {
     title: "Elegir el idioma antes de entrar",
     caption:
-      "El selector de idioma, en la esquina inferior izquierda (muestra el idioma actual, «Español»), despliega los idiomas disponibles: español e inglés. Muévete por la lista con las flechas y elige con Intro, o haz clic. Toda la interfaz cambia al momento, también esta pantalla, y Pharos lo recuerda en este equipo. Una vez dentro, el idioma se cambia desde el menú de usuario o desde «Mi perfil».",
+      "El selector de idioma, en la esquina inferior izquierda (muestra el idioma actual, «Español»), despliega los idiomas disponibles: español e inglés. Muévete por la lista con las flechas y elige con Intro, o haz clic. Toda la interfaz cambia al momento, también esta pantalla, y Pharos lo recuerda en este equipo; una vez dentro, el idioma viaja con tu cuenta a tus otros equipos. Después se cambia desde el menú de usuario o desde «Mi perfil».",
     covers: ["action:login-language"],
     focus: ['[data-testid="login-language"]', '[role="menu"]'],
     run: async () => {
@@ -139,6 +166,8 @@ chapter("acceso", () => {
       await $(SAVED_CHECK).click();
       await button(es.recoveryCodes.continue).click();
       await expect(userMenuTrigger()).toBeDisplayed();
+      // The first sync ends a moment later.
+      await syncIdle();
     },
   });
 
@@ -221,12 +250,16 @@ chapter("acceso", () => {
   step("menu-usuario", {
     title: "El menú de usuario",
     caption:
-      "El menú de tu avatar reúne lo que es tuyo y no de un proyecto: «Mi perfil», «Administración» (la configuración de la aplicación, capítulo 15), el idioma de la interfaz (español o inglés, con una ✓ en el actual; se aplica al momento) y «Cerrar sesión». Se recorre con las flechas ↑ ↓ y se cierra con Esc.",
+      "El menú de tu avatar reúne lo que es tuyo y no de un proyecto: «Mi perfil», «Administración» (la configuración de la aplicación, capítulo 15), el idioma de la interfaz (español o inglés, con una ✓ en el actual; se aplica al momento y viaja con tu cuenta) y «Cerrar sesión». En la app de escritorio, encima de «Cerrar sesión», «Conectado a …» dice a qué servidor está conectada tu sesión (aquí, el de este equipo). Se recorre con las flechas ↑ ↓ y se cierra con Esc.",
     covers: ["action:user-menu-language"],
     focus: '[role="menu"]',
     run: async () => {
+      await syncIdle();
       await userMenuTrigger().click();
       await expect($(`[role="menuitem"]*=${es.shell.myProfile}`)).toBeDisplayed();
+      // Shown in capitals (CSS): compare ignoring case.
+      const menuText = await browser.execute(() => document.querySelector('[role="menu"]')?.textContent ?? "");
+      expect(menuText).toContain(es.server.connectedTo.split("{{")[0].trim());
       await expect(byTestId("lang-es")).toBeDisplayed();
     },
   });
@@ -234,13 +267,13 @@ chapter("acceso", () => {
   step("perfil", {
     title: "Tu perfil",
     caption:
-      "«Mi perfil» reúne tus datos: el alias y tu nombre oficial (nombre y apellidos), el estado de la sincronización con «Sincronizar ahora» y, en «Preferencias», el idioma y el tema (claro u oscuro), que se aplican al momento en este equipo. La cuenta de este ejemplo tiene los datos con los que Liomar la creó.",
-    covers: ["route:/profile", "action:profile-preferences"],
+      "«Mi perfil» reúne lo tuyo: arriba, el alias y tu nombre oficial (nombre y apellidos), con el estado de la sincronización y «Sincronizar ahora»; más abajo, «Seguridad de la cuenta», «Tokens personales» y «Preferencias». La cuenta de este ejemplo tiene los datos con los que Liomar la creó.",
+    covers: ["route:/profile"],
     run: async () => {
       await $(`[role="menuitem"]*=${es.shell.myProfile}`).click();
       await expect($(`h1=${es.profile.title}`)).toBeDisplayed();
-      await expect(byTestId("profile-theme")).toBeDisplayed();
-      await expect(byTestId("profile-language")).toBeDisplayed();
+      await expect($("#displayName")).toBeEnabled(); // once the profile has loaded
+      await syncIdle();
     },
   });
 
@@ -300,6 +333,20 @@ chapter("acceso", () => {
       await dialog().$(SAVED_CHECK).click();
       await dialog().$(`button=${es.recoveryCodes.close}`).click();
       await expect(dialog()).not.toBeExisting();
+    },
+  });
+
+  step("perfil-preferencias", {
+    title: "Preferencias: idioma y tema",
+    caption:
+      "Al final de «Mi perfil», «Preferencias» guarda el idioma y el tema: claro, oscuro o «Según el sistema», que sigue el ajuste de Windows. Se aplican al momento y viajan con tu cuenta: tus otros equipos los toman al sincronizar («Se aplica en todos tus equipos»). Justo encima, «Tokens personales» crea los tokens para el CLI `pharos` y tus scripts (capítulo 20).",
+    covers: ["action:profile-preferences"],
+    focus: ".profile-prefs",
+    run: async () => {
+      await $(".profile-prefs").scrollIntoView({ block: "end" });
+      await expect(byTestId("profile-theme")).toBeDisplayed();
+      await expect(byTestId("profile-language")).toBeDisplayed();
+      await expect($(".profile-prefs")).toHaveText(expect.stringContaining(es.profile.synced));
     },
   });
 });
