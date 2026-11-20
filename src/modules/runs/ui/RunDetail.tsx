@@ -16,6 +16,7 @@ import { StatusPill } from "@shared/ui/StatusPill";
 import { TabPanel, Tabs } from "@shared/ui/Tabs";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { useToast } from "@shared/ui/Toast";
+import { useOnSynced } from "@shared/ui/useSynced";
 import { FormSkeleton } from "@shared/ui/Skeleton";
 import { runsApi } from "../api/runsApi";
 import type { LinkableItem } from "@modules/defects";
@@ -96,6 +97,8 @@ export function RunDetail({
   useEffect(() => {
     void refresh();
   }, [refresh]);
+  // A sync that brought or combined changes (FIX-48).
+  useOnSynced(() => void refresh());
   const inHeader = useContext(HeaderActionsContext) !== null;
 
   const run = data?.run;

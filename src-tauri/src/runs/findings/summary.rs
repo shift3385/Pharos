@@ -52,6 +52,10 @@ pub struct ToolFindings {
     pub run_id: String,
     pub run_key: String,
     pub open: FindingSeverityCounts,
+    /// Whether the tool has a previous run to compare with: without one
+    /// (its first import) «new» does not apply and the reports say so
+    /// instead of «0 nuevos» (FIX-48).
+    pub compared: bool,
     /// Open and not in the previous run of the tool.
     pub new: i64,
     /// With a decision other than «open».
@@ -192,6 +196,7 @@ pub fn of(
                 run_id: run.id.clone(),
                 run_key: run.run_key.clone(),
                 open: FindingSeverityCounts::default(),
+                compared: previous.is_some(),
                 new: 0,
                 triaged: 0,
                 review: 0,

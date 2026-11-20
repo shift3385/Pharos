@@ -305,6 +305,22 @@ describe("Requisitos and Trazabilidad as two sections (UX-21)", () => {
     expect(summary).not.toHaveBeenCalled();
   });
 
+  it("the list shows what a sync brought or merged at once (FIX-48)", async () => {
+    setViewportWidth(1440);
+    renderWithProviders(<RequirementsPage projectId="p1" projectName="Portal" />);
+    const table = await screen.findByRole("table", { name: "Requisitos" });
+    expect(within(table).queryByText(/Si cambian el mismo campo/)).not.toBeInTheDocument();
+    // The other device's description, merged into this device's copy.
+    list.mockResolvedValue([
+      { ...req("REQ-031", "Pago con tarjeta guardada con el servidor", "high"), description: "Si cambian el mismo campo, Pharos pregunta cuál queda." },
+      req("REQ-047", "Exportar historial a CSV", "low"),
+      req("REQ-051", "Notificación de pago", "high"),
+    ]);
+    window.dispatchEvent(new CustomEvent("pharos:synced"));
+    expect(await within(table).findByText(/Si cambian el mismo campo/)).toBeInTheDocument();
+    expect(within(table).getByRole("button", { name: /con el servidor/ })).toBeInTheDocument();
+  });
+
   it("«Trazabilidad» has the matrix and its export, and no requirement form", async () => {
     setViewportWidth(1440);
     renderWithProviders(<TraceabilityPage projectId="p1" projectName="Portal" />);

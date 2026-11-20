@@ -15,6 +15,7 @@ import {
 import { StatusPill } from "@shared/ui/StatusPill";
 import { TabPanel, Tabs } from "@shared/ui/Tabs";
 import { useToast } from "@shared/ui/Toast";
+import { useOnSynced } from "@shared/ui/useSynced";
 import { runsApi } from "../api/runsApi";
 import type { LinkableItem } from "@modules/defects";
 import { instantOf, statusTone, type LinkableCase } from "../model/types";
@@ -119,6 +120,8 @@ function RunsList({
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, userId]);
+  // A sync that brought or combined changes (FIX-48).
+  useOnSynced(() => void refresh());
 
   const inHeader = useContext(HeaderActionsContext) !== null;
   const actions = (

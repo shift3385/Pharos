@@ -122,6 +122,7 @@ export const FINDINGS: NonNullable<ExecutionSummary["findings"]> = {
       runId: "r3",
       runKey: "RUN-003",
       open: { critical: 1, high: 2, medium: 0, low: 0, info: 0 },
+      compared: true,
       new: 1,
       triaged: 1,
       review: 2,
