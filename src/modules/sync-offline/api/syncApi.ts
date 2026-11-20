@@ -479,6 +479,21 @@ export async function syncNow(): Promise<SyncResult> {
     userId,
     features: serverFeatures,
   });
+  // The first sync of an account (a new sign-up, or a device that never
+  // synced it) learns only now that the server has workspaces: fill the
+  // mirror at once, so the workspace selector appears now and not at the
+  // next sync, minutes later (FIX-40). Never fatal: the next sync does it.
+  if (!knowsWorkspaces && serverFeatures.includes("workspaces")) {
+    try {
+      const first = await fetchWorkspaces(request);
+      if (first) {
+        await invoke("workspaces_apply", { userId, workspaces: first });
+        window.dispatchEvent(new CustomEvent("pharos:workspaces"));
+      }
+    } catch (e) {
+      logSyncFailure(e, "workspaces");
+    }
+  }
   // Contents pulled documents name and this device lacks (SYNC-04b).
   if (route && serverFeatures.includes("blobs")) {
     for (const ws of route.ids) await transferBlobs(invoke, userId, ws, "download");

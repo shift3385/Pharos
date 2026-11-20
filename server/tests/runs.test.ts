@@ -366,7 +366,8 @@ describe("runs on the web", () => {
     // But one linked before keeps its link, label and case (ADR-0016).
     const linked = (await call("GET", `/api/defects/${defect.id}`)).body;
     expect(linked.links.map((l: Payload) => [l.targetKind, l.label])).toEqual([
-      ["result", `${run.runKey} · ${s.simple.key} #0`],
+      // The first attempt carries no number (FIX-38: no «#0»).
+      ["result", `${run.runKey} · ${s.simple.key}`],
     ]);
     expect(linked.caseIds).toEqual([s.simple.id]);
   });

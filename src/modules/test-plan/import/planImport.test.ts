@@ -81,9 +81,26 @@ describe("parsePlanXlsx (English template)", () => {
     expect(byKey("testPlan.testDataManagement")?.status).toBe("notFound");
     expect(byKey("testPlan.summary")?.status).toBe("filled");
     expect(byKey("testPlan.step.roles")?.count).toBe(1);
-    // one row per field + table + the title + the 29119-3 sheets (PLN-06)
-    expect(rows.length).toBe(27);
+    // one row per field + table + the title + the milestones + the 29119-3 sheets (PLN-06)
+    expect(rows.length).toBe(28);
     expect(byKey("testPlan.strategySheet")?.status).toBe("notFound");
+    expect(byKey("testPlan.milestones")?.status).toBe("notFound");
+  });
+
+  it("previews catalog lists by their labels, own entries as typed (FIX-40)", async () => {
+    const buf = await sheet({ ...EN, B21: "Functional\nPerformance\nContract tests", B35: "Playwright\nMy tool" });
+    const { rows } = await parsePlanXlsx(buf, "My Plan.xlsx", "Fallback");
+    const byKey = (k: string) => rows.find((r) => r.labelKey === k);
+    expect(byKey("testPlan.testTypes")?.previewItems).toEqual([
+      { key: "testPlan.typeLabel.functional", text: "functional" },
+      { key: "testPlan.typeLabel.performance", text: "performance" },
+      { text: "Contract tests" },
+    ]);
+    expect(byKey("testPlan.testLevels")?.previewItems).toEqual([
+      { key: "testPlan.levelLabel.system", text: "system" },
+      { key: "testPlan.levelLabel.acceptance", text: "acceptance" },
+    ]);
+    expect(byKey("testPlan.tools")?.previewItems).toEqual([{ text: "Playwright" }, { text: "My tool" }]);
   });
 
   it("emits progress for every detected item", async () => {
@@ -94,8 +111,8 @@ describe("parsePlanXlsx (English template)", () => {
       last = p.done;
       total = p.total;
     });
-    expect(total).toBe(27);
-    expect(last).toBe(27);
+    expect(total).toBe(28);
+    expect(last).toBe(28);
   });
 });
 

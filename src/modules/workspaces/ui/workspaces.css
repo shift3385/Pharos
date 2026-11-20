@@ -35,10 +35,24 @@
   grid-column: 2;
   grid-row: 2 / span 2;
 }
+/* In the strip (tablet, or the collapsed sidebar) the name is set like the
+   strip's own labels, 10.5 px, and uses the whole width, so «Personal» reads
+   whole; a longer name takes two lines before it is cut, and the tooltip
+   always has it (FIX-40). */
 .ws-switcher[data-compact] {
-  grid-template-columns: 1fr;
-  padding: 6px;
-  font-size: 0.75rem;
+  grid-template-columns: minmax(0, 1fr);
+  padding: 6px 2px;
+  font-size: 10.5px;
+  line-height: 1.25;
+  text-align: center;
+}
+.ws-switcher[data-compact] .ws-switcher__name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 .ws-switcher[data-compact] svg {
   display: none;
