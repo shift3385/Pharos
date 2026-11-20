@@ -144,7 +144,7 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Hola, Quality" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Jueves, 29 de octubre")).toHaveClass("home-header__date");
+    expect(screen.getByText("jueves, 29 de octubre")).toHaveClass("home-header__date");
     await waitFor(() => expect(screen.getByTestId("kpi-pending")).toHaveTextContent("2de 3"));
     // No summary sentences any more.
     const greeting = document.querySelector(".home-header__text")!;
@@ -183,7 +183,8 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(rate).toHaveAttribute("href", "/projects");
     expect(rate).toHaveTextContent("75,0%");
     // By case (NC-029): unlinked tests stay out, in a note under the card.
-    expect(rate).toHaveTextContent("de 4 casos ejecutados · últimos 14 días");
+    // On the desktop board the short form, whole (FIX-46).
+    expect(rate).toHaveTextContent(/de 4 casos$/);
     expect(rate.getAttribute("title")).toMatch(/últimos 14 días/);
     expect(rate.getAttribute("title")).toMatch(/Los tests sin vincular no cuentan/);
     const unlinked = screen.getByTestId("kpi-rate-unlinked");
@@ -649,6 +650,8 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(trigger).toHaveAccessibleName(
       "Periodo de los datos: Últimos 14 días",
     );
+    // FIX-46: on a phone the visible label is the short one, whole.
+    expect(trigger.querySelector(".home-btn__text")).toHaveTextContent(/^14 días$/);
     // It sits above the chart it changes.
     expect(
       trigger.compareDocumentPosition(screen.getByTestId("home-daily")) &

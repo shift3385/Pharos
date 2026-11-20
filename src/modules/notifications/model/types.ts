@@ -6,6 +6,9 @@ export const TRAVELLING_KINDS = [
   "case.review_requested",
   "case.approved",
   "case.changes_requested",
+  // FIX-43: a plan's review, told to its author like a case's.
+  "plan.approved",
+  "plan.changes_requested",
   "defect.assigned",
   "cycle.closed",
   "member.joined",

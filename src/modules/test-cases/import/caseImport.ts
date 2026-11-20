@@ -12,6 +12,8 @@ import {
   splitLines,
   type DetectionRow,
 } from "@shared/import/xlsx";
+import { parseIso } from "@shared/time/isoDay";
+import i18next from "i18next";
 import { detectLevel, fromGherkin, parseFeatureFlows } from "../ui/gherkin";
 import type { TestCaseData } from "../model/types";
 import { CUSTOM_SHEET_NAMES, readCustomSheet } from "../export/customSheet";
@@ -172,6 +174,9 @@ export async function parseCaseXlsx(
       case "text":
         if (SCALARS.has(spec.id)) scalar[spec.id] = raw;
         else (data as Record<string, unknown>)[spec.id] = raw;
+        // A day reads as the rest of the app («20 nov 2026»), not as the
+        // stored ISO day (FIX-44); the value itself is kept as written.
+        if (spec.id === "caseDate") prev = dayPreview(raw.trim()) ?? prev;
         break;
       case "list": {
         const list = splitLines(raw);
@@ -219,7 +224,12 @@ export async function parseCaseXlsx(
       fromGherkin(gherkin).examples ?? { headers: [], rows: [] },
     );
   }
-  push({ labelKey: "testCase.level.label", status: gherkin ? "filled" : "empty", preview: level });
+  // The level's name in the person's language, never the stored «basic».
+  push({
+    labelKey: "testCase.level.label",
+    status: gherkin ? "filled" : "empty",
+    previewKey: `testCase.level.${level}.name`,
+  });
 
   // The «Campos personalizados» sheet (FLD-01): Campo | Clave | Valor.
   const sheet = wb.worksheets.find((w) => CUSTOM_SHEET_NAMES.includes(w.name));
@@ -249,4 +259,14 @@ export async function parseCaseXlsx(
     data,
   };
   return { input, rows };
+}
+
+/** «20 nov 2026» of an ISO day in the app's language; undefined otherwise. */
+function dayPreview(raw: string): string | undefined {
+  const day = parseIso(raw);
+  if (!day) return undefined;
+  const lang = i18next.resolvedLanguage ?? i18next.language ?? "es";
+  return new Intl.DateTimeFormat(lang, { day: "numeric", month: "short", year: "numeric" })
+    .format(day)
+    .replace(/\./g, "");
 }

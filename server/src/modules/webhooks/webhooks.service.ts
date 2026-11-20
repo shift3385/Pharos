@@ -20,6 +20,7 @@ import { can } from "../workspaces/roles.js";
 import { deriveEvents, EVENT_ENTITIES, PING, WEBHOOK_EVENTS, type WebhookEvent } from "./events.js";
 import { newSecret } from "./signing.js";
 import { checkUrl, type TargetPolicy } from "./ssrf.js";
+import { personNameSql } from "../auth/personName.js";
 
 /** Live webhooks per workspace. */
 export const MAX_WEBHOOKS = 20;
@@ -214,7 +215,7 @@ export function createWebhookService(deps: {
     const { rows } = await c.query<{ ws: string; project: string | null; actor: string | null }>(
       `SELECT w.name AS ws,
               (SELECT payload->>'name' FROM documents WHERE workspace_id = w.id AND entity = 'project' AND entity_id = $2) AS project,
-              (SELECT coalesce(nullif(display_name, ''), email) FROM users WHERE id = $3) AS actor
+              (SELECT ${personNameSql()} FROM users WHERE id = $3) AS actor
          FROM workspaces w WHERE w.id = $1`,
       [ev.workspaceId, ev.projectId, ev.actorId],
     );

@@ -3,7 +3,7 @@
 // the role does not allow. The list is reloaded after every sync
 // (`pharos:workspaces`, `pharos:synced`) and when it changes here.
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "@modules/auth";
 import { listWorkspaces, type Workspace } from "../api/workspacesApi";
 import { can as roleCan } from "../model/roles";
@@ -33,13 +33,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [workspaces, setWorkspaces] = useState<Workspace[] | null>(null);
   const [currentId, setCurrentId] = useState<string | null>(null);
 
+  // Only the latest reload is shown (FIX-43): the one a new account starts
+  // when it enters (empty mirror) can answer after the one the first sync's
+  // `pharos:workspaces` started (full mirror), and used to hide the selector.
+  const latest = useRef(0);
   const reload = useCallback(async () => {
+    const mine = ++latest.current;
     if (!userId) {
       setWorkspaces(null);
       return;
     }
     try {
-      setWorkspaces(await listWorkspaces());
+      const list = await listWorkspaces();
+      if (mine === latest.current) setWorkspaces(list);
     } catch {
       // Offline or the server is away: keep what is shown.
     }

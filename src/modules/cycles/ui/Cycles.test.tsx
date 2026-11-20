@@ -171,6 +171,10 @@ describe("Ajustes · Configuraciones", () => {
     await userEvent.type(within(dialog).getByLabelText("Navegador"), "Edge");
     await userEvent.type(within(dialog).getByLabelText("Etiquetas de importación"), "msedge{Enter}chromium,");
     expect(within(dialog).getByText("msedge")).toBeInTheDocument();
+    // FIX-45: the labels' rule is beside them, behind «?», not atop the dialog.
+    expect(within(dialog).getByLabelText("Etiquetas de importación")).toHaveAccessibleDescription(
+      expect.stringContaining("Una etiqueta pertenece a una sola configuración del proyecto."),
+    );
     await userEvent.click(within(dialog).getByRole("button", { name: "Guardar" }));
     expect(configurationApi.create).toHaveBeenCalledWith(
       expect.objectContaining({ name: "Edge", matchLabels: ["msedge", "chromium"], attributes: expect.objectContaining({ browser: "Edge", os: null }) }),
@@ -375,6 +379,8 @@ describe("Ciclos", () => {
     const run = await screen.findByRole("button", { name: "Ejecutar" });
     expect(run).toBeDisabled();
     expect(screen.getAllByText(/quita del ciclo los casos eliminados \(c-gone\)/).length).toBeGreaterThan(0);
+    // FIX-45: unavailable, it is a plain button, not a washed-out primary.
+    expect(run).not.toHaveClass("ui-btn--primary");
   });
 
   it("an «Ejecutar» refused for a case shows its key in the dialog", async () => {
@@ -392,6 +398,7 @@ describe("Ciclos", () => {
     page("/projects/p1/cycles?cycle=cy1");
     const run = await screen.findByRole("button", { name: "Ejecutar" });
     expect(run).toBeEnabled();
+    expect(run).toHaveClass("ui-btn--primary");
     expect(screen.queryByText(/app de escritorio/)).not.toBeInTheDocument();
   });
 });

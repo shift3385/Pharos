@@ -133,7 +133,6 @@ export function RecoveryKeySection() {
           </ol>
           <ul className="recovery-dialog__guidance">
             <li>{t("recoveryKey.guidePaper")}</li>
-            <li>{t("recoveryKey.guideManager")}</li>
             <li>{t("recoveryKey.guideRisk")}</li>
             <li>{t("recoveryKey.guideBackup")}</li>
           </ul>

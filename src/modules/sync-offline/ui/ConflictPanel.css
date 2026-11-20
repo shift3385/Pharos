@@ -134,10 +134,10 @@
   box-shadow: inset 3px 0 0 var(--color-warning);
 }
 
+/* A field's value is text, in the body font (FIX-46). */
 .cp__value {
   margin: 0;
-  font-family: var(--font-mono);
-  font-size: var(--fs-metadata);
+  font-size: var(--fs-ui);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -165,9 +165,6 @@
   border-color: var(--color-navy-300);
 }
 
-.cp__btn:disabled {
-  opacity: 0.6;
-}
 
 /* Repeated keys (DAT-01). */
 .cp__subtitle {

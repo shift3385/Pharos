@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, RotateCcw } from "lucide-react";
 import { FormField } from "@shared/ui/FormField";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { useToast } from "@shared/ui/Toast";
 import type { Issue } from "@shared/validation";
 import {
@@ -78,9 +79,15 @@ export function RiskBandsCard({ project, onSaved }: { project: Project; onSaved:
   return (
     <section className="pj-card-box" aria-labelledby={`${id}-title`} data-testid="risk-bands">
       <div className="pj-card-box__head">
-        <h2 id={`${id}-title`} className="pj-section-title">
-          {t("projects.settings.riskBands.title")}
-        </h2>
+        {/* A one-line subtitle; how the bands work, behind «?» (FIX-45). */}
+        <div className="pj-card-box__title-row">
+          <h2 id={`${id}-title`} className="pj-section-title">
+            {t("projects.settings.riskBands.title")}
+          </h2>
+          <InfoTip id={`${id}-help`} label={t("projects.settings.riskBands.title")}>
+            {t("projects.settings.riskBands.help")}
+          </InfoTip>
+        </div>
         <p className="pj-card-box__desc">{t("projects.settings.riskBands.desc")}</p>
       </div>
       <div className="pj-bands">
@@ -147,10 +154,14 @@ export function RiskBandsCard({ project, onSaved }: { project: Project; onSaved:
         </div>
       </div>
       <figure className="pj-heat">
-        <div className="pj-heat__grid" aria-hidden="true">
+        {/* The axes by name, the numbers plain (FIX-45): «I 5» and «P 1»
+            were cryptic and glued to the first number. */}
+        <div className="pj-heat__plot" aria-hidden="true">
+        <span className="pj-heat__ytitle">{t("projects.settings.riskBands.impactAxis")}</span>
+        <div className="pj-heat__grid">
           {[...LEVELS].reverse().map((impact) => (
             <div key={impact} className="pj-heat__row">
-              <span className="pj-heat__axis">{impact === 5 ? `${t("projects.settings.riskBands.impactShort")} ${impact}` : impact}</span>
+              <span className="pj-heat__axis">{impact}</span>
               {LEVELS.map((likelihood) => {
                 const level = likelihood * impact;
                 return (
@@ -165,10 +176,12 @@ export function RiskBandsCard({ project, onSaved }: { project: Project; onSaved:
             <span className="pj-heat__axis" />
             {LEVELS.map((l) => (
               <span key={l} className="pj-heat__axis">
-                {l === 1 ? `${t("projects.settings.riskBands.likelihoodShort")} ${l}` : l}
+                {l}
               </span>
             ))}
           </div>
+        </div>
+        <span className="pj-heat__xtitle">{t("projects.settings.riskBands.likelihoodAxis")}</span>
         </div>
         <figcaption className="pj-heat__caption" data-testid="risk-band-cells">
           {t("projects.settings.riskBands.cells", { ...counts })}

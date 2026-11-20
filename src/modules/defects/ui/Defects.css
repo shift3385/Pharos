@@ -68,8 +68,10 @@
   white-space: nowrap;
 }
 
+/* A defect's title wraps to a second line before it is cut, so its end
+   («…prefijo anterior») stays readable (FIX-44). */
 .df-open {
-  display: block;
+  display: -webkit-box;
   max-width: 100%;
   padding: 0;
   overflow: hidden;
@@ -77,8 +79,11 @@
   font-weight: var(--fw-medium);
   color: var(--color-text-primary);
   text-align: start;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   cursor: pointer;
   background: none;
   border: 0;
@@ -444,11 +449,20 @@
   min-width: 0;
 }
 
+/* The linked case's «clave · título» on a line of its own, whole: it wraps
+   instead of ending in «credenciale…» (FIX-43). */
 .df-picker__case {
-  overflow: hidden;
+  flex: 1 0 100%;
+  min-width: 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.df-picker__key {
   font-family: var(--font-mono);
-  font-size: 12.5px;
-  text-overflow: ellipsis;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -456,9 +470,16 @@
 .df-escaped {
   grid-column: 1 / -1;
   display: flex;
-  gap: var(--space-2);
-  align-items: flex-start;
+  gap: var(--space-1);
+  align-items: center;
   font-size: var(--fs-ui);
+}
+
+.df-escaped__label {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  cursor: pointer;
 }
 
 /* The grid's `input { width: 100% }` (tc-form__grid) stretched the checkbox
@@ -466,16 +487,28 @@
 .df-escaped input[type="checkbox"] {
   flex: none;
   width: auto;
-  margin-top: 2px;
+  margin: 0;
+  accent-color: var(--color-navy-500);
 }
 
-.df-escaped > span {
-  flex: 1;
+/* «Vínculos»: the lists grow with the page, no scroll box inside the
+   scrolling page (FIX-44), with the app's checkbox colour. */
+.df-section .pl-links {
+  max-height: none;
+  overflow: visible;
+}
+.df-section .pl-links input[type="checkbox"] {
+  accent-color: var(--color-navy-500);
+}
+
+/* «Evidencias»: the file rows start at the card's content edge (FIX-44:
+   the list's default indent pushed them about 47 px in). */
+.df-section .pl-attach__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.df-escaped__label > span {
   min-width: 0;
-}
-
-.df-escaped small {
-  display: block;
-  font-size: var(--fs-metadata);
-  color: var(--color-text-secondary);
 }

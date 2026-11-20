@@ -113,6 +113,8 @@ export function UpcomingTests({
           <ArrowRight size={16} aria-hidden="true" />
         </Link>
       </div>
+      {/* With no project there is nothing to filter (FIX-46). */}
+      {projects.length > 0 && (
       <div className="home-upcoming__filter home-card__pad">
         <Select
           aria-label={t("dashboard.upcoming.filters")}
@@ -150,6 +152,7 @@ export function UpcomingTests({
           data-testid="home-upcoming-filter"
         />
       </div>
+      )}
       <div className="home-upcoming__panel home-fit" ref={fitRows.boxRef}>
         {state.status === "loading" ? (
           <div aria-hidden="true">
@@ -171,7 +174,7 @@ export function UpcomingTests({
           />
         ) : rows.length === 0 ? (
           <p className="home-empty home-card__pad">
-            {t(`dashboard.upcoming.empty.${tab}`)}
+            {projects.length === 0 ? t("dashboard.upcoming.noProjects") : t(`dashboard.upcoming.empty.${tab}`)}
           </p>
         ) : (
           <ul

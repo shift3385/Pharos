@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Cloud, LogOut, Monitor, Moon, Sun } from "lucide-react";
-import { personName, useAuth } from "@modules/auth";
+import { officialName, personName, useAuth } from "@modules/auth";
 import { SyncIndicator } from "@modules/sync-offline";
 import { PersonalTokensSection } from "@modules/integrations";
 import { useWorkspace } from "@modules/workspaces";
 import { SUPPORTED_LANGUAGES, type Language } from "@shared/i18n";
 import { useTheme } from "@shared/theme/useTheme";
+import { parseStamp } from "@shared/time/stamp";
 import { InfoTip } from "@shared/ui/InfoTip";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { TruncatedText } from "@shared/ui/TruncatedText";
@@ -32,8 +33,10 @@ function initials(name: string): string {
  *  it (RED-V4), which then removes it from this page. */
 export function ProfilePage() {
   const { t, i18n } = useTranslation();
+  // The local store writes UTC with no zone: read it as UTC (FIX-46), or the
+  // times show hours off.
   const when = (iso: string) => {
-    const d = new Date(iso);
+    const d = parseStamp(iso);
     return Number.isNaN(d.getTime())
       ? iso
       : new Intl.DateTimeFormat(i18n.resolvedLanguage, {
@@ -65,7 +68,7 @@ export function ProfilePage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const stored = await profileApi.get().catch(() => null);
+      const stored = await profileApi.get(user?.id).catch(() => null);
       if (cancelled) return;
       if (stored) setProfile(stored);
       const source = stored ?? user;
@@ -93,7 +96,7 @@ export function ProfilePage() {
     event.preventDefault();
     setStatus("saving");
     try {
-      const saved = await profileApi.upsert(form);
+      const saved = await profileApi.upsert(form, user?.id);
       setProfile(saved);
       setStatus("saved");
       if (saved) {
@@ -105,12 +108,16 @@ export function ProfilePage() {
     }
   }
 
-  // The one name of a person across the app (FIX-41): the display name.
-  const shownName = personName({
+  // The profile shows the alias and the official name (GLOSARIO, FIX-43):
+  // the alias first, as the shell does for oneself; the official name, the
+  // one records and acts carry, under it.
+  const person = {
     displayName: profile?.displayName ?? user?.displayName,
     firstName: profile?.firstName ?? user?.firstName,
     lastName: profile?.lastName ?? user?.lastName,
-  });
+  };
+  const official = officialName(person);
+  const shownName = person.displayName?.trim() || personName(person);
 
   return (
     <section className="profile screen-root" aria-labelledby="profile-title">
@@ -133,6 +140,11 @@ export function ProfilePage() {
             </span>
             <div className="profile__identity">
               <span className="profile__name">{shownName}</span>
+              {official && official !== shownName && (
+                <span className="profile__official" data-testid="profile-official">
+                  {official}
+                </span>
+              )}
               {user?.isAdmin && (
                 <span className="profile__admin" data-testid="profile-admin">
                   {t("profile.serverAdmin")}

@@ -23,6 +23,7 @@ interface Case {
   findings?: Record<string, unknown>[];
   metrics?: Record<string, unknown>[];
   warnings: { code: string; testKey: string | null; detail: string | null }[];
+  runEnd: string | null;
 }
 
 const cases = (JSON.parse(readFileSync(FIXTURE, "utf8")) as { cases: Case[] }).cases;
@@ -32,7 +33,7 @@ const content = (p: Record<string, unknown>) => Object.fromEntries(Object.entrie
 describe("the server's import planner writes what the desktop writes", () => {
   it("has vectors for every format and the corner cases", () => {
     expect(cases.map((c) => c.name)).toEqual(
-      expect.arrayContaining(["single/ctrf", "single/pw-junit", "single/cucumber-messages", "edge", "sarif/trivy", "axe/checkout", "k6/summary", "findings-edge"]),
+      expect.arrayContaining(["single/ctrf", "single/pw-junit", "single/cucumber-messages", "edge", "sarif/trivy", "axe/checkout", "k6/summary", "findings-edge", "run-end/durations", "run-end/zoned", "run-end/results"]),
     );
   });
 
@@ -62,6 +63,8 @@ describe("the server's import planner writes what the desktop writes", () => {
     expect(fm.findings.map((f) => content(findingPayload(f, fctx))).sort(byId)).toEqual((c.findings ?? []).map(content).sort(byId));
     expect(fm.metrics.map((m) => content(metricPayload(m, fctx))).sort(byId)).toEqual((c.metrics ?? []).map(content).sort(byId));
     expect([...plan.warnings, ...fm.warnings].map((w) => ({ code: w.code, testKey: w.testKey, detail: w.detail }))).toEqual(c.warnings);
+    // When a new run ends (FIX-43): the same as `import.rs::run_end`.
+    expect(runFieldsOf(c.doc).finishedAt).toEqual(c.runEnd);
   });
 });
 
@@ -73,5 +76,14 @@ describe("the run fields of a new imported run", () => {
     const both = runFieldsOf({ run: { startedAt: "2026-11-18T07:00:00Z", finishedAt: "2026-11-18T07:15:00Z" } });
     expect(both.startedAt).toBe("2026-11-18T07:00:00Z");
     expect(runFieldsOf({ run: {} }).startedAt).toBeNull();
+  });
+
+  it("ends a report with a start and durations at the start plus them, not at the import (FIX-43)", () => {
+    const junit = (startedAt: string) => ({ run: { startedAt }, results: [{ duration: 2500 }, { duration: 3300.4 }] });
+    expect(runFieldsOf(junit("2026-11-17T18:10:00")).finishedAt).toBe("2026-11-17T18:10:05.800");
+    expect(runFieldsOf(junit("2026-11-17T18:10:00-04:00")).finishedAt).toBe("2026-11-17T22:10:05.800Z");
+    const both = { run: { startedAt: "2026-11-17T18:10:00Z", finishedAt: "2026-11-17T18:20:00Z" }, results: [{ duration: 5 }] };
+    expect(runFieldsOf(both)).toMatchObject({ startedAt: "2026-11-17T18:10:00Z", finishedAt: "2026-11-17T18:20:00Z" });
+    expect(runFieldsOf({ run: { startedAt: "yesterday" }, results: [{ duration: 5 }] }).finishedAt).toBeNull();
   });
 });

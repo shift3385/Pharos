@@ -393,7 +393,6 @@ function CredentialsForm({
           id="password"
           type={showPassword ? "text" : "password"}
           label={t("auth.password")}
-          placeholder="••••••••"
           value={form.password}
           onChange={update("password")}
           autoComplete={isRegister ? "new-password" : "current-password"}

@@ -44,26 +44,38 @@
   color: var(--color-error-text);
 }
 
+/* The eye toggle sits inside the field, as on the sign-in screen (FIX-46). */
 .account-security__pw {
+  position: relative;
   display: flex;
-  gap: 6px;
   min-width: 0;
 }
 
 .account-security__pw input {
   flex: 1;
+  min-width: 0;
+  padding-right: 44px;
 }
 
 .account-security__reveal {
-  flex: none;
-  padding: 0 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font: inherit;
-  font-size: 12px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40px;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0 8px 8px 0;
+  background: none;
+  color: var(--color-text-muted);
   cursor: pointer;
+}
+
+.account-security__reveal:hover,
+.account-security__reveal[aria-pressed="true"] {
+  color: var(--color-text-primary);
 }
 
 .account-security__submit {

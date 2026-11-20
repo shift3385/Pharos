@@ -66,18 +66,17 @@ export function AssistButton({
       <div className="assist__row">
         <button
           type="button"
-          className="assist__btn assist__btn--icon"
+          className="assist__btn"
           disabled={!available || state === "loading"}
           aria-busy={state === "loading"}
+          aria-label={state === "loading" || name === t("ai.assist.button") ? undefined : name}
           title={available ? name : t("ai.assist.unavailable")}
           onClick={() => void run()}
         >
           <Sparkles size={16} className={state === "loading" ? "assist__spark" : undefined} aria-hidden="true" />
-          {state === "loading" ? (
-            <span>{t("ai.assist.drafting")}</span>
-          ) : (
-            <span className="sr-only">{name}</span>
-          )}
+          {/* The label shows, as the manual names the button (FIX-46); a
+              more specific name stays for screen readers. */}
+          <span>{state === "loading" ? t("ai.assist.drafting") : t("ai.assist.button")}</span>
         </button>
         <ProvenanceBadge provenance={provenance} onReview={onReview} />
       </div>

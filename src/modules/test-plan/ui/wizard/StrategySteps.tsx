@@ -9,6 +9,7 @@ import { Eye, FlaskConical, Lightbulb, Users, type LucideIcon } from "lucide-rea
 import { ListField, PairListField } from "@shared/ui/fields";
 import { FormField } from "@shared/ui/FormField";
 import { Select } from "@shared/ui/Select";
+import { TextArea } from "@shared/ui/TextArea";
 import { toKey } from "@shared/import/xlsx";
 import { AiSuggestList, suggestPlanLists, withProvenance, type PlanListGroup } from "@modules/ai";
 import { ESTIMATION_TECHNIQUES, INDEPENDENCE_LEVELS, TECHNIQUE_GROUPS, TECHNIQUE_KEYS } from "../../model/catalogs";
@@ -171,11 +172,16 @@ export function StaffingFields({ form, set }: Pick<StepProps, "form" | "set">) {
           ))}
         </div>
       </fieldset>
-      <TextField
-        label={t("testPlan.independenceNote")}
-        value={form.independenceNote}
-        onChange={(v) => set("independenceNote", v)}
-      />
+      {/* A sentence, not a word: it wraps and grows like the role and risk
+          fields instead of being cut at the edge (FIX-44). */}
+      <label className="tp-field">
+        <span>{t("testPlan.independenceNote")}</span>
+        <TextArea
+          size="cell"
+          value={form.independenceNote}
+          onChange={(e) => set("independenceNote", e.target.value)}
+        />
+      </label>
       <FieldLabel text={t("testPlan.training")} />
       <PairListField
         label={t("testPlan.training")}

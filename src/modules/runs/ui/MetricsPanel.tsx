@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MetricView } from "@shared/contracts/contract";
 import { DataTable, type DataColumn } from "@shared/ui/DataTable";
@@ -22,6 +22,10 @@ export function MetricsPanel({ metrics }: { metrics: MetricView[] }) {
   const main = metrics.filter((m) => !isCheck(m));
   const shown = all ? main : keyMetrics(metrics);
   const value = (m: MetricView) => formatMetric(m, i18n.language);
+  // k6 names its aggregations in English («rate», «count»): shown in the
+  // user's language; percentiles (p95) read the same in both (FIX-45).
+  const aggregation = (a: string | null | undefined) =>
+    !a ? "—" : t(`findings.metric.aggregations.${a}`, { defaultValue: a });
 
   const columns: DataColumn<MetricView>[] = [
     {
@@ -33,7 +37,7 @@ export function MetricsPanel({ metrics }: { metrics: MetricView[] }) {
     {
       id: "aggregation",
       header: t("findings.metric.aggregation"),
-      cell: (m) => m.aggregation ?? "—",
+      cell: (m) => aggregation(m.aggregation),
       width: "96px",
     },
     {
@@ -112,14 +116,23 @@ export function MetricsPanel({ metrics }: { metrics: MetricView[] }) {
               total: thresholds.total,
             })}
           </strong>
+          {/* The threshold is k6's own expression, in code style like the
+              table's «Umbral» column: its «0.01» is not a number of the
+              sentence, whose values use the locale (FIX-45). */}
           {thresholds.failed.length > 0 && (
             <span>
               {" "}
-              {t("findings.metric.failedList", {
-                list: thresholds.failed
-                  .map((m) => `${m.name} ${m.threshold ?? ""}: ${value(m)}`)
-                  .join("; "),
-              })}
+              {t("findings.metric.failedList")}{" "}
+              {thresholds.failed.map((m, i) => (
+                <Fragment key={m.id}>
+                  {i > 0 && "; "}
+                  <span className="fd-mono">{m.name}</span>{" "}
+                  {m.threshold && <code className="fd-mono">{m.threshold}</code>}
+                  {": "}
+                  {value(m)}
+                </Fragment>
+              ))}
+              .
             </span>
           )}
         </p>

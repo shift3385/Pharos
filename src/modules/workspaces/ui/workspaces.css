@@ -41,7 +41,9 @@
    always has it (FIX-40). */
 .ws-switcher[data-compact] {
   grid-template-columns: minmax(0, 1fr);
-  padding: 6px 2px;
+  /* As wide as the strip entries, with room around the name (FIX-46). */
+  width: 66px;
+  padding: 6px 4px;
   font-size: 10.5px;
   line-height: 1.25;
   text-align: center;
@@ -183,4 +185,26 @@ details.ws-section > summary {
   max-width: 70ch;
   font-size: var(--fs-caption);
   color: var(--color-text-secondary);
+}
+
+/* The member's alias under the official name (GLOSARIO, FIX-43). */
+.ws-member__alias {
+  display: block;
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+}
+
+/* A section title with its «?» help (FIX-46). */
+.ws-section__titleline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* A dialog whose content is a form: the dialog's own spacing, between
+   title, text, field and buttons (FIX-46: «Crear workspace» was crammed). */
+.ws-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }

@@ -251,6 +251,8 @@ export function ProjectDetail({
           <RunsPage
             projectId={projectId}
             projectName={project.name}
+            caseIdPrefix={project.caseIdPrefix}
+            caseIdDigits={project.caseIdDigits}
             runId={runId}
             cases={linkableCases.map((c) => ({
               id: c.id,

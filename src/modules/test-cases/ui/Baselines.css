@@ -147,6 +147,12 @@
   align-items: flex-start;
   font-size: var(--fs-ui);
 }
+/* The app's checkbox and radio (FIX-44): the brand colour, not the
+   browser's blue, as the data tables do. */
+.bl-check input,
+.bl-radio input {
+  accent-color: var(--color-navy-500);
+}
 .bl-radio small {
   display: block;
   color: var(--color-text-secondary);

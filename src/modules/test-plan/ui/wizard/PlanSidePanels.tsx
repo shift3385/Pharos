@@ -67,12 +67,17 @@ export function PlanStatusPanel({
           <dd className="t-id">v{version}</dd>
           {status === "approved" && approval && (
             <>
-              <dt>{t("testPlan.approval.by")}</dt>
-              {/* Wraps, never cut: a name plus «aprobación propia» is wider
-                  than the panel at 1440 px (FIX-40). */}
+              <dt className="tpw-facts__full">{t("testPlan.approval.by")}</dt>
+              {/* Never cut (FIX-40) and the name never broken (FIX-44): the
+                  name keeps its line, «aprobación propia» goes on the next. */}
               <dd className="tpw-facts__wrap" data-testid="plan-approved-by">
-                {approval.byName}
-                {approval.selfApproved && ` · ${t("testPlan.review.banner.selfApproved")}`}
+                <span className="tpw-facts__name">{approval.byName.replace(/ /g, "\u00a0")}</span>
+                {approval.selfApproved && (
+                  <span className="tpw-facts__note">
+                    <span className="sr-only"> · </span>
+                    {t("testPlan.review.banner.selfApproved")}
+                  </span>
+                )}
               </dd>
               <dt>{t("testPlan.approval.at")}</dt>
               <dd>{approvedAt}</dd>
@@ -145,10 +150,14 @@ export function PlanIoMenu({
   onImport,
   onExportPdf,
   onExportXlsx,
+  exportHistory,
 }: {
   onImport: () => void;
   onExportPdf: () => void;
   onExportXlsx: () => void;
+  /** The project's «Historial en el plan exportado» (PLN-02), named at the
+   *  menu's foot so the person knows what the document carries. */
+  exportHistory: "current" | "revisions";
 }) {
   const { t } = useTranslation();
   const mobile = useBreakpoint() === "mobile";
@@ -183,6 +192,10 @@ export function PlanIoMenu({
         <MenuItem icon={FileSpreadsheet} onSelect={onExportXlsx} description={t("testPlan.io.exportXlsxDesc")}>
           {t("testPlan.io.exportXlsx")}
         </MenuItem>
+        <MenuSeparator />
+        <div className="tpw-io-menu__foot" role="presentation" data-testid="plan-io-history">
+          {t("testPlan.io.history", { mode: t(`testPlan.historyMode.${exportHistory}`) })}
+        </div>
       </ResponsiveMenu>
     </>
   );

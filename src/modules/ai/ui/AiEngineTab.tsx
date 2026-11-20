@@ -1,3 +1,5 @@
+import { formatPercent } from "@shared/i18n/percent";
+import { formatBytes } from "@shared/i18n/numbers";
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -5,7 +7,6 @@ import {
   Download,
   Eye,
   EyeOff,
-  Info,
   LoaderCircle,
   PlugZap,
   RefreshCw,
@@ -62,7 +63,7 @@ import { askClearWebCopy } from "./clearWebCopy";
 import { followKeyChange } from "../api/webAccess";
 import "./Ai.css";
 
-const mb = (bytes: number) => `${(bytes / 1048576).toFixed(1)} MB`;
+const mb = (bytes: number) => formatBytes(bytes);
 
 /** The provider's own message (Rust returns a string; fetch errors an Error). */
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -373,7 +374,9 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
   return (
     <div className="ai-tab">
       {confirmDialog}
-      <div className="ai-tab__mode">
+      {/* The mode row has a surface of its own over the background photo
+          (FIX-46), and «Dónde se usa la IA» is its help behind «?». */}
+      <div className="ai-tab__mode ui-backdrop">
         <span className="adm-label" aria-hidden="true">
           {t("ai.mode")}
         </span>
@@ -384,6 +387,9 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
           onChange={(mode) => update({ mode })}
           options={modes.map((m) => ({ value: m, label: t(`ai.modeOption.${m}`) }))}
         />
+        <InfoTip id={`${uid}-where`} label={t("ai.whereUsed.title")}>
+          {t("ai.whereUsed.body")} {t("ai.neverBlocks")}
+        </InfoTip>
       </div>
 
       <div className="ai-tab__grid">
@@ -682,7 +688,7 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
                   <span style={{ width: `${pull.percent ?? 0}%` }} />
                 </div>
                 <p className="adm-hint">
-                  {pull.status} {pull.percent != null ? `${pull.percent}%` : ""}
+                  {pull.status} {pull.percent != null ? formatPercent(pull.percent, { digits: 0 }) : ""}
                 </p>
                 <p className="ai-warn">{t("ai.dontClose")}</p>
               </div>
@@ -702,16 +708,6 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
             </div>
           </section>
 
-          <section className="adm-card adm-card--info" aria-labelledby={`${uid}-where`}>
-            <Info size={18} className="adm-card__icon" aria-hidden="true" />
-            <div className="adm-card__titles">
-              <h2 id={`${uid}-where`} className="t-card-title">
-                {t("ai.whereUsed.title")}
-              </h2>
-              <p className="adm-hint">{t("ai.whereUsed.body")}</p>
-              <p className="adm-hint">{t("ai.neverBlocks")}</p>
-            </div>
-          </section>
         </div>
       </div>
 

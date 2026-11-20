@@ -8,6 +8,7 @@ import type {
 } from "@shared/contracts/contract";
 import { Dialog } from "@shared/ui/Dialog";
 import { FormField } from "@shared/ui/FormField";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { FileInput } from "@shared/ui/FileInput";
 import { Select } from "@shared/ui/Select";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
@@ -22,6 +23,7 @@ import {
   type ReadReport,
 } from "../model/importFlow";
 import { importErrorKey } from "../model/importErrors";
+import { exampleCaseKey, runTitleOf } from "../model/runLabels";
 import "@shared/ui/ConfirmDialog.css";
 import "@shared/ui/buttons.css";
 import "./Runs.css";
@@ -37,12 +39,18 @@ type Step = "form" | "importing" | "done";
  *  will link before anything is written. */
 export function ImportReportDialog({
   projectId,
+  caseIdPrefix = "",
+  caseIdDigits = 3,
   userId,
   runs,
   onClose,
   onImported,
 }: {
   projectId: string;
+  /** The project's case key prefix and digits, for the example key in the
+   *  help («@PH-001»), never a key of another project (FIX-45). */
+  caseIdPrefix?: string;
+  caseIdDigits?: number;
   userId: string;
   runs: Run[];
   onClose: () => void;
@@ -109,10 +117,7 @@ export function ImportReportDialog({
       const r = await readReport(file);
       setReport(r);
       const run = r.parsed.doc.run;
-      setTitle(
-        (prev) =>
-          prev || [run.sourceTool, file.name].filter(Boolean).join(" · "),
-      );
+      setTitle((prev) => prev || runTitleOf(run.sourceTool, file.name));
       setBuild((prev) => prev || (run.build ?? ""));
       setCommit((prev) => prev || (run.commitSha ?? ""));
       setBranch((prev) => prev || (run.branch ?? ""));
@@ -186,20 +191,53 @@ export function ImportReportDialog({
     !!preview &&
     (kind === "new" || !!runId) &&
     (!duplicateInNew || allowDuplicate);
+  // Results, findings and metrics are each counted only when the report has
+  // them: «SARIF · 2 hallazgos», never «SARIF · 0 resultados» (FIX-45).
+  const parsedSummary = (r: ReadReport) => {
+    const { results, findings = [], metrics = [] } = r.parsed.doc;
+    return [
+      t(`runs.format.${r.parsed.format}`),
+      (results.length > 0 || (findings.length === 0 && metrics.length === 0)) &&
+        t("runs.import.parsed", { count: results.length }),
+      findings.length > 0 && t("findings.preview.findings", { count: findings.length }),
+      metrics.length > 0 && t("findings.preview.metrics", { count: metrics.length }),
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  };
+  // Statuses and attachments; nothing (no empty line) for findings only.
+  const statusLine = preview
+    ? [
+        ...Object.entries(preview.statuses).map(([s, n]) => `${t(`runs.status.${s}`)}: ${n}`),
+        preview.attachments > 0 && t("runs.import.attachments", { count: preview.attachments }),
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
   const needsFolder = report?.parsed.doc.attachments.some(
     (a) => a.path && !report.parsed.inline.has(a.ref),
   );
 
   return (
     <Dialog
-      className="cd rn-modal"
+      className="cd rn-modal rn-import"
       labelledBy={`${id}-title`}
+      describedBy={step !== "done" ? `${id}-intro` : undefined}
       onClose={onClose}
       dismissable={step !== "importing"}
     >
-      <h3 id={`${id}-title`} className="cd__title">
-        {t("runs.import.title")}
-      </h3>
+      <div className="rn-modal__head">
+        <h3 id={`${id}-title`} className="cd__title">
+          {t("runs.import.title")}
+        </h3>
+        {step !== "done" && (
+          <InfoTip id={`${id}-intro`} label={t("runs.import.title")}>
+            {t("runs.import.intro", {
+              key: exampleCaseKey(caseIdPrefix, caseIdDigits),
+            })}
+          </InfoTip>
+        )}
+      </div>
 
       {step === "done" && outcome ? (
         <div className="rn-done" role="status">
@@ -240,12 +278,13 @@ export function ImportReportDialog({
         </div>
       ) : (
         <>
-          <p className="cd__msg">{t("runs.import.intro")}</p>
+          {/* The form scrolls inside the dialog and the buttons below it stay
+              in view at any window height (FIX-45). */}
+          <div className="rn-modal__body" data-testid="import-body">
           <div className="rn-form">
             <FormField
               label={t("runs.import.file")}
-              hint={t("runs.import.fileHint")}
-              info={t("runs.import.formats")}
+              info={`${t("runs.import.fileHint")} ${t("runs.import.formats")}`}
               required
             >
               {(p) => (
@@ -261,17 +300,14 @@ export function ImportReportDialog({
               <p className="tp-field__hint">{t("runs.import.reading")}</p>
             )}
             {report && (
-              <p className="tp-field__hint">
-                {t(`runs.format.${report.parsed.format}`)} ·{" "}
-                {t("runs.import.parsed", {
-                  count: report.parsed.doc.results.length,
-                })}
+              <p className="tp-field__hint" data-testid="import-parsed">
+                {parsedSummary(report)}
               </p>
             )}
             {needsFolder && (
               <FormField
                 label={t("runs.import.folder")}
-                hint={t("runs.import.folderHint")}
+                info={t("runs.import.folderHint")}
               >
                 {(p) => (
                   <FileInput
@@ -359,7 +395,7 @@ export function ImportReportDialog({
                 {openCycles.length > 0 && (
                   <FormField
                     label={t("runs.import.cycle")}
-                    hint={t("runs.import.cycleHint")}
+                    info={t("runs.import.cycleHint")}
                     className="tp-field rn-grid__wide"
                   >
                     {(p) => (
@@ -449,13 +485,7 @@ export function ImportReportDialog({
                     ` · ${t("findings.preview.thresholdsFailed", { count: preview.thresholdsFailed })}`}
                 </p>
               )}
-              <p className="tp-field__hint">
-                {Object.entries(preview.statuses)
-                  .map(([s, n]) => `${t(`runs.status.${s}`)}: ${n}`)
-                  .join(" · ")}
-                {preview.attachments > 0 &&
-                  ` · ${t("runs.import.attachments", { count: preview.attachments })}`}
-              </p>
+              {statusLine && <p className="tp-field__hint">{statusLine}</p>}
               {report?.parsed.warnings.map((w) => (
                 <p key={w.code} className="rn-warn">
                   {t(`runs.import.warning.${w.code}`)}
@@ -523,6 +553,7 @@ export function ImportReportDialog({
                 : t("runs.import.importing")}
             </p>
           )}
+          </div>
 
           <div className="cd__actions">
             <button

@@ -30,6 +30,16 @@
   margin: 0;
   color: var(--color-text-secondary);
 }
+/* Name, owner, workspace scope and status read whole on one line (FIX-46:
+   «CI de / Pharos», «Liomar / QA»); the scopes give way instead, their chips
+   wrapping. A narrow window scrolls the table. */
+.int-nowrap,
+.int-pill {
+  white-space: nowrap;
+}
+.int-scopes {
+  min-width: 140px;
+}
 .int-num {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;

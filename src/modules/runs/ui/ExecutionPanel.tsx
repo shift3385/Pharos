@@ -25,8 +25,10 @@ import {
   X,
 } from "lucide-react";
 import {
+  caseLabel,
   createDefectFromResult,
   DefectEditor,
+  originLabel,
   type DefectInput,
   type LinkableItem,
 } from "@modules/defects";
@@ -70,6 +72,7 @@ import {
 } from "../model/execution";
 import { instantOf, statusTone } from "../model/types";
 import { webDrafts } from "../model/webDrafts";
+import { localStamp } from "../model/runLabels";
 import "@shared/ui/buttons.css";
 import "@shared/ui/ConfirmDialog.css";
 import "./Execution.css";
@@ -436,7 +439,7 @@ export function ExecutionPanel({
         const name =
           pasted || !f.name
             ? t("execution.captureName", {
-                at: new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-"),
+                at: localStamp(new Date()),
               }) + extOf(f.type)
             : f.name;
         const kind = pasted || f.type.startsWith("image/") ? "screenshot" : "evidence";
@@ -519,7 +522,8 @@ export function ExecutionPanel({
       const d = await createDefectFromResult(resultId, userId, stepId);
       setDefect({
         draft: d,
-        label: [runKey, detail?.caseKey].filter(Boolean).join(" · "),
+        // «RUN · clave · título», as «Desde un resultado» names it (FIX-43).
+        label: originLabel(runKey, detail?.caseKey ? caseLabel(detail.caseKey, detail.caseTitle) : null),
       });
     } catch (e) {
       toast(errorText(e, t), "error");
@@ -1277,7 +1281,8 @@ function ShortcutsDialog({ paste, onClose }: { paste: boolean; onClose: () => vo
     ["T", t("execution.keys.timer")],
     ["Ctrl+V", t("execution.keys.paste")],
     ["Ctrl+Enter", t("execution.keys.save")],
-    ["Ctrl+Shift+N", t("execution.keys.nextItem")],
+    // The Shift key by its name on the user's keyboard («Mayús», FIX-45).
+    [`Ctrl+${t("execution.keys.shift")}+N`, t("execution.keys.nextItem")],
     ["?", t("execution.keys.help")],
   ];
   // Pasting a capture attaches a file: desktop only (SYNC-04b).

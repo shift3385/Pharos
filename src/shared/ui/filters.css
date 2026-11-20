@@ -46,8 +46,9 @@
   cursor: not-allowed;
 }
 
+/* The body font's tabular figures: a monospace slashed zero read as «θ»
+   (FIX-46). */
 .chips__count {
-  font-family: var(--font-mono);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);

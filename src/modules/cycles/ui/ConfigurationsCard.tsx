@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, MonitorSmartphone, MoreHorizontal, Plus } from "lucide-react";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { Menu, MenuItem, MenuSeparator } from "@shared/ui/Menu";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { Switch } from "@shared/ui/Switch";
@@ -178,9 +179,15 @@ export function ConfigurationsCard({ projectId, userId }: { projectId: string; u
     <section className="pj-card-box" aria-labelledby={titleId} data-testid="configurations-card">
       <div className="cy-card__head">
         <div className="pj-card-box__head">
-          <h2 id={titleId} className="pj-section-title">
-            {t("configurations.title")}
-          </h2>
+          {/* A one-line subtitle; what the labels are, behind «?» (FIX-45). */}
+          <div className="pj-card-box__title-row">
+            <h2 id={titleId} className="pj-section-title">
+              {t("configurations.title")}
+            </h2>
+            <InfoTip id={`${titleId}-labels`} label={t("configurations.title")}>
+              {t("configurations.labelsHelp")}
+            </InfoTip>
+          </div>
           <p className="pj-card-box__desc">{t("configurations.desc")}</p>
         </div>
         <button

@@ -19,6 +19,7 @@ import { membership, personalOf, type Queryable } from "../workspaces/members.js
 import { can } from "../workspaces/roles.js";
 import { API_SCOPES, SCOPE_CAPABILITY, type ApiScope } from "./scopes.js";
 import { hashToken, newToken, parseToken, type TokenKind } from "./tokenFormat.js";
+import { personNameSql } from "../auth/personName.js";
 
 /** Longest life of a token: one year (approved 2026-11-18, decision 4). */
 export const MAX_TOKEN_DAYS = 366;
@@ -123,7 +124,7 @@ interface Row {
 const SELECT = `
   SELECT t.id, t.kind, t.name, t.display_prefix, t.workspace_id, w.name AS workspace_name,
          t.project_id, p.payload->>'name' AS project_name, t.scopes, t.owner_user_id,
-         coalesce(nullif(u.display_name, ''), u.email) AS owner_name,
+         ${personNameSql("u")} AS owner_name,
          t.created_at, t.expires_at, t.last_used_at, t.last_used_ip, t.revoked_at, t.revoke_reason,
          u.disabled_at IS NOT NULL AS owner_disabled,
          (t.workspace_id IS NULL OR (w.deleted_at IS NULL AND EXISTS (

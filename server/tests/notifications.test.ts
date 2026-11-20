@@ -56,7 +56,7 @@ async function user(name: string): Promise<string> {
   const res = await app.inject({
     method: "POST",
     url: "/auth/register",
-    payload: { email: `${name}@pharos.dev`, password: "supersecret1", displayName: name, firstName: "A", lastName: "B" },
+    payload: { email: `${name}@pharos.dev`, password: "supersecret1", displayName: name, firstName: name.toUpperCase(), lastName: "Pérez" },
   });
   const body = res.json() as { accessToken: string; user: { id: string } };
   ids.set(name, body.user.id);
@@ -108,7 +108,8 @@ describe("/api/notifications (RED-W2)", () => {
     expect(first.items[0]).toMatchObject({
       kind: "defect.assigned",
       actorId: ids.get("ana"),
-      actorName: "ana",
+      // The official name, not the alias (GLOSARIO, FIX-43).
+      actorName: "ANA Pérez",
       projectId: "p-1",
       subject,
       readAt: null,
@@ -130,6 +131,20 @@ describe("/api/notifications (RED-W2)", () => {
     await send(teamApp, ana, input);
     await send(teamApp, ana, input);
     expect((await pull(teamApp, luis)).json().items).toHaveLength(1);
+  });
+
+  it("delivers a plan's review to its author (FIX-43)", async () => {
+    const ana = await user("ana");
+    const luis = await user("luis");
+    const plan = { entity: "test_plan", id: "tp-1", title: "Plan de pruebas" };
+    for (const kind of ["plan.approved", "plan.changes_requested"]) {
+      const res = await send(teamApp, ana, { kind, to: { userIds: [ids.get("luis")] }, subject: plan, dedupeKey: `tp-1:3:${kind}` });
+      expect(res.statusCode).toBe(200);
+    }
+    expect((await pull(teamApp, luis)).json().items.map((i: { kind: string }) => i.kind).sort()).toEqual([
+      "plan.approved",
+      "plan.changes_requested",
+    ]);
   });
 
   it("expands a workspace to its members, without the sender", async () => {

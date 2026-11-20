@@ -135,9 +135,15 @@
 .ex-start {
   align-self: flex-start;
 }
-/* Beside the executor the list is narrow: its filters wrap, never cut. */
+/* Beside the executor the list is narrow: its filters are compact, so the
+   five fit on one row of the 380 px column (FIX-45), and still wrap, never
+   cut, if a longer translation does not fit. */
 .ex-run[data-split="true"] .ex-items .chips {
   flex-wrap: wrap;
+}
+.ex-run[data-split="true"] .ex-items .chips__chip {
+  gap: 4px;
+  padding: 0 7px;
 }
 .ex-item-link {
   all: unset;

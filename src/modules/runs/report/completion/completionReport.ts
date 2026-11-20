@@ -12,7 +12,7 @@ import {
   type MetricOp,
 } from "@shared/metrics/catalog";
 import { decisionSection, type DecisionSection } from "../decisionSection";
-import { autoSummary, type ReportTable } from "../statusReport";
+import { autoSummary, runKeyList, type ReportTable } from "../statusReport";
 
 // The test completion report of a closed cycle (DOC-01, ISO/IEC/IEEE
 // 29119-3 «Test Completion Report», ADR-0044): eleven sections built from
@@ -235,8 +235,11 @@ const dayOf = (iso: string) => new Date(`${iso}T00:00:00`);
 
 /** The numbers as a first summary, with the verdict. */
 export function completionAutoSummary(s: ExecutionSummary, closure: CycleClosure, t: Translate): string {
+  // The criteria as the gate closed them: a manual one marked «Cumple» is
+  // met, as in the table of section 4 (FIX-45).
+  const met = closure.criteria.filter((c) => (c.state === "manual" ? c.manualMet === true : c.state === "met")).length;
   return [
-    autoSummary(s, t),
+    autoSummary(s, t, undefined, { met, all: closure.criteria.length }),
     t("completionReport.autoVerdict", { verdict: t(`gate.verdict.${closure.verdict}`) }),
   ].join(" ");
 }
@@ -288,7 +291,7 @@ export function buildCompletionReport(
       t("completionReport.field.buildEnv"),
       [ctx.cycle.build, ctx.cycle.environment].filter(Boolean).join(" · ") || "—",
     ],
-    [t("statusReport.field.runs"), s.runs.length ? s.runs.map((r) => r.runKey).join(", ") : "—"],
+    [t("statusReport.field.runs"), runKeyList(s.runs)],
     [t("statusReport.field.generated"), ctx.generatedAt.toLocaleString(lang)],
   ];
 
@@ -407,7 +410,7 @@ export function buildCompletionReport(
     });
   if (s.runs.length)
     items.push({
-      label: t("completionReport.deliverable.runs", { count: s.runs.length, keys: s.runs.map((r) => r.runKey).join(", ") }),
+      label: t("completionReport.deliverable.runs", { count: s.runs.length, keys: runKeyList(s.runs) }),
       key: null,
       fromPlan: false,
       delivered: true,

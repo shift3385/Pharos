@@ -61,7 +61,42 @@
 
 .ui-btn:disabled,
 .ui-btn[aria-disabled="true"] {
-  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* A disabled button stays readable (FIX-46): its label still says what it
+   would do («Aprobar versión 1.0», «Pensando…»). Instead of fading the whole
+   button (a pale orange with pale text), it turns neutral: the second
+   surface, the border colour and the secondary text, at full opacity; the
+   reason goes in a tooltip or a line beside it. One rule for the shared
+   buttons and for every module's primary (orange) button, so a new screen
+   cannot bring the faded look back. `button` raises it over the modules'
+   own `:disabled { opacity }` rules. */
+button.ui-btn:is(:disabled, [aria-disabled="true"]),
+button:is(
+    .cd__confirm,
+    .header-action[data-primary],
+    .err-boundary__primary,
+    .home-btn--primary,
+    .adm-btn--primary,
+    .assist__use,
+    .auth-form__submit,
+    .recovery-codes__done,
+    .recovery-dialog__primary,
+    .profile__save,
+    .pj-primary,
+    .tp-editor__save,
+    .tp__new,
+    .db-recovery__submit,
+    .auth-form__secondary,
+    .server-panel__secondary,
+    .cp__btn
+  ):is(:disabled, [aria-disabled="true"]) {
+  opacity: 1;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  box-shadow: none;
   cursor: not-allowed;
 }
 

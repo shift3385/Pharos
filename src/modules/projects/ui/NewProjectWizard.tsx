@@ -296,7 +296,8 @@ export function NewProjectWizard({
       ).map((part) =>
         t(`projects.wizard.summaryPart.${part}`, {
           digits: source.caseIdDigits,
-          mode: historyMode(source),
+          // Inside the sentence the value is lower case: «(solo la versión vigente)» (FIX-45).
+          mode: historyMode(source).toLocaleLowerCase(i18n.resolvedLanguage),
           ...projectRiskBands(source),
         }),
       )

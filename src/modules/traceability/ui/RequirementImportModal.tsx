@@ -66,7 +66,7 @@ export function RequirementImportModal({
               .join(" · ")}
           </p>
 
-          <div className="tr-table-wrap">
+          <div className="tr-table-wrap tr-table-wrap--preview">
             <table className="tr-table" aria-label={t("traceability.import.preview")}>
               <thead>
                 <tr>

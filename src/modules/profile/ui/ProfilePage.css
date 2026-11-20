@@ -28,8 +28,9 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  /* The cards take the page head's width: a narrower column left a ragged
+     right edge under the head card (FIX-46). */
   width: 100%;
-  max-width: 880px;
 }
 
 /* Cards shared by the sections of this page. */
@@ -91,6 +92,12 @@
 .profile__name {
   font-size: 18px;
   font-weight: var(--fw-semibold);
+}
+
+/* The official name under the alias (GLOSARIO, FIX-43). */
+.profile__official {
+  font-size: 13px;
+  color: var(--color-text-secondary);
 }
 
 .profile__email {
@@ -234,7 +241,7 @@
 
 .profile__audit dd {
   margin: 0;
-  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-secondary);
 }
 

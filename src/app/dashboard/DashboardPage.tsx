@@ -165,9 +165,7 @@ export function DashboardPage() {
     weekday: "long",
     day: "numeric",
     month: "long",
-  })
-    .format(today)
-    .replace(/^./, (c) => c.toUpperCase());
+  }).format(today); // Lower-case weekday in Spanish, as in the data table (FIX-46).
 
   // ---- Customizing the board ----
 
@@ -468,7 +466,7 @@ export function DashboardPage() {
   const upcoming = (
     <UpcomingTests projects={list} state={metrics} onRetry={retry} />
   );
-  const trend = <TrendCard projects={list} state={metrics} onRetry={retry} />;
+  const trend = <TrendCard projects={list} state={metrics} onRetry={retry} preferredId={exitProject?.id ?? null} />;
 
   const content: Record<GadgetId, GadgetView["content"]> = {
     kpiProjects: <KpiCard id="kpiProjects" {...kpiProps} compact={view === "desktop"} />,

@@ -1,3 +1,4 @@
+import { formatPercent } from "@shared/i18n/percent";
 import { useTranslation } from "react-i18next";
 import { percents, type ProgressSummary } from "../model/types";
 
@@ -32,7 +33,7 @@ export function ProgressBar({ summary }: { summary: ProgressSummary }) {
         <span className="cy-progress__seg" data-tone="info" style={{ width: `${share(rest)}%` }} />
       </span>
       <span className="cy-progress__text">
-        {summary.total === 0 ? t("cycles.progress.none") : `${summary.executed}/${summary.total} · ${passed} %`}
+        {summary.total === 0 ? t("cycles.progress.none") : `${summary.executed}/${summary.total} · ${formatPercent(passed, { digits: 0 })}`}
       </span>
     </span>
   );

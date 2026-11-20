@@ -63,16 +63,18 @@ describe("syncProfileNames", () => {
     revision: 2,
   };
 
+  beforeEach(() => localStorage.setItem("pharos.profile.account", "u"));
+
   it("sends the desktop's names when they are newer", async () => {
     invoke.mockResolvedValueOnce(local);
-    get.mockResolvedValue({ displayName: "Old", firstName: "Liomar", lastName: "R", updatedAt: "2026-11-10T00:00:00Z" });
+    get.mockResolvedValue({ id: "u", displayName: "Old", firstName: "Liomar", lastName: "R", updatedAt: "2026-11-10T00:00:00Z" });
     expect(await syncProfileNames()).toBe("sent");
     expect(patch).toHaveBeenCalledWith("/auth/me", { displayName: "Lio", firstName: "Liomar", lastName: "R" });
   });
 
   it("keeps the account's names here when they are newer", async () => {
     invoke.mockResolvedValueOnce(local);
-    get.mockResolvedValue({ displayName: "Liomar R.", firstName: "Liomar", lastName: "R", updatedAt: "2026-11-17T12:00:00Z" });
+    get.mockResolvedValue({ id: "u", displayName: "Liomar R.", firstName: "Liomar", lastName: "R", updatedAt: "2026-11-17T12:00:00Z" });
     expect(await syncProfileNames()).toBe("received");
     expect(invoke).toHaveBeenLastCalledWith("profile_upsert", {
       input: { displayName: "Liomar R.", firstName: "Liomar", lastName: "R", role: "test_manager" },
@@ -81,11 +83,43 @@ describe("syncProfileNames", () => {
 
   it("does nothing when they match, or offline", async () => {
     invoke.mockResolvedValueOnce(local);
-    get.mockResolvedValue({ displayName: "Lio", firstName: "Liomar", lastName: "R" });
+    get.mockResolvedValue({ id: "u", displayName: "Lio", firstName: "Liomar", lastName: "R" });
     expect(await syncProfileNames()).toBe("same");
     invoke.mockResolvedValueOnce(local);
     get.mockRejectedValue(new Error("offline"));
     expect(await syncProfileNames()).toBe("skipped");
     expect(patch).not.toHaveBeenCalled();
+  });
+
+  // FIX-46: two accounts on one installation. Liomar saved his names here;
+  // the admin signs in next: the admin's names stay on the server and
+  // replace the local ones, however new Liomar's are.
+  it("never sends one account's names to another account", async () => {
+    invoke.mockResolvedValueOnce(local);
+    get.mockResolvedValue({ id: "admin", displayName: "Administrador", firstName: "Admin", lastName: "Pharos", updatedAt: "2026-11-01T00:00:00Z" });
+    expect(await syncProfileNames()).toBe("received");
+    expect(patch).not.toHaveBeenCalled();
+    expect(invoke).toHaveBeenLastCalledWith("profile_upsert", {
+      input: { displayName: "Administrador", firstName: "Admin", lastName: "Pharos", role: "test_manager" },
+    });
+    expect(localStorage.getItem("pharos.profile.account")).toBe("admin");
+  });
+
+  it("takes the account's names when the owner of the local profile is unknown", async () => {
+    localStorage.removeItem("pharos.profile.account");
+    invoke.mockResolvedValueOnce(local);
+    get.mockResolvedValue({ id: "u", displayName: "Old", firstName: "Liomar", lastName: "R", updatedAt: "2026-11-10T00:00:00Z" });
+    expect(await syncProfileNames()).toBe("received");
+    expect(patch).not.toHaveBeenCalled();
+    expect(localStorage.getItem("pharos.profile.account")).toBe("u");
+  });
+
+  it("creates the local profile from the account when there is none", async () => {
+    invoke.mockResolvedValueOnce(null);
+    get.mockResolvedValue({ id: "u", displayName: "Lio", firstName: "Liomar", lastName: "R" });
+    expect(await syncProfileNames()).toBe("received");
+    expect(invoke).toHaveBeenLastCalledWith("profile_upsert", {
+      input: { displayName: "Lio", firstName: "Liomar", lastName: "R", role: undefined },
+    });
   });
 });

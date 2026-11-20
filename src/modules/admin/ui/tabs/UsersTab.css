@@ -175,3 +175,8 @@
   border-radius: 8px;
   font-size: 13.5px;
 }
+
+/* A date and a count read whole («20 nov 2026», «10 de 10», FIX-46). */
+.usr-nowrap {
+  white-space: nowrap;
+}

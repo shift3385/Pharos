@@ -214,6 +214,8 @@
 .tpl-form__field select,
 .tpl-form__field textarea {
   padding: var(--space-2) var(--space-3);
+  /* The body font: a textarea defaults to the browser's monospace (FIX-46). */
+  font-family: inherit;
   font-size: var(--fs-ui);
   color: var(--color-text-primary);
   background: var(--color-surface-2);

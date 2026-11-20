@@ -6,6 +6,7 @@ import { renderWithProviders, i18n } from "@test/utils";
 import { expectNoAxeViolations } from "@test/axe";
 import { setViewportWidth } from "@test/viewport";
 import { Dialog } from "./Dialog";
+import { prefixLabel } from "./prefixLabel";
 import { ProjectSelect, type ProjectChoice } from "./ProjectPicker";
 
 const PROJECTS: ProjectChoice[] = [
@@ -41,7 +42,13 @@ describe("ProjectSelect", () => {
   it("shows the chosen project with its prefix, and names both", () => {
     renderWithProviders(<Harness />);
     const trigger = screen.getByRole("button", { name: "Proyecto: Banca Móvil" });
-    expect(trigger).toHaveTextContent("BM_Banca Móvil");
+    // FIX-46: the prefix without its separator («PH», not «PH-»).
+    expect(trigger).toHaveTextContent("BMBanca Móvil");
+    expect(trigger).not.toHaveTextContent("BM_");
+  });
+
+  it("shows a prefix without the separator its keys use (FIX-46)", () => {
+    expect([prefixLabel("PH-"), prefixLabel("API-"), prefixLabel("BM_"), prefixLabel(undefined)]).toEqual(["PH", "API", "BM", ""]);
   });
 
   it("opens in the search field, with the chosen one checked", async () => {

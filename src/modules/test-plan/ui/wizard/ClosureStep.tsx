@@ -49,12 +49,11 @@ export function ClosureStep({ form, set }: Pick<StepProps, "form" | "set">) {
 
   return (
     <div className="tp-pair-field tpw-closure" role="group" aria-label={t("testPlan.step.closure")} data-testid="plan-closure">
-      <p className="tp__muted tpw-closure__hint">{t("testPlan.closureLink.hint")}</p>
       {items.length > 0 && (
         <>
         <div className="tpw-closure__head" aria-hidden="true">
           <span>{t("testPlan.criterionCol")}</span>
-          <span>{t("testPlan.metricCol")}</span>
+          <span>{t("testPlan.closureLink.target")}</span>
           <span>{t("testPlan.closureLink.label")}</span>
         </div>
         <ol className="tpw-closure__list">
@@ -84,7 +83,7 @@ export function ClosureStep({ form, set }: Pick<StepProps, "form" | "set">) {
                   </label>
                   <label className="tp-pair-field__cell">
                     <span className="tp-pair-field__label">
-                      {t("testPlan.metricCol")}
+                      {t("testPlan.closureLink.target")}
                       <span className="sr-only"> · {row}</span>
                     </span>
                     <TextArea
@@ -97,6 +96,11 @@ export function ClosureStep({ form, set }: Pick<StepProps, "form" | "set">) {
                 </div>
                 <div className="tpw-closure__controls">
                   <div className="tp-pair-field__cell tpw-closure__link">
+                    {/* Its name, shown when the column heads are not (a
+                        narrow step): the select had no visible label. */}
+                    <span className="tp-pair-field__label" aria-hidden="true">
+                      {t("testPlan.closureLink.label")}
+                    </span>
                     <Select
                       value={linked ? c.metricId! : NONE}
                       onChange={(v) => link(i, v)}

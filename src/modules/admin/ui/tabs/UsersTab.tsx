@@ -255,8 +255,8 @@ export function UsersTab() {
                         )}
                       </td>
                       <td>{u.email}</td>
-                      <td>{date(u.createdAt)}</td>
-                      <td>
+                      <td className="usr-nowrap">{date(u.createdAt)}</td>
+                      <td className="usr-nowrap">
                         {u.recoveryCodes.total === 0
                           ? t("admin.users.noCodes")
                           : t("admin.users.codesLeft", {

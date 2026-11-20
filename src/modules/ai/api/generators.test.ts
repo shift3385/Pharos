@@ -85,6 +85,9 @@ describe("cases from a requirement (IA-05) — prompt", () => {
     const [system, user] = buildCasesFromRequirementMessages(req, "es");
     expect(system.content).toContain("Spanish");
     expect(system.content).toContain("ONE JSON object");
+    // Result states by the app's Spanish names, not «passed, failed» (FIX-45).
+    expect(system.content).toContain("pasa, falla, bloqueado, omitido");
+    expect(buildCasesFromRequirementMessages(req, "en")[0].content).not.toContain("pasa, falla");
     expect(user.content).toContain("<data>");
     expect(user.content).toContain("Requirement REQ-007: Login with email and password");
     expect(user.content).toContain("Five failed attempts");

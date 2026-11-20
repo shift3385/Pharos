@@ -125,7 +125,7 @@ async function reachReview(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: "Continue" }));
   const notice = await screen.findByTestId("ai-send-notice");
   expect(notice).toHaveTextContent("The content leaves this device for Claude.");
-  expect(notice).toHaveTextContent("2 files (≈ 24 tokens) will be sent in 2 calls.");
+  expect(notice).toHaveTextContent("2 files (≈ 24 tokens, counted on the text as read) will be sent in 2 calls.");
   expect(screen.getByText(/1 line that looks like a secret/)).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Send and analyse" }));
   await screen.findByTestId("req-proposals");

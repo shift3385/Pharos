@@ -226,7 +226,7 @@ export function PlanReviewControls({
           onConfirm={() => void run("send")}
           onCancel={() => setOpen(null)}
         >
-          <label className="tpw-review__field" htmlFor={commentId}>
+          <label className="tp-field tpw-review__field" htmlFor={commentId}>
             <span>{t("testPlan.review.noteLabel")}</span>
             <TextArea id={commentId} size="short" value={comment} onChange={(e) => setComment(e.target.value)} />
           </label>
@@ -241,7 +241,7 @@ export function PlanReviewControls({
           onConfirm={() => void run("return")}
           onCancel={() => setOpen(null)}
         >
-          <label className="tpw-review__field" htmlFor={commentId}>
+          <label className="tp-field tpw-review__field" htmlFor={commentId}>
             <span>{t("testPlan.review.commentLabel")}</span>
             <TextArea
               id={commentId}

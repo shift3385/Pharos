@@ -1,7 +1,8 @@
 import { useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { ArrowLeft, Info, ListPlus, Lock, Pencil, Play, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowLeft, ListPlus, Lock, Pencil, Play, RotateCcw, Trash2 } from "lucide-react";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { useAuth } from "@modules/auth";
 import type { FindingView, MetricView, ResultView, RunItemRow, RunOverview } from "@shared/contracts/contract";
 import { isTauri } from "@shared/platform";
@@ -383,7 +384,8 @@ export function RunDetail({
       header: t("execution.run.attempts"),
       width: "88px",
       minView: "desktop",
-      cell: (r) => r.attempts,
+      // An item not executed yet has no attempts to count (FIX-45).
+      cell: (r) => (r.attempts > 0 ? r.attempts : "—"),
     },
   ];
 
@@ -468,6 +470,11 @@ export function RunDetail({
               {t(`runs.runStatus.${run.status}`, run.status)}
             </StatusPill>
             <StatusPill tone="neutral">{t(`runs.trigger.${run.trigger}`, run.trigger)}</StatusPill>
+            {/* Where the evidence is kept: help behind «?», not a standing
+                line on every run (FIX-45). */}
+            <InfoTip id="ex-evidence-note" label={t("execution.run.evidenceInfo")}>
+              {isTauri() ? t("execution.evidenceLocal") : t("execution.web.note")}
+            </InfoTip>
           </div>
           <dl className="ex-meta">
             {meta.map((m) => (
@@ -477,6 +484,9 @@ export function RunDetail({
               </div>
             ))}
           </dl>
+          {/* A run of findings or metrics only has nothing to execute: no
+              empty «0/0 ejecutados» bar (FIX-45). */}
+          {c.total > 0 && (
           <div className="ex-progress">
             <span
               className="ex-progress__track"
@@ -502,10 +512,7 @@ export function RunDetail({
               {t("execution.run.progress", { executed, total: c.total })}
             </span>
           </div>
-          <p className="tp-field__hint ex-evidence-note">
-            <Info size={14} aria-hidden="true" />{" "}
-            {isTauri() ? t("execution.evidenceLocal") : t("execution.web.note")}
-          </p>
+          )}
         </header>
       )}
 

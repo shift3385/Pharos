@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { parseStamp } from "@shared/time/stamp";
 import { useTranslation } from "react-i18next";
 import { Dialog } from "./Dialog";
 import { preview, type DetectionRow } from "@shared/import/xlsx";
@@ -25,8 +26,14 @@ export function ImportReportModal({
   onApply: () => void;
   onCancel: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const id = useId();
+  // A detected date reads as the app writes dates («16 nov 2026»), not in ISO
+  // (FIX-46).
+  const shown = (v: string) =>
+    /^\d{4}-\d{2}-\d{2}$/.test(v)
+      ? new Intl.DateTimeFormat(i18n.resolvedLanguage, { dateStyle: "medium", timeZone: "UTC" }).format(parseStamp(`${v} 00:00`))
+      : v;
   const ratio = total > 0 ? Math.round((done / total) * 100) : 0;
   const icon: Record<DetectionRow["status"], string> = {
     filled: "✓",
@@ -56,24 +63,30 @@ export function ImportReportModal({
           : t("importReport.doneMsg")}
       </p>
 
-      <ul className="imp__list">
-        {rows.map((r, i) => (
-          <li key={i} className="imp__row" data-status={r.status}>
-            <span className="imp__icon" aria-hidden="true">{icon[r.status]}</span>
-            <span className="imp__label">{t(r.labelKey)}</span>
-            <span className="imp__value">
-              {r.status === "notFound"
-                ? t("importReport.notFound")
-                : r.count != null
-                  ? t("importReport.rows", { count: r.count })
-                  : r.previewKey
-                    ? t(r.previewKey)
-                    : r.previewItems?.length
-                      ? preview(r.previewItems.map((it) => (it.key ? t(it.key, { defaultValue: it.text }) : it.text)).join(", "))
-                      : (r.preview ?? t("importReport.blank"))}
-            </span>
-          </li>
-        ))}
+      <ul className="imp__list u-scroll-fade">
+        {rows.map((r, i) => {
+          const value =
+            r.status === "notFound"
+              ? t("importReport.notFound")
+              : r.count != null
+                ? t("importReport.rows", { count: r.count })
+                : r.previewKey
+                  ? t(r.previewKey)
+                  : r.previewItems?.length
+                    ? preview(r.previewItems.map((it) => (it.key ? t(it.key, { defaultValue: it.text }) : it.text)).join(", "))
+                    : r.preview
+                      ? shown(r.preview)
+                      : t("importReport.blank");
+          return (
+            <li key={i} className="imp__row" data-status={r.status}>
+              <span className="imp__icon" aria-hidden="true">{icon[r.status]}</span>
+              <span className="imp__label">{t(r.labelKey)}</span>
+              <span className="imp__value" title={value}>
+                {value}
+              </span>
+            </li>
+          );
+        })}
       </ul>
 
       <div className="cd__actions">

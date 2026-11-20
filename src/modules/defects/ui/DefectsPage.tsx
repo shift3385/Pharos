@@ -18,6 +18,7 @@ import { matches, type StatusFilter } from "../model/filter";
 import { DEFECT_SEVERITIES, type Defect, type DefectInput, type LinkableItem, type ResultCandidate } from "../model/types";
 import { DefectBoard } from "./DefectBoard";
 import { DefectEditor } from "./DefectEditor";
+import { originLabel, resultName } from "../model/resultName";
 import { ResultPickerDialog } from "./ResultPickerDialog";
 import { SeverityPill, StatusBadge } from "./badges";
 import { PRIORITY_TONE } from "./tones";
@@ -108,6 +109,7 @@ export function DefectsPage({
   );
   const statusCount = (s: StatusFilter) => defects.filter((d) => matches(d, s, severities, query)).length;
   const caseKey = useMemo(() => new Map(cases.map((c) => [c.id, c.key])), [cases]);
+  const caseById = useMemo(() => new Map(cases.map((c) => [c.id, c])), [cases]);
   const fromResults = capabilities.results();
 
   const actions = (
@@ -131,7 +133,8 @@ export function DefectsPage({
     setPicking(false);
     try {
       const draft = await defectsApi.draftFromResult(r.resultId, userId);
-      setEditing({ defect: null, draft, fromLabel: `${r.runKey} · ${r.caseKey ?? r.testKey}` });
+      // The banner names the result as the picker did: «clave · título» (FIX-43).
+      setEditing({ defect: null, draft, fromLabel: originLabel(r.runKey, resultName(r, caseById)) });
     } catch (e) {
       toast(t("defects.saveFailed", { reason: e instanceof Error ? e.message : String(e) }));
     }
@@ -211,7 +214,7 @@ export function DefectsPage({
     {
       id: "cases",
       header: t("defects.column.cases"),
-      width: "minmax(0,1fr)",
+      width: "minmax(0,0.8fr)",
       minView: "desktop",
       cell: (d) => (
         <span className="df-cases">{d.caseIds.map((id) => caseKey.get(id) ?? "—").join(", ") || "—"}</span>

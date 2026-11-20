@@ -66,10 +66,14 @@ export function TrendCard({
   projects,
   state,
   onRetry,
+  preferredId = null,
 }: {
   projects: HomeProject[];
   state: MetricsState;
   onRetry: () => void;
+  /** The project «Criterios de salida» shows: the one to open on when no
+   *  project has a cycle yet (FIX-46). */
+  preferredId?: string | null;
 }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.resolvedLanguage;
@@ -80,7 +84,7 @@ export function TrendCard({
   const [chosen, setChosen] = useState<string | null>(null);
   const [kind, setKind] = useState<MetricKind>("passRate");
   const pm = byProject(state.data);
-  const project = trendProject(projects, chosen, (id) => pm.get(id)?.trend ?? []);
+  const project = trendProject(projects, chosen, (id) => pm.get(id)?.trend ?? [], preferredId);
   const metrics = project ? pm.get(project.id) : undefined;
   const points = metrics?.trend ?? [];
   const series = trendSeries(points, kind);
@@ -135,6 +139,8 @@ export function TrendCard({
             data-testid="home-trend-project"
           />
         )}
+        {/* With no project there is nothing to choose (FIX-46). */}
+        {projects.length > 0 && (
         <Select
           aria-label={t("dashboard.trend.metric")}
           value={kind}
@@ -142,6 +148,7 @@ export function TrendCard({
           options={TREND_KINDS.map((k) => ({ value: k, label: t(metricLabelKey(k)) }))}
           data-testid="home-trend-metric"
         />
+        )}
       </div>
 
       {!ready ? (
@@ -152,7 +159,7 @@ export function TrendCard({
         )
       ) : series.length === 0 ? (
         <p className="home-empty home-empty--left" data-testid="home-trend-empty">
-          {t("dashboard.trend.empty")}
+          {projects.length === 0 ? t("dashboard.trend.noProjects") : t("dashboard.trend.empty")}
         </p>
       ) : (
         <div className={`home-trend__body${showSide ? "" : " home-trend__body--narrow"}`}>

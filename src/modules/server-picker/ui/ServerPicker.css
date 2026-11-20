@@ -34,14 +34,14 @@
   color: var(--color-text-secondary);
 }
 
+/* The address is never cut (FIX-46: «Este equipo (localho…» on a phone):
+   in a narrow window it wraps, at a space first. */
 .server-line__host {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
   font-family: var(--font-mono);
   font-size: 13px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .server-line__lock {
@@ -108,10 +108,12 @@
   border-color: var(--color-warning);
 }
 
+/* As wide as the sign-in form it replaces (FIX-46). */
 .server-panel {
   display: grid;
   gap: var(--space-4);
   width: 100%;
+  max-width: 460px;
 }
 
 .server-panel__input {
@@ -171,8 +173,12 @@
   flex-wrap: wrap;
   gap: var(--space-2);
 }
-.server-panel__buttons > * {
-  flex: 1 1 auto;
+/* Two equal buttons, each with room around its label (FIX-46: «Conectar»
+   touched its edges beside a wide «Cancelar»). */
+.server-panel__buttons > button {
+  flex: 1 1 0;
+  min-width: max-content;
+  padding-inline: 18px;
 }
 
 .server-panel__secondary {

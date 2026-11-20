@@ -6,6 +6,8 @@
  * The class is doubled so these sizes win over each module's
  * `.x textarea { … }` rules, which keep their colours, borders and widths. */
 .ui-textarea.ui-textarea {
+  /* The body font, never the browser's monospace (FIX-46). */
+  font-family: inherit;
   /* Padding plus a 1 px border, top and bottom. */
   --ta-chrome: calc(2 * var(--space-2) + 2px);
   --ta-less: 0;

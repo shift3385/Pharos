@@ -22,3 +22,19 @@ export function tokenFailure(t: TFunction, e: unknown): string {
         : t("integrations.errors.generic");
   }
 }
+
+const DELIVERY: [RegExp, string][] = [
+  [/ENOTFOUND|EAI_AGAIN/i, "notFound"],
+  [/ECONNREFUSED/i, "refused"],
+  [/ETIMEDOUT|ESOCKETTIMEDOUT|timeout|aborted/i, "timeout"],
+  [/CERT|SSL|TLS/i, "certificate"],
+  [/ECONNRESET|EPIPE|socket hang up/i, "reset"],
+];
+
+/** A webhook delivery's network error in words, the raw code after it in
+ *  brackets for whoever has to look it up (FIX-46: «ENOTFOUND» alone). An
+ *  error it does not know is shown as it came. */
+export function deliveryFailure(t: TFunction, error: string): string {
+  const hit = DELIVERY.find(([re]) => re.test(error));
+  return hit ? t(`integrations.webhooks.deliveryError.${hit[1]}`, { code: error }) : error;
+}

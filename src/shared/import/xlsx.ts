@@ -56,7 +56,9 @@ export const splitLines = (v: string): string[] =>
 export const splitItems = (v: string): string[] =>
   v.split(/\r?\n|[,;]/).map((s) => s.trim()).filter(Boolean);
 
-export const preview = (s: string, n = 48): string =>
+/** A long value, cut at a word near `n`: the import report shows it on up to
+ *  two lines (FIX-46: 48 characters cut almost every value). */
+export const preview = (s: string, n = 120): string =>
   s.length > n ? `${s.slice(0, n).trim()}…` : s;
 
 /** Builds a normalized-label → key map from one or more i18n label dictionaries. */

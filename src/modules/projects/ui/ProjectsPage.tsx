@@ -1,3 +1,4 @@
+import { formatRatio } from "@shared/i18n/percent";
 import { useEffect, useMemo, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
@@ -202,7 +203,7 @@ function ProjectList() {
   // «Ejecutado» (NC-021): cases with a final result over the project's cases.
   const executedText = (row: ProjectRow) => {
     const share = executedShare(row);
-    return share === null ? "—" : `${Math.round(share * 100)} %`;
+    return formatRatio(share, { lang, digits: 0 });
   };
   const executedTitle = (row: ProjectRow) =>
     row.execution && row.execution.total > 0

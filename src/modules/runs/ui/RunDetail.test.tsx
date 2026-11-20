@@ -58,7 +58,8 @@ vi.mock("@shared/platform", async (orig) => ({
 const defects = vi.hoisted(() => ({
   createDefectFromResult: vi.fn(),
 }));
-vi.mock("@modules/defects", () => ({
+vi.mock("@modules/defects", async () => ({
+  ...(await vi.importActual<typeof import("../../defects/model/resultName")>("../../defects/model/resultName")),
   createDefectFromResult: defects.createDefectFromResult,
   DefectEditor: ({
     fromLabel,
@@ -376,7 +377,7 @@ describe("run screen", () => {
     expect(defects.createDefectFromResult).toHaveBeenCalledWith("res1", "test-user", "S2");
     // NC-007: the editor gets the project's cases and requirements to link.
     expect(await screen.findByRole("region", { name: "defect editor" })).toHaveTextContent(
-      "RUN-007 · TC-001 · TC-003,REQ-001",
+      "RUN-007 · TC-001 · Pagar con tarjeta · TC-003,REQ-001", // «clave · título» (FIX-43)
     );
     await expectNoAxeViolations(container);
   });
@@ -475,12 +476,12 @@ describe("run screen", () => {
     const dialog = await screen.findByRole("dialog", { name: "Eliminar el run" });
     const hidden = await within(dialog).findByTestId("run-delete-hidden");
     expect(hidden).toHaveTextContent("2 elementos del run");
-    expect(hidden).toHaveTextContent("3 resultados registrados (no se borran a mano) de 1 importación");
+    expect(hidden).toHaveTextContent("3 resultados registrados de 1 importación");
     expect(hidden).toHaveTextContent("4 evidencias de esos resultados");
     expect(hidden).toHaveTextContent("1 borrador sin guardar se descarta");
     expect(hidden).toHaveTextContent("ciclo CYC-002 «Sprint 12» dejará de contar este run");
     expect(hidden).toHaveTextContent("el defecto conserva el vínculo hasta la purga");
-    expect(dialog).toHaveTextContent("la purga se los lleva con el run pasados");
+    expect(dialog).toHaveTextContent("van a la Papelera (Administración › General) y la purga se los lleva pasados");
     await expectNoAxeViolations(dialog);
     // Critical tier (NC-014): Escape does not dismiss it; only its buttons answer.
     await user.keyboard("{Escape}");
@@ -755,7 +756,13 @@ describe("an imported run (FIX-42)", () => {
     api.results.mockResolvedValue([]);
     renderRun("/projects/p/runs/r1");
     expect(await screen.findByText("Este run no tiene casos ni resultados.")).toBeInTheDocument();
-    expect(screen.getByText("0/0 ejecutados")).toBeInTheDocument();
+    // Nothing to execute: no empty «0/0 ejecutados» bar (FIX-45).
+    expect(screen.queryByText("0/0 ejecutados")).not.toBeInTheDocument();
+    // The evidence note is behind «?», still reachable by its id.
+    expect(screen.getByRole("button", { name: /Dónde se guardan las evidencias/ })).toBeInTheDocument();
+    expect(document.getElementById("ex-evidence-note")).toHaveTextContent(
+      "Las evidencias se guardan cifradas en este equipo",
+    );
   });
 });
 
@@ -965,6 +972,11 @@ describe("findings and metrics of a run (ING-06, F4)", () => {
     const panel = await screen.findByTestId("metrics-panel");
     expect(within(panel).getByTestId("metrics-thresholds")).toHaveTextContent("Umbrales cumplidos: 1 de 2.");
     expect(within(panel).getByTestId("metrics-thresholds")).toHaveTextContent("http_req_duration p(95)<500: 742 ms");
+    // FIX-45: k6's expression in code style, the aggregations in Spanish.
+    expect(within(panel).getByTestId("metrics-thresholds").querySelector("code")).toHaveTextContent("p(95)<500");
+    expect(within(panel).getAllByText("tasa").length).toBeGreaterThan(0);
+    expect(within(panel).queryByText("rate")).not.toBeInTheDocument();
+    expect(within(panel).getAllByText("p95").length).toBeGreaterThan(0);
     expect(within(panel).getByText("Incumplido")).toBeInTheDocument();
     expect(within(panel).getByRole("heading", { name: "Checks" })).toBeInTheDocument();
     expect(within(panel).getByText("::Pago::status es 200")).toBeInTheDocument();

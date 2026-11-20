@@ -20,6 +20,9 @@
   color: var(--color-text-secondary);
 }
 .imp__list {
+  /* No browser gutter before the marks (FIX-46). */
+  margin: 0;
+  padding-left: 0;
   list-style: none;
   max-height: 320px;
   overflow-y: auto;
@@ -30,9 +33,9 @@
 }
 .imp__row {
   display: grid;
-  grid-template-columns: 18px 1fr 1.2fr;
+  grid-template-columns: 18px minmax(0, 1fr) minmax(0, 1.4fr);
   gap: var(--space-2);
-  align-items: baseline;
+  align-items: start;
   padding: var(--space-1) 0;
   border-bottom: 1px solid var(--color-border);
   font-size: var(--fs-caption);
@@ -47,11 +50,15 @@
 .imp__label {
   color: var(--color-text-primary);
 }
+/* A value takes two lines before it is cut, and its tooltip has it all
+   (FIX-46: one line cut every value). */
 .imp__value {
-  color: var(--color-text-secondary);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: var(--color-text-secondary);
 }
 .imp__row[data-status="notFound"] .imp__value {
   color: var(--color-text-muted);

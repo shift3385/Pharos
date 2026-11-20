@@ -135,7 +135,7 @@ export function UserMenu({ variant }: { variant: "sidebar" | "rail" | "mobile" }
         {/* The server this desktop works with (SEC-10); it changes only from
             the sign-in screen, after signing out. */}
         {isTauri() && (
-          <MenuLabel>{t("server.connectedTo", { host: serverHost(server.info.origin) })}</MenuLabel>
+          <ConnectedTo host={serverHost(server.info.origin)} />
         )}
         <MenuItem icon={LogOut} tone="danger" onSelect={() => void logout()}>
           {t("auth.logout")}
@@ -143,5 +143,21 @@ export function UserMenu({ variant }: { variant: "sidebar" | "rail" | "mobile" }
       </ResponsiveMenu>
       {variant === "mobile" && workspace?.dialog}
     </div>
+  );
+}
+
+/** «Conectado a localhost:3146»: the label in capitals, the address as it is
+ *  typed (FIX-46). */
+function ConnectedTo({ host }: { host: string }) {
+  const { t } = useTranslation();
+  const [before, after = ""] = t("server.connectedTo", { host: "\u0000" }).split("\u0000");
+  return (
+    <MenuLabel>
+      {before}
+      <span className="menu__label-value" data-testid="connected-host">
+        {host}
+      </span>
+      {after}
+    </MenuLabel>
   );
 }

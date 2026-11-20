@@ -1,3 +1,4 @@
+import { WholeKeys } from "@shared/ui/WholeKeys";
 import { useEffect, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BadgeCheck, Download, FileCheck2, Save } from "lucide-react";
@@ -260,7 +261,9 @@ export function CompletionReportDialog({
       {list.map(([k, v]) => (
         <div key={k}>
           <dt>{k}</dt>
-          <dd>{v}</dd>
+          <dd>
+            <WholeKeys text={v} />
+          </dd>
         </div>
       ))}
     </dl>
@@ -294,7 +297,7 @@ export function CompletionReportDialog({
           </h3>
           <p className="cd__msg">
             {t("completionReport.subtitle")}
-            {report && <> · {report.documentId}</>}
+            {report && <> · <span className="t-key">{report.documentId}</span></>}
           </p>
         </header>
 

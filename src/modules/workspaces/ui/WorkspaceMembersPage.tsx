@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
-import { personName, useAuth } from "@modules/auth";
+import { aliasOf, personName, useAuth } from "@modules/auth";
 import { Alert } from "@shared/ui/Alert";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { Select } from "@shared/ui/Select";
 import { Switch } from "@shared/ui/Switch";
 import { TabPanel, Tabs } from "@shared/ui/Tabs";
@@ -19,7 +20,7 @@ import { InviteDialog } from "./InviteDialog";
 import { useWorkspace } from "./workspaceContext";
 import "./workspaces.css";
 
-// The one name of a person across the app (FIX-41).
+// A member by the official name, the alias below it (GLOSARIO, FIX-43).
 const nameOf = (m: Member) => personName(m);
 
 /** «Miembros y roles» (SYNC-07, boceto 2). Everyone sees the members; only a
@@ -129,7 +130,9 @@ export function WorkspaceMembersPage() {
 
   // Only active Test Managers count (SEC-12): a disabled one is not.
   const managers = (members ?? []).filter((m) => m.role === "test_manager" && !m.disabled).length;
-  const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(i18n.language) : "");
+  // The app's date format («20 nov 2026»), not «20/11/2026» (FIX-46).
+  const date = (iso: string | null) =>
+    iso ? new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date(iso)) : "";
 
   return (
     <section className="ws-page" aria-labelledby="ws-members-title">
@@ -137,7 +140,8 @@ export function WorkspaceMembersPage() {
       <div className="ws-page__top ui-backdrop">
       <header className="ws-page__head">
         <h1 id="ws-members-title" className="ws-page__title">
-          {t("workspaces.members.title", { name: workspace.name })}
+          {/* The workspace by name: the tabs say which part of it shows (FIX-46). */}
+          {workspace.name}
         </h1>
         {manager && tab === "members" && (
           <button type="button" className="ui-btn ui-btn--primary" onClick={() => setInviting(true)} data-testid="members-invite">
@@ -190,6 +194,11 @@ export function WorkspaceMembersPage() {
                 <tr key={m.userId} data-testid={`member-${m.userId}`} data-email={m.email}>
                   <td>
                     {nameOf(m)} {self && <span className="ui-badge">{t("workspaces.members.you")}</span>}
+                    {aliasOf(m) && (
+                      <small className="ws-member__alias" data-testid={`member-alias-${m.userId}`}>
+                        {aliasOf(m)}
+                      </small>
+                    )}
                     {m.disabled && (
                       <span className="ui-badge" title={t("workspaces.members.disabledHint")}>
                         {t("workspaces.members.disabled")}
@@ -242,9 +251,16 @@ export function WorkspaceMembersPage() {
       </div>
 
       <section className="ws-section" aria-labelledby="ws-rules" data-testid="workspace-rules">
-        <h2 id="ws-rules" className="ws-section__title">
-          {t("workspaces.rules.title")}
-        </h2>
+        {/* The rule's explanation is help behind «?», never a standing
+            paragraph (FIX-46); the switch is still described by it. */}
+        <div className="ws-section__titleline">
+          <h2 id="ws-rules" className="ws-section__title">
+            {t("workspaces.rules.title")}
+          </h2>
+          <InfoTip id="ws-rule-hint" label={t("workspaces.rules.title")}>
+            {t(workspace.kind === "personal" ? "workspaces.rules.personalHint" : "workspaces.rules.independentHint")}
+          </InfoTip>
+        </div>
         <div className="ws-rule">
           <Switch
             label={t("workspaces.rules.independent")}
@@ -261,9 +277,6 @@ export function WorkspaceMembersPage() {
             testId="workspace-independent-approval"
             onChange={(on) => void setIndependent(on)}
           />
-          <p id="ws-rule-hint" className="ws-rule__hint">
-            {t(workspace.kind === "personal" ? "workspaces.rules.personalHint" : "workspaces.rules.independentHint")}
-          </p>
         </div>
       </section>
 

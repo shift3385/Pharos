@@ -217,8 +217,58 @@ export function runFieldsOf(doc: Json) {
     // A report that gives only its end starts then too, not at the import:
     // a run never starts after it finishes (FIX-42, as `import.rs`).
     startedAt: timeOf(run.startedAt) ?? timeOf(run.finishedAt),
-    finishedAt: timeOf(run.finishedAt),
+    finishedAt: runEndOf(doc),
   };
+}
+
+const ISO_TIME = /^(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?([Zz]|[+-]\d{2}:\d{2})?$/;
+
+/** Epoch milliseconds of an RFC 3339 time, and whether it names its zone; a
+ *  time without one (JUnit's `timestamp`) is read on the reporter's clock, as
+ *  if it were UTC (`import.rs::ms_of_iso`). */
+export function msOfIso(s: string): [number, boolean] | null {
+  const m = ISO_TIME.exec(s.trim());
+  if (!m) return null;
+  const [y, mo, d, hh, mi, ss] = m.slice(1, 7).map(Number) as [number, number, number, number, number, number];
+  if (mo < 1 || mo > 12 || d < 1 || d > 31 || hh > 23 || mi > 59 || ss > 59) return null;
+  const frac = Number((m[7] ?? "").slice(0, 3).padEnd(3, "0"));
+  let offset = 0;
+  const zone = m[8];
+  if (zone && zone !== "Z" && zone !== "z") {
+    const [oh, om] = [Number(zone.slice(1, 3)), Number(zone.slice(4, 6))];
+    if (oh > 23 || om > 59) return null;
+    offset = (zone[0] === "-" ? -1 : 1) * (oh * 60 + om);
+  }
+  // Date.UTC maps years 0–99 to 1900s; set the year explicitly.
+  const day = new Date(Date.UTC(2000, mo - 1, d));
+  day.setUTCFullYear(y);
+  return [day.getTime() + ((hh * 60 + mi - offset) * 60 + ss) * 1000 + frac, zone !== undefined];
+}
+
+/** When a new imported run ends: the report's end; else, from its start, the
+ *  latest end a result gives or the start plus the results' durations (a
+ *  JUnit report never says when it ended); null when it says neither
+ *  (FIX-43, `import.rs::run_end`). */
+export function runEndOf(doc: Json): string | null {
+  const run = obj(doc.run);
+  const end = timeOf(run.finishedAt);
+  if (end) return end;
+  const startText = timeOf(run.startedAt);
+  const start = startText === null ? null : msOfIso(startText);
+  if (!startText || !start) return null;
+  const results = arr(doc.results).map(obj);
+  let latest: [number, string] | null = null;
+  for (const r of results) {
+    const t = timeOf(r.finishedAt ?? r.stop);
+    const ms = t === null ? null : msOfIso(t);
+    // The last of equal ends, as Rust's `max_by_key`.
+    if (t !== null && ms && (!latest || ms[0] >= latest[0])) latest = [ms[0], t];
+  }
+  if (latest) return latest[0] < start[0] ? startText : latest[1];
+  const durations = results.map((r) => nonNegRound(r.duration)).filter((d): d is number => d !== null);
+  if (!durations.length) return null;
+  const iso = new Date(start[0] + durations.reduce((a, b) => a + b, 0)).toISOString();
+  return start[1] ? iso : iso.replace(/Z$/, "");
 }
 
 /** The normalizer version of a document (0 when it does not say). */

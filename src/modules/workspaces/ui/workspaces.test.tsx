@@ -86,6 +86,30 @@ describe("workspace switcher", () => {
     expect(button).toHaveTextContent("Viewer (solo lectura)");
     expect(localStorage.getItem(`pharos.workspace.${ME}`)).toBe("ws-t");
   });
+
+  it("a list asked earlier that answers later does not hide the selector (FIX-43)", async () => {
+    // A new account: the list asked when it enters (nothing yet) answers
+    // after the one the first sync's `pharos:workspaces` asked (Personal).
+    let calls = 0;
+    let answerFirst: (r: Response) => void = () => undefined;
+    localStorage.setItem("pharos.session", JSON.stringify({ accessToken: "tok", refreshToken: "r", user: { id: ME } }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => {
+        calls += 1;
+        if (calls === 1) return new Promise<Response>((done) => (answerFirst = done));
+        return Promise.resolve(new Response(JSON.stringify({ workspaces: [PERSONAL] }), { status: 200 }));
+      }),
+    );
+    withWorkspaces(<WorkspaceSwitcher />);
+    await waitFor(() => expect(calls).toBe(1));
+    act(() => {
+      window.dispatchEvent(new CustomEvent("pharos:workspaces"));
+    });
+    expect(await screen.findByTestId("workspace-switcher")).toHaveTextContent("Personal");
+    await act(async () => answerFirst(new Response(JSON.stringify({ code: "not_found" }), { status: 404 })));
+    expect(screen.getByTestId("workspace-switcher")).toHaveTextContent("Personal");
+  });
 });
 
 describe("read-only notice (exit criterion: un auditor no edita)", () => {
@@ -134,7 +158,7 @@ describe("members and roles", () => {
       "PATCH /workspaces/ws-t/members/marta": { body: { members: [] } },
     });
     withWorkspaces(<WorkspaceMembersPage />, "/workspaces/members?id=ws-t");
-    expect(await screen.findByRole("heading", { name: "Miembros · Equipo QA" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Equipo QA" })).toBeInTheDocument();
     expect(await screen.findByTestId("member-luis")).toHaveTextContent("Luis");
     expect(await screen.findByText("jorge@pharos.dev")).toBeInTheDocument();
     expect(screen.queryByText("Luis, ya dentro")).toBeNull();
@@ -151,6 +175,18 @@ describe("members and roles", () => {
     expect(await screen.findByText("PHX-ABCD-EFGH-JKMN")).toBeInTheDocument();
     const sent = requests.find((r) => r.method === "POST" && r.path === "/workspaces/ws-t/invitations");
     expect(sent?.body).toEqual({ role: "test_analyst", note: "jorge@pharos.dev", expiresInDays: 7 });
+  });
+
+  it("names a member by the official name, with the alias under it (GLOSARIO, FIX-43)", async () => {
+    const liomar = { ...member("liomar", "test_analyst", "Liomar"), displayName: "Liomar QA", lastName: "Rodríguez" };
+    const ws = { ...team("viewer"), members: [...team("viewer").members, liomar] };
+    serve({ "GET /workspaces": { body: { workspaces: [PERSONAL, ws] } } });
+    withWorkspaces(<WorkspaceMembersPage />, "/workspaces/members?id=ws-t");
+    const row = await screen.findByTestId("member-liomar");
+    expect(row).toHaveTextContent("Liomar Rodríguez");
+    expect(within(row).getByTestId("member-alias-liomar")).toHaveTextContent("Liomar QA");
+    // Without an alias of its own, no second line.
+    expect(screen.queryByTestId("member-alias-luis")).toBeNull();
   });
 
   it("everyone else only reads", async () => {

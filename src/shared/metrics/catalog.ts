@@ -98,7 +98,7 @@ export function formatMetric(
   const n = new Intl.NumberFormat(lang, {
     maximumFractionDigits: unit === "count" ? 0 : 1,
   }).format(value);
-  if (unit === "percent") return `${n} %`;
+  if (unit === "percent") return formatPercent(value, { lang, digits: 1 });
   if (unit === "days") return `${n} d`;
   return n;
 }
@@ -118,4 +118,5 @@ export function metricDelta(
     signDisplay: "exceptZero",
   }).format(d);
   return { text, better: d === 0 ? null : d > 0 === HIGHER_IS_BETTER[kind] };
-}
+}import { formatPercent } from "@shared/i18n/percent";
+

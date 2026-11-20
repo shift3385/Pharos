@@ -652,7 +652,7 @@ describe("plan wizard · review flow (PLN-07, PLN-08)", () => {
       const approve = within(panel).getByRole("button", { name: "Aprobar versión 1.3" });
       await vi.waitFor(() => expect(approve).toBeDisabled());
       expect(approve).toHaveAccessibleDescription(
-        "Este espacio de trabajo pide aprobación independiente: aprueba un Test Manager que no sea el autor del plan.",
+        "Este workspace pide aprobación independiente: aprueba un Test Manager que no sea el autor del plan.",
       );
       expect(asked[0]).toMatchObject({ subject: "plan", caseId: PLAN.id, authorId: "test-user", approverId: "test-user" });
     } finally {

@@ -90,9 +90,16 @@
   color: var(--color-error-text);
 }
 
+/* A disabled entry keeps its label readable (FIX-46: «Requisitos desde
+   diseños» at half opacity was about 2:1); the faded icon and the cursor say
+   it is off. */
 .menu__item:disabled {
-  opacity: 0.5;
+  color: var(--color-text-secondary);
   cursor: not-allowed;
+}
+
+.menu__item:disabled :is(.menu__icon, svg) {
+  opacity: 0.45;
 }
 
 .menu__icon {
@@ -124,6 +131,13 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-text-muted);
+}
+
+/* A value inside a label (a server address) keeps its own case (FIX-46):
+   «CONECTADO A localhost:3146», not «LOCALHOST:3146». */
+.menu__label-value {
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .menu__sep {

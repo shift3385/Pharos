@@ -283,7 +283,7 @@ describe("AppShell (SPEC §2/§7)", () => {
         { id: "p1", name: "Portal Clientes v3", caseIdPrefix: "BM-", caseIdDigits: 4, updatedAt: "", revision: 2 },
       ] as never);
       window.dispatchEvent(new Event(PROJECT_SAVED_EVENT));
-      await waitFor(() => expect(badge()).toHaveTextContent("BM-"));
+      await waitFor(() => expect(badge()).toHaveTextContent(/^BM$/));
     });
 
     it("has no axe violations", async () => {
