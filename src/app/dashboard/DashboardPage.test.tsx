@@ -168,7 +168,7 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     renderHome();
     const projects = await screen.findByTestId("kpi-projects");
     await waitFor(() => expect(projects).toHaveTextContent("3"));
-    expect(projects).toHaveTextContent("1 cierra este mes");
+    expect(projects).toHaveTextContent("1 plan termina este mes");
     const pending = screen.getByTestId("kpi-pending");
     await waitFor(() => expect(pending).toHaveTextContent("2de 3"));
     expect(pending).toHaveTextContent("1 bloqueada");
@@ -293,7 +293,10 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     renderHome();
     const picker = await screen.findByTestId("exit-picker");
     await waitFor(() => expect(picker).toHaveTextContent("App Móvil Banca"));
-    expect(screen.getByText("Cierre: 31 oct")).toBeInTheDocument();
+    expect(screen.getByText("Fin del plan: 31 oct")).toBeInTheDocument();
+    // The same words as the project header (FIX-45, FIX-48), in both languages.
+    for (const lng of ["es", "en"])
+      expect(i18n.t("dashboard.exit.close", { date: "d", lng })).toBe(i18n.t("projects.header.closesOn", { date: "d", lng }));
     expect(
       screen.getByText(
         "El plan de este proyecto no define criterios de salida.",

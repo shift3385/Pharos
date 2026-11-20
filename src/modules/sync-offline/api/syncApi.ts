@@ -557,8 +557,6 @@ export async function syncNow(): Promise<SyncResult> {
   if (revoked.length > 0) {
     window.dispatchEvent(new CustomEvent("pharos:workspaces-revoked", { detail: { workspaces: revoked } }));
   }
-  // Tell open pages to reload from the (now updated) local DB.
-  if (pulled > 0) window.dispatchEvent(new CustomEvent("pharos:synced"));
   if (skipped > 0) {
     window.dispatchEvent(
       new CustomEvent("pharos:sync-skipped", { detail: { count: skipped } }),
@@ -569,6 +567,10 @@ export async function syncNow(): Promise<SyncResult> {
   // not conflicts to review (FIX-47): only what is still open counts.
   const taken = await invoke<unknown[]>("sync_auto_merged_take", { userId }).catch(() => []);
   const merged = Array.isArray(taken) ? taken : [];
+  // Tell open pages to reload from the (now updated) local DB: after what
+  // was pulled and after what was combined here (FIX-48: a merged item
+  // changes this device's copy even when nothing new was pulled for it).
+  if (pulled > 0 || merged.length > 0) window.dispatchEvent(new CustomEvent("pharos:synced"));
   if (merged.length > 0) {
     window.dispatchEvent(new CustomEvent("pharos:sync-merged", { detail: { count: merged.length } }));
   }

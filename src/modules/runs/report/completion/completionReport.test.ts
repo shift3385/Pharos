@@ -128,7 +128,7 @@ describe("completion report model (DOC-01)", () => {
   it("lists open findings and failed thresholds among the residual risks (ING-06)", () => {
     const r = buildCompletionReport(S, ctx(), t);
     expect(r.findings?.findingsLine).toMatch(/^3 hallazgos abiertos/);
-    expect(r.findings?.failed.rows[0]).toEqual(["RUN-004", "http_req_duration · p(95)", "p(95)<500", "812 ms", "TC-002"]);
+    expect(r.findings?.failed.rows[0]).toEqual(["RUN-004", "http_req_duration · p(95)", "< 500 ms", "812 ms", "TC-002"]);
     expect(buildCompletionReport({ ...S, findings: undefined }, ctx(), t).findings).toBeNull();
   });
 

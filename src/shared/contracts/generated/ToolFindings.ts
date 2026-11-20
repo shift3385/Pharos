@@ -6,6 +6,12 @@ import type { FindingSeverityCounts } from "./FindingSeverityCounts";
  */
 export type ToolFindings = { tool: string, runId: string, runKey: string, open: FindingSeverityCounts, 
 /**
+ * Whether the tool has a previous run to compare with: without one
+ * (its first import) «new» does not apply and the reports say so
+ * instead of «0 nuevos» (FIX-48).
+ */
+compared: boolean, 
+/**
  * Open and not in the previous run of the tool.
  */
 new: number, 

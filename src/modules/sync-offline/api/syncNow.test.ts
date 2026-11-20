@@ -568,6 +568,35 @@ describe("syncNow and conflicts merged without asking (SYNC-02, FIX-47)", () => 
     expect((notice.mock.calls[0][0] as CustomEvent).detail).toEqual({ count: 1 });
   });
 
+  it("a merge tells the open pages to reload even when the pull brought nothing (FIX-48)", async () => {
+    // The server's version came back with the push (stale) and was merged
+    // into this device's copy; the pull after it is empty.
+    const { done } = scene([delta(1)], ["c1"], ["c1"]);
+    const synced = vi.fn();
+    window.addEventListener("pharos:synced", synced);
+    try {
+      const res = await syncNow();
+      expect(res.pulled).toBe(0);
+    } finally {
+      done();
+      window.removeEventListener("pharos:synced", synced);
+    }
+    expect(synced).toHaveBeenCalledTimes(1);
+  });
+
+  it("nothing pulled and nothing merged: the pages are not reloaded", async () => {
+    const { done } = scene([delta(1)], [], []);
+    const synced = vi.fn();
+    window.addEventListener("pharos:synced", synced);
+    try {
+      await syncNow();
+    } finally {
+      done();
+      window.removeEventListener("pharos:synced", synced);
+    }
+    expect(synced).not.toHaveBeenCalled();
+  });
+
   it("a field that merged and another that clashes on the same item: one conflict, no merge notice", async () => {
     // The core opens the conflict (it merges only when nothing collides), so
     // the item is not among the automatic merges.

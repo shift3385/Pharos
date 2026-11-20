@@ -72,6 +72,39 @@ describe("testPlanApi", () => {
     ]);
   });
 
+  it("web: a review by someone else calls the review route and announces it to the author (FIX-48)", async () => {
+    // What the web does for «Aprobar»: POST …/review, then the plan's author
+    // (`createdBy` of the server's answer) is told through the notifications
+    // (`NotificationsProvider` → POST /api/notifications). A caller of only
+    // the review route (as tour 21's helper did) leaves nobody notified.
+    const server = fakeServer(
+      {
+        id: "tp-1",
+        workspaceId: "ws-team",
+        projectId: "p1",
+        title: "Plan",
+        version: "1.0",
+        createdBy: "liomar",
+        revision: 9,
+        status: "approved",
+        data: { approval: { by: "jorge", at: "2026-11-20T10:00:00Z", version: "1.0", selfApproved: false } },
+      },
+      "jorge",
+    );
+    const seen: unknown[] = [];
+    const listen = (e: Event) => seen.push((e as CustomEvent).detail);
+    window.addEventListener("pharos:plan-review", listen);
+    try {
+      await testPlanApi.review({ id: "tp-1", revision: 8 }, { action: "approve", userId: "jorge", userName: "Jorge" });
+    } finally {
+      window.removeEventListener("pharos:plan-review", listen);
+    }
+    expect(server.calls()).toEqual(["POST /api/test-plans/tp-1/review"]);
+    expect(seen).toEqual([
+      expect.objectContaining({ kind: "approved", authorId: "liomar", actorId: "jorge", workspaceId: "ws-team", revision: 9 }),
+    ]);
+  });
+
   it("desktop: revision history from the Rust core", async () => {
     onDesktop();
     await testPlanApi.revisions("t1", "u1");

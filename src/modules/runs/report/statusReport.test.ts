@@ -134,10 +134,32 @@ describe("status report model (EJE-03)", () => {
   it("adds «Hallazgos y rendimiento» only when there are findings or thresholds (ING-06)", () => {
     expect(buildStatusReport(SUMMARY, ctx, t).findings).toBeNull();
     const f = buildStatusReport(CLOSED, ctx, t).findings!;
-    expect(f.findingsLine).toBe("3 hallazgos abiertos (Crítica: 1, Alta: 2) · 1 nuevo · 1 triado · 2 a revisar");
+    expect(f.findingsLine).toBe(
+      "3 hallazgos abiertos (Crítica: 1, Alta: 2) · 1 nuevo desde el run anterior · 1 triado · 2 a revisar (la herramienta no pudo decidir)",
+    );
     expect(f.thresholdsLine).toBe("Umbrales: 2 de 3 cumplidos");
-    expect(f.tools.rows).toEqual([["axe-core", "RUN-003", "1", "2", "0", "0", "0", "1", "1"]]);
-    expect(f.failed.rows).toEqual([["RUN-004", "http_req_duration · p(95)", "p(95)<500", "812 ms", "TC-002"]]);
+    expect(f.tools.headers.slice(-3)).toEqual(["Nuevos", "Triados", "A revisar"]);
+    expect(f.tools.rows).toEqual([["axe-core", "RUN-003", "1", "2", "0", "0", "0", "1", "1", "2"]]);
+    // The threshold in the value's form (FIX-48).
+    expect(f.failed.rows).toEqual([["RUN-004", "http_req_duration · p(95)", "< 500 ms", "812 ms", "TC-002"]]);
+  });
+
+  it("a first import has nothing to compare with: no «0 nuevos», and nothing «a revisar» when there is none (FIX-48)", () => {
+    // One untriaged axe violation of the tool's first run, as tour 13 imports it.
+    const first = {
+      ...CLOSED,
+      findings: {
+        ...CLOSED.findings!,
+        open: { critical: 0, high: 1, medium: 0, low: 0, info: 0 },
+        new: 0,
+        triaged: 0,
+        review: 0,
+        tools: [{ ...CLOSED.findings!.tools[0], open: { critical: 0, high: 1, medium: 0, low: 0, info: 0 }, compared: false, new: 0, triaged: 0, review: 0 }],
+      },
+    };
+    const f = buildStatusReport(first, ctx, t).findings!;
+    expect(f.findingsLine).toBe("1 hallazgo abierto (Alta: 1) · nuevos: sin run anterior con el que comparar · 0 triados");
+    expect(f.tools.rows[0].slice(-3)).toEqual(["—", "0", "0"]);
   });
 
   it("shows a failed threshold's value as the run's metrics do, not a raw ratio (FIX-47)", async () => {
@@ -154,12 +176,15 @@ describe("status report model (EJE-03)", () => {
       },
     };
     const f = buildStatusReport(rate, ctx, t).findings!;
-    expect(f.findingsLine).toContain("· 2 nuevos · 0 triados ·");
+    expect(f.findingsLine).toContain("· 2 nuevos desde el run anterior · 0 triados ·");
     expect(f.failed.rows.map((r) => r[3])).toEqual(["1,02 %", "1,53 s"]);
+    // The threshold beside it in the same form (FIX-48).
+    expect(f.failed.rows.map((r) => r[2])).toEqual(["< 1 %", "< 500 ms"]);
     // The completion report's residual risks use the same section.
     await i18n.changeLanguage("en");
     const en = buildStatusReport(rate, { ...ctx, lang: "en" }, t).findings!;
     expect(en.failed.rows.map((r) => r[3])).toEqual(["1.02 %", "1.53 s"]);
+    expect(en.failed.rows.map((r) => r[2])).toEqual(["< 1 %", "< 500 ms"]);
   });
 
   it("names the files by project and day", () => {

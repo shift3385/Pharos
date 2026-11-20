@@ -21,6 +21,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Database, Flag, GripVertical, Plus, Search, SquareCheck, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useToast } from "@shared/ui/Toast";
+import { useOnSynced } from "@shared/ui/useSynced";
 import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
 import { FilterChips } from "@shared/ui/FilterChips";
 import { FilterMenuButton } from "@shared/ui/FilterMenuButton";
@@ -122,6 +123,8 @@ export function PlannerBoard({ projectId, ownerId }: { projectId: string; ownerI
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, ownerId]);
+  // A sync that brought or combined changes (FIX-48).
+  useOnSynced(() => void refresh());
 
   const byStatus = useMemo(
     () => group(cards.filter((c) => matches(c, kind, query, priorities))),

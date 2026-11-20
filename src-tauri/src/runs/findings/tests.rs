@@ -529,6 +529,31 @@ fn import_doc(c: &Connection, p: &str, doc: Value, sha: &str) -> String {
 }
 
 #[test]
+fn a_first_scan_has_nothing_to_compare_with() {
+    // FIX-48: the first import of a tool has no previous run, so «new» does
+    // not apply; the reports say so instead of «0 nuevos».
+    let c = device();
+    let p = new_project(&c);
+    import_doc(
+        &c,
+        &p,
+        scan("2026-11-01", json!([finding("only", "high", json!({}))])),
+        &"d".repeat(64),
+    );
+    let filter = crate::execution::derive::ExecutionFilter {
+        project_id: p.clone(),
+        ..Default::default()
+    };
+    let f = crate::execution::execution_summary_of(&c, &filter, U)
+        .unwrap()
+        .unwrap()
+        .findings
+        .expect("the summary has findings");
+    assert_eq!((f.open.high, f.new), (1, 0));
+    assert!(!f.tools[0].compared);
+}
+
+#[test]
 fn the_summary_counts_the_latest_scan_of_each_tool_and_the_cases() {
     let c = device();
     let p = new_project(&c);
@@ -616,6 +641,10 @@ fn the_summary_counts_the_latest_scan_of_each_tool_and_the_cases() {
     assert_eq!((f.triaged, f.review), (1, 1));
     // New since the older scan: the two tagged ones.
     assert_eq!(f.new, 2);
+    assert!(
+        f.tools[0].compared,
+        "the newer scan has an older one to compare with"
+    );
     assert_eq!(
         f.cases,
         vec![summary::CaseFindings {

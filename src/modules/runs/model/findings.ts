@@ -170,6 +170,41 @@ export function formatMetric(
   }
 }
 
+/** k6's comparison operators, as a reader writes them. */
+const OPERATORS: Record<string, string> = {
+  "<": "<",
+  "<=": "≤",
+  ">": ">",
+  ">=": "≥",
+  "==": "=",
+  "===": "=",
+  "!=": "≠",
+};
+
+/** One k6 threshold: `aggregation operator number` (`rate<0.01`,
+ *  `p(95) < 500`, `count>=10`). */
+const THRESHOLD = /^\s*([a-z]+(?:\(\s*[\d.]+\s*\))?)\s*(===|==|!=|<=|>=|<|>)\s*(-?\d+(?:\.\d+)?(?:e[-+]?\d+)?)\s*$/i;
+
+const bareAggregation = (a: string) => a.replace(/[\s()]/g, "").toLowerCase();
+
+/** A metric's threshold in the same form as its value (FIX-48): `rate<0.01`
+ *  of a rate → «< 1 %», `p(95)<500` of a duration → «< 500 ms». The
+ *  aggregation is the metric's own (shown beside it), so only the operator
+ *  and the number remain. An expression of another aggregation of the
+ *  metric (a counter's `rate`, per second) or one this does not read is
+ *  shown as written: the run's «Métricas» keeps k6's own expression. */
+export function formatThreshold(
+  m: Pick<MetricView, "value" | "unit" | "aggregation"> & { threshold: string | null },
+  locale: string,
+): string {
+  const raw = m.threshold ?? "";
+  const parsed = THRESHOLD.exec(raw);
+  if (!parsed) return raw;
+  const [, aggregation, operator, number] = parsed;
+  if (m.aggregation && bareAggregation(m.aggregation) !== bareAggregation(aggregation)) return raw;
+  return `${OPERATORS[operator]} ${formatMetric({ value: Number(number), unit: m.unit }, locale)}`;
+}
+
 /** Checks: the per-check rates (a scope), apart from the other metrics. */
 export const isCheck = (m: MetricView) => m.name === "checks" && !!m.scope;
 
