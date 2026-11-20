@@ -65,25 +65,27 @@ function ActorCell({ actor, onBehalfOf, labels }: { actor: string; onBehalfOf: s
   );
 }
 
-/** A summary value as shown: a known code (`password_changed`) in words,
- *  anything else (a count, a file name) as it is. */
-function summaryValue(v: unknown, t: (k: string, o?: Record<string, unknown>) => string): string {
-  const text = String(v);
-  return /^[a-z_]+$/.test(text) ? t(`admin.audit.summaryValue.${text}`, { defaultValue: text }) : text;
-}
-
-/** «Estado, Prioridad, Pasos», «9 campos», or the counts of an import. */
+/** «Estado, Prioridad, Pasos», «9 campos», or the counts of an import. A
+ *  resolved sync conflict leads with what was kept («Se quedó: Combinado»,
+ *  ADR-0051), before its fields. */
 function changesText(row: AuditRow, labels: AuditLabels, t: (k: string, o?: Record<string, unknown>) => string): string {
   if (row.redactedAt) return t("admin.audit.redacted");
+  const summary = summaryEntries(row.summary);
+  const resolution = summary.find(([k]) => k === "resolution");
+  const lead = resolution ? `${t("admin.audit.summary.resolution")}: ${labels.summaryValue(resolution[1])}` : null;
   const fields = changedFields(row);
-  if (fields.length > 3) return t("admin.audit.fieldCount", { count: fields.length });
-  if (fields.length > 0) return fields.map(labels.field).join(", ");
-  return summaryEntries(row.summary)
-    .filter(([, v]) => typeof v === "number" || typeof v === "string")
-    .slice(0, 3)
-    // A known value reads in words (an account event's «Contraseña cambiada»).
-    .map(([k, v]) => `${t(`admin.audit.summary.${k}`, { defaultValue: k })}: ${summaryValue(v, t)}`)
-    .join(" · ");
+  const fieldsText =
+    fields.length > 3
+      ? t("admin.audit.fieldCount", { count: fields.length })
+      : fields.length > 0
+        ? fields.map(labels.field).join(", ")
+        : summary
+            .filter(([k, v]) => k !== "resolution" && (typeof v === "number" || typeof v === "string"))
+            .slice(0, 3)
+            // A known value reads in words (an account event's «Contraseña cambiada»).
+            .map(([k, v]) => `${t(`admin.audit.summary.${k}`, { defaultValue: k })}: ${labels.summaryValue(v)}`)
+            .join(" · ");
+  return [lead, fieldsText].filter(Boolean).join(" · ");
 }
 
 /**
@@ -274,7 +276,7 @@ export function AuditTab() {
       id: "action",
       header: t("admin.audit.cols.action"),
       cell: (r) => <ActionPill action={r.action} label={labels.action(r.action)} />,
-      width: "minmax(100px, 0.7fr)",
+      width: "minmax(140px, 0.8fr)",
     },
     { id: "element", header: t("admin.audit.cols.element"), cell: element, width: "minmax(170px, 1.6fr)" },
     {
@@ -440,7 +442,7 @@ export function AuditTab() {
               label={t("admin.audit.listLabel")}
               rowTone={(r) => (broken.has(r.id) ? "gap" : undefined)}
               mobileCard={mobileCard}
-              minWidth={760}
+              minWidth={800}
               empty={
                 <p className="adm-hint aud-emptylist">
                   {loading ? t("admin.audit.loading") : count > 0 || filters.period !== "all" ? t("admin.audit.emptyFiltered") : t("admin.audit.empty")}

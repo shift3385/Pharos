@@ -4,6 +4,7 @@ export const WORKSPACES_MODULE = "workspaces" as const;
 export { WorkspaceProvider } from "./ui/WorkspaceProvider";
 export { useWorkspace, useWorkspaceRole } from "./ui/workspaceContext";
 export { WorkspaceSwitcher } from "./ui/WorkspaceSwitcher";
+export { useWorkspaceMenu } from "./ui/useWorkspaceMenu";
 export { WorkspaceNotices } from "./ui/WorkspaceNotices";
 export { WorkspaceMembersPage } from "./ui/WorkspaceMembersPage";
 export { JoinWorkspacePage } from "./ui/JoinWorkspacePage";

@@ -21,6 +21,19 @@ describe("DbErrorScreen (SEC-06)", () => {
     await i18n.changeLanguage("es");
   });
 
+  it("takes the theme stored on this device, even with a dark system (FIX-39)", async () => {
+    localStorage.setItem("pharos.theme", "light");
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("dark"),
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    renderWithProviders(<DbErrorScreen error={`${DB_IN_USE_ERROR}: locked`} />);
+    await waitFor(() => expect(document.documentElement).toHaveAttribute("data-theme", "light"));
+    vi.unstubAllGlobals();
+  });
+
   it("explains a database written by a newer Pharos", () => {
     const error = `${NEWER_DB_ERROR}: unknown migrations: 0099_future.sql`;
     renderWithProviders(<DbErrorScreen error={error} />);
@@ -140,13 +153,29 @@ describe("DbErrorScreen recovery (SEC-03)", () => {
       `${WRONG_RECOVERY_KEY}: does not open it`,
     );
     await user.click(submit);
-    expect(
-      await screen.findByText(/no abre esta base de datos/),
-    ).toBeInTheDocument();
+    const wrong = await screen.findByText(/no abre esta base de datos/);
+    // Since 0.6 the data file is pharos.db and its copies pharos.db.bak-…
+    // (FIX-39): the 0.5 file name would send the user to the wrong copy.
+    expect(wrong).toHaveTextContent("pharos.db.bak-…");
+    expect(wrong).not.toHaveTextContent("pharos.db.enc");
 
     expect(onRecovered).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).not.toHaveTextContent("7K3M");
     expect(screen.getByRole("status")).not.toHaveTextContent(/7k3m/i);
+  });
+
+  it("names the files of 0.6 wherever the recovery key's texts mention one (FIX-39)", () => {
+    for (const lng of ["es", "en"]) {
+      const texts = ["recoveryKey.intro", "recoveryKey.guideBackup", "dbError.recovery.wrong"].map((k) =>
+        i18n.t(k, { lng }),
+      );
+      for (const text of texts) {
+        expect(text).toContain("pharos.db");
+        expect(text).not.toContain("pharos.db.enc");
+      }
+      expect(texts[0]).toContain("evidence");
+      expect(texts[1]).toContain("evidence");
+    }
   });
 
   it("does not offer recovery for other open errors", () => {
