@@ -30,6 +30,17 @@ describe("req-extract@1", () => {
     expect(user.content).toContain("Project: Tienda");
     expect(user.content).toContain('"basis":"stated|inferred"');
   });
+
+  it("asks for the requirement in the user's language, never «the system shall» in Spanish (FIX-45)", () => {
+    const [, es] = buildRequirementExtractMessages([{ path: "a.md", text: "1| x" }], "es");
+    expect(es.content).toContain('State it in Spanish as "El sistema deberá …"');
+    expect(es.content).toContain('"description":"El sistema deberá …"');
+    expect(es.content).toContain('no English word such as "shall"');
+    const [, en] = buildRequirementExtractMessages([{ path: "a.md", text: "1| x" }], "en");
+    expect(en.content).toContain('"description":"The system shall …"');
+    const [, synthesis] = buildRequirementSynthesisMessages([], [], "es");
+    expect(synthesis.content).toContain('"description":"El sistema deberá …"');
+  });
 });
 
 describe("req-synthesis@1", () => {

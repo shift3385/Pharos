@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { Check, Copy, Hash } from "lucide-react";
 import { FormField } from "@shared/ui/FormField";
 import { Select } from "@shared/ui/Select";
-import { WholeKeys } from "@shared/ui/WholeKeys";
 import type { Issue } from "@shared/validation";
 import { DIGITS, sampleKey } from "../model/numbering";
 
@@ -80,15 +79,17 @@ export function ProjectGeneralFields({
           id={`${idPrefix}-prefix`}
           label={t("projects.caseIdPrefix")}
           issue={prefixIssue}
+          // The help is behind «?» (FIX-45): a standing paragraph under the
+          // field broke its sample key across lines; the preview below shows
+          // the keys of the prefix typed.
+          info={prefixHint}
           hint={
             !prefixIssue && prefixFree ? (
               <span className="pj-free">
                 <Check size={14} aria-hidden="true" />
                 {t("projects.prefix.free")}
               </span>
-            ) : (
-              prefixHint && <WholeKeys text={prefixHint} />
-            )
+            ) : undefined
           }
         >
           {(p) => (

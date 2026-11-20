@@ -35,19 +35,39 @@
   letter-spacing: -0.02em;
 }
 
+/* The meta line wraps when the actions leave it little room. Every item
+   starts with a gutter of `--pj-meta-gap`, which holds its «·»; the line is
+   shifted left by one gutter inside a clip, so the gutter (and the «·») of
+   the item that starts a line falls outside and is hidden (FIX-45): no line
+   begins with a dangling separator. */
+.pj-header__meta-clip {
+  --pj-meta-gap: 20px;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .pj-header__meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1) 0;
+  margin-left: calc(-1 * var(--pj-meta-gap));
   font-size: 12.5px;
   color: var(--color-text-secondary);
 }
 
-/* «·» between the meta items, not before the first one after the status. */
+.pj-header__meta > * {
+  margin-left: var(--pj-meta-gap);
+}
+
+/* «·» between the meta items, not before the first one after the status:
+   centred in the item's gutter. */
 .pj-header__meta-item + .pj-header__meta-item::before {
   content: "·";
-  margin-right: var(--space-2);
+  display: inline-block;
+  width: var(--pj-meta-gap);
+  margin-left: calc(-1 * var(--pj-meta-gap));
+  text-align: center;
   color: var(--color-border-input);
 }
 
@@ -58,14 +78,16 @@
   min-width: 0;
 }
 
-/* Mobile (SPEC §5): the row's buttons share the width and clip their text;
+/* Mobile (SPEC §5): the row's buttons share the width, each at least as wide
+   as its own label: one that does not fit goes to the next row, full width,
+   instead of clipping its text («Importar infor…», FIX-45).
    «Importar / Exportar» keeps its natural width (`data-natural`). */
 .pj-header--mobile .pj-header__actions {
   flex: 1 1 100%;
 }
 
 .pj-header--mobile .pj-header__actions > * {
-  flex: 1 1 120px;
+  flex: 1 1 auto;
   min-width: 0;
 }
 

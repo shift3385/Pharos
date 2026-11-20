@@ -8,11 +8,17 @@
   min-width: 0;
 }
 
+/* «Usar» and its switch on their own card, as the cards below (FIX-45): over
+   the background image the row was drawn on the photo. */
 .ai-tab__mode {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) clamp(16px, 2.2cqi, 24px);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
 /* Online provider | (Ollama + where AI is used). */

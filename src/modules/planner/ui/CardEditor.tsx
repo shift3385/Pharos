@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Paperclip, Trash2 } from "lucide-react";
 import { ListField } from "@shared/ui/fields";
+import { FormField } from "@shared/ui/FormField";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { Select } from "@shared/ui/Select";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useUnsavedChangesGuard } from "@shared/ui/useUnsavedChangesGuard";
@@ -170,10 +172,10 @@ export function CardEditor({
           </label>
         </div>
 
-        <label className="tp-field">
-          <span>{t("planner.cardTitle")}</span>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} />
-        </label>
+        {/* Required, and marked so as in the other forms (FIX-45). */}
+        <FormField label={t("planner.cardTitle")} required>
+          {(p) => <input {...p} value={title} onChange={(e) => setTitle(e.target.value)} />}
+        </FormField>
         <label className="tp-field">
           <span>{t("planner.description")}</span>
           <TextArea
@@ -186,7 +188,15 @@ export function CardEditor({
         <p className="tp-field__grouplabel">{t("planner.labels")}</p>
         <ListField label={t("planner.labels")} items={labels} onChange={setLabels} />
 
-        <p className="tp-field__grouplabel">{t("planner.attachments")}</p>
+        {/* The limit and where files are kept, behind «?» (FIX-45). */}
+        <div className="pl-attach__head">
+          <p className="tp-field__grouplabel">{t("planner.attachments")}</p>
+          {card && (
+            <InfoTip id="pl-attach-limit" label={t("planner.attachments")}>
+              {t("planner.attachLimit", { mb: MAX_ATTACHMENT_MB })}
+            </InfoTip>
+          )}
+        </div>
         {!card ? (
           <p className="tp-field__hint">{t("planner.attachAfterSave")}</p>
         ) : (
@@ -235,9 +245,6 @@ export function CardEditor({
               aria-label={t("planner.attachFiles")}
               onChange={(e) => void addFiles(e.target.files)}
             />
-            <p id="pl-attach-limit" className="tp-field__hint">
-              {t("planner.attachLimit", { mb: MAX_ATTACHMENT_MB })}
-            </p>
           </div>
         )}
       </div>

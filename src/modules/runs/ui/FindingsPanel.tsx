@@ -4,6 +4,7 @@ import { ExternalLink } from "lucide-react";
 import type { FindingView } from "@shared/contracts/contract";
 import { FilterChips } from "@shared/ui/FilterChips";
 import { StatusPill } from "@shared/ui/StatusPill";
+import { Switch } from "@shared/ui/Switch";
 import {
   SEVERITIES,
   type FindingStanding,
@@ -82,15 +83,15 @@ export function FindingsPanel({
             count: byStanding(s).length,
           }))}
         />
-        <label className="fd__new">
-          <input
-            type="checkbox"
+        {/* The app's switch, not a native checkbox (FIX-45). */}
+        <span className="fd__new">
+          <Switch
             checked={onlyNew}
-            onChange={(e) => setOnlyNew(e.target.checked)}
-            data-testid="findings-only-new"
+            onChange={setOnlyNew}
+            label={t("findings.filter.onlyNew", { count: newCount })}
+            testId="findings-only-new"
           />
-          {t("findings.filter.onlyNew", { count: newCount })}
-        </label>
+        </span>
       </div>
 
       {groups.length === 0 ? (

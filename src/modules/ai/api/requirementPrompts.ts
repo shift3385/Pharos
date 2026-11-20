@@ -24,23 +24,32 @@ import type { AiResult } from "./aiApi";
 import { asData } from "./generators";
 import { aiJson } from "./structured";
 
+// FIX-45: the requirement is worded in the user's language («El sistema
+// deberá …»); the English «The system shall …» made the model write «el
+// sistema shall …» inside Spanish text. Whether this deserves a new version
+// (@2) in the provenance is left to the owners of ADR-0036.
 export const REQ_EXTRACT_PROMPT = "req-extract@1";
 export const REQ_SYNTHESIS_PROMPT = "req-synthesis@1";
 
 const languageOf = (lang: string) =>
   lang.startsWith("es") ? "Spanish" : "English";
 
+/** The opening of a requirement in the user's language. */
+const shallOf = (lang: string) =>
+  lang.startsWith("es") ? "El sistema deberá …" : "The system shall …";
+
 /** What makes a good requirement, after ISO/IEC/IEEE 29148 and EARS, in our
  *  own words. Shared by both prompts. */
-const GOOD_REQUIREMENT =
+const goodRequirement = (lang: string) =>
   `A good requirement is necessary (the product or its users depend on it), singular ` +
   `(one capability or constraint), unambiguous (no vague words such as "fast", "easy", ` +
   `"user-friendly", "etc." or "and/or"), verifiable (a tester can decide pass or fail) ` +
-  `and feasible. State it as "The system shall …"; use an EARS pattern when it fits: ` +
-  `"When <trigger>, the system shall …", "While <state>, …", "If <unwanted condition>, ` +
-  `then the system shall …", "Where <feature is included>, …". Write it at the level of ` +
-  `a capability of the user or of the system, never of an internal function, class or ` +
-  `variable.`;
+  `and feasible. State it in ${languageOf(lang)} as "${shallOf(lang)}"; use an EARS ` +
+  `pattern when it fits ("When <trigger>, the system shall …", "While <state>, …", ` +
+  `"If <unwanted condition>, then the system shall …", "Where <feature is included>, …"), ` +
+  `always written in ${languageOf(lang)}, with no English word such as "shall" in it. ` +
+  `Write it at the level of a capability of the user or of the system, never of an ` +
+  `internal function, class or variable.`;
 
 function system(role: string, lang: string): AiMessage {
   return {
@@ -78,7 +87,7 @@ export function buildRequirementExtractMessages(
       `do (functional), the qualities it must have (non-functional: performance, security, ` +
       `usability, compatibility…) and the constraints it must respect.`,
     ``,
-    GOOD_REQUIREMENT,
+    goodRequirement(lang),
     ``,
     `Rules:`,
     `- Rest every requirement on the material: cite the file path exactly as written after ` +
@@ -94,7 +103,7 @@ export function buildRequirementExtractMessages(
       `several sources. At most 40 requirements; prefer fewer, well-founded ones.`,
     ``,
     `Return exactly this shape:`,
-    `{"candidates":[{"title":"short name","description":"The system shall …",` +
+    `{"candidates":[{"title":"short name","description":"${shallOf(lang)}",` +
       `"priority":"low|medium|high","kind":"functional|non-functional|constraint",` +
       `"basis":"stated|inferred","acceptance":["observable criterion"],` +
       `"sources":[{"path":"docs/spec.md","startLine":12,"endLine":20}],"evidence":"short quote"}]}`,
@@ -203,7 +212,7 @@ export function buildRequirementSynthesisMessages(
     `Compare the candidates with each other and with the requirements already in the ` +
       `project, as in a formal requirements review, and propose changes to the project's list.`,
     ``,
-    GOOD_REQUIREMENT,
+    goodRequirement(lang),
     ``,
     `Rules:`,
     `- "add": a capability no existing requirement covers. Merge candidates that say the ` +
@@ -222,7 +231,7 @@ export function buildRequirementSynthesisMessages(
     ``,
     `Return exactly this shape:`,
     `{"proposals":[`,
-    `{"action":"add","from":["C1","C4"],"title":"…","description":"The system shall …","priority":"low|medium|high","reason":"…","similarTo":"REQ-007"},`,
+    `{"action":"add","from":["C1","C4"],"title":"…","description":"${shallOf(lang)}","priority":"low|medium|high","reason":"…","similarTo":"REQ-007"},`,
     `{"action":"improve","key":"REQ-003","from":["C2"],"title":"…","description":"…","priority":"high","reason":"…"},`,
     `{"action":"merge","keys":["REQ-009","REQ-012"],"keep":"REQ-009","title":"…","description":"…","reason":"…"},`,
     `{"action":"remove","key":"REQ-015","coveredBy":"REQ-002","reason":"…"}]}`,

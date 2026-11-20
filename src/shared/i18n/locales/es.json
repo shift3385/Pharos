@@ -1613,7 +1613,8 @@
       "runs": "Ejecuciones"
     },
     "deleteTitle": "Eliminar proyecto",
-    "deleteWarning": "Se eliminará «{{name}}» y TODO su contenido: el plan de pruebas, los casos de prueba y el tablero. Esta acción no se puede deshacer fácilmente.",
+    "deleteWarning": "Se eliminará «{{name}}» y todo su contenido: planes, casos, requisitos y tarjetas. Queda en la Papelera (Administración › General) hasta que se cumpla su plazo.",
+    "deleteWarningWeb": "Se eliminará «{{name}}» y todo su contenido: planes, casos, requisitos y tarjetas. Desde la web no se puede restaurar.",
     "deleteConfirm": "Sí, eliminar todo",
     "savedToast": "Ajustes actualizados",
     "header": {
@@ -1628,7 +1629,7 @@
       "cases_other": "{{count}} casos",
       "requirements_one": "1 requisito",
       "requirements_other": "{{count}} requisitos",
-      "closesOn": "Cierre del ciclo: {{date}}"
+      "closesOn": "Fin del plan: {{date}}"
     },
     "list": {
       "loadFailed": "No se pudo cargar la lista de proyectos.",
@@ -1648,7 +1649,7 @@
         "access": "Último acceso",
         "name": "Nombre (A–Z)",
         "updated": "Última modificación",
-        "closure": "Cierre del ciclo",
+        "closure": "Fin del plan",
         "execution": "Progreso de ejecución",
         "coverage": "Cobertura de requisitos",
         "defects": "Defectos abiertos"
@@ -1706,14 +1707,15 @@
       "planHistoryFailed": "No se pudo guardar el ajuste del historial.",
       "riskBands": {
         "title": "Bandas de riesgo",
-        "desc": "El nivel de riesgo de un requisito es probabilidad × impacto (1–25), según ISTQB. Elige hasta qué nivel es bajo y hasta cuál es medio; el resto es alto. Cambiarlas no toca ningún dato: cambia cómo se leen la matriz, su orden por riesgo y el informe.",
+        "desc": "El nivel de riesgo de un requisito es probabilidad × impacto (1–25).",
+        "help": "Según ISTQB. Elige hasta qué nivel es bajo y hasta cuál es medio; el resto es alto. Cambiarlas no toca ningún dato: cambia cómo se leen la matriz, su orden por riesgo y el informe.",
         "lowUpTo": "Bajo: hasta",
         "mediumUpTo": "Medio: hasta",
         "high": "Alto",
         "highRange": "{{from}} a {{to}}",
-        "impactShort": "I",
-        "likelihoodShort": "P",
-        "cells": "Impacto (I) por probabilidad (P). Con estas bandas: {{low}} celdas bajas, {{medium}} medias y {{high}} altas.",
+        "impactAxis": "Impacto",
+        "likelihoodAxis": "Probabilidad",
+        "cells": "Impacto por probabilidad. Con estas bandas: {{low}} celdas bajas, {{medium}} medias y {{high}} altas.",
         "reset": "Restablecer ({{low}} y {{medium}})",
         "saved": "Bandas de riesgo guardadas.",
         "failed": "No se pudieron guardar las bandas de riesgo.",
@@ -1730,7 +1732,7 @@
       "required": "Escribe un prefijo, por ejemplo «PHA-».",
       "overlap": "Se solapa con «{{prefix}}» de {{name}}: dos prefijos no pueden ser iguales ni empezar uno por el otro.",
       "placeholder": "Prefijo",
-      "suggestedHint": "Prefijo de las claves de los casos (PHA-001…), sugerido a partir del nombre y libre en tus proyectos. Puedes cambiarlo ahora o en Ajustes del proyecto.",
+      "suggestedHint": "Prefijo de las claves de los casos, sugerido a partir del nombre y libre en tus proyectos. Puedes cambiarlo ahora o en Ajustes del proyecto.",
       "free": "Libre"
     },
     "copySettings": {
@@ -1786,7 +1788,7 @@
         "desktopOnly": "Solo en la app de escritorio: en la web no hay retención de evidencias",
         "riskBands": "Bajo hasta {{low}} · medio hasta {{medium}}"
       },
-      "never": "Nunca se copian el nombre, el prefijo ni los datos (plan, casos, requisitos, ejecuciones).",
+      "never": "Nunca se copian el nombre, el prefijo ni los datos: plan, casos, requisitos, ciclos, ejecuciones, defectos y tablero.",
       "copiedFrom": "copiado de {{name}}",
       "summary": "Se copiarán de «{{name}}»: {{parts}}.",
       "summaryNothing": "No se copiará nada de «{{name}}»: el proyecto empieza con los ajustes por defecto.",
@@ -3957,9 +3959,10 @@
   },
   "customFields": {
     "title": "Campos personalizados",
-    "desc": "Campos propios del proyecto para sus casos de prueba. La clave y el tipo no cambian una vez creados; un campo se archiva, nunca se borra, y sus valores se conservan.",
+    "desc": "Campos propios del proyecto para sus casos de prueba.",
+    "rules": "La clave y el tipo no cambian una vez creados; un campo se archiva, nunca se borra, y sus valores se conservan.",
     "empty": "Aún no hay campos personalizados. Crea uno para registrar, por ejemplo, el navegador o el sprint de cada caso.",
-    "descDefect": "Campos propios del proyecto para sus defectos. La clave y el tipo no cambian una vez creados; un campo se archiva, nunca se borra, y sus valores se conservan.",
+    "descDefect": "Campos propios del proyecto para sus defectos.",
     "emptyDefect": "Aún no hay campos de defectos. Crea uno para registrar, por ejemplo, el cliente afectado o la versión corregida.",
     "entity": {
       "label": "Campos de",
@@ -4079,7 +4082,8 @@
   },
   "configurations": {
     "title": "Configuraciones",
-    "desc": "Dónde se ejecutan los ciclos: navegador, sistema, dispositivo e idioma. Las etiquetas son los textos con los que una importación reconoce cada configuración (p. ej. chromium o el nombre de un proyecto de Playwright).",
+    "desc": "Dónde se ejecutan los ciclos: navegador, sistema, dispositivo e idioma.",
+    "labelsHelp": "Las etiquetas son los textos con los que una importación reconoce cada configuración (p. ej. chromium o el nombre de un proyecto de Playwright).",
     "new": "Nueva configuración",
     "newTitle": "Nueva configuración",
     "editTitle": "Editar configuración",
@@ -4183,9 +4187,9 @@
     "clonedToast": "Ciclo clonado como {{key}}",
     "deletedToast": "Ciclo {{key}} eliminado",
     "deleteTitle": "Eliminar {{key}}",
-    "deleteMessage_zero": "Se eliminan el ciclo y sus elementos. No tiene runs.",
-    "deleteMessage_one": "Se eliminan el ciclo y sus elementos. Su run se conserva, sin ciclo.",
-    "deleteMessage_other": "Se eliminan el ciclo y sus elementos. Sus {{count}} runs se conservan, sin ciclo.",
+    "deleteMessage_zero": "El ciclo pasa a la Papelera con sus elementos. No tiene runs.",
+    "deleteMessage_one": "El ciclo pasa a la Papelera con sus elementos. Su run se conserva, sin ciclo.",
+    "deleteMessage_other": "El ciclo pasa a la Papelera con sus elementos. Sus {{count}} runs se conservan, sin ciclo.",
     "deleteConfirm": "Sí, eliminar",
     "notApproved": "No aprobado",
     "noConfigurations": "El proyecto no tiene configuraciones. Créalas en Ajustes del proyecto.",
@@ -4609,7 +4613,7 @@
     "import": {
       "open": "Importar informe",
       "title": "Importar un informe de resultados",
-      "intro": "Trae los resultados de tu automatización: tests, hallazgos y métricas. Un test que lleva la clave de un caso (por ejemplo, @PRJ-001) se vincula a él; el resto queda en «Sin vincular».",
+      "intro": "Trae los resultados de tu automatización: tests, hallazgos y métricas. Un test que lleva la clave de un caso (por ejemplo, @{{key}}) se vincula a él; el resto queda en «Sin vincular».",
       "formats": "Tests: JUnit XML, CTRF, JSON de Playwright, Cucumber Messages (NDJSON), Pharos Run JSON, TRX (.NET), Allure (la carpeta allure-results en un .zip) y Xcode (el JSON de xcresulttool). Hallazgos: SARIF (seguridad) y axe (accesibilidad). Métricas: el resumen de k6.",
       "file": "Informe",
       "fileHint": "El formato se detecta por el contenido. Hasta 200 MB (50 MB si es JSON o XML).",
@@ -4623,7 +4627,7 @@
       "existingRun": "Run abierto",
       "noOpenRuns": "No hay runs en curso en este proyecto",
       "run": "Run",
-      "keepOpen": "Dejar el run abierto para importar más shards",
+      "keepOpen": "Dejar el run abierto para añadir más informes de la misma ejecución",
       "cycle": "Ciclo",
       "noCycle": "Sin ciclo",
       "cycleHint": "Sus resultados cuentan en el progreso del ciclo. Los ciclos cerrados no aparecen.",
@@ -4825,6 +4829,7 @@
       "paste": "Pegar una captura en el paso o el resultado",
       "save": "Guardar el resultado",
       "nextItem": "Siguiente elemento sin ejecutar",
+      "shift": "Mayús",
       "help": "Ver esta lista"
     },
     "discardTitle": "¿Descartar el borrador?",
@@ -4848,6 +4853,7 @@
     },
     "evidenceLocal": "Las evidencias se guardan cifradas en este equipo y se sincronizan como el resto de los datos.",
     "run": {
+      "evidenceInfo": "Dónde se guardan las evidencias",
       "addCases": "Añadir casos",
       "edit": "Editar datos",
       "close": "Cerrar run",
@@ -4901,8 +4907,8 @@
       "deleteMessage": "{{key}} «{{title}}» desaparecerá de las listas y del progreso, en este equipo y en los que sincronicen. Se ocultan:",
       "deleteItems_one": "{{count}} elemento del run",
       "deleteItems_other": "{{count}} elementos del run",
-      "deleteResults_one": "{{count}} resultado registrado (no se borra a mano)",
-      "deleteResults_other": "{{count}} resultados registrados (no se borran a mano)",
+      "deleteResults_one": "{{count}} resultado registrado",
+      "deleteResults_other": "{{count}} resultados registrados",
       "deleteImports_one": "de {{count}} importación",
       "deleteImports_other": "de {{count}} importaciones",
       "deleteAttachments_one": "{{count}} evidencia de esos resultados",
@@ -4912,7 +4918,7 @@
       "deleteCycle": "El progreso del ciclo {{key}} «{{title}}» dejará de contar este run",
       "deleteDefects_one": "{{count}} resultado está vinculado a un defecto: el defecto conserva el vínculo hasta la purga",
       "deleteDefects_other": "{{count}} resultados están vinculados a defectos: los defectos conservan el vínculo hasta la purga",
-      "deletePurge": "Los resultados se conservan ocultos y la purga se los lleva con el run pasados {{days}} días (Administración → General).",
+      "deletePurge": "El run y sus resultados van a la Papelera (Administración › General) y la purga se los lleva pasados {{days}} días.",
       "deleteCycleClosed": "El ciclo {{key}} está cerrado: un run de un ciclo cerrado no se puede eliminar. Reabre el ciclo primero.",
       "deleted": "Run {{key}} eliminado.",
       "deletedNotice": "Este run se eliminó (quizá en otro equipo)."
@@ -4920,7 +4926,7 @@
     "picker": {
       "dataset_one": "{{count}} fila · {{name}} (v{{version}})",
       "dataset_other": "{{count}} filas · {{name}} (v{{version}})",
-      "search": "Buscar por ID o título",
+      "search": "Buscar por clave o título",
       "cases": "Casos",
       "inRun": "ya en el run",
       "chosen_one": "{{count}} caso elegido",
@@ -4983,7 +4989,7 @@
     },
     "unit": {
       "case": "casos",
-      "cell": "celdas del ciclo (caso × configuración)"
+      "cell": "celdas del ciclo, caso × configuración"
     },
     "progress": {
       "executed": "Ejecutados",
@@ -5049,7 +5055,9 @@
     "summaryHint": "Se rellena con las cifras; puedes cambiarlo.",
     "recommendationsLabel": "Recomendaciones",
     "recommendationsPlaceholder": "Qué propones: seguir, cerrar el ciclo, repetir pruebas…",
-    "autoSummary": "Se han ejecutado {{executed}} de {{total}} {{unit}} ({{pct}}), con una tasa de éxito de {{rate}}. Hay {{open}} defectos abiertos, {{critical}} críticos. Criterios de salida: {{met}} de {{all}} cumplidos.",
+    "autoSummary": "Se han ejecutado {{executed}} de {{total}} {{unit}}: {{pct}}, {{rate}}. Hay {{open}} defectos abiertos, {{critical}} críticos. Criterios de salida: {{met}} de {{all}} cumplidos.",
+    "withRate": "con una tasa de éxito de {{rate}}",
+    "noRate": "sin tasa de éxito todavía",
     "sheet": {
       "summary": "Resumen",
       "results": "Resultados",
@@ -5798,12 +5806,12 @@
       "title": "Triaje · {{rule}}",
       "state": "Estado",
       "reason": "Motivo",
-      "scope": "Se aplica a esta huella en todos los runs del proyecto. Queda en el historial.",
+      "scope": "Se aplica a este hallazgo en todos los runs del proyecto. Queda en el historial.",
       "history": "Decisiones anteriores",
       "save": "Guardar triaje",
       "error": "No se pudo guardar el triaje. Revisa el motivo e inténtalo de nuevo.",
       "help": {
-        "open": "Cuenta en la matriz, en el informe y en las gates.",
+        "open": "Cuenta en la matriz, en el informe y en los criterios de salida.",
         "false_positive": "La regla no aplica aquí.",
         "accepted_risk": "Se conoce y se asume. Conviene enlazar una decisión o un defecto.",
         "fixed": "Se espera que desaparezca en el próximo análisis."
@@ -5821,7 +5829,16 @@
       "passed": "Cumplido",
       "failed": "Incumplido",
       "thresholdsMet": "Umbrales cumplidos: {{passed}} de {{total}}.",
-      "failedList": "Incumplidos: {{list}}.",
+      "failedList": "Incumplidos:",
+      "aggregations": {
+        "avg": "media",
+        "min": "mínimo",
+        "med": "mediana",
+        "max": "máximo",
+        "count": "total",
+        "rate": "tasa",
+        "value": "valor"
+      },
       "empty": "No hay métricas.",
       "all": "Ver todas ({{shown}} de {{total}})",
       "fewer": "Ver solo las principales"

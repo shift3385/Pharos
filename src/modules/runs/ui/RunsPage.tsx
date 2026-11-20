@@ -1,5 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react";
-import { WholeKeys } from "@shared/ui/WholeKeys";
+import { Fragment, useContext, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 import { Plus, Upload } from "lucide-react";
@@ -39,6 +38,8 @@ type Origin = "all" | "import";
 export function RunsPage({
   projectId,
   projectName = "",
+  caseIdPrefix = "",
+  caseIdDigits = 3,
   runId,
   cases,
   requirements = [],
@@ -46,6 +47,9 @@ export function RunsPage({
   projectId: string;
   /** For the status report's identification and file names (EJE-03). */
   projectName?: string;
+  /** The project's case keys, for the import help's example (FIX-45). */
+  caseIdPrefix?: string;
+  caseIdDigits?: number;
   runId?: string;
   cases: LinkableCase[];
   /** The project's requirements, for a defect created from the executor (NC-007). */
@@ -54,17 +58,27 @@ export function RunsPage({
   return runId ? (
     <RunDetail key={runId} projectId={projectId} runId={runId} cases={cases} requirements={requirements} />
   ) : (
-    <RunsList projectId={projectId} projectName={projectName} cases={cases} />
+    <RunsList
+      projectId={projectId}
+      projectName={projectName}
+      caseIdPrefix={caseIdPrefix}
+      caseIdDigits={caseIdDigits}
+      cases={cases}
+    />
   );
 }
 
 function RunsList({
   projectId,
   projectName,
+  caseIdPrefix,
+  caseIdDigits,
   cases,
 }: {
   projectId: string;
   projectName: string;
+  caseIdPrefix: string;
+  caseIdDigits: number;
   cases: LinkableCase[];
 }) {
   const { t, i18n } = useTranslation();
@@ -163,16 +177,20 @@ function RunsList({
         <span className="rn-test">
           <span>{r.title}</span>
           <span className="tp-field__hint">
-            {/* The build («0.6.0-beta.1») never breaks at its hyphen (FIX-46). */}
-            <WholeKeys
-              text={[
-                t(`runs.trigger.${r.trigger}`),
-                r.sourceTool,
-                r.build && t("runs.list.build", { build: r.build }),
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            />
+            {/* Each fragment stays whole: «build 0.6.0-beta.1» never breaks
+                at its hyphen (FIX-45). */}
+            {[
+              t(`runs.trigger.${r.trigger}`),
+              r.sourceTool,
+              r.build && t("runs.list.build", { build: r.build }),
+            ]
+              .filter(Boolean)
+              .map((part, i) => (
+                <Fragment key={i}>
+                  {i > 0 && " · "}
+                  <span className="rn-nowrap">{part}</span>
+                </Fragment>
+              ))}
           </span>
         </span>
       ),
@@ -350,6 +368,8 @@ function RunsList({
       {importing && (
         <ImportReportDialog
           projectId={projectId}
+          caseIdPrefix={caseIdPrefix}
+          caseIdDigits={caseIdDigits}
           userId={userId}
           runs={runs ?? []}
           onClose={() => setImporting(false)}

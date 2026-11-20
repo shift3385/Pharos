@@ -296,7 +296,7 @@ describe("«Nuevo proyecto» (UX-29): from an existing project", () => {
       within(wizard).getByText("copiado de Banca Móvil"),
     ).toBeInTheDocument();
     expect(within(wizard).getByTestId("pj-new-summary")).toHaveTextContent(
-      "Se copiarán de «Banca Móvil»: los campos personalizados, los dígitos del número (4), el historial en el plan exportado (Historial de revisiones), las bandas de riesgo (bajo hasta 6, medio hasta 14), la retención de evidencias.",
+      "Se copiarán de «Banca Móvil»: los campos personalizados, los dígitos del número (4), el historial en el plan exportado (historial de revisiones), las bandas de riesgo (bajo hasta 6, medio hasta 14), la retención de evidencias.",
     );
     // The name and prefix are the new project's own.
     expect(
@@ -341,7 +341,7 @@ describe("«Nuevo proyecto» (UX-29): from an existing project", () => {
       within(wizard).queryByText("copiado de Banca Móvil"),
     ).not.toBeInTheDocument();
     expect(within(wizard).getByTestId("pj-new-summary")).toHaveTextContent(
-      "Se copiarán de «Banca Móvil»: el historial en el plan exportado (Historial de revisiones), las bandas de riesgo (bajo hasta 6, medio hasta 14).",
+      "Se copiarán de «Banca Móvil»: el historial en el plan exportado (historial de revisiones), las bandas de riesgo (bajo hasta 6, medio hasta 14).",
     );
     await userEvent.type(
       within(wizard).getByRole("textbox", { name: /Nombre del proyecto/ }),

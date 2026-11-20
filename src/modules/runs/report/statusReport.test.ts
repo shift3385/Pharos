@@ -7,7 +7,7 @@ import { evaluateExitCriteria, criterionValue } from "../model/exitCriteria";
 import { CLOSED, SUMMARY } from "./__fixtures__/summary";
 import { buildReportXlsx, type ReportLabels } from "./reportXlsx";
 import { reportDocDefinition } from "./reportPdf";
-import { autoSummary, buildStatusReport, pct, reportFileName } from "./statusReport";
+import { autoSummary, buildStatusReport, pct, reportFileName, runKeyList } from "./statusReport";
 
 const t = (k: string, o?: Record<string, unknown>) => i18n.t(k, o);
 const ctx = {
@@ -51,7 +51,7 @@ beforeEach(async () => {
 describe("status report model (EJE-03)", () => {
   it("builds the 29119-3 sections from the derivation", () => {
     const r = buildStatusReport(SUMMARY, ctx, t);
-    expect(r.identification).toContainEqual(["Ejecuciones incluidas", "RUN-002, RUN-001"]);
+    expect(r.identification).toContainEqual(["Ejecuciones incluidas", "RUN-001, RUN-002"]);
     expect(r.progress).toContainEqual(["% ejecutado", "75 %"]);
     expect(r.progress).toContainEqual(["Tasa de éxito", "33,3 %"]);
     expect(r.results.rows).toContainEqual(["Por confirmar", "1"]);
@@ -94,7 +94,7 @@ describe("status report model (EJE-03)", () => {
 
   it("prefills the summary from the numbers", () => {
     expect(autoSummary(SUMMARY, t)).toBe(
-      "Se han ejecutado 3 de 4 casos (75 %), con una tasa de éxito de 33,3 %. Hay 1 defectos abiertos, 1 críticos. Criterios de salida: 1 de 3 cumplidos.",
+      "Se han ejecutado 3 de 4 casos: 75 %, con una tasa de éxito de 33,3 %. Hay 1 defectos abiertos, 1 críticos. Criterios de salida: 1 de 3 cumplidos.",
     );
   });
 
@@ -228,5 +228,36 @@ describe("pct", () => {
   it("writes the decimal as the language does: a comma in Spanish, a point in English (FIX-43)", () => {
     expect(pct(1 / 3, "es")).toBe("33,3 %");
     expect(pct(1 / 3, "en")).toBe("33.3 %");
+  });
+});
+
+describe("status report wording (FIX-45)", () => {
+  const tr = (k: string, o?: Record<string, unknown>) => i18n.t(k, o);
+  beforeEach(async () => {
+    await i18n.changeLanguage("es");
+  });
+
+  it("says there is no pass rate yet instead of «de —», and no nested parentheses", () => {
+    const text = autoSummary(
+      { ...SUMMARY, passRate: null, progressUnit: "cell", progress: { ...SUMMARY.progress, executed: 0, total: 4 } },
+      tr,
+      "es",
+    );
+    expect(text).toContain(
+      "Se han ejecutado 0 de 4 celdas del ciclo, caso × configuración: 0 %, sin tasa de éxito todavía.",
+    );
+    expect(text).not.toContain("de —");
+    expect(text).not.toContain(") (");
+  });
+
+  it("counts the criteria it is given, as a closing does", () => {
+    expect(autoSummary(SUMMARY, tr, "es", { met: 2, all: 3 })).toContain("Criterios de salida: 2 de 3 cumplidos.");
+  });
+
+  it("lists the runs in key order, numerically", () => {
+    expect(runKeyList([{ runKey: "RUN-010" }, { runKey: "RUN-002" }, { runKey: "RUN-009" }])).toBe(
+      "RUN-002, RUN-009, RUN-010",
+    );
+    expect(runKeyList([])).toBe("—");
   });
 });

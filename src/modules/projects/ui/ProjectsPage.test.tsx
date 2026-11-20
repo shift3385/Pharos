@@ -129,7 +129,7 @@ describe("Proyectos (SPEC §8)", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Orden: Último acceso · Descendente" }));
     // NC-021: the execution progress has data now.
     expect(screen.getByRole("menuitemradio", { name: "Progreso de ejecución" })).toBeEnabled();
-    expect(screen.getByRole("menuitemradio", { name: "Cierre del ciclo" })).toBeDisabled();
+    expect(screen.getByRole("menuitemradio", { name: "Fin del plan" })).toBeDisabled();
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Nombre (A–Z)" }));
     await userEvent.click(screen.getByRole("button", { name: "Orden: Nombre (A–Z) · Descendente" }));
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Ascendente" }));

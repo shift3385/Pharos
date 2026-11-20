@@ -531,6 +531,16 @@
   flex: 1 1 260px;
 }
 
+/* A card's title with its «?»: the card keeps a one-line subtitle and the
+   rest of its help behind the icon (FIX-45). */
+.pj-card-box__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
 .pj-card-box__desc {
   margin: 0;
   font-size: var(--fs-caption);
@@ -755,6 +765,36 @@
   margin: 0;
 }
 
+/* The grid with its axis titles: «Impacto» up the left side, «Probabilidad»
+   under the numbers (FIX-45). */
+.pj-heat__plot {
+  display: grid;
+  grid-template-columns: auto minmax(0, 360px);
+  gap: 4px 6px;
+  justify-content: start;
+}
+
+.pj-heat__ytitle,
+.pj-heat__xtitle {
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.pj-heat__ytitle {
+  grid-row: 1;
+  align-self: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.pj-heat__xtitle {
+  grid-column: 2;
+  /* Centred under the five columns, past the numbers' column. */
+  padding-left: 27px;
+  text-align: center;
+}
+
 .pj-heat__grid {
   display: grid;
   gap: 3px;
@@ -763,7 +803,7 @@
 
 .pj-heat__row {
   display: grid;
-  grid-template-columns: 44px repeat(5, 1fr);
+  grid-template-columns: 24px repeat(5, 1fr);
   gap: 3px;
 }
 

@@ -8,6 +8,7 @@ import { buildStatusReport } from "../statusReport";
 import {
   EMPTY_TEXTS,
   buildCompletionReport,
+  completionAutoSummary,
   completionDocumentId,
   completionFileName,
   completionLabels,
@@ -111,7 +112,7 @@ describe("completion report model (DOC-01)", () => {
     // Deliverables: what Pharos holds, then the plan's, ticked by hand.
     expect(r.deliverableItems.map((d) => [d.label, d.fromPlan, d.delivered])).toEqual([
       ["Plan de pruebas TP-PH-3FA21C v4", false, true],
-      ["Ejecuciones RUN-002, RUN-001 (2)", false, true],
+      ["Ejecuciones RUN-001, RUN-002 (2)", false, true],
       ["1 defecto registrado en el ciclo", false, true],
       ["Informe de cierre TCR-PH-CYC-007", false, true],
       ["Plan de pruebas", true, false],
@@ -240,5 +241,19 @@ describe("completion report exports", () => {
     expect(text).toContain("TCR-PH-CYC-007");
     expect(text).toContain("Go con riesgos");
     expect(text).toContain("Se acepta DEF-002.");
+  });
+});
+
+describe("completion summary (FIX-45)", () => {
+  it("counts a manual criterion marked «Cumple» at the gate as met", async () => {
+    await i18n.changeLanguage("es");
+    const [executed, critical, manual] = S.closure.criteria;
+    const closure = {
+      ...S.closure,
+      criteria: [executed, { ...critical, state: "met" }, { ...manual, state: "manual", manualMet: true }],
+    };
+    expect(completionAutoSummary(S, closure, t)).toContain("Criterios de salida: 2 de 3 cumplidos.");
+    const notMet = { ...closure, criteria: [executed, critical, { ...manual, manualMet: false }] };
+    expect(completionAutoSummary(S, notMet, t)).toContain("Criterios de salida: 0 de 3 cumplidos.");
   });
 });

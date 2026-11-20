@@ -435,6 +435,8 @@ export function CycleDetail({
     cycle.sprint && t("cycles.meta.sprint", { sprint: cycle.sprint }),
   ].filter((m): m is string => Boolean(m));
 
+  const executable = !closed && items.length > 0 && gone.length === 0;
+
   return (
     <section className="cy-page" aria-labelledby="cy-detail-title">
       <button type="button" className="cy-back" onClick={onBack}>
@@ -462,16 +464,21 @@ export function CycleDetail({
           {cycle.description && <p className="cy-detail__desc">{cycle.description}</p>}
         </div>
         <div className="cy-actions">
+          {/* Unavailable, it is a plain button with readable text and the
+              reason in its tooltip, not a washed-out primary (FIX-45). */}
           <button
             type="button"
-            className="ui-btn ui-btn--primary"
-            disabled={closed || items.length === 0 || gone.length > 0}
+            className={executable ? "ui-btn ui-btn--primary" : "ui-btn"}
+            disabled={!executable}
+            data-testid="cycle-execute"
             title={
               closed
                 ? t("cycles.error.closed")
                 : gone.length > 0
                   ? t("cycles.execute.goneHint", { keys: gone.join(", ") })
-                  : undefined
+                  : items.length === 0
+                    ? t("cycles.error.empty")
+                    : undefined
             }
             onClick={() => {
               setError("");
