@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@shared/ui/Alert";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { useToast } from "@shared/ui/Toast";
 import { useConfirm } from "@shared/ui/useConfirm";
 import { tokensApi, type ApiToken, type IssuedToken } from "../api/tokensApi";
@@ -58,17 +59,21 @@ export function PersonalTokensSection({ workspaces }: { workspaces: TokenTarget[
   return (
     <section className="profile-card int-personal" aria-labelledby="int-personal-tokens" data-testid="personal-tokens">
       <div className="int-head">
-        <h2 id="int-personal-tokens" className="profile-card__title">
-          {t("integrations.tokens.personalTitle")}
-        </h2>
+        <div className="ui-title-row">
+          <h2 id="int-personal-tokens" className="profile-card__title">
+            {t("integrations.tokens.personalTitle")}
+          </h2>
+          <InfoTip id="int-personal-tokens-help" label={t("integrations.tokens.personalTitle")}>
+            {t("integrations.tokens.personalHint")}
+          </InfoTip>
+        </div>
         <button type="button" className="ui-btn ui-btn--primary" onClick={() => setCreating(true)} data-testid="personal-token-new">
           {t("integrations.tokens.newPersonal")}
         </button>
       </div>
-      <p className="tp__muted">{t("integrations.tokens.personalHint")}</p>
       <UseInCliHint />
       {error && <Alert kind="error">{error}</Alert>}
-      {tokens && tokens.length === 0 && <p className="tp__muted">{t("integrations.tokens.nonePersonal")}</p>}
+      {tokens && tokens.length === 0 && <p className="int-muted">{t("integrations.tokens.nonePersonal")}</p>}
       {tokens && tokens.length > 0 && (
         <TokensTable
           tokens={tokens}

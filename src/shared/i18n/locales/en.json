@@ -23,6 +23,7 @@
     "close": "Close"
   },
   "dbError": {
+    "technical": "Technical details",
     "title": "The local database could not be opened",
     "body": "Pharos has not modified any file. Close the app and try again; if it keeps happening, share this detail with support.",
     "inUseTitle": "Another Pharos is updating your data",
@@ -53,6 +54,11 @@
     }
   },
   "common": {
+    "chooseFile": "Choose file…",
+    "chooseFolder": "Choose folder…",
+    "noFileChosen": "No file chosen",
+    "filesChosen_one": "{{count}} file chosen",
+    "filesChosen_other": "{{count}} files chosen",
     "retry": "Retry",
     "loading": "Loading…",
     "delete": "Delete",
@@ -585,6 +591,7 @@
       "bgChoose": "Choose image…",
       "bgClear": "Remove",
       "bgDefault": "Use the default",
+      "bgTooSmall": "The image is too small for the background: it would look stretched. Choose one of at least {{width}} × {{height}} px.",
       "cardShadow": "Card shadow",
       "cardShadowHint": "A light shadow that sets the cards apart from the background.",
       "downloadSaved": "Download folder saved: {{path}}",
@@ -1412,7 +1419,7 @@
     "header": {
       "plan": {
         "draft": "Draft plan",
-        "reviewed": "Reviewed plan",
+        "reviewed": "Plan in review",
         "approved": "Approved plan",
         "obsolete": "Obsolete plan",
         "none": "No plan"
@@ -2733,8 +2740,8 @@
       },
       "approvedOnlyLabel": "Only approved cases",
       "approvedOnly": "Approved only",
-      "leftOut_one": "{{kept}} cases go in. {{count}} case that is not approved stays out: {{keys}}.",
-      "leftOut_other": "{{kept}} cases go in. {{count}} cases that are not approved stay out: {{keys}}.",
+      "leftOut_one": "Cases that go in: {{kept}}. {{count}} case that is not approved stays out: {{keys}}.",
+      "leftOut_other": "Cases that go in: {{kept}}. {{count}} cases that are not approved stay out: {{keys}}.",
       "nothing": "No case goes into the baseline. Untick «Only approved cases» or choose other cases.",
       "freeze_one": "Freeze {{count}} case",
       "freeze_other": "Freeze {{count}} cases",
@@ -3940,6 +3947,7 @@
     "clonedToast": "Cycle cloned as {{key}}",
     "deletedToast": "Cycle {{key}} deleted",
     "deleteTitle": "Delete {{key}}",
+    "deleteMessage_zero": "The cycle and its items are deleted. It has no runs.",
     "deleteMessage_one": "The cycle and its items are deleted. Its run is kept, without a cycle.",
     "deleteMessage_other": "The cycle and its items are deleted. Its {{count}} runs are kept, without a cycle.",
     "deleteConfirm": "Yes, delete",
@@ -4059,6 +4067,7 @@
       "title": "Add cases by filter",
       "hint": "The cases that match now are added; if they change later, the cycle does not.",
       "tags": "Tags",
+      "tagsPlaceholder": "smoke, regression",
       "tagsHint": "Any of them, separated by commas.",
       "priorities": "Priority",
       "statuses": "Case status",
@@ -5722,7 +5731,8 @@
       "addColumn": "Add column",
       "import": "Import CSV or xlsx…",
       "export": "Export CSV",
-      "counts": "Paste from Excel with Ctrl+V · {{rows}} rows · {{columns}} columns",
+      "counts": "Rows: {{rows}} · Columns: {{columns}}",
+      "pasteTip": "Paste from Excel with Ctrl+V.",
       "gridLabel": "Dataset data",
       "pasteHere": "Paste here a table copied from a spreadsheet",
       "pastePlaceholder": "Ctrl+V: the first row becomes the column names",

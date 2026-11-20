@@ -196,11 +196,18 @@ a.home-kpi:hover {
   flex: 1;
 }
 
+/* «Además, N tests sin vincular» under the card: a small tag on its own
+   surface, never bare text on the background photo (FIX-36). */
 .home-kpi__extra {
-  padding: 0 4px;
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 2px 10px;
   font-size: 12px;
   line-height: 16px;
   color: var(--color-text-secondary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
 }
 
 .home-kpi__extra:hover {
@@ -1248,18 +1255,30 @@ button.home-daily__data {
   gap: 0;
 }
 
-/* «+N sin vincular» (NC-029) at the top of «Tasa de éxito», left of its arrow. */
+/* «+N sin vincular» (NC-029) at the bottom right of «Tasa de éxito», on the
+   line of the note, which leaves it room: over the title it cut «Tasa de
+   éxito» (FIX-36). */
 .home-board .home-kpi__extra--badge {
   position: absolute;
-  top: 9px;
-  right: 34px;
-  max-width: calc(100% - 140px);
+  right: 10px;
+  bottom: 7px;
+  max-width: 50%;
   padding: 0 7px;
+  border: 0;
   border-radius: var(--radius-pill);
   background: var(--color-surface-2);
   font-size: 11px;
   line-height: 18px;
   text-decoration: none;
+}
+
+.home-board .home-kpi__extra:not(.home-kpi__extra--badge) {
+  flex: none;
+  margin-top: 4px;
+}
+
+.home-board .home-kpi-stack:has(> .home-kpi__extra--badge) .home-kpi__note {
+  padding-right: calc(min(110px, 50%) + 6px);
 }
 
 /* -- Customizing -- */

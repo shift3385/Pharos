@@ -1,0 +1,41 @@
+/* FileInput (FIX-36): a Pharos button and the chosen name in place of the
+   browser's file control. */
+.ui-file {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Visually hidden, still focusable and labelled. */
+.ui-file__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+}
+
+.ui-file__input:focus-visible + .ui-file__btn {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.ui-file__btn {
+  flex: none;
+}
+
+.ui-file__name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -312,7 +312,7 @@ function ProjectList() {
 
   return (
     <section className="pj-page">
-      <header className="pj-page__head">
+      <header className="pj-page__head ui-backdrop">
         <div className="pj-page__titles">
           <h1 className="pj-page__title">{t("projects.title")}</h1>
           <p className="pj-page__subtitle">{t("projects.subtitle")}</p>
@@ -371,7 +371,7 @@ function ProjectList() {
           <>
             <LoadingStatus />
             <section className="pj-recent">
-              <div className="pj-section-head">
+              <div className="pj-section-head ui-backdrop">
                 <Skeleton width={180} height={24} />
               </div>
               <CardGridSkeleton className="pj-recent__grid" minHeight={156} announce={false} />
@@ -388,12 +388,12 @@ function ProjectList() {
           </>
         )
       ) : all.length === 0 ? (
-        <p className="pj-empty">{t("projects.empty")}</p>
+        <p className="pj-empty ui-backdrop">{t("projects.empty")}</p>
       ) : (
         <>
           {recent.length > 0 && (
             <section className="pj-recent" aria-labelledby="pj-recent-title">
-              <div className="pj-section-head">
+              <div className="pj-section-head ui-backdrop">
                 <h2 id="pj-recent-title" className="pj-section-title">
                   {t("projects.list.recentTitle")}
                 </h2>

@@ -353,11 +353,14 @@
   border-top: 1px solid color-mix(in srgb, var(--color-on-navy) 8%, transparent);
 }
 
+/* The strip keeps the line above its foot: when the nav scrolls, an icon cut
+   at that line reads as «more below», not as an icon hidden behind the sync
+   status (FIX-36). */
 .sidebar[data-mode="rail"] .sidebar__foot {
   align-items: center;
+  width: 100%;
   margin-top: 6px;
   padding-top: 8px;
-  border-top: 0;
 }
 
 .sidebar :focus-visible {

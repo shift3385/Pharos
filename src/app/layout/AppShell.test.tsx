@@ -72,6 +72,14 @@ describe("AppShell (SPEC §2/§7)", () => {
       expect(screen.getByTestId("theme-toggle")).toHaveAccessibleName("Cambiar a tema oscuro");
     });
 
+    it("names the workspace page and its tab in the breadcrumbs, not «Inicio» (FIX-36)", () => {
+      renderShell("/workspaces/members?tab=integrations");
+      const crumbs = screen.getByRole("navigation", { name: "Ruta de navegación" });
+      expect(within(crumbs).getByRole("link", { name: "Workspace" })).toBeInTheDocument();
+      expect(within(crumbs).getByText("Integraciones")).toHaveAttribute("aria-current", "page");
+      expect(within(crumbs).queryByText("Inicio")).not.toBeInTheDocument();
+    });
+
     it("collapses to the 84 px strip and remembers it", async () => {
       const { unmount } = renderShell();
       await userEvent.click(screen.getByRole("button", { name: "Contraer menú" }));

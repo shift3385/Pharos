@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { RotateCcw, Trash2 } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { useToast } from "@shared/ui/Toast";
 import { purgedTotal, trashApi, type TrashEntity, type TrashItem } from "../api/trashApi";
@@ -141,6 +142,7 @@ export function TrashSection({ retentionDays }: { retentionDays: number }) {
         title={t("admin.trash.title")}
         count={items ? top.length : undefined}
         hint={top.length ? t("admin.trash.desc", { count: retentionDays }) : t("admin.trash.emptyDesc", { count: retentionDays })}
+        info={top.length ? t("admin.trash.restoreHint") : undefined}
       >
         <button
           type="button"
@@ -265,7 +267,6 @@ export function TrashSection({ retentionDays }: { retentionDays: number }) {
               </tbody>
             </table>
           </div>
-          <p className="adm-hint">{t("admin.trash.restoreHint")}</p>
         </>
       )}
 
@@ -322,11 +323,14 @@ function Head({
   title,
   count,
   hint,
+  info,
   children,
 }: {
   title: string;
   count?: number;
   hint: string;
+  /** Secondary help behind a «?» next to the title. */
+  info?: string;
   children?: ReactNode;
 }) {
   return (
@@ -335,12 +339,19 @@ function Head({
         <Trash2 size={18} />
       </span>
       <div className="adm-trash__text">
-        <span id="adm-trash-title" className="adm-label">
-          {title}
-          {count !== undefined && (
-            <span className="adm-trash__count" data-testid="trash-count">
-              {count}
-            </span>
+        <span className="ui-title-row">
+          <span id="adm-trash-title" className="adm-label">
+            {title}
+            {count !== undefined && (
+              <span className="adm-trash__count" data-testid="trash-count">
+                {count}
+              </span>
+            )}
+          </span>
+          {info && (
+            <InfoTip id="adm-trash-help" label={title}>
+              {info}
+            </InfoTip>
           )}
         </span>
         <span className="adm-hint">{hint}</span>

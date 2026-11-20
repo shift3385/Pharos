@@ -119,15 +119,19 @@
   height: 44px;
 }
 
-/* Search field of a list toolbar (SPEC §5: 40 px, 44 px and 15 px text on mobile). */
+/* Search field of a list toolbar (SPEC §5: 40 px, 44 px and 15 px text on mobile).
+   `flex: 1 1 260px` grows it along a row toolbar. Inside a column (a dialog body)
+   that basis would become its height, so the height is also capped (FIX-36). */
 .ui-search {
+  --ui-search-height: 40px;
   display: flex;
   align-items: center;
   gap: 8px;
   flex: 1 1 260px;
   min-width: 0;
   max-width: 360px;
-  height: 40px;
+  height: var(--ui-search-height);
+  max-height: var(--ui-search-height);
   padding: 0 12px;
   color: var(--color-text-muted);
   background: var(--color-surface-2);
@@ -153,8 +157,8 @@
 }
 
 [data-viewport="mobile"] .ui-search {
+  --ui-search-height: 44px;
   max-width: none;
-  height: 44px;
 }
 
 [data-viewport="mobile"] .ui-search input {

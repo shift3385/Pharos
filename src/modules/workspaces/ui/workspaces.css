@@ -47,10 +47,26 @@
 .ws-page {
   display: grid;
   gap: 16px;
-  max-width: 1040px;
+  max-width: 1200px;
 }
 .ws-page--narrow {
   max-width: 560px;
+}
+/* Title and tabs: one block, with a band over a background photo (FIX-36). */
+.ws-page__top {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+/* The panel stacks its cards with the page rhythm. */
+.ws-panel {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.ws-muted {
+  margin: 0;
+  color: var(--color-text-secondary);
 }
 .ws-page__head {
   display: flex;
@@ -63,9 +79,19 @@
   margin: 0;
   font-size: 1.4rem;
 }
+/* Every section is a card (FIX-36), as «Proyectos» and «Ajustes». */
 .ws-section {
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  min-width: 0;
+  padding: clamp(16px, 2.2cqi, 24px);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+details.ws-section > summary {
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
 }
 .ws-section__title {
   margin: 0;
@@ -81,7 +107,7 @@
 .ws-table th,
 .ws-table td {
   padding: 8px 10px;
-  border-bottom: 1px solid var(--border, #d7dde8);
+  border-bottom: 1px solid var(--color-border);
   text-align: left;
   vertical-align: middle;
 }
@@ -89,7 +115,7 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--text-muted, #5a6680);
+  color: var(--color-text-secondary);
 }
 .ws-roles {
   display: grid;
@@ -105,7 +131,7 @@
 .ws-code {
   margin: 8px 0;
   padding: 10px 12px;
-  border: 1px dashed var(--border, #d7dde8);
+  border: 1px dashed var(--color-border);
   border-radius: 8px;
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
   font-size: 1.05rem;
@@ -122,7 +148,7 @@
   margin-top: 8px;
 }
 .ws-error {
-  color: var(--danger, #b42318);
+  color: var(--color-error-text);
   margin: 4px 0 0;
 }
 .ws-notices {

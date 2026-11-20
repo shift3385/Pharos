@@ -14,8 +14,10 @@ import { joinLabels } from "@shared/ui/joinLabels";
 import {
   applyAppearance,
   backgroundImageUrl,
+  backgroundTooSmall,
   DEFAULT_BACKGROUND,
   loadSettings,
+  MIN_BACKGROUND,
   saveSettings,
 } from "../../model/settings";
 import { DownloadFolderField } from "../DownloadFolderField";
@@ -23,6 +25,16 @@ import { SettingsRow, SettingsSection } from "../SettingsSection";
 import { TrashSection } from "../TrashSection";
 
 const THEMES: ThemePreference[] = ["light", "dark", "system"];
+
+/** The pixel size of an image, or null when it cannot be decoded here. */
+function imageSize(src: string): Promise<{ width: number; height: number } | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
 
 /** Administración → General (SPEC §8): appearance (theme with «Según el
  *  sistema», language, custom background) and files and storage (download
@@ -82,6 +94,12 @@ export function GeneralTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean)
       reader.onload = () => resolve(String(reader.result));
       reader.readAsDataURL(file);
     });
+    // An icon or a logo would be stretched over the whole window (FIX-36).
+    const size = await imageSize(dataUri);
+    if (size && backgroundTooSmall(size.width, size.height)) {
+      toast(t("admin.settings.bgTooSmall", { width: MIN_BACKGROUND.width, height: MIN_BACKGROUND.height }), "error");
+      return;
+    }
     setSettings((s) => ({ ...s, backgroundImage: dataUri }));
   }
 

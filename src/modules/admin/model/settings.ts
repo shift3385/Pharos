@@ -155,4 +155,15 @@ export function applyAppearance(settings: AdminSettings = loadSettings()): void 
   const image = backgroundImageUrl(settings.backgroundImage);
   root.style.setProperty("--app-bg-image", image ? `url("${image}")` : "none");
   root.style.setProperty("--app-bg-opacity", String((settings.backgroundOpacity ?? 40) / 100));
+  // A photo is showing: page heads get a readable band (`shared/theme/surfaces.css`).
+  root.toggleAttribute("data-app-bg", Boolean(image) && (settings.backgroundOpacity ?? 40) > 0);
+}
+
+/** Smallest background image, in px: a smaller one (an icon, a logo) is
+ *  stretched over the whole window and blurs into a broken-looking page. */
+export const MIN_BACKGROUND = { width: 800, height: 450 } as const;
+
+/** Whether an image of this size is too small to be the app background. */
+export function backgroundTooSmall(width: number, height: number): boolean {
+  return width < MIN_BACKGROUND.width || height < MIN_BACKGROUND.height;
 }

@@ -9,15 +9,14 @@
     .home-card,
     .adm-card,
     .cy-summary,
-    .cy-panel,
-    .cy-mcard,
     .df-card,
-    .df-mcard,
     .df-section,
     .pl-card,
     .profile-card,
     .pj-recent__card,
     .pj-card-box,
+    .ui-card,
+    .ws-section,
     .tpl-card,
     .cl-card-box,
     .tc-body,
@@ -26,7 +25,6 @@
     .tz-kpi,
     .tz-panel,
     .tz-filters,
-    .rn-card,
     .empty-section__card
   ) {
   box-shadow: var(--shadow-2);

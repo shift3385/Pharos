@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { ListField, PairListField } from "@shared/ui/fields";
 import { DatePicker } from "@shared/ui/DatePicker";
 import { FormField } from "@shared/ui/FormField";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { required } from "@shared/validation";
 import {
@@ -51,13 +52,17 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
             {/* The status is not edited here: it moves with the actions of
                 «Estado del plan», as a case's (PLN-08, ADR-0049). */}
             <div className="tp-field tpw-ident__status">
-              <FieldLabel text={t("testPlan.status")} />
-              <span data-testid="plan-status" data-status={form.status}>
+              <div className="ui-title-row">
+                <FieldLabel text={t("testPlan.status")} />
+                <InfoTip id="tpw-status-help" label={t("testPlan.status")}>
+                  {t("testPlan.identificationHint")}
+                </InfoTip>
+              </div>
+              <span data-testid="plan-status" data-status={form.status} aria-describedby="tpw-status-help">
                 <StatusPill tone={PLAN_STATUS_TONE[form.status] ?? "neutral"} dot strike={form.status === "obsolete"}>
                   {t(`testPlan.statusLabel.${form.status}`)}
                 </StatusPill>
               </span>
-              <p className="tpw-status-hint">{t("testPlan.identificationHint")}</p>
             </div>
           </div>
           <div className="tpw-grid tpw-grid--3">

@@ -63,17 +63,20 @@ export function AdminPage() {
 
   return (
     <div className="adm">
-      <header className="adm__header">
-        <h1 className="t-page-title">{t("admin.title")}</h1>
-        <p className="adm__subtitle">{t("admin.subtitle")}</p>
-      </header>
+      {/* Title and tab strip share one band over the background photo (FIX-36). */}
+      <div className="adm__top ui-backdrop">
+        <header className="adm__header">
+          <h1 className="t-page-title">{t("admin.title")}</h1>
+          <p className="adm__subtitle">{t("admin.subtitle")}</p>
+        </header>
 
-      <AdminTabs
-        current={tab}
-        groups={adminTabGroups(isAdmin)}
-        counts={{ templates: templateCount ?? storedCount }}
-        onSelect={select}
-      />
+        <AdminTabs
+          current={tab}
+          groups={adminTabGroups(isAdmin)}
+          counts={{ templates: templateCount ?? storedCount }}
+          onSelect={select}
+        />
+      </div>
 
       <div
         id={ADMIN_PANEL_ID}

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { CircleCheck, CircleAlert } from "lucide-react";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { STEP_IDS } from "./steps";
 import type { StepProps } from "./stepProps";
 
@@ -14,9 +15,14 @@ export function FinishStep({ form, completion, goTo }: StepProps) {
   );
   return (
     <section className="tpw-finish" aria-labelledby="tpw-finish-title">
-      <h3 id="tpw-finish-title" className="tpw-finish__title">
-        {t("testPlan.finish.title")}
-      </h3>
+      <div className="ui-title-row">
+        <h3 id="tpw-finish-title" className="tpw-finish__title">
+          {t("testPlan.finish.title")}
+        </h3>
+        <InfoTip id="tpw-finish-help" label={t("testPlan.finish.title")}>
+          {t("testPlan.finish.exportHint")}
+        </InfoTip>
+      </div>
       <p className="tpw-finish__line">
         {missing.length === 0 ? (
           <CircleCheck size={16} className="tpw-ok" aria-hidden="true" />
@@ -41,7 +47,6 @@ export function FinishStep({ form, completion, goTo }: StepProps) {
       <p className="tpw-hint">
         {t("testPlan.finish.status", { status: t(`testPlan.statusLabel.${form.status}`) })}
       </p>
-      <p className="tpw-hint">{t("testPlan.finish.exportHint")}</p>
     </section>
   );
 }

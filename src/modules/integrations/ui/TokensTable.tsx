@@ -80,7 +80,7 @@ export function TokensTable({
                 {columns.ip && tok.lastUsedIp && (
                   <>
                     <br />
-                    <span className="tp__muted">{tok.lastUsedIp}</span>
+                    <span className="int-muted">{tok.lastUsedIp}</span>
                   </>
                 )}
               </td>
@@ -89,7 +89,7 @@ export function TokensTable({
                 {tok.status === "inactive" && (
                   <>
                     <br />
-                    <span className="tp__muted">{t(tok.inactiveReason === "owner_disabled" ? "integrations.status.ownerDisabled" : "integrations.status.ownerLeft", {
+                    <span className="int-muted">{t(tok.inactiveReason === "owner_disabled" ? "integrations.status.ownerDisabled" : "integrations.status.ownerLeft", {
                         name: tok.owner.name,
                       })}</span>
                   </>

@@ -59,10 +59,11 @@ export function JoinWorkspacePage() {
 
   return (
     <section className="ws-page ws-page--narrow" aria-labelledby="ws-join-title">
-      <h1 id="ws-join-title" className="ws-page__title">
+      <h1 id="ws-join-title" className="ws-page__title ui-backdrop">
         {t("workspaces.join.title")}
       </h1>
       <form
+        className="ui-card"
         onSubmit={(e) => {
           e.preventDefault();
           void (preview ? join() : check());

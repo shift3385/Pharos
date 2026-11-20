@@ -8,7 +8,7 @@ import {
 import { StatusPill, type PillTone } from "@shared/ui/StatusPill";
 import "./ProjectHeader.css";
 
-/** Plan status → state colour (SPEC §4: Borrador neutral, Revisado info,
+/** Plan status → state colour (SPEC §4: Borrador neutral, En revisión info,
  *  Aprobado success, Obsoleto neutral struck through). */
 const PLAN_TONE: Record<string, PillTone> = {
   draft: "neutral",
@@ -87,7 +87,7 @@ export function ProjectHeader({
     // Without actions only the hidden heading is left: no empty row (gap).
     if (!actions) return <h1 className="sr-only">{info.name}</h1>;
     return (
-      <header className="pj-header pj-header--mobile">
+      <header className="pj-header pj-header--mobile ui-backdrop">
         <h1 className="sr-only">{info.name}</h1>
         <div className="pj-header__actions">{actions}</div>
       </header>
@@ -97,7 +97,7 @@ export function ProjectHeader({
   const status =
     info.planStatus === undefined ? undefined : (info.planStatus ?? "none");
   return (
-    <header className="pj-header">
+    <header className="pj-header ui-backdrop">
       {badge && (
         <span className="pj-header__badge t-id" aria-hidden="true">
           {badge}

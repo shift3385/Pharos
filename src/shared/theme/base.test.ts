@@ -52,11 +52,18 @@ describe("base.css", () => {
     });
 
     it("leaves phones with the system scrollbar", () => {
+      // The phone layout gets one only with a mouse (a desktop window, FIX-36):
+      // those rules sit inside `@media (pointer: fine)`, indented.
+      const fine = css.indexOf("@media (pointer: fine)");
+      expect(fine).toBeGreaterThan(0);
       const selectors = css
+        .slice(0, fine)
         .split("\n")
         .filter((l) => !l.startsWith("@") && /::-webkit-scrollbar.*[,{]\s*$/.test(l));
       expect(selectors.length).toBeGreaterThan(0);
       for (const s of selectors) expect(s.startsWith(desk)).toBe(true);
+      const phone = css.slice(fine, css.indexOf("\n}\n", fine));
+      expect(phone).toMatch(/:root\[data-viewport="mobile"\] ::-webkit-scrollbar-button \{\s*display:\s*none;/);
     });
   });
 

@@ -13,6 +13,9 @@ export interface DetectionRow {
   status: FieldStatus;
   /** Short human preview of the detected value (text/list fields). */
   preview?: string;
+  /** i18n key of the detected value, shown instead of `preview` (a priority
+   *  or status: its label, not the stored key such as «medium»). */
+  previewKey?: string;
   /** Row count (table fields). */
   count?: number;
 }
