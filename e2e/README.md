@@ -65,8 +65,9 @@ before the database and the build.
 A chapter declares in `uses` (`manifest.ts`) the named data it reads and is
 not about: `cuenta-liomar`, `proyectos`, `prefijos`, `ajustes`, `plan`,
 `requisitos`, `casos-base`, `caso-dataset`, `ciclo`, `resultados`,
-`hallazgos`, `ejecucion-manual`, `defectos`, `requisitos-api`,
-`cuenta-jorge`, `equipo-qa`,
+`hallazgos`, `ejecucion-manual`, `defectos`, `ciclo-ejecutado` (the cycle's
+runs completed), `ciclo-cerrado` (the cycle closed with its gate and an
+approved closure report), `requisitos-api`, `cuenta-jorge`, `equipo-qa`,
 `jorge-en-equipo` (`PREREQUISITES`: each with its contract, the chapter that
 makes it on screen and how it is loaded). Before the chapter's first step,
 `ensure` (`prepare.ts`) syncs, checks each one against the server as Liomar
@@ -92,6 +93,15 @@ steps: they log to `e2e/results/tours/prepare.jsonl` (prerequisite, outcome,
 time). One that fails fails the chapter's first step with «prerequisite … could
 not be prepared». After a chapter that passed, what it made on screen is
 compared with its loaders' contract (a warning on drift).
+
+A chapter may have a **second part** that has to run later than the first
+(it needs data later chapters make): a `CHAPTERS` entry with `partOf` (the
+chapter it belongs to), the same `number` and `inManual: false`. Its steps
+are recorded under that chapter, numbered after the steps of the first
+part's tour file, so the manual prints them at the end of it. Chapter 9 uses
+it: `09-ciclos-cierre.tour.ts` closes the cycle after chapters 10 to 13,
+because nobody closes a cycle before running it. `--spec 09` runs both
+parts.
 
 ### The three accounts
 
