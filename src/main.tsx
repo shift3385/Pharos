@@ -8,6 +8,11 @@ import "@shared/fonts";
 import "@shared/theme/tokens.css";
 import "@shared/theme/base.css";
 import "@shared/theme/typography.css";
+import "@shared/theme/surfaces.css";
+// Shared classes used by many modules (`ui-btn`, `ui-badge`): loaded once for
+// the whole app, so a screen that forgets to import them is not left unstyled.
+import "@shared/ui/buttons.css";
+import "@shared/ui/pills.css";
 import "@shared/theme/cardShadow.css";
 import "@shared/i18n";
 

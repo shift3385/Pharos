@@ -193,6 +193,7 @@ export async function parsePlanXlsx(
     const raw = readValue(ws, label, spec.dir);
     let filled = raw.trim().length > 0;
     let prev: string | undefined = raw ? preview(raw.replace(/\n/g, " · ")) : undefined;
+    let prevKey: string | undefined;
 
     switch (spec.kind) {
       case "text":
@@ -222,13 +223,15 @@ export async function parsePlanXlsx(
       case "status":
         status = raw ? (spec.rev!.get(norm(raw)) ?? "") : "";
         prev = status || undefined;
+        // The report shows the label in the person's language, not «draft».
+        prevKey = status ? `testPlan.statusLabel.${status}` : undefined;
         filled = status.length > 0;
         break;
       case "methodology":
         Object.assign(data, parseMethodology(raw));
         break;
     }
-    push({ labelKey: spec.labelKey, status: filled ? "filled" : "empty", preview: prev });
+    push({ labelKey: spec.labelKey, status: filled ? "filled" : "empty", preview: prev, previewKey: prevKey });
     await yieldFrame();
   }
 

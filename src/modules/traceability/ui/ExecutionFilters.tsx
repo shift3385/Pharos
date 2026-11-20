@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { Select } from "@shared/ui/Select";
 import { X } from "lucide-react";
 import type { MatrixSort } from "../model/matrix";
@@ -95,7 +96,12 @@ export function ExecutionFilters({
           {t("traceability.filters.clear")}
         </button>
       )}
-      <p className="tz-filters__hint">{t("traceability.filters.hint")}</p>
+      {/* Behind a «?» at the end of the filters (FIX-37), not a standing line. */}
+      <span className="tz-filters__help">
+        <InfoTip id="tz-filters-help" label={t("traceability.filters.label")}>
+          {t("traceability.filters.hint")}
+        </InfoTip>
+      </span>
     </div>
   );
 }

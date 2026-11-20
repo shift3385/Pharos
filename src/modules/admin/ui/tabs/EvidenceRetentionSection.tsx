@@ -227,7 +227,7 @@ export function EvidenceRetentionSection({ onChanged }: { onChanged?: () => void
           <span className="adm-inline">
             <button
               type="button"
-              className="adm-btn"
+              className="adm-btn adm-btn--secondary"
               disabled={busy || changed.length === 0 || !valid}
               onClick={() => void save()}
               data-testid="evidence-retention-save"

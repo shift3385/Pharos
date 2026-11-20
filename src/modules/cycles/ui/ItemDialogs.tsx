@@ -204,7 +204,7 @@ export function AddByFilterDialog({
       <p className="cd__msg">{t("cycles.filter.hint")}</p>
       <div className="cy-form">
         <FormField label={t("cycles.filter.tags")} hint={t("cycles.filter.tagsHint")}>
-          {(p) => <input {...p} value={tags} placeholder="smoke, regression" onChange={(e) => setTags(e.target.value)} />}
+          {(p) => <input {...p} value={tags} placeholder={t("cycles.filter.tagsPlaceholder")} onChange={(e) => setTags(e.target.value)} />}
         </FormField>
         <fieldset className="cy-fieldset">
           <legend className="tp-field__label">{t("cycles.filter.priorities")}</legend>

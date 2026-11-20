@@ -1,5 +1,8 @@
 /* The project library (CAS-01, bocetos 1–6). Colors come from the theme
-   tokens only; a shared step's block in a case is tinted with the info tone. */
+   tokens only; a shared step's block in a case is tinted with the info tone.
+   The list and both editors sit on the general card (`pj-card-box`, as in
+   «Proyectos» and «Ajustes»), so nothing is drawn over the background image
+   (FIX-35). */
 .lb,
 .lb-editor {
   display: flex;
@@ -154,6 +157,15 @@
   border-inline-start: 1px solid var(--color-border);
 }
 
+/* A section title with its «?» help beside it. */
+.lb-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
 .lb-subtitle {
   font-size: var(--fs-ui);
   font-weight: var(--fw-semibold);
@@ -221,7 +233,7 @@
   padding-top: 8px;
   font-family: var(--font-mono);
   font-size: var(--fs-metadata);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .lb-step-edit__fields {
@@ -516,6 +528,12 @@
   flex-wrap: wrap;
   gap: 2px;
   margin-inline-start: auto;
+}
+
+/* A long action («Desvincular (copiar filas)») moves to the next row whole
+   instead of breaking inside its button. */
+.lb-block__actions .ui-btn {
+  white-space: nowrap;
 }
 
 .lb-tag,

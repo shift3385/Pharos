@@ -23,6 +23,7 @@
     "close": "Cerrar"
   },
   "dbError": {
+    "technical": "Detalles técnicos",
     "title": "No se pudo abrir la base de datos local",
     "body": "Pharos no ha modificado ningún archivo. Cierra la app y vuelve a intentarlo; si el problema sigue, comparte este detalle con soporte.",
     "inUseTitle": "Otro Pharos está actualizando tus datos",
@@ -53,6 +54,11 @@
     }
   },
   "common": {
+    "chooseFile": "Elegir archivo…",
+    "chooseFolder": "Elegir carpeta…",
+    "noFileChosen": "Ningún archivo elegido",
+    "filesChosen_one": "{{count}} archivo elegido",
+    "filesChosen_other": "{{count}} archivos elegidos",
     "retry": "Reintentar",
     "loading": "Cargando…",
     "delete": "Eliminar",
@@ -585,6 +591,7 @@
       "bgChoose": "Elegir imagen…",
       "bgClear": "Quitar",
       "bgDefault": "Usar el predeterminado",
+      "bgTooSmall": "La imagen es demasiado pequeña para el fondo: se vería estirada. Elige una de al menos {{width}} × {{height}} px.",
       "downloadSaved": "Carpeta de descarga guardada: {{path}}",
       "opacity": "Opacidad del fondo",
       "opacityHint": "Más bajo = más transparente. Solo afecta al fondo, no al contenido. El cambio se ve al momento; se conserva al pulsar «Guardar ajustes».",
@@ -1412,7 +1419,7 @@
     "header": {
       "plan": {
         "draft": "Plan borrador",
-        "reviewed": "Plan revisado",
+        "reviewed": "Plan en revisión",
         "approved": "Plan aprobado",
         "obsolete": "Plan obsoleto",
         "none": "Sin plan"
@@ -2733,8 +2740,8 @@
       },
       "approvedOnlyLabel": "Solo los casos aprobados",
       "approvedOnly": "Solo aprobados",
-      "leftOut_one": "Entran {{kept}} casos. Se queda fuera {{count}} que no está aprobado: {{keys}}.",
-      "leftOut_other": "Entran {{kept}} casos. Se quedan fuera {{count}} que no están aprobados: {{keys}}.",
+      "leftOut_one": "Casos que entran: {{kept}}. Se queda fuera {{count}} que no está aprobado: {{keys}}.",
+      "leftOut_other": "Casos que entran: {{kept}}. Se quedan fuera {{count}} que no están aprobados: {{keys}}.",
       "nothing": "Ningún caso entra en la baseline. Desmarca «Solo los casos aprobados» o elige otros casos.",
       "freeze_one": "Congelar {{count}} caso",
       "freeze_other": "Congelar {{count}} casos",
@@ -3940,6 +3947,7 @@
     "clonedToast": "Ciclo clonado como {{key}}",
     "deletedToast": "Ciclo {{key}} eliminado",
     "deleteTitle": "Eliminar {{key}}",
+    "deleteMessage_zero": "Se eliminan el ciclo y sus elementos. No tiene runs.",
     "deleteMessage_one": "Se eliminan el ciclo y sus elementos. Su run se conserva, sin ciclo.",
     "deleteMessage_other": "Se eliminan el ciclo y sus elementos. Sus {{count}} runs se conservan, sin ciclo.",
     "deleteConfirm": "Sí, eliminar",
@@ -4059,6 +4067,7 @@
       "title": "Añadir casos por filtro",
       "hint": "Se añaden los casos que coinciden ahora; si después cambian, el ciclo no cambia.",
       "tags": "Etiquetas",
+      "tagsPlaceholder": "humo, regresión",
       "tagsHint": "Cualquiera de ellas, separadas por comas.",
       "priorities": "Prioridad",
       "statuses": "Estado del caso",
@@ -5722,7 +5731,8 @@
       "addColumn": "Añadir columna",
       "import": "Importar CSV o xlsx…",
       "export": "Exportar CSV",
-      "counts": "Pega desde Excel con Ctrl+V · {{rows}} filas · {{columns}} columnas",
+      "counts": "Filas: {{rows}} · Columnas: {{columns}}",
+      "pasteTip": "Pega desde Excel con Ctrl+V.",
       "gridLabel": "Datos del dataset",
       "pasteHere": "Pega aquí una tabla copiada de una hoja de cálculo",
       "pastePlaceholder": "Ctrl+V: la primera fila serán los nombres de las columnas",

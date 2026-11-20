@@ -4,6 +4,7 @@ import { useServerInfo } from "@modules/server-picker";
 import { APP_BUILD, APP_VERSION } from "@shared/version";
 import { Alert } from "@shared/ui/Alert";
 import { FormField } from "@shared/ui/FormField";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { Select } from "@shared/ui/Select";
 import { useToast } from "@shared/ui/Toast";
 import { tokensApi, type WorkspaceProject } from "../api/tokensApi";
@@ -80,12 +81,16 @@ export function ConnectCiSection({ workspace, manager }: { workspace: { id: stri
 
   return (
     <section className="ws-section" aria-labelledby={`${id}-title`} data-testid="connect-ci">
-      <h2 id={`${id}-title`} className="ws-section__title">
-        {t("integrations.ci.title")}
-      </h2>
-      <p className="tp__muted">{t("integrations.ci.hint")}</p>
+      <div className="ui-title-row">
+        <h2 id={`${id}-title`} className="ws-section__title">
+          {t("integrations.ci.title")}
+        </h2>
+        <InfoTip id={`${id}-help`} label={t("integrations.ci.title")}>
+          {t("integrations.ci.hint")}
+        </InfoTip>
+      </div>
       {error && <Alert kind="error">{error}</Alert>}
-      {projects && projects.length === 0 && <p className="tp__muted">{t("integrations.ci.noProjects")}</p>}
+      {projects && projects.length === 0 && <p className="int-muted">{t("integrations.ci.noProjects")}</p>}
       {projects && projects.length > 0 && (
         <div className="int-ci">
           <div className="int-ci__form">
@@ -161,7 +166,12 @@ export function UseInCliHint() {
   return (
     <div className="int-cli" data-testid="use-in-cli">
       <div className="int-head">
-        <p className="int-subtitle">{t("integrations.ci.cliTitle")}</p>
+        <div className="ui-title-row">
+          <p className="int-subtitle">{t("integrations.ci.cliTitle")}</p>
+          <InfoTip id={`${id}-help`} label={t("integrations.ci.cliTitle")}>
+            {t("integrations.ci.cliHint")}
+          </InfoTip>
+        </div>
         <button
           type="button"
           className="ui-btn ui-btn--small"
@@ -174,7 +184,6 @@ export function UseInCliHint() {
       <pre id={`${id}-cmd`} tabIndex={-1} className="int-snippet">
         {command}
       </pre>
-      <p className="tp__muted">{t("integrations.ci.cliHint")}</p>
     </div>
   );
 }

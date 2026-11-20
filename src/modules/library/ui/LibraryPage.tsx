@@ -236,7 +236,7 @@ export function LibraryPage({ projectId }: { projectId: string }) {
         ];
 
   return (
-    <div className="lb">
+    <div className="lb pj-card-box">
       <Tabs
         label={t("library.title")}
         variant="underline"

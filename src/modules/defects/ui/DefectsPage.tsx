@@ -307,7 +307,10 @@ export function DefectsPage({
           <TableSkeleton columns={columns} minWidth={view === "desktop" ? 860 : 600} rowHeight={32} />
         )
       ) : defects.length === 0 ? (
-        <p className="df-empty">{t("defects.empty")}</p>
+        // On a card (FIX-37): over the background image it was text on the photo.
+        <p className="df-empty" data-testid="defects-empty">
+          {t("defects.empty")}
+        </p>
       ) : mode === "board" ? (
         <DefectBoard
           defects={visible}

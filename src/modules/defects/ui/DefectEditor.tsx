@@ -12,6 +12,7 @@ import {
 import { capabilities } from "@shared/platform";
 import { saveVia } from "@shared/export/saveFile";
 import { ListField } from "@shared/ui/fields";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { notify, unlessReported } from "@shared/ui/notify";
 import { Select } from "@shared/ui/Select";
 import { useToast } from "@shared/ui/Toast";
@@ -362,7 +363,7 @@ export function DefectEditor({
   return (
     <div className="df-editor">
       {confirmDialog}
-      <header className="tc-editor__top">
+      <header className="tc-editor__top df-editor__top">
         <button type="button" className="tp-editor__back" onClick={onClose}>
           ← {t("defects.back")}
         </button>
@@ -574,13 +575,25 @@ export function DefectEditor({
         </section>
 
         <section className="df-section" aria-labelledby={`${uid}-ext`}>
-          <h3 id={`${uid}-ext`} className="df-section__title">
-            {t("defects.section.external")}
-          </h3>
+          {/* The help behind a «?» beside the title (FIX-37); both fields
+              still announce it. */}
+          <div className="df-section__head">
+            <h3 id={`${uid}-ext`} className="df-section__title">
+              {t("defects.section.external")}
+            </h3>
+            <InfoTip id={`${uid}-ext-help`} label={t("defects.section.external")}>
+              {t("defects.field.externalHint")}
+            </InfoTip>
+          </div>
           <div className="tc-form__grid df-grid df-grid--2">
             <label className="tp-field">
               <span>{t("defects.field.externalKey")}</span>
-              <input value={form.externalKey} maxLength={200} onChange={(e) => update({ externalKey: e.target.value })} />
+              <input
+                value={form.externalKey}
+                maxLength={200}
+                aria-describedby={`${uid}-ext-help`}
+                onChange={(e) => update({ externalKey: e.target.value })}
+              />
             </label>
             <label className="tp-field">
               <span>{t("defects.field.externalUrl")}</span>
@@ -588,11 +601,11 @@ export function DefectEditor({
                 type="url"
                 value={form.externalUrl}
                 maxLength={2000}
+                aria-describedby={`${uid}-ext-help`}
                 onChange={(e) => update({ externalUrl: e.target.value })}
               />
             </label>
           </div>
-          <p className="tp-field__hint">{t("defects.field.externalHint")}</p>
         </section>
 
         {fields.length > 0 && (

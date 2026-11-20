@@ -4,6 +4,7 @@ import { useServerInfo } from "@modules/server-picker";
 import { Alert } from "@shared/ui/Alert";
 import { Dialog } from "@shared/ui/Dialog";
 import { FormField } from "@shared/ui/FormField";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { Select } from "@shared/ui/Select";
 import { useToast } from "@shared/ui/Toast";
 import { required } from "@shared/validation";
@@ -103,8 +104,13 @@ export function NewTokenDialog({
           />
         )}
       </FormField>
-      <fieldset className="int-scopes">
-        <legend>{t("integrations.tokens.scopes")}</legend>
+      <fieldset className="int-scopes" aria-labelledby={`${id}-scopes`}>
+        <legend className="ui-title-row">
+          <span id={`${id}-scopes`}>{t("integrations.tokens.scopes")}</span>
+          <InfoTip id={`${id}-scopes-help`} label={t("integrations.tokens.scopes")}>
+            {t("integrations.tokens.scopesHint")}
+          </InfoTip>
+        </legend>
         {API_SCOPES.map((s) => (
           <label key={s} className="int-scope">
             <input
@@ -117,7 +123,6 @@ export function NewTokenDialog({
             <code className="int-chip">{s}</code>
           </label>
         ))}
-        <p className="tp__muted">{t("integrations.tokens.scopesHint")}</p>
         {scopeMissing && (
           <p className="int-issue" role="alert">
             {t("integrations.tokens.scopeRequired")}
@@ -236,7 +241,7 @@ export function RotateTokenDialog({
   }
 
   return (
-    <Dialog labelledBy={`${id}-title`} describedBy={`${id}-msg`} onClose={onCancel} dismissable={!busy}>
+    <Dialog labelledBy={`${id}-title`} describedBy={`${id}-msg`} onClose={onCancel} dismissable={!busy} className="cd int-rotate">
       <h3 id={`${id}-title`} className="cd__title">
         {t("integrations.tokens.rotateTitle", { name })}
       </h3>

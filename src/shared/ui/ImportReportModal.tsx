@@ -66,7 +66,9 @@ export function ImportReportModal({
                 ? t("importReport.notFound")
                 : r.count != null
                   ? t("importReport.rows", { count: r.count })
-                  : (r.preview ?? t("importReport.blank"))}
+                  : r.previewKey
+                    ? t(r.previewKey)
+                    : (r.preview ?? t("importReport.blank"))}
             </span>
           </li>
         ))}

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   applyAppearance,
   backgroundImageUrl,
+  backgroundTooSmall,
   DEFAULT_BACKGROUND,
   DEFAULT_SETTINGS,
   loadSettings,
@@ -95,6 +96,21 @@ describe("admin settings", () => {
     expect(root.getPropertyValue("--app-bg-image")).toContain("default-background");
     expect(root.getPropertyValue("--app-bg-opacity")).toBe("0.4");
     expect(document.documentElement).toHaveAttribute("data-card-shadow");
+  });
+
+  it("marks the root while a background photo shows, so page heads get a band (FIX-36)", () => {
+    applyAppearance({ ...DEFAULT_SETTINGS, backgroundImage: "data:x", backgroundOpacity: 40 });
+    expect(document.documentElement).toHaveAttribute("data-app-bg");
+    applyAppearance({ ...DEFAULT_SETTINGS, backgroundImage: "data:x", backgroundOpacity: 0 });
+    expect(document.documentElement).not.toHaveAttribute("data-app-bg");
+    applyAppearance({ ...DEFAULT_SETTINGS, backgroundImage: "" });
+    expect(document.documentElement).not.toHaveAttribute("data-app-bg");
+  });
+
+  it("finds an icon-sized image too small for the background (FIX-36)", () => {
+    expect(backgroundTooSmall(256, 256)).toBe(true);
+    expect(backgroundTooSmall(1920, 400)).toBe(true);
+    expect(backgroundTooSmall(1920, 1080)).toBe(false);
   });
 
   it("clamps bad retention and opacity to safe ranges", () => {

@@ -96,7 +96,7 @@ describe("project routes (ADR-0029)", () => {
   it("heads every section with the project, without the old «← Proyectos» bar", async () => {
     renderAt("/projects/a/settings");
     expect(await screen.findByRole("heading", { level: 1, name: "Proyecto A" })).toBeInTheDocument();
-    expect(await screen.findByText("Plan revisado")).toBeInTheDocument();
+    expect(await screen.findByText("Plan en revisión")).toBeInTheDocument();
     expect(screen.getByText("240 casos")).toBeInTheDocument();
     expect(screen.getByText("0 requisitos")).toBeInTheDocument();
     expect(screen.getByText("Cierre del ciclo: 7 nov")).toBeInTheDocument();

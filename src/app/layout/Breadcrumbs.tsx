@@ -70,5 +70,15 @@ function trail(
     return [admin, { label: t(`admin.tabs.${tab}`) }];
   }
   if (pathname.startsWith("/profile")) return [app, { label: t("nav.profile") }];
+  // The workspace's pages (FIX-36): not «Inicio».
+  if (pathname.startsWith("/workspaces/join")) return [app, { label: t("workspaces.join.title") }];
+  if (pathname.startsWith("/workspaces")) {
+    const tab = new URLSearchParams(search).get("tab") === "integrations" ? "integrations" : "members";
+    return [
+      app,
+      { label: t("workspaces.switcher.label"), to: "/workspaces/members" },
+      { label: t(`workspaces.tabs.${tab}`) },
+    ];
+  }
   return [app, { label: t("nav.dashboard") }];
 }

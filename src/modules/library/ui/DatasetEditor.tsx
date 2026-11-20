@@ -4,6 +4,7 @@ import type { TFunction } from "i18next";
 import { Download, Upload } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { saveFile } from "@shared/export/saveFile";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { LoadError } from "@shared/ui/LoadError";
 import { unlessReported } from "@shared/ui/notify";
 import { FormSkeleton } from "@shared/ui/Skeleton";
@@ -266,6 +267,9 @@ export function DatasetEditor({
               columns: form.columns.length,
             })}
           </span>
+          <InfoTip id="lb-dataset-paste-help" label={t("library.dataset.gridLabel")}>
+            {t("library.dataset.pasteTip")}
+          </InfoTip>
         </div>
         <DatasetGrid
           value={form}

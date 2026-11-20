@@ -8,6 +8,7 @@ import type {
 } from "@shared/contracts/contract";
 import { Dialog } from "@shared/ui/Dialog";
 import { FormField } from "@shared/ui/FormField";
+import { FileInput } from "@shared/ui/FileInput";
 import { Select } from "@shared/ui/Select";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { cycleApi } from "@modules/cycles";
@@ -246,9 +247,8 @@ export function ImportReportDialog({
               required
             >
               {(p) => (
-                <input
+                <FileInput
                   {...p}
-                  type="file"
                   accept=".json,.ndjson,.jsonl,.xml,.sarif,.trx,.zip,application/json,application/xml,text/xml,application/zip"
                   disabled={step !== "form"}
                   onChange={(e) => void pick(e.target.files?.[0])}
@@ -272,12 +272,9 @@ export function ImportReportDialog({
                 hint={t("runs.import.folderHint")}
               >
                 {(p) => (
-                  <input
+                  <FileInput
                     {...p}
-                    type="file"
-                    multiple
-                    // Not in React's types: lets the user pick a whole folder.
-                    {...{ webkitdirectory: "" }}
+                    folder
                     disabled={step !== "form"}
                     onChange={(e) =>
                       setFolder(Array.from(e.target.files ?? []))

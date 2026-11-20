@@ -1,0 +1,48 @@
+/* Surfaces over the app's background photo (FIX-36).
+ *
+ * The background (Administración → General) is drawn under the whole content
+ * column, which has no surface of its own: anything outside a card sits on the
+ * photo. Two shared classes cover that:
+ *
+ * - `.ui-card`: the general card, the same look as «Proyectos» and «Ajustes»
+ *   (`pj-card-box`). Wrap a page region that has no surface in it.
+ * - `.ui-backdrop`: a page or section head (title, subtitle, meta line, tab
+ *   strip) that is meant to sit on the page. With no background photo it stays
+ *   as it is; with one (`:root[data-app-bg]`, set by `applyAppearance`) it gets
+ *   a translucent surface band, so grey text is never read on the photo.
+ *
+ * `.ui-title-row` puts a heading and its «?» (InfoTip) on one line without the
+ * button joining the heading's accessible name. */
+
+.ui-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: clamp(16px, 2.2cqi, 24px);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+:root[data-app-bg] .ui-backdrop {
+  padding: 12px 16px;
+  background: color-mix(in srgb, var(--color-surface-1) 88%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+  border-radius: 12px;
+}
+
+.ui-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  min-width: 0;
+}
+
+.ui-title-row > :is(h1, h2, h3, h4, p, legend) {
+  margin: 0;
+}

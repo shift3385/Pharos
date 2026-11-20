@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { Dialog } from "@shared/ui/Dialog";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { LoadError } from "@shared/ui/LoadError";
 import { libraryApi } from "../../api/libraryApi";
 import { columnsOfItem, rowsOfItem, type LibraryItem } from "../../model/types";
@@ -48,12 +49,14 @@ export function DatasetPickerDialog({
       initialFocus={searchRef}
       className="cd lb-insert"
     >
-      <h3 id={`${id}-title`} className="cd__title">
-        {t("library.bind.title")}
-      </h3>
-      <p id={`${id}-msg`} className="cd__msg">
-        {t("library.bind.help")}
-      </p>
+      <div className="lb-heading">
+        <h3 id={`${id}-title`} className="cd__title">
+          {t("library.bind.title")}
+        </h3>
+        <InfoTip id={`${id}-msg`} label={t("library.bind.title")}>
+          {t("library.bind.help")}
+        </InfoTip>
+      </div>
       <label className="ui-search">
         <Search size={16} aria-hidden="true" />
         <span className="sr-only">{t("library.bind.search")}</span>

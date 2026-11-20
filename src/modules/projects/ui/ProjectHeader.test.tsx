@@ -36,7 +36,7 @@ describe("ProjectHeader", () => {
     );
     expect(screen.getByRole("heading", { level: 1, name: "Portal Clientes v3" })).toBeInTheDocument();
     expect(screen.getByText("PCL")).toBeInTheDocument();
-    expect(screen.getByText("Plan revisado")).toBeInTheDocument();
+    expect(screen.getByText("Plan en revisión")).toBeInTheDocument();
     expect(screen.getByText("48 requisitos")).toBeInTheDocument();
     await expectNoAxeViolations();
   });
@@ -80,7 +80,7 @@ describe("ProjectHeader", () => {
       </ProjectHeaderLayout>,
     );
     expect(screen.getByRole("heading", { level: 1, name: "Portal Clientes v3" })).toHaveClass("sr-only");
-    expect(screen.queryByText("Plan revisado")).not.toBeInTheDocument();
+    expect(screen.queryByText("Plan en revisión")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Revisiones 0" })).toBeInTheDocument();
     await expectNoAxeViolations();
   });

@@ -65,8 +65,10 @@ export function WorkspaceMembersPage() {
   if (!workspace) {
     return (
       <section className="ws-page">
-        <h1 className="ws-page__title">{t("workspaces.switcher.members")}</h1>
-        <p className="tp__muted">{t("workspaces.members.none")}</p>
+        <div className="ws-page__top ui-backdrop">
+          <h1 className="ws-page__title">{t("workspaces.switcher.members")}</h1>
+          <p className="ws-muted">{t("workspaces.members.none")}</p>
+        </div>
       </section>
     );
   }
@@ -129,6 +131,8 @@ export function WorkspaceMembersPage() {
 
   return (
     <section className="ws-page" aria-labelledby="ws-members-title">
+      {/* Title and tabs share one band over the background photo (FIX-36). */}
+      <div className="ws-page__top ui-backdrop">
       <header className="ws-page__head">
         <h1 id="ws-members-title" className="ws-page__title">
           {t("workspaces.members.title", { name: workspace.name })}
@@ -155,16 +159,17 @@ export function WorkspaceMembersPage() {
           setParams(next, { replace: true });
         }}
       />
+      </div>
       {tab === "integrations" ? (
-        <TabPanel id="integrations" idPrefix="ws-">
+        <TabPanel id="integrations" idPrefix="ws-" className="ws-panel">
           <IntegrationsTab workspace={workspace} manager={can(workspace.role, "token.manage")} />
         </TabPanel>
       ) : (
-      <TabPanel id="members" idPrefix="ws-">
+      <TabPanel id="members" idPrefix="ws-" className="ws-panel">
       {workspace.kind === "personal" && <Alert kind="info">{t("workspaces.members.personal")}</Alert>}
-      {workspace.kind === "shared" && !manager && <p className="tp__muted">{t("workspaces.members.readOnly")}</p>}
 
-      <div className="ws-table-wrap">
+      <div className="ws-table-wrap ui-card">
+      {workspace.kind === "shared" && !manager && <p className="ws-muted">{t("workspaces.members.readOnly")}</p>}
         <table className="ws-table">
           <thead>
             <tr>
@@ -264,7 +269,7 @@ export function WorkspaceMembersPage() {
             {t("workspaces.members.invitations")}
           </h2>
           {invitations.length === 0 ? (
-            <p className="tp__muted">{t("workspaces.members.noInvitations")}</p>
+            <p className="ws-muted">{t("workspaces.members.noInvitations")}</p>
           ) : (
             <div className="ws-table-wrap">
               <table className="ws-table">
@@ -280,7 +285,7 @@ export function WorkspaceMembersPage() {
                 <tbody>
                   {invitations.map((inv) => (
                     <tr key={inv.id}>
-                      <td>{inv.note ?? <span className="tp__muted">{t("workspaces.members.noNote")}</span>}</td>
+                      <td>{inv.note ?? <span className="ws-muted">{t("workspaces.members.noNote")}</span>}</td>
                       <td>{t(`workspaces.roles.${inv.role}`)}</td>
                       <td>{date(inv.expiresAt)}</td>
                       <td>

@@ -89,6 +89,18 @@ describe("DefectEditor · links and evidence (MAN-03)", () => {
     expect(severity.closest("label")).toHaveTextContent("Impacto en el sistema");
   });
 
+  it("puts the external tracking help behind a «?» that both fields announce (FIX-37)", async () => {
+    render();
+    const key = await screen.findByRole("textbox", { name: "Clave externa" });
+    const hint = i18n.t("defects.field.externalHint");
+    expect(key).toHaveAccessibleDescription(hint);
+    expect(
+      screen.getByRole("button", { name: "Más información: Seguimiento externo" }),
+    ).toHaveAccessibleDescription(hint);
+    // The header sits on its own card over the background image.
+    expect(screen.getByRole("heading", { level: 2 }).closest(".df-editor__top")).not.toBeNull();
+  });
+
   it("asks before unlinking a result; Escape keeps it (NC-012)", async () => {
     const user = userEvent.setup();
     render();

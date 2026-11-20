@@ -8,6 +8,7 @@ import { PersonalTokensSection } from "@modules/integrations";
 import { useWorkspace } from "@modules/workspaces";
 import { SUPPORTED_LANGUAGES, type Language } from "@shared/i18n";
 import { useTheme } from "@shared/theme/useTheme";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { TruncatedText } from "@shared/ui/TruncatedText";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
@@ -114,7 +115,7 @@ export function ProfilePage() {
 
   return (
     <section className="profile screen-root" aria-labelledby="profile-title">
-      <header className="profile__header">
+      <header className="profile__header ui-backdrop">
         <h1 id="profile-title" className="t-page-title">
           {t("profile.title")}
         </h1>
@@ -310,8 +311,12 @@ function Preferences() {
       </div>
       <div className="profile-pref">
         <div className="profile-pref__text">
-          <span className="profile-pref__name">{t("profile.theme")}</span>
-          <span className="profile-pref__help">{t("profile.themeHelp")}</span>
+          <span className="ui-title-row">
+            <span className="profile-pref__name">{t("profile.theme")}</span>
+            <InfoTip id="profile-theme-help" label={t("profile.theme")}>
+              {t("profile.themeHelp")}
+            </InfoTip>
+          </span>
           <span className="profile-pref__synced">
             <Cloud size={13} aria-hidden="true" />
             {t("profile.synced")}

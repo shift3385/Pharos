@@ -2,6 +2,7 @@ import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { useAuth } from "@modules/auth";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { LoadError } from "@shared/ui/LoadError";
 import { FormSkeleton } from "@shared/ui/Skeleton";
 import type { TFunction } from "i18next";
@@ -199,9 +200,17 @@ export function SharedStepEditor({
               aria-labelledby={`${baseId}-steps`}
               className="lb-steps-edit"
             >
-              <h3 id={`${baseId}-steps`} className="lb-subtitle">
-                {t("library.editor.steps")}
-              </h3>
+              <div className="lb-heading">
+                <h3 id={`${baseId}-steps`} className="lb-subtitle">
+                  {t("library.editor.steps")}
+                </h3>
+                <InfoTip
+                  id={`${baseId}-steps-help`}
+                  label={t("library.editor.steps")}
+                >
+                  {t("library.step.paramHint")}
+                </InfoTip>
+              </div>
               <ol className="lb-steps-edit__list">
                 {form.steps.map((s, i) => {
                   const n = t("library.step.n", { n: i + 1 });
@@ -283,14 +292,21 @@ export function SharedStepEditor({
                 >
                   + {t("library.step.add")}
                 </button>
-                <span className="lb-muted">{t("library.step.paramHint")}</span>
               </div>
             </div>
           </div>
           <aside className="lb-side" aria-labelledby={`${baseId}-params`}>
-            <h3 id={`${baseId}-params`} className="lb-subtitle">
-              {t("library.params.title")}
-            </h3>
+            <div className="lb-heading">
+              <h3 id={`${baseId}-params`} className="lb-subtitle">
+                {t("library.params.title")}
+              </h3>
+              <InfoTip
+                id={`${baseId}-params-help`}
+                label={t("library.params.title")}
+              >
+                {t("library.params.help")}
+              </InfoTip>
+            </div>
             {params.length === 0 ? (
               <p className="lb-muted">{t("library.params.none")}</p>
             ) : (
@@ -342,7 +358,6 @@ export function SharedStepEditor({
                 </tbody>
               </table>
             )}
-            <p className="lb-muted">{t("library.params.help")}</p>
           </aside>
         </div>
         {issues.length > 0 && ed.dirty && (

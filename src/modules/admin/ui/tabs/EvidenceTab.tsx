@@ -13,6 +13,7 @@ import {
 import { useAuth } from "@modules/auth";
 import { capabilities } from "@shared/platform";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { useToast } from "@shared/ui/Toast";
 import { EVIDENCE_CHECK_BUSY, evidenceApi } from "../../api/evidenceApi";
@@ -479,10 +480,14 @@ function Orphans({
 
   return (
     <section className="adm-evidence-block" aria-labelledby={`${id}-t`} data-testid="evidence-orphans">
-      <h3 id={`${id}-t`} className="adm-evidence-block__title">
-        {t("admin.evidence.orphans.title", { count: orphans.length })}
-      </h3>
-      <p className="adm-hint">{t("admin.evidence.orphans.desc")}</p>
+      <div className="ui-title-row">
+        <h3 id={`${id}-t`} className="adm-evidence-block__title">
+          {t("admin.evidence.orphans.title", { count: orphans.length })}
+        </h3>
+        <InfoTip id={`${id}-help`} label={t("admin.evidence.orphans.title", { count: orphans.length })}>
+          {t("admin.evidence.orphans.desc")}
+        </InfoTip>
+      </div>
       {deletable.length > 1 && (
         <label className="adm-evidence-check">
           <input
@@ -572,12 +577,16 @@ function Problems({
     OWNERS.includes(k) ? t(`admin.evidence.owners.${k}`) : t("admin.evidence.owners.other", { kind: k });
   return (
     <section className="adm-evidence-block" aria-labelledby={`${id}-t`} data-testid={`evidence-${kind}`}>
-      <h3 id={`${id}-t`} className="adm-evidence-block__title">
-        <StatusPill tone={tone} dot>
-          {t(`admin.evidence.${kind}.title`, { count: problems.length })}
-        </StatusPill>
-      </h3>
-      <p className="adm-hint">{t(`admin.evidence.${kind}.desc`)}</p>
+      <div className="ui-title-row">
+        <h3 id={`${id}-t`} className="adm-evidence-block__title">
+          <StatusPill tone={tone} dot>
+            {t(`admin.evidence.${kind}.title`, { count: problems.length })}
+          </StatusPill>
+        </h3>
+        <InfoTip id={`${id}-help`} label={t(`admin.evidence.${kind}.title`, { count: problems.length })}>
+          {t(`admin.evidence.${kind}.desc`)}
+        </InfoTip>
+      </div>
       <ul className="adm-evidence-list">
         {problems.map((p) => (
           <li key={p.file} className="adm-evidence-problem">

@@ -13,6 +13,7 @@ import {
 import { AdminRevokeTokensButton } from "@modules/integrations";
 import { Alert } from "@shared/ui/Alert";
 import { Dialog } from "@shared/ui/Dialog";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { useToast } from "@shared/ui/Toast";
 import { useConfirm } from "@shared/ui/useConfirm";
@@ -174,7 +175,12 @@ export function UsersTab() {
     <div className="adm-stack">
       <div className="adm-card">
         <div className="usr-head">
-          <h2 className="usr-title">{t("admin.users.title")}</h2>
+          <div className="ui-title-row">
+            <h2 className="usr-title">{t("admin.users.title")}</h2>
+            <InfoTip id="admin-users-help" label={t("admin.users.title")}>
+              {t("admin.users.intro")} {t("admin.users.recoverHint")}
+            </InfoTip>
+          </div>
           {data && (
             <span className="usr-pill" data-testid="admins-count">
               {t("admin.users.adminsCount", { count: data.admins })}
@@ -186,7 +192,6 @@ export function UsersTab() {
             </span>
           )}
         </div>
-        <p className="usr-muted">{t("admin.users.intro")}</p>
         <SegmentedControl
           label={t("admin.users.statusLabel")}
           size="sm"
@@ -366,7 +371,6 @@ export function UsersTab() {
             })}
           </p>
         )}
-        <p className="usr-muted">{t("admin.users.recoverHint")}</p>
       </div>
       {resetting && (
         <ResetDialog

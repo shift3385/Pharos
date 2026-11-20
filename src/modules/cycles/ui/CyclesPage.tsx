@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router";
 import { CalendarRange, Plus } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { DataTable, type DataColumn, TableSkeleton } from "@shared/ui/DataTable";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { LoadError } from "@shared/ui/LoadError";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { StatusPill } from "@shared/ui/StatusPill";
@@ -193,42 +194,48 @@ export function CyclesPage({
 
   return (
     <section className="cy-page" aria-labelledby="cy-title">
-      <div className="cy-page__head">
-        <div>
-          <h2 id="cy-title" className="pj-section-title">
-            {t("cycles.title")}
-          </h2>
-          <p className="pj-card-box__desc">{t("cycles.subtitle")}</p>
+      {/* Title, filter and table on one card, as «Proyectos» (FIX-37): over
+          the background image nothing is drawn on the photo. */}
+      <div className="cy-sheet">
+        <div className="cy-page__head cy-sheet__bar">
+          <div className="cy-sheet__heading">
+            <h2 id="cy-title" className="pj-section-title">
+              {t("cycles.title")}
+            </h2>
+            <InfoTip id="cy-title-help" label={t("cycles.title")}>
+              {t("cycles.subtitle")}
+            </InfoTip>
+          </div>
+          <button
+            type="button"
+            className="ui-btn ui-btn--primary"
+            onClick={() => {
+              setError("");
+              setCreating(true);
+            }}
+          >
+            <Plus size={16} aria-hidden="true" />
+            {t("cycles.new")}
+          </button>
         </div>
-        <button
-          type="button"
-          className="ui-btn ui-btn--primary"
-          onClick={() => {
-            setError("");
-            setCreating(true);
-          }}
-        >
-          <Plus size={16} aria-hidden="true" />
-          {t("cycles.new")}
-        </button>
-      </div>
-      <SegmentedControl<StatusFilter>
-        label={t("cycles.filterLabel")}
-        size="sm"
-        value={filter}
-        onChange={setFilter}
-        options={[
-          { value: "all", label: t("cycles.all") },
-          ...CYCLE_STATUSES.map((s) => ({ value: s, label: t(`cycles.statusPlural.${s}`) })),
-        ]}
-      />
-      {loadFailed ? (
-        <LoadError message={t("cycles.loadFailed")} onRetry={() => void reload()} />
-      ) : cycles === null ? (
-        <TableSkeleton columns={columns} minWidth={640} rows={4} />
-      ) : (
+        <div className="cy-sheet__filters">
+          <SegmentedControl<StatusFilter>
+            label={t("cycles.filterLabel")}
+            size="sm"
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: "all", label: t("cycles.all") },
+              ...CYCLE_STATUSES.map((s) => ({ value: s, label: t(`cycles.statusPlural.${s}`) })),
+            ]}
+          />
+        </div>
+        {loadFailed ? (
+          <LoadError message={t("cycles.loadFailed")} onRetry={() => void reload()} />
+        ) : cycles === null ? (
+          <TableSkeleton columns={columns} minWidth={640} rows={4} />
+        ) : (
         <DataTable
-          className="dt-surface"
           rows={shown}
           columns={columns}
           getRowId={(c) => c.id}
@@ -256,7 +263,8 @@ export function CyclesPage({
             </div>
           )}
         />
-      )}
+        )}
+      </div>
       {creating && (
         <CycleDialog
           cycle={null}

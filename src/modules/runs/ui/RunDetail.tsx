@@ -10,6 +10,7 @@ import { Dialog } from "@shared/ui/Dialog";
 import { FilterChips } from "@shared/ui/FilterChips";
 import { FormField } from "@shared/ui/FormField";
 import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
+import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { TabPanel, Tabs } from "@shared/ui/Tabs";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
@@ -234,7 +235,7 @@ export function RunDetail({
     return (
       <div className="rn">
         {back}
-        <p className="tp-field__hint" role="status" data-testid="run-deleted-notice">
+        <p className="tp-field__hint rn-note" role="status" data-testid="run-deleted-notice">
           {t("execution.run.deletedNotice")}
         </p>
       </div>
@@ -262,7 +263,7 @@ export function RunDetail({
     return (
       <div className="rn">
         {back}
-        <p className="tp-field__hint">{t("execution.run.notFound")}</p>
+        <p className="tp-field__hint rn-note">{t("execution.run.notFound")}</p>
       </div>
     );
 
@@ -437,6 +438,7 @@ export function RunDetail({
 
       {extra && (!itemId || split) && (
         <Tabs
+          className="rn-tabs"
           variant="underline"
           idPrefix="run-"
           label={t("findings.tabs.label")}
@@ -623,20 +625,22 @@ function CloseRunDialog({
           {drafts > 0 && <li className="rn-warn">{t("execution.run.closeDrafts", { count: drafts })}</li>}
         </ul>
       )}
-      <fieldset className="rn-form">
-        <legend className="tp-field__label">{t("execution.run.closeAs")}</legend>
-        {(["completed", "aborted"] as const).map((s) => (
-          <label key={s} className="rn-check">
-            <input
-              type="radio"
-              name={`${id}-status`}
-              checked={status === s}
-              onChange={() => setStatus(s)}
-            />
-            {t(`runs.runStatus.${s}`)}
-          </label>
-        ))}
-      </fieldset>
+      {/* The app's segmented control instead of a bare fieldset with native
+          radios (FIX-37); still a named radio group. */}
+      <div className="tp-field rn-close-as">
+        <span className="tp-field__label" aria-hidden="true">
+          {t("execution.run.closeAs")}
+        </span>
+        <SegmentedControl<"completed" | "aborted">
+          label={t("execution.run.closeAs")}
+          value={status}
+          onChange={setStatus}
+          options={(["completed", "aborted"] as const).map((s) => ({
+            value: s,
+            label: t(`runs.runStatus.${s}`),
+          }))}
+        />
+      </div>
       {drafts > 0 && (
         <label className="rn-check">
           <input

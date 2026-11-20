@@ -226,6 +226,10 @@ describe("RunsPage", () => {
       await screen.findByRole("tab", { name: /Sin vincular/ }),
     );
     expect(screen.getByText("Sin etiqueta de caso")).toBeInTheDocument();
+    // FIX-37: the tray's intro sits behind a «?», announced on its button.
+    expect(
+      screen.getByRole("button", { name: "Más información: Sin vincular" }),
+    ).toHaveAccessibleDescription(i18n.t("runs.tray.intro"));
     await userEvent.click(
       screen.getByRole("button", { name: "Vincular… pays" }),
     );
