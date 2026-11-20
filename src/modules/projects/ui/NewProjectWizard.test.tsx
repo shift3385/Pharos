@@ -253,7 +253,8 @@ describe("«Nuevo proyecto» (UX-29): from an existing project", () => {
     const source = within(wizard).getByRole("button", {
       name: "Proyecto de origen: Banca Móvil",
     });
-    expect(source).toHaveTextContent("BM_Banca Móvil12 casos");
+    // The prefix without its separator (FIX-46).
+    expect(source).toHaveTextContent("BMBanca Móvil12 casos");
     const part = (name: RegExp) =>
       within(wizard).getByRole("checkbox", { name });
     expect(

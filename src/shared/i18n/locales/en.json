@@ -4499,7 +4499,7 @@
       "externalUrl": "External link",
       "externalHint": "To note the issue in another tool. Jira sync is coming in a future version.",
       "labels": "Labels",
-      "escaped": "Found outside the tests (escape)",
+      "escaped": "Found outside the tests",
       "escapedHint": "In production, for example. It counts as an escape of the last cycle closed before it was reported.",
       "unassigned": "Unassigned"
     },

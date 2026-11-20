@@ -224,7 +224,7 @@ input[type="radio"] {
   .u-scroll-fade {
     mask-image: linear-gradient(
       to bottom,
-      #000 calc(100% - var(--scroll-fade)),
+      currentColor calc(100% - var(--scroll-fade)),
       transparent calc(100% - var(--scroll-fade) / 2)
     );
     animation: scroll-fade linear both;

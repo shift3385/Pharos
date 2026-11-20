@@ -19,8 +19,11 @@
 .assist__btn:hover:not(:disabled) {
   border-color: var(--color-navy-300);
 }
+/* Disabled but readable (FIX-46): neutral, not faded. */
 .assist__btn:disabled {
-  opacity: 0.5;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+  cursor: not-allowed;
 }
 
 /* Only the icon, until it is working: then it also says so (AssistButton). */

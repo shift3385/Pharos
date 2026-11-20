@@ -4499,7 +4499,7 @@
       "externalUrl": "Enlace externo",
       "externalHint": "Para anotar la incidencia en otra herramienta. La sincronización con Jira llegará en una próxima versión.",
       "labels": "Etiquetas",
-      "escaped": "Encontrado fuera de las pruebas (escape)",
+      "escaped": "Encontrado fuera de las pruebas",
       "escapedHint": "Por ejemplo, en producción. Cuenta como escape del último ciclo cerrado antes de darlo de alta.",
       "unassigned": "Sin asignar"
     },
