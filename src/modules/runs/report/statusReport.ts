@@ -84,8 +84,13 @@ const STATUS_KEY: Record<(typeof STATUSES)[number], string> = {
 const SEVERITIES = ["critical", "major", "minor", "trivial"] as const;
 const BANDS = ["high", "medium", "low", "unassessed"] as const;
 
-export const pct = (ratio: number | null) =>
-  ratio === null ? "—" : `${(Math.round(ratio * 1000) / 10).toFixed(1)} %`;
+/** One decimal when there is one: «33.3 %», but «0 %» and «100 %», as the
+ *  cycle's bar shows them. */
+export const pct = (ratio: number | null) => {
+  if (ratio === null) return "—";
+  const tenths = Math.round(ratio * 1000) / 10;
+  return `${Number.isInteger(tenths) ? tenths : tenths.toFixed(1)} %`;
+};
 
 function when(at: string | null | undefined, lang?: string) {
   return at ? parseStamp(at).toLocaleString(lang) : "—";

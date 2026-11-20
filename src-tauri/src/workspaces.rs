@@ -518,6 +518,57 @@ pub(crate) fn follow_project(
     Ok(())
 }
 
+/// Puts a row this device already has in the workspace a pull found it in
+/// (FIX-38). A move (`move-project`, ADR-0042 §5) copies each document with
+/// the same revision and HLC, so for a device that pushed it the copy equals
+/// its base and is otherwise skipped as «already in sync»; the location is
+/// not content, so it changes here whatever the base, a pending change or an
+/// open conflict. The entity's pending changes go there too, and a project
+/// takes everything under it with theirs. Rows this device lacks are left to
+/// the write that follows.
+pub(crate) fn relocate_pulled(
+    conn: &Connection,
+    entity: &str,
+    id: &str,
+    workspace_id: &str,
+) -> Result<(), String> {
+    let Some(table) = table_of(entity) else {
+        return Ok(());
+    };
+    let moved = conn
+        .execute(
+            &format!(
+                "UPDATE {table} SET workspace_id = ?2 WHERE id = ?1 AND workspace_id IS NOT ?2"
+            ),
+            params![id, workspace_id],
+        )
+        .map_err(|e| format!("relocate {table}: {e}"))?;
+    if moved == 0 {
+        return Ok(());
+    }
+    conn.execute(
+        "UPDATE oplog SET workspace_id = ?3
+          WHERE entity = ?1 AND entity_id = ?2 AND synced_at IS NULL AND workspace_id IS NOT ?3",
+        params![entity, id, workspace_id],
+    )
+    .map_err(|e| format!("relocate oplog: {e}"))?;
+    if entity == "project" {
+        follow_project(conn, id, workspace_id)?;
+        for table in PROJECT_TABLES {
+            conn.execute(
+                &format!(
+                    "UPDATE oplog SET workspace_id = ?2
+                      WHERE synced_at IS NULL AND workspace_id IS NOT ?2
+                        AND entity_id IN (SELECT id FROM {table} WHERE project_id = ?1)"
+                ),
+                params![id, workspace_id],
+            )
+            .map_err(|e| format!("relocate oplog of {table}: {e}"))?;
+        }
+    }
+    Ok(())
+}
+
 /// The account's synced workspaces from the mirror, personal first (the UI).
 pub(crate) fn list(conn: &Connection, user: &str) -> Result<Vec<WorkspaceDto>, String> {
     let rows: Vec<(String, String, String, String, bool)> = {

@@ -545,3 +545,146 @@ fn two_accounts_of_one_device_in_the_same_workspace_the_first_holds_the_row() {
         .unwrap();
     assert_eq!(luis_pending, 0);
 }
+
+/// Marks an entity's local changes as pushed, as the server's answer does:
+/// its base becomes its latest local version, which is returned.
+fn pushed(c: &Connection, user: &str, entity: &str, id: &str) -> (i64, String) {
+    let version: (i64, String) = c
+        .query_row(
+            "SELECT revision, hlc FROM oplog WHERE entity = ?1 AND entity_id = ?2
+              ORDER BY created_at DESC, rowid DESC LIMIT 1",
+            [entity, id],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    c.execute(
+        "INSERT INTO sync_base (user_id, entity, entity_id, revision, hlc) VALUES (?1, ?2, ?3, ?4, ?5)
+         ON CONFLICT(user_id, entity, entity_id) DO UPDATE SET revision = excluded.revision, hlc = excluded.hlc",
+        params![user, entity, id, version.0, version.1],
+    )
+    .unwrap();
+    c.execute(
+        "UPDATE oplog SET synced_at = datetime('now') WHERE entity = ?1 AND entity_id = ?2",
+        [entity, id],
+    )
+    .unwrap();
+    version
+}
+
+/// The copy `move-project` leaves in `to`: the same version, its location
+/// rewritten (ADR-0042 §5).
+fn moved_copy(
+    c: &Connection,
+    entity: &str,
+    id: &str,
+    version: &(i64, String),
+    to: &str,
+) -> crate::sync::RemoteDoc {
+    let (mut payload, _, _) = crate::sync::read_payload(c, entity, id).unwrap().unwrap();
+    payload["workspaceId"] = json!(to);
+    serde_json::from_value(json!({
+        "entity": entity, "entityId": id, "payload": payload,
+        "revision": version.0, "deleted": false, "hlc": version.1
+    }))
+    .unwrap()
+}
+
+fn two_workspaces(c: &Connection) {
+    apply(
+        c,
+        ANA,
+        &[
+            ws(PERSONAL, "personal", "test_manager"),
+            ws(SHARED, "shared", "test_manager"),
+        ],
+    )
+    .unwrap();
+}
+
+fn pending_deltas(c: &Connection) -> Vec<Value> {
+    serde_json::to_value(crate::sync::build_pending(c, ANA).unwrap()).unwrap()["deltas"]
+        .as_array()
+        .unwrap()
+        .clone()
+}
+
+#[test]
+fn a_project_moved_by_another_client_follows_on_pull_with_the_version_we_have() {
+    // FIX-38: the move keeps revision and HLC, so its copy equals our base.
+    let c = conn();
+    two_workspaces(&c);
+    let p = project(&c, ANA);
+    two_workspaces(&c);
+    let k = case(&c, &p, ANA).unwrap();
+    let pv = pushed(&c, ANA, "project", &p);
+    let kv = pushed(&c, ANA, "test_case", &k);
+    assert_eq!(ws_of(&c, "projects", &p), PERSONAL);
+
+    let project_copy = moved_copy(&c, "project", &p, &pv, SHARED);
+    let case_copy = moved_copy(&c, "test_case", &k, &kv, SHARED);
+    crate::sync::apply_doc(&c, SHARED, ANA, &project_copy).unwrap();
+    crate::sync::apply_doc(&c, SHARED, ANA, &case_copy).unwrap();
+    assert_eq!(ws_of(&c, "projects", &p), SHARED);
+    assert_eq!(ws_of(&c, "test_cases", &k), SHARED);
+    assert!(
+        pending_deltas(&c).is_empty(),
+        "a move is not a local change: nothing goes back"
+    );
+
+    // And back again: still the same version.
+    let back = moved_copy(&c, "project", &p, &pv, PERSONAL);
+    crate::sync::apply_doc(&c, PERSONAL, ANA, &back).unwrap();
+    assert_eq!(ws_of(&c, "projects", &p), PERSONAL);
+    assert_eq!(ws_of(&c, "test_cases", &k), PERSONAL);
+}
+
+#[test]
+fn a_moved_project_takes_its_unsent_changes_along() {
+    let c = conn();
+    two_workspaces(&c);
+    let p = project(&c, ANA);
+    two_workspaces(&c);
+    let k = case(&c, &p, ANA).unwrap();
+    let pv = pushed(&c, ANA, "project", &p);
+    let kv = pushed(&c, ANA, "test_case", &k);
+    let project_copy = moved_copy(&c, "project", &p, &pv, SHARED);
+    let case_copy = moved_copy(&c, "test_case", &k, &kv, SHARED);
+    // An edit of the case this device has not sent yet.
+    crate::test_case::update_case(
+        &c,
+        &k,
+        &serde_json::from_value(
+            json!({ "projectId": p, "title": "Pago con tarjeta", "author": "Ana", "userId": ANA }),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+
+    // The case's copy comes first and meets the pending edit, which stays.
+    crate::sync::apply_doc(&c, SHARED, ANA, &case_copy).unwrap();
+    crate::sync::apply_doc(&c, SHARED, ANA, &project_copy).unwrap();
+    assert_eq!(ws_of(&c, "projects", &p), SHARED);
+    assert_eq!(ws_of(&c, "test_cases", &k), SHARED);
+    crate::sync::record_server_features(&c, ANA, "key-conflicts,append-only,stable-steps");
+    let deltas = pending_deltas(&c);
+    let delta = deltas
+        .iter()
+        .find(|d| d["entityId"] == k.as_str())
+        .expect("the edit is still pending");
+    assert_eq!(delta["payload"]["title"], "Pago con tarjeta");
+    assert_eq!(
+        delta["workspaceId"], SHARED,
+        "it goes where the case lives now"
+    );
+    let stamped: Vec<Option<String>> = c
+        .prepare("SELECT workspace_id FROM oplog WHERE entity_id = ?1 AND synced_at IS NULL")
+        .unwrap()
+        .query_map([&k], |r| r.get(0))
+        .unwrap()
+        .collect::<rusqlite::Result<_>>()
+        .unwrap();
+    assert!(
+        stamped.iter().all(|w| w.as_deref() == Some(SHARED)),
+        "{stamped:?}"
+    );
+}
