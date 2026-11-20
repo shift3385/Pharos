@@ -30,12 +30,16 @@ smoke".
    (the tours never stop other programs). The database name is fixed to
    `pharos_test_db_tours`.
 2. **Database.** Drops and creates `pharos_test_db_tours` on the server of
-   `TEST_DATABASE_URL` (only its host and credentials are used), migrates it
-   and seeds the test account.
+   `TEST_DATABASE_URL` (only its host and credentials are used) and migrates
+   it. No person is seeded (NC-052): Liomar creates his account on screen in
+   chapter 1.
 3. **API.** Starts `tsx src/server.ts` with `PORT=3100` and that database
    (not `npm start`, whose `prestart` stops Pharos APIs on its port).
    `JWT_ACCESS_SECRET` comes from the environment, else `.env`, else a random
-   one for the run: its tokens only serve this throwaway database.
+   one for the run: its tokens only serve this throwaway database. Then it
+   registers «Administrador» (`admin@pharos.test`) through `/auth/register`:
+   the first account of a server is its administrator, so neither Liomar nor
+   Jorge is one (NC-052, amended).
 4. **Binary.** `tauri build --debug --no-bundle` with
    `VITE_API_URL=http://localhost:3100` and a `--config` override of the CSP
    (generated from `tauri.conf.json` with 3000 → 3100), into
@@ -52,10 +56,50 @@ smoke".
 
 `npm run manual -- --spec 04` runs the preparation tour plus the tours whose
 file name matches the regular expression (`"0[2-4]"`), and skips the manual.
-Some chapters read data the earlier ones make (custom fields, configurations,
-cases, an imported report): each declares them in `needs` (`manifest.ts`), and
-the runner **adds those chapters** and says which. An invalid expression, or
-one matching no tour, stops the run before the database and the build.
+Nothing else is added, not even chapter 1: each chapter prepares the data it
+reads (below). An invalid expression, or one matching no tour, stops the run
+before the database and the build.
+
+### Prerequisites: the data a chapter reads
+
+A chapter declares in `uses` (`manifest.ts`) the named data it reads and is
+not about: `cuenta-liomar`, `proyectos`, `prefijos`, `ajustes`, `plan`,
+`requisitos`, `casos-base`, `ciclo`, `resultados`, `ejecucion-manual`,
+`defectos`, `requisitos-api`, `cuenta-jorge`, `equipo-qa`,
+`jorge-en-equipo` (`PREREQUISITES`: each with its contract, the chapter that
+makes it on screen and how it is loaded). Before the chapter's first step,
+`ensure` (`prepare.ts`) syncs, checks each one against the server as Liomar
+and loads what is missing, idempotently:
+
+- through the **app's own importers**, driven without captures, when one
+  exists: the requirements CSV, the plan and case `.xlsx`, the results report;
+- else through the **server's web API as Liomar** («Pharos Web») or the
+  account API, then a sync: projects, prefixes, custom fields,
+  configurations, the cycle and its runs, the manual run, defects, Jorge's
+  account, the team workspace. Never a database write.
+
+The values come from `e2e/tours/data/pharos.ts` (the case study: Liomar tests
+Pharos 0.6.0), and the import fixtures from `e2e/tours/fixtures/pharos/`,
+made by Pharos's own exporters (`npm run manual:fixtures` checks them;
+`PHAROS_WRITE_FIXTURES=1 npm run manual:fixtures` rewrites them after a data
+or template change). In a full run the chapter that makes each prerequisite
+runs earlier, so every check passes and nothing is loaded; `check:manual`
+fails when a chapter uses data made by a later one. Loaders never record
+steps: they log to `e2e/results/tours/prepare.jsonl` (prerequisite, outcome,
+time). One that fails fails the chapter's first step with «prerequisite … could
+not be prepared». After a chapter that passed, what it made on screen is
+compared with its loaders' contract (a warning on drift).
+
+### The three accounts
+
+- **Liomar** (`liomar.qa@pharos.test`): the app's account in every chapter.
+- **Jorge L. Meneses Yero** (`jorge.meneses@pharos.test`): only through the
+  API (`people.ts`: `registerJorge`, `jorgeAcceptsInvitation`,
+  `jorgeApprovesCase`…), never signed in to the app.
+- **«Administrador»** (`admin@pharos.test`): the server administrator.
+  `people.ts` has its API helpers; `account-switch.ts` (`asAdmin`,
+  `signInAs`) signs the app in with it for chapter 15's administration block
+  and back to Liomar.
 
 At the end of each chapter, `closeLeftovers` (`tour.ts`) closes what is still
 open, so one failed step cannot block the next chapter: native dialogs are
@@ -121,18 +165,18 @@ a label), so assertions must be specific. Failure screenshots go to
 A few screens only appear when something "outside" happens; the tours make
 it happen inside the isolated run instead of skipping them:
 
-- **Sync conflict** (chapter 10): `other-device.ts` signs in to the tour API
-  (never port 3000) as a second Pharos and pushes a newer version of a
-  requirement; the app then edits the same requirement and syncs.
-- **Orphan evidence** (chapter 14): a stray `.pev` file, back-dated two days,
+- **Sync conflict** (chapter 15): `people.ts` (`editOnOtherDevice`) signs in
+  to the tour API (never port 3000) as a second Pharos and pushes a newer
+  version of a requirement; the app then edits the same requirement and syncs.
+- **Orphan evidence** (chapter 16): a stray `.pev` file, back-dated two days,
   in the tour profile's `evidence/` folder.
 - **Database that does not open** (chapter 19): the app is closed and the
   tour holds the profile's `pharos.lock` open, as a second Pharos would; the app
   restarts on «Otro Pharos está actualizando tus datos» once its 10-second wait
   runs out, the tour lets go and «Reintentar» opens the data (ADR-0050 §5).
-- **«Algo salió mal»** (chapter 15): date formatting is made to throw in the
+- **«Algo salió mal»** (chapter 19): date formatting is made to throw in the
   WebView, so a view fails and the error boundary catches it.
-- **Clipboard paste** (chapter 13) and the **attachments folder** of a report
+- **Clipboard paste** (chapter 11) and the **attachments folder** of a report
   (chapter 8): a synthetic paste event with an image, and msedgedriver's
   folder upload into the `webkitdirectory` input.
 
@@ -204,10 +248,12 @@ pending; they are never faked.
 
 **«Requisitos desde un proyecto» (MAN-04).** Windows' folder picker is
 outside the WebView, so the runner sets `PHAROS_E2E_PICK_FOLDER` to
-`e2e/tours/fixtures/proyecto-billetera` and the debug build, only with an e2e
-profile, scans it instead of opening the picker (`project_scan.rs`). A release
-build always asks the person. The chapter's other sample data (the wallet's
-CSV and the sketch `boceto-billetera.jpg`) sit in the same folder.
+`e2e/tours/fixtures/pharos/proyecto-api-sincronizacion` (a small excerpt
+about Pharos's own sync API) and the debug build, only with an e2e profile,
+scans it instead of opening the picker (`project_scan.rs`). A release build
+always asks the person. The sketch for «Requisitos desde diseños»
+(`boceto-notificaciones.png`, Pharos's notifications panel) and the CSV of
+«API de sincronización» sit in `fixtures/pharos/` too.
 
 **Fallback: `.env`.** When `PHAROS_TOURS_AI_KEY` is not set, the runner
 reads `ANTHROPIC_API_KEY` (and `ANTHROPIC_MODEL`, used as given) from the

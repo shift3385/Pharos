@@ -23,6 +23,7 @@ import { fileURLToPath } from "node:url";
 import { $, $$, browser } from "@wdio/globals";
 import { recordToasts } from "./helpers";
 import { CHAPTERS, type ChapterId } from "./manifest";
+import { ensure, verifyMade } from "./prepare";
 import { es, setAppWindow } from "../support";
 
 const resultsDir = join(dirname(fileURLToPath(import.meta.url)), "..", "results", "tours");
@@ -132,7 +133,7 @@ async function focusBox(selectors: string[], origin: string | null): Promise<Foc
   };
 }
 
-let current: { id: ChapterId; n: number; failed: string | null } | null = null;
+let current: { id: ChapterId; n: number; failed: string | null; prepError: string | null } | null = null;
 /** The window size the next captures must have (setViewport changes it). */
 let target: Viewport = DESKTOP;
 
@@ -259,19 +260,33 @@ async function closeLeftovers(id: ChapterId, failed: string | null) {
 }
 
 /** A chapter of the manual: a mocha `describe` whose steps stop after the
- *  first failure (the next steps would only fail for the same reason). */
+ *  first failure (the next steps would only fail for the same reason).
+ *  Before its first step, its prerequisites (`uses` in the manifest) are
+ *  prepared silently (prepare.ts); one that cannot be fails the first step.
+ *  After a chapter that passed, what it makes on screen is compared with
+ *  its loaders' contract (a warning on drift). */
 export function chapter(id: ChapterId, body: () => void) {
   const meta = CHAPTERS.find((c) => c.id === id);
   if (!meta) throw new Error(`chapter ${id} is not in e2e/tours/manifest.ts`);
   describe(`Tour ${meta.number} · ${meta.title}`, () => {
     before(async () => {
-      current = { id, n: 0, failed: null };
+      current = { id, n: 0, failed: null, prepError: null };
+      await stabilise();
+      await setViewport(DESKTOP);
+      try {
+        await ensure(meta.uses ?? [], id);
+      } catch (err) {
+        current.prepError = (err as Error).message;
+        console.error(`✖ ${id}: ${current.prepError}`);
+      }
+      // A loader may have left the app on another screen or size.
       await stabilise();
       await setViewport(DESKTOP);
     });
     body();
     after(async () => {
       await closeLeftovers(id, current?.failed ?? null);
+      if (current && !current.failed && !current.prepError) await verifyMade(id);
     });
   });
 }
@@ -298,6 +313,11 @@ export function step(id: string, spec: StepSpec) {
       this.skip();
     }
     try {
+      if (ch.prepError) {
+        const message = ch.prepError;
+        ch.prepError = null;
+        throw new Error(message);
+      }
       await stabilise();
       await spec.run();
       const shot = spec.shot ?? "page";

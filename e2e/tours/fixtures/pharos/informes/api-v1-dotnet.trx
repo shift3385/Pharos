@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="5d1c9a40-2b7e-4f0a-9a6e-0c4b2f6a1e01" name="ci@BUILD-PC 2026-11-17 09:30:00" runUser="BUILD-PC\ci" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-11-17T09:30:00.000Z" queuing="2026-11-17T09:30:00.000Z" start="2026-11-17T09:30:00.000Z" finish="2026-11-17T09:30:04.000Z" />
+  <Results>
+    <UnitTestResult executionId="e1" testId="t1" testName="ListaLosProyectosConUnTokenDeLectura" computerName="BUILD-PC" duration="00:00:00.8200000" startTime="2026-11-17T09:30:00.100Z" endTime="2026-11-17T09:30:00.920Z" outcome="Passed" relativeResultsDirectory="e1" />
+    <UnitTestResult executionId="e2" testId="t2" testName="SubeUnInformeJUnitConUnTokenDeProyecto" computerName="BUILD-PC" duration="00:00:01.4000000" startTime="2026-11-17T09:30:01.000Z" endTime="2026-11-17T09:30:02.400Z" outcome="Failed" relativeResultsDirectory="e2">
+      <Output>
+        <ErrorInfo>
+          <Message>Expected status 201, got 403 (forbidden: the token lacks runs:write).</Message>
+          <StackTrace>   at Pharos.ApiV1.Tests.ResultsTests.SubeUnInformeJUnitConUnTokenDeProyecto() in C:\src\pharos-api-tests\ResultsTests.cs:line 41</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="e3" testId="t3" testName="RechazaUnTokenCaducado" computerName="BUILD-PC" duration="00:00:00.3100000" startTime="2026-11-17T09:30:02.500Z" endTime="2026-11-17T09:30:02.810Z" outcome="Passed" relativeResultsDirectory="e3" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest id="t1" name="ListaLosProyectosConUnTokenDeLectura" storage="c:\src\pharos-api-tests\bin\pharos.apiv1.tests.dll">
+      <TestCategory><TestCategoryItem TestCategory="API-001" /></TestCategory>
+      <TestMethod className="Pharos.ApiV1.Tests.ProjectsTests" name="ListaLosProyectosConUnTokenDeLectura" adapterTypeName="executor://mstestadapter/v2" />
+    </UnitTest>
+    <UnitTest id="t2" name="SubeUnInformeJUnitConUnTokenDeProyecto" storage="c:\src\pharos-api-tests\bin\pharos.apiv1.tests.dll">
+      <TestCategory><TestCategoryItem TestCategory="API-002" /></TestCategory>
+      <TestMethod className="Pharos.ApiV1.Tests.ResultsTests" name="SubeUnInformeJUnitConUnTokenDeProyecto" adapterTypeName="executor://mstestadapter/v2" />
+    </UnitTest>
+    <UnitTest id="t3" name="RechazaUnTokenCaducado" storage="c:\src\pharos-api-tests\bin\pharos.apiv1.tests.dll">
+      <TestCategory><TestCategoryItem TestCategory="API-003" /><TestCategoryItem TestCategory="seguridad" /></TestCategory>
+      <TestMethod className="Pharos.ApiV1.Tests.TokensTests" name="RechazaUnTokenCaducado" adapterTypeName="executor://mstestadapter/v2" />
+    </UnitTest>
+  </TestDefinitions>
+  <ResultSummary outcome="Failed"><Counters total="3" executed="3" passed="2" failed="1" /></ResultSummary>
+</TestRun>

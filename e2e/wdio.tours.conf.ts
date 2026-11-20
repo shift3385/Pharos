@@ -2,8 +2,8 @@
 // (wdio.conf.ts: tauri-driver, isolated profile, clean-up); run it through
 // `npm run manual` (e2e/tours/run-tours.mjs), which starts the isolated API and
 // builds the tour binary first. The tours run as ONE group, in manifest order,
-// in a single app session: each chapter builds on the data the earlier ones
-// left (the seed in 00, the project created in 02…).
+// in a single app session: in a full run each chapter builds on the data the
+// earlier ones made on screen (prerequisites: e2e/tours/prepare.ts).
 import { cpSync, existsSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -18,8 +18,8 @@ delete process.env.PHAROS_E2E_DRIVER_LOG;
 const e2eDir = fileURLToPath(new URL(".", import.meta.url));
 
 // `npm run manual -- --spec 04` → PHAROS_TOURS_ONLY=04: the preparation tour
-// (sign-in, theme), the tours whose file name matches it (a regular expression:
-// "0[2-4]") and the chapters they read data from (`needs` in the manifest).
+// (theme) and the tours whose file name matches it (a regular expression:
+// "0[2-4]"); each prepares the data it reads (`uses`, e2e/tours/prepare.ts).
 const { files } = selectTours(process.env.PHAROS_TOURS_ONLY);
 
 export const config: WebdriverIO.Config = {

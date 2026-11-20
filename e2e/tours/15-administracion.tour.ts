@@ -5,7 +5,7 @@
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { $, $$, browser, expect } from "@wdio/globals";
-import { editOnOtherDevice } from "./other-device";
+import { editOnOtherDevice } from "./people";
 import { chapter, step } from "./tour";
 import {
   acceptConfirm,

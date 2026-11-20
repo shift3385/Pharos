@@ -1,8 +1,10 @@
-// Preparation (not a manual chapter): a clean, signed-in, light-themed app at
-// 1440 px. The data the chapters show is made by the chapters themselves,
-// through the app's own screens and importers (fixtures in e2e/tours/fixtures/),
-// in a fixed order, so every run starts from the same empty account and ends
-// with the same data.
+// Preparation (not a manual chapter): a clean, signed-out, light-themed app at
+// 1440 px. In a full run the data the chapters show is made by the chapters
+// themselves, through the app's own screens and importers, in a fixed order,
+// so every run starts from the same empty account and ends with the same data.
+// In a partial run (`--spec`) each chapter first prepares, silently, the data
+// it reads (prerequisites, e2e/tours/prepare.ts): the first one registers and
+// signs in Liomar when chapter 1 is not in the run.
 import { browser, expect } from "@wdio/globals";
 import { $ } from "@wdio/globals";
 import { button, ensureSignedOut } from "../support";

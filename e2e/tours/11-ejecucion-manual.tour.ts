@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { $, $$, browser, expect } from "@wdio/globals";
 import { DESKTOP, MOBILE, chapter, setViewport, step } from "./tour";
 import { PROJECT_A, byTestId, chooseFile, clickButton, es, field, fixturesDir, openProject, openSection, tf, waitForText, waitForToast } from "./helpers";
+import { MANUAL_RUN, RELEASE } from "./data/pharos";
 
 const E = es.execution;
 const downloadsDir = process.env.PHAROS_TOURS_DOWNLOADS ?? "";
@@ -46,7 +47,7 @@ chapter("ejecucion-manual", () => {
       await openProject(PROJECT_A.name);
       await openSection("runs");
       await byTestId("run-new").click();
-      await byTestId("run-new-title").setValue("Regresión manual · 0.3.0-rc1");
+      await byTestId("run-new-title").setValue(MANUAL_RUN.title);
       if (await byTestId("run-cases-search").isExisting()) {
         await pickCase("PH-001");
         await pickCase("PH-002");
@@ -218,7 +219,7 @@ chapter("ejecucion-manual", () => {
       await byTestId("run-edit").click();
       await expect($(D)).toBeDisplayed();
       await (await field(es.runs.field.environment, D)).setValue("staging");
-      await (await field(es.runs.field.build, D)).setValue("0.3.0-rc1");
+      await (await field(es.runs.field.build, D)).setValue(RELEASE.build);
     },
   });
 

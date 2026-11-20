@@ -16,31 +16,28 @@ import { $, $$, browser, expect } from "@wdio/globals";
 import { AI, AI_SKIP, CHEAP_MODELS, aiCall, chapter, step } from "./tour";
 import {
   PROJECT_A,
-  button,
   byTestId,
   chooseFile,
   clickButton,
   dialog,
   es,
-  fixturesDir,
   menuItem,
   pickFromMenu,
   openAdminTab,
   openProject,
   openSection,
-  startBlankProject,
   tf,
   waitForText,
   waitForToast,
 } from "./helpers";
+import { AI_MATERIAL } from "./data/pharos";
+import { pharosFixtures } from "./prepare";
 
 const X = es.ai;
 const D = '[role="dialog"]';
 const AI_TIMEOUT = 90_000;
 /** Reading a folder or a sketch and comparing: a minute or two (MAN-03). */
 const DESIGN_TIMEOUT = 240_000;
-/** The second product of the example: its CSV, folder and sketch. */
-const WALLET = { name: "Billetera SafeGuard" };
 
 /** Opens every «Criterios de aceptación», «Supuestos» and «Preguntas
  *  abiertas» of the proposals, so the capture shows them. */
@@ -139,27 +136,10 @@ chapter("ia", () => {
   });
 
   // ---- The three ways to bring requirements, with AI (MAN-03) -------------
-  // In a second product, the Billetera SafeGuard app: its CSV, its project
-  // folder and the sketch of its screens (e2e/tours/fixtures).
-
-  step("billetera-csv", {
-    title: "Otro producto: importar sus requisitos (.csv)",
-    caption:
-      "Liomar prueba también la Billetera SafeGuard, una app de billetera digital. Crea su proyecto («Billetera SafeGuard») y, en «Requisitos», trae los que ya tenía en una hoja de cálculo con «Importar › Importar requisitos (.csv)» (capítulo 7). La vista previa muestra los cinco antes de crearlos.",
-    skip: AI_SKIP,
-    shot: { element: D },
-    run: async () => {
-      await byTestId("nav-projects").click();
-      await expect($(`h1=${es.projects.title}`)).toBeDisplayed();
-      await startBlankProject(WALLET.name);
-      await button(es.projects.wizard.create).click();
-      await expect($(`h1=${WALLET.name}`)).toBeDisplayed();
-      await openSection("requirements");
-      await chooseFile('input[type="file"][accept=".csv,text/csv"]', join(fixturesDir, "requisitos-billetera.csv"));
-      await expect(dialog()).toBeDisplayed();
-      await expect(dialog()).toHaveText(expect.stringContaining("REQ-005"));
-    },
-  });
+  // In «API de sincronización», with its requirements already imported
+  // (prerequisite «requisitos-api»): an excerpt of Pharos's own sync API as
+  // the project folder and a sketch of a Pharos screen
+  // (e2e/tours/fixtures/pharos, AI_MATERIAL in data/pharos.ts).
 
   step("importar-menu-ia", {
     title: "Las tres formas de traer requisitos",
@@ -169,8 +149,8 @@ chapter("ia", () => {
     skip: AI_SKIP,
     focus: '[role="menu"]',
     run: async () => {
-      await clickButton(tf("traceability.import.confirm", { count: 5 }), D);
-      await waitForToast(tf("traceability.import.doneToast", { created: 5, updated: 0 }));
+      await openProject(AI_MATERIAL.folderProject);
+      await openSection("requirements");
       await clickButton(es.traceability.io.import);
       for (const item of [es.traceability.io.importCsv, es.traceability.io.fromProject, es.traceability.fromDesign.open]) {
         await expect(menuItem(item)).toBeDisplayed();
@@ -244,10 +224,10 @@ chapter("ia", () => {
       await dialog().waitForExist({ reverse: true, timeout: 60_000 });
       await pickFromMenu(es.traceability.io.import, es.traceability.fromDesign.open);
       await expect(dialog()).toBeDisplayed();
-      await chooseFile(`${D} input.tr-design__file[accept]`, join(fixturesDir, "boceto-billetera.jpg"));
+      await chooseFile(`${D} input.tr-design__file[accept]`, join(pharosFixtures, AI_MATERIAL.sketch));
       await $(`${D} .tr-design__item`).waitForExist({ timeout: 30_000 });
-      await $(`${D} .tr-design__note`).setValue("acceso e inicio");
-      await $(`${D} .tr-design__context textarea`).setValue("App móvil de billetera digital, rol cliente");
+      await $(`${D} .tr-design__note`).setValue("campana y panel de notificaciones");
+      await $(`${D} .tr-design__context textarea`).setValue(AI_MATERIAL.sketchContext);
     },
   });
 

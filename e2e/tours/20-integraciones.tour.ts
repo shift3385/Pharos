@@ -2,21 +2,24 @@
 // sets up so CI and other tools talk to Pharos. A shared workspace and its
 // project, project tokens (create, the secret once, revoke), webhooks (create,
 // the secret once, a test delivery and «Entregas») and personal tokens in
-// «Mi perfil». Example: Liomar opens «Equipo QA» for his team and gives the
-// CI of «Pagos Web» its token.
+// «Mi perfil». Example: Liomar opens «Equipo QA» for his team, shares
+// «Pharos» into it and gives its CI a token (TEAM in data/pharos.ts).
 //
 // «Conectar CI» and «Usar en el CLI» are track L's UI (L6b, INT-04); their
 // steps and texts come from L's notes.
 import { $, $$, browser, expect } from "@wdio/globals";
-import { createProject } from "../support";
 import { chapter, step } from "./tour";
 import { acceptConfirm, byTestId, chooseOption, clickButton, es, menuItem, openAdminTab, tf, waitForText, waitForToast } from "./helpers";
+import { TEAM } from "./data/pharos";
 
 const I = es.integrations;
-const WS = "Equipo QA";
+const WS = TEAM.workspace;
 // The personal workspace, as the server names it.
 const PERSONAL = "Personal";
-const PROJECT = "Pagos Web";
+/** The project the chapter shares: «Pharos», with everything the earlier
+ *  chapters made (its keys do not change). */
+const PROJECT = TEAM.sharedProject;
+const TOKEN_NAME = `CI de ${PROJECT}`;
 const HOOK_URL = "https://ci.ejemplo.test/pharos";
 const D = '[role="dialog"]';
 const CONFIRM = '[role="alertdialog"]';
@@ -93,10 +96,6 @@ chapter("integraciones", () => {
     covers: ["dialogs:src/modules/workspaces/ui/ShareProjectDialog.tsx"],
     shot: { element: D },
     run: async () => {
-      // A new workspace may become the current one once the sync lists it:
-      // create the project where it is born, in the personal workspace.
-      await switchWorkspace(PERSONAL);
-      await createProject(PROJECT);
       // The server moves it, so it must have it first.
       await syncNow();
       await switchWorkspace(PERSONAL);
@@ -144,7 +143,7 @@ chapter("integraciones", () => {
     shot: { element: D },
     run: async () => {
       await byTestId("project-token-new").click();
-      await byTestId("token-name").setValue("CI de Pagos Web");
+      await byTestId("token-name").setValue(TOKEN_NAME);
       await chooseOption(byTestId("token-target"), { text: PROJECT });
       await check("token-scope-runs:write");
     },
@@ -188,7 +187,7 @@ chapter("integraciones", () => {
     covers: ["dialogs:src/modules/integrations/ui/ProjectTokensSection.tsx"],
     focus: '[data-testid="project-tokens"]',
     run: async () => {
-      await waitForText("CI de Pagos Web");
+      await waitForText(TOKEN_NAME);
     },
   });
 

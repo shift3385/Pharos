@@ -1,0 +1,4 @@
+ID;Título;Descripción;Prioridad
+API-REQ-001;Enviar los cambios del equipo con /sync/push;"El escritorio envía sus cambios en lotes; cada uno lleva su revisión y su marca HLC.";Alta
+API-REQ-002;Traer los cambios del servidor con /sync/pull;El escritorio pide lo que cambió desde su último cursor, página a página.;Alta
+API-REQ-003;Detectar un conflicto campo a campo;Si dos equipos cambian el mismo campo sin sincronizar, el servidor devuelve un conflicto en lugar de pisar uno de los cambios.;Media

@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { arrayLiteral, check, countDialogs, coversIn, hasViewSwitch, routePaths, stepsIn } from "./check-manual.mjs";
+import { arrayLiteral, check, countDialogs, coversIn, hasViewSwitch, prerequisiteErrors, routePaths, stepsIn } from "./check-manual.mjs";
 import { findAiKey } from "./manual/ai-key.mjs";
 import { inline, leftoverTable, markdownToHtml, tableCells } from "./manual/markdown.mjs";
 import { printWithEdge, settled, sweepProfiles } from "./manual/edge-print.mjs";
@@ -147,6 +147,16 @@ test("foreignNames: other people and accounts are hits, ordinary words are not (
   ]);
   assert.deepEqual(foreignNames("Analista de QA · una semana · Liomar QA · liomar.qa@pharos.test · Mañana"), []);
   assert.deepEqual(foreignNames("ana minúscula, Perezoso, Romeros"), []);
+});
+
+test("foreignNames: exactly three accounts are allowed, Jorge and «Administrador» included (NC-052 amended)", () => {
+  assert.deepEqual(
+    foreignNames("Jorge L. Meneses Yero · jorge.meneses@pharos.test · Administrador · admin@pharos.test · Liomar QA · liomar.qa@pharos.test"),
+    [],
+  );
+  // Synthetic accounts are not people; another person's address is.
+  assert.deepEqual(foreignNames("qa.web@pharos.test · nadie@pharos.test"), []);
+  assert.deepEqual(foreignNames("lucia.romero@pharos.test · ana@pharos.test"), ["lucia.romero@pharos.test", "ana@pharos.test"]);
 });
 
 test("the chapter sources and the tour captions name only the manual's person (NC-052)", () => {
@@ -369,23 +379,36 @@ test("printWithEdge waits for a PDF Edge writes after returning (MAN-04)", () =>
     assert.ok(settled(pdf, 10_000));
   }));
 
-test("selectTours adds what a partial run needs, in run order, and refuses a bad filter (MAN-02)", async () => {
+test("selectTours runs only the preparation and the asked chapters, in run order, and refuses a bad filter (MAN-03)", async () => {
   const { CHAPTERS, selectTours } = await import("../e2e/tours/manifest.ts");
-  const order = new Map(CHAPTERS.map((c, i) => [c.id, i]));
-  for (const c of CHAPTERS) {
-    for (const id of c.needs ?? []) assert.ok(order.get(id) < order.get(c.id), `${c.id} needs ${id}, which must run first`);
-  }
   assert.equal(selectTours(null).files.length, CHAPTERS.filter((c) => c.file).length);
-  assert.deepEqual(selectTours(null).added, []);
-  const defects = selectTours("^12");
-  // Chapter 1 always runs: it creates the account (NC-052).
-  assert.deepEqual(defects.files, ["00-preparacion.tour.ts", "01-acceso.tour.ts", "04-proyectos.tour.ts", "14-ajustes.tour.ts", "07-requisitos.tour.ts", "08-casos.tour.ts", "09-ciclos.tour.ts", "10-ejecuciones.tour.ts", "12-defectos.tour.ts"]);
-  assert.deepEqual(defects.added, ["01-acceso.tour.ts", "04-proyectos.tour.ts", "14-ajustes.tour.ts", "07-requisitos.tour.ts", "08-casos.tour.ts", "09-ciclos.tour.ts", "10-ejecuciones.tour.ts"]);
-  assert.deepEqual(selectTours("^16").added, ["01-acceso.tour.ts"], "a chapter that reads nothing adds only the account");
-  assert.deepEqual(selectTours("^01").added, [], "chapter 1 asked for is not added twice");
+  assert.deepEqual(selectTours(null).asked, []);
+  // No chapter is added any more, not even chapter 1: each prepares its data.
+  assert.deepEqual(selectTours("^13").files, ["00-preparacion.tour.ts", "13-trazabilidad.tour.ts"]);
+  assert.deepEqual(selectTours("^1[23]").asked, ["12-defectos.tour.ts", "13-trazabilidad.tour.ts"], "run order, not number order");
+  assert.deepEqual(selectTours("^01").files, ["00-preparacion.tour.ts", "01-acceso.tour.ts"]);
   assert.throws(() => selectTours("["), /not a valid regular expression/);
   assert.throws(() => selectTours("^99"), /matches no tour file/);
   assert.throws(() => selectTours("^00"), /matches no tour file/, "the preparation alone is not a run");
+});
+
+test("prerequisites: built on earlier ones, made on screen before every chapter that uses them (MAN-03)", async () => {
+  const { CHAPTERS, PREREQUISITES, prerequisiteClosure } = await import("../e2e/tours/manifest.ts");
+  assert.deepEqual(prerequisiteErrors(CHAPTERS, PREREQUISITES, prerequisiteClosure), []);
+  // The closure brings what a prerequisite is built on, in preparation order.
+  assert.deepEqual(
+    prerequisiteClosure(["casos-base"]).map((p) => p.id),
+    ["cuenta-liomar", "proyectos", "prefijos", "ajustes", "requisitos", "casos-base"],
+  );
+  assert.throws(() => prerequisiteClosure(["nada"]), /unknown prerequisite/);
+  // A chapter that uses data made by a later chapter is refused.
+  const chapters = [
+    { id: "a", uses: ["p"] },
+    { id: "b", uses: [] },
+  ];
+  const prereqs = [{ id: "p", madeBy: "b", after: [] }];
+  assert.match(prerequisiteErrors(chapters, prereqs, prerequisiteClosure).join(), /made on screen by b, which must run before it/);
+  assert.match(prerequisiteErrors([{ id: "a", uses: ["x"] }], prereqs, prerequisiteClosure).join(), /unknown prerequisite x/);
 });
 
 test("groupInset: a wide control keeps a column-wide inset under its half-width capture (MAN-02)", () => {

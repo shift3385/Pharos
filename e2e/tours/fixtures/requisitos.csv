@@ -1,7 +1,0 @@
-ID;Título;Descripción;Prioridad
-REQ-002;Crear un proyecto con su prefijo;Quien prueba crea un proyecto y elige el prefijo con el que se numeran sus casos.;Alta
-REQ-003;Guardar el plan con historial de revisiones;Cada guardado del plan de pruebas crea una revisión que se puede consultar y restaurar.;Media
-REQ-004;Importar resultados JUnit;Un informe JUnit se importa como run y vincula cada test a su caso por la propiedad test_id.;Alta
-REQ-005;Exportar la matriz de trazabilidad a .xlsx;La matriz se exporta con requisitos, casos, estados y defectos.;Media
-REQ-006;Trabajar sin conexión y sincronizar;Los cambios hechos sin conexión se envían al servidor cuando vuelve la conexión.;Alta
-REQ-007;Imprimir el plan desde el navegador;La versión web imprime el plan con el diálogo de impresión del navegador.;Baja

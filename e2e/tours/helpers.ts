@@ -8,9 +8,9 @@ import { button, es, projectListLoaded, startBlankProject } from "../support";
 export const fixturesDir = join(fileURLToPath(new URL(".", import.meta.url)), "fixtures");
 export const repoDir = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
 
-/** The tour's projects (fixed names and prefixes: the manual shows them). */
-export const PROJECT_A = { name: "Pharos", prefix: "PH" };
-export const PROJECT_B = { name: "API de sincronización", prefix: "API" };
+/** The tour's projects (fixed names and prefixes: the manual shows them).
+ *  The case study lives in data/pharos.ts. */
+export { PROJECT_A, PROJECT_B } from "./data/pharos";
 
 /** Clicks the theme toggle until the app is in the light theme. */
 export async function switchToLightTheme() {
@@ -37,13 +37,12 @@ export async function goHome() {
   await byTestId("nav-dashboard").click();
 }
 
-/** Opens a project from «Todos los proyectos». When a chapter runs on its
- *  own (`npm run manual -- --spec 04`), the project chapter 2 makes may not
- *  exist yet: it is created then, so every chapter can run alone.
+/** Opens a project from «Todos los proyectos» of the current workspace.
+ *  It never creates one: a chapter that runs alone gets its projects from
+ *  its prerequisites (prepare.ts), and creating a missing one would hide a
+ *  missing prerequisite behind an empty twin.
  *  BASE-24: it waits for the loaded list, not its skeleton (which also has
- *  the class pj-table), and searches before deciding the project is missing;
- *  reading the skeleton made it create an empty twin of the project, whose
- *  requirements list then had nothing to click. */
+ *  the class pj-table), and searches before deciding the project is missing. */
 export async function openProject(name: string) {
   await byTestId("nav-projects").click();
   await expect($(`h1=${es.projects.title}`)).toBeDisplayed();
@@ -54,10 +53,8 @@ export async function openProject(name: string) {
     await $(".pj-search input").setValue(name);
     await row.waitForExist({ timeout: 5_000 }).catch(() => undefined);
   }
-  if (!(await row.isExisting())) {
-    await startBlankProject(name);
-    await button(es.projects.wizard.create).click();
-  } else await row.click();
+  await row.waitForExist({ timeout: 15_000, timeoutMsg: `no project «${name}» in this workspace` });
+  await row.click();
   await expect($(`h1=${name}`)).toBeDisplayed();
 }
 
@@ -471,5 +468,22 @@ export async function clickButton(text: string, scopeSelector?: string) {
       return false;
     },
     { timeout: 15_000, timeoutMsg: `no visible, enabled button «${text}»` },
+  );
+}
+
+/** Picks a workspace in the sidebar's switcher once it lists it (the list
+ *  catches up with the server after a create or a move). «Personal» is the
+ *  personal workspace. */
+export async function switchWorkspace(name: string) {
+  await browser.waitUntil(
+    async () => {
+      if ((await byTestId("workspace-switcher").getAttribute("title"))?.startsWith(name)) return true;
+      await byTestId("workspace-switcher").click();
+      const item = $(`[role="menuitem"]*=${name}`);
+      if (await item.isExisting()) await item.click();
+      else await browser.keys("Escape");
+      return false;
+    },
+    { timeout: 30_000, interval: 1_000, timeoutMsg: `the switcher never offered «${name}»` },
   );
 }

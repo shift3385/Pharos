@@ -31,6 +31,7 @@ import {
   waitForText,
   waitForToast,
 } from "./helpers";
+import { RELEASE } from "./data/pharos";
 
 const F = es.defects;
 const PREFIX_BUG = "El menú lateral sigue mostrando el prefijo anterior";
@@ -102,7 +103,7 @@ chapter("defectos", () => {
       );
       await (await field(F.field.expected)).setValue("El selector muestra «PH-» al momento.");
       await (await field(F.field.actual)).setValue("Sigue mostrando «PHA-» hasta cambiar de sección.");
-      await (await field(F.field.foundInBuild)).setValue("0.3.0-rc1");
+      await (await field(F.field.foundInBuild)).setValue(RELEASE.build);
       await (await field(F.field.foundInEnvironment)).setValue("staging");
       for (const label of ["Crear un proyecto", "REQ-002"]) {
         const box = $(`label*=${label}`);

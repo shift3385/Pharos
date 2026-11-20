@@ -24,6 +24,7 @@ import {
   waitForToast,
   chooseOption,
 } from "./helpers";
+import { RELEASE } from "./data/pharos";
 
 const R = es.runs;
 const D = '[role="dialog"]';
@@ -67,7 +68,7 @@ chapter("ejecuciones", () => {
       await $(D).$('input[type="file"]:not([webkitdirectory])').setValue(REPORT);
       await waitForText(R.format.junit);
       await (await field(R.field.title, D)).setValue("Regresión automática · nightly 2026-11-03");
-      await (await field(R.field.build, D)).setValue("0.3.0-rc1");
+      await (await field(R.field.build, D)).setValue(RELEASE.build);
       await (await field(R.field.environment, D)).setValue("staging");
     },
   });
@@ -111,7 +112,7 @@ chapter("ejecuciones", () => {
       // msedgedriver uploads a whole folder into a webkitdirectory input.
       await $(D).$('input[type="file"][webkitdirectory]').setValue(join(fixturesDir, "informe-adjuntos", "capturas"));
       await (await field(R.field.title, D)).setValue("Tests de acceso · con capturas");
-      await (await field(R.field.build, D)).setValue("0.3.0-rc1");
+      await (await field(R.field.build, D)).setValue(RELEASE.build);
       await (await field(R.field.environment, D)).setValue("staging");
       // The cycle of chapter 7 (CYC-02): the first option after «Sin ciclo».
       const cycle = $(D).$('[data-testid="import-cycle"]');

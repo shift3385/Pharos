@@ -36,6 +36,7 @@ import {
   xpathString,
   chooseOption,
 } from "./helpers";
+import { BASE_CASES } from "./data/pharos";
 
 const C = es.testCase;
 const L = es.library;
@@ -234,7 +235,7 @@ chapter("casos", () => {
       await clickButton(C.examples.addRow);
       await clickButton(C.examples.addRow);
       const cells = Array.from(await table.$$("tbody input"));
-      const values = ["lucia.romero@pharos.test", "contraseña-mala", "nadie@pharos.test", "supersecret1"];
+      const values = BASE_CASES[1].examples.flat();
       for (let i = 0; i < Math.min(values.length, cells.length); i++) await cells[i].setValue(values[i]);
       await linkRequirement("REQ-001");
       await saveCase();
@@ -270,7 +271,7 @@ chapter("casos", () => {
     run: async () => {
       await backToList();
       await newCase("basic");
-      await $("#tc-title").setValue("Humo de la versión 0.3.0");
+      await $("#tc-title").setValue(BASE_CASES[3].title);
       await $('[data-testid="tc-case-type"]').$('button[data-value="checklist"]').click();
       await fillSteps(C.checklist.items, ["La app arranca sin errores", "Se puede iniciar sesión", "El Inicio muestra los proyectos"]);
       // A reference written by hand, which «Migrar trazabilidad» (chapter 13) turns into a link.

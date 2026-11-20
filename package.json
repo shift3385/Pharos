@@ -19,6 +19,7 @@
     "e2e:driver": "node e2e/scripts/fetch-edgedriver.mjs",
     "manual": "node e2e/tours/run-tours.mjs",
     "manual:build": "node scripts/build-manual.mjs",
+    "manual:fixtures": "vitest run --config scripts/manual/fixtures/vitest.config.ts",
     "check:manual": "node scripts/check-manual.mjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p e2e && tsc --noEmit -p packages/formats",
     "lint": "eslint . --ext .ts,.tsx --max-warnings 0",

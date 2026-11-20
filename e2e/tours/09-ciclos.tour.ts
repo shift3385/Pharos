@@ -20,6 +20,7 @@ import {
   waitForText,
   waitForToast,
 } from "./helpers";
+import { CYCLE } from "./data/pharos";
 
 const Y = es.cycles;
 const D = '[role="dialog"]';
@@ -46,8 +47,8 @@ chapter("ciclos", () => {
     run: async () => {
       await clickButton(Y.new);
       await expect(dialog()).toBeDisplayed();
-      await (await field(Y.field.title, D)).setValue("Regresión 0.3.0");
-      await (await field(Y.field.build, D)).setValue("0.3.0-rc1");
+      await (await field(Y.field.title, D)).setValue(CYCLE.title);
+      await (await field(Y.field.build, D)).setValue(CYCLE.build);
       await (await field(Y.field.environment, D)).setValue("staging");
       await (await field(Y.field.sprint, D)).setValue("Sprint 1");
       // The start typed, the end picked in the calendar (UX-36): it opens on

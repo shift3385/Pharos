@@ -15,7 +15,6 @@ import {
   dialog,
   es,
   field,
-  fixturesDir,
   menuItem,
   openProject,
   openSection,
@@ -25,6 +24,7 @@ import {
   waitForToast,
   chooseOption,
 } from "./helpers";
+import { pharosFixtures } from "./prepare";
 
 const T = es.traceability;
 const D = '[role="dialog"]';
@@ -68,7 +68,7 @@ chapter("requisitos", () => {
     run: async () => {
       await clickButton(T.requirement.save, D);
       await waitForToast(T.requirement.savedToast);
-      await chooseFile('input[type="file"][accept=".csv,text/csv"]', join(fixturesDir, "requisitos.csv"));
+      await chooseFile('input[type="file"][accept=".csv,text/csv"]', join(pharosFixtures, "requisitos-pharos.csv"));
       await expect(dialog()).toBeDisplayed();
       await expect(dialog()).toHaveText(expect.stringContaining("REQ-007"));
     },
@@ -80,8 +80,8 @@ chapter("requisitos", () => {
       "«Importar 6» los añade. Cada fila muestra el ID, el requisito con su descripción, la prioridad, cuántos casos lo enlazan y si está «Cubierto» o «Sin cubrir» (las filas sin cubrir se tiñen, para verlas enseguida). A la derecha, ✨ genera casos con IA desde ese requisito (capítulo 17) y la papelera lo elimina. Haz clic en el título para editarlo.",
     toast: true,
     run: async () => {
-      await clickButton(tf("traceability.import.confirm", { count: 6 }), D);
-      await waitForToast(tf("traceability.import.doneToast", { created: 6, updated: 0 }));
+      await clickButton(tf("traceability.import.confirm", { count: 11 }), D);
+      await waitForToast(tf("traceability.import.doneToast", { created: 11, updated: 0 }));
       await expect($("button.tz-open*=Imprimir el plan")).toBeDisplayed();
     },
   });

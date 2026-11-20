@@ -8,6 +8,7 @@
 import { $, $$, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
 import { PROJECT_A, byTestId, chooseOption, clickButton, dialog, es, openProject, openSection, tf, waitForText, waitForToast } from "./helpers";
+import { RELEASE } from "./data/pharos";
 
 const T = es.traceability;
 const D = '[role="dialog"]';
@@ -46,7 +47,7 @@ chapter("trazabilidad", () => {
     focus: '[data-testid="trace-filter-build"]',
     run: async () => {
       const build = $('[data-testid="trace-filter-build"]');
-      await chooseOption(build, { value: "0.3.0-rc1" });
+      await chooseOption(build, { value: RELEASE.build });
       await browser.waitUntil(async () => (await browser.getUrl()).includes("build="), { timeoutMsg: "the filter is not in the URL" });
       await browser.waitUntil(async () => (await $$("tbody tr")).length > 0, { timeoutMsg: "the filtered matrix has no rows" });
     },

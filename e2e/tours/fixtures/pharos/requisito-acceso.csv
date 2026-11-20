@@ -1,0 +1,2 @@
+ID;Título;Descripción;Prioridad
+REQ-001;Iniciar sesión con correo y contraseña;"Quien tiene cuenta entra con su correo y su contraseña; con datos incorrectos, Pharos no dice cuál de los dos falla.";Alta

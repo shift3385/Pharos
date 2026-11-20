@@ -21,8 +21,14 @@ tener una explicación.
 - [ ] Tema claro, ventana de 1440 px (390 px en el capítulo de móvil).
 - [ ] Ningún diálogo cortado, ningún aviso (toast) tapando lo que el paso
       explica, ningún menú abierto que no toque.
-- [ ] Solo datos de prueba (proyectos «Banca Móvil» y «Portal Clientes», cuenta
-      `smoke@pharos.dev`): nada personal ni real.
+- [ ] Solo datos de prueba, todos sobre probar Pharos 0.6.0 (proyectos
+      «Pharos» y «API de sincronización»; valores en
+      `e2e/tours/data/pharos.ts`): nada personal ni real.
+- [ ] Solo aparecen las tres cuentas del manual (NC-052, enmendada): Liomar
+      Rodríguez (`liomar.qa@pharos.test`), su compañero Jorge L. Meneses Yero
+      (`jorge.meneses@pharos.test`, solo en las funciones de equipo) y
+      «Administrador» (`admin@pharos.test`, solo en la administración del
+      servidor). Ningún otro nombre (`scripts/manual/persona.mjs`).
 - [ ] **Ninguna clave visible**: en «Motor de IA» la clave aparece como guardada
       y enmascarada, nunca en claro.
 - [ ] **La captura demuestra el pie** (MAN-02): lo que el texto explica se ve
@@ -49,7 +55,7 @@ tener una explicación.
       enumera clics se amplía (o se completa con una nota «### Paso <id>» en
       `fuentes/`).
 - [ ] **Los datos de prueba se presentan como ejemplo**: «el nombre de tu
-      proyecto (en este ejemplo, «Banca Móvil»)», nunca como si fueran los del
+      proyecto (en este ejemplo, «Pharos»)», nunca como si fueran los del
       lector.
 - [ ] **Cada pie está al día** con la interfaz: los textos coinciden con
       `src/shared/i18n/locales/es.json` y los iconos con los de la pantalla
@@ -92,10 +98,10 @@ se publica:
       con SMTP, y entonces el administrador no lo ve); el enlace abre
       «Elige una contraseña nueva» con «Enlace generado por …»; la otra cuenta
       recibe el aviso. «Hacer administrador» y «Quitar administrador» piden
-      confirmación, y el último administrador no se puede quitar. *Por qué no
-      en el tour:* necesita una segunda cuenta en la lista, y el manual solo
-      muestra a su persona (NC-052). Los tours recorren la pestaña. Lo cubren
-      además `server/tests/admin.test.ts` y `UsersTab.test.tsx`.
+      confirmación, y el último administrador no se puede quitar. Pendiente de
+      los pasos del capítulo 15 con «Administrador» y la cuenta de Jorge
+      (NC-052, enmendada); fuera del tour quedan siempre el envío por correo
+      (SMTP) y la página del enlace. Lo cubren además `server/tests/admin.test.ts` y `UsersTab.test.tsx`.
 - [ ] **Fusión por campo (SYNC-02)**: con dos equipos (o el escritorio y la
       web) sobre la misma cuenta, cambiar campos distintos de un caso sin
       sincronizar entre medias se combina sin preguntar y avisa «Se combinaron
@@ -109,8 +115,9 @@ se publica:
       compartido, «Desactivar cuenta…» pide el sucesor y el correo; la otra
       cuenta deja de sincronizar al momento y, al entrar, ve «Esta cuenta está
       desactivada…»; en «Miembros» aparece «Desactivada»; «Reactivar cuenta»
-      la devuelve. *Por qué no en el tour:* necesita una segunda cuenta
-      (NC-052). Lo cubren `server/tests/account-disable.test.ts` y
+      la devuelve. Pendiente de los pasos del capítulo 15
+      con la cuenta de Jorge (NC-052, enmendada); fuera del tour queda siempre
+      lo que ve Jorge al entrar («Esta cuenta está desactivada…»). Lo cubren `server/tests/account-disable.test.ts` y
       `UsersTab.test.tsx`.
 - [ ] **Ollama** (Administración → Motor de IA): con Ollama instalado y en
       marcha, la tarjeta pasa a «Conectado», «Descargar «modelo»» descarga el
@@ -173,5 +180,5 @@ se publica:
 - [ ] Los capítulos y elementos pendientes (`pending`/`skip` en
       `e2e/tours/manifest.ts`) siguen teniendo motivo; uno que ya se puede
       recorrer pasa a `active` con su tour.
-- [ ] Si se ejecutó con IA: las capturas del capítulo 11 muestran respuestas
+- [ ] Si se ejecutó con IA: las capturas del capítulo 17 muestran respuestas
       razonables del proveedor configurado y el campo de la clave difuminado.
