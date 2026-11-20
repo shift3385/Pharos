@@ -33,6 +33,8 @@ const ICONS: Record<string, { icon: LucideIcon; tone: string }> = {
   "case.review_requested": { icon: Eye, tone: "warning" },
   "case.approved": { icon: CircleCheck, tone: "success" },
   "case.changes_requested": { icon: Undo2, tone: "warning" },
+  "plan.approved": { icon: CircleCheck, tone: "success" },
+  "plan.changes_requested": { icon: Undo2, tone: "warning" },
   "defect.assigned": { icon: Bug, tone: "error" },
   "cycle.closed": { icon: Flag, tone: "neutral" },
   "sync.conflict": { icon: RefreshCw, tone: "warning" },

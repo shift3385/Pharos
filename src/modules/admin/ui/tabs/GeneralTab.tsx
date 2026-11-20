@@ -1,3 +1,4 @@
+import { formatPercent } from "@shared/i18n/percent";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ImagePlus, Save } from "lucide-react";
@@ -177,7 +178,7 @@ export function GeneralTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean)
               max={100}
               step={5}
               aria-describedby="adm-opacity-hint"
-              aria-valuetext={`${settings.backgroundOpacity} %`}
+              aria-valuetext={formatPercent(settings.backgroundOpacity, { digits: 0 })}
               value={settings.backgroundOpacity}
               onChange={(e) => setSettings((s) => ({ ...s, backgroundOpacity: Number(e.target.value) }))}
             />

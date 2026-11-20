@@ -25,8 +25,10 @@ import {
   X,
 } from "lucide-react";
 import {
+  caseLabel,
   createDefectFromResult,
   DefectEditor,
+  originLabel,
   type DefectInput,
   type LinkableItem,
 } from "@modules/defects";
@@ -519,7 +521,8 @@ export function ExecutionPanel({
       const d = await createDefectFromResult(resultId, userId, stepId);
       setDefect({
         draft: d,
-        label: [runKey, detail?.caseKey].filter(Boolean).join(" · "),
+        // «RUN · clave · título», as «Desde un resultado» names it (FIX-43).
+        label: originLabel(runKey, detail?.caseKey ? caseLabel(detail.caseKey, detail.caseTitle) : null),
       });
     } catch (e) {
       toast(errorText(e, t), "error");

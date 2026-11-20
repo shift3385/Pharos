@@ -362,6 +362,110 @@ fn time_of(v: Option<&Value>) -> Option<String> {
     }
 }
 
+/// Epoch milliseconds of an RFC 3339 time (`2026-11-17T18:10:00.5+01:00`),
+/// and whether it names its zone. A time without a zone, as JUnit writes its
+/// `timestamp` (`2026-11-17T18:10:00`), is read on the reporter's clock (as
+/// if it were UTC) and says so. `None` for anything else.
+/// `importPlan.ts::msOfIso` reads the same.
+fn ms_of_iso(s: &str) -> Option<(i64, bool)> {
+    let b = s.trim().as_bytes();
+    let num = |from: usize, len: usize| -> Option<i64> {
+        let part = b.get(from..from + len)?;
+        part.iter()
+            .all(u8::is_ascii_digit)
+            .then(|| part.iter().fold(0i64, |n, d| n * 10 + i64::from(d - b'0')))
+    };
+    if b.len() < 19
+        || b[4] != b'-'
+        || b[7] != b'-'
+        || !matches!(b[10], b'T' | b't')
+        || b[13] != b':'
+        || b[16] != b':'
+    {
+        return None;
+    }
+    let (y, m, d) = (num(0, 4)?, num(5, 2)?, num(8, 2)?);
+    let (hh, mm, ss) = (num(11, 2)?, num(14, 2)?, num(17, 2)?);
+    if !(1..=12).contains(&m) || !(1..=31).contains(&d) || hh > 23 || mm > 59 || ss > 59 {
+        return None;
+    }
+    let mut i = 19;
+    let mut frac = 0i64;
+    if b.get(i) == Some(&b'.') {
+        let digits = b[i + 1..].iter().take_while(|c| c.is_ascii_digit()).count();
+        if digits == 0 {
+            return None;
+        }
+        for k in 0..3 {
+            let digit = if k < digits { b[i + 1 + k] - b'0' } else { 0 };
+            frac = frac * 10 + i64::from(digit);
+        }
+        i += 1 + digits;
+    }
+    let offset = match b.get(i..)? {
+        [] => None,
+        [b'Z' | b'z'] => Some(0),
+        [sign @ (b'+' | b'-'), _, _, b':', _, _] => {
+            let (oh, om) = (num(i + 1, 2)?, num(i + 4, 2)?);
+            if oh > 23 || om > 59 {
+                return None;
+            }
+            let o = oh * 60 + om;
+            Some(if *sign == b'-' { -o } else { o })
+        }
+        _ => return None,
+    };
+    // Days from civil (H. Hinnant's algorithm).
+    let y = if m <= 2 { y - 1 } else { y };
+    let era = y.div_euclid(400);
+    let yoe = y.rem_euclid(400);
+    let mp = if m > 2 { m - 3 } else { m + 9 };
+    let doy = (153 * mp + 2) / 5 + d - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    let days = era * 146_097 + doe - 719_468;
+    let minutes = (days * 24 + hh) * 60 + mm - offset.unwrap_or(0);
+    Some((minutes * 60_000 + ss * 1000 + frac, offset.is_some()))
+}
+
+/// When a new imported run ends: the report's own end; else, from its start,
+/// the latest end a result gives or, when no result says when it ended, the
+/// start plus the results' durations. A JUnit report says when it started
+/// and how long each test took, never when it ended: the run ends then, not
+/// at the import (FIX-43). A start without a zone gives an end without one.
+/// `None` when the report says neither. `importPlan.ts::runEndOf` computes
+/// the same.
+fn run_end(doc: &Doc) -> Option<String> {
+    if let Some(end) = time_of(doc.run.finished_at.as_ref()) {
+        return Some(end);
+    }
+    let start_text = time_of(doc.run.started_at.as_ref())?;
+    let (start, zoned) = ms_of_iso(&start_text)?;
+    let latest = doc
+        .results
+        .iter()
+        .filter_map(|r| time_of(r.finished_at.as_ref().or(r.stop.as_ref())))
+        .filter_map(|t| ms_of_iso(&t).map(|(ms, _)| (ms, t)))
+        .max_by_key(|(ms, _)| *ms);
+    if let Some((ms, text)) = latest {
+        return Some(if ms < start { start_text } else { text });
+    }
+    let durations: Vec<i64> = doc
+        .results
+        .iter()
+        .filter_map(|r| r.duration.filter(|d| d.is_finite() && *d >= 0.0))
+        .map(|d| d.round() as i64)
+        .collect();
+    if durations.is_empty() {
+        return None;
+    }
+    let end = iso_of_ms(start + durations.iter().sum::<i64>());
+    Some(if zoned {
+        end
+    } else {
+        end.trim_end_matches('Z').to_string()
+    })
+}
+
 /// Epoch milliseconds as RFC 3339 UTC (`2026-10-27T03:52:07.031Z`).
 fn iso_of_ms(ms: i64) -> String {
     let days = ms.div_euclid(86_400_000);
@@ -1196,7 +1300,7 @@ pub(crate) fn commit(
             &run_id,
             &RunInput {
                 status: Some("completed".into()),
-                finished_at: time_of(doc.run.finished_at.as_ref()),
+                finished_at: run_end(&doc),
                 user_id: user.clone(),
                 ..Default::default()
             },

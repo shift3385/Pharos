@@ -8,7 +8,33 @@ import type {
   TestPlanInput,
   TestPlanSummary,
 } from "../model/types";
-import type { PlanReviewAction } from "../model/review";
+import { planReviewOf, type PlanReviewAction } from "../model/review";
+import { PLAN_REVIEW_EVENT, type PlanReviewEvent } from "../model/events";
+
+/** «Aprobar» and «Pedir cambios» told to the notifications (FIX-43), as a
+ *  case's review is (`PLAN_REVIEW_EVENT`): from the plan as stored. */
+function announcePlanReview(saved: TestPlan, input: { action: PlanReviewAction; userId: string }) {
+  const kind = input.action === "approve" ? "approved" : input.action === "return" ? "returned" : null;
+  if (!kind) return;
+  const review = planReviewOf(saved.data?.review);
+  const approval = saved.data?.approval ?? null;
+  const at = (kind === "approved" ? approval?.at : review?.returnedAt) ?? new Date().toISOString();
+  const detail: PlanReviewEvent = {
+    kind,
+    planId: saved.id,
+    title: saved.title,
+    version: saved.version,
+    projectId: saved.projectId ?? "",
+    workspaceId: saved.workspaceId,
+    authorId: saved.createdBy ?? "",
+    actorId: input.userId,
+    at,
+    revision: saved.revision,
+    ...(kind === "returned" && review?.comment ? { comment: review.comment } : {}),
+    ...(kind === "approved" ? { selfApproval: approval?.selfApproved ?? false } : {}),
+  };
+  window.dispatchEvent(new CustomEvent(PLAN_REVIEW_EVENT, { detail }));
+}
 
 const path = (id: string) => `/api/test-plans/${encodeURIComponent(id)}`;
 
@@ -33,18 +59,21 @@ export const testPlanApi = {
   /** A review transition (PLN-08, ADR-0049): send, approve, «Pedir
    *  cambios» (`return`), obsolete, reactivate. The core decides who
    *  approves; the plan as it stands after it. */
-  review: (
+  review: async (
     plan: Pick<TestPlan, "id" | "revision">,
     input: { action: PlanReviewAction; comment?: string; userId: string; userName: string },
-  ): Promise<TestPlan | null> =>
-    isTauri()
-      ? invoke("test_plan_review", { id: plan.id, input })
-      : serverApi.post(`${path(plan.id)}/review`, {
+  ): Promise<TestPlan | null> => {
+    const saved: TestPlan | null = isTauri()
+      ? await invoke("test_plan_review", { id: plan.id, input })
+      : await serverApi.post(`${path(plan.id)}/review`, {
           action: input.action,
           comment: input.comment,
           userName: input.userName,
           revision: plan.revision,
-        }),
+        });
+    if (saved) announcePlanReview(saved, input);
+    return saved;
+  },
   remove: (id: string, userId: string): Promise<void> =>
     isTauri() ? invoke("test_plan_delete", { id, userId }) : serverApi.remove(path(id), id),
   revisions: (id: string, userId: string): Promise<RevisionSummary[]> =>

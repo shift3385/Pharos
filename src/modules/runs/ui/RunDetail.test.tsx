@@ -58,7 +58,8 @@ vi.mock("@shared/platform", async (orig) => ({
 const defects = vi.hoisted(() => ({
   createDefectFromResult: vi.fn(),
 }));
-vi.mock("@modules/defects", () => ({
+vi.mock("@modules/defects", async () => ({
+  ...(await vi.importActual<typeof import("../../defects/model/resultName")>("../../defects/model/resultName")),
   createDefectFromResult: defects.createDefectFromResult,
   DefectEditor: ({
     fromLabel,
@@ -376,7 +377,7 @@ describe("run screen", () => {
     expect(defects.createDefectFromResult).toHaveBeenCalledWith("res1", "test-user", "S2");
     // NC-007: the editor gets the project's cases and requirements to link.
     expect(await screen.findByRole("region", { name: "defect editor" })).toHaveTextContent(
-      "RUN-007 · TC-001 · TC-003,REQ-001",
+      "RUN-007 · TC-001 · Pagar con tarjeta · TC-003,REQ-001", // «clave · título» (FIX-43)
     );
     await expectNoAxeViolations(container);
   });

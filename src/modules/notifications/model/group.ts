@@ -66,6 +66,11 @@ export function targetOf(n: AppNotification): Target | null {
     case "case.changes_requested":
       path = projectPath(n, "cases", "case");
       break;
+    // FIX-43: the project's plan, where the review banner says what changed.
+    case "plan.approved":
+    case "plan.changes_requested":
+      path = n.projectId ? `/projects/${encodeURIComponent(n.projectId)}/plan` : null;
+      break;
     case "defect.assigned":
       path = projectPath(n, "defects", "defect");
       break;
@@ -109,6 +114,9 @@ export function labelOf(kind: string, workspaceId: string | null = null): string
     case "case.approved":
     case "case.changes_requested":
       return "notifications.action.openCase";
+    case "plan.approved":
+    case "plan.changes_requested":
+      return "notifications.action.openPlan";
     case "defect.assigned":
       return "notifications.action.defect";
     case "cycle.closed":

@@ -107,8 +107,9 @@ describe("profile page", () => {
     setViewportWidth(1440);
     const { unmount } = renderWithProviders(<ProfilePage />);
     await screen.findByDisplayValue("Quality");
-    // The display name, the one name of a person across the app (FIX-41).
+    // The profile: the alias and, under it, the official name (GLOSARIO, FIX-43).
     expect(document.querySelector(".profile__name")).toHaveTextContent(/^QA$/);
+    expect(screen.getByTestId("profile-official")).toHaveTextContent(/^Quality Analyst$/);
     expect(screen.getByTitle("qa@pharos.dev")).toHaveTextContent(
       "qa@pharos.dev",
     );

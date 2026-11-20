@@ -39,13 +39,26 @@ export function AuthProvider({
     initialSession?.user ?? null,
   );
 
+  // The session is stored BEFORE the app sees the account (FIX-43). What
+  // opens with it (the first sync, the workspace list) reads the session
+  // from the store (`getSession`): published first, a new account's first
+  // sync failed with `not-authenticated` while the keychain was still being
+  // written, the indicator said «Sincronizado» and the workspace selector
+  // never appeared, since nothing synced or listed the workspaces again.
   const applySession = useCallback(
     async (next: Session, isOffline = false) => {
+      let failed: unknown = null;
+      try {
+        await store.save(next);
+      } catch (e) {
+        // Not kept for the next start, but the account is signed in now.
+        failed = e ?? new Error("session-save");
+      }
       session.current = next;
       setUser(next.user);
       setOffline(isOffline);
       setStatus("authenticated");
-      await store.save(next);
+      if (failed) throw failed;
     },
     [store],
   );

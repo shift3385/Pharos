@@ -1,3 +1,4 @@
+import { WholeKeys } from "@shared/ui/WholeKeys";
 import { useEffect, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Download, FileText } from "lucide-react";
@@ -258,7 +259,9 @@ export function StatusReportDialog({
             {tbl.rows.map((r, i) => (
               <tr key={i}>
                 {r.map((c, j) => (
-                  <td key={j}>{c}</td>
+                  <td key={j}>
+                    <WholeKeys text={c} />
+                  </td>
                 ))}
               </tr>
             ))}
@@ -271,7 +274,9 @@ export function StatusReportDialog({
       {list.map(([k, v]) => (
         <div key={k}>
           <dt>{k}</dt>
-          <dd>{v}</dd>
+          <dd>
+            <WholeKeys text={v} />
+          </dd>
         </div>
       ))}
     </dl>

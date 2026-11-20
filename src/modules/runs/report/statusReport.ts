@@ -1,3 +1,4 @@
+import { formatRatio } from "@shared/i18n/percent";
 import type { ExecutionSummary } from "@shared/contracts/contract";
 import { parseStamp } from "@shared/time/stamp";
 import { criterionValue, evaluateExitCriteria } from "../model/exitCriteria";
@@ -84,27 +85,23 @@ const STATUS_KEY: Record<(typeof STATUSES)[number], string> = {
 const SEVERITIES = ["critical", "major", "minor", "trivial"] as const;
 const BANDS = ["high", "medium", "low", "unassessed"] as const;
 
-/** One decimal when there is one: «33.3 %», but «0 %» and «100 %», as the
- *  cycle's bar shows them. */
-export const pct = (ratio: number | null) => {
-  if (ratio === null) return "—";
-  const tenths = Math.round(ratio * 1000) / 10;
-  return `${Number.isInteger(tenths) ? tenths : tenths.toFixed(1)} %`;
-};
+/** One decimal when there is one, in the report's language: «33,3 %» in
+ *  Spanish, «33.3 %» in English, but «0 %» and «100 %» (FIX-43). */
+export const pct = (ratio: number | null, lang?: string) => formatRatio(ratio, { lang });
 
 function when(at: string | null | undefined, lang?: string) {
   return at ? parseStamp(at).toLocaleString(lang) : "—";
 }
 
 /** The prefilled summary: the numbers in one paragraph (the user edits it). */
-export function autoSummary(s: ExecutionSummary, t: Translate): string {
+export function autoSummary(s: ExecutionSummary, t: Translate, lang?: string): string {
   const met = s.exitCriteria.filter((c) => c.met === true).length;
   return t("statusReport.autoSummary", {
     executed: s.progress.executed,
     total: s.progress.total,
     unit: t(`statusReport.unit.${s.progressUnit}`),
-    pct: pct(s.progress.total ? s.progress.executed / s.progress.total : null),
-    rate: pct(s.passRate),
+    pct: pct(s.progress.total ? s.progress.executed / s.progress.total : null, lang),
+    rate: pct(s.passRate, lang),
     open: s.defects.open,
     critical: s.defects.openBySeverity.critical,
     met,
@@ -175,9 +172,9 @@ export function buildStatusReport(
       [t("statusReport.progress.total"), String(s.progress.total)],
       [
         t("statusReport.progress.executedPct"),
-        pct(s.progress.total ? s.progress.executed / s.progress.total : null),
+        pct(s.progress.total ? s.progress.executed / s.progress.total : null, ctx.lang),
       ],
-      [t("statusReport.progress.passRate"), pct(s.passRate)],
+      [t("statusReport.progress.passRate"), pct(s.passRate, ctx.lang)],
       [t("statusReport.progress.lastExecution"), when(s.lastExecutedAt, ctx.lang)],
     ],
     results: {
@@ -207,7 +204,7 @@ export function buildStatusReport(
     coverageLine: t("statusReport.coverageLine", {
       covered: s.coverage.covered,
       total: s.coverage.requirements,
-      pct: pct(s.coverage.coverageRatio),
+      pct: pct(s.coverage.coverageRatio, ctx.lang),
     }),
     bandsLine: t("statusReport.bandsLine", {
       low: s.coverage.riskBands.low,
@@ -218,8 +215,8 @@ export function buildStatusReport(
     weightedLine:
       s.coverage.weighted.totalWeight > 0
         ? t("statusReport.weightedLine", {
-            coverage: pct(s.coverage.weighted.coverageRatio),
-            passed: pct(s.coverage.weighted.passedRatio),
+            coverage: pct(s.coverage.weighted.coverageRatio, ctx.lang),
+            passed: pct(s.coverage.weighted.passedRatio, ctx.lang),
             count: s.coverage.weighted.unassessed,
           })
         : t("statusReport.weightedNone"),

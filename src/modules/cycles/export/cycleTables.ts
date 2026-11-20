@@ -3,6 +3,7 @@
 // percents the «Ciclos» screen shows), never from one progress call per
 // cycle. The tables are plain data: the plan and case exporters write them
 // as a sheet of their own and a PDF section.
+import { formatPercent } from "@shared/i18n/percent";
 import i18n from "i18next";
 import type { ExportTable } from "@shared/export/extraTables";
 import { notify, ReportedError } from "@shared/ui/notify";
@@ -84,7 +85,7 @@ function configurationNames(
 /** «x/y · z %», as the cycle list's progress bar says it. */
 function progressText(c: CycleSummary, t: Translate): string {
   if (c.progress.total === 0) return t("cycles.progress.none");
-  return `${c.progress.executed}/${c.progress.total} · ${percents(c.progress).passed} %`;
+  return `${c.progress.executed}/${c.progress.total} · ${formatPercent(percents(c.progress).passed, { digits: 0 })}`;
 }
 
 /** The project's cycles with their progress, for the plan export. */

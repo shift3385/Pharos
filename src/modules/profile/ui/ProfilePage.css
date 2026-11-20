@@ -93,6 +93,12 @@
   font-weight: var(--fw-semibold);
 }
 
+/* The official name under the alias (GLOSARIO, FIX-43). */
+.profile__official {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
 .profile__email {
   font-size: 13px;
   color: var(--color-text-secondary);

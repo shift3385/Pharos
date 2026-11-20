@@ -444,12 +444,14 @@
   min-width: 0;
 }
 
+/* The linked case's «clave · título» on a line of its own, whole: it wraps
+   instead of ending in «credenciale…» (FIX-43). */
 .df-picker__case {
-  overflow: hidden;
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 1 0 100%;
+  min-width: 0;
+  font-size: 13px;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 /* «Encontrado fuera de las pruebas (escape)» (DOC-06, D4). */

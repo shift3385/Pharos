@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@test/slow";
 import { screen, waitFor, within } from "@testing-library/react";
@@ -212,6 +215,22 @@ describe("«Desde un resultado» names the case (FIX-42)", () => {
     // The search finds it by the case's title too.
     await userEvent.type(within(dialog).getByRole("searchbox"), "pago");
     expect(within(dialog).getByRole("button", { name: "Elegir: RUN-003 ATS_001 · Pago" })).toBeInTheDocument();
+    // FIX-43: the case's name is whole (it wraps, never «Pa…»), and the
+    // prefill banner names the result the same way, not by its test path.
+    expect(within(dialog).getByText("ATS_001 · Pago")).toHaveClass("df-picker__case");
+    draftFromResult.mockResolvedValue({ projectId: "p1", userId: "u1", title: "t", data: {}, fromResult: { resultId: "r9" } });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Elegir: RUN-003 ATS_001 · Pago" }));
+    const banner = await screen.findByRole("status");
+    expect(banner).toHaveTextContent("Prerrellenado desde RUN-003 · ATS_001 · Pago.");
+    expect(banner).not.toHaveTextContent("specs/acceso");
+  });
+
+  it("lets the case's name wrap in the picker instead of cutting it (FIX-43)", () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "Defects.css"), "utf8");
+    const at = css.indexOf("\n.df-picker__case {");
+    const rule = css.slice(at, css.indexOf("}", at));
+    expect(rule).toMatch(/white-space:\s*normal/);
+    expect(rule).not.toMatch(/nowrap|text-overflow/);
   });
 });
 

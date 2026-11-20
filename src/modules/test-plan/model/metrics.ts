@@ -4,6 +4,7 @@
 // agreed with DOC-02/DOC-06: the metrics track keeps the same literals in
 // `src/shared/metrics` and in Rust, and the derivation evaluates a linked
 // criterion from its metric. Do not rename them.
+import { formatPercent } from "@shared/i18n/percent";
 import type { ClosureCriterion, PlanMetric } from "./types";
 
 export const METRIC_KINDS = [
@@ -91,7 +92,7 @@ export function targetText(m: Pick<PlanMetric, "kind" | "unit" | "op" | "target"
   const unit = unitOf(m);
   const tail =
     unit === "percent"
-      ? `${value} %`
+      ? formatPercent(m.target, { lang, digits: 2 })
       : unit === "count" || unit === "score"
         ? value
         : `${value} ${t(`testPlan.metricUnitShort.${unit}`, { count: m.target })}`;

@@ -41,12 +41,17 @@ describe("Informe de estado (EJE-03)", () => {
     await within(dialog).findByText("1. Identificación");
     expect(summary).toHaveBeenCalledWith(expect.objectContaining({ projectId: "p1", cycleId: undefined }), expect.any(String));
     expect(dialog).toHaveTextContent("RUN-002, RUN-001");
+    // FIX-43: a key never breaks at its hyphen («RUN-» / «001»).
+    for (const key of within(dialog).getAllByText("RUN-001")) {
+      expect(key.tagName).toBe("SPAN");
+      expect(key).toHaveStyle({ whiteSpace: "nowrap" });
+    }
     expect(dialog).toHaveTextContent("(a fecha de hoy)");
     const exit = within(dialog).getByTestId("report-exit");
     expect(within(exit).getAllByText("No cumple")).toHaveLength(2);
     expect(within(exit).getByText("Cumple")).toBeInTheDocument();
     expect(within(dialog).getByTestId("report-summary")).toHaveValue(
-      "Se han ejecutado 3 de 4 casos (75 %), con una tasa de éxito de 33.3 %. Hay 1 defectos abiertos, 1 críticos. Criterios de salida: 1 de 3 cumplidos.",
+      "Se han ejecutado 3 de 4 casos (75 %), con una tasa de éxito de 33,3 %. Hay 1 defectos abiertos, 1 críticos. Criterios de salida: 1 de 3 cumplidos.",
     );
     expect(dialog).toHaveTextContent("se guardan solo en este equipo");
     await expectNoAxeViolations();

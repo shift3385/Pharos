@@ -296,7 +296,7 @@ describe("disabling an account (SEC-12)", () => {
       "ana@pharos.dev",
     ]);
     expect(disabled.users[0].disabled).toMatchObject({
-      byName: "admin",
+      byName: "F L", // who disabled it: the official name (FIX-43)
       reason: "baja",
     });
     const active = (

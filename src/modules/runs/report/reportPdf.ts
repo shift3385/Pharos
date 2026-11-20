@@ -1,3 +1,4 @@
+import { pdfWholeKeys } from "@shared/export/wholeKeys";
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
 import {
   baseDoc,
@@ -17,7 +18,7 @@ const pairsTable = (list: [string, string][]): Content => ({
     widths: [150, "*"],
     body: list.map(([k, v]) => [
       { text: k, style: "value", bold: true },
-      { text: v || "—", style: "value" },
+      { text: pdfWholeKeys(v || "—"), style: "value" },
     ]),
   },
   layout: "noBorders",
