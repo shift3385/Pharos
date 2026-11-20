@@ -173,6 +173,11 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     await waitFor(() => expect(pending).toHaveTextContent("2de 3"));
     expect(pending).toHaveTextContent("1 bloqueada");
     expect(screen.getByTestId("kpi-defects")).toHaveTextContent("1 crítico");
+    // Defects have their own section since 0.2.0, not the Board (FIX-40).
+    expect(screen.getByTestId("kpi-defects")).toHaveAttribute(
+      "title",
+      "Defectos sin cerrar de tus proyectos, en su sección Defectos",
+    );
 
     const rate = screen.getByTestId("kpi-rate");
     expect(rate).toHaveAttribute("href", "/projects");

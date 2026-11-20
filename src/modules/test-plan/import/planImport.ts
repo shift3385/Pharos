@@ -14,11 +14,12 @@ import {
   splitLines,
   toKey,
   type DetectionRow,
+  type PreviewItem,
 } from "@shared/import/xlsx";
-import { CEREMONIES, CEREMONY_FREQUENCIES } from "../model/catalogs";
+import { CEREMONIES, CEREMONY_FREQUENCIES, DELIVERABLE_KEYS, TEST_LEVELS, TEST_TYPES, toolName } from "../model/catalogs";
 import { DELIVERABLE_REV, TOOL_REV } from "../model/catalogLabels";
 import { fromDisplay } from "../model/schedule";
-import { parseStrategySheets } from "./strategyImport";
+import { parseMilestoneSheet, parseStrategySheets } from "./strategyImport";
 import type {
   ClosureCriterion,
   RiskItem,
@@ -146,6 +147,18 @@ function parseMethodology(
   };
 }
 
+/** A catalog entry as the report shows it: the label in the person's
+ *  language, not the stored key («functional»); own entries as typed
+ *  (FIX-40). */
+function catalogItem(field: string, value: string): PreviewItem {
+  if (field === "testTypes" && TEST_TYPES.includes(value)) return { key: `testPlan.typeLabel.${value}`, text: value };
+  if (field === "testLevels" && TEST_LEVELS.includes(value)) return { key: `testPlan.levelLabel.${value}`, text: value };
+  if (field === "deliverables" && DELIVERABLE_KEYS.includes(value))
+    return { key: `testPlan.deliverableLabel.${value}`, text: value };
+  if (field === "tools") return { text: toolName(value) };
+  return { text: value };
+}
+
 const yieldFrame = () => new Promise<void>((r) => setTimeout(r, 24));
 
 /**
@@ -166,7 +179,8 @@ export async function parsePlanXlsx(
 
   const data: TestPlanData = {};
   const rows: DetectionRow[] = [];
-  const total = FIELDS.length + TABLES.length + 2; // +1 for the title, +1 for the 29119-3 sheets
+  // +1 for the title, +1 for the milestones, +1 for the 29119-3 sheets.
+  const total = FIELDS.length + TABLES.length + 3;
   let done = 0;
 
   const push = (row: DetectionRow) => {
@@ -194,6 +208,7 @@ export async function parsePlanXlsx(
     let filled = raw.trim().length > 0;
     let prev: string | undefined = raw ? preview(raw.replace(/\n/g, " · ")) : undefined;
     let prevKey: string | undefined;
+    let prevItems: PreviewItem[] | undefined;
 
     switch (spec.kind) {
       case "text":
@@ -218,6 +233,7 @@ export async function parsePlanXlsx(
         (data as Record<string, unknown>)[spec.id] = list;
         filled = list.length > 0;
         prev = list.length ? preview(list.join(", ")) : undefined;
+        prevItems = list.length ? list.map((v) => catalogItem(spec.id, v)) : undefined;
         break;
       }
       case "status":
@@ -231,7 +247,13 @@ export async function parsePlanXlsx(
         Object.assign(data, parseMethodology(raw));
         break;
     }
-    push({ labelKey: spec.labelKey, status: filled ? "filled" : "empty", preview: prev, previewKey: prevKey });
+    push({
+      labelKey: spec.labelKey,
+      status: filled ? "filled" : "empty",
+      preview: prev,
+      previewKey: prevKey,
+      previewItems: prevItems,
+    });
     await yieldFrame();
   }
 
@@ -259,6 +281,17 @@ export async function parsePlanXlsx(
     push({ labelKey: spec.labelKey, status: raw.length ? "filled" : "empty", count: raw.length });
     await yieldFrame();
   }
+
+  // The milestones of step 14, from the sheet the export adds for them
+  // (EXP-03): the template's table holds the sprints only (FIX-40).
+  const milestones = parseMilestoneSheet(wb);
+  if (milestones) data.milestones = milestones;
+  push({
+    labelKey: "testPlan.milestones",
+    status: milestones === undefined ? "notFound" : milestones.length ? "filled" : "empty",
+    count: milestones?.length,
+  });
+  await yieldFrame();
 
   // The 29119-3 sections of 0.4.0 (PLN-06), from their own sheets.
   const strategy = parseStrategySheets(wb);

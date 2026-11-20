@@ -123,7 +123,7 @@ const cells = (ws: ExcelJS.Worksheet) => {
 };
 
 describe("plan export: «Hitos» and «Ciclos» (EXP-03)", () => {
-  it("adds both sheets after the template's, which does not change, and the import ignores them", async () => {
+  it("adds both sheets after the template's, which does not change; the import reads back only «Hitos»", async () => {
     const t = i18n.getFixedT("es");
     serve();
     const form = {
@@ -186,7 +186,10 @@ describe("plan export: «Hitos» and «Ciclos» (EXP-03)", () => {
       "plan.xlsx",
       "Ada",
     );
-    expect(imported.input).toEqual(reference.input);
+    // «Hitos» comes back (FIX-40); «Ciclos» is the project's, not the plan's.
+    const { milestones, ...rest } = imported.input.data;
+    expect(milestones).toEqual([{ name: "Entrega beta", date: "2026-11-20" }]);
+    expect({ ...imported.input, data: rest }).toEqual(reference.input);
   });
 
   it("the PDF ends with the same tables; an empty one adds nothing", () => {

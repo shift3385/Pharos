@@ -184,6 +184,9 @@ describe("Administración → Evidencias", () => {
     expect(usageCard).toHaveTextContent("Por defecto: 90 días");
     expect(usageCard).toHaveTextContent("Tienda: 30 días");
     expect(usageCard).toHaveTextContent("1 guardados · 4 caducados");
+    // Attachments sync since SYNC-04b (0.5.0): the card no longer says they do not (FIX-39).
+    expect(screen.getByText(/Se sincronizan con tu workspace/)).toBeInTheDocument();
+    expect(screen.queryByText(/no se sincronizan/)).not.toBeInTheDocument();
   });
 
   it("verifies on demand and lists what it found, with where it is used", async () => {
