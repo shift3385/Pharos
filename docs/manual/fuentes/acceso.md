@@ -13,10 +13,9 @@ registrado quién hizo cada cambio y tus proyectos llegan a tus otros equipos.
 
 Tu cuenta tiene dos nombres:
 
-- El **alias** es como te ve el resto de la aplicación: el menú lateral, el
-  menú de usuario, los cambios que haces.
-- El **nombre oficial** (nombre y apellidos) firma los documentos que exportas,
-  como el plan de pruebas («Elaborado por»).
+- El **alias** es el nombre con el que Pharos te nombra: el menú lateral, el
+  menú de usuario, los miembros de un workspace, las revisiones y los avisos.
+- El **nombre oficial** (nombre y apellidos) queda guardado en tu perfil.
 
 Si olvidas la contraseña, entras con uno de tus **códigos de recuperación de
 la cuenta**: diez códigos de un solo uso que Pharos te enseña una sola vez, al
@@ -145,8 +144,8 @@ los tuyos.
 - Si dos personas usan el mismo equipo y las dos son miembros de un mismo
   workspace compartido, sus proyectos se ven en este equipo desde la cuenta
   que los sincronizó primero. La otra los ve en sus otros equipos y en la web.
-- Escribe bien tu nombre y tus apellidos antes de exportar documentos: son los
-  que firman el plan de pruebas.
+- Elige un alias que tus compañeros reconozcan: es el nombre con el que te
+  ven en el workspace.
 - El idioma también se puede cambiar después, desde el menú de usuario o desde
   «Mi perfil › Preferencias»; el tema, desde «Mi perfil › Preferencias», la
   barra superior o «Administración › General» (capítulo 15). En el perfil y en

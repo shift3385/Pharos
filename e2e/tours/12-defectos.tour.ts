@@ -14,6 +14,7 @@ import {
   acceptConfirm,
   byTestId,
   chooseFile,
+  chooseOption,
   clearInput,
   clickButton,
   dialog,
@@ -31,6 +32,7 @@ import {
   waitForText,
   waitForToast,
 } from "./helpers";
+import { PERSONA } from "../../scripts/manual/persona.mjs";
 import { DEFECTS, RELEASE } from "./data/pharos";
 
 const F = es.defects;
@@ -120,6 +122,18 @@ chapter("defectos", () => {
     },
   });
 
+  step("asignado", {
+    title: "Asignado a",
+    caption:
+      "«Asignado a», en «Dónde se encontró», dice quién se ocupa del defecto: se elige entre los miembros activos del workspace, o «Sin asignar». En «Personal» el único miembro eres tú, así que Liomar se lo asigna a sí mismo; en un workspace compartido, la persona elegida recibe un aviso con el defecto (capítulo 21).",
+    focus: '//label[.//*[@data-testid="defect-assignee"]]',
+    run: async () => {
+      await chooseOption(byTestId("defect-assignee"), { text: PERSONA.alias });
+      await expect(byTestId("defect-assignee")).toHaveText(expect.stringContaining(PERSONA.alias));
+      await byTestId("defect-assignee").scrollIntoView({ block: "center" });
+    },
+  });
+
   step("evidencias", {
     title: "Evidencias",
     caption:
@@ -158,7 +172,7 @@ chapter("defectos", () => {
   step("desde-resultado", {
     title: "Un defecto desde un resultado fallido",
     caption:
-      "Cuando una prueba falla, lo más rápido es crear el defecto desde su resultado. «Desde un resultado» lista los intentos que no pasaron en los runs del proyecto con su run y su test, y se buscan por run, caso o test (en este ejemplo, «con capturas» deja la prueba automática de acceso del informe JUnit importado en el capítulo 10). Al elegir uno, el editor se rellena con el error y el defecto queda vinculado a ese resultado y a su caso, así que la trazabilidad no depende de copiar y pegar.",
+      "Cuando una prueba falla, lo más rápido es crear el defecto desde su resultado. «Desde un resultado» lista los intentos que no pasaron en los runs del proyecto, con su run y, si el resultado está vinculado a un caso, su clave y su título («clave · título»; si no, la ruta del test), y se buscan por run, caso o test (en este ejemplo, «con capturas» deja la prueba automática de acceso del informe JUnit importado en el capítulo 10). Al elegir uno, el editor se rellena con el error y el defecto queda vinculado a ese resultado y a su caso, así que la trazabilidad no depende de copiar y pegar.",
     covers: ["dialogs:src/modules/defects/ui/ResultPickerDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -177,7 +191,7 @@ chapter("defectos", () => {
   step("prerrellenado", {
     title: "Prerrellenado desde el resultado",
     caption:
-      "El aviso azul de arriba indica de qué resultado nace el defecto. Revisa el título y la severidad que propone y guarda. En este ejemplo, Liomar lo titula «Entrar con credenciales válidas muestra “Correo o contraseña incorrectos”» y lo marca como crítico: nadie puede entrar en la aplicación.",
+      "El aviso azul de arriba indica de qué resultado nace el defecto. El editor trae el error como resultado obtenido y, como resultado esperado, el del paso que falló o, si no tiene, el del caso. Revisa el título y la severidad que propone y guarda. En este ejemplo, Liomar lo titula «Entrar con credenciales válidas muestra “Correo o contraseña incorrectos”» y lo marca como crítico: nadie puede entrar en la aplicación.",
     focus: ".df-banner",
     run: async () => {
       await $(D).$(`button*=${F.results.choose}`).click();

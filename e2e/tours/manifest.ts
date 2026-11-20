@@ -608,6 +608,7 @@ export const INVENTORY: Item[] = [
   I("ejecuciones", "upload", "upload:src/modules/runs/ui/ImportReportDialog.tsx", "Elegir el informe (y la carpeta de adjuntos)"),
   I("ejecuciones", "action", "action:runs-filter", "Filtrar runs por origen"),
   I("ejecuciones", "screen", "screen:unlinked-tray", "Bandeja «Sin vincular»"),
+  I("ejecuciones", "screen", "screen:run-imported-results", "La pantalla de un run importado: «Resultados importados» (FIX-42)"),
   I("ejecuciones", "tab", "tabs:src/modules/runs/ui/RunsPage.tsx", "Pestañas de Ejecuciones (Runs / Sin vincular)"),
   I("ejecuciones", "tab", "tabs:src/modules/runs/ui/RunDetail.tsx", "Pestañas de un run: Casos / Hallazgos / Métricas (ING-06)"),
   I("ejecuciones", "dialog", "dialogs:src/modules/runs/ui/TriageDialog.tsx", "Triaje de un hallazgo (ING-06)"),
@@ -739,6 +740,7 @@ export const INVENTORY: Item[] = [
   I("movil", "platform", "platform:mobile-project-pills", "Secciones del proyecto en móvil"),
   I("movil", "platform", "platform:mobile-search", "Búsqueda en móvil"),
   I("movil", "platform", "platform:mobile-filters", "Filtros en una hoja inferior"),
+  I("movil", "platform", "platform:mobile-user-sheet", "La hoja del avatar en el móvil: workspace y cuenta (FIX-39)"),
   I("movil", "platform", "platform:desktop-only-gates", "Funciones solo de escritorio en la versión web", {
     skip: `${WEB_ONLY} Lo cubren las pruebas unitarias de cada módulo con isTauri() = false y la revisión manual de la versión web (docs/manual/REVIEW.md).`,
   }),

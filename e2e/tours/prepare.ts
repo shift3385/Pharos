@@ -94,11 +94,14 @@ async function importCase(file: string, requirementKeys: readonly string[]) {
   await apply.click();
   await expect($("#tc-title")).toBeDisplayed();
   for (const key of requirementKeys) {
-    await chooseOption($('[data-testid="requirement-add"]'), { value: key });
-    await expect($(`[aria-label="${tf("testCase.requirements.remove", { key })}"]`)).toBeDisplayed();
+    const linked = $(`[aria-label="${tf("testCase.requirements.remove", { key })}"]`);
+    // FIX-42: a requirement key of the project in «Trazabilidad» comes back
+    // as a link; older .xlsx files carry it only as text.
+    if (!(await linked.isExisting())) await chooseOption($('[data-testid="requirement-add"]'), { value: key });
+    await expect(linked).toBeDisplayed();
   }
-  // The .xlsx carries the links only as text («Otras referencias»): once
-  // linked, the text goes, as in a case made by hand (chapter 8).
+  // Whatever stayed as text («Otras referencias») goes, as in a case made by
+  // hand (chapter 8).
   if (requirementKeys.length > 0) {
     const refs = await field(es.testCase.otherReferences);
     await refs.click();

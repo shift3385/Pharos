@@ -70,7 +70,7 @@ aparece en él se dio por corregido):
   abiertos». El interruptor **«Con hallazgos abiertos»** deja solo los
   requisitos afectados.
 - El **informe de estado** añade la sección «7.1 Hallazgos y rendimiento»
-  (abiertos por severidad, nuevos, triajados, a revisar, umbrales cumplidos y
+  (abiertos por severidad, nuevos, triados, a revisar, umbrales cumplidos y
   los incumplidos), y el **informe de cierre** los lista entre los riesgos
   residuales. Si no hay hallazgos ni umbrales, la sección no aparece.
 

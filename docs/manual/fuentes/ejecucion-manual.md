@@ -115,7 +115,7 @@ funcionan «?» y Ctrl+Mayús+N.
   equipo, pero van en el Excel y en el PDF.
 - Si el proyecto tiene análisis de seguridad o accesibilidad, o pruebas de
   carga (capítulo 10), el informe añade «7.1 Hallazgos y rendimiento»: los
-  hallazgos abiertos por severidad, los nuevos, los triajados, los que
+  hallazgos abiertos por severidad, los nuevos, los triados, los que
   esperan revisión y los umbrales cumplidos e incumplidos.
 
 ## Véase también

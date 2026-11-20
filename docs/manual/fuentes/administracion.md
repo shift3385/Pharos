@@ -150,8 +150,9 @@ workspace en el que trabajas y, debajo, tu rol en él. La lista
   tuyo) cambiáis el mismo elemento sin sincronizar entre medias, Pharos los
   combina campo a campo: si cambiasteis campos distintos (tú el título, ella
   la prioridad; tú un paso, ella otro), se queda con los dos y no pregunta.
-  Un aviso dice cuántos elementos se combinaron, y cada uno queda en la
-  auditoría como «Conflicto resuelto».
+  Un aviso dice cuántos elementos se combinaron «en otro equipo o por otra
+  persona», y cada uno queda en la auditoría como «Conflicto resuelto», con
+  «Se quedó: Combinado» junto a los campos.
   - Solo pregunta por lo que choca: el mismo campo cambiado de dos formas,
     un paso que uno borró y el otro editó, o los pasos reordenados de dos
     maneras distintas. En el panel de conflictos eliges, campo a campo, «Mi
@@ -162,9 +163,9 @@ workspace en el que trabajas y, debajo, tu rol en él. La lista
   - Si uno aprobó o revisó el elemento y el otro cambió su contenido, eliges
     una versión entera: una aprobación no puede cubrir un contenido que no
     vio. Lo mismo al cerrar un ciclo que otro editaba.
-  - En la web pasa igual al guardar: si alguien cambió otros campos mientras
-    editabas, se combina y se guarda («Alguien cambió este elemento…»); si
-    cambió los mismos, un diálogo te deja elegir qué queda en cada uno, o
+  - En la web pasa igual al guardar: si otros campos cambiaron mientras
+    editabas, se combina y se guarda («Este elemento cambió en otro equipo o
+    lo cambió otra persona mientras lo editabas…»); si cambiaron los mismos, un diálogo te deja elegir qué queda en cada uno, o
     volver al formulario sin guardar.
 - **Rechazado por permisos.** Si cambias algo que tu rol ya no permite (por
   ejemplo, te cambiaron el rol mientras no tenías conexión), el servidor no

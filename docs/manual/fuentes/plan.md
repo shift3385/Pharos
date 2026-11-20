@@ -250,7 +250,8 @@ combinan solos; solo el mismo campo pide elegir (capítulo 15, «Conflictos»).
   cronograma se leen «2026-11-09 – 2026-11-22». Los hitos aparecen bajo el
   cronograma y los ciclos, al final. Los apartados de estrategia van donde
   los pide el asistente; en el Excel, en las hojas «Estrategia 29119-3»,
-  «Métricas» y «Criterios de salida», que «Importar .xlsx» vuelve a leer.
+  «Métricas», «Criterios de salida» e «Hitos», que «Importar .xlsx» vuelve a
+  leer.
 - Si el documento debe llevar su historial, elige «Historial de revisiones» en
   «Ajustes del proyecto › Historial en el plan exportado» (capítulo 14). El
   .pdf y el .xlsx (también los del ZIP del proyecto) añaden entonces la tabla

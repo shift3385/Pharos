@@ -15,6 +15,10 @@ corrija y se pueda volver a probar. Cada defecto lleva:
   errata en la pantalla de entrada justo antes de una demostración.
 - **Reproducción:** pasos, resultado esperado y resultado obtenido, con la
   build y el entorno en que se encontró.
+- **Asignado a:** quién se ocupa de él, elegido entre los miembros activos
+  del workspace (o «Sin asignar»). En un workspace compartido, la persona
+  elegida recibe un aviso (capítulo 21). Un nombre escrito a mano en una
+  versión anterior se conserva hasta que eliges a un miembro.
 - **Vínculos** con los casos, los requisitos y los resultados de los que nace.
   La matriz de trazabilidad (capítulo 13), el informe de estado (capítulo 11)
   y el Inicio (capítulo 3) los cuentan.

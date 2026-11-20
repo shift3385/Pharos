@@ -129,7 +129,7 @@ chapter("acceso", () => {
   step("registro", {
     title: "Crear una cuenta",
     caption:
-      "Si es tu primera vez, «Regístrate» abre «Crear cuenta». Escribe tu alias, tu nombre, tus apellidos, tu correo y una contraseña de al menos 8 caracteres. En este ejemplo, Liomar Rodríguez, responsable de QA de Pharos, crea la cuenta con la que hará todas las pruebas del manual, con el alias «Liomar QA». El alias es como te ve el resto de la aplicación; el nombre y los apellidos forman tu nombre oficial, el que firma los documentos que exportas (el plan de pruebas, por ejemplo). Todos los campos son obligatorios: si falta uno, el formulario te lleva a él.",
+      "Si es tu primera vez, «Regístrate» abre «Crear cuenta». Escribe tu alias, tu nombre, tus apellidos, tu correo y una contraseña de al menos 8 caracteres. En este ejemplo, Liomar Rodríguez, responsable de QA de Pharos, crea la cuenta con la que hará todas las pruebas del manual, con el alias «Liomar QA». El alias es el nombre con el que Pharos te nombra: el menú lateral, los miembros de un workspace, las revisiones y los avisos. El nombre y los apellidos forman tu nombre oficial, que guarda tu perfil. Todos los campos son obligatorios: si falta uno, el formulario te lleva a él.",
     covers: ["screen:register"],
     run: async () => {
       await $(`button=${es.auth.signUpLink}`).click();
@@ -159,15 +159,17 @@ chapter("acceso", () => {
   step("registro-hecho", {
     title: "Primera entrada con la cuenta nueva",
     caption:
-      "Con los códigos guardados, «Continuar» abre Pharos. Como la cuenta es nueva, «Inicio» aparece vacío: el saludo y la invitación a crear tu primer proyecto con «Nuevo proyecto» (capítulo 4). Tu alias y tu correo quedan al pie del menú lateral, junto al estado de la sincronización.",
+      "Con los códigos guardados, «Continuar» abre Pharos. Como la cuenta es nueva, «Inicio» aparece vacío: el saludo y la invitación a crear tu primer proyecto con «Nuevo proyecto» (capítulo 4). Arriba del menú lateral ya está el selector de workspace, con «Personal», tu espacio propio, y tu rol en él (capítulo 2). Tu alias y tu correo quedan al pie del menú lateral, junto al estado de la sincronización.",
     covers: ["state:home-empty"],
-    focus: USER_MENU,
+    focus: [USER_MENU, '[data-testid="workspace-switcher"]'],
     run: async () => {
       await $(SAVED_CHECK).click();
       await button(es.recoveryCodes.continue).click();
       await expect(userMenuTrigger()).toBeDisplayed();
       // The first sync ends a moment later.
       await syncIdle();
+      // FIX-40: the workspace selector is there from the first sign-in.
+      await expect(byTestId("workspace-switcher")).toHaveText(expect.stringContaining("Personal"));
     },
   });
 
@@ -280,7 +282,7 @@ chapter("acceso", () => {
   step("perfil-guardar", {
     title: "Cambiar el alias y el nombre",
     caption:
-      "Corrige lo que haga falta y pulsa «Guardar» (o Intro). En este ejemplo, Liomar escribió su apellido sin tilde al registrarse y lo corrige: «Rodríguez». Ese nombre oficial es el que firma el plan de pruebas que redacta en el capítulo 5. Junto al botón aparece «Guardado» (si cambias el alias, el avatar y el pie del menú lateral lo muestran al momento) y, debajo, cuándo se creó y se actualizó tu perfil y su número de revisión, que sube con cada cambio. Los cambios llegan a tus otros equipos con la siguiente sincronización.",
+      "Corrige lo que haga falta y pulsa «Guardar» (o Intro). En este ejemplo, Liomar escribió su apellido sin tilde al registrarse y lo corrige: «Rodríguez». Junto al botón aparece «Guardado» (si cambias el alias, el avatar y el pie del menú lateral lo muestran al momento) y, debajo, cuándo se creó y se actualizó tu perfil y su número de revisión, que sube con cada cambio. Los cambios llegan a tus otros equipos con la siguiente sincronización.",
     covers: ["action:profile-save"],
     focus: [".profile__audit", `button=${es.profile.save}`],
     run: async () => {

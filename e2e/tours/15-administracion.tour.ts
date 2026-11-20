@@ -41,7 +41,6 @@ import {
   tf,
   waitForText,
   waitForToast,
-  xpathString,
 } from "./helpers";
 
 const A = es.admin;
@@ -88,12 +87,11 @@ async function retitleRequirement(title: string) {
 }
 
 // ---- «Usuarios» (server administrator) -------------------------------------
-// Rows are found by the account's e-mail (the per-row test ids are on their
-// way: user-row-<email>, user-reset, user-grant, user-revoke, user-disable,
-// user-enable, user-revoke-tokens).
-const userRow = (email: string) => $(`//tr[td[normalize-space()=${xpathString(email)}]]`);
-const rowButton = (email: string, text: string) =>
-  $(`//tr[td[normalize-space()=${xpathString(email)}]]//button[normalize-space()=${xpathString(text)}]`);
+// Rows and their buttons are found by the account's e-mail (FIX-38 test ids:
+// data-email on the row, user-<action>-<email> on its buttons).
+const userRow = (email: string) => $(`tr[data-email="${email}"]`);
+type UserAction = "reset" | "grant" | "revoke" | "disable" | "enable";
+const rowButton = (email: string, action: UserAction) => byTestId(`user-${action}-${email}`);
 
 chapter("administracion", () => {
   // Safety net: whatever happens in the administrator block, the next
@@ -167,7 +165,7 @@ chapter("administracion", () => {
   step("eliminar-plantilla", {
     title: "Eliminar una plantilla propia",
     caption:
-      "Tus plantillas se editan o eliminan desde su menú; las incluidas con Pharos no se pueden borrar. Eliminar pide confirmación con «Sí, eliminar».",
+      "Tus plantillas se editan o eliminan desde su menú; las incluidas con Pharos no se pueden borrar. Eliminar pide confirmación con «Sí, eliminar»: la plantilla pasa a la papelera y puedes restaurarla desde «Administración › General › Papelera» hasta que se elimine para siempre.",
     covers: ["dialogs:src/modules/templates/ui/TemplatesTab.tsx", "dialogs:src/modules/templates/ui/TemplateFormModal.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
@@ -279,7 +277,7 @@ chapter("administracion", () => {
   step("cambios-combinados", {
     title: "Cambios en campos distintos: se combinan solos",
     caption:
-      "Si el mismo elemento se cambia en dos sitios antes de sincronizar, Pharos lo combina campo a campo. En este ejemplo, Liomar completa desde su portátil la descripción del requisito REQ-006 («Si cambian el mismo campo, Pharos pregunta cuál queda.») y, en este equipo, sin sincronizar entre medias, su título («…con el servidor»). Al sincronizar, como tocó campos distintos, Pharos se queda con los dos cambios sin preguntar: el requisito tiene el título nuevo y la descripción del portátil. Un aviso dice cuántos elementos se combinaron, y cada uno queda en «Auditoría» como «Conflicto resuelto».",
+      "Si el mismo elemento se cambia en dos sitios antes de sincronizar, Pharos lo combina campo a campo. En este ejemplo, Liomar completa desde su portátil la descripción del requisito REQ-006 («Si cambian el mismo campo, Pharos pregunta cuál queda.») y, en este equipo, sin sincronizar entre medias, su título («…con el servidor»). Al sincronizar, como tocó campos distintos, Pharos se queda con los dos cambios sin preguntar: el requisito tiene el título nuevo y la descripción del portátil. Un aviso lo dice («Se combinaron tus cambios con los hechos a la vez en otro equipo o por otra persona en 1 elemento…»), y el elemento queda en «Auditoría» como «Conflicto resuelto», con «Se quedó: Combinado».",
     shot: { element: D },
     run: async () => {
       // The other device: Liomar's laptop, through the tour API.
@@ -413,14 +411,14 @@ chapter("administracion", () => {
   step("auditoria", {
     title: "Auditoría",
     caption:
-      "«Auditoría» lista cada cambio de tu cuenta, el más reciente arriba: quién lo hizo (tú, un agente en tu nombre o el sistema), qué acción, sobre qué elemento y desde dónde (este equipo, la web u otro equipo). Por defecto ves los últimos 30 días; filtra por periodo, quién, elemento, acción o proyecto, o busca una clave. Arriba, Pharos comprueba que el registro está íntegro: ningún cambio se ha borrado, reordenado ni modificado.",
+      "«Auditoría» lista cada cambio de tu cuenta, el más reciente arriba: quién lo hizo (tú, un agente en tu nombre o el sistema), qué acción, sobre qué elemento y desde dónde (este equipo, la web u otro equipo). Por defecto ves los últimos 30 días; filtra por periodo, quién, elemento, acción o proyecto, o busca una clave. Arriba, Pharos comprueba que el registro está íntegro: ningún cambio se ha borrado, reordenado ni modificado. Aquí Liomar busca «REQ-006»: cada cambio de su título sale como «Editado», y cada conflicto de sincronización como «Conflicto resuelto», con lo que se quedó («Se quedó: Combinado»: se juntaron los cambios de los dos equipos) y los campos que tocó.",
     covers: ["admin:audit", "action:audit-verify"],
     run: async () => {
       await openAdminTab("audit");
       await waitForText(A.audit.integrity.okTitle, 30_000);
-      await browser.waitUntil(async () => (await $$('[data-testid^="audit-row-"]')).length > 0, {
-        timeoutMsg: "no audit rows",
-      });
+      await byTestId("audit-search").setValue(SYNC_REQ.key);
+      // FIX-39: the merged sync event says what was kept.
+      await waitForText(`${A.audit.summary.resolution}: ${A.audit.summaryValue.merged}`, 20_000);
     },
   });
 
@@ -634,7 +632,7 @@ chapter("administracion", () => {
     shot: { element: D },
     mask: ['[data-testid="admin-reset-link"]'],
     run: async () => {
-      await rowButton(TEAMMATE.email, U.reset).click();
+      await rowButton(TEAMMATE.email, "reset").click();
       await expect(dialog()).toBeDisplayed();
       await clickButton(U.resetConfirm, D);
       // With e-mail on the server, it asks how to deliver it first.
@@ -659,7 +657,7 @@ chapter("administracion", () => {
     covers: ["dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "action:admin-grant"],
     shot: { element: '[role="alertdialog"], [role="dialog"]' },
     run: async () => {
-      await rowButton(TEAMMATE.email, U.grant).click();
+      await rowButton(TEAMMATE.email, "grant").click();
       await expect(dialog()).toBeDisplayed();
       await waitForText(tf("admin.users.grantTitle", { name: TEAMMATE.alias }));
     },
@@ -676,10 +674,10 @@ chapter("administracion", () => {
     covers: ["dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "action:admin-revoke"],
     shot: false,
     run: async () => {
-      await rowButton(TEAMMATE.email, U.revoke).click();
+      await rowButton(TEAMMATE.email, "revoke").click();
       await clickButton(U.revokeConfirm, '[role="alertdialog"], [role="dialog"]');
       await waitForToast(tf("admin.users.revoked", { name: TEAMMATE.alias }));
-      await expect(rowButton(TEAMMATE.email, U.grant)).toBeDisplayed();
+      await expect(rowButton(TEAMMATE.email, "grant")).toBeDisplayed();
     },
   });
 
@@ -690,7 +688,7 @@ chapter("administracion", () => {
     covers: ["dialogs:src/modules/integrations/ui/AdminRevokeTokens.tsx"],
     shot: { element: '[role="alertdialog"], [role="dialog"]' },
     run: async () => {
-      await rowButton(TEAMMATE.email, es.integrations.admin.button).click();
+      await userRow(TEAMMATE.email).$(`button=${es.integrations.admin.button}`).click();
       await expect(dialog()).toBeDisplayed();
       await waitForText("CLI de Jorge");
     },
@@ -707,7 +705,7 @@ chapter("administracion", () => {
     covers: ["dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "dialogs:src/modules/admin/ui/tabs/DisableAccountDialog.tsx", "action:admin-disable"],
     shot: { element: D },
     run: async () => {
-      await rowButton(TEAMMATE.email, U.disable).click();
+      await rowButton(TEAMMATE.email, "disable").click();
       await expect(dialog()).toBeDisplayed();
       await (await field(U.disableReason, D)).setValue("Baja temporal");
       await (await field(tf("admin.users.disableConfirmLabel", { email: TEAMMATE.email }), D)).setValue(TEAMMATE.email);
@@ -727,7 +725,7 @@ chapter("administracion", () => {
     run: async () => {
       await byTestId("users-status").$(`button*=${U.status.disabled}`).click();
       await expect(userRow(TEAMMATE.email)).toBeDisplayed();
-      await expect(rowButton(TEAMMATE.email, U.enable)).toBeDisplayed();
+      await expect(rowButton(TEAMMATE.email, "enable")).toBeDisplayed();
       await browser.action("pointer").move({ origin: "viewport", x: 700, y: 40 }).perform();
     },
   });
@@ -739,7 +737,7 @@ chapter("administracion", () => {
     covers: ["dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "action:admin-enable"],
     shot: false,
     run: async () => {
-      await rowButton(TEAMMATE.email, U.enable).click();
+      await rowButton(TEAMMATE.email, "enable").click();
       await clickButton(U.enableConfirm, '[role="alertdialog"], [role="dialog"]');
       await waitForToast(tf("admin.users.enabled", { name: TEAMMATE.alias }));
       await signInAs("liomar");

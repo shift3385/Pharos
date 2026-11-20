@@ -48,7 +48,7 @@ Los **hallazgos** de los análisis de seguridad y accesibilidad (capítulo 10)
 también llegan a la matriz: un caso con hallazgos abiertos en el último
 análisis de cada herramienta lleva una insignia con cuántos son, en el color
 del peor, y el interruptor **«Con hallazgos abiertos»** deja solo los
-requisitos con algún caso así. Un hallazgo triajado (falso positivo, riesgo
+requisitos con algún caso así. Un hallazgo triado (falso positivo, riesgo
 aceptado o corregido) ya no cuenta. Un umbral de k6 incumplido en una métrica
 vinculada a un caso lo marca como fallido.
 

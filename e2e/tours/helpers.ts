@@ -209,6 +209,8 @@ export async function keyboardDrag(handle: ReturnType<typeof $>, { key = "ArrowR
 /** Sets a hidden <input type="file"> (WebDriver uploads the local file). */
 export async function chooseFile(selector: string, file: string) {
   const input = await $(selector);
+  // A page that is still rendering may not have its input yet.
+  await input.waitForExist({ timeout: 15_000 });
   const hidden = await browser.execute((el: HTMLElement) => {
     const was = { hidden: el.hasAttribute("hidden"), display: el.style.display };
     el.removeAttribute("hidden");

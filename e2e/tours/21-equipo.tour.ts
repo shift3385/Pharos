@@ -15,7 +15,7 @@
 // CI token; the manual prints it after. It leaves «Equipo QA» with «Pharos»
 // (prerequisite `equipo-qa`) and Jorge as its second Test Manager
 // (`jorge-en-equipo`).
-import { $, browser, expect } from "@wdio/globals";
+import { $, $$, browser, expect } from "@wdio/globals";
 import { TEAMMATE } from "../../scripts/manual/persona.mjs";
 import { DEFECTS, PROJECT_A, TEAM } from "./data/pharos";
 import {
@@ -448,7 +448,7 @@ chapter("equipo", () => {
 
   step("auditoria", {
     title: "La auditoría del equipo",
-    caption: `En «Administración › Auditoría», el Test Manager de un workspace compartido ve también lo que hicieron los demás miembros. Buscando «${CASE.key}», el historial del caso muestra quién hizo cada cosa: el envío a revisión de Liomar, y la petición de cambios y la aprobación de Jorge L. Meneses Yero.`,
+    caption: `En «Administración › Auditoría», el Test Manager de un workspace compartido ve también lo que hicieron los demás miembros, con su nombre. Liomar busca «${CASE.key}»: cada paso de la revisión del caso sale por su nombre, «Enviado a revisión» (Liomar), «Cambios pedidos» y «Aprobado» (Jorge L. Meneses Yero), con los campos que cambió («Aprobación, Revisión, Estado»).`,
     focus: '[data-testid="audit-tab"]',
     run: async () => {
       await openAdminTab("audit");
@@ -461,6 +461,19 @@ chapter("equipo", () => {
         },
         { timeout: 20_000, timeoutMsg: "the audit does not show Jorge's review of the case" },
       );
+      // The case's own rows in view (the search also lists other elements).
+      // The search applies after a pause: every row is the case's.
+      await browser.waitUntil(
+        async () => {
+          const rows = await $$('[data-testid^="audit-row-"]');
+          for (const r of rows) if (!(await r.getText()).includes(CASE.key)) return false;
+          return rows.length > 0;
+        },
+        { timeout: 10_000, timeoutMsg: "the audit search did not leave the case's rows alone" },
+      );
+      // The oldest is at the bottom: in view with the search box above.
+      const caseRow = $(`(//*[starts-with(@data-testid,"audit-row-")][contains(normalize-space(.),"${CASE.key}")])[last()]`);
+      await caseRow.scrollIntoView({ block: "end" });
     },
   });
 

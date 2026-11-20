@@ -17,8 +17,9 @@ que vive en el servidor:
 - ver quién es miembro, cambiar su rol o quitarlo;
 - pedirle que **revise y apruebe** tu trabajo: con la «Aprobación
   independiente», nadie aprueba lo que escribió;
-- repartir el trabajo y enterarte de lo que hace el equipo: las
-  notificaciones y la auditoría.
+- repartir el trabajo (un defecto se asigna a un miembro, que recibe el
+  aviso) y enterarte de lo que hace el equipo: las notificaciones y la
+  auditoría.
 
 En este ejemplo, Liomar crea «Equipo QA», lleva allí el proyecto «Pharos» e
 invita a Jorge como Test Analyst. Jorge revisa la checklist de humo de la
@@ -62,8 +63,9 @@ workspace, apruebe planes o reasigne los tokens de CI si alguien se va.
 ## Si algo no sale
 
 - **El compañero no aparece en «Miembros y roles».** Comprueba que usó el
-  código antes de que caducara y vuelve a abrir la página. En la tabla de
-  invitaciones, la suya tiene que decir «Aceptada».
+  código antes de que caducara y vuelve a abrir la página. Una invitación
+  usada desaparece de «Invitaciones pendientes»; si la suya sigue ahí, aún no
+  la ha usado, y si dice «Caducada», revócala y crea otra.
 - **«Este código ya se usó o caducó».** Cada código sirve una vez. Revoca la
   invitación y crea otra.
 - **No veo «Compartir con un workspace…».** Aparece en «Proyectos» con tu

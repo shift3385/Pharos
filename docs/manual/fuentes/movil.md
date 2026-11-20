@@ -21,6 +21,11 @@ En el móvil:
   (en Inicio, el logotipo), la lupa, las notificaciones y tu avatar;
 - la **barra inferior** lleva Inicio, Proyectos, Admin (Administración) y
   Perfil;
+- **tu avatar** abre una hoja con el apartado «Workspace» (tus workspaces
+  con tu rol, «Crear workspace», «Unirse con un código…» y «Miembros y
+  roles», como el selector del menú lateral), el estado de la sincronización
+  y, debajo, «Mi perfil», «Administración», el tema, el idioma y «Cerrar
+  sesión»;
 - las **notificaciones** (la campana de la barra superior) se abren como una
   hoja desde abajo, con los mismos días, el filtro «Sin leer» y la acción de
   cada una;

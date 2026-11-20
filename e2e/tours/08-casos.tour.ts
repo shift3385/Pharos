@@ -643,7 +643,7 @@ chapter("casos", () => {
   step("importar", {
     title: "Importar un caso desde .xlsx",
     caption:
-      "Para traer un caso escrito en Excel, «Importar / Exportar → Importar .xlsx» lee una plantilla rellenada o un caso exportado antes. El informe enseña qué campos se reconocieron y «Aplicar» abre el editor con esos datos, todavía sin guardar.",
+      "Para traer un caso escrito en Excel, «Importar / Exportar → Importar .xlsx» lee una plantilla rellenada o un caso exportado antes. El informe enseña qué campos se reconocieron, con la prioridad y el estado en tu idioma («Alta», «Borrador»), y «Aplicar» abre el editor con esos datos, todavía sin guardar. Las claves de «Trazabilidad» que son requisitos del proyecto vuelven como vínculos, no como texto libre.",
     covers: ["upload:src/modules/test-cases/ui/TestCasesPage.tsx", "dialogs:src/modules/test-cases/ui/TestCasesPage.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {

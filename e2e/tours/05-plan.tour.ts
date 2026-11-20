@@ -85,7 +85,7 @@ chapter("plan", () => {
 
   step("importar", {
     title: "Importar el plan desde Excel",
-    caption: `Liomar no escribe el plan paso a paso: lo tiene en Excel, en «${PLAN.file}», un plan exportado antes desde Pharos. «Importar / Exportar», en la cabecera, y después «Importar .xlsx» leen un plan exportado o una plantilla rellenada en Excel (Administración › Plantillas). Antes de tocar nada, el informe de importación muestra, campo a campo, qué reconoció y qué no («no detectado», «en blanco»…), para que decidas si aplicarlo. El título del plan sale del nombre del archivo.`,
+    caption: `Liomar no escribe el plan paso a paso: lo tiene en Excel, en «${PLAN.file}», un plan exportado antes desde Pharos. «Importar / Exportar», en la cabecera, y después «Importar .xlsx» leen un plan exportado o una plantilla rellenada en Excel (Administración › Plantillas). Antes de tocar nada, el informe de importación muestra, campo a campo, qué reconoció y qué no («no detectado», «en blanco»…), para que decidas si aplicarlo. Las listas salen con sus nombres («Funcionales, Rendimiento…»), y más abajo el informe cuenta también los hitos que trae el Excel, en su hoja «Hitos». El título del plan sale del nombre del archivo.`,
     covers: ["upload:src/modules/test-plan/ui/TestPlanWizard.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -125,7 +125,7 @@ chapter("plan", () => {
 
   step("identificacion", {
     title: "Paso 1 · Identificación del plan",
-    caption: `El paso 1 es el bloque de identificación del documento de ISO/IEC/IEEE 29119-3: el título (aquí, «${PLAN.title}»), el estado (no se elige aquí: cambia con las acciones de «Estado del plan», como en los casos), el ID de documento (por defecto «TP-», el prefijo del proyecto y seis caracteres; se puede cambiar), la versión («${PLAN.version}») y la fecha. El autor no se escribe: es tu nombre oficial del perfil (en este ejemplo, Liomar Rodríguez, capítulo 1); lo ves en el panel «Estado del plan» y firma el plan cuando lo exportas.`,
+    caption: `El paso 1 es el bloque de identificación del documento de ISO/IEC/IEEE 29119-3: el título (aquí, «${PLAN.title}»), el estado (no se elige aquí: cambia con las acciones de «Estado del plan», como en los casos), el ID de documento (por defecto «TP-», el prefijo del proyecto y seis caracteres; se puede cambiar), la versión («${PLAN.version}») y la fecha. El autor no se escribe: lo pone Pharos con tu nombre (en este ejemplo, «Liomar QA»); lo ves en el panel «Estado del plan» y en el plan exportado.`,
     covers: ["wizard:identification"],
     focus: ".tpw-ident",
     run: async () => {
@@ -310,7 +310,7 @@ chapter("plan", () => {
   step("cronograma", {
     title: "Paso 15 · Cronograma",
     caption:
-      "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas: aquí, los dos sprints de la versión, del 9 de noviembre al 6 de diciembre. Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin (Esc cancela el rango a medias): el sprint aparece como una franja y en la lista «Sprints», con su nombre y sus fechas, que puedes editar (dd/mm/aaaa e Intro). «Siguiente sprint» añade el siguiente a continuación, con la duración del paso 7. La leyenda explica el calendario: las franjas alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es hoy y el rojo claro señala días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). Con el ratón puedes arrastrar los extremos del sprint seleccionado. Las flechas de arriba cambian de mes.",
+      "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas: aquí, los dos sprints de la versión, del 9 de noviembre al 6 de diciembre, y los dos hitos que trajo el Excel, «Congelación de código» y «Publicación de la 0.6.0». Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin (Esc cancela el rango a medias): el sprint aparece como una franja y en la lista «Sprints», con su nombre y sus fechas, que puedes editar (dd/mm/aaaa e Intro). «Siguiente sprint» añade el siguiente a continuación, con la duración del paso 7. La leyenda explica el calendario: las franjas alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es hoy y el rojo claro señala días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). Con el ratón puedes arrastrar los extremos del sprint seleccionado. Las flechas de arriba cambian de mes.",
     covers: ["wizard:schedule"],
     focus: ".tps-card",
     run: async () => {
@@ -323,7 +323,7 @@ chapter("plan", () => {
 
   step("cronograma-hito", {
     title: "Cronograma: un hito con el teclado",
-    caption: `Un hito es una fecha clave que no ocupa días, como una congelación de código o una publicación. Liomar marca uno con el teclado: elige «Hito», lleva el foco al calendario con Tab, se mueve con las flechas hasta el ${dmy(PLAN_ON_SCREEN.milestone.date)} y pulsa Intro. El hito se marca con un rombo ámbar y se añade a la lista «Hitos», donde le da nombre, «${PLAN_ON_SCREEN.milestone.name}», y puede corregir la fecha. Con el ratón basta un clic en el día. En el calendario, ← → mueven el foco un día, ↑ ↓ una semana, Inicio y Fin van al principio y al final de la semana, RePág y AvPág cambian de mes, e Intro o Espacio marcan el día enfocado.`,
+    caption: `Un hito es una fecha clave que no ocupa días, como una congelación de código o una publicación. Además de los dos que trajo el Excel, Liomar marca uno con el teclado: elige «Hito», lleva el foco al calendario con Tab, se mueve con las flechas hasta el ${dmy(PLAN_ON_SCREEN.milestone.date)} y pulsa Intro. El hito se marca con un rombo ámbar y se añade a la lista «Hitos», donde le da nombre, «${PLAN_ON_SCREEN.milestone.name}», y puede corregir la fecha. Con el ratón basta un clic en el día. En el calendario, ← → mueven el foco un día, ↑ ↓ una semana, Inicio y Fin van al principio y al final de la semana, RePág y AvPág cambian de mes, e Intro o Espacio marcan el día enfocado.`,
     covers: ["action:schedule-milestone", "keyboard:schedule-calendar"],
     focus: [".tps-diamond", "section.tps-list"],
     run: async () => {
@@ -348,8 +348,16 @@ chapter("plan", () => {
       await browser.keys(["Control", "a"]);
       await browser.keys([...PLAN_ON_SCREEN.milestone.name]);
       await expect(fresh).toHaveValue(PLAN_ON_SCREEN.milestone.name);
+      // The calendar from its top and, below, the three milestones (two from
+      // the Excel, FIX-40); the pointer off the controls without scrolling.
       await $(".tps-card").scrollIntoView({ block: "start" });
-      await $("h2.tpw__title").moveTo();
+      // «Sprint / Hito» whole under the top bar.
+      await browser.execute(() => {
+        let el = document.querySelector(".tps-card")?.parentElement ?? null;
+        while (el && el.scrollHeight <= el.clientHeight) el = el.parentElement;
+        (el ?? document.scrollingElement)?.scrollBy(0, -24);
+      });
+      await browser.action("pointer").move({ origin: "viewport", x: 1270, y: 760 }).perform();
     },
   });
 

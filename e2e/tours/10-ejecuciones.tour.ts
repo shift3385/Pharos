@@ -13,6 +13,7 @@ import { DESKTOP, MOBILE, chapter, setViewport, step } from "./tour";
 import {
   PROJECT_A,
   acceptConfirm,
+  byTestId,
   clickButton,
   dialog,
   es,
@@ -91,7 +92,7 @@ chapter("ejecuciones", () => {
   step("importar", {
     title: "Importar un informe",
     caption:
-      "«Importar informe» trae a Pharos los resultados de tu automatización. Lee los tests de Cucumber Messages (NDJSON), CTRF, JUnit XML, JSON de Playwright, .NET (TRX), Allure (la carpeta `allure-results` comprimida en un .zip), Xcode (el JSON de `xcresulttool`) y Pharos Run JSON, y también SARIF, axe y el resumen de k6, que traen hallazgos y métricas en lugar de tests. Admite hasta 200 MB (50 MB si es JSON o XML). Pulsa «Elegir archivo…»: el formato se detecta por el contenido, y Pharos rellena el título, la build, el commit, la rama y el entorno con lo que trae el informe; corrígelos si hace falta. En este ejemplo, el JUnit de la regresión nocturna de Pharos con Playwright. Solo en la app de escritorio.",
+      "«Importar informe» trae a Pharos los resultados de tu automatización: tests, hallazgos y métricas. La lista de formatos está tras el «?» del campo «Informe»: los tests de JUnit XML, CTRF, JSON de Playwright, Cucumber Messages (NDJSON), Pharos Run JSON, .NET (TRX), Allure (la carpeta `allure-results` comprimida en un .zip) y Xcode (el JSON de `xcresulttool`); los hallazgos de SARIF y axe, y las métricas del resumen de k6. Admite hasta 200 MB (50 MB si es JSON o XML). Pulsa «Elegir archivo…»: el formato se detecta por el contenido, y Pharos rellena el título, la build, el commit, la rama y el entorno con lo que trae el informe; corrígelos si hace falta. En este ejemplo, el JUnit de la regresión nocturna de Pharos con Playwright. Solo en la app de escritorio.",
     covers: ["dialogs:src/modules/runs/ui/ImportReportDialog.tsx", "upload:src/modules/runs/ui/ImportReportDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -105,7 +106,7 @@ chapter("ejecuciones", () => {
   step("vista-previa", {
     title: "Vista previa antes de importar",
     caption:
-      "La vista previa dice cuántos tests e intentos trae el informe, cuántos se vinculan a un caso y cuántos quedarán «sin vincular», con los avisos que haya. Un test se vincula solo si lleva la clave de un caso: en Cucumber, Playwright o CTRF, como tag (@PH-001); en JUnit, con la propiedad test_id; en TRX, con su categoría ([TestCategory(\"PH-001\")]); en Allure, con la etiqueta `tag` o un enlace `tms`. Este informe no la lleva, así que sus 4 tests irán a la bandeja. Nada se guarda hasta pulsar «Importar». Si el archivo ya se importó, Pharos lo dice y no duplica nada.",
+      "La vista previa dice cuántos tests trae el informe y en cuántos intentos, y cuántos de esos intentos se vinculan a un caso y cuántos quedarán «sin vincular», con los avisos que haya. Un test se vincula solo si lleva la clave de un caso: en Cucumber, Playwright o CTRF, como tag (@PH-001); en JUnit, con la propiedad test_id; en TRX, con su categoría ([TestCategory(\"PH-001\")]); en Allure, con la etiqueta `tag` o un enlace `tms`. Este informe no la lleva, así que sus 4 tests irán a la bandeja. Nada se guarda hasta pulsar «Importar». Si el archivo ya se importó, Pharos lo dice y no duplica nada.",
     shot: { element: D },
     run: async () => {
       await $(D).$(`[aria-label="${R.import.preview}"]`).scrollIntoView({ block: "center" });
@@ -116,7 +117,7 @@ chapter("ejecuciones", () => {
   step("importado", {
     title: "Informe importado",
     caption:
-      "Al terminar, el resumen dice qué run se creó, cuántos resultados se importaron y cuántos quedan sin vincular; si el informe nombra adjuntos que no se encontraron (aquí no se eligió carpeta), también lo avisa. Al cerrarlo, el run aparece en la lista como «Importado», con sus resultados; el filtro «Importados» deja solo los runs que vienen de un informe.",
+      "Al terminar, el resumen dice qué run se creó, cuántos resultados se importaron y cuántos quedan sin vincular; si el informe nombra adjuntos y no elegiste la «Carpeta de adjuntos», avisa de que no se guardaron (aquí, sus 3 capturas). Al cerrarlo, el run aparece en la lista como «Importado», con sus resultados; el filtro «Importados» deja solo los runs que vienen de un informe.",
     covers: ["action:runs-filter"],
     shot: { element: D },
     run: async () => {
@@ -238,6 +239,21 @@ chapter("ejecuciones", () => {
       await expect($(".rn-done")).toHaveText(expect.stringContaining(", 0 sin vincular"));
       await clickButton(es.common.close, D);
       await $(`[data-testid="run-row-${datasetRun}"]`).waitForDisplayed();
+    },
+  });
+
+  step("run-importado", {
+    title: "Los resultados de un run importado",
+    caption: `Un clic en la clave de un run importado abre su pantalla, con los resultados que trajo el informe: cada test con su caso (clave y título) y, si la tiene, su fila del dataset, o «Sin vincular» si no tiene caso; su estado y sus intentos. El progreso los cuenta como ejecutados («3/3 ejecutados») y los filtros de arriba los separan por estado. Un run importado no ofrece «Añadir casos»: sus resultados vienen del informe; «Reabrir» lo deja en curso para añadirle más informes con «Run abierto». Aquí, el run de «${LIBRARY.case.title}», con sus tres filas.`,
+    covers: ["screen:run-imported-results"],
+    run: async () => {
+      await $(`[data-testid="run-row-${datasetRun}"]`).click();
+      await browser.waitUntil(async () => (await $$('[data-testid="run-imported-result"]')).length === 3, {
+        timeout: 20_000,
+        timeoutMsg: "the imported run does not list its three results",
+      });
+      await expect(byTestId("run-add-cases")).not.toBeExisting();
+      await waitForText(tf("execution.run.progress", { executed: 3, total: 3 }));
     },
   });
 

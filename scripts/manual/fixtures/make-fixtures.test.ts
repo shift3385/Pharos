@@ -22,6 +22,7 @@ import { caseToExportable } from "@modules/test-cases/export/batch";
 import { parseCaseXlsx } from "@modules/test-cases/import/caseImport";
 import { reconcileFlows, reconcileTable, stepsOf } from "@modules/test-cases/model/steps";
 import type { TestCase, TestCaseData } from "@modules/test-cases/model/types";
+import { milestonesTable } from "@modules/test-plan/export/planExtras";
 import { buildPlanXlsx } from "@modules/test-plan/export/planXlsx";
 import { parsePlanXlsx } from "@modules/test-plan/import/planImport";
 import { linkedText, newMetricId } from "@modules/test-plan/model/metrics";
@@ -136,7 +137,10 @@ describe("case-study fixtures (e2e/tours/fixtures/pharos)", () => {
     };
     // With `t`: the strategy, metrics and criteria sheets are found by their
     // translated names on import («Estrategia 29119-3»…), not by their keys.
-    const { buffer } = await buildPlanXlsx(toExportable(form, AUTHOR, t, "es"), "es", t);
+    // As a Pharos export: with the «Hitos» sheet (EXP-03), which the import
+    // reads back (FIX-40).
+    const exportable = { ...toExportable(form, AUTHOR, t, "es"), extraTables: [milestonesTable(form.milestones, t)] };
+    const { buffer } = await buildPlanXlsx(exportable, "es", t);
     const fresh = new Uint8Array(buffer as ArrayBuffer);
     const parsed = async (b: ArrayBuffer | Uint8Array) => content((await parsePlanXlsx(b instanceof Uint8Array ? b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) : b, PLAN.file, AUTHOR)).input);
     const mine = await parsed(fresh);
