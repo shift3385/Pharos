@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Download, FileText } from "lucide-react";
-import { useAuth } from "@modules/auth";
+import { personName, useAuth } from "@modules/auth";
 import { cycleApi } from "@modules/cycles";
 import { projectPlanRef } from "@modules/test-plan";
 import type { ExecutionSummary } from "@shared/contracts/contract";
@@ -181,7 +181,7 @@ export function StatusReportDialog({
               scopeLabel,
               periodLabel,
               generatedAt: new Date(),
-              author: user?.displayName ?? user?.email ?? "",
+              author: personName(user),
               planTitle: plan?.title ?? null,
               lang: i18n.resolvedLanguage,
               summary: shownSummary,

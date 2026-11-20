@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BadgeCheck, Download, FileCheck2, Save } from "lucide-react";
-import { useAuth } from "@modules/auth";
+import { personName, useAuth } from "@modules/auth";
 import { configurationApi, cycleApi } from "@modules/cycles";
 import { defectsApi } from "@modules/defects";
 import { projectPlanForCompletion } from "@modules/test-plan";
@@ -478,7 +478,7 @@ export function CompletionReportDialog({
       {confirming && (
         <ConfirmDialog
           title={t("completionReport.approveTitle")}
-          message={t("completionReport.approveMessage", { name: user?.displayName ?? user?.email ?? "" })}
+          message={t("completionReport.approveMessage", { name: personName(user) })}
           confirmLabel={t("completionReport.approve")}
           confirmTestId="completion-approve-confirm"
           onCancel={() => setConfirming(false)}
@@ -486,7 +486,7 @@ export function CompletionReportDialog({
             setConfirming(false);
             void save({
               by: userId,
-              byName: user?.displayName ?? user?.email ?? "",
+              byName: personName(user),
               at: new Date().toISOString(),
             });
           }}

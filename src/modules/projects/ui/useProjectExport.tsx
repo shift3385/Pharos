@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "@modules/auth";
+import { personName, useAuth } from "@modules/auth";
 import { useToast } from "@shared/ui/Toast";
 import { unlessReported } from "@shared/ui/notify";
 import type { Project } from "../model/types";
@@ -29,7 +29,7 @@ export function useProjectExport() {
   // Who the plans' revision history names (PLN-02): the official name,
   // never the alias. Only the owner edits a project today.
   const names: Record<string, string> = user
-    ? { [user.id]: `${user.firstName} ${user.lastName}`.trim() }
+    ? { [user.id]: personName(user) }
     : {};
 
   function onProgress(title: string) {

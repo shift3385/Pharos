@@ -125,6 +125,13 @@ describe("case diff", () => {
     ]);
   });
 
+  it("a checklist's items are checks, not steps (FIX-41)", () => {
+    const a = { title: "T", data: { steps: [{ id: "a", text: "1" }] } };
+    const b = { title: "T", data: { steps: [{ id: "a", text: "1" }, { id: "n", text: "Revisar el log" }] } };
+    expect(diffCase(a, b, { checklist: true }).map((c) => `${c.field}:${c.kind}:${c.position}`)).toEqual(["checks:added:2"]);
+    expect(diffCase(a, b).map((c) => c.field)).toEqual(["steps"]);
+  });
+
   it("word diff gives both texts back", () => {
     const parts = wordDiff("the payment fails", "the payment is rejected");
     expect(parts.filter((p) => p.op !== "ins").map((p) => p.text).join("")).toBe("the payment fails");

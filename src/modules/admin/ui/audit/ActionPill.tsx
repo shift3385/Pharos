@@ -12,6 +12,10 @@ const TONE: Record<string, PillTone> = {
   redact: "error",
   import: "warning",
   execute: "warning",
+  // Review steps (FIX-41): `labels.eventKey`.
+  "review.sent": "info",
+  "review.changesRequested": "warning",
+  "review.approved": "success",
 };
 
 export function ActionPill({ action, label }: { action: string; label: string }) {

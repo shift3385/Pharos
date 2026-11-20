@@ -44,6 +44,17 @@ describe("navigation", () => {
     expect(screen.queryByText(/Fase 0/)).not.toBeInTheDocument();
   });
 
+  it("marks no entry as current on the workspace pages, which are not Administración (FIX-41)", async () => {
+    const current = () =>
+      [...document.querySelectorAll('[data-testid^="nav-"][aria-current="page"]')].map((e) => e.getAttribute("data-testid"));
+    const admin = renderWithProviders(<App />, { route: "/admin" });
+    expect(current()).toContain("nav-admin");
+    admin.unmount();
+    renderWithProviders(<App />, { route: "/workspaces/join" });
+    expect(await screen.findByRole("heading", { name: "Unirse a un workspace" })).toBeInTheDocument();
+    expect(current()).toEqual([]);
+  });
+
   it("navigates to empty module sections from the sidebar", async () => {
     const user = userEvent.setup();
     renderWithProviders(<App />, { route: "/" });

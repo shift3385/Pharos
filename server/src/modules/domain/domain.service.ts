@@ -511,6 +511,12 @@ export function createDomainService(store: DomainStore) {
     return new Map([...first].map(([id, v]) => [id, v.by]));
   }
 
+  /** The author of one case (CAS-02): the payload's `createdBy` if it has
+   *  one, else who wrote its first revision; `fallback` when neither says. */
+  async function caseAuthor(tx: DomainTx, payload: Payload, id: string, fallback: string): Promise<string> {
+    return str(payload, "createdBy") || (await authorsOf(tx, str(payload, "projectId"), id)).get(id) || fallback;
+  }
+
   const testCases = {
     list: (userId: string, projectId: string) =>
       run(userId, async (tx) => {
@@ -586,9 +592,10 @@ export function createDomainService(store: DomainStore) {
           "Test case",
           revision,
         );
+        const author = await caseAuthor(tx, doc.payload, id, userId);
         const next = await tx.put("test_case", id, await casePayload(tx, doc.payload, input), doc);
         await storeRevision(tx, userId, next);
-        return { createdBy: userId, ...next.payload };
+        return { ...next.payload, createdBy: author };
       }),
     remove: remove("test_case", "Test case"),
     /** A review transition (CAS-02, ADR-0047): the account is the session's;
@@ -597,6 +604,9 @@ export function createDomainService(store: DomainStore) {
       run(userId, async (tx) => {
         const doc = current(await tx.get("test_case", id), "Test case", revision);
         const project = await liveProject(tx, str(doc.payload, "projectId"));
+        // Who wrote its first revision (TEN-01: a shared case has other
+        // readers); the reader when that is unknown.
+        const author = await caseAuthor(tx, doc.payload, id, userId);
         const next = await reviewTransition(
           doc.payload,
           { ...input, userId, at: new Date().toISOString(), revision: doc.revision + 1 },
@@ -606,12 +616,7 @@ export function createDomainService(store: DomainStore) {
             workspaceId: (await tx.workspaceOf("test_case", id)) ?? (str(project, "workspaceId") || WORKSPACE),
             projectId: str(doc.payload, "projectId"),
             caseId: id,
-            // Who wrote its first revision (TEN-01: a shared case has
-            // other readers); the reader when that is unknown.
-            authorId:
-              str(doc.payload, "createdBy") ||
-              (await authorsOf(tx, str(doc.payload, "projectId"), id)).get(id) ||
-              userId,
+            authorId: author,
           },
         );
         const stored = await tx.put(
@@ -621,7 +626,9 @@ export function createDomainService(store: DomainStore) {
           doc,
         );
         await storeRevision(tx, userId, stored);
-        return { createdBy: userId, ...withStableSteps(stored.payload) };
+        // The case's author, not the reviewer: the client tells the author
+        // of «Pedir cambios» and «Aprobar» with it (FIX-41).
+        return { ...withStableSteps(stored.payload), createdBy: author };
       }),
     /** The earlier state a reviewer compares the case with: the latest
      *  revision that was approved or sent to review (CAS-02). */

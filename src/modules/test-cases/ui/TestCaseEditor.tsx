@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Columns2, FileCode, MoreHorizontal, PencilLine, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "@modules/auth";
+import { personName, useAuth } from "@modules/auth";
 import { ListField } from "@shared/ui/fields";
 import { Select } from "@shared/ui/Select";
 import { ErrorSummary, FormField } from "@shared/ui/FormField";
@@ -607,7 +607,7 @@ export function TestCaseEditor({
   async function save(patch?: Partial<FormState>) {
     const f = patch ? { ...form, ...patch } : form;
     setSaving(true);
-    const author = testCase?.author ?? (user ? `${user.firstName} ${user.lastName}` : "");
+    const author = testCase?.author ?? personName(user);
     const clean = (a: string[]) => a.map((s) => s.trim()).filter(Boolean);
     // A step keeps its id when its text is trimmed; empty ones are dropped.
     const cleanSteps = (a: Step[]) =>
@@ -693,7 +693,7 @@ export function TestCaseEditor({
   /** Maps the current form to the export shape, shared by .xlsx and .pdf. */
   function buildExportableCase(): ExportableCase {
     const author =
-      testCase?.author ?? (user ? `${user.firstName} ${user.lastName}` : "");
+      testCase?.author ?? personName(user);
     return {
       scenarioId: form.scenarioId,
       title: form.title,

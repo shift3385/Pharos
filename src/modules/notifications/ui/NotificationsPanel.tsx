@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import {
@@ -148,6 +148,25 @@ export function NotificationsPanel({ onDone, showTitle = true }: { onDone: () =>
   );
 }
 
+/** Where the element's key goes in a notification's text. */
+const KEY_MARK = "⁣KEY⁣";
+
+/** The text with its key (PH-004, BM-DEF-031) in one piece: a key never
+ *  breaks over two lines (FIX-41). */
+function withKey(text: string, key: string | undefined): ReactNode {
+  if (!key || !text.includes(KEY_MARK)) return text.split(KEY_MARK).join(key ?? "");
+  return text.split(KEY_MARK).flatMap((part, i) =>
+    i === 0
+      ? [part]
+      : [
+          <span key={i} className="np-row__key">
+            {key}
+          </span>,
+          part,
+        ],
+  );
+}
+
 function Row({ n, time, onOpen }: { n: AppNotification; time: string; onOpen: (n: AppNotification) => void }) {
   const { t } = useTranslation();
   const look = ICONS[n.kind] ?? { icon: Bell, tone: "neutral" };
@@ -157,7 +176,7 @@ function Row({ n, time, onOpen }: { n: AppNotification; time: string; onOpen: (n
   const count = typeof n.data?.count === "number" ? n.data.count : 1;
   const text = t(`notifications.kind.${n.kind}`, {
     actor: n.actorName || t("notifications.someone"),
-    key: n.subject.key ?? "",
+    key: n.subject.key ? KEY_MARK : "",
     title: n.subject.title,
     count,
     // SEC-12: «… ya no tiene acceso a QA Móvil».
@@ -172,7 +191,7 @@ function Row({ n, time, onOpen }: { n: AppNotification; time: string; onOpen: (n
         <Icon size={16} />
       </span>
       <button type="button" className="np-row__body" onClick={() => onOpen(n)}>
-        <span className="np-row__text">{text}</span>
+        <span className="np-row__text">{withKey(text, n.subject.key)}</span>
         <span className="np-row__meta">
           {unread && <span className="sr-only">{t("notifications.unreadMark")}</span>}
           {time}
