@@ -65,7 +65,7 @@ async function sync() {
 async function openMembers() {
   await byTestId("workspace-switcher").click();
   await byTestId("workspace-members").click();
-  await expect($(`h1=${tf("workspaces.members.title", { name: WS })}`)).toBeDisplayed();
+  await expect($(`h1=${WS}`)).toBeDisplayed();
   await expect($(".ws-table")).toBeDisplayed();
 }
 
@@ -147,7 +147,7 @@ chapter("equipo", () => {
   step("miembros-solo", {
     title: "Miembros y roles",
     caption:
-      "«Miembros y roles», en el selector, abre la página del workspace. La pestaña «Miembros» lista a cada persona con su correo, su rol y desde cuándo está; debajo, las «Reglas» del workspace y las invitaciones pendientes. Al pie, «¿Qué puede hacer cada rol?» se despliega con un resumen de los cinco roles: Test Manager, Test Analyst, Automation Engineer, Product Owner y Viewer (solo lectura). Por ahora Liomar es el único miembro.",
+      "«Miembros y roles», en el selector, abre la página del workspace, con su nombre por título («Equipo QA»). La pestaña «Miembros» lista a cada persona con su correo, su rol y desde cuándo está; debajo, las «Reglas» del workspace y las invitaciones pendientes. Al pie, «¿Qué puede hacer cada rol?» se despliega con un resumen de los cinco roles: Test Manager, Test Analyst, Automation Engineer, Product Owner y Viewer (solo lectura). Por ahora Liomar es el único miembro.",
     covers: ["route:/workspaces/members"],
     run: async () => {
       await openMembers();

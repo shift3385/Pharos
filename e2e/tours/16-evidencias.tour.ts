@@ -24,8 +24,8 @@ async function chooseProject(name: string) {
   const items = ".project-menu__list > *";
   await browser.waitUntil(async () => (await $$(items)).length > 0, { timeoutMsg: "the project menu did not open" });
   for (const item of await $$(items)) {
-    // An item reads «PH- Pharos»: the prefix, then the name.
-    if ((await item.getText()).replace(/^[A-Z]+-\s*/, "").trim() === name) {
+    // An item reads «PH Pharos» (the prefix without its separator, FIX-46), then the name.
+    if ((await item.getText()).replace(/^[A-Z0-9]+[-_]?\s+/, "").trim() === name) {
       await item.click();
       break;
     }

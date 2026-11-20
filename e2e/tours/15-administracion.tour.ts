@@ -64,6 +64,25 @@ function newestDownload(ext: string): string {
   return join(downloadsDir, files[0].f);
 }
 
+/** Leaves on screen only the toast that contains `text` (marked
+ *  `data-tour-shown`, for a step's focus), once the next toast has come over
+ *  it. The others are hidden, not removed (React owns them). */
+async function showOnlyToast(text: string) {
+  await browser.pause(1_500);
+  await browser.execute((wanted: string) => {
+    const toasts = Array.from(document.querySelectorAll<HTMLElement>(".toast-stack .toast"));
+    const visible = toasts.find((t) => getComputedStyle(t).display !== "none");
+    const display = visible ? getComputedStyle(visible).display : "flex";
+    for (const t of toasts) {
+      if ((t.textContent ?? "").includes(wanted)) {
+        t.style.setProperty("display", display, "important");
+        t.setAttribute("data-tour-shown", "");
+      } else t.style.setProperty("display", "none", "important");
+    }
+  }, text);
+  await expect($("[data-tour-shown]")).toBeDisplayed();
+}
+
 /** Every scrolled container back to its top (a page shot from its title). */
 async function scrollAllToTop() {
   await browser.execute(() => {
@@ -293,7 +312,7 @@ chapter("administracion", () => {
     caption:
       "Si el mismo elemento se cambia en dos sitios antes de sincronizar, Pharos lo combina campo a campo. En este ejemplo, Liomar completa desde su portátil la descripción del requisito REQ-006 («Si cambian el mismo campo, Pharos pregunta cuál queda.») y, en este equipo, sin sincronizar entre medias, su título («…con el servidor»). Al sincronizar, como tocó campos distintos, Pharos se queda con los dos cambios sin preguntar: el requisito tiene el título nuevo y la descripción del portátil. Un aviso lo dice («Se combinaron tus cambios con los hechos a la vez en otro equipo o por otra persona en 1 elemento…»), y el elemento queda en «Auditoría» como «Conflicto resuelto», con «Se quedó: Combinado».",
     toast: true,
-    focus: [".toast-stack .toast:last-child", `button.tz-open*=${SYNC_REQ.title}`],
+    focus: ["[data-tour-shown]", `button.tz-open*=${SYNC_REQ.title}`],
     run: async () => {
       // The other device: Liomar's laptop, through the tour API.
       await editOnOtherDevice(
@@ -306,9 +325,11 @@ chapter("administracion", () => {
       await retitleRequirement(`${SYNC_REQ.title} con el servidor`);
       await clickButton(es.sync.now);
       await waitForToast(es.sync.autoMerged_one.split("{{")[0], 30_000);
+      // The sync then adds its own «Sincronizado (↑…)» toast on top: the
+      // picture shows the merge notice, the subject of this step.
+      await showOnlyToast(es.sync.autoMerged_one.split("{{")[0]);
       // The picture: the notice over the list, with REQ-006's new title.
-      await expect($(`button.tz-open*=${SYNC_REQ.title} con el servidor`)).toBeDisplayed();
-    },
+      await expect($(`button.tz-open*=${SYNC_REQ.title} con el servidor`)).toBeDisplayed();    },
     after: async () => {
       // Both changes are there.
       await openRequirement(SYNC_REQ.title);
