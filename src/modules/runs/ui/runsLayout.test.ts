@@ -32,7 +32,10 @@ describe("runs surfaces and wrapping (FIX-45)", () => {
   });
 
   it("draws the thresholds line and the tray's «?» on a surface", () => {
-    expect(findings(".fd-kpi")).toMatch(/background:\s*var\(--color-surface-1\);/);
+    // FIX-47: the thresholds line is the shared `.ui-card`, kept one line of text.
+    expect(read("MetricsPanel.tsx")).toContain('className="ui-card fd-kpi"');
+    expect(findings(".fd-kpi")).toMatch(/display:\s*block;/);
+    expect(findings(".fd-kpi")).not.toMatch(/background:/);
     expect(runs(".rn-tray__bar .infotip")).toMatch(/background:\s*var\(--color-surface-1\);/);
   });
 

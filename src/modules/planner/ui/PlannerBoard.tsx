@@ -200,7 +200,7 @@ export function PlannerBoard({ projectId, ownerId }: { projectId: string; ownerI
   return (
     <div className="pl">
       {!inHeader && <div className="pl-head">{newCard}</div>}
-      <div className="pl-toolbar">
+      <div className="ui-card pl-toolbar">
         <FilterChips
           label={t("planner.kind")}
           options={[

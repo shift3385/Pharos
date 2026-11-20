@@ -1,4 +1,4 @@
-// The answer of the common synthesis (`req-synthesis@1`), checked against
+// The answer of the common synthesis (`req-synthesis@2`), checked against
 // what was sent: the model is asked for all of this, but cannot be trusted to
 // (as `usableProposals` in IA-16). Pure — testable.
 

@@ -20,6 +20,7 @@ const ctx: NotificationsValue = {
   markRead: vi.fn(),
   markAllRead: vi.fn(),
   openConflicts: vi.fn(),
+  conflicts: 0,
 };
 
 vi.mock("../state/notificationsContext", () => ({ useNotifications: () => ctx }));
@@ -108,10 +109,27 @@ describe("NotificationsPanel", () => {
 
   it("a conflict opens the conflicts", async () => {
     const user = userEvent.setup();
-    show([item("s", today, { origin: "local", kind: "sync.conflict", projectId: null, data: { count: 2 }, subject: { entity: "sync", id: "x", title: "" } })]);
-    expect(screen.getByText("2 conflictos de sincronización por revisar")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Resolver" }));
-    expect(ctx.openConflicts).toHaveBeenCalled();
+    ctx.conflicts = 2;
+    try {
+      show([item("s", today, { origin: "local", kind: "sync.conflict", projectId: null, data: { count: 2 }, subject: { entity: "sync", id: "x", title: "" } })]);
+      expect(screen.getByText("2 conflictos de sincronización por revisar")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Resolver" }));
+      expect(ctx.openConflicts).toHaveBeenCalled();
+    } finally {
+      ctx.conflicts = 0;
+    }
+  });
+
+  it("a conflict already resolved has nothing left to open (FIX-47)", async () => {
+    const user = userEvent.setup();
+    const onDone = show([
+      item("s", today, { origin: "local", kind: "sync.conflict", projectId: null, data: { count: 1 }, subject: { entity: "sync", id: "x", title: "" } }),
+    ]);
+    expect(screen.queryByRole("button", { name: "Resolver" })).not.toBeInTheDocument();
+    await user.click(screen.getByText("1 conflicto de sincronización por revisar"));
+    expect(ctx.markRead).toHaveBeenCalledWith(["s"]);
+    expect(ctx.openConflicts).not.toHaveBeenCalled();
+    expect(onDone).not.toHaveBeenCalled();
   });
 
   it("«Marcar todo como leído» is off with nothing unread", async () => {

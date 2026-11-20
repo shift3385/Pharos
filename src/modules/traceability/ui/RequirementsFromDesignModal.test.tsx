@@ -145,7 +145,7 @@ describe("RequirementsFromDesignModal", () => {
       expect(api.create.mock.calls[0][0]).toMatchObject({
         title: "Recuperar la contraseña",
         data: {
-          aiProvenance: { requirement: { ...provenance, prompt: "requirements-from-design@1+req-synthesis@1" } },
+          aiProvenance: { requirement: { ...provenance, prompt: "requirements-from-design@1+req-synthesis@2" } },
           sources: [{ kind: "image", name: "login.png", index: 1 }],
         },
       });

@@ -11,10 +11,17 @@ const block = (selector: string) => {
 };
 
 describe("board (FIX-45)", () => {
-  it("draws its filters on a card, never on the photo", () => {
+  it("draws its filters on the shared card, never on the photo (FIX-47)", () => {
+    const board = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "PlannerBoard.tsx"), "utf8");
+    expect(board).toContain('className="ui-card pl-toolbar"');
+    const surfaces = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../../shared/theme/surfaces.css"), "utf8");
+    const card = surfaces.slice(surfaces.indexOf(".ui-card {"), surfaces.indexOf("}", surfaces.indexOf(".ui-card {")));
+    expect(card).toMatch(/background:\s*var\(--color-surface-1\);/);
+    // The card stacks its children; the toolbar keeps them in a row, and
+    // paints no surface of its own.
     const bar = block(".pl-toolbar");
-    expect(bar).toMatch(/background:\s*var\(--color-surface-1\);/);
-    expect(bar).toMatch(/border:\s*1px solid var\(--color-border\);/);
+    expect(bar).toMatch(/flex-direction:\s*row;/);
+    expect(bar).not.toMatch(/background:/);
   });
 
   it("counts with the body font, not the monospace slashed zero", () => {

@@ -13,16 +13,14 @@
 }
 
 /* The filters on one card, as the cases list (FIX-45): over the background
-   image, on a phone above all, the bare row sat on the photo. */
+   image, on a phone above all, the bare row sat on the photo. The card is
+   the shared `.ui-card` (FIX-47); this lays the filters out in a row. */
 .pl-toolbar {
-  display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 12px;
   padding: 12px;
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
 }
 
 .pl-toolbar .ui-search {

@@ -94,8 +94,18 @@ describe("status report model (EJE-03)", () => {
 
   it("prefills the summary from the numbers", () => {
     expect(autoSummary(SUMMARY, t)).toBe(
-      "Se han ejecutado 3 de 4 casos: 75 %, con una tasa de éxito de 33,3 %. Hay 1 defectos abiertos, 1 críticos. Criterios de salida: 1 de 3 cumplidos.",
+      "Se han ejecutado 3 de 4 casos: 75 %, con una tasa de éxito de 33,3 %. Hay 1 defecto abierto, 1 crítico. Criterios de salida: 1 de 3 cumplidos.",
     );
+  });
+
+  it("says one and many defects in the singular and plural (FIX-47)", async () => {
+    const many = { ...SUMMARY, defects: { ...SUMMARY.defects, open: 3, openBySeverity: { ...SUMMARY.defects.openBySeverity, critical: 2 } } };
+    expect(autoSummary(many, t)).toContain("Hay 3 defectos abiertos, 2 críticos.");
+    const none = { ...SUMMARY, defects: { ...SUMMARY.defects, open: 0, openBySeverity: { ...SUMMARY.defects.openBySeverity, critical: 0 } } };
+    expect(autoSummary(none, t)).toContain("Hay 0 defectos abiertos, 0 críticos.");
+    await i18n.changeLanguage("en");
+    expect(autoSummary(SUMMARY, t)).toContain("There is 1 open defect, 1 critical.");
+    expect(autoSummary(many, t)).toContain("There are 3 open defects, 2 critical.");
   });
 
   it("shows default criteria in the user's language and the plan's as written", async () => {
@@ -124,10 +134,32 @@ describe("status report model (EJE-03)", () => {
   it("adds «Hallazgos y rendimiento» only when there are findings or thresholds (ING-06)", () => {
     expect(buildStatusReport(SUMMARY, ctx, t).findings).toBeNull();
     const f = buildStatusReport(CLOSED, ctx, t).findings!;
-    expect(f.findingsLine).toBe("3 hallazgos abiertos (Crítica: 1, Alta: 2) · 1 nuevos · 1 triados · 2 a revisar");
+    expect(f.findingsLine).toBe("3 hallazgos abiertos (Crítica: 1, Alta: 2) · 1 nuevo · 1 triado · 2 a revisar");
     expect(f.thresholdsLine).toBe("Umbrales: 2 de 3 cumplidos");
     expect(f.tools.rows).toEqual([["axe-core", "RUN-003", "1", "2", "0", "0", "0", "1", "1"]]);
     expect(f.failed.rows).toEqual([["RUN-004", "http_req_duration · p(95)", "p(95)<500", "812 ms", "TC-002"]]);
+  });
+
+  it("shows a failed threshold's value as the run's metrics do, not a raw ratio (FIX-47)", async () => {
+    const rate = {
+      ...CLOSED,
+      findings: {
+        ...CLOSED.findings!,
+        new: 2,
+        triaged: 0,
+        failedThresholds: [
+          { runId: "r8", runKey: "RUN-008", name: "http_req_failed", aggregation: "rate", scope: null, threshold: "rate<0.01", value: 0.0102, unit: "ratio", caseId: null },
+          { runId: "r8", runKey: "RUN-008", name: "http_req_duration", aggregation: "p(95)", scope: null, threshold: "p(95)<500", value: 1534.5, unit: "ms", caseId: null },
+        ],
+      },
+    };
+    const f = buildStatusReport(rate, ctx, t).findings!;
+    expect(f.findingsLine).toContain("· 2 nuevos · 0 triados ·");
+    expect(f.failed.rows.map((r) => r[3])).toEqual(["1,02 %", "1,53 s"]);
+    // The completion report's residual risks use the same section.
+    await i18n.changeLanguage("en");
+    const en = buildStatusReport(rate, { ...ctx, lang: "en" }, t).findings!;
+    expect(en.failed.rows.map((r) => r[3])).toEqual(["1.02 %", "1.53 s"]);
   });
 
   it("names the files by project and day", () => {

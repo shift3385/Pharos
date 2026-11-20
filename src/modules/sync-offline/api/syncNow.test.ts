@@ -517,6 +517,89 @@ describe("syncNow key blocks (DAT-01)", () => {
   });
 });
 
+describe("syncNow and conflicts merged without asking (SYNC-02, FIX-47)", () => {
+  const stale = (id: string) => ({
+    entity: "test_case",
+    entityId: id,
+    payload: { title: "remote" },
+    revision: 3,
+    deleted: false,
+    hlc: "w",
+  });
+
+  /** The server turns down `turnedDown` as stale; the core merges `merged`
+   *  without asking (and opens a conflict for the rest). */
+  function scene(pending: PendingDelta[], turnedDown: string[], merged: string[]) {
+    const calls: { cmd: string; args: Record<string, unknown> }[] = [];
+    invoke.mockImplementation(async (cmd: string, args: Record<string, unknown>) => {
+      calls.push({ cmd, args });
+      if (cmd === "oplog_pending") return { deltas: pending };
+      if (cmd === "sync_cursor_get") return "0";
+      if (cmd === "sync_auto_merged_take")
+        return merged.map((id) => ({ entity: "test_case", entityId: id, fields: { title: "local" } }));
+      return undefined;
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string, init: RequestInit) => {
+        if (url.includes("/sync/push")) {
+          const n = (JSON.parse(init.body as string) as { deltas: unknown[] }).deltas.length;
+          return json({ accepted: n - turnedDown.length, conflicts: turnedDown.map(stale) });
+        }
+        return json({ docs: [], cursor: 0, hasMore: false });
+      }),
+    );
+    const notice = vi.fn();
+    window.addEventListener("pharos:sync-merged", notice);
+    return { calls, notice, done: () => window.removeEventListener("pharos:sync-merged", notice) };
+  }
+
+  it("an item whose every change merged is no conflict to review", async () => {
+    const { calls, notice, done } = scene([delta(1)], ["c1"], ["c1"]);
+    try {
+      const res = await syncNow();
+      expect(res.conflicts).toBe(0);
+    } finally {
+      done();
+    }
+    // The core saw the server's version (and merged it); one notice says so.
+    expect(calls.find((c) => c.cmd === "apply_remote")?.args.docs).toEqual([stale("c1")]);
+    expect(notice).toHaveBeenCalledTimes(1);
+    expect((notice.mock.calls[0][0] as CustomEvent).detail).toEqual({ count: 1 });
+  });
+
+  it("a field that merged and another that clashes on the same item: one conflict, no merge notice", async () => {
+    // The core opens the conflict (it merges only when nothing collides), so
+    // the item is not among the automatic merges.
+    const { notice, done } = scene([delta(1)], ["c1"], []);
+    try {
+      expect((await syncNow()).conflicts).toBe(1);
+    } finally {
+      done();
+    }
+    expect(notice).not.toHaveBeenCalled();
+  });
+
+  it("only the clashing item counts when another one merged in the same sync", async () => {
+    const { notice, done } = scene([delta(1), delta(2)], ["c1", "c2"], ["c2"]);
+    try {
+      expect((await syncNow()).conflicts).toBe(1);
+    } finally {
+      done();
+    }
+    expect((notice.mock.calls[0][0] as CustomEvent).detail).toEqual({ count: 1 });
+  });
+
+  it("a merge that came with the pull takes nothing off the push's conflicts", async () => {
+    const { done } = scene([delta(1)], ["c1"], ["c9"]);
+    try {
+      expect((await syncNow()).conflicts).toBe(1);
+    } finally {
+      done();
+    }
+  });
+});
+
 describe("syncNow and stable steps (DAT-02)", () => {
   it("records the server's features and pushes the test cases held back until it lists stable-steps", async () => {
     const order: string[] = [];

@@ -1,5 +1,8 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
 import { expectNoAxeViolations } from "@test/axe";
@@ -84,6 +87,35 @@ describe("InfoTip (UX-10)", () => {
     button.getBoundingClientRect = () => rect as DOMRect;
     fireEvent.scroll(window);
     expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
+  it("keeps a readable width: the stylesheet's cap, never the window's (FIX-47)", async () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "infoTip.css"), "utf8");
+    const rule = css.match(/\.infotip__bubble \{([^}]*)\}/)![1];
+    expect(rule).toMatch(/max-width: min\(360px, calc\(100vw - 16px\)\);/);
+    expect(rule).toMatch(/width: max-content;/);
+    const user = userEvent.setup();
+    renderWithProviders(<Field />);
+    await user.click(screen.getByRole("button", { name: /Key/ }));
+    // No inline max-width overrides the cap (the popover's window-wide one did).
+    expect(screen.getByRole("tooltip").style.maxWidth).toBe("");
+  });
+
+  it("stays anchored when its trigger moves without a scroll, as in a dialog that re-centres (FIX-47)", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Field />);
+    const button = screen.getByRole("button", { name: /Key/ });
+    const at = (top: number) => {
+      const r = { top, bottom: top + 20, left: 40, right: 60, width: 20, height: 20, x: 40, y: top, toJSON: () => ({}) };
+      button.getBoundingClientRect = () => r as DOMRect;
+    };
+    at(100);
+    await user.click(button);
+    const tip = screen.getByRole("tooltip");
+    await waitFor(() => expect(tip.style.top).toBe("126px"));
+    at(60); // The dialog grew and moved up: no scroll, no resize.
+    await waitFor(() => expect(tip.style.top).toBe("86px"));
+    expect(tip.style.left).toBe("40px");
   });
 
   it("after a click closes it, hover does not reopen it until the pointer leaves (L4)", async () => {
