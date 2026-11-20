@@ -1079,7 +1079,11 @@ pub(crate) fn commit(
                 ci_url: text(&doc.run.ci_url),
                 dataset: text(&doc.run.dataset),
                 context: doc.run.context.clone(),
-                started_at: time_of(doc.run.started_at.as_ref()),
+                // A report that gives only its end (a SARIF's endTimeUtc)
+                // starts then too, not at the import: a run never starts
+                // after it finishes (FIX-42).
+                started_at: time_of(doc.run.started_at.as_ref())
+                    .or_else(|| time_of(doc.run.finished_at.as_ref())),
                 cycle_id: text(&new.cycle_id),
                 user_id: user.clone(),
                 ..Default::default()

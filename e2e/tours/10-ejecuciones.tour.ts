@@ -284,7 +284,7 @@ chapter("ejecuciones", () => {
   step("hallazgos", {
     title: "Los hallazgos de un run",
     caption:
-      "En el run aparecen las pestañas «Hallazgos» y «Métricas» cuando hay algo que mostrar. «Hallazgos» los agrupa por regla, con su severidad, su ubicación (archivo y línea, o página y elemento) y sus referencias (CWE, WCAG…). «Nuevo» marca los que no estaban en el run anterior de la misma herramienta. Los filtros dejan ver solo una severidad, los abiertos, los que esperan revisión («A revisar») o los ya triajados.",
+      "En el run aparecen las pestañas «Hallazgos» y «Métricas» cuando hay algo que mostrar. «Hallazgos» los agrupa por regla, con su severidad, su ubicación (archivo y línea, o página y elemento) y sus referencias (CWE, WCAG…). «Nuevo» marca los que no estaban en el run anterior de la misma herramienta. Los filtros dejan ver solo una severidad, los abiertos, los que esperan revisión («A revisar») o los ya triados.",
     covers: ["tabs:src/modules/runs/ui/RunDetail.tsx"],
     run: async () => {
       await importAndOpen();
@@ -303,7 +303,7 @@ chapter("ejecuciones", () => {
   step("triaje", {
     title: "Triaje de un hallazgo",
     caption:
-      "«Triaje» decide qué hacer con un hallazgo: falso positivo, riesgo aceptado o corregido, siempre con un motivo, o reabrirlo. La decisión vale para ese hallazgo en todos los runs del proyecto, así que el próximo análisis llega ya triajado, y las decisiones anteriores quedan en su historial. En este ejemplo, Liomar marca como falso positivo la cadena de formato: es una constante del módulo y no viene de la petición.",
+      "«Triaje» decide qué hacer con un hallazgo: falso positivo, riesgo aceptado o corregido, siempre con un motivo, o reabrirlo. La decisión vale para ese hallazgo en todos los runs del proyecto, así que el próximo análisis llega ya triado, y las decisiones anteriores quedan en su historial. En este ejemplo, Liomar marca como falso positivo la cadena de formato: es una constante del módulo y no viene de la petición.",
     covers: ["dialogs:src/modules/runs/ui/TriageDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -315,9 +315,9 @@ chapter("ejecuciones", () => {
   });
 
   step("triaje-hecho", {
-    title: "Hallazgo triajado",
+    title: "Hallazgo triado",
     caption:
-      "Al guardar, el hallazgo sale de «Abiertos» (ya no cuenta en la matriz ni en los informes) y aparece en «Triajados» con su estado.",
+      "Al guardar, el hallazgo sale de «Abiertos» (ya no cuenta en la matriz ni en los informes) y aparece en «Triados» con su estado.",
     shot: false,
     run: async () => {
       await $(D).$('[data-testid="triage-save"]').click();
@@ -333,7 +333,7 @@ chapter("ejecuciones", () => {
   step("axe", {
     title: "Importar un informe de accesibilidad (axe)",
     caption:
-      "Un informe de axe (axe-core, @axe-core/playwright…) trae las reglas de accesibilidad incumplidas en cada página, con su nivel WCAG. En este ejemplo, la auditoría del diálogo «Nuevo requisito» de Pharos trae una infracción grave, la página sin título (`document-title`), y una regla «A revisar», el contraste de color: axe no pudo decidirla, así que no cuenta como abierta hasta que alguien la mire y la triaje.",
+      "Un informe de axe (axe-core, @axe-core/playwright…) trae las reglas de accesibilidad incumplidas en cada página, con su nivel WCAG. En este ejemplo, la auditoría del diálogo «Nuevo requisito» de Pharos trae una infracción grave, la página sin título (`document-title`), y una regla «A revisar», el contraste de color: axe no pudo decidirla, así que no cuenta como abierta hasta que alguien la mire y decida en «Triaje».",
     run: async () => {
       await chooseReport(AXE_REPORT, R.format.axe);
       await (await field(R.field.title, D)).setValue(SCANS.axe.title);

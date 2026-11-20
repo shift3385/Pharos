@@ -77,7 +77,7 @@ Como con los resultados, **el vínculo se deriva al leer** (`runs/link.rs` y su 
 3. **Diálogo de triaje:** estados `Abierto`, `Falso positivo`, `Riesgo aceptado` y `Corregido`, con motivo obligatorio salvo en «Abierto». Se aplica a esa huella en todos los runs del proyecto (ADR-0012).
 4. **Lista de runs:** bajo el progreso, «12 hallazgos · 2 umbrales incumplidos», y un icono por tipo (escudo para seguridad, persona para accesibilidad, velocímetro para rendimiento).
 5. **Matriz:** junto al estado del caso, una insignia con el recuento de hallazgos abiertos, del color de la peor severidad. Al pasar el cursor se ve el desglose. Hay un filtro «Con hallazgos abiertos». Un caso fallido por umbral lleva una nota con el umbral («p(95)<500 ms: 742 ms»).
-6. **Informe de estado:** una sección nueva, «Hallazgos y rendimiento». Recoge los hallazgos abiertos por severidad (nuevos frente al período anterior y triajados) y los umbrales cumplidos (n/m), con la lista de los incumplidos. El informe de cierre (ADR-0044) reutiliza el mismo bloque.
+6. **Informe de estado:** una sección nueva, «Hallazgos y rendimiento». Recoge los hallazgos abiertos por severidad (nuevos frente al período anterior y triados) y los umbrales cumplidos (n/m), con la lista de los incumplidos. El informe de cierre (ADR-0044) reutiliza el mismo bloque.
 
 ## 6. PRs (orden y dependencias)
 

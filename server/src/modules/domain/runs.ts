@@ -1005,7 +1005,14 @@ export function createRunService(store: DomainStore) {
       stepId === null ? !["passed", "skipped"].includes(str(s, "status")) : strOrNull(s, "stepId") === stepId,
     );
     const sid = stepRow ? strOrNull(stepRow, "stepId") : null;
-    const expected = sid ? (steps.find((s) => s.id === sid)?.expected ?? null) : null;
+    // The failed step's expected result, else the flow's (or the case's): a
+    // case often states it once, not per step (FIX-42, as `defects.rs`).
+    const holder = flowId ? flow : data;
+    const flowExpected =
+      holder && typeof holder.expectedResult === "string" && holder.expectedResult.trim()
+        ? holder.expectedResult.trim()
+        : null;
+    const expected = (sid ? (steps.find((s) => s.id === sid)?.expected ?? null) : null) ?? flowExpected;
     const actual =
       (stepRow && typeof stepRow.actual === "string" && stepRow.actual.trim() ? stepRow.actual : null) ??
       (typeof p.errorMessage === "string" ? p.errorMessage : null);

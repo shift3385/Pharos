@@ -125,6 +125,9 @@ su tag.
   otra vez.
 - **«N adjuntos no se encontraron en la carpeta elegida.»** Elige la carpeta
   que contiene los archivos (por ejemplo, `test-results`).
+- **«N adjuntos del informe no se guardaron: no elegiste la carpeta de
+  adjuntos.»** Para guardarlos como evidencias, elige la «Carpeta de
+  adjuntos» antes de pulsar «Importar».
 - **«El archivo supera…».** El límite es 200 MB (50 MB si es JSON o XML).
 - **«El archivo no es un XML válido».** Desde la 0.6.0, un XML con una
   declaración DTD se rechaza: quítala del informe.

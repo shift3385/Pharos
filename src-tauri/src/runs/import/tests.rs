@@ -348,6 +348,27 @@ fn tests_without_one_case_tag_go_to_the_tray_with_their_reason() {
 }
 
 #[test]
+fn a_report_with_only_its_end_time_starts_then_not_at_the_import() {
+    // FIX-42: a SARIF gives only endTimeUtc; the run used to start at the
+    // import (later) and finish at the report's end (earlier).
+    let c = device();
+    let p = new_project(&c);
+    let doc = json!({"schemaVersion": "1.0.0", "run": {"finishedAt": "2026-11-18T07:15:00Z"},
+                     "shards": [{"sourceFormat": "pharos_run_json"}],
+                     "results": [{"name": "t", "status": "passed", "testKey": "k"}]});
+    let out = import(&c, &new_run(&p, doc)).unwrap();
+    let (started, finished): (String, String) = c
+        .query_row(
+            "SELECT started_at, finished_at FROM runs WHERE id = ?1",
+            [&out.run_id],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(started, "2026-11-18T07:15:00Z");
+    assert_eq!(finished, "2026-11-18T07:15:00Z");
+}
+
+#[test]
 fn the_revision_is_the_one_current_when_the_run_started() {
     let c = device();
     let p = new_project(&c);

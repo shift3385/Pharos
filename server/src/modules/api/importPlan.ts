@@ -214,7 +214,9 @@ export function runFieldsOf(doc: Json) {
     ciUrl: text(run.ciUrl),
     dataset: text(run.dataset),
     context: run.context && typeof run.context === "object" && !Array.isArray(run.context) ? (run.context as Json) : null,
-    startedAt: timeOf(run.startedAt),
+    // A report that gives only its end starts then too, not at the import:
+    // a run never starts after it finishes (FIX-42, as `import.rs`).
+    startedAt: timeOf(run.startedAt) ?? timeOf(run.finishedAt),
     finishedAt: timeOf(run.finishedAt),
   };
 }

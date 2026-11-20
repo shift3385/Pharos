@@ -4435,7 +4435,8 @@
     "import": {
       "open": "Importar informe",
       "title": "Importar un informe de resultados",
-      "intro": "Cucumber Messages (NDJSON), CTRF, JUnit XML, JSON de Playwright o Pharos Run JSON. Los tests con la etiqueta del caso (@TC-001) se vinculan a él; el resto queda en «Sin vincular».",
+      "intro": "Trae los resultados de tu automatización: tests, hallazgos y métricas. Un test que lleva la clave de un caso (por ejemplo, @PRJ-001) se vincula a él; el resto queda en «Sin vincular».",
+      "formats": "Tests: JUnit XML, CTRF, JSON de Playwright, Cucumber Messages (NDJSON), Pharos Run JSON, TRX (.NET), Allure (la carpeta allure-results en un .zip) y Xcode (el JSON de xcresulttool). Hallazgos: SARIF (seguridad) y axe (accesibilidad). Métricas: el resumen de k6.",
       "file": "Informe",
       "fileHint": "El formato se detecta por el contenido. Hasta 200 MB (50 MB si es JSON o XML).",
       "reading": "Leyendo el informe…",
@@ -4454,7 +4455,11 @@
       "cycleHint": "Sus resultados cuentan en el progreso del ciclo. Los ciclos cerrados no aparecen.",
       "runCycle": "Este run es del ciclo {{cycle}}.",
       "preview": "Vista previa",
-      "previewSummary": "{{tests}} tests, {{results}} intentos: {{linked}} se vinculan a un caso y {{unlinked}} quedan sin vincular.",
+      "previewSummary": "{{tests}} en {{attempts}}. Intentos que se vinculan a un caso: {{linked}}; sin vincular: {{unlinked}}.",
+      "previewTests_one": "{{count}} test",
+      "previewTests_other": "{{count}} tests",
+      "previewAttempts_one": "{{count}} intento",
+      "previewAttempts_other": "{{count}} intentos",
       "attachments_one": "{{count}} adjunto",
       "attachments_other": "{{count}} adjuntos",
       "warnings_one": "{{count}} aviso",
@@ -4475,6 +4480,8 @@
         "attached_other": "{{count}} adjuntos guardados como evidencia.",
         "missing_one": "{{count}} adjunto no se encontró en la carpeta elegida.",
         "missing_other": "{{count}} adjuntos no se encontraron en la carpeta elegida.",
+        "noFolder_one": "{{count}} adjunto del informe no se guardó: no elegiste la carpeta de adjuntos.",
+        "noFolder_other": "{{count}} adjuntos del informe no se guardaron: no elegiste la carpeta de adjuntos.",
         "failed_one": "{{count}} adjunto no se pudo guardar.",
         "failed_other": "{{count}} adjuntos no se pudieron guardar."
       },
@@ -4665,7 +4672,7 @@
       "draftUnavailable": "Este navegador no deja guardar borradores. Lo marcado se guarda al registrar el resultado.",
       "importDesktopOnly": "Importar informes y la bandeja «Sin vincular» solo en la app de escritorio."
     },
-    "evidenceLocal": "Las evidencias se guardan cifradas en este equipo y aún no se sincronizan con tus otros equipos.",
+    "evidenceLocal": "Las evidencias se guardan cifradas en este equipo y se sincronizan como el resto de los datos.",
     "run": {
       "addCases": "Añadir casos",
       "edit": "Editar datos",
@@ -4692,6 +4699,13 @@
       "filter": "Filtrar por resultado",
       "executeNext": "Ejecutar el siguiente",
       "empty": "Este run no tiene casos. Añádelos con «Añadir casos».",
+      "emptyClosed": "Este run no tiene casos ni resultados.",
+      "imported": {
+        "title": "Resultados importados",
+        "test": "Test",
+        "unlinked": "Sin vincular",
+        "flaky": "Flaky"
+      },
       "emptyFilter": "Ningún elemento con ese resultado.",
       "closed": "{{key}} cerrado.",
       "saved": "Datos del run guardados.",
@@ -5579,7 +5593,7 @@
     "standing": {
       "open": "Abiertos",
       "review": "A revisar",
-      "triaged": "Triajados",
+      "triaged": "Triados",
       "all": "Todos"
     },
     "locations_one": "{{count}} ubicación",
