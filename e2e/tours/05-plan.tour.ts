@@ -442,7 +442,7 @@ chapter("plan", () => {
   step("revisiones", {
     title: "Revisiones del plan",
     caption:
-      "Liomar pulsa «Seguir editando» y «Guardar». Cada guardado con cambios sube la versión y crea una revisión, una copia fechada del plan. El panel «Historial», junto al formulario (o debajo en pantallas estrechas), enseña los últimos cambios: estado, versión, fecha, quién y qué pasos tocó (aquí, la versión nueva con «Alcance» y «Cronograma», encima de la creación del plan). Su enlace «Revisiones» abre la lista de esas copias, con su número, su título y su fecha, la más reciente arriba.",
+      "Liomar pulsa «Seguir editando» y «Guardar». Cada guardado con cambios sube la versión y crea una revisión, una copia fechada del plan. El panel «Historial», junto al formulario (o debajo en pantallas estrechas), enseña los últimos cambios: estado, versión, fecha, quién y qué pasos tocó (aquí, la versión nueva con «Alcance» y «Cronograma», encima de la creación del plan). Su enlace «Revisiones» abre la lista de esas copias, cada una con su versión del plan (v0.6, v0.7, como en el Historial), su título y su fecha, la más reciente arriba.",
     covers: ["dialogs:src/modules/test-plan/ui/wizard/PlanSidePanels.tsx"],
     focus: 'section[aria-labelledby="tpw-revs-title"]',
     run: async () => {

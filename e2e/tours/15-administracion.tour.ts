@@ -369,6 +369,8 @@ chapter("administracion", () => {
       await byTestId("notifications-trigger").click();
       await expect(byTestId("notifications-panel")).toBeDisplayed();
       await browser.waitUntil(async () => (await $$('[data-testid="notification-row"][data-kind="sync.conflict"]')).length > 0, {
+        // The notice is written only if the conflict is still open 6 s later.
+        timeout: 30_000,
         timeoutMsg: "no sync conflict notification",
       });
     },
@@ -406,7 +408,7 @@ chapter("administracion", () => {
   step("seguridad", {
     title: "Seguridad · clave de recuperación",
     caption:
-      "Los datos de este equipo (el archivo pharos.db y la carpeta evidence) están cifrados y su clave vive en el almacén de credenciales de Windows. «Mostrar clave de recuperación» la enseña: con esa clave y una copia de tus datos puedes recuperarlos en otro equipo si este falla. Guárdala ahora, no cuando la necesites.",
+      "«Seguridad» lo dice en una línea, «La base de datos de este equipo está cifrada.», y su «?» lo explica: los datos de este equipo (el archivo pharos.db y la carpeta evidence) están cifrados y su clave vive en el almacén de credenciales de Windows. «Mostrar clave de recuperación» la enseña: con esa clave y una copia de tus datos puedes recuperarlos en otro equipo si este falla. Guárdala ahora, no cuando la necesites.",
     covers: ["admin:security"],
     focus: `button=${es.recoveryKey.show}`,
     run: async () => {

@@ -73,7 +73,7 @@ chapter("inicio", () => {
   step("periodo", {
     title: "El periodo de los datos",
     caption:
-      "El selector de periodo («Últimos 14 días», por defecto) decide qué días cuentan para la tasa de éxito y para «Ejecuciones diarias»: hoy, los últimos 7, 14 o 30 días, o el mes en curso. Las demás cifras son el estado actual de cada proyecto. Pharos recuerda el periodo en este equipo. Las opciones por ciclo y el rango personalizado llegan en una próxima versión.",
+      "El selector de periodo («Últimos 14 días», por defecto) decide qué días cuentan para la tasa de éxito y para «Ejecuciones diarias»: hoy, los últimos 7, 14 o 30 días, o el mes en curso. Las demás cifras son el estado actual de cada proyecto. Pharos recuerda el periodo en este equipo. Las opciones por ciclo y el rango personalizado, en gris con la etiqueta «Próximamente», llegan en una próxima versión.",
     covers: ["action:home-period"],
     focus: ['[data-testid="home-period"]', '[role="menu"]'],
     run: async () => {

@@ -103,8 +103,9 @@ desde un proyecto» y «Requisitos desde diseños»).
   - Cada propuesta lleva su motivo y su fuente: el archivo y las líneas, o la
     imagen con la zona marcada.
   - Los criterios de aceptación van uno por bloque. Los que siguen Gherkin se
-    leen una palabra clave por línea, en negrita (Given, When, Then, And, But),
-    y el texto sigue en minúscula: «Given el campo vacío».
+    leen una palabra clave por línea, en negrita, en el idioma del requisito
+    (en español, Dado, Cuando, Entonces, Y, Pero), y el texto sigue en
+    minúscula: «Dado el campo vacío».
   - «Escrito en la fuente» significa que el texto está ahí. «Inferido» es una
     deducción, que llega con sus supuestos y sus preguntas abiertas, para que
     la confirmes. Lo deducido solo del código puede ser un defecto: confírmalo

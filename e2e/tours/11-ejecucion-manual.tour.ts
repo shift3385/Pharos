@@ -269,7 +269,7 @@ chapter("ejecucion-manual", () => {
   step("ejecutar-filas", {
     title: "Ejecutar cada fila del dataset",
     caption:
-      `En el ejecutor, cada fila de un Outline o de un dataset es una ejecución con su propio resultado: «Flujo principal · Fila 1 de 3», «Fila 2 de 3»… con el primer valor de la fila al lado. Los valores de la fila aparecen resaltados en los pasos, y los pasos insertados de la biblioteca llevan encima «Paso compartido · ${LIBRARY.step.name} · v2». En este ejemplo, Liomar pasa las dos filas de PH-002 y, en «${LIBRARY.case.title}» (PH-005), entran las dos primeras cuentas y la tercera falla al pulsar «Entrar». Cada resultado recuerda el dataset y la versión de cada paso compartido.`,
+      `En el ejecutor, cada fila de un Outline o de un dataset es una ejecución con su propio resultado: «Flujo principal · Fila 1 de 3», «Fila 2 de 3»… con el primer valor de la fila al lado. Los valores de la fila aparecen resaltados en los pasos, y los pasos insertados de la biblioteca llevan encima «Paso compartido · ${LIBRARY.step.name} · v2». En este ejemplo, Liomar pasa las dos filas de PH-002 y, en «${LIBRARY.case.title}» (PH-005), entran las dos primeras cuentas y la tercera falla al pulsar «Entrar». Cada resultado recuerda el dataset y la versión de cada paso compartido. Mientras le quede alguna fila sin resultado, la lista no dice «Pasa»: cuenta cuántas lleva («2 de 3 ejecutadas»).`,
     focus: ".ex-targets",
     run: async () => {
       await $(D).$("button.cd__confirm").click();
