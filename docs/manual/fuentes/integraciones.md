@@ -39,7 +39,7 @@ aviso 7 días antes.
 La guía de la API, [api-v1.md](../api-v1.md), explica con ejemplos de
 `curl` cómo subir resultados, leer datos y comprobar la firma de un webhook.
 
-## La línea de comandos (`pharos`)
+## La línea de comandos «pharos»
 
 La app instala también el programa `pharos`, que se usa desde una terminal
 (PowerShell o el Símbolo del sistema). La referencia completa, con todas las

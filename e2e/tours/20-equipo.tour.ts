@@ -9,7 +9,7 @@
 // Every screen is Liomar's. Jorge acts from his own computer through the tour
 // API (people.ts: jorgeAcceptsInvitation, jorgeRequestsChangesOnCase,
 // jorgeApprovesCase, jorgeApprovesPlan); he never signs in to this app, and
-// the captions say what he did «desde su equipo».
+// the captions say he did it «desde la web» (the audit shows Origen «Web»).
 //
 // It runs before chapter 21 (manifest.ts), which gives the shared «Pharos» a
 // CI token; the manual prints it after. It leaves «Equipo QA» with «Pharos»
@@ -179,10 +179,11 @@ chapter("equipo", () => {
   step("invitacion-creada", {
     title: "El código, una sola vez",
     caption:
-      "«Crear invitación» muestra el código y la dirección del servidor. Pharos no envía correos: «Copiar texto de invitación» copia un mensaje con el workspace, el servidor y el código, para que se lo mandes por el canal que uséis. El código solo se ve ahora (en este manual, difuminado); si se pierde, revoca la invitación y crea otra.",
+      "«Crear invitación» muestra el código y, debajo, la dirección del servidor del equipo: la misma con la que Liomar se conecta, a la que Jorge debe poder llegar desde su ordenador. Pharos no envía correos: «Copiar texto de invitación» copia un mensaje con el workspace, el servidor y el código, para que se lo mandes por el canal que uséis. El código solo se ve ahora; si se pierde, revoca la invitación y crea otra. En este manual, el código y la dirección van difuminados.",
     covers: ["dialogs:src/modules/workspaces/ui/InviteDialog.tsx"],
     shot: { element: D },
-    mask: [".ws-code"],
+    focus: '[data-testid="invite-code"]',
+    mask: [".ws-code", ".ws-code + p.tp__muted"],
     run: async () => {
       await byTestId("invite-create").click();
       await $(".ws-code").waitForDisplayed({ timeout: 15_000 });
@@ -200,7 +201,7 @@ chapter("equipo", () => {
   step("unirse", {
     title: "Unirse con un código",
     caption:
-      "Así se une quien recibe la invitación: en su Pharos, en el selector de workspace, «Unirse con un código…». Pega el código y pulsa «Comprobar»: Pharos le dice a qué workspace entra, con qué rol y quién le invitó; «Unirme» lo confirma, y los proyectos del workspace llegan a su equipo en la siguiente sincronización. Su workspace «Personal» no cambia. Jorge ya lo ha hecho desde su equipo; aquí se ve la página, vacía, en el Pharos de Liomar.",
+      "Así se une quien recibe la invitación: en su Pharos, en el selector de workspace, «Unirse con un código…». Pega el código y pulsa «Comprobar»: Pharos le dice a qué workspace entra, con qué rol y quién le invitó; «Unirme» lo confirma, y los proyectos del workspace llegan a su equipo en la siguiente sincronización. Su workspace «Personal» no cambia. Jorge ya lo ha hecho desde la web; aquí se ve la página, vacía, en el Pharos de Liomar.",
     covers: ["route:/workspaces/join"],
     run: async () => {
       await byTestId("workspace-switcher").click();
@@ -272,7 +273,7 @@ chapter("equipo", () => {
   step("cambios-pedidos", {
     title: "Jorge pide cambios",
     caption:
-      "Jorge revisa el caso desde su equipo y pulsa «Pedir cambios…» con su comentario. Al sincronizar, Liomar ve en el caso el aviso «Cambios pedidos por Jorge L. Meneses Yero», con la fecha y el comentario, y recibe una notificación. El caso sigue en revisión.",
+      "Jorge revisa el caso desde la web y pulsa «Pedir cambios…» con su comentario. Al sincronizar, Liomar ve en el caso el aviso «Cambios pedidos por Jorge L. Meneses Yero», con la fecha y el comentario, y recibe una notificación. El caso sigue en revisión.",
     focus: ".tc-review",
     run: async () => {
       await jorgeRequestsChangesOnCase(PROJECT_A.name, CASE.key, CASE.changes);
@@ -308,7 +309,7 @@ chapter("equipo", () => {
   step("caso-aprobado", {
     title: "Jorge aprueba el caso",
     caption:
-      "Jorge lo vuelve a revisar desde su equipo y lo aprueba. Tras sincronizar, el caso de Liomar muestra «Aprobado por Jorge L. Meneses Yero», con la fecha y la versión, sin «aprobación propia»: lo aprobó otra persona. Liomar recibe la notificación.",
+      "Jorge lo vuelve a revisar desde la web y lo aprueba. Tras sincronizar, el caso de Liomar muestra «Aprobado por Jorge L. Meneses Yero», con la fecha y la versión, sin «aprobación propia»: lo aprobó otra persona. Liomar recibe la notificación.",
     focus: ".tc-review",
     run: async () => {
       await jorgeApprovesCase(PROJECT_A.name, CASE.key);
@@ -322,7 +323,7 @@ chapter("equipo", () => {
   step("plan-en-revision", {
     title: "Quién aprueba el plan",
     caption:
-      "El plan de «Pharos» llega al equipo «En revisión», tal como Liomar lo dejó en el capítulo 5 (un borrador se envía con «Enviar a revisión»). En «Estado del plan», el «Aprobar versión N» de Liomar está en gris: lo aprueba un Test Manager que no sea el autor del plan. Jorge, como Test Analyst, puede revisarlo y pedir cambios, pero no aprobarlo.",
+      "El plan de «Pharos» llega al equipo «En revisión», tal como Liomar lo dejó (capítulos 5 y 17) (un borrador se envía con «Enviar a revisión»). En «Estado del plan», el «Aprobar versión N» de Liomar está en gris: lo aprueba un Test Manager que no sea el autor del plan. Jorge, como Test Analyst, puede revisarlo y pedir cambios, pero no aprobarlo.",
     focus: '[data-testid="plan-review"]',
     run: async () => {
       await openPlanStep("roles");
@@ -363,7 +364,7 @@ chapter("equipo", () => {
   step("plan-cambios", {
     title: "Cambios pedidos en el plan",
     caption:
-      "Jorge revisa el plan desde su equipo y pide un cambio: que «Roles» diga quién aprueba el plan en el equipo. Al sincronizar, «Estado del plan» de Liomar muestra «Cambios pedidos por Jorge L. Meneses Yero» con su comentario. Liomar añade la fila en «Roles, independencia y formación» y pulsa «Guardar»: el plan sigue «En revisión» y el aviso pasa a «Cambios guardados tras la petición de Jorge L. Meneses Yero».",
+      "Jorge revisa el plan desde la web y pide un cambio: que «Roles» diga quién aprueba el plan en el equipo. Al sincronizar, «Estado del plan» de Liomar muestra «Cambios pedidos por Jorge L. Meneses Yero» con su comentario. Liomar añade la fila en «Roles, independencia y formación» y pulsa «Guardar»: el plan sigue «En revisión» y el aviso pasa a «Cambios guardados tras la petición de Jorge L. Meneses Yero».",
     focus: ['[data-testid="plan-review"]', `[role="group"][aria-label="${P.step.roles}"]`],
     run: async () => {
       await jorgeRequestsChangesOnPlan(PROJECT_A.name, TEAM.planChanges);
@@ -394,13 +395,17 @@ chapter("equipo", () => {
       await openMembers();
       await chooseOption(byTestId(`member-role-${TEAMMATE.email}`), { text: W.roles[TEAM.jorgeFinalRole] });
       await waitForToast(tf("workspaces.members.roleChanged", { name: JORGE, role: W.roles[TEAM.jorgeFinalRole] }));
+      // The page leaves its busy state (greyed selects and buttons) first.
+      await byTestId(`member-remove-${TEAMMATE.email}`).waitForEnabled({ timeout: 15_000 });
+      await byTestId(`member-role-${TEAMMATE.email}`).waitForEnabled({ timeout: 15_000 });
+      await pointerAway();
     },
   });
 
   step("plan-aprobado", {
     title: "Otra persona aprueba el plan",
     caption:
-      "Jorge, ya Test Manager, aprueba el plan desde su equipo. Tras sincronizar, «Estado del plan» muestra «Aprobado» con su nombre y la fecha, sin «aprobación propia»; el «Historial» y los exportes del plan lo recogen también.",
+      "Jorge, ya Test Manager, aprueba el plan desde la web. Tras sincronizar, «Estado del plan» muestra «Aprobado» con su nombre y la fecha, sin «aprobación propia»; el «Historial» y los exportes del plan lo recogen también.",
     focus: '[data-testid="plan-approved-by"]',
     run: async () => {
       await jorgeApprovesPlan(PROJECT_A.name);
@@ -439,7 +444,7 @@ chapter("equipo", () => {
   step("notificaciones", {
     title: "Lo que te llega del equipo",
     caption:
-      "La campana de la barra superior reúne lo que el equipo hizo y te concierne, agrupado por día: aquí, entre otros avisos, que Jorge L. Meneses Yero se unió a «Equipo QA», que devolvió el caso con cambios y que lo aprobó. Cada aviso lleva su acción directa («Ver miembros», «Abrir caso»…). «Marcar todo como leído» los da por vistos; se guardan 90 días.",
+      "La campana de la barra superior reúne lo que el equipo hizo y te concierne, agrupado por día: aquí, entre otros avisos, que Jorge L. Meneses Yero se unió a «Equipo QA», que pidió cambios en el plan y lo aprobó, y que devolvió el caso con cambios y lo aprobó. Cada aviso lleva su acción directa («Ver miembros», «Abrir plan», «Abrir caso»…). «Marcar todo como leído» los da por vistos; se guardan 90 días.",
     focus: '[data-testid="notifications-panel"]',
     run: async () => {
       // The bell pulls from the server after every sync.
@@ -448,9 +453,17 @@ chapter("equipo", () => {
       await browser.waitUntil(
         async () => {
           const text = await byTestId("notifications-panel").getText();
-          return text.includes(JORGE) && text.includes(CASE.key);
+          // The plan's review notices too (Jorge's Pharos posts them, as the
+          // case's: people.ts jorgeNotifiesPlanReview).
+          const planTitle = (s: string) => tf(s, { actor: JORGE, title: "" }).trim();
+          return (
+            text.includes(JORGE) &&
+            text.includes(CASE.key) &&
+            text.includes(planTitle("notifications.kind.plan.approved")) &&
+            text.includes(planTitle("notifications.kind.plan.changes_requested"))
+          );
         },
-        { timeout: 30_000, timeoutMsg: "Jorge's notifications never reached Liomar" },
+        { timeout: 30_000, timeoutMsg: "Jorge's notifications (plan and case) never reached Liomar" },
       );
     },
     after: async () => {

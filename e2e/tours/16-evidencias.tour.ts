@@ -7,6 +7,7 @@
 // evidence folder: a file with the store's name pattern (<2 hex>/<64 hex>.pev)
 // that no row knows, dated two days back (younger orphans are never deleted).
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdirSync, utimesSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -37,10 +38,14 @@ function plantOrphan() {
   const profile = process.env.PHAROS_E2E_PROFILE;
   if (!profile) throw new Error("PHAROS_E2E_PROFILE is not set");
   const appData = process.env.APPDATA ?? join(homedir(), "AppData", "Roaming");
-  const folder = join(appData, "com.pharos.desktop", "e2e", profile, "evidence", "ab");
+  // Named, as the store names its files, by the hash of its content: a
+  // capture whose save was cut short (no row ever recorded it).
+  const content = Buffer.from("captura-acceso-interrumpida.png: guardado a medias");
+  const hash = createHash("sha256").update(content).digest("hex");
+  const folder = join(appData, "com.pharos.desktop", "e2e", profile, "evidence", hash.slice(0, 2));
   mkdirSync(folder, { recursive: true });
-  const file = join(folder, `ab${"0".repeat(62)}.pev`);
-  writeFileSync(file, Buffer.from("not a real evidence file"));
+  const file = join(folder, `${hash}.pev`);
+  writeFileSync(file, content);
   const twoDaysAgo = new Date(Date.now() - 2 * 24 * 3600 * 1000);
   utimesSync(file, twoDaysAgo, twoDaysAgo);
   // Windows also looks at the creation time, which Node cannot set.
@@ -55,7 +60,7 @@ chapter("evidencias", () => {
   step("almacen", {
     title: "El almacén de evidencias",
     caption:
-      "Las evidencias son los archivos que adjuntas: capturas, vídeos, registros y trazas de las tarjetas del Tablero, los defectos, los resultados y los informes importados. Pharos los guarda cifrados en este equipo y, con un servidor, los comparte con tu workspace: cada archivo viaja una sola vez por su contenido y llega cifrado a tus otros equipos y a los de tus compañeros. En «Administración», la pestaña «Evidencias» empieza por «Almacén de evidencias»: el espacio que ocupan, los adjuntos vigentes por tipo (tablero, defectos, reportes, resultados, borradores…), los caducados y la retención de los reportes importados. En este ejemplo, los de Pharos: las capturas de sus resultados y los informes que Liomar importó (capítulo 10).",
+      "Las evidencias son los archivos que adjuntas: capturas, vídeos, registros y trazas de las tarjetas del Tablero, los defectos, los resultados y los informes importados. Pharos los guarda cifrados en este equipo y, con un servidor, los comparte con tu workspace: cada archivo viaja una sola vez por su contenido y llega cifrado a tus otros equipos y a los de tus compañeros. En «Administración», la pestaña «Evidencias» empieza por «Almacén de evidencias»: el espacio que ocupan, los adjuntos vigentes por tipo (tablero, defectos, reportes, resultados, borradores…), los caducados y la retención de los reportes importados. En este ejemplo, los de Pharos: las capturas de sus resultados y los informes que Liomar importó (capítulo 10). Los de «Requisitos», si los hay, son los archivos de origen de los requisitos que el asistente de IA propone desde un proyecto o desde diseños (capítulo 17).",
     covers: ["admin:evidence", "screen:evidence-admin"],
     run: async () => {
       plantOrphan();
@@ -121,7 +126,7 @@ chapter("evidencias", () => {
   step("verificar", {
     title: "Verificar las evidencias",
     caption:
-      "«Verificar evidencias» comprueba que cada archivo está y se descifra, y busca archivos que ningún elemento usa, los huérfanos. No borra nada por sí sola; puedes seguir trabajando mientras tanto. Al terminar, el informe dice cuántos archivos comprobó y muestra en bloques lo que encontró: aquí, «Archivos sin registro (1)», un huérfano.",
+      "«Verificar evidencias» comprueba que cada archivo está y se descifra, y busca archivos que ningún elemento usa, los huérfanos. No borra nada por sí sola; puedes seguir trabajando mientras tanto. Al terminar, el informe dice cuántos archivos comprobó y muestra en bloques lo que encontró: aquí, «Archivos sin registro (1)», un huérfano: una captura cuyo guardado se cortó (por ejemplo, porque el equipo se apagó en ese momento), así que ningún elemento llegó a apuntarla.",
     // The «Verificar evidencias» card alone: the page ends with it, so a
     // page shot would cut the retention rows above it.
     shot: { element: '[data-testid="evidence-check"]' },

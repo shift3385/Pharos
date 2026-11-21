@@ -10,7 +10,7 @@
 // steps and texts come from L's notes.
 import { $, $$, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
-import { acceptConfirm, byTestId, chooseOption, clickButton, es, switchWorkspace, waitForText, waitForToast } from "./helpers";
+import { acceptConfirm, byTestId, chooseOption, clickButton, es, scrollToTop, switchWorkspace, waitForText, waitForToast } from "./helpers";
 import { TEAM } from "./data/pharos";
 import { jorgeCreatesProjectToken } from "./people";
 import { TEAMMATE } from "../../scripts/manual/persona.mjs";
@@ -151,20 +151,22 @@ chapter("integraciones", () => {
     caption:
       "«Conectar CI», debajo de los tokens, prepara el paso de GitHub Actions que sube los informes de tus pruebas a este proyecto en cada pull request. Elige el proyecto y marca los informes que genera tu CI: por defecto, JUnit (pruebas), SARIF (análisis estático), k6 (rendimiento) y axe (accesibilidad). El paso se actualiza al momento y ya lleva tu servidor y tu proyecto, pero nunca el token. Una línea larga sigue en la línea de abajo, con sangría, para que se lea entera; «Copiar» copia el YAML exacto, sin esos saltos. Si el aviso pide cambiar el SHA de la acción, pon el del commit de la versión de Pharos que uses: fijar la acción por SHA impide que alguien la cambie sin que lo sepas.",
     covers: ["section:connect-ci"],
-    focus: '[data-testid="connect-ci"]',
+    focus: ['[data-testid="ci-project"]', '[data-testid="ci-yaml"]'],
     run: async () => {
-      await byTestId("connect-ci").scrollIntoView({ block: "start" });
       await chooseOption(byTestId("ci-project"), { text: PROJECT });
       await check("ci-format-ctrf");
       await expect(byTestId("ci-yaml")).toHaveText(expect.stringContaining("ctrf"));
       await resetYaml();
+      // The card from its top, just below the top bar (after the clicks,
+      // which scroll the page to each control).
+      await scrollToTop('[data-testid="connect-ci"]');
     },
   });
 
   step("conectar-ci-github", {
     title: "Conectar CI: en GitHub",
     caption:
-      "En GitHub, una vez por repositorio, en Settings › Secrets and variables › Actions: crea el secreto PHAROS_TOKEN con un token de proyecto (el de la sección de arriba, que solo se ve al crearlo; si no eres Test Manager, la sección te dice que se lo pidas a uno) y la variable PHAROS_URL con la dirección de este servidor, que tiene su propio botón «Copiar». Después pega el paso al final del job de tus pruebas, ajusta las rutas de los informes y abre un PR: la página del job enseña una tabla con lo subido y el run aparece en Pharos, en «Ejecuciones» (capítulo 10). En un PR desde un fork no hay secretos: no se sube nada y el job no falla.",
+      "En GitHub, una vez por repositorio, en Settings › Secrets and variables › Actions: crea el secreto PHAROS_TOKEN con un token de proyecto (el de la sección de arriba, que solo se ve al crearlo; si no eres Test Manager, la sección te dice que se lo pidas a uno) y la variable PHAROS_URL con la dirección del servidor de tu equipo, la que muestra la sección con su propio botón «Copiar» (en las capturas, la del servidor de pruebas de este manual). Después pega el paso al final del job de tus pruebas, ajusta las rutas de los informes y abre un PR: la página del job enseña una tabla con lo subido y el run aparece en Pharos, en «Ejecuciones» (capítulo 10). En un PR desde un fork no hay secretos: no se sube nada y el job no falla.",
     covers: [],
     focus: '[data-testid="ci-url"]',
     run: async () => {
@@ -277,7 +279,7 @@ chapter("integraciones", () => {
   step("tokens-personales", {
     title: "Tokens personales",
     caption:
-      "Para tu propia línea de comandos (el CLI `pharos`) usa un token personal: en «Mi perfil», «Tokens personales» › «Nuevo token…». Puede servir para todos tus workspaces o solo para uno, con los permisos y la caducidad que elijas, y también se ve una sola vez. Como los de proyecto, actúa en tu nombre y avisa 7 días antes de caducar. Debajo, «Usar en el CLI» da el comando `pharos login --server <este servidor>`, que pide el token y lo guarda en el Administrador de credenciales de Windows: el token nunca va escrito en el comando. «Revocar» lo anula; el administrador del servidor puede revocar todos los de una cuenta si se filtran.",
+      "Para tu propia línea de comandos (el CLI `pharos`) usa un token personal: en «Mi perfil», «Tokens personales» › «Nuevo token…». Puede servir para todos tus workspaces o solo para uno, con los permisos y la caducidad que elijas, y también se ve una sola vez. Como los de proyecto, actúa en tu nombre y avisa 7 días antes de caducar. Debajo, «Usar en el CLI» da el comando `pharos login --server <este servidor>`, con la dirección del servidor de tu equipo (en las capturas, la del servidor de pruebas de este manual), que pide el token y lo guarda en el Administrador de credenciales de Windows: el token nunca va escrito en el comando. «Revocar» lo anula; el administrador del servidor puede revocar todos los de una cuenta si se filtran.",
     covers: ["dialogs:src/modules/integrations/ui/PersonalTokensSection.tsx"],
     focus: '[data-testid="personal-tokens"]',
     run: async () => {

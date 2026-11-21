@@ -376,7 +376,43 @@ export async function jorgeReviewsPlan(projectName: string, action: ReviewAction
   const p = await jorge.project(projectName);
   const plan = await jorge.plan(p.id);
   if (!plan) throw new Error(`«${projectName}» has no plan`);
-  return jorge.post(`/api/test-plans/${plan.id}/review`, { action, comment, userName: TEAMMATE.alias, revision: plan.revision });
+  const saved = await jorge.post<Doc>(`/api/test-plans/${plan.id}/review`, { action, comment, userName: TEAMMATE.alias, revision: plan.revision });
+  // The author as the plan reads before the review (as for a case: the
+  // review answer may carry the reviewer as `createdBy`, which his desktop's
+  // stored plan would not).
+  if (saved) {
+    const author = typeof plan.createdBy === "string" && plan.createdBy !== jorge.userId ? plan.createdBy : saved.createdBy;
+    const workspaceId = String((await jorge.get<Doc>(`/api/projects/${p.id}`)).workspaceId ?? "");
+    await jorgeNotifiesPlanReview({ ...saved, createdBy: author }, action, workspaceId);
+  }
+  return saved;
+}
+
+/** What Jorge's Pharos does after a plan review it made: tell the plan's
+ *  author (src/modules/test-plan/api/testPlanApi.ts `announcePlanReview` →
+ *  notifications/model/planReview.ts `notificationOfPlanReview`). As for a
+ *  case, the server does not notify a plan review by itself. */
+async function jorgeNotifiesPlanReview(saved: Doc, action: ReviewAction, workspaceId: string) {
+  const kind = action === "approve" ? "plan.approved" : action === "return" ? "plan.changes_requested" : null;
+  if (!kind) return;
+  const author = typeof saved.createdBy === "string" ? saved.createdBy : "";
+  if (!author || author === jorge.userId) throw new Error(`the plan's author is unknown or is Jorge (${author || "none"}): nobody to notify`);
+  const data = (saved.data ?? {}) as { review?: { comment?: string; returnedAt?: string }; approval?: { at?: string } };
+  const at = (kind === "plan.approved" ? data.approval?.at : data.review?.returnedAt) ?? new Date().toISOString();
+  const comment = kind === "plan.changes_requested" && data.review?.comment ? { comment: data.review.comment.slice(0, 1000) } : {};
+  const sent = await jorge.post<{ delivered: number }>("/api/notifications", {
+    input: {
+      kind,
+      to: { userIds: [author] },
+      // The project's workspace on the server (the one membership is checked in).
+      workspaceId: workspaceId || null,
+      projectId: saved.projectId ?? null,
+      subject: { entity: "test_plan", id: saved.id, title: saved.title },
+      data: { version: saved.version, at, ...comment },
+      dedupeKey: `${saved.id}:${saved.revision}:${kind}`,
+    },
+  });
+  if (!sent?.delivered) throw new Error(`the server delivered Jorge's ${kind} notification to nobody (author ${author}, workspace ${workspaceId || "none"})`);
 }
 export const jorgeApprovesPlan = (projectName: string, comment?: string) => jorgeReviewsPlan(projectName, "approve", comment);
 export const jorgeRequestsChangesOnPlan = (projectName: string, comment: string) => jorgeReviewsPlan(projectName, "return", comment);

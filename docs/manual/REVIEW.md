@@ -61,6 +61,10 @@ tener una explicación.
       paso, qué cambia al hacerlo y cuándo conviene (MAN-02). Un pie que solo
       enumera clics se amplía (o se completa con una nota «### Paso <id>» en
       `fuentes/`).
+- [ ] **Donde la historia salta adelante** (la segunda parte de un
+      capítulo, que ocurre después de otros), un aviso «### Antes del paso
+      <id>» en `fuentes/` lo dice justo antes de ese paso, sin cifras que ya
+      dan la pantalla o el módulo de datos.
 - [ ] **Los datos de prueba se presentan como ejemplo**: «el nombre de tu
       proyecto (en este ejemplo, «Pharos»)», nunca como si fueran los del
       lector.

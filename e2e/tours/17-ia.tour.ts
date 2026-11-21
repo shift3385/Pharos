@@ -157,7 +157,7 @@ chapter("ia", () => {
       await browser.execute(() => {
         const content = document.querySelector<HTMLElement>(".app-shell__content");
         const ok = document.querySelector(".ai-test__ok");
-        if (content && ok) content.scrollTop += Math.max(0, ok.getBoundingClientRect().bottom - (window.innerHeight - 110));
+        if (content && ok) content.scrollTop += Math.max(0, ok.getBoundingClientRect().bottom - (window.innerHeight - 150));
         window.scrollTo(0, 0);
         document.documentElement.scrollTop = 0;
         document.body.scrollTop = 0;
@@ -215,7 +215,7 @@ chapter("ia", () => {
   step("desde-proyecto-enviar", {
     title: "Antes de enviar",
     caption:
-      "«Continuar» resume lo que saldrá del equipo: cuántos archivos, unos cuántos tokens y en cuántas llamadas, y a qué proveedor van. Las líneas con aspecto de secreto (claves, tokens) se sustituyen por «[secreto omitido]» antes de enviar. «Volver» te deja cambiar la selección; «Enviar y analizar» empieza.",
+      "«Continuar» resume lo que saldrá del equipo: cuántos archivos, cuántos tokens (aproximados, contados sobre el texto ya leído, así que pueden diferir un poco de los del paso anterior) y en cuántas llamadas, y a qué proveedor van. Las líneas con aspecto de secreto (claves, tokens) se sustituyen por «[secreto omitido]» antes de enviar. «Volver» te deja cambiar la selección; «Enviar y analizar» empieza.",
     skip: AI_SKIP,
     shot: { element: D },
     run: async () => {
@@ -336,7 +336,7 @@ chapter("ia", () => {
 
   step("asistir", {
     title: "«Asistir con IA» en un campo",
-    caption: "En los campos de texto del plan, el botón de IA (✨, «Asistir con IA») propone un borrador breve a partir del resto del plan, con lo que pide el syllabus ISTQB para esa sección. En «Conclusión», valora el plan frente a sus objetivos y criterios de salida, y no inventa resultados. Revisa el «Borrador de la IA» y pulsa «Usar» o «Descartar»: nada se aplica solo, y lo aceptado queda marcado como generado por IA.",
+    caption: "En los campos de texto del plan, el botón de IA (✨, «Asistir con IA») propone un borrador breve a partir del resto del plan, con lo que pide el syllabus ISTQB para esa sección. En «Conclusión», valora el plan frente a sus objetivos y criterios de salida, y no inventa resultados. Revisa el «Borrador de la IA» y pulsa «Usar» o «Descartar»: nada se aplica solo, y lo aceptado queda marcado como generado por IA. A la derecha, el «Historial» del plan sigue mostrando el recorrido del capítulo 5: aprobado, marcado obsoleto y reactivado, otra vez «En revisión» con la nota de su primer envío.",
     covers: ["ai:assist-field"],
     skip: AI_SKIP,
     focus: ".assist__preview",

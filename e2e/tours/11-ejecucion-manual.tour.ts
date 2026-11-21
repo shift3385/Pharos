@@ -122,6 +122,8 @@ chapter("ejecucion-manual", () => {
         timeoutMsg: "the «obtenido» field did not take the focus",
       });
       await browser.keys([...MANUAL_RUN.failed.actual]);
+      // From the first step: the four steps and the failed one's notes.
+      await scrollToTop('[data-testid="exec-panel"] .ex-step', 12);
     },
   });
 

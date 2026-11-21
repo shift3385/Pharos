@@ -54,7 +54,7 @@ chapter("movil", () => {
   step("movil-avatar", {
     title: "Tu avatar: workspace y cuenta",
     caption:
-      "En el móvil no hay menú lateral: tu avatar, en la barra superior, abre una hoja con lo que en el escritorio está en el selector de workspace y en el menú de usuario. Arriba, tu correo y el estado de la sincronización, con «Sincronizar ahora». Después, «Workspace» lista tus workspaces con tu rol en cada uno (aquí, «Personal», donde Liomar es Test Manager) y ofrece «Crear workspace», «Unirse con un código…» y «Miembros y roles». Debajo, «Mi perfil», «Administración», el tema, el idioma y «Cerrar sesión».",
+      "En el móvil no hay menú lateral: tu avatar, en la barra superior, abre una hoja con lo que en el escritorio está en el selector de workspace y en el menú de usuario. Arriba, tu correo, el servidor al que estás conectado (en las capturas, el servidor de pruebas de este manual) y el estado de la sincronización, con «Sincronizar ahora». Después, «Workspace» lista tus workspaces con tu rol en cada uno (aquí, «Personal», donde Liomar es Test Manager) y ofrece «Crear workspace», «Unirse con un código…» y «Miembros y roles». Debajo, «Mi perfil», «Administración», el tema, el idioma y «Cerrar sesión».",
     covers: ["platform:mobile-user-sheet"],
     run: async () => {
       await browser.keys("Escape");
@@ -88,7 +88,8 @@ chapter("movil", () => {
         const cur = nav?.querySelector<HTMLElement>('[aria-current="page"]');
         if (nav && cur) nav.scrollLeft += cur.getBoundingClientRect().left - nav.getBoundingClientRect().left - (nav.clientWidth - cur.offsetWidth) / 2;
       });
-      await scrollToTop(".tz-cards");
+      // No sliver of the block above: the list starts on a whole card.
+      await scrollToTop(".tz-cards", 2);
     },
   });
 
