@@ -18,6 +18,18 @@ import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { PERIODS, isoDay, shortDate, type Period } from "./model/homeData";
 import { previousRange } from "./model/compare";
 
+/** «Próximamente» after a menu option that is not available yet. Its words
+ *  join the option's name for screen readers («Ciclo actual, Próximamente»). */
+function SoonChip() {
+  const { t } = useTranslation();
+  return (
+    <span className="menu__soon">
+      <span className="sr-only">, </span>
+      {t("dashboard.period.soon")}
+    </span>
+  );
+}
+
 /** «Periodo» of the Home (SPEC §8): a menu on tablet/desktop and a bottom sheet
  *  «Periodo de los datos» on mobile. Test cycles and a custom range need the
  *  plan's sprints from a range (wave 5): they are shown disabled with the
@@ -108,11 +120,16 @@ export function PeriodSelector({
         ))}
         <MenuSeparator />
         <MenuLabel>{t("dashboard.period.cycles")}</MenuLabel>
+        {/* Not yet available: the pale disabled look and a «Próximamente»
+            chip, as «Continuar con Google» (FIX-49: only a hover title said
+            so, and they looked like the live options). */}
         <MenuItem icon={Flag} disabled title={soon} onSelect={() => {}}>
           {t("dashboard.period.cycleCurrent")}
+          <SoonChip />
         </MenuItem>
         <MenuItem icon={History} disabled title={soon} onSelect={() => {}}>
           {t("dashboard.period.cyclePrevious")}
+          <SoonChip />
         </MenuItem>
         <MenuSeparator />
         <MenuItem
@@ -122,6 +139,7 @@ export function PeriodSelector({
           onSelect={() => {}}
         >
           {t("dashboard.period.custom")}
+          <SoonChip />
         </MenuItem>
         <MenuSeparator />
         {/* A menu holds menu items only, so the comparison is an on/off item

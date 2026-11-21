@@ -1672,7 +1672,7 @@
       "coverageShort": "{{value}} % cov.",
       "today": "Today",
       "yesterday": "Yesterday",
-      "never": "Never",
+      "never": "—",
       "summary": "Showing <b>{{from}}–{{to}}</b> of <b>{{total}}</b> projects",
       "noMatch": "No project matches “{{query}}”.",
       "rowMenu": "More actions for {{name}}",
@@ -3073,6 +3073,7 @@
       "cyclePrevious": "Previous cycle",
       "custom": "Custom range…",
       "soonTitle": "Coming soon: will use the plan’s cycles and ranges",
+      "soon": "Coming soon",
       "compare": "Compare with the previous period",
       "short": {
         "today": "Today",
@@ -3524,7 +3525,7 @@
       "weighted": "Weighted coverage",
       "weightedTitle": "Risk-weighted coverage",
       "weightedHow": "Sum of the risk level (likelihood × impact) of the covered requirements over the sum of the level of every assessed requirement. «Passed» counts those with every case executed and passed.",
-      "weightedCalc": "covered = {{covered}} / {{total}} = {{coveredPct}} · passed = {{passed}} / {{total}} = {{passedPct}}",
+      "weightedCalcCovered": "covered = {{covered}} / {{total}} = {{coveredPct}}",
       "weightedBands_one": "1 unassessed requirement is left out. The project's bands: low up to {{low}}, medium up to {{medium}}.",
       "weightedBands_other": "{{count}} unassessed requirements are left out. The project's bands: low up to {{low}}, medium up to {{medium}}.",
       "weightedHint_one": "passed {{passed}} · 1 unassessed",
@@ -3571,13 +3572,13 @@
       "defectsWithoutCase_one": "Defect without a linked case",
       "defectsWithoutCase_other": "Defects without a linked case",
       "subtitle": "What breaks the requirement ↔ case ↔ defect chain",
-      "migrateHint_one": "{{count}} ID appears in the free-text Traceability of your cases and can become a link.",
-      "migrateHint_other": "{{count}} IDs appear in the free-text Traceability of your cases and can become links."
+      "migrateHint_one": "{{count}} ID appears in the free text of «Other references» of your cases and can become a link.",
+      "migrateHint_other": "{{count}} IDs appear in the free text of «Other references» of your cases and can become links."
     },
     "migrate": {
       "button": "Migrate traceability ({{count}})",
-      "title": "Migrate the Traceability field to links",
-      "intro": "These IDs appear in the free-text Traceability of your cases. Choose which become links to requirements. The free text is kept.",
+      "title": "Migrate «Other references» to links",
+      "intro": "These IDs appear in the free text of «Other references» of your cases. Choose which become links to requirements. The free text is kept.",
       "include": "Include",
       "found": "Found",
       "willCreate": "will be created",
@@ -3852,6 +3853,7 @@
   },
   "recoveryKey": {
     "title": "Recovery key",
+    "introShort": "This computer's database is encrypted.",
     "intro": "The local database is encrypted and its key lives only in this computer's credential store. If you lose it (new PC, reinstalled Windows), only the recovery key together with your copy of pharos.db and of the evidence folder brings your data back.",
     "lastShown": "Last shown: {{date}}",
     "desktopOnly": "Only available in the desktop app.",
@@ -4783,6 +4785,7 @@
     "paramValue": "Value of <{{name}}>",
     "inDraft": "Draft",
     "notRun": "Not run",
+    "partial": "{{done}} of {{total}} run",
     "rowValues": "Row data: {{row}}",
     "steps": "Steps",
     "unmarked_one": "({{count}} unmarked)",
@@ -5372,15 +5375,15 @@
         "received": "{{actor}} invited you to {{title}}"
       },
       "case": {
-        "review_requested": "{{actor}} sent {{key}} {{title}} for review",
-        "approved": "{{actor}} approved {{key}} {{title}}",
-        "changes_requested": "{{actor}} returned {{key}} {{title}} with changes"
+        "review_requested": "{{actor}} sent {{key}} «{{title}}» for review",
+        "approved": "{{actor}} approved {{key}} «{{title}}»",
+        "changes_requested": "{{actor}} returned {{key}} «{{title}}» with changes"
       },
       "defect": {
-        "assigned": "{{actor}} assigned you {{key}} {{title}}"
+        "assigned": "{{actor}} assigned you {{key}} «{{title}}»"
       },
       "cycle": {
-        "closed": "{{actor}} closed the cycle {{key}} {{title}}"
+        "closed": "{{actor}} closed the cycle {{key}} «{{title}}»"
       },
       "sync": {
         "conflict_one": "{{count}} sync conflict to review",
@@ -5405,8 +5408,8 @@
         "inactive": "{{owner}}'s token {{title}} stopped working: its owner left the workspace or their account was disabled. Reassign or revoke it in «Integrations»."
       },
       "plan": {
-        "approved": "{{actor}} approved the plan {{title}}",
-        "changes_requested": "{{actor}} asked for changes to the plan {{title}}"
+        "approved": "{{actor}} approved the plan «{{title}}»",
+        "changes_requested": "{{actor}} asked for changes to the plan «{{title}}»"
       }
     },
     "action": {

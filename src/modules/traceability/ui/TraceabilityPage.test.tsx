@@ -211,6 +211,26 @@ describe("Trazabilidad (RED-V3)", () => {
     expect(notes).not.toMatch(/text-overflow|nowrap/);
   });
 
+  it("the note of a design item has the whole row under the file (FIX-49)", () => {
+    const css = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "Traceability.css"),
+      "utf8",
+    ).replace(/\/\*[\s\S]*?\*\//g, "");
+    const block = (selector: string) => {
+      const at = css.indexOf(`\n${selector} {`);
+      expect(at, selector).toBeGreaterThan(-1);
+      return css.slice(at, css.indexOf("}", at));
+    };
+    expect(block(".tr-design__item")).toMatch(
+      /grid-template-columns:\s*minmax\(0, 1fr\) auto;/,
+    );
+    expect(block(".tr-design__note")).toMatch(/grid-column:\s*1 \/ -1/);
+    // The filters' «?» sits in the card's corner, never alone on a row of its own.
+    expect(block(".tz-filters__help")).toMatch(/position:\s*absolute/);
+    // Each equation of the weighted coverage on a line of its own, whole.
+    expect(block(".tz-weighted-tip__eq")).toMatch(/white-space:\s*nowrap/);
+  });
+
   it("«Mostrar solo huecos» counts and keeps only the uncovered requirements", async () => {
     setViewportWidth(1440);
     renderWithProviders(<TraceabilityPage projectId="p1" projectName="Portal" />);

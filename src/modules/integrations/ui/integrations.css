@@ -83,11 +83,20 @@
   font-weight: 600;
   margin-bottom: 4px;
 }
+/* Checkbox, label and chip on one row: a long label wraps within its own
+   column and the chip stays beside it (FIX-49: «runs:write» dropped alone
+   under «Subir resultados y cerrar ejecuciones»). */
 .int-scope {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+}
+.int-scope > span {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.int-scope > :is(input, .int-chip) {
+  flex: none;
 }
 .int-issue {
   color: var(--color-error-text);
@@ -236,6 +245,18 @@
   padding-left: 1.3em;
   display: grid;
   gap: 6px;
+}
+/* An address or a placeholder inside a sentence: the look of the code boxes
+   (size and surface of `.int-snippet`, as «Usar en el CLI»), whole on one
+   line (FIX-49: at the text's size «http: //localhost» showed a gap after
+   the colon, and «<SHA-de-40-» / «caracteres>» broke in two). */
+.int-code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--color-surface-2);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  white-space: nowrap;
 }
 .int-cli {
   display: grid;

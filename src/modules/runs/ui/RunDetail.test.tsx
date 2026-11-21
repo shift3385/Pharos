@@ -283,6 +283,42 @@ describe("run screen", () => {
     await expectNoAxeViolations(container);
   });
 
+  it("a dataset case with a row still to run says how many are done, not «Pasa» (FIX-49)", async () => {
+    const base = overview();
+    api.overview.mockResolvedValue(
+      overview({
+        items: [
+          {
+            ...base.items[0],
+            targets: 3,
+            done: 2,
+            status: "not_run",
+            attempts: 2,
+          },
+        ],
+        counts: {
+          passed: 2,
+          failed: 0,
+          blocked: 0,
+          skipped: 0,
+          other: 0,
+          notRun: 1,
+          total: 3,
+        },
+      }),
+    );
+    renderRun("/projects/p/runs/r1");
+    const pill = await screen.findByText("2 de 3 ejecutadas");
+    expect(pill.closest(".rn-counts")).not.toHaveTextContent("Pasa");
+    // The chips count it under «Sin ejecutar», not «Pasa».
+    expect(screen.getByRole("button", { name: /^Pasa/ })).toHaveTextContent(
+      "0",
+    );
+    expect(
+      screen.getByRole("button", { name: /^Sin ejecutar/ }),
+    ).toHaveTextContent("1");
+  });
+
   it("marks steps from the keyboard, autosaves the draft and records the attempt", async () => {
     const user = userEvent.setup();
     const { container } = renderRun();

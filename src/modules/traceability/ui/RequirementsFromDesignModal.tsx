@@ -73,7 +73,7 @@ const ACCEPT =
  *  picks screenshots, sketches, PDF exports, an Excalidraw sketch or a Claude
  *  Design folder or ZIP; sees what will be sent, where, and its rough cost; and
  *  starts the analysis. Nothing leaves the machine before «Analizar». Two calls:
- *  the images are read once (`requirements-from-design@1`), then the common
+ *  the images are read once (`requirements-from-design@2`), then the common
  *  synthesis of IA-17 compares the candidates with the project's requirements,
  *  as partial material (nothing is removed for not being shown). The proposals
  *  open in the common review. */

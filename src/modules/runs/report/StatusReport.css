@@ -1,10 +1,13 @@
 /* «Informe de estado» (EJE-03). No design in docs/rediseno: the shared
    dialog (.cd) widened, with the tokens of the other dialogs. */
+/* The dialog does not scroll: its body does, and it ends above the buttons,
+   so they never cover a line of it, scrolled to the end or not (FIX-49: a
+   sticky footer over the scrolling dialog hid the last line). */
 .sr-modal {
   max-width: 880px;
   width: 100%;
   max-height: calc(100dvh - var(--space-6));
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .sr {
@@ -12,6 +15,21 @@
   flex-direction: column;
   gap: var(--space-3);
   min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.sr-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  /* Room for the fields' focus ring, which the scroll box would clip. */
+  margin: -2px;
+  padding: 2px;
 }
 
 .sr-head .cd__title {
@@ -148,10 +166,10 @@
 }
 
 .sr-actions {
-  position: sticky;
-  bottom: calc(-1 * var(--space-5));
+  flex: none;
   flex-wrap: wrap;
-  padding: var(--space-3) 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
   background: var(--color-surface-1);
 }
 

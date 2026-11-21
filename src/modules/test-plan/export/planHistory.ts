@@ -284,6 +284,31 @@ export function planSaves(
   return saves;
 }
 
+/** The plan version each revision copy holds (revision number → version):
+ *  the copy is the state its save overwrote, so its version is the «before»
+ *  of that save's event (same transaction, same second), else the version the
+ *  last earlier save left. A copy no source dates is left out (FIX-49: the
+ *  «Revisiones» list named copies «rev. N» next to the Historial's «v0.7»). */
+export function copyVersions(source: PlanHistorySource): Map<number, string> {
+  const saves = planSaves(source, { title: "", data: {} });
+  const out = new Map<number, string>();
+  for (const copy of source.revisions) {
+    const at = parseStamp(copy.createdAt);
+    if (!valid(at)) continue;
+    const second = Math.floor(at.getTime() / 1000) * 1000;
+    const own = saves.find(
+      (s) =>
+        !s.created &&
+        s.versionBefore &&
+        Math.floor(s.at.getTime() / 1000) * 1000 === second,
+    );
+    const earlier = saves.filter((s) => s.at.getTime() < second).pop();
+    const version = own?.versionBefore ?? earlier?.version ?? null;
+    if (version) out.set(copy.revision, version);
+  }
+  return out;
+}
+
 /** Whether a save changed the plan (a save without changes only bumps the
  *  version). */
 export const isRevision = (s: PlanSave) =>

@@ -270,7 +270,8 @@ describe("runs on the web", () => {
     const overview = (await call("GET", `/api/runs/${run.id}/overview`)).body;
     expect(overview.items.map((i: Payload) => [i.done, i.status, i.attempts])).toEqual([
       [1, "passed", 2],
-      [1, "passed", 1],
+      // One row of three run: not «Pasa» until every row has a result (FIX-49).
+      [1, "not_run", 1],
     ]);
     expect(overview.counts).toMatchObject({ passed: 2, notRun: 2, total: 4 });
     const detail = (await call("GET", `/api/run-items/${simpleItem}`)).body;
@@ -366,8 +367,9 @@ describe("runs on the web", () => {
     // But one linked before keeps its link, label and case (ADR-0016).
     const linked = (await call("GET", `/api/defects/${defect.id}`)).body;
     expect(linked.links.map((l: Payload) => [l.targetKind, l.label])).toEqual([
-      // The first attempt carries no number (FIX-38: no «#0»).
-      ["result", `${run.runKey} · ${s.simple.key}`],
+      // The first attempt carries no number (FIX-38: no «#0»); named by its
+      // case, key and title (FIX-49).
+      ["result", `${run.runKey} · ${s.simple.key} · Pay`],
     ]);
     expect(linked.caseIds).toEqual([s.simple.id]);
   });

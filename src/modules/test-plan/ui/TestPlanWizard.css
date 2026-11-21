@@ -92,18 +92,12 @@
   min-width: 0;
 }
 
-/* A control the page scrolls to (focus, a search, «Siguiente») stops above
-   the sticky footer with room for the control after it, never half under
-   it (FIX-44: the ✨ button and «Añadir» were cut by the footer). */
-.tpw__fields :is(input, textarea, select, button, [tabindex]) {
-  scroll-margin-bottom: 120px;
-}
-
-/* The footer stays in view and in one line; «Siguiente: …» clips. */
+/* The footer closes the step, in one line («Siguiente: …» clips). It is not
+   held at the window's foot (FIX-49): a footer fixed over the page covers
+   whatever scrolls under it, at any window height, and left the ✨ button,
+   «Añadir» and the third milestone half hidden (FIX-44 only moved the
+   controls the page scrolls to). The step list keeps the steps in reach. */
 .tpw__foot {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -417,21 +411,30 @@
 }
 
 /* A value that may be longer than the panel (who approved, and whether it
-   was their own plan): it wraps instead of being cut (FIX-40). */
+   was their own plan): it wraps instead of being cut (FIX-40). `break-word`,
+   not `anywhere`: the name's whole width stays its minimum, so it moves to
+   the next line before it is broken (FIX-49). */
 .tpw-facts dd.tpw-facts__wrap {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   white-space: normal;
 }
 
-/* The approver's name stays whole on its line («Jorge L. Meneses / Yero»
-   broke it); «aprobación propia» goes on the next line (FIX-44). */
-.tpw-facts dd.tpw-facts__wrap {
+/* «Aprobado por»: the name on the label's row when it fits, like every
+   other fact (FIX-49: alone on its row, the label looked like it had no
+   value); a name too long for that row moves whole to the next line, never
+   broken («Jorge L. Meneses / Yero», FIX-44). «aprobación propia» goes
+   under the name. */
+.tpw-facts__pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 12px;
   grid-column: 1 / -1;
-  margin-top: -4px;
 }
 
-.tpw-facts dt.tpw-facts__full {
-  grid-column: 1 / -1;
+.tpw-facts__pair > dd.tpw-facts__wrap {
+  margin-left: auto;
 }
 
 .tpw-facts__name {
@@ -715,11 +718,21 @@
 /* «Metodología» (UX-36): two columns in the look of «Niveles y tipos»,
    at any form width from 480 px (not three). Left, the way of working;
    right, one row per meeting: checkbox and name, then its frequency. */
-@container (min-width: 480px) {
+/* Side by side only from 560 px (FIX-49): below that the two cells need more
+   than the step has (the frequencies' 184 px plus the longest meeting name),
+   so the selects ran to the card's edge and «Método de trabajo» broke in two.
+   Narrower, the meetings go under the way of working. */
+@container (max-width: 559.98px) {
+  .tpw-meth .tpw-cols__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container (min-width: 560px) {
   /* About 40/60 (FIX-44): at 120 px «Método de trabajo» and «Duración del
      sprint» wrapped and the «Ágil» select was cramped. */
   .tpw-meth .tpw-cols__grid {
-    grid-template-columns: minmax(180px, 2fr) minmax(min-content, 3fr);
+    grid-template-columns: minmax(200px, 2fr) minmax(min-content, 3fr);
   }
 }
 

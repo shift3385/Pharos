@@ -37,6 +37,21 @@ export function IndentedLines({ text }: { text: string }) {
   });
 }
 
+/** Where the placeholder goes in its translated notice. */
+const MARK = "\u0001";
+
+/** The SHA notice with the placeholder as code, whole on one line (FIX-49). */
+function PlaceholderNotice({ text }: { text: string }) {
+  const [before, after = ""] = text.split(MARK);
+  return (
+    <>
+      {before}
+      <code className="int-code">{SHA_PLACEHOLDER}</code>
+      {after}
+    </>
+  );
+}
+
 /** Copies `text`; when the clipboard is refused, selects the element so the
  *  person can copy it by hand. */
 async function copyOrSelect(text: string, elementId: string): Promise<boolean> {
@@ -155,7 +170,13 @@ export function ConnectCiSection({ workspace, manager }: { workspace: { id: stri
             <pre id={`${id}-yaml`} tabIndex={-1} className="int-snippet" data-testid="ci-yaml">
               <IndentedLines text={yaml} />
             </pre>
-            {placeholder && <Alert kind="info">{t("integrations.ci.placeholder", { placeholder: SHA_PLACEHOLDER })}</Alert>}
+            {placeholder && (
+              <Alert kind="info">
+                <PlaceholderNotice
+                  text={t("integrations.ci.placeholder", { placeholder: MARK })}
+                />
+              </Alert>
+            )}
             <p className="int-subtitle">{t("integrations.ci.stepsTitle")}</p>
             <ol className="int-ci__steps">
               <li>
@@ -163,7 +184,12 @@ export function ConnectCiSection({ workspace, manager }: { workspace: { id: stri
               </li>
               <li>
                 {t("integrations.ci.stepVariable")}{" "}
-                <code id={`${id}-url`} tabIndex={-1} data-testid="ci-url">
+                <code
+                  id={`${id}-url`}
+                  tabIndex={-1}
+                  className="int-code"
+                  data-testid="ci-url"
+                >
                   {info.origin}
                 </code>{" "}
                 <button type="button" className="ui-btn ui-btn--small" onClick={() => void copy(info.origin, `${id}-url`)} data-testid="ci-copy-url">

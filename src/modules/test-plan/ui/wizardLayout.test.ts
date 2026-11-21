@@ -27,8 +27,26 @@ describe("plan wizard layout (FIX-40)", () => {
     expect(rule(".tpw-metrics__row", narrow)).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\) auto 38px/);
   });
 
-  it("a control the page scrolls to stops clear of the sticky footer (FIX-44)", () => {
-    expect(rule(".tpw__fields :is(input, textarea, select, button, [tabindex])")).toMatch(/scroll-margin-bottom:\s*120px/);
+  it("the step's footer is not held over the page, so no control is ever half under it (FIX-49)", () => {
+    const foot = rule(".tpw__foot");
+    expect(foot).toMatch(/display:\s*flex/);
+    expect(foot).not.toMatch(/position:\s*(sticky|fixed)/);
+    // No other rule of the wizard pins it either.
+    expect(css).not.toMatch(
+      /\.tpw__foot[^{]*\{[^}]*position:\s*(sticky|fixed)/,
+    );
+  });
+
+  it("«Metodología» puts the meetings under the way of working below 560 px (FIX-49)", () => {
+    const narrow = css.indexOf("@container (max-width: 559.98px)");
+    expect(narrow).toBeGreaterThan(-1);
+    expect(rule(".tpw-meth .tpw-cols__grid", narrow)).toMatch(
+      /grid-template-columns:\s*minmax\(0, 1fr\);/,
+    );
+    const wide = css.indexOf("@container (min-width: 560px)");
+    expect(rule(".tpw-meth .tpw-cols__grid", wide)).toMatch(
+      /minmax\(200px, 2fr\) minmax\(min-content, 3fr\)/,
+    );
   });
 
   it("stacked under the calendar, the schedule rows have no scroll box of their own (FIX-44)", () => {
@@ -43,14 +61,18 @@ describe("plan wizard layout (FIX-40)", () => {
     expect(rule(".tps-diamond")).not.toMatch(/\btop:/);
   });
 
-  it("«Título» takes the whole row and the approver's name its own line (FIX-44)", () => {
-    expect(rule(".tpw-ident")).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\);/);
-    expect(rule(".tpw-facts dt.tpw-facts__full")).toMatch(/grid-column:\s*1 \/ -1/);
+  it("«Título» takes the whole row; the approver's name shares the label's row when it fits (FIX-44, FIX-49)", () => {
+    expect(rule(".tpw-ident")).toMatch(
+      /grid-template-columns:\s*minmax\(0, 1fr\);/,
+    );
+    const pair = rule(".tpw-facts__pair");
+    expect(pair).toMatch(/grid-column:\s*1 \/ -1/);
+    expect(pair).toMatch(/flex-wrap:\s*wrap/);
   });
 
-  it("«Aprobado por» wraps instead of being cut", () => {
+  it("«Aprobado por» wraps instead of being cut, moving the whole name before breaking it", () => {
     const wrap = rule(".tpw-facts dd.tpw-facts__wrap");
-    expect(wrap).toMatch(/overflow-wrap:\s*anywhere/);
+    expect(wrap).toMatch(/overflow-wrap:\s*break-word/);
     expect(wrap).toMatch(/white-space:\s*normal/);
   });
 

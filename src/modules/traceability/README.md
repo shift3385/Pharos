@@ -87,7 +87,7 @@ con los filtros activos arriba.
   - `limits.ts`: los límites y las estimaciones de tokens, iguales que en `ai.rs`.
   - `candidates.ts`: numera lo enviado y escribe las fuentes de cada candidato
     a partir del material, nunca del modelo.
-- **Dos llamadas:** `requirements-from-design@1` (`@modules/ai`, con las
+- **Dos llamadas:** `requirements-from-design@2` (`@modules/ai`, con las
   imágenes) y `req-synthesis@2` con `partialMaterial: true`. Un fallo de la
   síntesis se reintenta sin volver a enviar las imágenes. La procedencia guarda
   los dos prompts.

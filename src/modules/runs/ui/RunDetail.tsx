@@ -368,8 +368,17 @@ export function RunDetail({
       width: "minmax(120px,1fr)",
       cell: (r) => (
         <span className="rn-counts">
-          <StatusPill tone={r.status === "not_run" ? "neutral" : statusTone(r.status)} dot>
-            {r.status === "not_run" ? t("execution.notRun") : t(`runs.status.${r.status}`, r.status)}
+          {/* A case with rows or flows still to run is not «Pasa» yet: it
+              shows how many are done (FIX-49). */}
+          <StatusPill
+            tone={r.status === "not_run" ? "neutral" : statusTone(r.status)}
+            dot
+          >
+            {r.status !== "not_run"
+              ? t(`runs.status.${r.status}`, r.status)
+              : r.done > 0
+                ? t("execution.partial", { done: r.done, total: r.targets })
+                : t("execution.notRun")}
           </StatusPill>
           {r.hasDraft && <StatusPill tone="info">{t("execution.inDraft")}</StatusPill>}
         </span>

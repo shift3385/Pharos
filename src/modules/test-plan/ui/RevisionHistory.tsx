@@ -4,6 +4,7 @@ import { useAuth } from "@modules/auth";
 import { testPlanApi } from "../api/testPlanApi";
 import type { RevisionSummary } from "../model/types";
 import { parseStamp } from "@shared/time/stamp";
+import { copyVersions } from "../export/planHistory";
 
 /** A plan's revisions, newest first; `limit` shows only the latest ones (the
  *  side panel), `onRestore` adds «Restaurar» to each (the dialog). */
@@ -20,12 +21,20 @@ export function RevisionHistory({
   const { user } = useAuth();
   const userId = user?.id ?? "";
   const [revisions, setRevisions] = useState<RevisionSummary[]>([]);
+  const [versions, setVersions] = useState<Map<number, string>>(new Map());
 
   useEffect(() => {
     let cancelled = false;
     void testPlanApi.revisions(planId, userId).then((r) => {
       if (!cancelled) setRevisions(r);
     });
+    // Each copy is named by its plan version, as the Historial is (FIX-49).
+    void Promise.resolve()
+      .then(() => testPlanApi.history(planId, userId))
+      .then((source) => {
+        if (!cancelled && source) setVersions(copyVersions(source));
+      })
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
@@ -48,7 +57,9 @@ export function RevisionHistory({
       {shown.map((r) => (
         <li key={r.id} className="tp-revs__item">
           <span className="tp-revs__rev t-id">
-            {t("testPlan.revShort")} {r.revision}
+            {versions.has(r.revision)
+              ? `v${versions.get(r.revision)}`
+              : `${t("testPlan.revShort")} ${r.revision}`}
           </span>
           <span className="tp-revs__title u-truncate" title={r.title}>
             {r.title}

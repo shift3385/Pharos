@@ -234,6 +234,15 @@ describe("Workspace › Integraciones › Conectar CI", () => {
     const indent = uses!.textContent!.length - uses!.textContent!.trimStart().length;
     expect(uses!.style.paddingLeft).toBe(`${indent + 2}ch`);
     expect(uses!.style.textIndent).toBe(`-${indent + 2}ch`);
+    // FIX-49: the address and the SHA placeholder are code, whole on one line.
+    expect(screen.getByTestId("ci-url")).toHaveClass("int-code");
+    const sha = /<[^>]*SHA[^>]*>/.exec(copied)?.[0];
+    if (sha) {
+      const codes = [
+        ...screen.getByTestId("connect-ci").querySelectorAll(".int-code"),
+      ].map((c) => c.textContent);
+      expect(codes).toContain(sha);
+    }
   });
 });
 

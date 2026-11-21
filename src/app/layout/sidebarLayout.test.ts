@@ -73,6 +73,35 @@ describe("sidebar at 900 px of height (FIX-46)", () => {
     expect(content).toBeLessThanOrEqual(nav);
   });
 
+  it("the strip of a 1024 × 768 tablet fits every entry, «Admin» included (FIX-49)", () => {
+    const tight = media("max-height: 800px");
+    const rail = '.sidebar[data-mode="rail"]';
+    const rule = (selector: string) => {
+      const at = tight.indexOf(`${selector} {`);
+      return at < 0 ? "" : tight.slice(at, tight.indexOf("}", at));
+    };
+    const pad = /padding:\s*(\d+)px 0 (\d+)px/.exec(
+      rule(`${rail} .sidebar__link`),
+    );
+    const gap = Number(
+      /gap:\s*(\d+)px/.exec(rule(`${rail} .sidebar__link`))?.[1],
+    );
+    expect(pad).not.toBeNull();
+    // An entry: padding, 18 px icon, gap, 13 px label; 0 px between entries.
+    const entry = Number(pad![1]) + 18 + gap + 13 + Number(pad![2]);
+    expect(entry).toBeGreaterThanOrEqual(24);
+    // Measured on navegacion/11: the strip from the workspace chip (y 92) to
+    // the divider above the foot (y 665) holds the 12 entries.
+    expect(12 * entry).toBeLessThanOrEqual(665 - 92);
+    expect(rule(`${rail} .sidebar__nav,\n  ${rail} .sidebar__group`)).toMatch(
+      /gap:\s*0;/,
+    );
+  });
+
+  it("on a phone the content's scrollbar takes no room beside full-width cards (FIX-49)", () => {
+    expect(block('[data-viewport="mobile"] .app-shell__content')).toMatch(/scrollbar-width:\s*none/);
+  });
+
   it("fades the nav's lower edge only while there is more below", () => {
     const here = dirname(fileURLToPath(import.meta.url));
     const base = readFileSync(join(here, "../../shared/theme/base.css"), "utf8");

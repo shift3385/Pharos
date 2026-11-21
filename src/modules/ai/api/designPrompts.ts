@@ -1,4 +1,4 @@
-// Requirements from designs (IA-18, ADR-0037): the prompt `requirements-from-design@1`
+// Requirements from designs (IA-18, ADR-0037): the prompt `requirements-from-design@2`
 // reads screenshots, sketches, PDF exports and the text of design files, and
 // proposes candidate requirements, each with the item it comes from. It only
 // extracts: comparing with the project's requirements is the common synthesis
@@ -10,8 +10,12 @@ import type { AiResult } from "./aiApi";
 import { asData } from "./generators";
 import { aiJson, requireItems } from "./structured";
 
-/** Version of the prompt; it goes with the results so a change can be traced. */
-export const DESIGN_PROMPT_VERSION = "requirements-from-design@1";
+/** Version of the prompt; it goes with the results so a change can be traced.
+ *  @2 (FIX-49, ADR-0036's rule): the requirement and its acceptance criteria
+ *  in the user's language («El sistema deberá …», «Dado … cuando … entonces
+ *  …»); @1 always asked for «The system shall …» and «Given … when … then …»,
+ *  which put English keywords inside Spanish criteria. */
+export const DESIGN_PROMPT_VERSION = "requirements-from-design@2";
 
 /** One numbered item of the material, as the model reads it. */
 export interface DesignPromptItem {
@@ -28,15 +32,28 @@ export interface DesignPromptItem {
 }
 
 const MAX_CONTEXT = 2000;
-const languageOf = (lang: string) => (lang.startsWith("es") ? "Spanish" : "English");
+const languageOf = (lang: string) =>
+  lang.startsWith("es") ? "Spanish" : "English";
+const shallOf = (lang: string) =>
+  lang.startsWith("es") ? "El sistema deberá …" : "The system shall …";
+const criterionOf = (lang: string) =>
+  lang.startsWith("es")
+    ? "Dado … cuando … entonces …"
+    : "Given … when … then …";
+const keywordsOf = (lang: string) =>
+  lang.startsWith("es")
+    ? `the Spanish keywords "Dado", "Cuando", "Entonces", "Y" and "Pero", never the English ` +
+      `"Given", "When", "Then", "And" or "But"`
+    : `the keywords "Given", "When", "Then", "And" and "But"`;
 
 const SYSTEM = (lang: string) =>
   [
     `You are a senior QA analyst who derives software requirements from user-interface designs ` +
       `(screenshots, sketches, wireframes, mock-ups, design files) for a traceability matrix.`,
     `Write each requirement as IEEE 29148 asks: necessary, unambiguous, verifiable, singular and ` +
-      `feasible, as "The system shall…" (in ${languageOf(lang)}), in EARS form when it fits ` +
-      `("When <event>, the system shall…"). One behaviour per requirement.`,
+      `feasible, in ${languageOf(lang)} as "${shallOf(lang)}", in EARS form when it fits, always ` +
+      `written in ${languageOf(lang)} with no English word such as "shall" in it. One behaviour ` +
+      `per requirement.`,
     `Look at each screen for: its purpose; the data it shows; every field with its type, ` +
       `mandatory mark, format, limits and validation messages; every action (buttons, links, ` +
       `menus) and where it leads; the flow between screens; the states (empty, loading, error, ` +
@@ -48,8 +65,8 @@ const SYSTEM = (lang: string) =>
       `decide to "questions". Never invent figures, limits, roles or texts the material does ` +
       `not show: ask instead. Do not describe colours, fonts or layout as requirements unless ` +
       `the material states them as a rule.`,
-    `Acceptance criteria: two to five observable checks per requirement, ` +
-      `"Given … when … then …" or a short check a tester can verify.`,
+    `Acceptance criteria: two to five observable checks per requirement, as one sentence ` +
+      `"${criterionOf(lang)}" with ${keywordsOf(lang)}, or a short check a tester can verify.`,
     `Evidence: each requirement cites the item numbers it comes from; for an image, the ` +
       `region as fractions 0..1 of the image (x, y from the top-left corner, w, h) when it ` +
       `comes from one part of it, and "quote" with the visible text it rests on.`,
@@ -61,11 +78,11 @@ const SYSTEM = (lang: string) =>
       `text value in ${languageOf(lang)}; keep the JSON keys and enum values in English.`,
   ].join("\n\n");
 
-const SHAPE =
+const SHAPE = (lang: string) =>
   `{"screens":[{"item":1,"name":"short screen name","purpose":"one sentence"}],` +
-  `"candidates":[{"title":"short and specific","description":"The system shall …",` +
+  `"candidates":[{"title":"short and specific","description":"${shallOf(lang)}",` +
   `"priority":"low|medium|high","kind":"functional|non-functional|constraint",` +
-  `"basis":"stated|inferred","acceptance":["Given … when … then …"],` +
+  `"basis":"stated|inferred","acceptance":["${criterionOf(lang)}"],` +
   `"assumptions":["…"],"questions":["…"],` +
   `"evidence":[{"item":1,"region":{"x":0.1,"y":0.6,"w":0.3,"h":0.08},"quote":"visible text"}]}]}`;
 
@@ -98,7 +115,7 @@ export function buildDesignExtractionMessages(items: DesignPromptItem[], context
     ``,
     `List the screens you can tell apart and propose the requirements this material supports, ` +
       `at most 40, most important first. Return exactly this shape:`,
-    SHAPE,
+    SHAPE(lang),
     ``,
     `Rules: every candidate has at least one evidence item that exists in the list above. ` +
       `"priority" is low, medium or high in English and lowercase. Leave "region" out when ` +
