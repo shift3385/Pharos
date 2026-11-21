@@ -47,7 +47,11 @@ tener una explicación.
       de lo que hay detrás en los bordes; uno sin borde (un panel de texto, un
       icono, una fila de valores) lleva aire alrededor, con cada borde del
       recorte entre dos líneas de texto; un control pequeño lleva contexto, con
-      su borde bien dentro. Nunca se ve una doble raya (el marco y, a pocos
+      su borde bien dentro. Con varios elementos, cada uno sigue la misma
+      regla por todos sus lados: dos con borde que se tocan forman una sola
+      figura; cualquier otro par (un botón y su menú, un «?» y su globo) se
+      enseña como dos recortes bien separados, nunca un marco escalonado.
+      Nunca se ve una doble raya (el marco y, a pocos
       píxeles, el borde gris del elemento o el contorno de la captura), ni el
       recorte corta una línea de texto, ni queda en otra página que su
       captura. Si el recorte amplía algo que no es lo que cuenta el texto, se

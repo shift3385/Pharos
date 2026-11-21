@@ -22,7 +22,10 @@
 //         no own border there is no line to double;
 //       - a small control gets context around it (a 3× enlargement of a lone
 //         34 px button says nothing), its own border then well inside.
-//     Pieces a few px apart (a menu and its trigger) are joined into one shape.
+//     Several pieces obey the rule on every side: two edged pieces that touch
+//     form one shape; any other pair is shown as separate cut-outs set apart.
+//     Where lines of text are too close for the outline, a piece with air
+//     takes in the whole block.
 //  2. png.mjs `drawFocus` draws one outline round the pieces, `GAP` px outside
 //     them, into the PNG: the marker the Markdown chapters and the PDF show.
 //  3. In the PDF, `focusLayout`/`groupInset` place the cut-out and `cutoutSvg`
@@ -261,9 +264,15 @@ function airPiece(imageW, imageH, box, pad, img, ranges) {
     };
     const pick = (side, wideInk, edgeInk) => {
       const p = pad[side];
-      const list = candidates(p, range(side)).filter((c) => c <= 1 || !strip[side](c));
+      const { min, max } = range(side);
+      const list = candidates(p, { min, max }).filter((c) => c <= 1 || !strip[side](c));
       if (list.length === 0) return Math.min(p, 1);
-      const quiet = list.find((c) => wideInk(c) <= 0.02) ?? list.find((c) => edgeInk(c) <= 0.02);
+      // With no quiet line for the outline in range (text lines closer than
+      // the outline is wide), the piece takes in the whole block: further
+      // out, up to 80 px or the capture's edge, to the first quiet line.
+      const far = [];
+      if (max > 0) for (let c = max + 1; c <= max + 80; c++) if (!strip[side](c)) far.push(c);
+      const quiet = list.find((c) => wideInk(c) <= 0.02) ?? far.find((c) => wideInk(c) <= 0.02) ?? list.find((c) => edgeInk(c) <= 0.02);
       if (quiet !== undefined) return quiet;
       let best = p;
       let least = Infinity;
@@ -280,24 +289,25 @@ function airPiece(imageW, imageH, box, pad, img, ranges) {
     // The wide band: the outline outside the edge and 2 px inside it; the
     // edge band: 1 px outside, 2 px inside (never into the element itself).
     const inner = (p) => (p > 0 ? Math.min(2, p) : 2);
+    // At the capture's edge the outline is off the image: quiet.
     pad.top = pick(
       "top",
-      (p) => bandInk(img, x0, fy0 - p - GAP, x1, fy0 - p + inner(p)),
+      (p) => (fy0 - p <= 0 ? (fy0 - p === 0 ? 0 : Infinity) : bandInk(img, x0, Math.max(0, fy0 - p - GAP), x1, fy0 - p + inner(p))),
       (p) => bandInk(img, x0, fy0 - p - 1, x1, fy0 - p + inner(p)),
     );
     pad.bottom = pick(
       "bottom",
-      (p) => bandInk(img, x0, fy1 + p - inner(p), x1, fy1 + p + GAP),
+      (p) => (fy1 + p >= img.height ? (fy1 + p === img.height ? 0 : Infinity) : bandInk(img, x0, fy1 + p - inner(p), x1, Math.min(img.height, fy1 + p + GAP))),
       (p) => bandInk(img, x0, fy1 + p - inner(p), x1, fy1 + p + 1),
     );
     pad.left = pick(
       "left",
-      (p) => bandInk(img, fx0 - p - GAP, y0, fx0 - p + inner(p), y1),
+      (p) => (fx0 - p <= 0 ? (fx0 - p === 0 ? 0 : Infinity) : bandInk(img, Math.max(0, fx0 - p - GAP), y0, fx0 - p + inner(p), y1)),
       (p) => bandInk(img, fx0 - p - 1, y0, fx0 - p + inner(p), y1),
     );
     pad.right = pick(
       "right",
-      (p) => bandInk(img, fx1 + p - inner(p), y0, fx1 + p + GAP, y1),
+      (p) => (fx1 + p >= img.width ? (fx1 + p === img.width ? 0 : Infinity) : bandInk(img, fx1 + p - inner(p), y0, Math.min(img.width, fx1 + p + GAP), y1)),
       (p) => bandInk(img, fx1 + p - inner(p), y0, fx1 + p + 1, y1),
     );
   }
@@ -308,19 +318,22 @@ function airPiece(imageW, imageH, box, pad, img, ranges) {
   return { x, y, w: x1 - x, h: y1 - y, r: 0, edge: false };
 }
 
+/** A tiny control: a lone enlargement of it says nothing, so it gets context. */
+const isTiny = (b) => Math.max(b.w, b.h) <= 64;
 const isSmall = (b) => Math.min(b.w, b.h) <= 48 && Math.max(b.w, b.h) <= 240;
 
 /** The piece of one element (see the rule at the top of this file). */
 export function focusPiece(imageW, imageH, box, img = null, { part = false } = {}) {
   if (!box || !(box.w > 0) || !(box.h > 0)) return null;
-  if (!part && isSmall(box)) {
+  // An icon (under 24 px) has no frame-like border to merge with: air.
+  const edges = img && Math.min(box.w, box.h) >= 24 ? findEdges(img, box) : null;
+  const edged = edges?.sides.length === 4;
+  if (!part && isSmall(box) && !(edged && !isTiny(box))) {
     const x = Math.max(16, Math.ceil((MIN_PIECE.w - box.w) / 2));
     const y = Math.max(16, Math.ceil((MIN_PIECE.h - box.h) / 2));
     return airPiece(imageW, imageH, box, { top: y, right: x, bottom: y, left: x }, img, { min: 3, max: Math.max(x, y) + 16 });
   }
-  // An icon (under 24 px) has no frame-like border to merge with: air.
-  const edges = img && Math.min(box.w, box.h) >= 24 ? findEdges(img, box) : null;
-  if (edges?.sides.length === 4) {
+  if (edged) {
     const b = edges.box;
     const x = Math.max(0, b.x);
     const y = Math.max(0, b.y);
@@ -342,93 +355,141 @@ export function focusPiece(imageW, imageH, box, img = null, { part = false } = {
   return airPiece(imageW, imageH, box, { top: a, right: a, bottom: a, left: a }, img, part ? { min: 2, max: 10 } : { min: 3, max: AIR + 24 });
 }
 
+/** Part of `a` hidden under `b` (a popover over the card it explains): `a`
+ *  ends where `b` starts, when `b` spans `a`'s whole width (or height). */
+function trimCovered(a, b) {
+  const spansX = b.x <= a.x + 3 && b.x + b.w >= a.x + a.w - 3;
+  const spansY = b.y <= a.y + 3 && b.y + b.h >= a.y + a.h - 3;
+  const out = { ...a };
+  if (spansX && b.y > a.y + 12 && b.y < a.y + a.h && b.y + b.h >= a.y + a.h) out.h = b.y - a.y;
+  else if (spansX && b.y + b.h < a.y + a.h - 12 && b.y + b.h > a.y && b.y <= a.y) {
+    out.y = b.y + b.h;
+    out.h = a.y + a.h - out.y;
+  } else if (spansY && b.x > a.x + 12 && b.x < a.x + a.w && b.x + b.w >= a.x + a.w) out.w = b.x - a.x;
+  else if (spansY && b.x + b.w < a.x + a.w - 12 && b.x + b.w > a.x && b.x <= a.x) {
+    out.x = b.x + b.w;
+    out.w = a.x + a.w - out.x;
+  }
+  return out;
+}
+
 /**
  * The pieces of a step: one per focused element when the tour recorded
- * several (`parts`), else one for the union box (`focus`); pieces a few px
- * apart are joined (`bridge`).
+ * several (`parts`), else one for the union box (`focus`).
+ *
+ * Several pieces follow the same rule as one, on every side. Two edged
+ * pieces that touch or overlap (a card and the popover over it) form one
+ * shape whose frame lies on their borders. Any other pair is shown as
+ * separate cut-outs (`unit`), moved apart (`dx`, `dy`) so their frames
+ * never run side by side a few px apart: joining a padded piece to a bordered
+ * one would step the frame in and bare the border as a second line.
  */
 export function focusCuts(imageW, imageH, focus, parts = null, img = null) {
   if (Array.isArray(parts) && parts.length > 1) {
     // An element inside another (the eye button inside its password field)
     // is part of that one's piece: a frame of its own would be a line inside.
     const within = (a, b) => a !== b && a.x >= b.x - 4 && a.y >= b.y - 4 && a.x + a.w <= b.x + b.w + 4 && a.y + a.h <= b.y + b.h + 4;
-    const outer = parts.filter((p) => !parts.some((q) => within(p, q) && !(within(q, p) && parts.indexOf(q) > parts.indexOf(p))));
-    if (outer.length === 1) return [focusPiece(imageW, imageH, outer[0], img)].filter(Boolean);
+    let outer = parts.filter((p) => !parts.some((q) => within(p, q) && !(within(q, p) && parts.indexOf(q) > parts.indexOf(p))));
+    if (outer.length === 1) return focusCuts(imageW, imageH, outer[0], null, img);
+    outer = outer.map((p) => outer.reduce((acc, q) => (q === p ? acc : trimCovered(acc, q)), p));
     const pieces = outer.map((p) => focusPiece(imageW, imageH, p, img, { part: true })).filter(Boolean);
-    if (pieces.length > 0) return bridge(pieces);
+    if (pieces.length > 0) return spread(join(pieces));
   }
   const one = focusPiece(imageW, imageH, focus, img);
-  return one ? [one] : [];
+  return one ? [{ ...one, unit: 0, dx: 0, dy: 0 }] : [];
 }
 
-/** Two pieces a few px apart (a menu just above its trigger) would get two
- *  frames side by side: a double line. The smaller one reaches into the
- *  other, deep enough that their insides (inside the frame) overlap, so one
- *  frame and one outline go round a single shape. */
-const BRIDGE_GAP = 24;
+/** Overlap two pieces of one shape need, so their insides (inside the frame)
+ *  overlap too: no amber seam across the shape. */
 const REACH = 2 * MIN_FRAME_PX + 2 * FOCUS_RADIUS;
-function bridge(pieces) {
-  const out = pieces.map((z) => ({ ...z }));
+
+/** Edged pieces that touch or overlap become one unit (one shape); the
+ *  smaller reaches into the larger far enough for a seamless inside. */
+function join(pieces) {
+  const out = pieces.map((p, i) => ({ ...p, unit: i }));
   const area = (z) => z.w * z.h;
   for (let i = 0; i < out.length; i++) {
     for (let j = 0; j < out.length; j++) {
       const a = out[i];
       const b = out[j];
-      if (i === j || area(a) > area(b)) continue;
+      if (i === j || !a.edge || !b.edge || area(a) > area(b)) continue;
       const overlapX = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
       const overlapY = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
-      // Side by side along most of the smaller one (a 16 px «?» over its tooltip).
-      const along = (len) => Math.min(2 * FOCUS_RADIUS, 0.6 * len);
-      if (overlapX > along(a.w)) {
-        const under = a.y - (b.y + b.h);
-        const over = b.y - (a.y + a.h);
-        if (under > -REACH && under < BRIDGE_GAP) {
+      if (overlapX < -2 || overlapY < -2) continue;
+      if (overlapX > 2 * FOCUS_RADIUS && overlapY < REACH) {
+        if (a.y < b.y) a.h = Math.max(a.h, b.y + REACH - a.y);
+        else {
           const top = Math.min(a.y, b.y + b.h - REACH);
           a.h += a.y - top;
           a.y = top;
-          align(a, b, "x", "w");
-        } else if (over > -REACH && over < BRIDGE_GAP) {
-          a.h = Math.max(a.h, b.y + REACH - a.y);
-          align(a, b, "x", "w");
         }
-      } else if (overlapY > along(a.h)) {
-        const right = a.x - (b.x + b.w);
-        const left = b.x - (a.x + a.w);
-        if (right > -REACH && right < BRIDGE_GAP) {
-          const x0 = Math.min(a.x, b.x + b.w - REACH);
-          a.w += a.x - x0;
-          a.x = x0;
-          align(a, b, "y", "h");
-        } else if (left > -REACH && left < BRIDGE_GAP) {
-          a.w = Math.max(a.w, b.x + REACH - a.x);
-          align(a, b, "y", "h");
+      } else if (overlapY > 2 * FOCUS_RADIUS && overlapX < REACH) {
+        if (a.x < b.x) a.w = Math.max(a.w, b.x + REACH - a.x);
+        else {
+          const left = Math.min(a.x, b.x + b.w - REACH);
+          a.w += a.x - left;
+          a.x = left;
         }
       }
+      const from = a.unit;
+      for (const p of out) if (p.unit === from) p.unit = b.unit;
     }
   }
   return out;
 }
 
-/** Joined pieces whose sides miss each other by a pixel or three share that
- *  side: no hairline notch in the frame. An edged piece never moves (that
- *  would bare its border inside the frame): the other one takes its side;
- *  two edged pieces keep their real step. */
-function align(a, b, pos, size) {
-  const near = 6;
-  const set = (p, lo, hi) => {
-    p[pos] = lo;
-    p[size] = hi - lo;
+/** Capture px between two separate cut-outs: clearly two boxes, never a
+ *  frame running beside another a few px away. */
+export const MIN_SEPARATION = 16;
+
+/** The box a piece takes in the cut-out (with its frame), moved by its unit. */
+const placed = (p) =>
+  p.edge
+    ? { x: p.x + p.dx, y: p.y + p.dy, w: p.w, h: p.h }
+    : { x: p.x + p.dx - FRAME_ROOM, y: p.y + p.dy - FRAME_ROOM, w: p.w + 2 * FRAME_ROOM, h: p.h + 2 * FRAME_ROOM };
+
+/** Moves separate units apart (`dx`, `dy`) until any two that face each
+ *  other are at least `MIN_SEPARATION` apart, keeping their layout. */
+function spread(pieces) {
+  const out = pieces.map((p) => ({ ...p, dx: 0, dy: 0 }));
+  const units = [...new Set(out.map((p) => p.unit))];
+  const box = (u) => unionBox(out.filter((p) => p.unit === u).map(placed));
+  const move = (u, dx, dy) => {
+    for (const p of out) {
+      if (p.unit !== u) continue;
+      p.dx += dx;
+      p.dy += dy;
+    }
   };
-  if (Math.abs(a[pos] - b[pos]) <= near && a[pos] !== b[pos]) {
-    if (!a.edge) set(a, b[pos], a[pos] + a[size]);
-    else if (!b.edge) set(b, a[pos], b[pos] + b[size]);
+  for (let round = 0; round < 12; round++) {
+    let moved = false;
+    for (const u of units) {
+      for (const v of units) {
+        if (u === v) continue;
+        const a = box(u);
+        const b = box(v);
+        const overlapX = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+        const overlapY = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+        const below = b.y + b.h / 2 > a.y + a.h / 2 || (b.y + b.h / 2 === a.y + a.h / 2 && v > u);
+        const right = b.x + b.w / 2 > a.x + a.w / 2 || (b.x + b.w / 2 === a.x + a.w / 2 && v > u);
+        if (overlapX > 0 && below) {
+          const gap = b.y - (a.y + a.h);
+          if (gap < MIN_SEPARATION) {
+            for (const w of units) if (w !== u && box(w).y >= b.y - 0.5) move(w, 0, MIN_SEPARATION - gap);
+            moved = true;
+          }
+        } else if (overlapY > 0 && overlapX <= 0 && right) {
+          const gap = b.x - (a.x + a.w);
+          if (gap < MIN_SEPARATION) {
+            for (const w of units) if (w !== u && box(w).x >= b.x - 0.5) move(w, MIN_SEPARATION - gap, 0);
+            moved = true;
+          }
+        }
+      }
+    }
+    if (!moved) break;
   }
-  const hiA = a[pos] + a[size];
-  const hiB = b[pos] + b[size];
-  if (Math.abs(hiA - hiB) <= near && hiA !== hiB) {
-    if (!a.edge) set(a, a[pos], hiB);
-    else if (!b.edge) set(b, b[pos], hiA);
-  }
+  return out;
 }
 
 /** The outline's rectangles (outer edge) round the pieces, for `drawFocus`. */
@@ -450,7 +511,7 @@ const FRAME_ROOM = 5;
 
 /** The box the cut-out shows: the pieces, with room for their frames. */
 function cropBox(cuts) {
-  return unionBox(cuts.map((c) => (c.edge ? c : { x: c.x - FRAME_ROOM, y: c.y - FRAME_ROOM, w: c.w + 2 * FRAME_ROOM, h: c.h + 2 * FRAME_ROOM })));
+  return unionBox(cuts.map((c) => placed({ dx: 0, dy: 0, ...c })));
 }
 
 /**
@@ -547,12 +608,23 @@ export function cutoutSvg(url, imageW, imageH, layout, { id, label }) {
     const inset = p.edge ? (clip ? sw : 0) : clip ? 0 : -Math.min(sw, FRAME_ROOM);
     return `<rect x="${n(p.x + inset)}" y="${n(p.y + inset)}" width="${n(p.w - 2 * inset)}" height="${n(p.h - 2 * inset)}" rx="${n(Math.max(0, r - inset))}"/>`;
   };
+  const units = [...new Set(pieces.map((p) => p.unit ?? 0))];
+  const groups = units
+    .map((u, k) => {
+      const own = pieces.filter((p) => (p.unit ?? 0) === u);
+      const { dx = 0, dy = 0 } = own[0];
+      const cid = units.length > 1 ? `${id}-${k}` : id;
+      return (
+        `<clipPath id="${cid}">${own.map((p) => rect(p, true)).join("")}</clipPath>` +
+        `<g transform="translate(${n(dx)} ${n(dy)})"><g fill="${color}">${own.map((p) => rect(p, false)).join("")}</g>` +
+        `<image href="${url}" x="0" y="0" width="${imageW}" height="${imageH}" preserveAspectRatio="none" clip-path="url(#${cid})"/></g>`
+      );
+    })
+    .join("");
   return (
     `<svg class="cutout" role="img" aria-label="${label}" width="${n(insetMm)}mm" height="${n(insetHmm)}mm" ` +
     `viewBox="${crop.x} ${crop.y} ${crop.w} ${crop.h}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">` +
-    `<defs><clipPath id="${id}">${pieces.map((p) => rect(p, true)).join("")}</clipPath></defs>` +
-    `<g fill="${color}">${pieces.map((p) => rect(p, false)).join("")}</g>` +
-    `<image href="${url}" x="0" y="0" width="${imageW}" height="${imageH}" preserveAspectRatio="none" clip-path="url(#${id})"/>` +
+    groups +
     `</svg>`
   );
 }

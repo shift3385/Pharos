@@ -86,7 +86,15 @@ The values come from `e2e/tours/data/pharos.ts` (the case study: Liomar tests
 Pharos 0.6.0), and the import fixtures from `e2e/tours/fixtures/pharos/`,
 made by Pharos's own exporters (`npm run manual:fixtures` checks them;
 `PHAROS_WRITE_FIXTURES=1 npm run manual:fixtures` rewrites them after a data
-or template change). In a full run the chapter that makes each prerequisite
+or template change). The story's dates follow the day the tours run
+(`RUN_DAY` in the data module: `PHAROS_TOURS_DAY`, else today): the cycle
+is Sprint 1, from eleven days before to two days after it, so every date
+the app stamps «now» falls inside it, also when a run crosses midnight.
+The committed fixtures are made for `REFERENCE_DAY`; before the tours,
+`e2e/tours/run-fixtures.mjs` copies them to a temporary folder with their
+dates moved to the run day and makes the plan and case `.xlsx` again for it
+(the tours read that copy through `PHAROS_TOURS_FIXTURES`). Captions never
+quote a date. In a full run the chapter that makes each prerequisite
 runs earlier, so every check passes and nothing is loaded; `check:manual`
 fails when a chapter uses data made by a later one. Loaders never record
 steps: they log to `e2e/results/tours/prepare.jsonl` (prerequisite, outcome,
@@ -152,7 +160,11 @@ step("nuevo", {
   button, a menu or tooltip over other content) is cut exactly at its box, so
   the cut-out's single amber frame lies over its own border; one without an
   edge gets air, each side snapped between lines of text; a small control
-  gets context. Pieces a few px apart join into one shape. The manual draws
+  gets context. Two bordered pieces that touch or overlap (a card and the
+  popover over it) form one shape; any other pair (a button and its menu, a
+  «?» and its tooltip) becomes two cut-outs set clearly apart, never one
+  stepped frame. Where text lines are too close for the outline, the piece
+  takes in the whole block. The manual draws
   one amber outline (Faro Nocturno's accent) round the pieces into the PNG
   and keeps them in `docs/manual/pasos.json` (`cuts`). In the PDF only, a
   «Detalle» cut-out follows the capture (beside it, level with the zone, or

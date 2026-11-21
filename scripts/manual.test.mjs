@@ -13,7 +13,7 @@ import { arrayLiteral, check, countDialogs, coversIn, hasViewSwitch, prerequisit
 import { findAiKey } from "./manual/ai-key.mjs";
 import { inline, leftoverTable, markdownToHtml, tableCells } from "./manual/markdown.mjs";
 import { printWithEdge, settled, sweepProfiles } from "./manual/edge-print.mjs";
-import { cutoutSvg, focusCuts, focusLayout, focusPiece, FOCUS_COLOR, FOCUS_STROKE, frameGeometry, GAP, groupInset, MIN_FRAME_PX, outlineZones, sameFocusPixels } from "./manual/focus.mjs";
+import { cutoutSvg, focusCuts, focusLayout, focusPiece, FOCUS_COLOR, FOCUS_STROKE, frameGeometry, GAP, groupInset, MIN_SEPARATION, outlineZones, sameFocusPixels } from "./manual/focus.mjs";
 import { acquireLock, lockMessage, pidAlive, releaseLock, UNREADABLE_GRACE_MS } from "./manual/run-lock.mjs";
 import { changedShare, decodePng, drawFocus, encodePng, quantize } from "./manual/png.mjs";
 import { needlesFor, scanForSecret } from "./manual/secret-scan.mjs";
@@ -294,7 +294,7 @@ test("an element with its own border is cut at that border: the frame lies over 
   }
 });
 
-test("a menu over other content: cut at its own box, nothing behind at its edges; its trigger joins it (MAN-02)", () => {
+test("a menu over other content: cut at its own box, nothing behind; its trigger a separate cut-out (MAN-02)", () => {
   // Text everywhere behind (rows of dark dots), a white menu with a border on top.
   const img = image(600, 400, (x, y) => (y % 14 < 4 && x % 3 === 0 ? [30, 30, 30, 255] : [255, 255, 255, 255]));
   const menu = { x: 200, y: 100, w: 220, h: 120 };
@@ -306,7 +306,19 @@ test("a menu over other content: cut at its own box, nothing behind at its edges
   assert.deepEqual([m.x, m.y, m.w, m.h], [menu.x, menu.y, menu.w, menu.h], "the menu's own box");
   const t = cuts.find((c) => c !== m);
   assert.equal(t.edge, true);
-  assert.ok(t.y + MIN_FRAME_PX * 2 < m.y + m.h, "the pieces overlap inside their frame: one shape");
+  assert.deepEqual([t.x, t.y, t.w, t.h], [trigger.x, trigger.y, trigger.w, trigger.h], "the button's own box too");
+  // 6 px apart: never one stepped shape, nor two frames side by side; two
+  // cut-outs moved apart in the «Detalle».
+  assert.notEqual(t.unit, m.unit);
+  assert.ok(t.y + t.dy - (m.y + m.dy + m.h) >= MIN_SEPARATION, "clearly two boxes");
+  // A card half under the popover that explains it: one shape, the card's
+  // hidden part left out, the frame on both borders.
+  const card = { x: 240, y: 60, w: 140, h: 80 };
+  paintBorder(img, card, 8, GREY, WHITE);
+  paintBorder(img, menu, 10, GREY, WHITE);
+  const pair = focusCuts(600, 400, { x: 200, y: 60, w: 220, h: 160 }, [card, menu], img);
+  assert.equal(new Set(pair.map((p) => p.unit)).size, 1, "one shape");
+  assert.ok(pair.every((p) => p.edge && p.dx === 0 && p.dy === 0));
   // A button inside a field (the password's eye) adds no frame of its own.
   const eye = { x: menu.x + menu.w - 40, y: menu.y + 2, w: 36, h: 36 };
   assert.equal(focusCuts(600, 400, menu, [menu, eye], img).length, 1);
