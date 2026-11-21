@@ -126,7 +126,7 @@ chapter("evidencias", () => {
   step("verificar", {
     title: "Verificar las evidencias",
     caption:
-      "«Verificar evidencias» comprueba que cada archivo está y se descifra, y busca archivos que ningún elemento usa, los huérfanos. No borra nada por sí sola; puedes seguir trabajando mientras tanto. Al terminar, el informe dice cuántos archivos comprobó y muestra en bloques lo que encontró: aquí, «Archivos sin registro (1)», un huérfano: una captura cuyo guardado se cortó (por ejemplo, porque el equipo se apagó en ese momento), así que ningún elemento llegó a apuntarla.",
+      "«Verificar evidencias» comprueba que cada archivo está y se descifra, y busca archivos que ningún elemento usa, los huérfanos. No borra nada por sí sola; puedes seguir trabajando mientras tanto. Al terminar, el informe dice cuántos archivos comprobó y muestra en bloques lo que encontró: aquí, «Archivos sin registro (1)», un huérfano: una captura de hace dos días, de antes de este ejemplo, cuyo guardado se cortó (por ejemplo, porque el equipo se apagó en ese momento), así que ningún elemento llegó a apuntarla.",
     // The «Verificar evidencias» card alone: the page ends with it, so a
     // page shot would cut the retention rows above it.
     shot: { element: '[data-testid="evidence-check"]' },

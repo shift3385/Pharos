@@ -131,7 +131,7 @@ chapter("acceso", () => {
   step("registro", {
     title: "Crear una cuenta",
     caption:
-      "Si es tu primera vez, «Regístrate» abre «Crear cuenta». Escribe tu nombre, tus apellidos, tu alias, tu correo y una contraseña de al menos 8 caracteres. En este ejemplo, Liomar Rodríguez, responsable de QA de Pharos, crea la cuenta con la que hará todas las pruebas del manual, con el alias «Liomar QA» (escribe «Rodriguez» sin tilde, por descuido: lo corrige en «Mi perfil»). El alias es el nombre con el que Pharos te nombra: el menú lateral, los miembros de un workspace, las revisiones y los avisos. El nombre y los apellidos forman tu nombre oficial, que guarda tu perfil. Todos los campos son obligatorios: si falta uno, el formulario te lleva a él.",
+      "Si es tu primera vez, «Regístrate» abre «Crear cuenta». Escribe tu nombre, tus apellidos, tu alias, tu correo y una contraseña de al menos 8 caracteres. En este ejemplo, Liomar Rodríguez, responsable de QA de Pharos, crea la cuenta con la que hará todas las pruebas del manual, con el alias «Liomar QA» (escribe «Rodriguez» sin tilde, por descuido: lo corrige en «Mi perfil»). El alias es el nombre con el que Pharos te saluda en tu menú; el nombre y los apellidos forman tu nombre oficial, el que figura en los miembros de un workspace, las revisiones, las firmas y la auditoría. Todos los campos son obligatorios: si falta uno, el formulario te lleva a él.",
     covers: ["screen:register"],
     run: async () => {
       await $(`button=${es.auth.signUpLink}`).click();

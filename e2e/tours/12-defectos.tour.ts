@@ -193,7 +193,7 @@ chapter("defectos", () => {
   step("prerrellenado", {
     title: "Prerrellenado desde el resultado",
     caption:
-      "El aviso azul de arriba indica de qué resultado nace el defecto, y el editor llega ya relleno: más abajo, en «Reproducción», trae el error como resultado obtenido y, como esperado, el del paso que falló o, si no tiene, el del caso. Revisa el título y la severidad que propone y guarda. En este ejemplo, Liomar lo titula «Entrar con credenciales válidas muestra “Correo o contraseña incorrectos”» y lo marca como crítico: nadie puede entrar en la aplicación.",
+      "El aviso azul de arriba indica de qué resultado nace el defecto, y el editor llega ya relleno: más abajo, en «Reproducción», trae el error como resultado obtenido y, como esperado, el del paso que falló o, si no tiene, el del caso. Revisa el título y la severidad que propone y guarda. En este ejemplo, Liomar lo titula «" + LOGIN_BUG + "» y lo marca como crítico: con credenciales válidas, la cuenta de prueba de PH-001 no puede entrar, y lo mismo pasa con la tercera cuenta del dataset de PH-005; el acceso falla para parte de las cuentas.",
     focus: ".df-banner",
     run: async () => {
       await $(D).$(`button*=${F.results.choose}`).click();

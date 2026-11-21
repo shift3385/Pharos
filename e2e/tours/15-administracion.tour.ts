@@ -306,7 +306,7 @@ chapter("administracion", () => {
   step("cambios-combinados", {
     title: "Cambios en campos distintos: se combinan solos",
     caption:
-      "Si el mismo elemento se cambia en dos sitios antes de sincronizar, Pharos lo combina campo a campo. En este ejemplo, Liomar completa desde su portátil la descripción del requisito REQ-006 («Si cambian el mismo campo, Pharos pregunta cuál queda.») y, en este equipo, sin sincronizar entre medias, su título («…con el servidor»). Al sincronizar, como tocó campos distintos, Pharos se queda con los dos cambios sin preguntar: el requisito tiene el título nuevo y la descripción del portátil. Un aviso lo dice («Se combinaron tus cambios con los hechos a la vez en otro equipo o por otra persona en 1 elemento…»), y el elemento queda en «Auditoría» como «Conflicto resuelto», con «Se quedó: Combinado».",
+      "Si el mismo elemento se cambia en dos sitios antes de sincronizar, Pharos lo combina campo a campo. En este ejemplo, Liomar empieza desde su portátil la descripción del requisito REQ-006 con una frase («Si cambian el mismo campo, Pharos pregunta cuál queda.») y, en este equipo, sin sincronizar entre medias, su título («…con el servidor»). Al sincronizar, como tocó campos distintos, Pharos se queda con los dos cambios sin preguntar: el requisito tiene el título nuevo y la descripción del portátil. Un aviso lo dice («Se combinaron tus cambios con los hechos a la vez en otro equipo o por otra persona en 1 elemento…»), y el elemento queda en «Auditoría» como «Conflicto resuelto», con «Se quedó: Combinado».",
     toast: true,
     focus: ["[data-tour-shown]", `button.tz-open*=${SYNC_REQ.title}`],
     run: async () => {
@@ -314,7 +314,8 @@ chapter("administracion", () => {
       await editOnOtherDevice(
         "requirement",
         (p) => p.requirementKey === SYNC_REQ.key,
-        (p) => ({ ...p, description: `${String(p.description ?? "")} ${MERGED_SENTENCE}`.trim() }),
+        // At the start, so the list's two-line description shows it.
+        (p) => ({ ...p, description: `${MERGED_SENTENCE} ${String(p.description ?? "")}`.trim() }),
       );
       // This device: the same requirement, another field, before syncing.
       await openRequirement(SYNC_REQ.title);
@@ -469,6 +470,26 @@ chapter("administracion", () => {
       await byTestId("audit-search").setValue(SYNC_REQ.key);
       // FIX-39: the merged sync event says what was kept.
       await waitForText(`${A.audit.summary.resolution}: ${A.audit.summaryValue.merged}`, 20_000);
+      // The search applies after a pause and reloads the list: wait until
+      // the list is not busy, every row is about the requirement and it
+      // stays the same over three polls.
+      let last = "";
+      let same = 0;
+      await browser.waitUntil(
+        async () => {
+          const busy = await $('[data-testid="audit-tab"] [aria-busy="true"]').isExisting();
+          const rows = await $$('[data-testid^="audit-row-"]');
+          const texts: string[] = [];
+          for (let i = 0; i < rows.length; i++) texts.push(await rows[i].getText());
+          const q = decodeURIComponent(/[?&]q=([^&#]*)/.exec(await browser.getUrl())?.[1] ?? "");
+          const ok = !busy && q === SYNC_REQ.key && texts.length > 0 && texts[0].includes(SYNC_REQ.key);
+          const sig = texts.join("|");
+          same = ok && sig === last ? same + 1 : 0;
+          last = sig;
+          return same >= 2;
+        },
+        { timeout: 30_000, interval: 400, timeoutMsg: `the audit list did not settle on «${SYNC_REQ.key}»` },
+      );
     },
   });
 
@@ -721,7 +742,7 @@ chapter("administracion", () => {
   step("usuario-revocar-tokens", {
     title: "Revocar los tokens de una cuenta",
     caption:
-      "«Revocar sus tokens…» anula de una vez todos los tokens de API de esa cuenta, personales y de proyecto, por ejemplo si se filtró uno. La confirmación los nombra (aquí, «CLI de Jorge») y avisa de que no se puede deshacer: los CI que los usan dejan de subir resultados hasta que tengan uno nuevo.",
+      "«Revocar sus tokens…» anula de una vez todos los tokens de API de esa cuenta, personales y de proyecto, por ejemplo si se filtró uno. La confirmación los nombra (aquí, «CLI de Jorge», un token personal que Jorge se creó para su línea de comandos) y avisa de que no se puede deshacer: los CI que los usan dejan de subir resultados hasta que tengan uno nuevo.",
     covers: ["dialogs:src/modules/integrations/ui/AdminRevokeTokens.tsx"],
     shot: { element: '[role="alertdialog"], [role="dialog"]' },
     run: async () => {

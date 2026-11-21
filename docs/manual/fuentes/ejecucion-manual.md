@@ -36,6 +36,11 @@ En este manual, Liomar repite a mano los casos de acceso de Pharos en el run
 - PH-005, el caso con el dataset «Usuarios válidos» (capítulo 8), se ejecuta
   una vez por fila: pasan las dos primeras cuentas y falla la tercera.
 
+El informe de estado del final del capítulo cuenta tres defectos abiertos de
+«Pharos», los del capítulo 12: el crítico del acceso, el del prefijo en el
+menú lateral (aplazado) y el del enlace del correo de bienvenida, que avisó un
+usuario de la beta.
+
 Las evidencias de un intento se guardan cifradas. Mientras ejecutas son un
 borrador de este equipo; al guardar el resultado se sincronizan con los demás
 equipos del espacio de trabajo.

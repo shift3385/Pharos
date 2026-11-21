@@ -66,6 +66,58 @@ async function top() {
   await $("h2.tpw__title").moveTo();
 }
 
+/** The step footer («Anterior» / «Siguiente») whole or out of the shot,
+ *  never sliced by the window's bottom edge: a little further down when the
+ *  step title stays clear of the top bar, else a little up. */
+async function footerClear() {
+  await browser.execute(() => {
+    const content = document.querySelector<HTMLElement>(".app-shell__content");
+    const foot = document.querySelector<HTMLElement>(".tpw__foot");
+    const title = document.querySelector<HTMLElement>(".tpw__form");
+    if (!content || !foot || !title) return;
+    const h = window.innerHeight;
+    const f = foot.getBoundingClientRect();
+    if (f.top >= h || f.bottom <= h) return;
+    const down = f.bottom - (h - 12);
+    if (title.getBoundingClientRect().top - down >= 72) content.scrollTop += down;
+    else {
+      // Up: from the page top if the footer is then out of the window too.
+      const up = h - f.top + 4;
+      content.scrollTop = content.scrollTop - up < 200 ? 0 : content.scrollTop - up;
+    }
+  });
+}
+
+/** Scrolls a list box so it shows whole rows: its top on a row's start and,
+ *  as far as the heights allow, its bottom on a row's end. */
+async function wholeRows(box: string, row: string) {
+  await browser.execute(
+    (boxSel: string, rowSel: string) => {
+      const el = document.querySelector<HTMLElement>(boxSel);
+      if (!el) return;
+      const top0 = el.getBoundingClientRect().top - el.scrollTop;
+      const rows = Array.from(el.querySelectorAll<HTMLElement>(rowSel)).map((r) => {
+        const b = r.getBoundingClientRect();
+        return { top: b.top - top0, bottom: b.bottom - top0 };
+      });
+      const h = el.clientHeight;
+      const max = el.scrollHeight - h;
+      let best = { s: 0, cost: Infinity };
+      for (const r of rows) {
+        if (r.top > max + 1) break;
+        const s = Math.min(r.top, max);
+        const end = s + h;
+        const cut = rows.find((x) => x.top < end - 1 && x.bottom > end + 1);
+        const cost = cut ? end - cut.top : 0;
+        if (cost < best.cost - 1) best = { s, cost };
+      }
+      el.scrollTop = best.s;
+    },
+    box,
+    row,
+  );
+}
+
 /** A day of the schedule calendar (ISO date). */
 const day = (iso: string) => $(`.tps-grid [data-day="${iso}"]`);
 
@@ -86,7 +138,7 @@ chapter("plan", () => {
 
   step("importar", {
     title: "Importar el plan desde Excel",
-    caption: `Liomar no escribe el plan paso a paso: lo tiene en Excel, en «${PLAN.file}», un plan exportado antes desde Pharos. «Importar / Exportar», en la cabecera, y después «Importar .xlsx» leen un plan exportado o una plantilla rellenada en Excel (Administración › Plantillas). Antes de tocar nada, el informe de importación muestra, campo a campo, qué reconoció y qué no («no detectado», «en blanco»…), para que decidas si aplicarlo. Las listas salen con sus nombres, y más abajo el informe cuenta también los hitos que trae el Excel, en su hoja «Hitos». El título del plan sale del nombre del archivo.`,
+    caption: `Liomar no escribe el plan paso a paso: lo tiene en Excel, en «${PLAN.file}», un plan exportado antes desde Pharos. «Importar / Exportar», en la cabecera, y después «Importar .xlsx» leen un plan exportado o una plantilla rellenada en Excel (Administración › Plantillas). Antes de tocar nada, el informe de importación muestra, campo a campo, qué reconoció y qué no («no detectado», «en blanco»…), para que decidas si aplicarlo. Las listas salen con sus nombres y, al final, el informe cuenta las filas de cada tabla, como los dos hitos de la hoja «Hitos» (la captura muestra ese final de la lista). El título del plan sale del nombre del archivo.`,
     covers: ["upload:src/modules/test-plan/ui/TestPlanWizard.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -94,6 +146,8 @@ chapter("plan", () => {
       await expect(dialog()).toBeDisplayed();
       // The report is complete once «Aplicar al formulario» can be pressed.
       await $(`button=${es.importReport.apply}`).waitForEnabled({ timeout: 30_000 });
+      // The report box shows whole rows: none is cut by its bottom edge.
+      await wholeRows(".imp__list", ".imp__row");
     },
   });
 
@@ -128,7 +182,8 @@ chapter("plan", () => {
     title: "Paso 1 · Identificación del plan",
     caption: `El paso 1 es el bloque de identificación del documento de ISO/IEC/IEEE 29119-3: el título (aquí, «${PLAN.title}»), el estado (no se elige aquí: cambia con las acciones de «Estado del plan», como en los casos), el ID de documento (por defecto «TP-», el prefijo del proyecto y seis caracteres; se puede cambiar), la versión («${PLAN.version}») y la fecha. El autor no se escribe: lo pone Pharos con tu nombre (en este ejemplo, «Liomar Rodríguez»); lo verás en el panel «Estado del plan» y en el plan exportado.`,
     covers: ["wizard:identification"],
-    shot: { element: ".tpw-ident" },
+    shot: { element: ".tpw__form" },
+    focus: ".tpw-ident",
     run: async () => {
       await expect($("h2.tpw__title")).toHaveText(P.step.identification);
       await expect(await field(P.version)).toHaveValue(PLAN.version);
@@ -221,7 +276,7 @@ chapter("plan", () => {
   step("metodologia", {
     title: "Paso 7 · Metodología",
     caption:
-      "Cómo trabaja el equipo, en dos columnas. En «Método de trabajo», la metodología y, con «Ágil», la duración del sprint (aquí, «2 semanas»; de 1 a 4). En «Reuniones del equipo», una fila por reunión (diaria, revisión, retrospectiva y planificación): su casilla, su nombre y su frecuencia en la misma fila; la frecuencia de una reunión sin marcar se ve en gris y no se puede cambiar hasta marcarla. Con «Tradicional / V-model», que no trabaja por sprints, la duración y las reuniones desaparecen y la segunda columna pide las fases del proyecto. Si falta algo, una línea bajo el paso dice qué. La duración del sprint no es solo informativa: el cronograma (paso 15) la usa para proponer el siguiente sprint y avisa si uno dura otra cosa.",
+      "Cómo trabaja el equipo, en dos bloques, uno debajo de otro. En «Método de trabajo», la metodología y, con «Ágil», la duración del sprint (aquí, «2 semanas»; de 1 a 4). En «Reuniones del equipo», una fila por reunión (diaria, revisión, retrospectiva y planificación): su casilla, su nombre y su frecuencia en la misma fila; la frecuencia de una reunión sin marcar se ve en gris y no se puede cambiar hasta marcarla. Con «Tradicional / V-model», que no trabaja por sprints, la duración y las reuniones desaparecen y el segundo bloque pide las fases del proyecto. Si falta algo, una línea bajo el paso dice qué. La duración del sprint no es solo informativa: el cronograma (paso 15) la usa para proponer el siguiente sprint y avisa si uno dura otra cosa.",
     covers: ["wizard:methodology"],
     focus: ".tpw-meth",
     run: async () => {
@@ -270,6 +325,7 @@ chapter("plan", () => {
       await expect(await field(P.environmentConfig)).toHaveValue(PLAN.environmentConfig);
       await next("tools");
       await atLeast(".tpw-tools .tp-pill", 3);
+      await footerClear();
     },
   });
 
@@ -296,6 +352,7 @@ chapter("plan", () => {
       await expect(byTestId("plan-independence").$(`input[value="${PLAN.independence}"]`)).toBeSelected();
       // From the step title, just below the top bar.
       await scrollToTop(".tpw__form");
+      await footerClear();
     },
   });
 
@@ -417,7 +474,7 @@ chapter("plan", () => {
       // The free-text criterion, the last row, in view above the step footer.
       const free = $(".tpw-closure__list > li:last-child");
       await expect(free.$("textarea")).toHaveValue(PLAN.closure[0][0]);
-      await free.scrollIntoView({ block: "center" });
+      await scrollToTop(".tpw-closure__list > li:nth-last-child(3)");
     },
   });
 

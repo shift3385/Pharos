@@ -332,7 +332,7 @@ chapter("casos", () => {
   step("checklist-items", {
     title: "Las comprobaciones",
     caption:
-      "Más abajo, «Comprobaciones» ocupa el lugar de los pasos: una comprobación por fila, con su asa para reordenarla y su papelera (aquí, las tres de la prueba de humo: que la app arranca sin errores, que se puede iniciar sesión y que el Inicio muestra los proyectos).",
+      "Más abajo, las comprobaciones ocupan el lugar de los pasos: una comprobación por fila, con su asa para reordenarla y su papelera (aquí, las tres de la prueba de humo: que la app arranca sin errores, que se puede iniciar sesión y que el Inicio muestra los proyectos).",
     covers: ["action:case-checklist"],
     shot: { element: `[role="group"][aria-label="${C.checklist.items}"]` },
     run: async () => {
@@ -573,7 +573,7 @@ chapter("casos", () => {
   step("lista", {
     title: "La lista de casos",
     caption:
-      "Con casos, la tabla muestra ID, título, requisito, prioridad, nivel, estado, «Ejecución» y fecha de la última edición. «Ejecución» es el último resultado de cada caso, el mismo que la matriz (capítulo 13): «Pasa», «Falla», «Bloqueado», «Omitido» o «Por confirmar»; «—» si aún no tiene ninguno. Si un caso tiene contenido sugerido por IA que nadie ha revisado, su estado (normalmente «Borrador») lleva un ✨ y un borde discontinuo, y al pasar el puntero lo explica. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, resultado («Ejecución», con «Sin resultados» para los que aún no se han ejecutado), tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta. El filtro «Por revisar» deja los casos en revisión que puedes aprobar, y un caso al que le pidieron cambios lleva la marca «Cambios pedidos». Haz clic en la cabecera de una columna para ordenar por ella. En este ejemplo, «credenciales» deja los dos casos de acceso.",
+      "Con casos, la tabla muestra ID, título, requisito, prioridad, nivel, estado, «Ejecución» y fecha de la última edición. «Ejecución» es el último resultado de cada caso, el mismo que la matriz (capítulo 13): «Pasa», «Falla», «Bloqueado», «Omitido» o «Por confirmar»; «—» si aún no tiene ninguno. Si un caso tiene contenido sugerido por IA que nadie ha revisado, su estado (normalmente «Borrador») lleva un ✨ y un borde discontinuo, y al pasar el puntero lo explica. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, resultado («Ejecución», con «Sin resultados» para los que aún no se han ejecutado), tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta. El filtro «Por revisar» deja los casos en revisión que puedes aprobar, y un caso al que le pidieron cambios lleva la marca «Cambios pedidos». Haz clic en la cabecera de una columna para ordenar por ella. En este ejemplo, «credenciales» deja los dos casos con «credenciales» en el título.",
     covers: ["action:cases-search", "action:cases-filter", "action:cases-sort"],
     run: async () => {
       // From the library, where the steps above end.
@@ -588,7 +588,7 @@ chapter("casos", () => {
   step("sin-coincidencias", {
     title: "Ningún caso coincide",
     caption:
-      "Si la búsqueda o los filtros no dejan ningún caso, la lista lo dice y ofrece «Quitar filtros» para volver a verlos todos. En este ejemplo, Pharos aún no tiene ningún caso sobre «exportar a pdf».",
+      "Si la búsqueda o los filtros no dejan ningún caso, la lista lo dice y ofrece «Quitar filtros» para volver a verlos todos. En este ejemplo, Liomar ordena la lista por «Título» y busca «exportar a pdf»: Pharos aún no tiene ningún caso sobre eso.",
     covers: ["state:cases-no-match"],
     focus: "button=Quitar filtros",
     run: async () => {
@@ -602,17 +602,18 @@ chapter("casos", () => {
   step("recorrer", {
     title: "Editar y recorrer los casos",
     caption:
-      "Con un caso abierto (aquí, PH-001, al que Liomar acaba de rellenar «Caso de uso mapeado»), la barra superior indica su posición en la lista («N de M») y sus flechas pasan al anterior o al siguiente respetando el filtro activo, para revisar varios casos seguidos sin volver a la lista. El orden del recorrido se fija al abrir el caso, aunque la lista cambie. A la derecha, el estado de guardado avisa si hay cambios sin guardar; si sales con cambios, Pharos pregunta antes de perderlos.",
+      "Con un caso abierto (aquí, PH-003 en la vista «Editor», al que Liomar acaba de rellenar «Caso de uso mapeado»), la barra superior indica su posición en la lista («N de M») y sus flechas pasan al anterior o al siguiente respetando el filtro y el orden de la lista (aquí, por «Título», como Liomar la dejó en el paso anterior), para revisar varios casos seguidos sin volver a la lista. El orden del recorrido se fija al abrir el caso, aunque la lista cambie. A la derecha, el estado de guardado avisa si hay cambios sin guardar; si sales con cambios, Pharos pregunta antes de perderlos.",
     covers: ["action:case-walk", "action:case-edit"],
     focus: ".tc-nav",
     run: async () => {
       await clickButton(C.list.clearFilters);
-      await $("a.cl-title*=Iniciar sesión").click();
+      await $(`a.cl-title*=${BASE_CASES[2].title}`).click();
       await expect($("#tc-title")).toBeDisplayed();
+      await editorView();
       // An edit that leaves the title as the later chapters know it.
-      await (await field("Caso de uso mapeado")).setValue("Entrar en Pharos");
+      await (await field("Caso de uso mapeado")).setValue("Crear proyectos");
       await saveCase();
-      // The shot: PH-001 with its «N de M» bar; the walk comes after it.
+      // The shot: PH-003 with its «N de M» bar; the walk comes after it.
       await pageTop();
     },
     after: async () => {
@@ -678,7 +679,7 @@ chapter("casos", () => {
   step("restaurar", {
     title: "Restaurar una revisión",
     caption:
-      "«Restaurar», junto a una revisión anterior, pregunta antes y carga su contenido en el editor, todavía sin guardar y con la misma clave: revísalo y, si es lo que buscabas, pulsa «Guardar». Se crea una revisión nueva y las anteriores se conservan, así que restaurar nunca borra el historial. Esc o «Cancelar» lo dejan todo como estaba.",
+      "«Restaurar», junto a una revisión anterior, pregunta antes y carga su contenido en el editor, todavía sin guardar y con la misma clave: revísalo y, si es lo que buscabas, pulsa «Guardar». Se crea una revisión nueva y las anteriores se conservan, así que restaurar nunca borra el historial. Esc o «Cancelar» lo dejan todo como estaba. En este ejemplo, Liomar restaura la revisión 1 y guarda: el título vuelve a «Rechazar credenciales no válidas».",
     covers: ["dialogs:src/modules/test-cases/ui/TestCaseEditor.tsx"],
     shot: false,
     run: async () => {

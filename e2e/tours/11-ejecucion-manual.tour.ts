@@ -319,7 +319,7 @@ chapter("ejecucion-manual", () => {
   step("cerrar-run", {
     title: "Cerrar el run",
     caption:
-      "«Cerrar run» avisa de lo que queda sin ejecutar y de los borradores sin guardar, y pide cómo se cierra en «Cerrar como»: «Completado» o «Cancelado» (cancelar descarta los borradores). Un run cerrado no admite intentos nuevos; «Reabrir» lo vuelve a abrir, salvo que su ciclo esté cerrado.",
+      "«Cerrar run» avisa de lo que queda sin ejecutar y de los borradores sin guardar (aquí no queda nada pendiente, así que no hay avisos), y pide cómo se cierra en «Cerrar como»: «Completado» o «Cancelado» (cancelar descarta los borradores). Un run cerrado no admite intentos nuevos; «Reabrir» lo vuelve a abrir, salvo que su ciclo esté cerrado.",
     covers: ["dialogs:src/modules/runs/ui/RunDetail.tsx"],
     shot: { element: D },
     run: async () => {

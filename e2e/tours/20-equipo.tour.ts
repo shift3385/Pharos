@@ -323,7 +323,7 @@ chapter("equipo", () => {
   step("plan-en-revision", {
     title: "Quién aprueba el plan",
     caption:
-      "El plan de «Pharos» llega al equipo «En revisión», tal como Liomar lo dejó (capítulos 5 y 17) (un borrador se envía con «Enviar a revisión»). En «Estado del plan», el «Aprobar versión N» de Liomar está en gris: lo aprueba un Test Manager que no sea el autor del plan. Jorge, como Test Analyst, puede revisarlo y pedir cambios, pero no aprobarlo.",
+      "El plan de «Pharos» llega al equipo «En revisión», tal como Liomar lo dejó en los capítulos 5 y 17 (un borrador se envía con «Enviar a revisión»). En «Estado del plan», el «Aprobar versión N» de Liomar está en gris: lo aprueba un Test Manager que no sea el autor del plan. Jorge, como Test Analyst, puede revisarlo y pedir cambios, pero no aprobarlo.",
     focus: '[data-testid="plan-review"]',
     run: async () => {
       await openPlanStep("roles");

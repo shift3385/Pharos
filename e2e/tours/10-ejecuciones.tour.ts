@@ -233,7 +233,7 @@ chapter("ejecuciones", () => {
     title: "Desvincular",
     covers: ["dialogs:src/modules/runs/ui/UnlinkedTray.tsx"],
     caption:
-      "«Desvincular» pregunta antes: sus resultados, pasados y futuros, dejan de contar para el caso y el test vuelve a la bandeja («Vínculo retirado.»). Los resultados no cambian; si te equivocas, vuelve a vincularlo. Esc o «Cancelar» lo dejan como estaba.",
+      "«Desvincular» pregunta antes: sus resultados, pasados y futuros, dejan de contar para el caso y el test vuelve a la bandeja («Vínculo retirado.»). Los resultados no cambian; si te equivocas, vuelve a vincularlo. Esc o «Cancelar» lo dejan como estaba. En este ejemplo, Liomar lo desvincula para ver cómo funciona: el test vuelve a la bandeja, y por eso los capítulos siguientes cuentan cuatro tests sin vincular.",
     shot: false,
     run: async () => {
       await $(`button*=${R.tray.unlink}`).click();

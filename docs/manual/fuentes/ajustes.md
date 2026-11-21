@@ -104,3 +104,11 @@ y las configuraciones Chrome y Edge en Windows 11.
 - Capítulo 13, «Trazabilidad»: el orden por riesgo y la cobertura ponderada.
 - [Glosario](../GLOSARIO.md): «Prefijo de ID de caso», «Campo personalizado»,
   «Configuración».
+
+### Antes del paso ajustes
+
+**Al preparar el proyecto.** Estos ajustes se hacen justo después de crear el
+proyecto (capítulo 4), antes de escribir el plan, los requisitos y los casos:
+por eso las capturas muestran «Pharos» todavía sin campos personalizados ni
+configuraciones, y Liomar crea aquí «Navegador», «Regresión crítica» y las
+configuraciones que los casos y los ciclos de los capítulos 8 y 9 ya usan.

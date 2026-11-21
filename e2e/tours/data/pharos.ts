@@ -175,7 +175,7 @@ export const CYCLE = {
     justifications: [
       {
         match: /crític/i,
-        text: "No se acepta: el defecto crítico del acceso impide entrar con credenciales válidas. Se corrige para la beta.2 y se repite la regresión; lo sigue Liomar, responsable de QA.",
+        text: "No se acepta: el defecto crítico del acceso deja fuera a cuentas con credenciales válidas (la de PH-001 y la tercera del dataset). Se corrige para la beta.2 y se repite la regresión; lo sigue Liomar, responsable de QA.",
       },
       {
         match: /cobertura/i,

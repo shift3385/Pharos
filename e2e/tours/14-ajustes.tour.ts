@@ -32,7 +32,7 @@ chapter("ajustes", () => {
   step("ajustes", {
     title: "Ajustes del proyecto: prefijo de los casos",
     caption:
-      "«Ajustes del proyecto», en el menú lateral, permite cambiar el nombre y cómo se numeran sus casos: el prefijo (en este ejemplo, «PH-», el que Liomar eligió al crear el proyecto en el capítulo 4) y el número de dígitos. La vista previa muestra cómo quedará el ID del siguiente caso (PH-001). Elige el prefijo pronto: es el que verás en informes, defectos y exportaciones. «Guardar» confirma cada cambio con «Ajustes actualizados».",
+      "«Ajustes del proyecto», en el menú lateral, permite cambiar el nombre y cómo se numeran sus casos: el prefijo (en este ejemplo, «PH-», el que Liomar eligió al crear el proyecto en el capítulo 4) y el número de dígitos. La vista previa muestra el formato de los IDs (PH-001, PH-002…). Elige el prefijo pronto: es el que verás en informes, defectos y exportaciones. «Guardar» confirma cada cambio con «Ajustes actualizados».",
     covers: ["section:settings"],
     focus: ".pj-settings__preview",
     run: async () => {
@@ -151,7 +151,7 @@ chapter("ajustes", () => {
   step("campo-archivar", {
     title: "Archivar un campo",
     caption:
-      "Un campo no se borra, para no perder lo que ya se escribió en él: se archiva desde su menú («Archivar») y sus valores se conservan. «Mostrar archivados» lo enseña y «Desarchivar» lo recupera. En este ejemplo, Liomar archiva «Sprint antiguo», un campo que ya no usa.",
+      "Un campo no se borra, para no perder lo que ya se escribió en él: se archiva desde su menú («Archivar») y sus valores se conservan. «Mostrar archivados» lo enseña y «Desarchivar» lo recupera. En este ejemplo, Liomar crea «Sprint antiguo» solo para probarlo y lo archiva: no lo necesita.",
     covers: ["action:custom-field-archive"],
     focus: '[data-testid="custom-fields-card"]',
     run: async () => {
