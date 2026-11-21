@@ -102,7 +102,7 @@ constante. Comparten `systemRules()` y `asData()` con los demás generadores.
  "reason":"si no hay ninguno, por qué"}
 ```
 
-### `req-synthesis@3` (común con la pista de imágenes)
+### `req-synthesis@4` (común con la pista de imágenes)
 
 - **Material:**
   - Los candidatos numerados (`C1…Cn`) con su base.
@@ -116,6 +116,9 @@ constante. Comparten `systemRules()` y `asData()` con los demás generadores.
   - Revisa los existentes entre sí: duplicados y redundantes.
   - Cada propuesta lleva un motivo de 20 palabras como máximo, que nombre el defecto o
     la evidencia.
+  - Cada texto es para quien lo revisa en la aplicación: cita el material por lo que
+    esa persona conoce y nunca nombra lo de la petición (candidatos, lotes, etiquetas
+    C1…, ids, «el modelo», «el prompt»). Ver la nota FIX-52 del ADR-0036.
   - No pongas claves nuevas.
 - **Esquema (zod):**
 
@@ -151,7 +154,7 @@ Contrato común con IA-18 (tipos, filtro, vista, aplicar y `AiSendNotice`): la n
 `contrato-propuestas-requisitos.md` (v2). Lo que sigue es lo que guarda IA-17.
 
 - `requirements.data` (JSON), con este contenido:
-  - `aiProvenance`: `{ requirement: AiProvenance & { prompt?: "req-synthesis@3" } }`;
+  - `aiProvenance`: `{ requirement: AiProvenance & { prompt?: "req-synthesis@4" } }`;
   - `sources`: `RequirementSource[]`.
 - La revisión humana usa `markReviewed`, como en los casos: con «Marcar revisado» en
   el formulario y después «Guardar».

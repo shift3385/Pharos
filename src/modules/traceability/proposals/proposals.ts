@@ -1,4 +1,4 @@
-// The answer of the common synthesis (`req-synthesis@3`), checked against
+// The answer of the common synthesis (`req-synthesis@4`), checked against
 // what was sent: the model is asked for all of this, but cannot be trusted to
 // (as `usableProposals` in IA-16). Pure — testable.
 
@@ -141,20 +141,74 @@ const priorityOf = (
 const LABEL = String.raw`C\d+`;
 const LABEL_LIST = String.raw`${LABEL}(?:\s*(?:,|y|e|and|&)\s*${LABEL})*`;
 
-/** The model's «Motivo» without the prompt's own candidate labels («C1»,
- *  «(C4)», «C3 y C7»), which mean nothing to the reader (FIX-51: «C1 no tiene
- *  cobertura»). A label in parentheses goes; one in the sentence becomes the
- *  candidate's title in «», or «una propuesta» when the number is unknown.
- *  `req-synthesis@3` already asks the model not to write them. */
+// The pipeline's word for what the material shows, as the model may still
+// write it (FIX-52: «la candidata dice «pendientes»»). The reader sees each
+// proposal's «Fuente», so it becomes «la fuente» / «the source». Spanish
+// determiners take the feminine of «fuente».
+const ES_SINGULAR: Record<string, string> = {
+  el: "la", un: "una", este: "esta", ese: "esa", del: "de la", al: "a la", otro: "otra",
+  la: "la", una: "una", esta: "esta", esa: "esa", otra: "otra", cada: "cada",
+  ningún: "ninguna", ninguna: "ninguna",
+};
+const ES_PLURAL: Record<string, string> = {
+  los: "las", unos: "unas", estos: "estas", esos: "esas", otros: "otras", varios: "varias",
+  ambos: "ambas", las: "las", unas: "unas", estas: "estas", esas: "esas", otras: "otras",
+  varias: "varias", ambas: "ambas", dos: "dos", tres: "tres", cuatro: "cuatro", cinco: "cinco",
+};
+const sameCase = (found: string, word: string) =>
+  /^\p{Lu}/u.test(found) ? word.charAt(0).toUpperCase() + word.slice(1) : word;
+const determiner = (table: Record<string, string>) =>
+  (found: string, det: string, noun: string) =>
+    sameCase(found, `${table[det.toLowerCase()]} ${noun}`);
+
+/** «candidata», «los candidatos», «candidate requirements»… → «fuente»,
+ *  «las fuentes», «sources». Left alone when the material itself speaks of
+ *  candidates (a recruiting product), where the word is the user's own. */
+function withoutPipelineWords(text: string, material: string): string {
+  const es = !/candidat[oa]/i.test(material);
+  const en = !/candidate/i.test(material);
+  let out = text;
+  if (es) {
+    out = out
+      .replace(
+        new RegExp(String.raw`\b(${Object.keys(ES_PLURAL).join("|")})\s+(?:requisitos\s+)?candidat[oa]s\b`, "gi"),
+        (m, det: string) => determiner(ES_PLURAL)(m, det, "fuentes"),
+      )
+      .replace(
+        new RegExp(String.raw`\b(${Object.keys(ES_SINGULAR).join("|")})\s+(?:requisito\s+)?candidat[oa]\b`, "gi"),
+        (m, det: string) => determiner(ES_SINGULAR)(m, det, "fuente"),
+      )
+      .replace(/\brequisitos\s+candidat[oa]s\b|\bcandidat[oa]s\b/gi, (m) => sameCase(m, "fuentes"))
+      .replace(/\brequisito\s+candidat[oa]\b|\bcandidat[oa]\b/gi, (m) => sameCase(m, "fuente"));
+  }
+  if (en) {
+    out = out
+      .replace(/\bcandidate\s+requirements\b|\bcandidates\b/gi, (m) => sameCase(m, "sources"))
+      .replace(/\bcandidate\s+requirement\b|\bcandidate\b/gi, (m) => sameCase(m, "source"));
+  }
+  return out;
+}
+
+/** The model's «Motivo» in the reader's words, a last line of defence behind
+ *  the prompt (`req-synthesis@4` asks for it already):
+ *  - the prompt's candidate labels («C1», «(C4)», «C3 y C7», FIX-51: «C1 no
+ *    tiene cobertura»): one in parentheses goes; one in the sentence becomes
+ *    the candidate's title in «», or nothing when the number is unknown;
+ *  - the pipeline's word «candidata/candidato», «candidate» (FIX-52: «la
+ *    candidata dice…») becomes «la fuente», «the source». */
 export function readableReason(
   reason: string,
-  candidates: readonly Pick<CandidateRequirement, "title">[],
+  candidates: readonly (Pick<CandidateRequirement, "title"> &
+    Partial<Pick<CandidateRequirement, "description">>)[],
 ): string {
   const titleOf = (label: string) => {
     const c = candidates[Number(label.slice(1)) - 1];
     return c ? `«${c.title.trim()}»` : "";
   };
-  return reason
+  const material = candidates
+    .map((c) => `${c.title} ${c.description ?? ""}`)
+    .join(" ");
+  return withoutPipelineWords(reason, material)
     .replace(new RegExp(String.raw`\s*\(\s*${LABEL_LIST}\s*\)`, "g"), "")
     .replace(new RegExp(String.raw`\b${LABEL_LIST}\b`, "g"), (list) => {
       const names = (list.match(new RegExp(LABEL, "g")) ?? []).map(titleOf).filter(Boolean);

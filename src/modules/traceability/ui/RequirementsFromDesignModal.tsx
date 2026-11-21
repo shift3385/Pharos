@@ -30,7 +30,7 @@ import type {
   CandidateRequirement,
   RequirementProposal,
 } from "../proposals/types";
-import { usableRequirementProposals } from "../proposals/proposals";
+import { readableReason, usableRequirementProposals } from "../proposals/proposals";
 import { RequirementProposalsReview } from "./RequirementProposalsReview";
 import { DesignSourceLabel } from "./DesignSourceLabel";
 import { useAuth } from "@modules/auth";
@@ -74,7 +74,7 @@ const ACCEPT =
  *  picks screenshots, sketches, PDF exports, an Excalidraw sketch or a Claude
  *  Design folder or ZIP; sees what will be sent, where, and its rough cost; and
  *  starts the analysis. Nothing leaves the machine before «Analizar». Two calls:
- *  the images are read once (`requirements-from-design@2`), then the common
+ *  the images are read once (`requirements-from-design@3`), then the common
  *  synthesis of IA-17 compares the candidates with the project's requirements,
  *  as partial material (nothing is removed for not being shown). The proposals
  *  open in the common review. */
@@ -226,7 +226,9 @@ export function RequirementsFromDesignModal({
         setExtracted(done);
         if (!done.candidates.length) {
           setEmptyReason(
-            value.reason ?? t("traceability.fromDesign.noCandidates"),
+            value.reason
+              ? readableReason(value.reason, [])
+              : t("traceability.fromDesign.noCandidates"),
           );
           return setPhase("empty");
         }
@@ -251,7 +253,9 @@ export function RequirementsFromDesignModal({
       );
       if (!proposals.length) {
         setEmptyReason(
-          r.value.reason ?? t("traceability.fromDesign.nothingToChange"),
+          r.value.reason
+            ? readableReason(r.value.reason, done.candidates)
+            : t("traceability.fromDesign.nothingToChange"),
         );
         return setPhase("empty");
       }
