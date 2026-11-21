@@ -328,9 +328,9 @@ chapter("plan", () => {
 
   step("cronograma-hito", {
     title: "Cronograma: un hito con el teclado",
-    caption: `Un hito es una fecha clave que no ocupa días, como una congelación de código o una publicación. Además de los dos que trajo el Excel, Liomar marca uno con el teclado: elige «Hito», lleva el foco al calendario con Tab, se mueve con las flechas hasta el ${dmy(PLAN_ON_SCREEN.milestone.date)} y pulsa Intro. El hito se marca con un rombo ámbar y se añade a la lista «Hitos», donde le da nombre, «${PLAN_ON_SCREEN.milestone.name}», y puede corregir la fecha. Con el ratón basta un clic en el día. En el calendario, ← → mueven el foco un día, ↑ ↓ una semana, Inicio y Fin van al principio y al final de la semana, RePág y AvPág cambian de mes, e Intro o Espacio marcan el día enfocado.`,
+    caption: `Un hito es una fecha clave que no ocupa días, como una congelación de código o una publicación. Además de los dos que trajo el Excel, Liomar marca uno con el teclado: elige «Hito», lleva el foco al calendario con Tab, se mueve con las flechas hasta el ${dmy(PLAN_ON_SCREEN.milestone.date)} y pulsa Intro. El hito se marca con un rombo ámbar en su día del calendario y se añade a la lista «Hitos», donde le da nombre, «${PLAN_ON_SCREEN.milestone.name}», y puede corregir la fecha. Con el ratón basta un clic en el día. En el calendario, ← → mueven el foco un día, ↑ ↓ una semana, Inicio y Fin van al principio y al final de la semana, RePág y AvPág cambian de mes, e Intro o Espacio marcan el día enfocado.`,
     covers: ["action:schedule-milestone", "keyboard:schedule-calendar"],
-    focus: [".tps-diamond", "section.tps-list"],
+    focus: "section.tps-list",
     run: async () => {
       await $(`.tps-seg__btn=${P.schedule.modeMilestone}`).click();
       const before = (await $$(`input.tps-name[aria-label^="${P.milestoneName}"]`)).length;

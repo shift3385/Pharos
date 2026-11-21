@@ -455,7 +455,8 @@ chapter("equipo", () => {
           const text = await byTestId("notifications-panel").getText();
           // The plan's review notices too (Jorge's Pharos posts them, as the
           // case's: people.ts jorgeNotifiesPlanReview).
-          const planTitle = (s: string) => tf(s, { actor: JORGE, title: "" }).trim();
+          // The text before the (quoted) title.
+          const planTitle = (s: string) => tf(s, { actor: JORGE, title: "@@" }).split("@@")[0].replace(/«$/, "").trim();
           return (
             text.includes(JORGE) &&
             text.includes(CASE.key) &&
