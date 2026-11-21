@@ -153,14 +153,14 @@ section{display:grid;gap:16px;min-width:0}
 
 <header class="mast">
   <div class="wrap">
-    <div class="eyebrow">Pharos · línea base, actualizada el 19 de noviembre de 2026</div>
+    <div class="eyebrow">Pharos · línea base, actualizada el 21 de noviembre de 2026</div>
     <h1>Lo hecho, lo que queda y <span class="beam">el rumbo</span> hasta 1.0</h1>
     <p>Inventario comprobado en el repositorio (ramas, PR y documentos), lo pendiente por cada área de trabajo de un QA manual o de automatización, y el rumbo hacia la ejecución autónoma, aprobado como rector del proyecto el 11 de noviembre.</p>
     <div class="facts">
       <div class="fact"><b>0.3.0</b><span>última versión publicada (17 nov)</span></div>
       <div class="fact"><b>0.4 · 0.5 · 0.6</b><span>betas <code>beta.1</code> publicadas, pendientes de tu validación</span></div>
-      <div class="fact"><b>0.6.0</b><span>completa: las 6 pistas en <code>main</code> y <code>v0.6.0-beta.1</code> publicada (19 nov)</span></div>
-      <div class="fact"><b>0.7.0</b><span>sin empezar: espera tu OK</span></div>
+      <div class="fact"><b>0.6.0</b><span>completa; <code>v0.6.0-beta.2</code> publicada (21 nov), con el manual nuevo y FIX-35 a FIX-52</span></div>
+      <div class="fact"><b>0.7.0</b><span>sin empezar: espera tu OK; ya tiene 6 ítems nuevos registrados</span></div>
       <div class="fact"><b>0</b><span>PR abiertos; tu app tiene lo mismo que <code>main</code></span></div>
     </div>
   </div>
@@ -171,9 +171,14 @@ section{display:grid;gap:16px;min-width:0}
 
 <section aria-labelledby="ahora">
   <h2 id="ahora">Estado ahora</h2>
-  <p class="lead">Actualizado el 19 de noviembre, tras publicar <code>v0.6.0-beta.1</code>. Lo anterior está en «Histórico», al final de esta sección. Esta página se vuelve a publicar con cada avance: PR, CI, decisiones y lo que integran las demás sesiones.</p>
+  <p class="lead">Actualizado el 21 de noviembre, tras publicar <code>v0.6.0-beta.2</code>. Lo anterior está en «Histórico», al final de esta sección. Esta página se vuelve a publicar con cada avance: PR, CI, decisiones y lo que integran las demás sesiones.</p>
   <div class="risks">
-    <div><b>0.6.0 «Núcleo y automatización conectada» · completa; <code>v0.6.0-beta.1</code> publicada (<a href="https://github.com/shift3385/Pharos/pull/152">#152</a>, 19 nov)</b><span>Las seis pistas están hechas y en <code>main</code> (<a href="https://github.com/shift3385/Pharos/pull/103">#103</a> a <a href="https://github.com/shift3385/Pharos/pull/151">#151</a>). La etiqueta apunta a <code>8a8a923</code>, con su instalador (run 44636987139). El release corrigió además una prueba del selector de servidor que dependía de la versión.<br>
+    <div><b>0.6.0 · <code>v0.6.0-beta.2</code> publicada (<a href="https://github.com/shift3385/Pharos/pull/173">#173</a>, 21 nov): manual nuevo y nueve rondas de correcciones</b><span>No añade funciones ni migraciones. El manual de usuario se rehízo para 0.6.0 recorriendo la app real, y cada recorrido destapó defectos que se corrigieron en nueve rondas: <a href="https://github.com/shift3385/Pharos/pull/154">#154</a> a <a href="https://github.com/shift3385/Pharos/pull/171">#171</a> (FIX-35 a FIX-52, NC-061 en adelante). El manual entró en <a href="https://github.com/shift3385/Pharos/pull/172">#172</a> junto a las rondas 3 a 9.<br>
+<b>Lo más visible:</b> las pantallas van sobre tarjetas y se leen con una imagen de fondo; las ayudas largas pasan a un «?»; «hoy» usa la hora local y no UTC; los registros llevan los nombres oficiales de las personas; claves, porcentajes y tamaños con formato español; sin avisos de conflicto sobrantes; el perfil ya no se cuela entre cuentas; las listas se recargan tras sincronizar; y las versiones de las instrucciones de IA suben según ADR-0036.<br>
+<b>El manual:</b> 21 capítulos y 387 pasos. Liomar prueba el propio Pharos, con Jorge L. Meneses Yero para el trabajo en equipo y una cuenta «Administrador» para administrar el servidor (NC-052 enmendada). Hay un capítulo nuevo, el 20, «Trabajo en equipo». Cada capítulo va directo a su tema con datos importados, y la puerta de calidad y el cierre del ciclo corren sobre resultados reales.<br>
+<b>Lecciones:</b> los recorridos son pruebas, así que los arreglos de la app y los recorridos tenían que entrar juntos; además, cada ejecución de un recorrido borra <code>e2e/results/tours</code>.<br>
+<b>Instalador:</b> run 44928232901, todavía en marcha al publicar esta página. La final de 0.6.0 sigue esperando tu validación; <a href="https://claude.ai/artifact/CXPbM9rzgzzra5Un4YgpfY">tu lista</a> tiene un grupo nuevo para la beta.2.</span></div>
+    <div><b>0.6.0 «Núcleo y automatización conectada» · completa; <code>v0.6.0-beta.1</code> (19 nov) (<a href="https://github.com/shift3385/Pharos/pull/152">#152</a>, 19 nov)</b><span>Las seis pistas están hechas y en <code>main</code> (<a href="https://github.com/shift3385/Pharos/pull/103">#103</a> a <a href="https://github.com/shift3385/Pharos/pull/151">#151</a>). La etiqueta apunta a <code>8a8a923</code>, con su instalador (run 44636987139). El release corrigió además una prueba del selector de servidor que dependía de la versión.<br>
 <b>N · Núcleo:</b> <code>pharos-core</code> y SQLite en disco cifrado por página, con WAL; la app, otra ventana y el CLI escriben a la vez (CORE-01, SEC-04, SEC-05).<br>
 <b>S · Sync y cuentas:</b> fusión de conflictos campo a campo, oplog compactado, lápidas de revisiones y desactivar cuentas (SYNC-02, SYNC-10, SYNC-11, SEC-12).<br>
 <b>A · API:</b> <code>/api/v1</code> con tokens, lectura de casos, ciclos, defectos y requisitos, webhooks firmados e imagen del servidor sin root (INT-02, INT-03, DEU-01). Contrato OpenAPI 1.3.0.<br>
@@ -184,7 +189,7 @@ section{display:grid;gap:16px;min-width:0}
 <b>Fuera de 0.6.0, opcionales:</b> F8 (<i>gates</i> en la CI) y SYNC-07b.</span></div>
     <div><b>0.5.0 «Equipo» · <code>v0.5.0-beta.1</code> publicada (<a href="https://github.com/shift3385/Pharos/pull/102">#102</a>, 18 nov)</b><span>Etiqueta e instalador en GitHub (run 44400388676). Las finales de 0.4.0 y 0.5.0 esperan tus validaciones: tu <a href="https://claude.ai/artifact/CXPbM9rzgzzra5Un4YgpfY">lista</a> ya tiene los grupos de 0.5.0, con el criterio de salida de dos personas en el mismo workspace.</span></div>
     <div><b>0.3.0 · publicada y en <code>main</code> (<a href="https://github.com/shift3385/Pharos/pull/80">PR #80</a>, <code>ad89973</code>)</b><span><code>v0.3.0</code> está en GitHub con su instalador (NSIS y MSI), y <code>main</code> tiene la sección <code>[0.3.0]</code> del CHANGELOG y la marca de «publicada». <code>main</code> sigue en <code>0.4.0-beta.1</code>. Lo que quedó sin validar va en la salida de 0.5.0.</span></div>
-    <div><b>Tu lista de validaciones</b><span><a href="https://claude.ai/artifact/CXPbM9rzgzzra5Un4YgpfY">La lista</a> cubre 0.3.0, 0.4.0, 0.5.0 y 0.6.0. 0.3.0 está validada y publicada. Para las finales de 0.4.0, 0.5.0 y 0.6.0 faltan sus grupos: entre ellos, dos personas en el mismo workspace (0.5.0) y el PR real con el CLI (0.6.0). Te queda también desinstalar la 0.2.0 antigua.</span></div>
+    <div><b>Tu lista de validaciones</b><span><a href="https://claude.ai/artifact/CXPbM9rzgzzra5Un4YgpfY">La lista</a> cubre 0.3.0, 0.4.0, 0.5.0 y 0.6.0, con un grupo nuevo para la beta.2. 0.3.0 está validada y publicada. Para las finales de 0.4.0, 0.5.0 y 0.6.0 faltan sus grupos: entre ellos, dos personas en el mismo workspace (0.5.0) y el PR real con el CLI (0.6.0). Te queda también desinstalar la 0.2.0 antigua.</span></div>
   </div>
   <details class="hist"><summary>Histórico del 11 al 18 de noviembre (18 entradas)</summary>
   <div class="risks">
@@ -212,12 +217,12 @@ section{display:grid;gap:16px;min-width:0}
 
 <section aria-labelledby="donde">
   <h2 id="donde">Dónde está cada cosa</h2>
-  <p class="lead">Comprobado el 19 de noviembre. La app que usas corre sobre <code>local/app-completa</code>, que tiene exactamente el mismo contenido que <code>origin/main</code> (<code>8a8a923</code>, versión <code>0.6.0-beta.1</code>). No hay ningún PR abierto.</p>
+  <p class="lead">Comprobado el 21 de noviembre. La app que usas corre sobre <code>local/app-completa</code>, que tiene exactamente el mismo contenido que <code>origin/main</code> (<code>1cdce40</code>, versión <code>0.6.0-beta.2</code>). No hay ningún PR abierto.</p>
   <div class="card" style="display:grid;gap:10px">
     <div class="legend">
-      <div class="leg"><i class="sw" style="background:var(--navy-700)"></i><p><b><code>origin/main</code> · 8a8a923</b><small>0.6.0 completa: las seis pistas y el release <a href="https://github.com/shift3385/Pharos/pull/152">#152</a></small></p></div>
-      <div class="leg"><i class="sw" style="background:var(--navy-500)"></i><p><b>Etiquetas</b><small><code>v0.3.0</code> (publicada) · <code>v0.4.0-beta.1</code>, <code>v0.5.0-beta.1</code> y <code>v0.6.0-beta.1</code> (por validar)</small></p></div>
-      <div class="leg"><i class="sw" style="background:var(--accent)"></i><p><b>Siguiente</b><small>0.7.0 «Ejecutar con una orden» no ha empezado: espera tu OK. Opcionales: F8 y SYNC-07b</small></p></div>
+      <div class="leg"><i class="sw" style="background:var(--navy-700)"></i><p><b><code>origin/main</code> · 1cdce40</b><small>0.6.0 completa: las seis pistas, el manual nuevo con FIX-35 a FIX-52 y el release <a href="https://github.com/shift3385/Pharos/pull/173">#173</a></small></p></div>
+      <div class="leg"><i class="sw" style="background:var(--navy-500)"></i><p><b>Etiquetas</b><small><code>v0.3.0</code> (publicada) · <code>v0.4.0-beta.1</code>, <code>v0.5.0-beta.1</code>, <code>v0.6.0-beta.1</code> y <code>v0.6.0-beta.2</code> (por validar)</small></p></div>
+      <div class="leg"><i class="sw" style="background:var(--accent)"></i><p><b>Siguiente</b><small>0.7.0 «Ejecutar con una orden» no ha empezado: espera tu OK. Ya tiene registrados RED-W8, DAT-05, CAS-04, DEF-02 y el resto de CAS-03 y PLN-09. Opcionales: F8 y SYNC-07b</small></p></div>
     </div>
   </div>
 </section>
@@ -301,7 +306,7 @@ section{display:grid;gap:16px;min-width:0}
 
 <section aria-labelledby="pendiente">
   <h2 id="pendiente">Lo que queda, por área de QA</h2>
-  <p class="lead">Prioridad según el estudio del estado del arte (P0 bloquea el hito, P1 paridad de mercado, P2 diferenciador, P3 escala). A la derecha, la versión de la propuesta; debajo, de qué depende. Los ítems marcados «Hecho» se comprobaron contra el ROADMAP y los PR el 19 de noviembre.</p>
+  <p class="lead">Prioridad según el estudio del estado del arte (P0 bloquea el hito, P1 paridad de mercado, P2 diferenciador, P3 escala). A la derecha, la versión de la propuesta; debajo, de qué depende. Los ítems marcados «Hecho» se comprobaron contra el ROADMAP y los PR el 21 de noviembre.</p>
   <div class="filters" role="group" aria-label="Filtrar por prioridad">
     <span>Mostrar</span>
     <button class="chip" type="button" id="f-all" data-f="all" aria-pressed="true">Todo</button>
@@ -314,6 +319,7 @@ section{display:grid;gap:16px;min-width:0}
 
     <div class="area"><div><h3><span class="n">01</span>Planificación y estrategia</h3><p class="have"><b>Hecho:</b> plan ISO/IEC/IEEE 29119-3 completo de 22 pasos con apartado de métricas (0.4.0), IA por paso, riesgos, cronograma, revisiones, PDF y .xlsx; estados por acciones y aprobación con roles y «Aprobación independiente» (0.5.0).</p></div>
       <ul>
+        <li data-p="p2"><span class="p p2">P2</span><span><b>Hecho en parte (FIX-49):</b> «Revisiones» del plan con la versión (vX.Y) de cada revisión; falta guardarla con la revisión <code>PLN-09</code></span><span class="ver">0.7</span></li>
         <li data-p="p2"><span class="p p2">P2</span><span><b>Hecho (0.4.0, #69).</b> Apartados ISO que faltan: entrada, suspensión y reanudación, supuestos, técnicas, <b>métricas</b>, formación, independencia, presupuesto <code>NC-023</code></span><span class="ver">0.4</span><span class="dep">Base de los criterios estructurados y del informe de cierre</span></li>
         <li data-p="p2"><span class="p p2">P2</span><span><b>Hecho (0.4.0, #69).</b> Aprobación con autor y fecha; editar devuelve a «Revisado» <code>NC-032</code></span><span class="ver">0.4</span><span class="dep">Aprobación con roles y «Aprobación independiente»: hecho en 0.5.0 (PLN-08)</span></li>
         <li data-p="p2"><span class="p p2">P2</span><span>Estimación del esfuerzo de prueba (no existe aún)</span><span class="ver">0.4</span></li>
@@ -331,6 +337,8 @@ section{display:grid;gap:16px;min-width:0}
 
     <div class="area"><div><h3><span class="n">03</span>Diseño de casos</h3><p class="have"><b>Hecho:</b> tres niveles de Gherkin, campos propios, revisiones inmutables y restaurar, casos desde requisito con IA y revisión crítica, <code>.feature</code> con <code>@TC</code>; revisión y aprobación por otra persona y baselines de suite (0.5.0).</p></div>
       <ul>
+        <li data-p="p2"><span class="p p2">P2</span><span>Importar casos desde .xlsx conservando todos los tipos de vínculo <code>CAS-04</code></span><span class="ver">0.7</span></li>
+        <li data-p="p2"><span class="p p2">P2</span><span><b>Hecho en parte (FIX-49):</b> editor Gherkin propio; falta que sangre al escribir <code>CAS-03</code></span><span class="ver">0.7</span></li>
         <li data-p="p1"><span class="p p1">P1</span><span><b>Hecho (0.6.0: #133, #134, #137, #142 y #150).</b> Pasos compartidos, parámetros y datasets <code>CAS-01</code></span><span class="ver">0.6</span></li>
         <li data-p="p1"><span class="p p1">P1</span><span><b>Hecho (0.5.0, #83).</b> Borrador → revisión → aprobado y baselines de suite <code>CAS-02</code></span><span class="ver">0.5</span></li>
         <li data-p="p1"><span class="p p1">P1</span><span>Duplicados con embeddings locales y <i>lint</i> de oráculo <code>IA-02</code> <code>IA-03</code></span><span class="ver">0.8</span></li>
@@ -357,6 +365,7 @@ section{display:grid;gap:16px;min-width:0}
 
     <div class="area"><div><h3><span class="n">06</span>Defectos</h3><p class="have"><b>Hecho:</b> entidad con severidad y prioridad, ciclo de vida fijo, «Desde un resultado» con evidencias, tablero, campos propios; densidad, escapes, tiempo de corrección y reapertura (0.4.0).</p></div>
       <ul>
+        <li data-p="p2"><span class="p p2">P2</span><span>Marca visible «Reabierto» e historial de reaperturas <code>DEF-02</code></span><span class="ver">0.7</span></li>
         <li data-p="p1"><span class="p p1">P1</span><span><b>Hecho (0.4.0, #70).</b> Métricas de defectos: densidad, tiempo de corrección, reapertura, escapes</span><span class="ver">0.4</span></li>
         <li data-p="p1"><span class="p p1">P1</span><span>Triage de fallos (flaky por historial y explicación con IA) <code>IA-04</code></span><span class="ver">0.9</span></li>
         <li data-p="p3"><span class="p p3">P3</span><span><b>Hecho (#67).</b> Eliminar desde cualquier vista <code>NC-015</code></span><span class="ver">0.3</span></li>
@@ -406,6 +415,8 @@ section{display:grid;gap:16px;min-width:0}
 
     <div class="area"><div><h3><span class="n">13</span>Administración y seguridad</h3><p class="have"><b>Hecho:</b> SQLite en disco cifrado por página, con WAL y escritura desde otros procesos (0.6.0); clave de recuperación; copia antes de migrar; evidencias con retención; contraseña de la cuenta con códigos, correo y administrador del servidor (0.5.0); desactivar cuentas (0.6.0); papelera.</p></div>
       <ul>
+        <li data-p="p2"><span class="p p2">P2</span><span>Papelera en la web: restaurar desde la web lo borrado en la cuenta <code>RED-W8</code></span><span class="ver">0.7</span></li>
+        <li data-p="p2"><span class="p p2">P2</span><span>Importar un proyecto entero desde su exportación <code>DAT-05</code></span><span class="ver">0.7</span></li>
         <li data-p="p1"><span class="p p1">P1</span><span><b>Hecho (0.5.0, #85).</b> Cambiar y recuperar la contraseña de la cuenta <code>SEC-08</code></span><span class="ver">0.5</span></li>
         <li data-p="p2"><span class="p p2">P2</span><span><b>Hecho (0.5.0, #84).</b> Papelera con restaurar; cadena de auditoría tras restaurar una copia <code>RED-W3</code> <code>AUD-01c</code></span><span class="ver">0.5</span></li>
         <li data-p="p2"><span class="p p2">P2</span><span>«Exportar diagnóstico» cuando la BD no abre; instalador firmado <code>UX-09</code></span><span class="ver">0.3–0.5</span></li>
@@ -443,8 +454,8 @@ section{display:grid;gap:16px;min-width:0}
     <div class="node past"><div class="v">0.3.0</div><div class="rail"><i class="dot"></i></div><div class="body"><h3>Diseño asistido y experiencia<span class="tag pub">Publicada</span></h3><p>Requisitos propuestos por la IA desde un proyecto y desde diseños, IA en el plan y en los casos, Inicio como pizarra, plan de 17 pasos, manual v2 y SQLite 3.54. <code>v0.3.0</code>, publicada el 17 de noviembre.</p><p class="exit"><b>Salió cuando:</b> todo estuvo en <code>main</code> por PR, el manual en verde, la IA validada con una clave real y las validaciones nativas hechas. Por tu decisión del 17 nov, Windows limpio, Ollama y lo que faltaba de IA-13/14, IA-16 e IA-18 pasaron a la salida de 0.5.0.</p></div></div>
     <div class="node"><div class="v">0.4.0</div><div class="rail"><i class="dot"></i></div><div class="body"><h3>Estrategia medible<span class="tag here">beta.1 publicada</span></h3><p>Plan ISO completo con métricas, aprobación con autor y fecha, criterios estructurados, <i>quality gate</i> al cerrar ciclo, tendencia y métricas clásicas, informe de cierre, vista de auditoría.</p><p class="exit"><b>Sale cuando:</b> cerrar un ciclo con un criterio en «No cumple» pide una justificación que queda en el informe de cierre, y el Inicio muestra la tendencia de los últimos ciclos.</p><p class="exit"><b>Estado:</b> <code>v0.4.0-beta.1</code> publicada (12 nov); la final espera tu validación en <a href="https://claude.ai/artifact/CXPbM9rzgzzra5Un4YgpfY">tu lista</a>.</p></div></div>
     <div class="node"><div class="v">0.5.0</div><div class="rail"><i class="dot"></i></div><div class="body"><h3>Equipo<small>antes 0.3.0</small><span class="tag here">beta.1 publicada</span></h3><p>Workspaces con roles, revisión y aprobación por otra persona, adjuntos sincronizados, contraseña, TLS y servidor configurable.</p><p class="exit"><b>Sale cuando:</b> dos personas trabajan en el mismo workspace con roles, un auditor no puede editar y otra persona aprueba un caso.</p><p class="exit"><b>Estado:</b> <code>v0.5.0-beta.1</code> publicada (18 nov); la final espera tu validación en <a href="https://claude.ai/artifact/CXPbM9rzgzzra5Un4YgpfY">tu lista</a>, incluida la de dos personas en el mismo workspace.</p></div></div>
-    <div class="node now"><div class="v">0.6.0</div><div class="rail"><i class="dot"></i></div><div class="body"><h3>Núcleo y automatización conectada<small>escalón a</small><span class="tag here">beta.1 publicada</span></h3><p><code>pharos-core</code>, cifrado por página, CLI, API con tokens, webhooks, SARIF, k6, axe y Allure, pasos compartidos.</p><p class="exit"><b>Sale cuando:</b> un PR de GitHub reporta JUnit, SARIF, k6 y axe a Pharos, y el CLI escribe con la app abierta.</p><p class="exit"><b>Estado:</b> completa; <code>v0.6.0-beta.1</code> publicada (19 nov). Los dos criterios de salida están probados en la CI y la final espera tu validación en <a href="https://claude.ai/artifact/CXPbM9rzgzzra5Un4YgpfY">tu lista</a>.</p></div></div>
-    <div class="node"><div class="v">0.7.0</div><div class="rail"><i class="dot"></i></div><div class="body"><h3>Ejecutar con una orden<small>escalón b</small><span class="tag">sin empezar · espera tu OK</span></h3><p>Runner local con «doctor» (Playwright, Karate o Bruno, k6, axe, Appium o FlaUI en Windows), <code>pharos run</code>, Gherkin de ida y vuelta, la suite de Pharos dentro de Pharos, disparo de CI, aislamiento.</p><p class="exit"><b>Sale cuando:</b> «Ejecutar @TC-001» en local deja un resultado vinculado y un plan dispara un workflow de GitHub.</p></div></div>
+    <div class="node now"><div class="v">0.6.0</div><div class="rail"><i class="dot"></i></div><div class="body"><h3>Núcleo y automatización conectada<small>escalón a</small><span class="tag here">beta.2 publicada</span></h3><p><code>pharos-core</code>, cifrado por página, CLI, API con tokens, webhooks, SARIF, k6, axe y Allure, pasos compartidos.</p><p class="exit"><b>Sale cuando:</b> un PR de GitHub reporta JUnit, SARIF, k6 y axe a Pharos, y el CLI escribe con la app abierta.</p><p class="exit"><b>Estado:</b> completa. <code>v0.6.0-beta.1</code> (19 nov) y <code>v0.6.0-beta.2</code> (21 nov), con el manual nuevo y FIX-35 a FIX-52. Los criterios de salida están probados en la CI y la final espera tu validación en <a href="https://claude.ai/artifact/CXPbM9rzgzzra5Un4YgpfY">tu lista</a>.</p></div></div>
+    <div class="node"><div class="v">0.7.0</div><div class="rail"><i class="dot"></i></div><div class="body"><h3>Ejecutar con una orden<small>escalón b</small><span class="tag">sin empezar · espera tu OK</span></h3><p>Runner local con «doctor» (Playwright, Karate o Bruno, k6, axe, Appium o FlaUI en Windows), <code>pharos run</code>, Gherkin de ida y vuelta, la suite de Pharos dentro de Pharos, disparo de CI, aislamiento.</p><p class="exit"><b>Sale cuando:</b> «Ejecutar @TC-001» en local deja un resultado vinculado y un plan dispara un workflow de GitHub.</p><p class="exit"><b>Registrado para 0.7.0 (20 nov, revisión del manual):</b> RED-W8 (Papelera en la web), DAT-05 (importar un proyecto entero), CAS-04 (importar casos conservando todos sus vínculos), DEF-02 (marca «Reabierto») y lo que falta de CAS-03 (editor Gherkin que sangra al escribir) y PLN-09 (versión del plan en cada revisión).</p></div></div>
     <div class="node"><div class="v">0.8.0</div><div class="rail"><i class="dot"></i></div><div class="body"><h3>Scripts generados por IA<small>escalón c</small></h3><p>La IA escribe el spec desde el caso, con procedencia visible; política de ejecución; <i>lint</i> de oráculo, duplicados, MCP local, modelo por tarea.</p><p class="exit"><b>Sale cuando:</b> un spec generado desde un caso se revisa, se ejecuta y queda vinculado, y Claude Code lee casos por MCP.</p></div></div>
     <div class="node"><div class="v">0.9.0</div><div class="rail"><i class="dot"></i></div><div class="body"><h3>Agente supervisado<small>escalón d</small></h3><p>El agente propone qué ejecutar, dónde y con qué framework; una persona aprueba; reparación de scripts rotos con aprobación; agente headless (Windows; Mac para iOS); triage de fallos.</p><p class="exit"><b>Sale cuando:</b> un plan del agente aprobado por una persona corre en el agente headless y cada acción queda auditada como <code>agent:&lt;id&gt;</code>.</p></div></div>
     <div class="node"><div class="v">0.10.0</div><div class="rail"><i class="dot"></i></div><div class="body"><h3>Campo y ecosistema<small>antes 0.4.0 y 0.8.0</small></h3><p>App Android de ejecución manual, sesiones exploratorias, adjuntos en la web, paquetes sin servidor, Jira, importar desde TestRail, paquetes EAA y ASVS.</p><p class="exit"><b>Sale cuando:</b> un caso ejecutado en el móvil aparece en el escritorio y el ciclo plan → CI → resultado → defecto llega a Jira.</p></div></div>
@@ -507,7 +518,7 @@ section{display:grid;gap:16px;min-width:0}
   </div>
 </section>
 
-<p class="foot">Fuentes: <code>git</code> y <code>gh</code> sobre el repositorio el 19 de noviembre de 2026 (la primera versión es del 11 de noviembre), <code>docs/ROADMAP.md</code> §2.1 y §2.2, <code>docs/manual/NC-log.md</code>, <code>files/PROGRESO.md</code> y el estudio «Pharos QA estado del arte». Documentación actualizada en los commits <code>a11e6db</code>, <code>ac7b885</code> y <code>3a734bf</code> (aprobación, ADR-0039) de la rama <code>claude/baseline-replan-e8959c</code>. Línea base anterior: 28 de octubre de 2026.</p>
+<p class="foot">Fuentes: <code>git</code> y <code>gh</code> sobre el repositorio el 21 de noviembre de 2026 (la primera versión es del 11 de noviembre), <code>docs/ROADMAP.md</code> §2.1 y §2.2, <code>docs/manual/NC-log.md</code>, <code>files/PROGRESO.md</code> y el estudio «Pharos QA estado del arte». Documentación actualizada en los commits <code>a11e6db</code>, <code>ac7b885</code> y <code>3a734bf</code> (aprobación, ADR-0039) de la rama <code>claude/baseline-replan-e8959c</code>. Línea base anterior: 28 de octubre de 2026.</p>
 
 </div>
 </main>

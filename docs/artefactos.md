@@ -22,7 +22,7 @@ Este índice recoge las páginas que se usan para seguir el proyecto y para apro
 
 | Nombre | Enlace | Para qué sirve | Fecha | Ítems y ADR | Copia |
 | --- | --- | --- | --- | --- | --- |
-| Línea base y rumbo | [artefacto](https://claude.ai/artifact/QmVMLpTA4RcXXWW5GqywVf) | Estado del proyecto que se publica con cada avance: PR, CI, decisiones, pistas y lo que falta para cada versión | 2026-11-19 | [ADR-0039](adr/0039-rumbo-hacia-la-ejecucion-autonoma.md), ROADMAP §2 y §7 | [linea-base-y-rumbo.html](bocetos/linea-base-y-rumbo.html) |
+| Línea base y rumbo | [artefacto](https://claude.ai/artifact/QmVMLpTA4RcXXWW5GqywVf) | Estado del proyecto que se publica con cada avance: PR, CI, decisiones, pistas y lo que falta para cada versión | 2026-11-21 | [ADR-0039](adr/0039-rumbo-hacia-la-ejecucion-autonoma.md), ROADMAP §2 y §7 | [linea-base-y-rumbo.html](bocetos/linea-base-y-rumbo.html) |
 | Validaciones de Pharos | [artefacto](https://claude.ai/artifact/CXPbM9rzgzzra5Un4YgpfY) | Lista en la que el usuario marca las validaciones nativas de 0.3.0 y 0.4.0. Un fallo se convierte en NC | 2026-11-17 | ROADMAP §6, [NC-log](manual/NC-log.md) | [validaciones.html](bocetos/validaciones.html), sin las marcas |
 | Capturas del rediseño | [artefacto](https://claude.ai/artifact/KsmYigvo8zuZH77ucFG5Tp) | Cada pantalla del rediseño a nueve anchos (de 320 a 1440 px), en tema claro y oscuro | 2026-11-12 | RED-F1, RED-V1 y RED-V3 | [capturas-rediseno.html](bocetos/capturas-rediseno.html), solo la página; las imágenes están en el artefacto |
 
