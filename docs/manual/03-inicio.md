@@ -26,25 +26,25 @@ el estado de ahora.
 
 ### 3.1. Tu Inicio
 
-«Inicio» es lo primero que ves al entrar: un resumen de todos tus proyectos abiertos. Arriba, en una sola línea, el saludo y la fecha; a la derecha, el periodo de los datos, «Nuevo proyecto» y el engranaje para personalizarlo. Debajo, cuatro tarjetas con las cifras clave y cuatro paneles: la ejecución por proyecto, las próximas pruebas, los criterios de salida y las ejecuciones diarias. Ningún panel se desplaza por dentro: una lista muestra las filas que caben y termina en «+N más». Se actualiza solo cada vez que llegan datos de otro equipo.
+«Inicio» es lo primero que ves al entrar: un resumen de todos tus proyectos abiertos. Arriba, en una sola línea, el saludo y la fecha; a la derecha, el periodo de los datos, «Nuevo proyecto» y el engranaje para personalizarlo. Debajo, cuatro tarjetas con las cifras clave y cinco paneles: la ejecución por proyecto, las próximas pruebas, los criterios de salida, las ejecuciones diarias y la tendencia de ciclos. Ningún panel se desplaza por dentro: una lista muestra las filas que caben y termina en «+N más». Se actualiza solo cuando llegan datos de otro equipo, de otra ventana de Pharos o del CLI `pharos`. Las capturas de este capítulo muestran el Inicio de Liomar con el trabajo de los capítulos siguientes ya hecho: los proyectos del capítulo 4 y, en «Pharos», su plan, sus casos, sus ejecuciones y sus defectos (capítulos 5 a 12).
 
 ![Tu Inicio](img/inicio/01-resumen.png)
 
 ### 3.2. Las cuatro cifras clave
 
-«Proyectos abiertos» (y cuántos cierran este mes), «Pruebas pendientes» (casos sin ejecutar o bloqueados, sobre el total), «Tasa de éxito» (casos que pasan sobre los casos ejecutados en el periodo; un caso con varios flujos, filas o configuraciones pasa solo si pasan todos, y los tests importados sin vincular no cuentan: si los hay, debajo pone «Además, N tests sin vincular», con enlace a Ejecuciones) y «Defectos abiertos» (con los críticos aparte, en rojo). Cada tarjeta es un enlace: lleva a la lista de proyectos o, si solo tienes un proyecto, directamente a sus casos, sus ejecuciones o sus defectos.
+«Proyectos abiertos» (y cuántos cierran este mes), «Pruebas pendientes» (casos sin ejecutar o bloqueados, sobre el total), «Tasa de éxito» (casos que pasan sobre los casos ejecutados en el periodo; un caso con varios flujos, filas o configuraciones pasa solo si pasan todos, y los tests importados sin vincular no cuentan: si los hay, la tarjeta lo dice con «+N sin vincular», un enlace a Ejecuciones) y «Defectos abiertos» (con los críticos aparte, en rojo). Cada tarjeta es un enlace (al pasar el ratón se resalta, como «Tasa de éxito» en la captura): lleva a la lista de proyectos o, si solo tienes un proyecto, directamente a sus casos, sus ejecuciones o sus defectos.
 
 ![Las cuatro cifras clave](img/inicio/02-tarjetas.png)
 
 ### 3.3. El periodo de los datos
 
-El selector de periodo («Últimos 14 días», por defecto) decide qué días cuentan para la tasa de éxito y para «Ejecuciones diarias»: hoy, los últimos 7, 14 o 30 días, o el mes en curso. Las demás cifras son el estado actual de cada proyecto. Pharos recuerda el periodo en este equipo. Las opciones por ciclo y el rango personalizado llegan en una próxima versión.
+El selector de periodo («Últimos 14 días», por defecto) decide qué días cuentan para la tasa de éxito y para «Ejecuciones diarias»: hoy, los últimos 7, 14 o 30 días, o el mes en curso. Las demás cifras son el estado actual de cada proyecto. Pharos recuerda el periodo en este equipo. Las opciones por ciclo y el rango personalizado, en gris con la etiqueta «Próximamente», llegan en una próxima versión.
 
 ![El periodo de los datos](img/inicio/03-periodo.png)
 
 ### 3.4. Comparar con el periodo anterior
 
-Al final del menú del periodo, «Comparar con el periodo anterior» enfrenta el periodo con otro de la misma duración justo antes: los 7 días con los 7 anteriores, «Hoy» con ayer y «Este mes» con los mismos días antes del día 1; debajo del interruptor ves sus fechas. Encendido, el botón del periodo dice «vs anterior», la «Tasa de éxito» muestra la diferencia en puntos (▲ en verde si sube, ▼ en rojo si baja) y «Ejecuciones diarias» suma una línea gris de puntos con el total de cada día del periodo anterior, su diferencia en % junto al total y una columna «Anterior» en «Ver los datos». Las demás cifras son el estado de ahora y no cambian. El interruptor no cierra el menú, y Pharos lo recuerda en este equipo, como el periodo.
+Al final del menú del periodo, «Comparar con el periodo anterior» enfrenta el periodo con otro de la misma duración justo antes: los 7 días con los 7 anteriores, «Hoy» con ayer y «Este mes» con los mismos días antes del día 1; debajo del interruptor ves sus fechas. Encendido, el botón del periodo dice «vs anterior», la «Tasa de éxito» muestra la diferencia en puntos (▲ en verde si sube, ▼ en rojo si baja) y «Ejecuciones diarias» suma una línea gris de puntos con el total de cada día del periodo anterior, su diferencia en % junto al total y una columna «Anterior» en «Ver los datos». Las demás cifras son el estado de ahora y no cambian. El interruptor no cierra el menú (Esc lo cierra), y Pharos lo recuerda en este equipo, como el periodo. En este ejemplo la semana anterior no tiene datos: cada intento lleva la fecha en que entró en Pharos (el de un informe importado, la de la importación) y todos son de esta semana. Los dos paneles lo dicen con «sin datos antes» y la línea gris queda en cero.
 
 ![Comparar con el periodo anterior](img/inicio/04-comparar.png)
 
@@ -56,13 +56,13 @@ Una barra por proyecto abierto con el último resultado de cada uno de sus casos
 
 ### 3.6. La ayuda de cada panel
 
-Junto al título de cada panel, el botón «?» explica qué muestra: «Ejecución por proyecto», el último resultado de cada caso en cada proyecto abierto; «Próximas pruebas», qué ejecutar según su último resultado y por prioridad; «Criterios de salida», los definidos en el plan de pruebas; y «Ejecuciones diarias», qué cuenta como intento. Se abre al pasar el ratón, con un clic o con el teclado (Tab), y se cierra con Esc.
+Junto al título de cada panel, el botón «?» explica qué muestra: «Ejecución por proyecto», el último resultado de cada caso en cada proyecto abierto; «Próximas pruebas», qué ejecutar según su último resultado y por prioridad; «Criterios de salida», los definidos en el plan de pruebas; «Ejecuciones diarias», qué cuenta como intento; y «Tendencia de ciclos», qué métrica sigue. Se abre al pasar el ratón, con un clic o con el teclado (Tab), y se cierra con Esc.
 
 ![La ayuda de cada panel](img/inicio/06-ayuda.png)
 
 ### 3.7. Criterios de salida
 
-«Criterios de salida» evalúa los criterios de cierre del plan de pruebas de un proyecto (capítulo 5): el anillo da el porcentaje ejecutado y cada criterio dice «Cumple», «No cumple» o «Sin datos» (los que Pharos no puede medir solo). El titular resume si el proyecto está «Listo para cerrar» o si «Hay criterios que no se cumplen». Si el plan no define criterios, se usan los de por defecto; «Abrir el plan» lleva a él.
+«Criterios de salida» evalúa los criterios de cierre del plan de pruebas de un proyecto (capítulo 5): el anillo da el porcentaje ejecutado y cada criterio dice «Cumple», «No cumple» o «Sin datos» (los que Pharos no puede medir solo). El titular resume si el proyecto está «Listo para cerrar» o si «Hay criterios que no se cumplen». Son cifras del proyecto entero, no de un ciclo: en «Pharos», 3 de sus 5 casos tienen resultado (PH-003 y PH-004 no se han ejecutado), por eso el anillo marca menos que el cierre del ciclo «Regresión 0.6.0» (capítulo 9), que solo cuenta PH-001 y PH-002. Si el plan no define criterios, se usan los de por defecto; «Abrir el plan» lleva a él.
 
 ![Criterios de salida](img/inicio/07-criterios.png)
 
@@ -92,7 +92,7 @@ Con «Últimos 30 días» el eje de fechas solo rotula el primer día, uno por s
 
 ### 3.12. Tendencia de ciclos
 
-«Tendencia de ciclos» sigue una métrica a lo largo de los últimos ciclos cerrados del proyecto (con las cifras congeladas al cerrarlos) y del ciclo activo, en vivo y punteado: la tasa de éxito, la densidad de defectos, los escapes, el tiempo de corrección, la reapertura o el flaky. La línea verde es el objetivo del plan y el punto bajo cada ciclo, su veredicto (Go, Go con riesgos o No-go). Si una métrica empeora dos ciclos seguidos o se sale del objetivo, el gadget lo avisa. Mientras ningún ciclo se haya cerrado con «Cerrar ciclo…» (capítulo 9), dice cómo empezar.
+«Tendencia de ciclos» sigue una métrica a lo largo de los últimos ciclos cerrados del proyecto (con las cifras congeladas al cerrarlos) y del ciclo activo, en vivo y punteado: la tasa de éxito, la densidad de defectos, los escapes, el tiempo de corrección, la reapertura o el flaky. La línea verde es el objetivo del plan y el punto bajo cada ciclo, su veredicto (Go, Go con riesgos o No-go). Si una métrica empeora dos ciclos seguidos o se sale del objetivo, el gadget lo avisa. El selector de la cabecera elige el proyecto. Aquí, «Pharos» tiene un ciclo cerrado, la «Regresión 0.6.0» del capítulo 9 (CYC-001): su tasa de éxito, 50 %, con el punto rojo de su «No-go» debajo; a la derecha, «Último cerrado» con su cifra y el aviso «fuera del objetivo», porque el plan pide al menos un 90 %. La línea se completa a medida que se cierran más ciclos con «Cerrar ciclo…». Un proyecto sin ningún ciclo dice cómo empezar.
 
 ![Tendencia de ciclos](img/inicio/12-tendencia.png)
 
@@ -116,7 +116,7 @@ Con el teclado: pasa de un gadget a otro con Tab, muévelo con las flechas y cam
 
 ### 3.16. Ocultar un gadget
 
-El ojo tachado de cada gadget lo oculta y los demás suben a ocupar su sitio. Aquí se ha ocultado «Criterios de salida». Los gadgets ocultos no se pierden: se cuentan en «Gadgets ocultos», arriba.
+El ojo tachado de cada gadget lo oculta. Aquí se ha ocultado «Criterios de salida»: su sitio queda libre, y un gadget de debajo sube a ocuparlo solo si cabe en él (si no, puedes llevar otro allí o agrandarlo). Los gadgets ocultos no se pierden: se cuentan en «Gadgets ocultos», arriba.
 
 ![Ocultar un gadget](img/inicio/16-ocultar.png)
 
@@ -244,7 +244,8 @@ salieras desde otra pantalla.
 - **La tasa de éxito dice «—» y «Sin ejecuciones».** En el periodo elegido no
   hay resultados. Amplía el periodo («Últimos 30 días») o ejecuta casos
   (capítulos 10 y 11).
-- **Bajo la tasa de éxito pone «Además, N tests sin vincular».** Son tests
+- **La tasa de éxito dice «+N sin vincular»** (en el móvil, «Además, N tests
+  sin vincular»). Son tests
   importados que aún esperan en la bandeja «Sin vincular» (capítulo 10). La
   tasa, como el progreso de cada proyecto, cuenta casos, así que no los
   incluye. Vincúlalos a su caso desde «Ejecuciones» y entrarán en la tasa.

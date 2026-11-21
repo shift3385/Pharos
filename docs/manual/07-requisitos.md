@@ -33,9 +33,14 @@ En las formas con IA, la IA solo **propone**. Tú revisas cada propuesta y
 decides qué se aplica.
 
 En este manual, Liomar escribe a mano el primer requisito de Pharos («Iniciar
-sesión con correo y contraseña») e importa los demás de un CSV: crear un
+sesión con correo y contraseña») e importa los otros once de un CSV: crear un
 proyecto, el historial del plan, importar JUnit, exportar la matriz, trabajar
-sin conexión e imprimir el plan, este último descartado después.
+sin conexión, imprimir el plan (descartado después, porque queda fuera de la
+versión), ejecutar paso a paso con evidencias, registrar un defecto, la
+aprobación independiente, recuperar la cuenta y los tokens de CI.
+
+En un workspace compartido, escriben requisitos el Test Manager, el Test
+Analyst y el Product Owner; un Viewer solo los ve (capítulo 20).
 
 ## Paso a paso
 
@@ -59,7 +64,7 @@ Si tus requisitos ya están en una hoja de cálculo, «Importar › Importar req
 
 ### 7.4. La lista de requisitos
 
-«Importar 6» los añade. Cada fila muestra el ID, el requisito con su descripción, la prioridad, cuántos casos lo enlazan y si está «Cubierto» o «Sin cubrir» (las filas sin cubrir se tiñen, para verlas enseguida). A la derecha, ✨ genera casos con IA desde ese requisito (capítulo 17) y la papelera lo elimina. Haz clic en el título para editarlo.
+«Importar 11» añade los once requisitos del CSV, de REQ-002 a REQ-012, y al importar un aviso lo confirma («Importados: 11 nuevos, 0 actualizados»); la captura muestra los primeros. Cada fila muestra el ID, el requisito con su descripción, la prioridad, cuántos casos lo enlazan y si está «Cubierto» o «Sin cubrir» (las filas sin cubrir se tiñen, para verlas enseguida). A la derecha, ✨ genera casos con IA desde ese requisito (capítulo 17) y la papelera lo elimina. Haz clic en el título para editarlo.
 
 ![La lista de requisitos](img/requisitos/04-requisitos.png)
 
@@ -87,13 +92,13 @@ El menú «Importar» reúne las tres formas de traer requisitos: el CSV y dos c
 
 ### 7.9. Eliminar un requisito
 
-La papelera de la fila pide confirmación (en este ejemplo, REQ-007, que queda fuera de la versión). El ID eliminado no se reutiliza: los casos que lo enlazaban lo muestran como «Requisito desconocido» y aparecen en los huecos de la trazabilidad. Esc no cierra este aviso: solo «Cancelar».
+La papelera de la fila pide confirmación (en este ejemplo, REQ-007, que queda fuera de la versión). El ID eliminado no se reutiliza: los casos que lo enlazaban lo muestran como «requisito desconocido» y aparecen en los huecos de la trazabilidad. En la app de escritorio, el requisito queda en la Papelera (Administración › General, capítulo 15) y «Restaurar» lo devuelve con su mismo ID y su historial. Esc no cierra este aviso: solo «Cancelar».
 
 ![Eliminar un requisito](img/requisitos/09-eliminar-requisito.png)
 
 ### 7.10. Requisito eliminado
 
-Al confirmar aparece el aviso «REQ-007 eliminado» y la lista deja de mostrarlo.
+Al confirmar aparece el aviso «REQ-007 eliminado» y la lista deja de mostrarlo; mientras esté en la Papelera, se puede restaurar.
 
 ### 7.11. Los requisitos en el móvil
 
@@ -105,9 +110,10 @@ En el móvil, cada requisito es una tarjeta con su ID, su título, su prioridad,
 
 Estos flujos necesitan un motor de IA configurado (capítulo 15). Sin él, sus
 entradas del menú y el botón ✨ aparecen en gris (apartado «Más formas de traer
-requisitos: la IA»). El capítulo 17 los muestra paso a paso con otro producto, la
-Billetera SafeGuard: «Las tres formas de traer requisitos», «Requisitos desde un
-proyecto» y «Requisitos desde diseños».
+requisitos: la IA»). El capítulo 17 los muestra paso a paso con material de Pharos:
+la documentación y el código de su «API de sincronización» y un boceto del
+panel de notificaciones («Las tres formas de traer requisitos», «Requisitos
+desde un proyecto» y «Requisitos desde diseños»).
 
 - **✨ Generar casos desde un requisito** (en cada fila, y en la matriz):
   - La IA propone escenarios con su Gherkin.
@@ -146,8 +152,9 @@ proyecto» y «Requisitos desde diseños».
   - Cada propuesta lleva su motivo y su fuente: el archivo y las líneas, o la
     imagen con la zona marcada.
   - Los criterios de aceptación van uno por bloque. Los que siguen Gherkin se
-    leen una palabra clave por línea, en negrita (Given, When, Then, And, But),
-    y el texto sigue en minúscula: «Given el campo vacío».
+    leen una palabra clave por línea, en negrita, en el idioma del requisito
+    (en español, Dado, Cuando, Entonces, Y, Pero), y el texto sigue en
+    minúscula: «Dado el campo vacío».
   - «Escrito en la fuente» significa que el texto está ahí. «Inferido» es una
     deducción, que llega con sus supuestos y sus preguntas abiertas, para que
     la confirmes. Lo deducido solo del código puede ser un defecto: confírmalo
@@ -183,6 +190,9 @@ proyecto» y «Requisitos desde diseños».
 - **«No se pudo guardar el requisito».** Vuelve a pulsar «Guardar»; en la web,
   comprueba la conexión.
 - **«No se pudo cargar la trazabilidad.»** Pulsa «Reintentar».
+- **Eliminé un requisito por error.** En la app de escritorio está en la
+  Papelera de «Administración › General» (capítulo 15): «Restaurar» lo
+  devuelve con su mismo ID y su historial.
 - **Las entradas de IA y ✨ están en gris.** Configura un motor de IA en
   Administración (capítulo 15). «Requisitos desde un proyecto» no aparece en la
   versión web.

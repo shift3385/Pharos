@@ -22,10 +22,10 @@ Estos atajos funcionan en cualquier pantalla. Cada capítulo explica los suyos.
 
 | Tecla | Qué hace |
 | --- | --- |
-| Ctrl+K (⌘K en Mac) | Abre la búsqueda. No actúa si hay un diálogo abierto |
+| Ctrl+K (⌘K en Mac) | Abre el panel de búsqueda (la búsqueda global llega en una próxima versión). No actúa si hay un diálogo abierto |
 | Tab / Mayús+Tab | Pasa al control siguiente o al anterior. El primer Tab de cada pantalla muestra «Saltar al contenido», que lleva directamente al contenido sin recorrer el menú |
 | Intro o Espacio | Pulsa el botón o el enlace enfocado |
-| Esc | Cierra el menú, panel o diálogo abierto y devuelve el foco al botón que lo abrió. En una confirmación normal equivale a «Cancelar»; las confirmaciones críticas (las que borran algo guardado para siempre) solo responden a sus botones |
+| Esc | Cierra el menú, panel o diálogo abierto y devuelve el foco al botón que lo abrió. En una confirmación normal equivale a «Cancelar»; las confirmaciones críticas (las que borran algo guardado) solo responden a sus botones |
 | ↑ ↓ | Recorren las opciones de un menú (también el selector de proyecto) |
 | Inicio / Fin | Saltan a la primera o a la última opción de un menú |
 | ← → | Cambian de pestaña en las pestañas y en los controles segmentados (por ejemplo, Lista / Tablero) |
@@ -218,7 +218,7 @@ funcionan «?» y Ctrl+Mayús+N.
 | Tecla | Dónde | Qué hace |
 | --- | --- | --- |
 | Tab | Retención por proyecto | Recorre los tipos y su plazo |
-| ↑ ↓ | Selector de plazo de un tipo | Cambian entre «Por defecto», «Siempre» y «Días…» |
+| ↑ ↓ | Selector de plazo de un tipo | Cambian entre «Por defecto», «Siempre» y «Número de días» |
 | Esc | Confirmación de acortar la retención o de borrar huérfanos | No la cierra: usa «Cancelar» |
 
 ### 17. Asistente de IA
@@ -227,6 +227,7 @@ funcionan «?» y Ctrl+Mayús+N.
 | --- | --- | --- |
 | Tab, Intro | Botón ✨ de un campo o de una lista | Lo alcanza y pide la propuesta |
 | Espacio | Casilla de una propuesta | La marca o la desmarca |
+| Ctrl+V | Material de «Requisitos desde diseños» | Pega una captura |
 | Esc | Diálogos de propuestas («Generar casos», «Sugerir casos») | Los cierran sin crear nada |
 
 ### 18. Pantallas estrechas y móvil
@@ -244,7 +245,14 @@ funcionan «?» y Ctrl+Mayús+N.
 | Tab, Intro | Botones de «Algo salió mal» | Llegan a «Reintentar», «Recargar» o «Exportar diagnóstico» y los pulsan |
 | Intro | Campo «Clave de recuperación» | Abre los datos con la clave |
 
-### 20. Integraciones
+### 20. Trabajo en equipo
+
+| Tecla | Dónde | Qué hace |
+| --- | --- | --- |
+| Esc | «Crear workspace», «Compartir…» e «Invitar» | Cierra el diálogo sin cambiar nada |
+| Esc | «Invitación creada» | Cierra el diálogo: el código ya no se vuelve a ver |
+
+### 21. Integraciones
 
 | Tecla | Dónde | Qué hace |
 | --- | --- | --- |

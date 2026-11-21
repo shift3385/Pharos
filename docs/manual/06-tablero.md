@@ -26,13 +26,13 @@ El «Tablero» organiza el trabajo del equipo de pruebas que no es un caso ni un
 
 ### 6.2. Nueva tarjeta
 
-«Nueva tarjeta», en la cabecera, abre el editor: el tipo (tarea, defecto o datos de prueba), la prioridad (baja, media, alta o crítica), el título, que es obligatorio, una descripción y etiquetas. En este ejemplo, Liomar prepara las cuentas de prueba de Pharos: «Preparar cuentas de prueba sintéticas», de tipo datos de prueba y prioridad alta. «Guardar» la deja en Backlog; una vez guardada, admite adjuntos.
+«Nueva tarjeta», en la cabecera, abre el editor: el tipo (tarea o datos de prueba), la prioridad (baja, media, alta o crítica), el título, que es obligatorio, una descripción y etiquetas. En este ejemplo, Liomar prepara las cuentas de prueba de Pharos: «Preparar cuentas de prueba sintéticas», de tipo datos de prueba y prioridad alta, con la etiqueta «0.6.0» de la versión que prueba. «Guardar» la deja en Backlog; una vez guardada, admite adjuntos. Los defectos no van aquí: tienen su propia sección (capítulo 12).
 
 ![Nueva tarjeta](img/tablero/02-nueva-tarjeta.png)
 
 ### 6.3. Adjuntar archivos a una tarjeta
 
-Con la tarjeta guardada, «Adjuntar archivos», en «Adjuntos», acepta archivos de hasta 200 MB (en este ejemplo, «cuentas-de-prueba.csv» con las cuentas del equipo). Se guardan cifrados en este equipo; un clic en el nombre lo guarda en tu carpeta de descarga, y la papelera («Quitar: nombre del archivo») lo quita. Los adjuntos solo están en la app de escritorio.
+Con la tarjeta guardada, «Adjuntar archivos», en «Adjuntos», acepta archivos de hasta 200 MB (en este ejemplo, «cuentas-de-prueba.csv» con las cuentas del equipo). Se guardan cifrados y llegan a tus otros equipos y a los miembros del workspace al sincronizar; un archivo que aún no ha llegado lo dice al abrirlo. Un clic en el nombre lo guarda en tu carpeta de descarga, y la papelera («Quitar: nombre del archivo») lo quita. Los adjuntos se añaden desde la app de escritorio.
 
 ![Adjuntar archivos a una tarjeta](img/tablero/03-adjunto.png)
 
@@ -62,23 +62,23 @@ Cuando una tarea avanza, arrastra su tarjeta con el ratón a la columna que corr
 
 ### 6.8. Filtrar y buscar tarjetas
 
-Con muchas tarjetas, filtra por tipo («Todas», «Tareas», «Datos de prueba», con su número) y por prioridad, o busca por título, clave o etiqueta sin preocuparte por los acentos (en este ejemplo, «regresion» deja una sola tarjeta). Los filtros solo cambian lo que ves: las tarjetas siguen en su columna.
+Con muchas tarjetas, filtra por tipo («Todas», «Tareas», «Datos de prueba», con su número) y por prioridad, o busca por título o etiqueta sin preocuparte por los acentos (en este ejemplo, «regresion» deja una sola tarjeta). Los filtros solo cambian lo que ves: las tarjetas siguen en su columna.
 
 ![Filtrar y buscar tarjetas](img/tablero/08-filtrar.png)
 
 ### 6.9. Eliminar una tarjeta
 
-La papelera de la tarjeta pide confirmación («¿Eliminar la tarjeta?») antes de borrarla con sus adjuntos. Esc no cierra este aviso: solo «Cancelar».
+En este ejemplo, Liomar elimina «Automatizar la regresión de acceso»: esa automatización queda fuera del alcance de la 0.6.0 y se planificará con la versión siguiente. La papelera de la tarjeta pide confirmación («¿Eliminar la tarjeta?») antes de borrarla con sus adjuntos. Esc no cierra este aviso: solo «Cancelar». En la app de escritorio, la tarjeta eliminada queda en la Papelera (Administración › General, capítulo 15) y se puede restaurar hasta que se cumple su plazo.
 
 ![Eliminar una tarjeta](img/tablero/09-eliminar.png)
 
 ### 6.10. Tarjeta eliminada
 
-Al confirmar, la tarjeta desaparece del tablero.
+Al confirmar, la tarjeta desaparece del tablero y pasa a la Papelera.
 
 ### 6.11. El tablero en el móvil
 
-En el móvil, las columnas se recorren deslizando de lado y los filtros (tipo, búsqueda y prioridad) quedan arriba; el menú de prioridad se abre como una hoja desde abajo. «Nueva tarjeta» está en la fila de botones de la sección.
+En el móvil, las columnas se recorren deslizando de lado y los filtros (tipo, búsqueda y prioridad) quedan arriba. «Nueva tarjeta» está en la fila de botones de la sección. El menú de prioridad, como todas las listas de Pharos en el móvil, se abre como una hoja desde abajo: elige con un toque o ciérrala deslizándola hacia abajo.
 
 <img src="img/tablero/11-movil.png" alt="El tablero en el móvil" width="280">
 
@@ -105,8 +105,16 @@ En el móvil, las columnas se recorren deslizando de lado y los filtros (tipo, b
   una tarjeta ya guardada: guárdala y vuelve a abrirla.
 - **«… supera el límite de 200 MB.»** Ese archivo no se adjunta. Comprímelo o
   enlaza dónde está en la descripción.
-- **«Por ahora solo está disponible en la app de escritorio.»** En la versión
-  web, las tarjetas no admiten adjuntos.
+- **«Por ahora solo está disponible en la app de escritorio.»** Los adjuntos
+  se añaden desde la app de escritorio.
+- **«Este archivo no está en este equipo…».** El adjunto aún no ha llegado de
+  otro equipo del workspace: se vuelve a intentar en la siguiente
+  sincronización.
+- **No puedo crear tarjetas ni adjuntar archivos.** Tu rol en ese workspace es
+  Viewer: solo puedes ver el tablero (capítulo 20).
+- **Eliminé una tarjeta por error.** En la app de escritorio está en la
+  Papelera de «Administración › General» (capítulo 15): «Restaurar» la
+  devuelve con sus adjuntos.
 - **No encuentro una tarjeta.** Revisa los filtros: el tipo, la prioridad y el
   buscador solo cambian lo que ves. Elige «Todas», desmarca las prioridades y
   borra la búsqueda.
@@ -125,12 +133,13 @@ En el móvil, las columnas se recorren deslizando de lado y los filtros (tipo, b
 ## Consejos
 
 - Usa las **etiquetas** para agrupar tarjetas de una misma versión o área
-  (por ejemplo, «0.3.0» o «sincronización»): el buscador también busca en
+  (por ejemplo, «0.6.0» o «sincronización»): el buscador también busca en
   ellas.
 - Pon los **datos de prueba** en tarjetas de tipo «Datos de prueba» con su
   archivo adjunto: así el equipo sabe dónde están y quién los preparó.
-- Los adjuntos se guardan cifrados en el equipo, junto con los datos de
-  Pharos: inclúyelos en tus copias (capítulo 16, «Evidencias»).
+- Los adjuntos se guardan cifrados, junto con los datos de Pharos, y llegan a
+  los demás equipos de tu workspace al sincronizar: inclúyelos en tus copias
+  (capítulo 16, «Evidencias»).
 
 ## Véase también
 

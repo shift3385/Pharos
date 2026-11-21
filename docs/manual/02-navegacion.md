@@ -16,31 +16,44 @@ pruebas:
 2. **Tablero:** las tareas del equipo y la preparación de datos.
 3. **Requisitos:** la base de prueba, lo que la aplicación debe hacer.
 4. **Casos de prueba:** cómo se comprueba cada requisito.
-5. **Ciclos de prueba:** qué casos se ejecutan, dónde y contra qué versión.
-6. **Ejecuciones:** los resultados, manuales o importados de la automatización.
-7. **Defectos:** lo que falló y su seguimiento hasta cerrarlo.
-8. **Trazabilidad:** la matriz que une requisitos, casos, resultados y defectos.
-9. **Ajustes del proyecto:** nombre, numeración, campos y configuraciones.
+5. **Biblioteca:** los pasos compartidos y las tablas de datos (datasets) que
+   reutilizan los casos.
+6. **Ciclos de prueba:** qué casos se ejecutan, dónde y contra qué versión.
+7. **Ejecuciones:** los resultados, manuales o importados de la automatización.
+8. **Defectos:** lo que falló y su seguimiento hasta cerrarlo.
+9. **Trazabilidad:** la matriz que une requisitos, casos, resultados y defectos.
+10. **Ajustes del proyecto:** nombre, numeración, campos y configuraciones.
+
+Encima de todo, el **selector de workspace** dice en qué espacio de trabajo
+estás y con qué rol. Al empezar solo tienes «Personal», tu espacio propio;
+los workspaces compartidos con tu equipo llegan en los capítulos 20 y 21.
+«Proyectos» muestra solo los proyectos del workspace elegido.
 
 ## Paso a paso
 
 ### 2.1. La pantalla de Pharos
 
-Todas las pantallas comparten la misma estructura. A la izquierda, el menú lateral: «Inicio» y «Proyectos» arriba; dentro de un proyecto, el bloque «Proyecto activo» con sus secciones; «Administración» en «Configuración» y, al pie, la sincronización y tu menú de usuario. Arriba del todo, el logotipo y el nombre «Pharos», que abren «Acerca de Pharos»; en el borde derecho del menú, a media altura, la pestaña que lo contrae. Arriba, la barra con la ruta (migas de pan), el buscador, las notificaciones y el cambio de tema. El resto es el contenido de la sección abierta: en este ejemplo, el «Tablero» del proyecto «Pharos».
+Todas las pantallas comparten la misma estructura. A la izquierda, el menú lateral: arriba, el selector de workspace («Personal», con tu rol); debajo, «Inicio» y «Proyectos»; dentro de un proyecto, el bloque «Proyecto activo» con sus secciones; «Administración» en «Configuración» y, al pie, la sincronización y tu menú de usuario. Arriba del todo, el logotipo y el nombre «Pharos», que abren «Acerca de Pharos»; en el borde derecho del menú, a media altura, la pestaña que lo contrae. Arriba, la barra con la ruta (migas de pan), el buscador, las notificaciones y el cambio de tema. El buscador (o Ctrl+K, ⌘K en Mac) abre un panel que de momento solo avisa de que la búsqueda global llega en una próxima versión: mientras tanto, cada lista tiene su propio buscador y, en los casos, Ctrl+P salta a uno concreto (capítulo 8). El resto es el contenido de la sección abierta: en este ejemplo, el «Tablero» del proyecto «Pharos».
 
 ![La pantalla de Pharos](img/navegacion/01-estructura.png)
 
-### 2.2. Acerca de Pharos
+### 2.2. El selector de workspace
+
+Un workspace es un espacio de trabajo con sus proyectos y sus personas. El selector de la parte de arriba del menú lateral dice en cuál estás y con qué rol: al entrar, «Personal», tu espacio propio, donde eres Test Manager. Despliégalo para cambiar a otro workspace, «Crear workspace», «Unirse con un código…» o abrir «Miembros y roles». «Proyectos» y el selector de proyecto muestran solo los proyectos del workspace elegido. Los workspaces compartidos con tu equipo se explican en los capítulos 20 y 21.
+
+![El selector de workspace](img/navegacion/02-workspace.png)
+
+### 2.3. Acerca de Pharos
 
 Un clic en el logotipo o en el nombre «Pharos», arriba del menú lateral, abre «Acerca de Pharos»: la versión instalada y su compilación, la plataforma (escritorio o web), las tecnologías con que está hecha, la licencia, el responsable del proyecto y el asistente de IA que ayuda en su desarrollo. Con el teclado, llega a él con Tab y pulsa Intro o Espacio. Si informas de un fallo, di siempre la versión y la compilación. «Cerrar» o Esc lo cierran. En la tira de iconos también se abre desde el logotipo.
 
-![Acerca de Pharos](img/navegacion/02-acerca-de.png)
+![Acerca de Pharos](img/navegacion/03-acerca-de.png)
 
-### 2.3. Las secciones y el proceso de prueba
+### 2.4. Las secciones y el proceso de prueba
 
-El bloque «Proyecto activo» va en el orden del proceso de prueba: cada sección sirve a una de sus actividades, como resume la tabla de debajo. La sección abierta queda resaltada. Al abrir un proyecto existente, Pharos entra en su «Tablero»; uno recién creado se abre en su «Plan de pruebas».
+El bloque «Proyecto activo» va en el orden del proceso de prueba: cada sección sirve a una de sus actividades, como resume la tabla de debajo. Un clic en una sección la abre y la deja resaltada: aquí, «Plan de pruebas». Al abrir un proyecto existente, Pharos entra en su «Tablero»; uno recién creado se abre en su «Plan de pruebas».
 
-![Las secciones y el proceso de prueba](img/navegacion/03-menu-proyecto.png)
+![Las secciones y el proceso de prueba](img/navegacion/04-menu-proyecto.png)
 
 Cada sección del proyecto sirve a una actividad del proceso de prueba
 (ISTQB CTFL v4, «Proceso de prueba»):
@@ -49,7 +62,7 @@ Cada sección del proyecto sirve a una actividad del proceso de prueba
 | --- | --- | --- |
 | Planificación | Plan de pruebas | Fijar el alcance, el enfoque, los recursos, el calendario y los criterios de salida |
 | Análisis | Requisitos | Definir la base de prueba: qué hay que comprobar y con qué riesgo |
-| Diseño | Casos de prueba | Escribir cómo se comprueba cada requisito, con sus datos y su Gherkin |
+| Diseño | Casos de prueba y Biblioteca | Escribir cómo se comprueba cada requisito, con sus datos y su Gherkin, y reutilizar pasos y tablas de datos en muchos casos |
 | Implementación | Ciclos de prueba (y el Tablero, para preparar datos y entorno) | Decidir qué se ejecuta, en qué configuraciones y contra qué build |
 | Ejecución | Ejecuciones y Defectos | Registrar los resultados, manuales o importados, e informar de lo que falla |
 | Monitorización y control | Tablero, Trazabilidad e Inicio | Seguir el avance del trabajo, la cobertura de los requisitos y el estado de cada proyecto |
@@ -58,39 +71,33 @@ Cada sección del proyecto sirve a una actividad del proceso de prueba
 «Ajustes del proyecto» no es una actividad: es la configuración del proyecto
 (numeración, campos personalizados y configuraciones) que usan las demás.
 
-### 2.4. Cambiar de proyecto
+### 2.5. Cambiar de proyecto
 
-El selector de la parte superior del bloque, con el prefijo y el nombre del proyecto, salta a otro proyecto sin volver a la lista. Escribe para filtrar (útil con muchos proyectos), muévete con ↑ ↓ y elige con Intro o con un clic. Pharos abre la misma sección en el otro proyecto: si estabas en su «Tablero», llegas al «Tablero» del nuevo. «Ver todos los proyectos», al pie, abre la lista.
+El selector de la parte superior del bloque, con el prefijo y el nombre del proyecto, salta a otro proyecto sin volver a la lista. Escribe para filtrar (útil con muchos proyectos), muévete con ↑ ↓ y elige con Intro o con un clic. Pharos abre la misma sección en el otro proyecto: si estabas en su «Plan de pruebas», llegas al «Plan de pruebas» del nuevo. «Ver todos los proyectos», al pie, abre la lista.
 
-![Cambiar de proyecto](img/navegacion/04-cambiar-proyecto.png)
+![Cambiar de proyecto](img/navegacion/05-cambiar-proyecto.png)
 
-### 2.5. Dónde estás: las migas de pan
+### 2.6. Dónde estás: las migas de pan
 
-Tras elegir «API de sincronización», la barra superior muestra la ruta: «Proyectos › API de sincronización › Tablero». Cada tramo, menos el último, es un enlace: «Proyectos» vuelve a la lista. Si un nombre es muy largo, se recorta con «…» y se lee entero al pasar el ratón.
+Tras elegir «API de sincronización», la barra superior muestra la ruta: «Proyectos › API de sincronización › Plan de pruebas». Cada tramo, menos el último, es un enlace: «Proyectos» vuelve a la lista. Si un nombre es muy largo, se recorta con «…» y se lee entero al pasar el ratón.
 
-![Dónde estás: las migas de pan](img/navegacion/05-migas.png)
-
-### 2.6. Buscar (Ctrl+K)
-
-El buscador de la barra superior, o Ctrl+K desde cualquier pantalla (⌘K en Mac), será la búsqueda global de casos, requisitos y proyectos. En esta versión todavía no busca: el panel avisa de que llega en una próxima versión. Mientras tanto, cada lista tiene su propio buscador y, en los casos, Ctrl+P salta a uno concreto (capítulo 8). Esc cierra el panel.
-
-![Buscar (Ctrl+K)](img/navegacion/06-busqueda.png)
+![Dónde estás: las migas de pan](img/navegacion/06-migas.png)
 
 ### 2.7. Notificaciones
 
-La campana, junto al buscador, abrirá tus notificaciones. Como la búsqueda, todavía es un adelanto: el panel avisa de que llegan en una próxima versión. Los avisos de lo que haces (guardado, exportado, sincronizado) aparecen por ahora un momento abajo a la derecha.
+La campana, junto al buscador, abre tus notificaciones: lo que otras personas hacen y te afecta (una invitación, un caso que te envían a revisar o que te aprueban, un defecto que te asignan, un ciclo que se cierra, quién entra o sale de tu workspace) y los conflictos de sincronización de este equipo. Se agrupan por día, el número rojo de la campana cuenta las que no has leído, «Sin leer» las filtra y cada una tiene su acción directa («Revisar», «Ver defecto», «Resolver»…). Abrirla la marca como leída; «Marcar todo como leído» las marca todas, también en tus otros equipos. Se guardan 90 días. Mientras Liomar trabaja solo, el panel dice «Estás al día»: lo de otras personas llega al compartir un workspace con el equipo (capítulo 20). Los avisos de lo que haces tú (guardado, exportado, sincronizado) siguen apareciendo un momento abajo a la derecha.
 
 ![Notificaciones](img/navegacion/07-notificaciones.png)
 
 ### 2.8. Tema claro u oscuro
 
-El botón de la luna, a la derecha de la barra superior, pasa Pharos al tema oscuro («Faro Nocturno»); en el tema oscuro es un sol y vuelve al claro. Se aplica al momento y se recuerda en este equipo. En «Administración › General» (capítulo 15) hay además la opción «Según el sistema», que sigue el ajuste de Windows.
+El botón de la luna, a la derecha de la barra superior, pasa Pharos al tema oscuro («Faro Nocturno»); en el tema oscuro es un sol y vuelve al claro. Se aplica al momento y viaja con tu cuenta a tus otros equipos. En «Mi perfil › Preferencias» (capítulo 1) y en «Administración › General» (capítulo 15) hay además la opción «Según el sistema», que sigue el ajuste de Windows.
 
 ![Tema claro u oscuro](img/navegacion/08-tema.png)
 
 ### 2.9. La sincronización, al pie del menú
 
-Al pie del menú lateral, un punto de color y una palabra dicen cómo está la sincronización con el servidor: «Sincronizado», «Cambios pendientes (N)», «Sin conexión» o «Conflictos (N)». Pharos sincroniza solo al entrar y cuando vuelve la conexión (y, si activas «Sincronización automática» en Administración › Sincronización, capítulo 15, cada pocos minutos); «Sincronizar ahora» lo hace al momento y avisa de cuántos cambios envió (↑) y recibió (↓). Mientras sincroniza, también cuando lo hace solo, las flechas del botón giran y el punto se vuelve un anillo; si tu sistema pide reducir el movimiento, las flechas no giran y basta el anillo. Con conflictos aparece «Revisar conflictos» (capítulo 15).
+Al pie del menú lateral, un punto de color y una palabra dicen cómo está la sincronización con el servidor: «Sincronizado», «Cambios pendientes (N)», «Sin conexión» o «Conflictos (N)». Pharos sincroniza solo al entrar y cuando vuelve la conexión (y, si activas «Sincronización automática» en Administración › Sincronización, capítulo 15, cada pocos minutos); «Sincronizar ahora» lo hace al momento y avisa de cuántos cambios envió (↑) y recibió (↓). Mientras sincroniza, también cuando lo hace solo, las flechas del botón giran y el punto se vuelve un anillo; si tu sistema pide reducir el movimiento, las flechas no giran y basta el anillo. Con conflictos aparece «Revisar conflictos» (capítulo 15). Lo que guarda otra ventana de Pharos o el CLI `pharos` en este equipo aparece solo en unos segundos, sin sincronizar.
 
 ![La sincronización, al pie del menú](img/navegacion/09-sincronizar.png)
 
@@ -102,7 +109,7 @@ La pestaña con la flecha ‹, en el borde derecho del menú lateral y a media a
 
 ### 2.11. Pantallas medianas: la tira de iconos
 
-Pharos se adapta al ancho de la ventana. Por debajo de 1280 px (una tableta, o la ventana a media pantalla), el menú lateral es siempre la tira de iconos, el buscador se reduce a la lupa (Ctrl+K sigue funcionando), las tablas ocultan sus columnas menos importantes y lo que no cabe, como las columnas del Tablero, se desplaza de lado. Si la ventana es baja, desplaza la tira para llegar a tu avatar. Por debajo de 600 px pasa al diseño del móvil, con una barra inferior (capítulo 18).
+Pharos se adapta al ancho de la ventana. Por debajo de 1280 px (una tableta, o la ventana a media pantalla), el menú lateral es siempre la tira de iconos, el buscador se reduce a la lupa (Ctrl+K sigue funcionando), las tablas ocultan sus columnas menos importantes y lo que no cabe, como las columnas del Tablero, se desplaza de lado. Si la ventana es baja y no caben todas las secciones, la tira de secciones se desplaza; la sincronización y tu avatar quedan siempre a la vista, abajo. Por debajo de 600 px pasa al diseño del móvil, con una barra inferior (capítulo 18).
 
 ![Pantallas medianas: la tira de iconos](img/navegacion/11-tableta.png)
 
@@ -114,7 +121,14 @@ propio, nunca con una ventana del navegador. Hay dos clases:
 | Clase | Cuándo aparece | Cómo se responde |
 | --- | --- | --- |
 | Normal | Lo que se puede rehacer o solo pierde lo que no guardaste: descartar cambios, restaurar una revisión, cerrar un run, cambiar de proveedor de IA o reemplazar su clave, quitar un caso del ciclo, desvincular | Con sus botones, o con Esc o un clic fuera, que equivalen a «Cancelar» |
-| Crítica | El botón borra algo guardado y no hay vuelta atrás: eliminar un proyecto, caso, requisito, defecto, tarjeta, ciclo, run o plantilla, acortar la retención, descartar un borrador de ejecución con sus adjuntos, quitar una evidencia | Solo con sus botones: Esc y el clic fuera no hacen nada, para que no se acepte ni se descarte por accidente. El botón de confirmar es rojo |
+| Crítica | El botón borra algo guardado: eliminar un proyecto, caso, requisito, defecto, tarjeta, ciclo, run o plantilla, acortar la retención, descartar un borrador de ejecución con sus adjuntos, quitar una evidencia | Solo con sus botones: Esc y el clic fuera no hacen nada, para que no se acepte ni se descarte por accidente. El botón de confirmar es rojo |
+
+En la app de escritorio, lo que eliminas (proyectos, casos, requisitos,
+defectos, tarjetas, ciclos, runs y plantillas) no desaparece al momento: va a
+la **Papelera**, en «Administración › General» (capítulo 15), y desde allí se
+restaura con todo lo que se borró con ello hasta que se cumple su plazo. En la
+versión web, lo eliminado no se recupera. Quitar una evidencia, descartar un
+borrador de ejecución o acortar la retención sí son definitivos.
 
 ## Los cuadros de texto
 
@@ -133,10 +147,10 @@ Estos atajos funcionan en cualquier pantalla. Cada capítulo explica los suyos.
 
 | Tecla | Qué hace |
 | --- | --- |
-| Ctrl+K (⌘K en Mac) | Abre la búsqueda. No actúa si hay un diálogo abierto |
+| Ctrl+K (⌘K en Mac) | Abre el panel de búsqueda (la búsqueda global llega en una próxima versión). No actúa si hay un diálogo abierto |
 | Tab / Mayús+Tab | Pasa al control siguiente o al anterior. El primer Tab de cada pantalla muestra «Saltar al contenido», que lleva directamente al contenido sin recorrer el menú |
 | Intro o Espacio | Pulsa el botón o el enlace enfocado |
-| Esc | Cierra el menú, panel o diálogo abierto y devuelve el foco al botón que lo abrió. En una confirmación normal equivale a «Cancelar»; las confirmaciones críticas (las que borran algo guardado para siempre) solo responden a sus botones |
+| Esc | Cierra el menú, panel o diálogo abierto y devuelve el foco al botón que lo abrió. En una confirmación normal equivale a «Cancelar»; las confirmaciones críticas (las que borran algo guardado) solo responden a sus botones |
 | ↑ ↓ | Recorren las opciones de un menú (también el selector de proyecto) |
 | Inicio / Fin | Saltan a la primera o a la última opción de un menú |
 | ← → | Cambian de pestaña en las pestañas y en los controles segmentados (por ejemplo, Lista / Tablero) |
@@ -181,8 +195,19 @@ atajos siguen siendo los de tu navegador.
   automática, Pharos solo sincroniza al entrar, al volver la conexión y con
   «Sincronizar ahora». Púlsalo, o activa «Sincronización automática» en
   Administración › Sincronización (capítulo 15).
-- **Veo «Conflictos (N)».** El mismo elemento se cambió en dos equipos a la
-  vez. Pulsa «Revisar conflictos» y elige qué versión conservar (capítulo 15).
+- **Veo «Conflictos (N)».** El mismo campo de un elemento se cambió en dos
+  equipos a la vez. Si se cambiaron campos distintos, Pharos los combina solo y
+  no pregunta. Pulsa «Revisar conflictos»: el panel enseña solo los campos que
+  chocan y eliges, campo a campo, cuál conservar, o «La mía en todo» o «La del
+  servidor en todo» (capítulo 15).
+- **Veo un aviso de solo lectura.** Tu rol en ese workspace es Viewer: puedes
+  ver y exportar, pero no cambiar nada. Pide otro rol a su Test Manager
+  (capítulo 20).
+- **«Rechazado por permisos».** El servidor no aceptó un cambio porque tu rol
+  en ese workspace no lo permite. «Descartar» deja la versión del servidor
+  (capítulo 20).
+- **No veo un proyecto en «Proyectos».** Está en otro workspace: cámbialo en el
+  selector de la parte de arriba del menú lateral.
 
 ## En el móvil
 
@@ -207,13 +232,14 @@ atajos siguen siendo los de tu navegador.
 - El selector de proyecto conserva la sección: compara rápidamente el Tablero
   o los Defectos de dos proyectos.
 - Si informas de un fallo, di la versión y la compilación de «Acerca de
-  Pharos»: un clic en el logotipo o en el nombre, arriba del menú lateral (en
-  este manual, la 0.2.0).
+  Pharos»: un clic en el logotipo o en el nombre, arriba del menú lateral.
 
 ## Véase también
 
 - Capítulo 1, «Acceso y cuenta»: el menú de usuario.
 - Capítulo 4, «Proyectos»: crear y abrir proyectos.
+- Capítulos 20, «Trabajo en equipo», y 21, «Integraciones»: los workspaces
+  compartidos, los roles y las notificaciones de otras personas.
 - Capítulo 15, «Administración»: tema, idioma, sincronización y conflictos.
 - Capítulo 18, «Pantallas estrechas y móvil».
 - [Glosario](../GLOSARIO.md): «Conflicto de sincronización», «Conflicto de clave».

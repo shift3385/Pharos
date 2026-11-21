@@ -48,21 +48,27 @@ y las configuraciones Chrome y Edge en Windows 11.
 
 ## Paso a paso
 
+> **Al preparar el proyecto.** Estos ajustes se hacen justo después de crear el
+> proyecto (capítulo 4), antes de escribir el plan, los requisitos y los casos:
+> por eso las capturas muestran «Pharos» todavía sin campos personalizados ni
+> configuraciones, y Liomar crea aquí «Navegador», «Regresión crítica» y las
+> configuraciones que los casos y los ciclos de los capítulos 8 y 9 ya usan.
+
 ### 14.1. Ajustes del proyecto: prefijo de los casos
 
-«Ajustes del proyecto», en el menú lateral, permite cambiar el nombre y cómo se numeran sus casos: el prefijo (en este ejemplo, Liomar acorta a «PH-» el «PHA-» que Pharos sugirió al crearlo) y el número de dígitos. La vista previa muestra cómo quedará el ID del siguiente caso (PH-001). Elige el prefijo pronto: es el que verás en informes, defectos y exportaciones. «Guardar» lo confirma con «Ajustes actualizados».
+«Ajustes del proyecto», en el menú lateral, permite cambiar el nombre y cómo se numeran sus casos: el prefijo (en este ejemplo, «PH-», el que Liomar eligió al crear el proyecto en el capítulo 4) y el número de dígitos. La vista previa muestra el formato de los IDs (PH-001, PH-002…). Elige el prefijo pronto: es el que verás en informes, defectos y exportaciones. «Guardar» confirma cada cambio con «Ajustes actualizados».
 
 ![Ajustes del proyecto: prefijo de los casos](img/ajustes/01-ajustes.png)
 
 ### 14.2. Un prefijo que se solapa
 
-Dos proyectos no pueden usar prefijos que se solapen: iguales (sin contar el guion o el guion bajo final, ni mayúsculas) o uno que empiece por el otro, como «PH-» y «PHA-», porque «PHA-001» también empieza por «PH». Si escribes uno así, el campo dice con qué proyecto choca (en este ejemplo, «API-» es el de «API de sincronización») y «Guardar» no guarda hasta que lo cambies. Los proyectos que ya compartían prefijo de una versión anterior (todos empezaban con «ATS_») pueden seguir guardando su nombre; el aviso solo aparece al cambiar el prefijo.
+Dos proyectos no pueden usar prefijos que se solapen: iguales (sin contar el guion o el guion bajo final, ni mayúsculas) o uno que empiece por el otro, como «PH-» y «PHA-», porque «PHA-001» también empieza por «PH». Si escribes uno así, el campo dice con qué proyecto choca (en este ejemplo, «API-» es el de «API de sincronización») y «Guardar» no guarda hasta que lo cambies. Liomar vuelve a «PH-» y guarda.
 
 ![Un prefijo que se solapa](img/ajustes/02-prefijo-solapado.png)
 
 ### 14.3. El historial en el plan exportado
 
-«Historial en el plan exportado» decide qué llevan del historial el .xlsx y el .pdf del plan (capítulo 5), tanto al exportarlo desde el asistente como en el ZIP del proyecto. «Solo la versión vigente», la opción de partida, pone en la cabecera la versión, la fecha, el autor y el estado actuales. «Historial de revisiones» añade una tabla con una fila por persona y día: su último guardado, el estado y las secciones que cambió. Se guarda al elegirlo, sin pulsar «Guardar» («Ajuste del historial guardado.»). En este ejemplo, Liomar elige el historial: el plan de Pharos pasa por revisiones y quiere que se vean al firmarlo.
+«Historial en el plan exportado» decide qué llevan del historial el .xlsx y el .pdf del plan (capítulo 5), tanto al exportarlo desde el asistente como en el ZIP del proyecto. «Solo la versión vigente», la opción de partida, pone en la cabecera la versión, la fecha, el autor y el estado actuales. «Historial de revisiones» añade una tabla con una fila por persona y día: su último guardado, el estado y las secciones que cambió. Se guarda al elegirlo, sin pulsar «Guardar» (un aviso lo confirma). En este ejemplo, Liomar deja «Solo la versión vigente», la opción con la que creó el proyecto en el capítulo 4: es la que lleva el plan que exportó en el capítulo 5.
 
 ![El historial en el plan exportado](img/ajustes/03-historial-plan.png)
 
@@ -80,13 +86,13 @@ Los campos personalizados añaden a los casos lo que tu equipo necesite clasific
 
 ### 14.6. El campo, en la lista
 
-«Crear campo» lo guarda y aparece en la lista; desde ese momento, los casos del proyecto pueden usarlo (capítulo 8). Se reordena arrastrando o con el menú de cada campo: ese es el orden en que se ve en el editor.
+«Crear campo» lo guarda y aparece en la lista; desde ese momento, los casos del proyecto pueden usarlo (capítulo 8). Liomar crea también «Regresión crítica», un campo sí/no para marcar los casos de la regresión imprescindible. Se reordena arrastrando o con el menú de cada campo: ese es el orden en que se ve en el editor.
 
 ![El campo, en la lista](img/ajustes/06-campo-creado.png)
 
 ### 14.7. Archivar un campo
 
-Un campo no se borra, para no perder lo que ya se escribió en él: se archiva desde su menú («Archivar») y sus valores se conservan. «Mostrar archivados» lo enseña y «Desarchivar» lo recupera.
+Un campo no se borra, para no perder lo que ya se escribió en él: se archiva desde su menú («Archivar») y sus valores se conservan. «Mostrar archivados» lo enseña y «Desarchivar» lo recupera. En este ejemplo, Liomar crea «Sprint antiguo» solo para probarlo y lo archiva: no lo necesita.
 
 ![Archivar un campo](img/ajustes/07-campo-archivar.png)
 
