@@ -1,5 +1,5 @@
 {
-  "version": "0.6.0-beta.1",
+  "version": "0.6.0-beta.2",
   "date": "2026-11-21",
   "steps": [
     {
@@ -4664,7 +4664,7 @@
       "n": 2,
       "id": "nuevo-ciclo",
       "title": "Nuevo ciclo",
-      "caption": "«Nuevo ciclo» pide el título (obligatorio), la build y el entorno contra los que se prueba, el hito y el sprint del plan, las fechas (se escriben dd/mm/aaaa o se eligen en el calendario de Pharos, capítulo 5; el de «Termina» abre en el mes de «Empieza» y no deja elegir un día anterior) y las configuraciones en las que se ejecutará (las de «Ajustes del proyecto», capítulo 14). En este ejemplo, «Regresión 0.6.0» de la build 0.6.0-beta.1 en staging, con las fechas del Sprint 1 del plan, en Chrome y en Edge sobre Windows 11. Sin configuraciones, el ciclo se ejecuta como un único run. Intro en un campo crea el ciclo.",
+      "caption": "«Nuevo ciclo» pide el título (obligatorio), la build y el entorno contra los que se prueba, el hito y el sprint del plan, las fechas (se escriben dd/mm/aaaa o se eligen en el calendario de Pharos, capítulo 5; el de «Termina» abre en el mes de «Empieza» y no deja elegir un día anterior) y las configuraciones en las que se ejecutará (las de «Ajustes del proyecto», capítulo 14). En este ejemplo, «Regresión 0.6.0» de la build 0.6.0-beta.2 en staging, con las fechas del Sprint 1 del plan, en Chrome y en Edge sobre Windows 11. Sin configuraciones, el ciclo se ejecuta como un único run. Intro en un campo crea el ciclo.",
       "covers": [
         "dialogs:src/modules/cycles/ui/CycleDialog.tsx"
       ],
@@ -5480,7 +5480,7 @@
       "n": 1,
       "id": "nuevo-run",
       "title": "Nuevo run manual",
-      "caption": "Para las pruebas que se hacen a mano fuera de un ciclo, «Nuevo run manual», en «Ejecuciones», crea un run: el título (obligatorio; propone «Run manual» y la fecha), el entorno, la build, la configuración y los casos que entran, con buscador y el recuento de los elegidos. Cada caso entra con su revisión vigente, así que el resultado queda ligado a la versión del caso que se ejecutó. Un caso con dataset dice cuántas filas trae y de qué dataset («3 filas · Usuarios válidos (v1)»): cada fila será una ejecución propia. En este ejemplo, Liomar repite a mano los casos de acceso de Pharos en staging, con la build 0.6.0-beta.1. «Crear y abrir» lo crea y abre su pantalla.",
+      "caption": "Para las pruebas que se hacen a mano fuera de un ciclo, «Nuevo run manual», en «Ejecuciones», crea un run: el título (obligatorio; propone «Run manual» y la fecha), el entorno, la build, la configuración y los casos que entran, con buscador y el recuento de los elegidos. Cada caso entra con su revisión vigente, así que el resultado queda ligado a la versión del caso que se ejecutó. Un caso con dataset dice cuántas filas trae y de qué dataset («3 filas · Usuarios válidos (v1)»): cada fila será una ejecución propia. En este ejemplo, Liomar repite a mano los casos de acceso de Pharos en staging, con la build 0.6.0-beta.2. «Crear y abrir» lo crea y abre su pantalla.",
       "covers": [
         "dialogs:src/modules/runs/ui/CasePickerDialog.tsx"
       ],
@@ -5963,7 +5963,7 @@
       "n": 4,
       "id": "asignado",
       "title": "Asignado a",
-      "caption": "Debajo, «Dónde se encontró» lleva la build y el entorno (en este ejemplo, 0.6.0-beta.1 en staging), y «Asignado a» dice quién se ocupa del defecto: se elige entre los miembros activos del workspace, o «Sin asignar». En «Personal» el único miembro eres tú, así que Liomar se lo asigna a sí mismo; en un workspace compartido, la persona elegida recibe un aviso con el defecto (capítulo 20). En «Vínculos», marca los casos y los requisitos afectados: la matriz de trazabilidad (capítulo 13) los mostrará junto al defecto. Liomar marca el caso «Crear un proyecto» (PH-003) y el requisito REQ-002.",
+      "caption": "Debajo, «Dónde se encontró» lleva la build y el entorno (en este ejemplo, 0.6.0-beta.2 en staging), y «Asignado a» dice quién se ocupa del defecto: se elige entre los miembros activos del workspace, o «Sin asignar». En «Personal» el único miembro eres tú, así que Liomar se lo asigna a sí mismo; en un workspace compartido, la persona elegida recibe un aviso con el defecto (capítulo 20). En «Vínculos», marca los casos y los requisitos afectados: la matriz de trazabilidad (capítulo 13) los mostrará junto al defecto. Liomar marca el caso «Crear un proyecto» (PH-003) y el requisito REQ-002.",
       "covers": [],
       "image": "defectos/04-asignado.png",
       "viewport": {
@@ -8080,14 +8080,14 @@
       "focus": {
         "x": 484,
         "y": 771,
-        "w": 161,
+        "w": 159,
         "h": 20
       },
       "cuts": [
         {
           "x": 478,
           "y": 755,
-          "w": 183,
+          "w": 181,
           "h": 56,
           "r": 0,
           "edge": false,
@@ -8258,14 +8258,14 @@
         "x": 602,
         "y": 531,
         "w": 498,
-        "h": 199
+        "h": 220
       },
       "cuts": [
         {
           "x": 602,
           "y": 531,
           "w": 498,
-          "h": 199,
+          "h": 220,
           "r": 6,
           "edge": true,
           "unit": 0,
@@ -8402,16 +8402,16 @@
       "status": "passed",
       "focus": {
         "x": 300,
-        "y": 291,
+        "y": 236,
         "w": 512,
-        "h": 318
+        "h": 429
       },
       "cuts": [
         {
           "x": 300,
-          "y": 291,
+          "y": 236,
           "w": 512,
-          "h": 318,
+          "h": 429,
           "r": 6,
           "edge": true,
           "unit": 0,
@@ -9431,14 +9431,14 @@
       "status": "passed",
       "focus": {
         "x": 304,
-        "y": 160,
+        "y": 250,
         "w": 1074,
         "h": 312
       },
       "cuts": [
         {
           "x": 304,
-          "y": 160,
+          "y": 250,
           "w": 288,
           "h": 40,
           "r": 6,
@@ -9449,7 +9449,7 @@
         },
         {
           "x": 604,
-          "y": 178,
+          "y": 268,
           "w": 778,
           "h": 298,
           "r": 0,

@@ -43,7 +43,7 @@ chapter("ciclos", () => {
   step("nuevo-ciclo", {
     title: "Nuevo ciclo",
     caption:
-      "«Nuevo ciclo» pide el título (obligatorio), la build y el entorno contra los que se prueba, el hito y el sprint del plan, las fechas (se escriben dd/mm/aaaa o se eligen en el calendario de Pharos, capítulo 5; el de «Termina» abre en el mes de «Empieza» y no deja elegir un día anterior) y las configuraciones en las que se ejecutará (las de «Ajustes del proyecto», capítulo 14). En este ejemplo, «Regresión 0.6.0» de la build 0.6.0-beta.1 en staging, con las fechas del Sprint 1 del plan, en Chrome y en Edge sobre Windows 11. Sin configuraciones, el ciclo se ejecuta como un único run. Intro en un campo crea el ciclo.",
+      "«Nuevo ciclo» pide el título (obligatorio), la build y el entorno contra los que se prueba, el hito y el sprint del plan, las fechas (se escriben dd/mm/aaaa o se eligen en el calendario de Pharos, capítulo 5; el de «Termina» abre en el mes de «Empieza» y no deja elegir un día anterior) y las configuraciones en las que se ejecutará (las de «Ajustes del proyecto», capítulo 14). En este ejemplo, «Regresión 0.6.0» de la build 0.6.0-beta.2 en staging, con las fechas del Sprint 1 del plan, en Chrome y en Edge sobre Windows 11. Sin configuraciones, el ciclo se ejecuta como un único run. Intro en un campo crea el ciclo.",
     covers: ["dialogs:src/modules/cycles/ui/CycleDialog.tsx"],
     shot: { element: D },
     run: async () => {

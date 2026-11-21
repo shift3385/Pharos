@@ -171,7 +171,7 @@ export const PREREQUISITES: Prerequisite[] = [
   {
     id: "ejecucion-manual",
     contract:
-      "the completed manual run «Regresión manual · 0.6.0-beta.1» (PH-001 fails, PH-002 passes, PH-005 passes its first two dataset rows and fails the third)",
+      "the completed manual run «Regresión manual · 0.6.0-beta.2» (PH-001 fails, PH-002 passes, PH-005 passes its first two dataset rows and fails the third)",
     madeBy: "ejecucion-manual",
     after: ["casos-base", "caso-dataset"],
     loader: "web API /api/runs, /api/results and /close + sync",

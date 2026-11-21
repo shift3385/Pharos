@@ -1,6 +1,6 @@
 [package]
 name = "pharos-core"
-version = "0.6.0-beta.1"
+version = "0.6.0-beta.2"
 description = "Pharos core: local database, migrations, repositories, oplog and sync (CORE-01, ADR-0050)"
 authors = ["Pharos"]
 edition = "2021"
