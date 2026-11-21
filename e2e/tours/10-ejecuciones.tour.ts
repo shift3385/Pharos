@@ -398,8 +398,18 @@ chapter("ejecuciones", () => {
       await expect($('[data-testid="metrics-thresholds"]')).toHaveText(
         expect.stringContaining(tf("findings.metric.thresholdsMet", { passed: 3, total: 4 })),
       );
-      // The thresholds line on top, down to «Ver todas» and the k6 checks.
+      // The thresholds line on top, down to «Ver todas».
       await scrollToTop('[data-testid="metrics-panel"]');
+    },
+  });
+
+  step("metricas-checks", {
+    title: "Los checks de k6",
+    caption:
+      "Debajo del resumen, «Checks» reúne en su propia tarjeta las comprobaciones del script de k6, cada una con cuántas veces se cumplió. El check de entrar lleva `@PH-001`, como su métrica: cuenta para ese caso.",
+    focus: ["h3.fd-sub", '//h3[contains(@class,"fd-sub")]/following-sibling::*[1]'],
+    run: async () => {
+      await scrollToTop("h3.fd-sub");
     },
   });
 

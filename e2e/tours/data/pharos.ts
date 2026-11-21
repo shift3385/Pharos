@@ -12,6 +12,51 @@
 /** The release under test. */
 export const RELEASE = { version: "0.6.0", build: "0.6.0-beta.1", environment: "staging" };
 
+// ---- The story's calendar ------------------------------------------------------
+// Every date of the story is relative to the day the tours run, so the
+// dates the app stamps «now» (a run started, a result imported, a cycle
+// closed) fall inside the cycle however late a run ends or whatever month it
+// is made in. RUN_DAY is PHAROS_TOURS_DAY (YYYY-MM-DD), else today (local).
+// The committed fixtures are made for REFERENCE_DAY; e2e/tours/run-tours.mjs
+// shifts a copy of them to RUN_DAY before the tours start.
+
+/** The day the committed fixtures (reports, the plan .xlsx) are written for. */
+export const REFERENCE_DAY = "2026-11-20";
+
+function localToday(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+const envDay = typeof process !== "undefined" ? process.env?.PHAROS_TOURS_DAY : undefined;
+/** The day the story is told on: the cycle is under way, three days before its end. */
+export const RUN_DAY = envDay && /^\d{4}-\d{2}-\d{2}$/.test(envDay) ? envDay : localToday();
+
+/** ISO day `n` days after `iso`. */
+export function shiftDay(iso: string, n: number): string {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+/** Days from `a` to `b` (ISO days). */
+export const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000);
+/** «9 de noviembre», as the captions and texts write a day. */
+export const longDay = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("es-ES", { day: "numeric", month: "long", timeZone: "UTC" });
+/** «07/12/2026». */
+export const dmyDay = (iso: string) => iso.split("-").reverse().join("/");
+
+/** RUN_DAY + n. */
+const day = (n: number) => shiftDay(RUN_DAY, n);
+/** Sprint 1 holds the cycle (two weeks up to three days after the run day);
+ *  Sprint 2 follows; the release is the day after Sprint 2. */
+export const STORY_DAYS = {
+  sprint1: { start: day(-11), end: day(2) },
+  sprint2: { start: day(3), end: day(16) },
+  planDate: day(-4),
+  codeFreeze: day(5),
+  candidate: day(7),
+  release: day(17),
+};
+
 /** The two projects of chapter 4. Liomar shortens the prefix Pharos suggests
  *  for «Pharos» («PHA-») to «PH-» when he creates it; «API-» is the one
  *  suggested for the second. */
@@ -164,6 +209,9 @@ export const CYCLE = {
   build: RELEASE.build,
   environment: RELEASE.environment,
   sprint: "Sprint 1",
+  /** Its window: Sprint 1 of the plan, around the run day. */
+  startsOn: STORY_DAYS.sprint1.start,
+  endsOn: STORY_DAYS.sprint1.end,
   /** The first two base cases, assigned to Liomar. */
   caseKeys: ["PH-001", "PH-002"],
   assignee: "Liomar Rodríguez",
@@ -179,10 +227,10 @@ export const CYCLE = {
       },
       {
         match: /cobertura/i,
-        text: "Los 8 requisitos sin cubrir (REQ-003 a REQ-005 y REQ-008 a REQ-012) se cubren en el Sprint 2, hasta el 6 de diciembre; lo asume Liomar, responsable de QA.",
+        text: `Los 8 requisitos sin cubrir (REQ-003 a REQ-005 y REQ-008 a REQ-012) se cubren en el Sprint 2, hasta el ${longDay(STORY_DAYS.sprint2.end)}; lo asume Liomar, responsable de QA.`,
       },
     ],
-    otherJustification: "Se repite en la regresión de la beta.2, del 23 de noviembre; lo sigue Liomar, responsable de QA.",
+    otherJustification: `Se repite en la regresión de la beta.2, del ${longDay(STORY_DAYS.sprint2.start)}; lo sigue Liomar, responsable de QA.`,
     /** The manual criteria: PH-001, the critical case, was run (and failed);
      *  the demo was not held with the access broken. */
     manual: [
@@ -263,7 +311,7 @@ export const PLAN = {
    *  plan import takes the title from the file name. */
   file: `Plan de pruebas de Pharos ${RELEASE.version}.xlsx`,
   version: "0.6",
-  planDate: "2026-11-16",
+  planDate: STORY_DAYS.planDate,
   summary:
     "Plan de pruebas de la versión 0.6.0 de Pharos, la app de gestión de pruebas que funciona sin conexión y se sincroniza con su servidor. Cubre la biblioteca del proyecto, la importación de informes (Allure, TRX, SARIF, axe y k6), las integraciones (tokens, webhooks y el CLI pharos) y la nueva base de datos local cifrada.",
   scopeIn: [
@@ -275,7 +323,7 @@ export const PLAN = {
   ],
   scopeOut: ["Integración con Jira", "App móvil nativa"],
   assumptions: ["El servidor de staging está disponible de 8 a 20 h"],
-  constraints: ["Un equipo de QA de dos personas", "La versión sale el 07/12/2026, al terminar el Sprint 2"],
+  constraints: ["Un equipo de QA de dos personas", `La versión sale el ${dmyDay(STORY_DAYS.release)}, al terminar el Sprint 2`],
   testLevels: ["integration", "system", "acceptance"],
   testTypes: ["functional", "security", "usability", "performance", "retest", "regression", "Pruebas de sincronización"],
   techniques: ["equivalencePartitioning", "boundaryValues", "stateTransition", "exploratory"],
@@ -305,12 +353,12 @@ export const PLAN = {
     notes: "La regresión de la 0.5.0 llevó 17 persona-días; se suman la biblioteca del proyecto y la conversión de los datos locales.",
   },
   sprints: [
-    { name: "Sprint 1", start: "2026-11-09", end: "2026-11-22" },
-    { name: "Sprint 2", start: "2026-11-23", end: "2026-12-06" },
+    { name: "Sprint 1", ...STORY_DAYS.sprint1 },
+    { name: "Sprint 2", ...STORY_DAYS.sprint2 },
   ],
   milestones: [
-    { name: "Congelación de código", date: "2026-11-25" },
-    { name: `Publicación de la ${RELEASE.version}`, date: "2026-12-07" },
+    { name: "Congelación de código", date: STORY_DAYS.codeFreeze },
+    { name: `Publicación de la ${RELEASE.version}`, date: STORY_DAYS.release },
   ],
   risks: [
     ["Una actualización de WebView2 rompe la automatización de escritorio", "Fijar la versión del controlador y revisarla en cada actualización"],
@@ -333,7 +381,7 @@ export const PLAN = {
  *  and a milestone marked with the keyboard (from the day before). */
 export const PLAN_ON_SCREEN = {
   scopeIn: "Conversión de los datos locales de la 0.5 a la 0.6",
-  milestone: { name: "Versión candidata", date: "2026-11-27", from: "2026-11-26" },
+  milestone: { name: "Versión candidata", date: STORY_DAYS.candidate, from: shiftDay(STORY_DAYS.candidate, -1) },
   reviewNote: `Primera versión del plan de la ${RELEASE.version}, importada de Excel.`,
 };
 

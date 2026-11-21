@@ -48,7 +48,7 @@ import { PREREQUISITES, prerequisiteClosure, type ChapterId, type Prereq } from 
 
 const toursDir = dirname(fileURLToPath(import.meta.url));
 /** The fixtures of the case study (all about testing Pharos). */
-export const pharosFixtures = join(toursDir, "fixtures", "pharos");
+export const pharosFixtures = join(process.env.PHAROS_TOURS_FIXTURES ?? join(toursDir, "fixtures"), "pharos");
 const logFile = join(toursDir, "..", "results", "tours", "prepare.jsonl");
 const D = '[role="dialog"]';
 
@@ -396,6 +396,8 @@ const LOADERS: Record<Prereq, Loader> = {
         build: CYCLE.build,
         environment: CYCLE.environment,
         sprint: CYCLE.sprint,
+        startsOn: CYCLE.startsOn,
+        endsOn: CYCLE.endsOn,
         configurationIds: configs,
         ...(plan ? { testPlanId: plan.id } : {}),
       });
@@ -415,7 +417,7 @@ const LOADERS: Record<Prereq, Loader> = {
       await openSection("runs");
       await clickButton(R.import.open);
       await expect($(D)).toBeDisplayed();
-      const report = join(toursDir, "fixtures", "informe-adjuntos");
+      const report = join(process.env.PHAROS_TOURS_FIXTURES ?? join(toursDir, "fixtures"), "informe-adjuntos");
       await $(D).$('input[type="file"]:not([webkitdirectory])').setValue(join(report, "junit.xml"));
       await waitForText(R.format.junit);
       await $(D).$('input[type="file"][webkitdirectory]').setValue(join(report, "capturas"));

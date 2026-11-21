@@ -287,7 +287,7 @@ chapter("integraciones", () => {
       "Para tu propia línea de comandos (el CLI `pharos`) usa un token personal: en «Mi perfil», «Tokens personales» › «Nuevo token personal…». Puede servir para todos tus workspaces o solo para uno, con los permisos y la caducidad que elijas, y también se ve una sola vez. Como los de proyecto, actúa en tu nombre y avisa 7 días antes de caducar. Debajo, «Usar en el CLI» da el comando `pharos login --server <este servidor>`, con la dirección del servidor de tu equipo (en las capturas, difuminada: es la del servidor de pruebas de este manual), que pide el token y lo guarda en el Administrador de credenciales de Windows: el token nunca va escrito en el comando. «Revocar» lo anula; el administrador del servidor puede revocar todos los de una cuenta si se filtran.",
     covers: ["dialogs:src/modules/integrations/ui/PersonalTokensSection.tsx"],
     focus: '[data-testid="personal-tokens"]',
-    mask: ['[data-testid="use-in-cli"] pre.int-snippet'],
+    mask: [".tour-server-address"],
     run: async () => {
       await byTestId("user-menu-trigger").click();
       await $(`[role="menuitem"]*=${es.shell.myProfile}`).click();
@@ -299,6 +299,22 @@ chapter("integraciones", () => {
       await closeSecret();
       await waitForText("Mi CLI");
       await expect(byTestId("use-in-cli")).toBeDisplayed();
+      // Only the server address is blurred: the command stays readable. The
+      // address is wrapped in a span of its own for the capture's mask.
+      await browser.execute(() => {
+        const pre = document.querySelector<HTMLElement>('[data-testid="use-in-cli"] pre.int-snippet');
+        const text = pre?.firstChild;
+        if (!pre || !text || text.nodeType !== Node.TEXT_NODE || pre.querySelector(".tour-server-address")) return;
+        const m = /(https?:\/\/\S+)/.exec(text.textContent ?? "");
+        if (!m) return;
+        const at = (text.textContent ?? "").indexOf(m[1]);
+        const rest = (text as Text).splitText(at);
+        rest.splitText(m[1].length);
+        const span = document.createElement("span");
+        span.className = "tour-server-address";
+        rest.replaceWith(span);
+        span.appendChild(rest);
+      });
       await byTestId("personal-tokens").scrollIntoView({ block: "start" });
     },
     after: async () => {

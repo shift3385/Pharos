@@ -698,7 +698,7 @@ chapter("casos", () => {
   step("importar", {
     title: "Importar un caso desde .xlsx",
     caption:
-      "Para traer un caso escrito en Excel, «Importar / Exportar → Importar .xlsx» lee una plantilla rellenada o un caso exportado antes. El informe enseña qué campos se reconocieron, con la prioridad y el estado en tu idioma («Alta», «Borrador»), y «Aplicar al formulario» abre el editor con esos datos, todavía sin guardar. Las claves de «Trazabilidad» que son requisitos del proyecto vuelven como vínculos, no como texto libre.",
+      "Para traer un caso escrito en Excel, «Importar / Exportar → Importar .xlsx» lee una plantilla rellenada o un caso exportado antes. El informe enseña qué campos se reconocieron, con la prioridad y el estado en tu idioma («Alta», «Borrador»), y «Aplicar al formulario» abre el editor con esos datos, todavía sin guardar. La «Fecha» del caso es el día en que se escribió. Las claves de «Trazabilidad» que son requisitos del proyecto vuelven como vínculos, no como texto libre.",
     covers: ["upload:src/modules/test-cases/ui/TestCasesPage.tsx", "dialogs:src/modules/test-cases/ui/TestCasesPage.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -709,6 +709,14 @@ chapter("casos", () => {
       await expect(dialog()).toBeDisplayed();
       // The capture shows the finished report, not the detection in progress.
       await $(`button=${es.importReport.apply}`).waitForEnabled({ timeout: 30_000 });
+      // From the «Fecha» row: the day the case was written, today.
+      await browser.execute((label: string) => {
+        const list = document.querySelector<HTMLElement>(".imp__list");
+        const row = Array.from(list?.querySelectorAll<HTMLElement>(".imp__row") ?? []).find(
+          (r) => r.querySelector(".imp__label")?.textContent?.trim() === label,
+        );
+        if (list && row) list.scrollTop = row.offsetTop - list.offsetTop - 4;
+      }, String(C.caseDate));
     },
   });
 

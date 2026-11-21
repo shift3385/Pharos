@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 import { $, $$, browser, expect } from "@wdio/globals";
 import { button, es, projectListLoaded, startBlankProject } from "../support";
 
-export const fixturesDir = join(fileURLToPath(new URL(".", import.meta.url)), "fixtures");
+/** The run's fixtures: the runner's copy with the dates of the run day
+ *  (run-fixtures.mjs), else the committed ones. */
+export const fixturesDir = process.env.PHAROS_TOURS_FIXTURES ?? join(fileURLToPath(new URL(".", import.meta.url)), "fixtures");
 export const repoDir = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
 
 /** The tour's projects (fixed names and prefixes: the manual shows them).

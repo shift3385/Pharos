@@ -43,7 +43,7 @@ chapter("ciclos", () => {
   step("nuevo-ciclo", {
     title: "Nuevo ciclo",
     caption:
-      "«Nuevo ciclo» pide el título (obligatorio), la build y el entorno contra los que se prueba, el hito y el sprint del plan, las fechas (se escriben dd/mm/aaaa o se eligen en el calendario de Pharos, capítulo 5; el de «Termina» abre en el mes de «Empieza» y no deja elegir un día anterior) y las configuraciones en las que se ejecutará (las de «Ajustes del proyecto», capítulo 14). En este ejemplo, «Regresión 0.6.0» de la build 0.6.0-beta.1 en staging, del 9 al 20 de noviembre (el Sprint 1 del plan), en Chrome y en Edge sobre Windows 11. Sin configuraciones, el ciclo se ejecuta como un único run. Intro en un campo crea el ciclo.",
+      "«Nuevo ciclo» pide el título (obligatorio), la build y el entorno contra los que se prueba, el hito y el sprint del plan, las fechas (se escriben dd/mm/aaaa o se eligen en el calendario de Pharos, capítulo 5; el de «Termina» abre en el mes de «Empieza» y no deja elegir un día anterior) y las configuraciones en las que se ejecutará (las de «Ajustes del proyecto», capítulo 14). En este ejemplo, «Regresión 0.6.0» de la build 0.6.0-beta.1 en staging, con las fechas del Sprint 1 del plan, en Chrome y en Edge sobre Windows 11. Sin configuraciones, el ciclo se ejecuta como un único run. Intro en un campo crea el ciclo.",
     covers: ["dialogs:src/modules/cycles/ui/CycleDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -55,8 +55,8 @@ chapter("ciclos", () => {
       await (await field(Y.field.sprint, D)).setValue(CYCLE.sprint);
       // The start typed, the end picked in the calendar (UX-36): it opens on
       // the start's month, with the days before it off.
-      await typeDate(await field(Y.field.startsOn, D), "2026-11-09");
-      await pickDate(await field(Y.field.endsOn, D), "2026-11-20");
+      await typeDate(await field(Y.field.startsOn, D), CYCLE.startsOn);
+      await pickDate(await field(Y.field.endsOn, D), CYCLE.endsOn);
       const checks = Array.from(await $(D).$$(".cy-check input[type=checkbox]"));
       if (checks.length === 0) throw new Error("the cycle dialog offers no configuration (chapter 2 creates them)");
       for (const c of checks.slice(0, 2)) await c.click();

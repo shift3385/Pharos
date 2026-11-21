@@ -32,8 +32,9 @@ import { AI_MATERIAL, BASE_CASES, CUSTOM_FIELDS, PLAN, PROJECT_A, REQUIREMENTS }
 import { PERSONA } from "../persona.mjs";
 
 const ROOT = resolve(__dirname, "../../..");
-const OUT = join(ROOT, "e2e", "tours", "fixtures", "pharos");
-const WRITE = process.env.PHAROS_WRITE_FIXTURES === "1";
+/** PHAROS_FIXTURES_OUT: write them there for a tour run (e2e/tours/run-tours.mjs). */
+const OUT = process.env.PHAROS_FIXTURES_OUT ?? join(ROOT, "e2e", "tours", "fixtures", "pharos");
+const WRITE = process.env.PHAROS_WRITE_FIXTURES === "1" || !!process.env.PHAROS_FIXTURES_OUT;
 const AUTHOR = `${PERSONA.first} ${PERSONA.last}`;
 const t = i18n.getFixedT("es");
 
@@ -153,7 +154,7 @@ describe("case-study fixtures (e2e/tours/fixtures/pharos)", () => {
 
   it("the four base cases, exported by the case exporter", async () => {
     serveTemplates();
-    const at = "2026-11-16T09:00:00.000Z";
+    const at = `${PLAN.planDate}T09:00:00.000Z`;
     const field = (f: (typeof CUSTOM_FIELDS)[keyof typeof CUSTOM_FIELDS], position: number): CustomField => ({
       id: f.fieldKey,
       projectId: "p",

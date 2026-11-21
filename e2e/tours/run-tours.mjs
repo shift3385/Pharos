@@ -31,7 +31,7 @@ import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, openSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { createConnection } from "node:net";
-import { homedir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { owners } from "../../scripts/api-port.mjs";
@@ -41,6 +41,8 @@ import { acquireLock, lockMessage, releaseLock } from "../../scripts/manual/run-
 import { scanForSecret } from "../../scripts/manual/secret-scan.mjs";
 import { driverVersion, major, webview2Version } from "../scripts/edge-driver.mjs";
 import { selectTours } from "./manifest.ts";
+import { REFERENCE_DAY, RUN_DAY, daysBetween } from "./data/pharos.ts";
+import { prepareRunFixtures } from "./run-fixtures.mjs";
 
 const toursDir = fileURLToPath(new URL(".", import.meta.url));
 const repoDir = join(toursDir, "..", "..");
@@ -311,6 +313,19 @@ try {
   rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
 
+  // The story's dates follow the run day (data/pharos.ts): the fixtures'
+  // dates move with it, in a copy the tours read (PHAROS_TOURS_FIXTURES).
+  const shift = daysBetween(REFERENCE_DAY, RUN_DAY);
+  console.log(`› Story day ${RUN_DAY} (fixtures moved ${shift} days from ${REFERENCE_DAY})`);
+  const runFixtures = await prepareRunFixtures({
+    repoDir,
+    source: join(toursDir, "fixtures"),
+    out: join(tmpdir(), "pharos-tours-fixtures"),
+    days: shift,
+    runDay: RUN_DAY,
+  });
+  checkInterrupted();
+
   console.log(`› Creating the tour database ${TOURS_DB} (${dbUrl.hostname}:${dbUrl.port || 5432})`);
   await dropDatabase();
   await admin(`CREATE DATABASE ${TOURS_DB}`);
@@ -397,6 +412,9 @@ try {
         PHAROS_E2E_PROFILE: profile,
         PHAROS_TOURS_DOWNLOADS: downloads,
         PHAROS_TOURS_API: apiUrl,
+        // The run's day and fixtures: a run that crosses midnight keeps its day.
+        PHAROS_TOURS_DAY: RUN_DAY,
+        PHAROS_TOURS_FIXTURES: runFixtures,
         // «Requisitos desde un proyecto»: the folder the debug build picks
         // instead of Windows' own picker (project_scan.rs, MAN-03).
         PHAROS_E2E_PICK_FOLDER: join(toursDir, "fixtures", "pharos", "proyecto-api-sincronizacion"),

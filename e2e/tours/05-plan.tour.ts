@@ -153,7 +153,7 @@ chapter("plan", () => {
 
   step("importado", {
     title: "El plan, cargado en el asistente",
-    caption: `«Aplicar al formulario» carga lo reconocido en el asistente, todavía sin guardar: la línea del paso dice «Cambios sin guardar» y la lista de pasos marca con una ✓ los que quedan completos. En el paso 1 ya están el título («${PLAN.title}»), la versión («${PLAN.version}») y la fecha (${dmy(PLAN.planDate)}). Un plan importado empieza siempre en Borrador, aunque el Excel venga de un plan aprobado.`,
+    caption: `«Aplicar al formulario» carga lo reconocido en el asistente, todavía sin guardar: la línea del paso dice «Cambios sin guardar» y la lista de pasos marca con una ✓ los que quedan completos. En el paso 1 ya están el título («${PLAN.title}»), la versión («${PLAN.version}») y la fecha del plan. Un plan importado empieza siempre en Borrador, aunque el Excel venga de un plan aprobado.`,
     focus: ".tpw-rail__head",
     run: async () => {
       await $(`button=${es.importReport.apply}`).click();
@@ -193,7 +193,7 @@ chapter("plan", () => {
 
   step("fecha", {
     title: "La fecha: el selector de fechas de Pharos",
-    caption: `La fecha se escribe dd/mm/aaaa (aquí, ${dmy(PLAN.planDate)}) o se elige en el calendario de Pharos, el mismo del cronograma: el botón del calendario, al final del campo, lo abre en el mes de la fecha, con el mes y el año arriba y ‹ › para cambiar de mes. Hoy lleva un anillo naranja y el día elegido va relleno. Con el teclado, las flechas recorren los días, RePág y AvPág cambian de mes, Inicio y Fin van al principio y al final de la semana, Intro elige y Esc cierra y vuelve al botón sin cambiar nada. Al pie, «Hoy» elige el día de hoy y «Borrar» vacía el campo. En el móvil se abre como una hoja desde abajo. El mismo selector está en los ciclos (capítulo 9), en el informe de estado (capítulo 11) y en los campos personalizados de tipo fecha (capítulo 14).`,
+    caption: `La fecha se escribe dd/mm/aaaa o se elige en el calendario de Pharos, el mismo del cronograma: el botón del calendario, al final del campo, lo abre en el mes de la fecha, con el mes y el año arriba y ‹ › para cambiar de mes. Hoy lleva un anillo naranja y el día elegido va relleno. Con el teclado, las flechas recorren los días, RePág y AvPág cambian de mes, Inicio y Fin van al principio y al final de la semana, Intro elige y Esc cierra y vuelve al botón sin cambiar nada. Al pie, «Hoy» elige el día de hoy y «Borrar» vacía el campo. En el móvil se abre como una hoja desde abajo. El mismo selector está en los ciclos (capítulo 9), en el informe de estado (capítulo 11) y en los campos personalizados de tipo fecha (capítulo 14).`,
     covers: ["action:date-picker"],
     focus: ".pdate__pop",
     run: async () => {
@@ -370,7 +370,7 @@ chapter("plan", () => {
   step("cronograma", {
     title: "Paso 15 · Cronograma",
     caption:
-      "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas: aquí, los dos sprints de la versión, del 9 de noviembre al 6 de diciembre, y los dos hitos que trajo el Excel: «Congelación de código», el rombo del 25 de noviembre, y «Publicación de la 0.6.0», el 7 de diciembre, al día siguiente del último sprint. Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin (Esc cancela el rango a medias): el sprint aparece como una franja y en la lista «Sprints», con su nombre y sus fechas, que puedes editar (dd/mm/aaaa e Intro). «Siguiente sprint» añade el siguiente a continuación, con la duración del paso 7. La leyenda explica el calendario: las franjas alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es hoy y el rojo claro señala días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). Con el ratón puedes arrastrar los extremos del sprint seleccionado. Las flechas de arriba cambian de mes.",
+      "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas: aquí, los dos sprints de la versión, de dos semanas cada uno, y los dos hitos que trajo el Excel: «Congelación de código», con su rombo en el calendario, y «Publicación de la 0.6.0», al día siguiente del último sprint. Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin (Esc cancela el rango a medias): el sprint aparece como una franja y en la lista «Sprints», con su nombre y sus fechas, que puedes editar (dd/mm/aaaa e Intro). «Siguiente sprint» añade el siguiente a continuación, con la duración del paso 7. La leyenda explica el calendario: las franjas alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es hoy y el rojo claro señala días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). Con el ratón puedes arrastrar los extremos del sprint seleccionado. Las flechas de arriba cambian de mes.",
     covers: ["wizard:schedule"],
     focus: ".tps-grid",
     run: async () => {
@@ -385,12 +385,16 @@ chapter("plan", () => {
 
   step("cronograma-hito", {
     title: "Cronograma: un hito con el teclado",
-    caption: `Un hito es una fecha clave que no ocupa días, como una congelación de código o una publicación. Además de los dos que trajo el Excel, Liomar marca uno con el teclado: elige «Hito», lleva el foco al calendario con Tab, se mueve con las flechas hasta el ${dmy(PLAN_ON_SCREEN.milestone.date)} y pulsa Intro. El hito se marca con un rombo ámbar y se añade a la lista «Hitos», donde le da nombre, «${PLAN_ON_SCREEN.milestone.name}», y puede corregir la fecha. Con el ratón basta un clic en el día. En el calendario, ← → mueven el foco un día, ↑ ↓ una semana, Inicio y Fin van al principio y al final de la semana, RePág y AvPág cambian de mes, e Intro o Espacio marcan el día enfocado.`,
+    caption: `Un hito es una fecha clave que no ocupa días, como una congelación de código o una publicación. Además de los dos que trajo el Excel, Liomar marca uno con el teclado: elige «Hito», lleva el foco al calendario con Tab, se mueve con las flechas hasta el día que quiere y pulsa Intro. El hito se marca con un rombo ámbar y se añade a la lista «Hitos», donde le da nombre, «${PLAN_ON_SCREEN.milestone.name}», y puede corregir la fecha. Con el ratón basta un clic en el día. En el calendario, ← → mueven el foco un día, ↑ ↓ una semana, Inicio y Fin van al principio y al final de la semana, RePág y AvPág cambian de mes, e Intro o Espacio marcan el día enfocado.`,
     covers: ["action:schedule-milestone", "keyboard:schedule-calendar"],
     focus: [`.tps-grid [data-day="${PLAN_ON_SCREEN.milestone.date}"]`, "[data-tour-shown]"],
     run: async () => {
       await $(`.tps-seg__btn=${P.schedule.modeMilestone}`).click();
       const before = (await $$(`input.tps-name[aria-label^="${P.milestoneName}"]`)).length;
+      // The month of the day before the milestone (the calendar opens on the
+      // plan's first month), then keyboard focus on it, → and Enter.
+      for (let i = 0; i < 3 && !(await day(PLAN_ON_SCREEN.milestone.from).isExisting()); i++)
+        await $(`button.tps-nav__btn[aria-label="${P.schedule.nextMonth}"]`).click();
       // Keyboard focus on the day before, then → and Enter.
       await browser.execute((iso: string) => {
         (document.querySelector(`.tps-grid [data-day="${iso}"]`) as HTMLElement | null)?.focus();
