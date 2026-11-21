@@ -330,7 +330,8 @@ describe("disabling an account (SEC-12)", () => {
         workspaceId: movil,
         name: "QA Móvil",
         candidates: [
-          expect.objectContaining({ userId: ana.userId, role: "test_analyst" }),
+          // Named by the official name, not the alias (FIX-51).
+          expect.objectContaining({ userId: ana.userId, displayName: "F L", role: "test_analyst" }),
         ],
       }),
     ]);

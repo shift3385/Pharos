@@ -4,8 +4,11 @@ import type { MetricView } from "@shared/contracts/contract";
 import { DataTable, type DataColumn } from "@shared/ui/DataTable";
 import { StatusPill } from "@shared/ui/StatusPill";
 import {
+  aggregationLabel,
   formatMetric,
+  formatThreshold,
   isCheck,
+  scopeLabel,
   keyMetrics,
   thresholdsOf,
 } from "../model/findings";
@@ -24,8 +27,16 @@ export function MetricsPanel({ metrics }: { metrics: MetricView[] }) {
   const value = (m: MetricView) => formatMetric(m, i18n.language);
   // k6 names its aggregations in English («rate», «count»): shown in the
   // user's language; percentiles (p95) read the same in both (FIX-45).
-  const aggregation = (a: string | null | undefined) =>
-    !a ? "—" : t(`findings.metric.aggregations.${a}`, { defaultValue: a });
+  const aggregation = (a: string | null | undefined) => aggregationLabel(a, t) || "—";
+  // The threshold in the value's own form («< 1 %» beside «1,02 %»), as the
+  // status report shows it; k6's expression («rate<0.01») in its tooltip
+  // (FIX-51: the tab still showed the raw expression with a decimal point).
+  const threshold = (m: MetricView) =>
+    m.threshold ? (
+      <span title={t("findings.metric.rawThreshold", { expression: m.threshold })}>
+        {formatThreshold(m, i18n.language)}
+      </span>
+    ) : null;
 
   const columns: DataColumn<MetricView>[] = [
     {
@@ -43,7 +54,14 @@ export function MetricsPanel({ metrics }: { metrics: MetricView[] }) {
     {
       id: "scope",
       header: t("findings.metric.scope"),
-      cell: (m) => <span className="fd-mono fd-muted">{m.scope ?? "—"}</span>,
+      cell: (m) =>
+        m.scope ? (
+          <span className="fd-muted" title={m.scope}>
+            {scopeLabel(m.scope, t)}
+          </span>
+        ) : (
+          <span className="fd-muted">—</span>
+        ),
       width: "minmax(0,1.2fr)",
       minView: "tablet",
     },
@@ -57,8 +75,7 @@ export function MetricsPanel({ metrics }: { metrics: MetricView[] }) {
     {
       id: "threshold",
       header: t("findings.metric.threshold"),
-      cell: (m) =>
-        m.threshold ? <span className="fd-mono">{m.threshold}</span> : "—",
+      cell: (m) => threshold(m) ?? "—",
       width: "minmax(0,1fr)",
     },
     {
@@ -116,9 +133,8 @@ export function MetricsPanel({ metrics }: { metrics: MetricView[] }) {
               total: thresholds.total,
             })}
           </strong>
-          {/* The threshold is k6's own expression, in code style like the
-              table's «Umbral» column: its «0.01» is not a number of the
-              sentence, whose values use the locale (FIX-45). */}
+          {/* «http_req_failed (tasa < 1 %): 1,02 %»: the threshold in the
+              value's form, as in the table's «Umbral» column (FIX-51). */}
           {thresholds.failed.length > 0 && (
             <span>
               {" "}
@@ -126,8 +142,16 @@ export function MetricsPanel({ metrics }: { metrics: MetricView[] }) {
               {thresholds.failed.map((m, i) => (
                 <Fragment key={m.id}>
                   {i > 0 && "; "}
-                  <span className="fd-mono">{m.name}</span>{" "}
-                  {m.threshold && <code className="fd-mono">{m.threshold}</code>}
+                  <span className="fd-mono">{m.name}</span>
+                  {m.threshold && (
+                    <>
+                      {" ("}
+                      {aggregationLabel(m.aggregation, t)}
+                      {m.aggregation ? " " : ""}
+                      {threshold(m)}
+                      {")"}
+                    </>
+                  )}
                   {": "}
                   {value(m)}
                 </Fragment>
@@ -161,7 +185,7 @@ export function MetricsPanel({ metrics }: { metrics: MetricView[] }) {
       ) : null}
       {checks.length > 0 && (
         <>
-          <h3 className="fd-sub">{t("findings.check.title")}</h3>
+          <h3 className="ui-card fd-sub">{t("findings.check.title")}</h3>
           <DataTable
             className="dt-surface"
             label={t("findings.check.title")}

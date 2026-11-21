@@ -202,3 +202,9 @@ sin cambiar la decisión.
 - **Qué cambió.** El prompt de diseños pide el requisito y sus criterios de aceptación en el idioma de la persona: en español, «El sistema deberá …» y «Dado … cuando … entonces …» (con «Y» y «Pero»); en inglés, «The system shall …» y «Given … when … then …». La versión 1 pedía siempre las palabras clave inglesas, y salían «Given/When/Then» dentro de criterios en español. Son criterios en prosa de un requisito, no un `.feature`: un `.feature` sigue con las palabras clave inglesas salvo `# language: es`.
 - **Por qué sube la versión.** La regla de la nota anterior: un identificador no nombra dos textos. Lo generado antes conserva `@1`; la importación desde diseños guarda ahora `requirements-from-design@2+req-synthesis@2`.
 - **Lectura.** `criterionLines` reconoce también «Dado/Dada/Dados/Dadas», «Cuando», «Entonces», «Y» y «Pero» para mostrar cada palabra clave en su línea y en negrita.
+
+## Nota (FIX-51, 2026-11-20): `req-synthesis@3`
+
+- **Qué cambió.** El prompt de síntesis dice que las etiquetas de los candidatos (C1, C2…) solo sirven para «from» y nunca van en «reason», «title» ni «description»: un candidato se nombra por lo que dice y un requisito por su clave. El ejemplo de «reason» de la versión 2 citaba «C3 and C7», y el modelo copiaba esas etiquetas en el «Motivo» que lee la persona («C1 no tiene cobertura»).
+- **Además.** `readableReason` (`traceability/proposals/proposals.ts`) quita del «Motivo» una etiqueta entre paréntesis y cambia una suelta por el título del candidato entre «», por si el modelo las escribe igual.
+- **Por qué sube la versión.** La regla de las notas anteriores. Lo generado antes conserva `@2`; la importación desde un proyecto guarda `req-synthesis@3` y la de diseños `requirements-from-design@2+req-synthesis@3`.

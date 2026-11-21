@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
+import i18n from "@shared/i18n";
 import type { FindingView, MetricView } from "@shared/contracts/contract";
 import {
+  aggregationLabel,
+  scopeLabel,
   formatMetric,
   formatThreshold,
   groupByRule,
@@ -190,5 +193,25 @@ describe("findings model (F4)", () => {
       1,
       ["2"],
     ]);
+  });
+});
+
+describe("aggregation and scope labels (FIX-51)", () => {
+  const es = i18n.getFixedT("es");
+  const en = i18n.getFixedT("en");
+
+  it("say k6's tags as a reader does", () => {
+    expect(scopeLabel("case:PH-001", es)).toBe("Caso PH-001");
+    expect(scopeLabel("expected_response:true", es)).toBe("Respuestas esperadas");
+    expect(scopeLabel("expected_response:true", en)).toBe("Expected responses");
+    expect(scopeLabel("scenario:login,method:GET", es)).toBe("Escenario: login · Método: GET");
+    expect(scopeLabel("mytag:x", es)).toBe("mytag: x");
+    expect(scopeLabel(null, es)).toBe("");
+  });
+
+  it("say the aggregation in the user's language", () => {
+    expect(aggregationLabel("rate", es)).toBe("tasa");
+    expect(aggregationLabel("p95", es)).toBe("p95");
+    expect(aggregationLabel(null, es)).toBe("");
   });
 });

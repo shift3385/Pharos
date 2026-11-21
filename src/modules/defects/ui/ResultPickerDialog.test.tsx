@@ -43,3 +43,23 @@ describe("ResultPickerDialog when the results fail to load", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
+
+describe("ResultPickerDialog dates an attempt by when it ran (FIX-51)", () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("es");
+    vi.mocked(defectsApi.results).mockReset();
+  });
+
+  it("shows the report's time of an imported attempt, not the import's", async () => {
+    vi.mocked(defectsApi.results).mockResolvedValueOnce([
+      { ...RESULT, createdAt: "2026-11-20 23:53:00", executedAt: "2026-11-16T18:10:00" },
+    ] as never);
+    renderWithProviders(
+      <ResultPickerDialog projectId="p1" userId="u1" purpose="create" onPick={vi.fn()} onClose={vi.fn()} />,
+    );
+    const line = await screen.findByText(/intento 3 ·/);
+    expect(line).toHaveTextContent("16 nov 2026");
+    expect(line).not.toHaveTextContent("20 nov");
+    expect(line).toHaveClass("df-picker__when");
+  });
+});

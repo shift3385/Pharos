@@ -56,6 +56,26 @@ const current = { title: "Plan", data: {} };
 const rows = (s: PlanHistorySource, tz = UTC) =>
   groupHistory(planSaves(s, current), tz);
 
+describe("a request for changes in the history (FIX-51)", () => {
+  it("is marked, so the Historial can say «Cambios pedidos»", () => {
+    const saves = planSaves(
+      source([
+        create(ANA, "2026-11-05T09:00:00.000Z", "reviewed"),
+        update(LUIS, "2026-11-05T10:00:00.000Z", {
+          "data.review": [{ state: "pending" }, { state: "changesRequested", returnedBy: LUIS }],
+        }),
+        update(ANA, "2026-11-05T11:00:00.000Z", {
+          version: ["1.0", "1.1"],
+          "data.scopeIn": [[], ["a"]],
+          "data.review": [{ state: "changesRequested" }, { state: "changesRequested" }],
+        }),
+      ]),
+      current,
+    );
+    expect(saves.map((s) => Boolean(s.returned))).toEqual([false, true, false]);
+  });
+});
+
 describe("revision history of the exported plan (PLN-02)", () => {
   it("joins the saves of one person on one day into their last one", () => {
     const r = rows(

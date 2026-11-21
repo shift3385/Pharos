@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { accountApi, type AdminUser, type DisableImpact } from "@modules/auth";
+import { accountApi, personName, type AdminUser, type DisableImpact } from "@modules/auth";
 import { Alert } from "@shared/ui/Alert";
 import { Dialog } from "@shared/ui/Dialog";
 import { Select } from "@shared/ui/Select";
@@ -69,7 +69,7 @@ export function DisableAccountDialog({
   return (
     <Dialog labelledBy={`${id}-title`} onClose={onClose} dismissable={!busy}>
       <h3 id={`${id}-title`} className="cd__title">
-        {t("admin.users.disableTitle", { name: target.displayName })}
+        {t("admin.users.disableTitle", { name: personName(target) })}
       </h3>
       <ul className="usr-list">
         <li>{t("admin.users.disablePoint1")}</li>

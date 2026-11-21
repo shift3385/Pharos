@@ -4,7 +4,7 @@
 //
 //   req-extract@2    one batch of project files → candidate requirements, each
 //                    with the files and lines it rests on.
-//   req-synthesis@2  every candidate (of any source: a project here, images
+//   req-synthesis@3  every candidate (of any source: a project here, images
 //                    and designs in IA-18) + the existing requirements →
 //                    proposals: new, improve, merge (possible duplicate),
 //                    remove (redundant).
@@ -30,7 +30,10 @@ import { aiJson } from "./structured";
 // shall …» inside Spanish text. Requirements written before keep `@1` in
 // their provenance: both ids stay valid there and nothing is migrated.
 export const REQ_EXTRACT_PROMPT = "req-extract@2";
-export const REQ_SYNTHESIS_PROMPT = "req-synthesis@2";
+// @3 (FIX-51, ADR-0036 note): the candidates' labels (C1, C4) are for "from"
+// only and never written in the texts the person reads; @2's own example
+// reason cited «C3 and C7», and the model copied the labels into «Motivo».
+export const REQ_SYNTHESIS_PROMPT = "req-synthesis@3";
 
 const languageOf = (lang: string) =>
   lang.startsWith("es") ? "Spanish" : "English";
@@ -226,8 +229,10 @@ export function buildRequirementSynthesisMessages(
     `- ${removal}`,
     `- At most one proposal per existing requirement. Never invent keys: use only the keys ` +
       `listed. Never write file names or paths: "from" says where it comes from.`,
-    `- "reason" names the concrete defect or evidence in at most 20 words (e.g. "C3 and C7 ` +
-      `describe sign-in; REQ-004 says only 'secure'").`,
+    `- "reason" names the concrete defect or evidence in at most 20 words (e.g. "two ` +
+      `candidates describe sign-in; REQ-004 says only 'secure'"). The labels C1, C2… are only ` +
+      `for "from": the person never sees them, so never write them in "reason", "title" or ` +
+      `"description"; name a candidate by what it says, and an existing requirement by its key.`,
     `- Propose only what improves the list: do not pad. At most 100 proposals.`,
     ``,
     `Return exactly this shape:`,

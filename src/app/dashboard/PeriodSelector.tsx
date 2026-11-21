@@ -123,23 +123,21 @@ export function PeriodSelector({
         {/* Not yet available: the pale disabled look and a «Próximamente»
             chip, as «Continuar con Google» (FIX-49: only a hover title said
             so, and they looked like the live options). */}
-        <MenuItem icon={Flag} disabled title={soon} onSelect={() => {}}>
+        <MenuItem icon={Flag} disabled title={soon} badge={<SoonChip />} onSelect={() => {}}>
           {t("dashboard.period.cycleCurrent")}
-          <SoonChip />
         </MenuItem>
-        <MenuItem icon={History} disabled title={soon} onSelect={() => {}}>
+        <MenuItem icon={History} disabled title={soon} badge={<SoonChip />} onSelect={() => {}}>
           {t("dashboard.period.cyclePrevious")}
-          <SoonChip />
         </MenuItem>
         <MenuSeparator />
         <MenuItem
           icon={CalendarRange}
           disabled
           title={soon}
+          badge={<SoonChip />}
           onSelect={() => {}}
         >
           {t("dashboard.period.custom")}
-          <SoonChip />
         </MenuItem>
         <MenuSeparator />
         {/* A menu holds menu items only, so the comparison is an on/off item

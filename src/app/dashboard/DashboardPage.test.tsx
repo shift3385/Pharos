@@ -236,6 +236,10 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
         name: /^Ciclo actual ?, Próximamente$/,
       }),
     ).toBeDisabled();
+    // FIX-51: the chip is beside the text, never inside its ellipsis.
+    const custom = within(menu).getByRole("menuitem", { name: /^Rango personalizado… ?, Próximamente$/ });
+    expect(custom.querySelector(".menu__text .menu__soon")).toBeNull();
+    expect(custom.querySelector(":scope > .menu__soon")).not.toBeNull();
     // RED-W4: the comparison is an on/off item, off until turned on.
     const compare = within(menu).getByRole("menuitemcheckbox", {
       name: "Comparar con el periodo anterior",

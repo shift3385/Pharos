@@ -105,12 +105,24 @@ export function draftFor(
   return { texts, summaryEdited: summaryEdited === true, approval: stale ? null : approval, stale };
 }
 
+/** The keys of a cycle's free-form `data`. The audit names each one in
+ *  «Cambios», so a new key is added here and gets a label in
+ *  `admin.audit.fields` (FIX-51: `completionReport` showed raw; the test
+ *  `auditFieldLabels.test.ts` reads this type). */
+export interface CycleData {
+  /** The gate's record of each closing (DOC-02), written by the core. */
+  closures?: unknown[];
+  /** The closure report's texts and approval (DOC-01). */
+  completionReport?: StoredCompletion;
+  [key: string]: unknown;
+}
+
 /** The cycle's `data` with the report saved in it: every other key (the
  *  gate's `closures` among them) as it was. */
 export function withCompletion(
   data: Record<string, unknown> | null | undefined,
   stored: StoredCompletion,
-): Record<string, unknown> {
+): CycleData {
   return { ...(data ?? {}), completionReport: stored };
 }
 

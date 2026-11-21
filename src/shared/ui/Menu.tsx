@@ -148,9 +148,13 @@ export function MenuItem({
   testId,
   description,
   checked,
+  badge,
   children,
 }: {
   icon?: LucideIcon;
+  /** A chip after the text, such as «Próximamente». It never shrinks: the
+   *  text gives way first (FIX-51: inside the text it was cut to «Próximam»). */
+  badge?: ReactNode;
   onSelect: () => void;
   selected?: boolean;
   /** An on/off item (`menuitemcheckbox`, RED-W4): toggling it keeps the
@@ -193,6 +197,7 @@ export function MenuItem({
       <ItemText description={description} descId={descId}>
         {children}
       </ItemText>
+      {badge}
       {selected && <Check className="menu__check" size={16} aria-hidden="true" />}
     </button>
   );

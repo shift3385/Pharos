@@ -148,8 +148,11 @@
   color: var(--color-text-primary);
 }
 
+/* The «Checks» heading is the shared `.ui-card`, like the thresholds line
+   above the metrics: never text on the background photo (FIX-51). */
 .fd-sub {
   margin: var(--space-2) 0 0;
+  padding: var(--space-3) var(--space-4);
   font-size: var(--fs-ui);
 }
 

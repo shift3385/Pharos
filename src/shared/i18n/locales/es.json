@@ -57,6 +57,7 @@
     "chooseFile": "Elegir archivo…",
     "chooseFolder": "Elegir carpeta…",
     "noFileChosen": "Ningún archivo elegido",
+    "noFolderChosen": "Ninguna carpeta elegida",
     "filesChosen_one": "{{count}} archivo elegido",
     "filesChosen_other": "{{count}} archivos elegidos",
     "retry": "Reintentar",
@@ -985,6 +986,7 @@
         "risks": "Riesgos",
         "lifecycle": "Ciclo de vida",
         "closures": "Cierres",
+        "completionReport": "Informe de cierre",
         "links": "Vínculos",
         "review": "Revisión",
         "approval": "Aprobación",
@@ -2415,6 +2417,7 @@
       "created": "Creación del plan",
       "approved": "Aprobado por {{name}}",
       "sent": "Enviado a revisión por {{name}}",
+      "returned": "Cambios pedidos por {{name}}",
       "lostApproval": "pierde la aprobación",
       "none": "Aún no hay cambios guardados.",
       "someone": "Otra cuenta"
@@ -2817,6 +2820,7 @@
     },
     "checklist": {
       "items": "Comprobaciones",
+      "add": "Añadir comprobación",
       "hint": "Una checklist se ejecuta marcando cada punto; no tiene pasos Gherkin.",
       "kept": "Los pasos y el Gherkin de este caso se conservan, ocultos mientras sea una checklist.",
       "noGherkin": "Una checklist no tiene vista Gherkin."
@@ -3526,6 +3530,7 @@
       "weightedTitle": "Cobertura ponderada por riesgo",
       "weightedHow": "Suma del nivel de riesgo (probabilidad × impacto) de los requisitos cubiertos entre la suma del nivel de todos los requisitos evaluados. «Aprobada» cuenta los que tienen todos sus casos ejecutados y en Pasa.",
       "weightedCalcCovered": "cubierta = {{covered}} / {{total}} = {{coveredPct}}",
+      "weightedCalcPassed": "aprobada = {{passed}} / {{total}} = {{passedPct}}",
       "weightedBands_one": "1 requisito sin evaluar no entra. Bandas del proyecto: bajo hasta {{low}}, medio hasta {{medium}}.",
       "weightedBands_other": "{{count}} requisitos sin evaluar no entran. Bandas del proyecto: bajo hasta {{low}}, medio hasta {{medium}}.",
       "weightedHint_one": "aprobada {{passed}} · 1 sin evaluar",
@@ -5390,9 +5395,9 @@
         "conflict_other": "{{count}} conflictos de sincronización por revisar"
       },
       "member": {
-        "joined": "{{actor}} se unió a {{title}}",
-        "removed": "Ya no eres miembro de {{title}}",
-        "disabled": "{{actor}} desactivó la cuenta de {{title}}: ya no tiene acceso a {{workspaceName}}"
+        "joined": "{{actor}} se unió a «{{title}}»",
+        "removed": "Ya no eres miembro de «{{title}}»",
+        "disabled": "{{actor}} desactivó la cuenta de {{title}}: ya no tiene acceso a «{{workspaceName}}»"
       },
       "account": {
         "reset_issued": "{{actor}} (administrador del servidor) generó un enlace para restablecer tu contraseña. Si no lo pediste, avísale.",
@@ -5864,6 +5869,19 @@
         "rate": "tasa",
         "value": "valor"
       },
+      "scopes": {
+        "case": "Caso {{value}}",
+        "expected_response_true": "Respuestas esperadas",
+        "expected_response_false": "Respuestas no esperadas",
+        "scenario": "Escenario: {{value}}",
+        "group": "Grupo: {{value}}",
+        "name": "Petición: {{value}}",
+        "method": "Método: {{value}}",
+        "status": "Estado HTTP: {{value}}",
+        "url": "URL: {{value}}",
+        "check": "Comprobación: {{value}}"
+      },
+      "rawThreshold": "Expresión de k6: {{expression}}",
       "empty": "No hay métricas.",
       "all": "Ver todas ({{shown}} de {{total}})",
       "fewer": "Ver solo las principales"
@@ -6045,7 +6063,7 @@
       "imported": "Importadas {{rows}} filas y {{columns}} columnas. Revisa y guarda.",
       "exported": "Exportado: {{name}}",
       "replaceTitle": "¿Reemplazar los datos?",
-      "replaceMessage": "Los datos de «{{name}}» sustituyen a los de la rejilla. Las filas conservan su id por posición.",
+      "replaceMessage": "Los datos de «{{name}}» sustituyen a los de la rejilla. Las filas conservan su ID por posición.",
       "replaceConfirm": "Reemplazar",
       "emptyColumn": "La columna {{n}} no tiene nombre.",
       "badColumn": "«{{name}}» no sirve como columna: sin espacios al principio o al final, sin < ni >, y hasta 40 caracteres.",

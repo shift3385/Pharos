@@ -37,17 +37,48 @@
 .int-pill {
   white-space: nowrap;
 }
-.int-scopes {
-  min-width: 140px;
+/* The token tables fit their card at 1440 px with several rows and long
+   names (FIX-51: a second member's token pushed «Reasignar a mí», «Rotar» and
+   «Revocar» out of the card). The table's own text is the caption size, the
+   cells are tighter, the scopes stack, the last use and a «Revocado el …»
+   pill may take two lines, and the buttons stack in their column. */
+.int-table {
+  font-size: var(--fs-caption);
+}
+.int-table th,
+.int-table td {
+  padding: 8px;
+}
+.int-scopes-cell {
+  min-width: 0;
+}
+.int-scopes-cell .int-chip {
+  display: block;
+  width: max-content;
 }
 .int-num {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+.int-num.int-when {
+  min-width: 7em;
+  white-space: normal;
+}
+.int-table .int-pill--mute {
+  white-space: normal;
+}
 .int-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+.int-actions-cell .int-actions {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+.int-actions-cell .ui-btn {
+  white-space: nowrap;
 }
 .int-pill {
   display: inline-block;

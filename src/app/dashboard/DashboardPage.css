@@ -124,9 +124,12 @@
   height: 44px;
 }
 
-/* Period menu: a bit wider than the default menu, and the drawn switch. */
+/* Period menu: a bit wider than the default menu, and the drawn switch.
+   Wide enough for «Rango personalizado…» and its «Próximamente» chip on one
+   line, in es and en (FIX-51: at 270px the label showed «……» and the chip was
+   cut to «Próximam»). */
 .home-period.menu {
-  width: 270px;
+  width: 310px;
 }
 
 .home-compare {
@@ -239,9 +242,13 @@
   border-radius: 12px;
 }
 
+/* No shadow of its own either: with «Sombra en las tarjetas» on, the shadow
+   is the stack's, so it never reads as a raised card inside another (FIX-51,
+   movil/01; FIX-49 removed only the hover shadow). */
 .home-kpi-stack > .home-kpi:has(~ .home-kpi__extra:not(.home-kpi__extra--badge)) {
   border: 0;
   background: transparent;
+  box-shadow: none;
 }
 
 .home-kpi-stack > .home-kpi__extra:not(.home-kpi__extra--badge) {

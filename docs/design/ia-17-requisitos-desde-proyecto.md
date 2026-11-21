@@ -102,7 +102,7 @@ constante. Comparten `systemRules()` y `asData()` con los demás generadores.
  "reason":"si no hay ninguno, por qué"}
 ```
 
-### `req-synthesis@2` (común con la pista de imágenes)
+### `req-synthesis@3` (común con la pista de imágenes)
 
 - **Material:**
   - Los candidatos numerados (`C1…Cn`) con su base.
@@ -151,7 +151,7 @@ Contrato común con IA-18 (tipos, filtro, vista, aplicar y `AiSendNotice`): la n
 `contrato-propuestas-requisitos.md` (v2). Lo que sigue es lo que guarda IA-17.
 
 - `requirements.data` (JSON), con este contenido:
-  - `aiProvenance`: `{ requirement: AiProvenance & { prompt?: "req-synthesis@2" } }`;
+  - `aiProvenance`: `{ requirement: AiProvenance & { prompt?: "req-synthesis@3" } }`;
   - `sources`: `RequirementSource[]`.
 - La revisión humana usa `markReviewed`, como en los casos: con «Marcar revisado» en
   el formulario y después «Guardar».

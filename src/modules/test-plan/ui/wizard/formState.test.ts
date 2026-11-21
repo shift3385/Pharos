@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import i18n from "@shared/i18n";
 import legacy from "../../model/__fixtures__/legacy-schedule.json";
 import type { TestPlan } from "../../model/types";
@@ -18,6 +18,21 @@ const plan = (data: TestPlan["data"]): TestPlan => ({
   updatedAt: "",
   revision: 1,
   data,
+});
+
+describe("a new plan's «Fecha» (FIX-51)", () => {
+  const original = process.env.TZ;
+  afterEach(() => {
+    vi.useRealTimers();
+    process.env.TZ = original;
+  });
+
+  it("is today's local date, also late in the evening in a zone behind UTC", () => {
+    process.env.TZ = "America/Caracas";
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 10, 20, 20, 51)); // 00:51 UTC on the 21st
+    expect(defaults(t, "Pharos").planDate).toBe("2026-11-20");
+  });
 });
 
 describe("schedule in the plan form (RED-W5)", () => {

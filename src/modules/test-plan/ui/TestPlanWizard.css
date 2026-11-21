@@ -187,6 +187,22 @@
   overscroll-behavior: contain;
 }
 
+/* The list fades out at the bottom edge while more steps follow below, so a
+   step is never shown sliced in half by the card's edge (FIX-51: «Entrada,
+   suspensión y…» cut mid-line). At the end of the list it sits under the
+   last step, over the padding, and hides nothing. */
+.tpw-rail::after {
+  content: "";
+  position: sticky;
+  bottom: -16px;
+  flex: none;
+  height: 28px;
+  margin-top: -12px;
+  margin-bottom: -16px;
+  background: linear-gradient(to bottom, transparent, var(--color-surface-1) 70%);
+  pointer-events: none;
+}
+
 .tpw-rail__head {
   display: flex;
   flex-direction: column;
@@ -1602,8 +1618,14 @@
   cursor: pointer;
 }
 
+/* Each label centred in its box, also when a neighbour on the row wraps to
+   two lines (FIX-51: «Externa» sat at the top beside «Equipo de la
+   organización»). */
 .tpw-scale__option span {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 8px 6px;
   font-size: var(--fs-caption);
   text-align: center;

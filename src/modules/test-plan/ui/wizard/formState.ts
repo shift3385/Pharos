@@ -2,6 +2,7 @@
 // an import or a revision, and how it becomes what is saved and exported.
 // Pure functions, moved out of TestPlanWizard (RED-V2).
 import type { ProvenanceMap } from "@modules/ai";
+import { todayIso } from "@shared/time/isoDay";
 import { duplicateRows, type Issue } from "@shared/validation";
 import type { ExportablePlan } from "../../export/planXlsx";
 import type {
@@ -294,7 +295,7 @@ export function defaults(
   return {
     title: name ? t("testPlan.suggestedTitle", { project: name }) : t("testPlan.defaultTitle"),
     version: "1.0",
-    planDate: new Date().toISOString().slice(0, 10),
+    planDate: todayIso(),
     status: "draft",
     summary: "",
     scopeIn: [],

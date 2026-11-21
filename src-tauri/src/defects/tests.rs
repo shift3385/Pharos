@@ -901,6 +901,47 @@ fn a_result_without_a_case_reaches_the_case_its_test_key_is_mapped_to() {
     assert_eq!(candidates[0].test_case_id.as_deref(), Some(case.as_str()));
 }
 
+#[test]
+fn a_candidate_is_dated_by_when_the_attempt_ran_not_by_its_import() {
+    // FIX-51: an imported attempt showed the import time. Its own end, else
+    // its start, else its run's start (the report's), else when it was saved.
+    let c = device();
+    let p = new_project(&c);
+    c.execute(
+        "INSERT INTO runs (id, workspace_id, project_id, run_key, title, trigger, started_at,
+                created_by, updated_by, created_at, updated_at)
+         VALUES ('run-r', 'w', ?1, 'RUN-004', 'CI', 'ci', '2026-11-16T18:10:00', ?2, ?2,
+                '2026-11-20 23:53:00', '2026-11-20 23:53:00')",
+        rusqlite::params![p, U],
+    )
+    .unwrap();
+    for (id, run, finished) in [
+        ("own", "run-r", Some("2026-11-16T18:12:30")),
+        ("from-run", "run-r", None),
+        ("orphan", "run-gone", None),
+    ] {
+        c.execute(
+            "INSERT INTO results (id, workspace_id, project_id, run_id, shard_id, test_key, attempt,
+                    status, finished_at, executed_by, created_by, created_at, hlc)
+             VALUES (?1, 'w', ?2, ?3, 'shard-x', ?1, 0, 'failed', ?4, 'ci', ?5,
+                    '2026-11-20 23:53:00', 'h')",
+            rusqlite::params![id, p, run, finished, U],
+        )
+        .unwrap();
+    }
+    let at = |id: &str| {
+        result_candidates(&c, &p, U)
+            .unwrap()
+            .into_iter()
+            .find(|r| r.result_id == id)
+            .unwrap()
+            .executed_at
+    };
+    assert_eq!(at("own"), "2026-11-16T18:12:30");
+    assert_eq!(at("from-run"), "2026-11-16T18:10:00");
+    assert_eq!(at("orphan"), "2026-11-20 23:53:00");
+}
+
 // ---- review: limits, stale links, revived cards ----------------------------------
 
 /// A synced card (base 4 / H) with these case ids, and its server copy as the

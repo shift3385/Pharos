@@ -43,12 +43,20 @@ describe("req-extract@2", () => {
   });
 });
 
-describe("req-synthesis@2", () => {
+describe("req-synthesis@3", () => {
   const existing = [{ key: "REQ-001", title: "Sign in", description: "x".repeat(900), priority: "high" }];
   const candidates = [{ title: "Sign out", description: "The system shall sign out.", basis: "stated" as const }];
 
+  it("keeps the candidates' labels out of the texts the person reads (FIX-51)", () => {
+    const [, user] = buildRequirementSynthesisMessages(candidates, existing, "es");
+    expect(user.content).toContain('never write them in "reason", "title" or "description"');
+    // @2's example reason cited «C3 and C7», and the model copied it.
+    expect(user.content).not.toContain("C3 and C7");
+    expect(user.content).toContain('(e.g. "two candidates describe sign-in;');
+  });
+
   it("numbers candidates C1… and lists the existing ones by key, clipped", () => {
-    expect(REQ_SYNTHESIS_PROMPT).toBe("req-synthesis@2");
+    expect(REQ_SYNTHESIS_PROMPT).toBe("req-synthesis@3");
     const [, user] = buildRequirementSynthesisMessages(candidates, existing, "en");
     expect(user.content).toContain("C1 [stated] Sign out: The system shall sign out.");
     expect(user.content).toContain("REQ-001 [high] Sign in: ");

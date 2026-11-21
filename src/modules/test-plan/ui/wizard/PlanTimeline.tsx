@@ -4,6 +4,7 @@ import { personName, useAuth } from "@modules/auth";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { testPlanApi } from "../../api/testPlanApi";
 import { isRevision, planSaves, type PlanSave } from "../../export/planHistory";
+import { planReviewOf } from "../../model/review";
 import type { TestPlan } from "../../model/types";
 
 const STATUS_TONE: Record<string, "neutral" | "info" | "success"> = {
@@ -51,6 +52,9 @@ export function PlanTimeline({ plan, limit = 4 }: { plan: TestPlan; limit?: numb
   const names: Record<string, string> = user ? { [user.id]: personName(user) } : {};
   const approval = plan.data.approval;
   if (approval) names[approval.by] ??= approval.byName;
+  // Who asked for changes, as the review records them (FIX-51).
+  const review = planReviewOf(plan.data.review);
+  if (review?.returnedBy && review.returnedByName) names[review.returnedBy] ??= review.returnedByName;
   // A person's name never breaks across lines (FIX-44: «Jorge L. Meneses /
   // Yero»): its spaces do not wrap.
   const nameOf = (actor: string) => (names[actor] || t("testPlan.timeline.someone")).replace(/ /g, "\u00a0");
@@ -68,7 +72,10 @@ export function PlanTimeline({ plan, limit = 4 }: { plan: TestPlan; limit?: numb
               // review's own record is not «Identificación del plan» (FIX-44).
               s.statusBefore === "draft" && s.status === "reviewed"
               ? t("testPlan.timeline.sent", { name: nameOf(s.actor) })
-              : [nameOf(s.actor), s.sections.map((id) => t(`testPlan.step.${id}`)).join(", ")]
+              : // A request for changes says so, not only who (FIX-51).
+                s.returned && s.sections.length === 0
+                ? t("testPlan.timeline.returned", { name: nameOf(s.actor) })
+                : [nameOf(s.actor), s.sections.map((id) => t(`testPlan.step.${id}`)).join(", ")]
                 .filter(Boolean)
                 .join(" · ");
         return (

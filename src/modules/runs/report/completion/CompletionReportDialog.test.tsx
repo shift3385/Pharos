@@ -100,6 +100,22 @@ describe("Informe de cierre (DOC-01)", () => {
     await expectNoAxeViolations();
   });
 
+  it("scrolls its sections in a body that ends above the buttons (FIX-51)", async () => {
+    // Regression of FIX-49: `.sr-modal` clips, and only the status report got
+    // the scrolling wrapper, so this body could not scroll and lost its buttons.
+    setViewportWidth(1440);
+    open();
+    const dialog = await screen.findByRole("dialog", { name: "Informe de cierre de pruebas" });
+    await within(dialog).findByText("Desviaciones respecto al plan");
+    const scroll = dialog.querySelector(".sr > .sr-scroll");
+    expect(scroll).not.toBeNull();
+    expect(scroll?.querySelector(".sr-body")).not.toBeNull();
+    expect(scroll?.querySelector("[data-testid='completion-approve']")).not.toBeNull();
+    const actions = dialog.querySelector(".sr > .sr-actions");
+    expect(actions).not.toBeNull();
+    expect(within(actions as HTMLElement).getByTestId("completion-export-pdf")).toBeInTheDocument();
+  });
+
   it("saves the texts in the cycle, then approves with author and date; editing takes it away", async () => {
     setViewportWidth(1440);
     open();

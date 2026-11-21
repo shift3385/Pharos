@@ -188,7 +188,7 @@ const optionalKey = z.preprocess(
   z.string().max(100).optional(),
 );
 
-/** The answer of `req-synthesis@2`: what to do with the candidates and the
+/** The answer of `req-synthesis@3`: what to do with the candidates and the
  *  existing requirements. Keys and candidate numbers are checked against what
  *  was sent in `usableRequirementProposals` (traceability). */
 export const requirementSynthesisSchema = z.object({
