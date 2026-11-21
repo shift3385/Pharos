@@ -67,18 +67,24 @@ export function PlanStatusPanel({
           <dd className="t-id">v{version}</dd>
           {status === "approved" && approval && (
             <>
-              <dt className="tpw-facts__full">{t("testPlan.approval.by")}</dt>
-              {/* Never cut (FIX-40) and the name never broken (FIX-44): the
-                  name keeps its line, «aprobación propia» goes on the next. */}
-              <dd className="tpw-facts__wrap" data-testid="plan-approved-by">
-                <span className="tpw-facts__name">{approval.byName.replace(/ /g, "\u00a0")}</span>
-                {approval.selfApproved && (
-                  <span className="tpw-facts__note">
-                    <span className="sr-only"> · </span>
-                    {t("testPlan.review.banner.selfApproved")}
+              {/* Never cut (FIX-40), the name never broken (FIX-44), and on
+                  the label's row when it fits, like every other fact; a name
+                  too long for it moves whole to the next line (FIX-49).
+                  «aprobación propia» goes under the name. */}
+              <div className="tpw-facts__pair">
+                <dt>{t("testPlan.approval.by")}</dt>
+                <dd className="tpw-facts__wrap" data-testid="plan-approved-by">
+                  <span className="tpw-facts__name">
+                    {approval.byName.replace(/ /g, "\u00a0")}
                   </span>
-                )}
-              </dd>
+                  {approval.selfApproved && (
+                    <span className="tpw-facts__note">
+                      <span className="sr-only"> · </span>
+                      {t("testPlan.review.banner.selfApproved")}
+                    </span>
+                  )}
+                </dd>
+              </div>
               <dt>{t("testPlan.approval.at")}</dt>
               <dd>{approvedAt}</dd>
             </>

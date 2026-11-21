@@ -42,6 +42,21 @@ const KEYBOARD_KEYS: { label: string; insert: string; name?: string }[] = [
 ];
 
 const highlight = highlightGherkin;
+/** One block per line with a hanging indent: a line too long for the box
+ *  continues under the text of its step (its own indentation plus 2 ch), not
+ *  at column 0 (FIX-49, NC-129). The text is the code's, line breaks
+ *  included, so what reads is what is saved. */
+const hangingLines = (code: string) =>
+  code
+    .split("\n")
+    .map((line, i, all) => {
+      const hang = line.length - line.trimStart().length + 2;
+      return `<span class="tc-hang" style="padding-left:${hang}ch;text-indent:-${hang}ch">${highlight(line)}${
+        i < all.length - 1 ? "\n" : ""
+      }</span>`;
+    })
+    .join("");
+
 /** One span per line, so CSS can number them (mobile editing). */
 const numbered = (code: string) =>
   code
@@ -128,6 +143,12 @@ export function GherkinEditor({
   const wrapRef = useRef<HTMLDivElement>(null);
   const id = useId();
   const keyboard = useKeyboardInset(Boolean(keyboardBar));
+  // While the editor is not being typed in, the code shows with hanging
+  // indents (FIX-49); the textarea, laid over the code, cannot indent a
+  // wrapped line, so while typing the editor's own layout shows instead and
+  // the caret always sits on the text it edits.
+  const [typing, setTyping] = useState(false);
+  const resting = !keyboardBar && !typing;
 
   // The editor does not forward aria-* to its textarea, so link the hint here.
   useEffect(() => {
@@ -204,18 +225,36 @@ export function GherkinEditor({
           {t("testCase.gherkinKeys")}
         </p>
       )}
-      <Editor
-        textareaId={`${id}-ta`}
-        value={value}
-        onValueChange={onChange}
-        highlight={keyboardBar ? numbered : highlight}
-        padding={16}
-        tabSize={2}
-        insertSpaces
-        textareaClassName="tc-gherkin__ta"
-        preClassName="tc-gherkin__pre"
-        className="tc-gherkin__editor"
-      />
+      <div
+        className="tc-gherkin__stack"
+        data-resting={resting || undefined}
+        onFocus={() => setTyping(true)}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null))
+            setTyping(false);
+        }}
+      >
+        <Editor
+          textareaId={`${id}-ta`}
+          value={value}
+          onValueChange={onChange}
+          highlight={keyboardBar ? numbered : highlight}
+          padding={16}
+          tabSize={2}
+          insertSpaces
+          textareaClassName="tc-gherkin__ta"
+          preClassName="tc-gherkin__pre"
+          className="tc-gherkin__editor"
+        />
+        {resting && (
+          <pre
+            className="tc-gherkin__hang"
+            aria-hidden="true"
+            data-testid="gherkin-resting"
+            dangerouslySetInnerHTML={{ __html: hangingLines(value) }}
+          />
+        )}
+      </div>
       {keyboardBar && palette}
     </div>
   );

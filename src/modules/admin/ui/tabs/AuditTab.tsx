@@ -72,8 +72,24 @@ function changesText(row: AuditRow, labels: AuditLabels, t: (k: string, o?: Reco
   if (row.redactedAt) return t("admin.audit.redacted");
   const summary = summaryEntries(row.summary);
   const resolution = summary.find(([k]) => k === "resolution");
-  const lead = resolution ? `${t("admin.audit.summary.resolution")}: ${labels.summaryValue(resolution[1])}` : null;
-  const fields = changedFields(row);
+  const lead = resolution
+    ? `${t("admin.audit.summary.resolution")}: ${labels.summaryValue(resolution[1])}`
+    : null;
+  // A combined conflict also names the fields kept as they were («Título»
+  // kept from this device changes nothing, so the diff alone left it out,
+  // FIX-49): every field the merge decided, after the changed ones.
+  const decided = summary.find(([k]) => k === "fields")?.[1];
+  const fields = [
+    ...new Set([
+      ...changedFields(row),
+      ...(resolution &&
+      decided &&
+      typeof decided === "object" &&
+      !Array.isArray(decided)
+        ? Object.keys(decided)
+        : []),
+    ]),
+  ];
   const fieldsText =
     fields.length > 3
       ? t("admin.audit.fieldCount", { count: fields.length })

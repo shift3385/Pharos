@@ -7,6 +7,9 @@ export interface SyncStatusValue {
   label: string;
   title: string;
   conflicts: number;
+  /** False until the first count of conflicts has been read: before it,
+   *  `conflicts` is 0 because nothing is known yet (FIX-49). */
+  conflictsKnown?: boolean;
   /** Local changes not sent yet. */
   pending: number;
   syncing: boolean;

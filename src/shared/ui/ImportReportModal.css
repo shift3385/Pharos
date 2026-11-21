@@ -24,7 +24,7 @@
   margin: 0;
   padding-left: 0;
   list-style: none;
-  max-height: 320px;
+  max-height: min(52vh, 460px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -50,14 +50,12 @@
 .imp__label {
   color: var(--color-text-primary);
 }
-/* A value takes two lines before it is cut, and its tooltip has it all
-   (FIX-46: one line cut every value). */
+/* A value wraps on as many lines as it needs, never cut (FIX-46 cut it at
+   one line, then at two: «…de gestión de pruebas que…», FIX-49). The list
+   scrolls, and its lower edge fades when more rows follow. */
 .imp__value {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
+  min-width: 0;
+  overflow-wrap: break-word;
   color: var(--color-text-secondary);
 }
 .imp__row[data-status="notFound"] .imp__value {

@@ -285,6 +285,9 @@ export function StatusReportDialog({
   return (
     <Dialog className="cd sr-modal" labelledBy={`${id}-title`} onClose={onClose} dismissable={!busy}>
       <div data-testid="status-report" className="sr">
+        {/* Only this part scrolls, and it ends above the buttons (FIX-49:
+            the sticky footer covered the last line of the body). */}
+        <div className="sr-scroll">
         <header className="sr-head">
           <h3 id={`${id}-title`} className="cd__title">
             <FileText size={18} aria-hidden="true" /> {t("statusReport.title")}
@@ -451,6 +454,7 @@ export function StatusReportDialog({
             </section>
           </div>
         )}
+        </div>
 
         <div className="cd__actions sr-actions">
           <button type="button" className="cd__cancel" onClick={onClose} disabled={busy}>

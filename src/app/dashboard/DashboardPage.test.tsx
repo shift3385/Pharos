@@ -230,8 +230,11 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(
       within(menu).getByRole("menuitemradio", { name: "Últimos 14 días" }),
     ).toHaveAttribute("aria-checked", "true");
+    // Not available yet, and it says so on screen (FIX-49).
     expect(
-      within(menu).getByRole("menuitem", { name: "Ciclo actual" }),
+      within(menu).getByRole("menuitem", {
+        name: /^Ciclo actual ?, Próximamente$/,
+      }),
     ).toBeDisabled();
     // RED-W4: the comparison is an on/off item, off until turned on.
     const compare = within(menu).getByRole("menuitemcheckbox", {

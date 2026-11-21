@@ -56,9 +56,12 @@ export const splitLines = (v: string): string[] =>
 export const splitItems = (v: string): string[] =>
   v.split(/\r?\n|[,;]/).map((s) => s.trim()).filter(Boolean);
 
-/** A long value, cut at a word near `n`: the import report shows it on up to
- *  two lines (FIX-46: 48 characters cut almost every value). */
-export const preview = (s: string, n = 120): string =>
+/** A value of the import report, whole up to `n` characters: the report
+ *  wraps it on as many lines as it needs (FIX-49: cut at 120 characters and
+ *  two lines, «…de gestión de pruebas que…» and «Ciclos,…» lost what was
+ *  detected). Only a longer one ends in «…», with all of it in its tooltip. */
+export const PREVIEW_MAX = 600;
+export const preview = (s: string, n = PREVIEW_MAX): string =>
   s.length > n ? `${s.slice(0, n).trim()}…` : s;
 
 /** Builds a normalized-label → key map from one or more i18n label dictionaries. */

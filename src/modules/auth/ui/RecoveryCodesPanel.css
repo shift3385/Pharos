@@ -62,8 +62,20 @@
   font-weight: var(--fw-medium);
 }
 
+/* The app's checkbox (as in the plan's lists and the tables): 18 px, navy,
+   level with the first line of its text (FIX-49: a 13 px browser box). */
+.recovery-codes__check {
+  align-items: center;
+  cursor: pointer;
+}
+
 .recovery-codes__check input {
-  margin-top: 3px;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--color-navy-500);
+  cursor: pointer;
 }
 
 .recovery-codes__done {

@@ -9,9 +9,24 @@ const items: DesignPromptItem[] = [
   { number: 3, kind: "pdf", name: "flujo.pdf", attachment: { mediaType: "application/pdf", data: "UERG" } },
 ];
 
-describe("requirements-from-design@1", () => {
+describe("requirements-from-design@2", () => {
   it("is versioned", () => {
-    expect(DESIGN_PROMPT_VERSION).toBe("requirements-from-design@1");
+    expect(DESIGN_PROMPT_VERSION).toBe("requirements-from-design@2");
+  });
+
+  it("asks for the requirement and its criteria in the user's language (FIX-49)", () => {
+    const [es, esUser] = buildDesignExtractionMessages(items, "", "es");
+    expect(es.content).toContain("El sistema deberá …");
+    expect(es.content).toContain("Dado … cuando … entonces …");
+    expect(es.content).toContain('never the English "Given"');
+    expect(es.content).not.toContain('as "The system shall');
+    expect(esUser.content).toContain(
+      '"acceptance":["Dado … cuando … entonces …"]',
+    );
+    expect(esUser.content).toContain('"description":"El sistema deberá …"');
+    const [en, enUser] = buildDesignExtractionMessages(items, "", "en");
+    expect(en.content).toContain("The system shall …");
+    expect(enUser.content).toContain('"acceptance":["Given … when … then …"]');
   });
 
   it("numbers the material, says which attachment is which and keeps text as data", () => {

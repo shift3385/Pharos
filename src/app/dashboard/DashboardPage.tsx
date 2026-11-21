@@ -548,6 +548,10 @@ export function DashboardPage() {
               {/* The chart is the widget the period changes, so the selector
                   is here too (user's decision); same state as in Resumen. */}
               <div className="home-period-row">
+                {/* The button says it to screen readers already. */}
+                <span className="home-period-row__label" aria-hidden="true">
+                  {t("dashboard.period.label")}
+                </span>
                 <PeriodSelector
               value={period}
               onChange={choosePeriod}

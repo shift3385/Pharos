@@ -164,6 +164,29 @@ describe("Administración › Auditoría (AUD-01)", () => {
     expect(within(dialog).getByRole("table", { name: "Cambios campo a campo" })).toBeInTheDocument();
   });
 
+  it("names a field the person kept by hand in a combined conflict, though it did not change (FIX-49)", async () => {
+    const merged = row({
+      id: "e4",
+      actor: `user:${ME}`,
+      onBehalfOf: null,
+      action: "resolve_conflict",
+      entity: "requirement",
+      entityKey: "REQ-006",
+      changes: '{"description":["Antes","Después"]}',
+      summary:
+        '{"resolution":"merged","auto":false,"fields":{"description":"remote","title":"local"},"remoteRevision":5}',
+    });
+    api.list.mockResolvedValue({ total: 1, events: [merged] });
+    setViewportWidth(1440);
+    render();
+    const listed = (await screen.findByTestId("audit-row-e4")).closest(
+      ".dt__row",
+    ) as HTMLElement;
+    expect(
+      within(listed).getByText("Se quedó: Combinado · Descripción, Título"),
+    ).toBeInTheDocument();
+  });
+
   it("gives the action column room for its longest label, «Conflicto resuelto» (FIX-39)", async () => {
     render();
     await screen.findByText("ATS_014");

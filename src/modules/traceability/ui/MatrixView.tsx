@@ -93,15 +93,23 @@ function WeightedKpi({ coverage }: { coverage: CoverageSummary | null }) {
           <span className="tz-weighted-tip">
             <strong>{t("traceability.matrix.weightedTitle")}</strong>
             <span>{t("traceability.matrix.weightedHow")}</span>
+            {/* One equation per line, each whole (FIX-49: «… = 0 / 20 =» / «0 %»). */}
             {has && (
               <span className="tz-weighted-tip__calc">
-                {t("traceability.matrix.weightedCalc", {
-                  covered: w.coveredWeight,
-                  passed: w.passedWeight,
-                  total: w.totalWeight,
-                  coveredPct: percent(w.coverageRatio),
-                  passedPct: percent(w.passedRatio),
-                })}
+                <span className="tz-weighted-tip__eq">
+                  {t("traceability.matrix.weightedCalcCovered", {
+                    covered: w.coveredWeight,
+                    total: w.totalWeight,
+                    coveredPct: percent(w.coverageRatio),
+                  })}
+                </span>
+                <span className="tz-weighted-tip__eq">
+                  {t("traceability.matrix.weightedCalcPassed", {
+                    passed: w.passedWeight,
+                    total: w.totalWeight,
+                    passedPct: percent(w.passedRatio),
+                  })}
+                </span>
               </span>
             )}
             {coverage && (

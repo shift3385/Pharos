@@ -84,7 +84,7 @@ describe("NotificationsPanel", () => {
     expect(screen.getByRole("heading", { name: "Hoy" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Ayer" })).toBeInTheDocument();
     const texts = [...document.querySelectorAll(".np-row__text")].map((e) => e.textContent);
-    expect(texts).toEqual(["Ana Torres te asignó BM-DEF-031 El saldo no se refresca", "Ana Torres aprobó BM-CP-0139 Login"]);
+    expect(texts).toEqual(["Ana Torres te asignó BM-DEF-031 «El saldo no se refresca»", "Ana Torres aprobó BM-CP-0139 «Login»"]);
     // A key is one unbreakable piece (FIX-41): never «BM-/DEF-031».
     expect([...document.querySelectorAll(".np-row__key")].map((e) => e.textContent)).toEqual(["BM-DEF-031", "BM-CP-0139"]);
     expect(screen.getByRole("radio", { name: "Sin leer · 1" })).toBeInTheDocument();
@@ -120,16 +120,13 @@ describe("NotificationsPanel", () => {
     }
   });
 
-  it("a conflict already resolved has nothing left to open (FIX-47)", async () => {
-    const user = userEvent.setup();
-    const onDone = show([
+  it("a conflict notice is not listed while no conflict is open (FIX-47, FIX-49)", () => {
+    show([
       item("s", today, { origin: "local", kind: "sync.conflict", projectId: null, data: { count: 1 }, subject: { entity: "sync", id: "x", title: "" } }),
+      item("a", today),
     ]);
+    expect(screen.queryByText("1 conflicto de sincronización por revisar")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Resolver" })).not.toBeInTheDocument();
-    await user.click(screen.getByText("1 conflicto de sincronización por revisar"));
-    expect(ctx.markRead).toHaveBeenCalledWith(["s"]);
-    expect(ctx.openConflicts).not.toHaveBeenCalled();
-    expect(onDone).not.toHaveBeenCalled();
   });
 
   it("«Marcar todo como leído» is off with nothing unread", async () => {

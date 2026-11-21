@@ -448,6 +448,18 @@ function worst(statuses: string[]): string | null {
   return out;
 }
 
+/** A run item's status (`runs::manual::item_status`): a failure or a block
+ *  decides it at once; otherwise it is `not_run` until every target (flow,
+ *  dataset row) has a final result, so a dataset case never reads «Pasa» with
+ *  a row still to run (FIX-49). */
+export function itemStatus(statuses: string[], targets: number): string {
+  const s = worst(statuses);
+  return s !== null &&
+    (statuses.length >= targets || s === "failed" || s === "blocked")
+    ? s
+    : NOT_RUN;
+}
+
 // ---- service ---------------------------------------------------------------------
 
 // ---- the run itself (shared with the API import, ADR-0052) -----------------------
@@ -835,7 +847,7 @@ export function createRunService(store: DomainStore) {
         rowIndex: item.exampleRowId ? (rowOf(rd, item.flowId, item.exampleRowId)?.index ?? null) : null,
         targets: targets.length,
         done: statuses.length,
-        status: worst(statuses) ?? NOT_RUN,
+        status: itemStatus(statuses, targets.length),
         attempts: attempts.get(item.id) ?? 0,
         hasDraft: false,
         ...(dataset ? { dataset } : {}),

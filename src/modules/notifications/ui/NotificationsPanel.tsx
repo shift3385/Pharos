@@ -71,7 +71,11 @@ export function NotificationsPanel({ onDone, showTitle = true }: { onDone: () =>
   const navigate = useNavigate();
   const ctx = useNotifications();
   const [filter, setFilter] = useState<Filter>("all");
-  const items = ctx?.items ?? [];
+  // «N conflictos por revisar» with none open would be false: such a notice
+  // is not listed while no conflict is open (FIX-49; FIX-47 only took away
+  // its link).
+  const conflictsOpen = ctx?.conflicts ?? 0;
+  const items = (ctx?.items ?? []).filter((n) => n.kind !== "sync.conflict" || conflictsOpen > 0);
   const unread = ctx?.unread ?? 0;
   const lng = i18n.resolvedLanguage ?? "es";
   const now = new Date();
@@ -85,11 +89,7 @@ export function NotificationsPanel({ onDone, showTitle = true }: { onDone: () =>
         ? t("notifications.yesterday")
         : day.toLocaleDateString(lng, { weekday: "long", day: "numeric", month: "short" });
 
-  // A conflict's notification once every conflict is resolved: nothing left
-  // to open (FIX-47).
-  const conflictsOpen = ctx?.conflicts ?? 0;
-  const targetFor = (n: AppNotification) =>
-    n.kind === "sync.conflict" && conflictsOpen === 0 ? null : targetOf(n);
+  const targetFor = (n: AppNotification) => targetOf(n);
 
   const open = (n: AppNotification) => {
     if (!n.readAt) ctx?.markRead([n.id]);

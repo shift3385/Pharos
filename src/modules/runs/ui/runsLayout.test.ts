@@ -26,6 +26,18 @@ describe("«Importar informe» fits any window (FIX-45)", () => {
   });
 });
 
+describe("«Informe de estado» never covers its last line (FIX-49)", () => {
+  it("scrolls its body, which ends above the buttons, not the dialog", () => {
+    const report = blockOf(read("../report/StatusReport.css"));
+    expect(report(".sr-modal")).toMatch(/overflow:\s*hidden;/);
+    const body = report(".sr-scroll");
+    expect(body).toMatch(/overflow-y:\s*auto;/);
+    expect(body).toMatch(/min-height:\s*0;/);
+    expect(report(".sr-actions")).toMatch(/flex:\s*none;/);
+    expect(report(".sr-actions")).not.toMatch(/position:\s*sticky/);
+  });
+});
+
 describe("runs surfaces and wrapping (FIX-45)", () => {
   it("keeps a build or key whole", () => {
     expect(runs(".rn-nowrap")).toMatch(/white-space:\s*nowrap;/);

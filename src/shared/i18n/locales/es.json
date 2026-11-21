@@ -1672,7 +1672,7 @@
       "coverageShort": "{{value}} % cob.",
       "today": "Hoy",
       "yesterday": "Ayer",
-      "never": "Nunca",
+      "never": "—",
       "summary": "Mostrando <b>{{from}}–{{to}}</b> de <b>{{total}}</b> proyectos",
       "noMatch": "Ningún proyecto coincide con «{{query}}».",
       "rowMenu": "Más acciones de {{name}}",
@@ -3073,6 +3073,7 @@
       "cyclePrevious": "Ciclo anterior",
       "custom": "Rango personalizado…",
       "soonTitle": "Próximamente: usará los ciclos y rangos del plan",
+      "soon": "Próximamente",
       "compare": "Comparar con el periodo anterior",
       "short": {
         "today": "Hoy",
@@ -3524,7 +3525,7 @@
       "weighted": "Cobertura ponderada",
       "weightedTitle": "Cobertura ponderada por riesgo",
       "weightedHow": "Suma del nivel de riesgo (probabilidad × impacto) de los requisitos cubiertos entre la suma del nivel de todos los requisitos evaluados. «Aprobada» cuenta los que tienen todos sus casos ejecutados y en Pasa.",
-      "weightedCalc": "cubierta = {{covered}} / {{total}} = {{coveredPct}} · aprobada = {{passed}} / {{total}} = {{passedPct}}",
+      "weightedCalcCovered": "cubierta = {{covered}} / {{total}} = {{coveredPct}}",
       "weightedBands_one": "1 requisito sin evaluar no entra. Bandas del proyecto: bajo hasta {{low}}, medio hasta {{medium}}.",
       "weightedBands_other": "{{count}} requisitos sin evaluar no entran. Bandas del proyecto: bajo hasta {{low}}, medio hasta {{medium}}.",
       "weightedHint_one": "aprobada {{passed}} · 1 sin evaluar",
@@ -3571,13 +3572,13 @@
       "defectsWithoutCase_one": "Defecto sin caso vinculado",
       "defectsWithoutCase_other": "Defectos sin caso vinculado",
       "subtitle": "Lo que rompe la cadena requisito ↔ caso ↔ defecto",
-      "migrateHint_one": "{{count}} ID aparece en el texto libre de Trazabilidad de tus casos y puede convertirse en vínculo.",
-      "migrateHint_other": "{{count}} IDs aparecen en el texto libre de Trazabilidad de tus casos y pueden convertirse en vínculos."
+      "migrateHint_one": "{{count}} ID aparece en el texto libre de «Otras referencias» de tus casos y puede convertirse en vínculo.",
+      "migrateHint_other": "{{count}} IDs aparecen en el texto libre de «Otras referencias» de tus casos y pueden convertirse en vínculos."
     },
     "migrate": {
       "button": "Migrar trazabilidad ({{count}})",
-      "title": "Migrar el campo Trazabilidad a vínculos",
-      "intro": "Estos IDs aparecen en el texto libre de Trazabilidad de tus casos. Elige cuáles convertir en vínculos con requisitos. El texto libre se conserva.",
+      "title": "Migrar «Otras referencias» a vínculos",
+      "intro": "Estos IDs aparecen en el texto libre de «Otras referencias» de tus casos. Elige cuáles convertir en vínculos con requisitos. El texto libre se conserva.",
       "include": "Incluir",
       "found": "Encontrado",
       "willCreate": "se creará",
@@ -3852,6 +3853,7 @@
   },
   "recoveryKey": {
     "title": "Clave de recuperación",
+    "introShort": "La base de datos de este equipo está cifrada.",
     "intro": "La base de datos local está cifrada y su clave vive solo en el almacén de credenciales de este equipo. Si lo pierdes (PC nuevo, Windows reinstalado), solo la clave de recuperación junto con tu copia de pharos.db y de la carpeta evidence devuelve tus datos.",
     "lastShown": "Mostrada por última vez: {{date}}",
     "desktopOnly": "Disponible solo en la app de escritorio.",
@@ -4783,6 +4785,7 @@
     "paramValue": "Valor de <{{name}}>",
     "inDraft": "Borrador",
     "notRun": "Sin ejecutar",
+    "partial": "{{done}} de {{total}} ejecutadas",
     "rowValues": "Datos de la fila: {{row}}",
     "steps": "Pasos",
     "unmarked_one": "({{count}} sin marcar)",
@@ -5372,15 +5375,15 @@
         "received": "{{actor}} te invitó a {{title}}"
       },
       "case": {
-        "review_requested": "{{actor}} envió a revisión {{key}} {{title}}",
-        "approved": "{{actor}} aprobó {{key}} {{title}}",
-        "changes_requested": "{{actor}} devolvió {{key}} {{title}} con cambios"
+        "review_requested": "{{actor}} envió a revisión {{key}} «{{title}}»",
+        "approved": "{{actor}} aprobó {{key}} «{{title}}»",
+        "changes_requested": "{{actor}} devolvió {{key}} «{{title}}» con cambios"
       },
       "defect": {
-        "assigned": "{{actor}} te asignó {{key}} {{title}}"
+        "assigned": "{{actor}} te asignó {{key}} «{{title}}»"
       },
       "cycle": {
-        "closed": "{{actor}} cerró el ciclo {{key}} {{title}}"
+        "closed": "{{actor}} cerró el ciclo {{key}} «{{title}}»"
       },
       "sync": {
         "conflict_one": "{{count}} conflicto de sincronización por revisar",
@@ -5405,8 +5408,8 @@
         "inactive": "El token {{title}} de {{owner}} ha dejado de funcionar: su dueño salió del workspace o se desactivó su cuenta. Reasígnalo o revócalo en «Integraciones»."
       },
       "plan": {
-        "approved": "{{actor}} aprobó el plan {{title}}",
-        "changes_requested": "{{actor}} pidió cambios en el plan {{title}}"
+        "approved": "{{actor}} aprobó el plan «{{title}}»",
+        "changes_requested": "{{actor}} pidió cambios en el plan «{{title}}»"
       }
     },
     "action": {
@@ -5464,9 +5467,9 @@
       "leave": "Salir",
       "lastManager": "Hace falta otro Test Manager antes",
       "removeTitle": "Quitar a {{name}}",
-      "removeConfirm": "{{name}} dejará de ver «{{workspace}}». Su copia en sus equipos se borrará en su próximo sync. Lo que no haya sincronizado se pierde.",
+      "removeConfirm": "{{name}} dejará de ver «{{workspace}}». Su copia en sus equipos se borrará en su próxima sincronización. Lo que no haya sincronizado se pierde.",
       "leaveTitle": "Salir de «{{workspace}}»",
-      "leaveConfirm": "Dejarás de ver sus proyectos. La copia de este equipo se borrará en tu próximo sync, cuando lo confirmes.",
+      "leaveConfirm": "Dejarás de ver sus proyectos. La copia de este equipo se borrará en tu próxima sincronización, cuando lo confirmes.",
       "roleChanged": "Rol de {{name}}: {{role}}",
       "removed": "{{name}} ya no es miembro",
       "personal": "Tu workspace personal no admite otros miembros. Crea uno compartido para trabajar en equipo.",
@@ -5514,7 +5517,7 @@
       "code": "Código de invitación",
       "check": "Comprobar",
       "preview": "Te unes a «{{name}}» como {{role}}, invitado por {{by}}.",
-      "note": "Sus proyectos se descargarán a este equipo en el próximo sync. Tu workspace Personal no cambia.",
+      "note": "Sus proyectos se descargarán a este equipo en la próxima sincronización. Tu workspace Personal no cambia.",
       "submit": "Unirme",
       "joined": "Te has unido a «{{name}}»",
       "invalid": "Este código ya se usó o caducó. Pide otro a quien te invitó.",

@@ -102,6 +102,22 @@
   opacity: 0.45;
 }
 
+/* «Próximamente» after an option that is not available yet (FIX-49), in the
+   look of the sign-in screen's chip. */
+.menu__soon {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  font-size: 10.5px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  vertical-align: 1px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
 .menu__icon {
   flex: none;
   color: var(--color-text-secondary);

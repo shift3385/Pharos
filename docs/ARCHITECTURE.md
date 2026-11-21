@@ -1066,7 +1066,7 @@ through `src-tauri/src/journal.rs`:
   material (images reduced on a canvas, PDF as is, `.excalidraw` texts, a
   Claude Design folder or ZIP as Markdown plus a DOMParser outline per
   `*.dc.html`, nothing executed), `ai/api/designPrompts.ts` is the prompt
-  `requirements-from-design@1`, and `fromDesign/candidates.ts` writes each
+  `requirements-from-design@2`, and `fromDesign/candidates.ts` writes each
   candidate's sources from the material for the common review of IA-17.
 - **Theme preference:** `ThemeProvider` keeps `preference`
   (`light | dark | system`, stored in `pharos.theme`) and the resolved

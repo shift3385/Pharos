@@ -280,6 +280,44 @@
   line-height: var(--lh-normal) !important;
 }
 
+/* At rest (not being typed in), the code shows with hanging indents: a long
+   step continues under its own text, never at column 0 (FIX-49, NC-129).
+   The view lies in the editor's own cell, over its box and under nothing
+   that takes the pointer: a click still lands in the textarea, and typing
+   shows the editor's layout, where the caret sits on the text it edits. */
+.tc-gherkin__stack {
+  display: grid;
+  min-width: 0;
+}
+
+.tc-gherkin__stack > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.tc-gherkin__stack[data-resting] .tc-gherkin__pre {
+  visibility: hidden;
+}
+
+.tc-gherkin__hang {
+  z-index: 1;
+  margin: 0;
+  /* The editor's padding plus its border. */
+  padding: 17px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-ui);
+  line-height: var(--lh-normal);
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  pointer-events: none;
+}
+
+.tc-gherkin__hang .tc-hang {
+  display: block;
+}
+
 /* Gherkin syntax colors — Faro Nocturno tokens only (no hardcoded colors). */
 .tc-gherkin .token.feature,
 .tc-gherkin .token.scenario,

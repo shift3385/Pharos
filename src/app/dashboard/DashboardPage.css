@@ -179,9 +179,24 @@
     box-shadow 150ms ease;
 }
 
-a.home-kpi:hover {
-  border-color: var(--color-navy-300);
-  box-shadow: var(--shadow-2);
+/* Only with a real pointer: on a phone a tap left the hover shadow on the
+   card (FIX-49). */
+@media (hover: hover) {
+  a.home-kpi:hover {
+    border-color: var(--color-navy-300);
+    box-shadow: var(--shadow-2);
+  }
+
+  /* «Tasa de éxito» with its note is one surface: the whole of it lights up,
+     never a shadowed card inside another (FIX-49, movil/01). */
+  .home-kpi-stack > a.home-kpi:has(~ .home-kpi__extra:not(.home-kpi__extra--badge)):hover {
+    box-shadow: none;
+  }
+
+  .home-kpi-stack:has(> .home-kpi__extra:not(.home-kpi__extra--badge)):has(> a.home-kpi:hover) {
+    border-color: var(--color-navy-300);
+    box-shadow: var(--shadow-2);
+  }
 }
 
 /* «Tasa de éxito» with its note on unlinked tests under it (NC-029). */
@@ -989,11 +1004,24 @@ a.home-kpi:hover {
   border-bottom: 1px solid var(--color-border);
 }
 
-/* Mobile «Ejecución»: the period selector above «Ejecuciones diarias». */
+/* Mobile «Ejecución»: the period selector above «Ejecuciones diarias», on a
+   strip of its own with its name, never a lone button on the background
+   photo (FIX-49). */
 .home-period-row {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: -4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 8px 8px 16px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.home-period-row__label {
+  font-size: 13px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-secondary);
 }
 
 .home__panel {

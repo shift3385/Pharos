@@ -675,6 +675,20 @@ pub(crate) fn item_detail(
     }))
 }
 
+/// The status of a run item from the final statuses of its targets (flows and
+/// dataset rows) that have one, out of `targets`. A failure or a block decides
+/// the case at once; otherwise the case is `not_run` until every target has a
+/// result, so a dataset case never reads «Pasa» while a row is still to run
+/// (FIX-49: «pasa solo si pasan todas sus filas»). Its twin is `itemStatus` in
+/// `server/src/modules/domain/runs.ts`.
+pub(crate) fn item_status(statuses: Vec<&str>, targets: usize) -> &str {
+    let done = statuses.len();
+    match derive::worst_status(statuses) {
+        Some(s) if done >= targets || s == "failed" || s == "blocked" => s,
+        _ => crate::cycles::progress::NOT_RUN,
+    }
+}
+
 /// The run screen: header, cycle and configuration names, items with their
 /// progress, and the counts over all targets.
 pub(crate) fn overview(
@@ -795,9 +809,7 @@ pub(crate) fn overview(
             row_index,
             targets: targets.len() as i64,
             done,
-            status: derive::worst_status(statuses)
-                .unwrap_or(crate::cycles::progress::NOT_RUN)
-                .to_string(),
+            status: item_status(statuses, targets.len()).to_string(),
             attempts: attempts.get(item.id.as_str()).copied().unwrap_or(0),
             has_draft: drafts.contains(&item.id),
             dataset: bound_dataset(&data),

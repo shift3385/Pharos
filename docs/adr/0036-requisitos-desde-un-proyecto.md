@@ -196,3 +196,9 @@ sin cambiar la decisión.
   del requisito, `applyRequirementProposals`) acepta cualquier versión. Las
   menciones de `@1` de las secciones anteriores describen la versión 1.
 - La importación desde diseños (IA-18) guarda `requirements-from-design@1+req-synthesis@2`.
+
+## Nota (FIX-49, 2026-11-20): `requirements-from-design@2`
+
+- **Qué cambió.** El prompt de diseños pide el requisito y sus criterios de aceptación en el idioma de la persona: en español, «El sistema deberá …» y «Dado … cuando … entonces …» (con «Y» y «Pero»); en inglés, «The system shall …» y «Given … when … then …». La versión 1 pedía siempre las palabras clave inglesas, y salían «Given/When/Then» dentro de criterios en español. Son criterios en prosa de un requisito, no un `.feature`: un `.feature` sigue con las palabras clave inglesas salvo `# language: es`.
+- **Por qué sube la versión.** La regla de la nota anterior: un identificador no nombra dos textos. Lo generado antes conserva `@1`; la importación desde diseños guarda ahora `requirements-from-design@2+req-synthesis@2`.
+- **Lectura.** `criterionLines` reconoce también «Dado/Dada/Dados/Dadas», «Cuando», «Entonces», «Y» y «Pero» para mostrar cada palabra clave en su línea y en negrita.

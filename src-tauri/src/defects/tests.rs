@@ -273,11 +273,26 @@ fn a_defect_from_a_failed_result_is_prefilled_and_shares_its_evidence() {
     // Only the result is stored; its case is derived through it.
     assert_eq!(kinds, ["result"]);
     assert_eq!(d.case_ids, vec![case]);
-    assert!(d.links[0]
-        .label
-        .as_deref()
-        .unwrap()
-        .starts_with("RUN-001 · "));
+    // FIX-49: named by the case it reaches, «RUN-001 · <key> · <title>».
+    let label = d.links[0].label.as_deref().unwrap();
+    assert!(label.starts_with("RUN-001 · ATS_"), "{label}");
+    assert_eq!(label.matches(" · ").count(), 2, "{label}");
+    assert_eq!(
+        result_label(
+            "RUN-004 · specs/a.spec.ts::entra #2",
+            "PH-001",
+            "Iniciar sesión"
+        ),
+        "RUN-004 · PH-001 · Iniciar sesión #2"
+    );
+    assert_eq!(
+        result_label(
+            "RUN-004 · specs/a.spec.ts::entra",
+            "PH-001",
+            "Iniciar sesión"
+        ),
+        "RUN-004 · PH-001 · Iniciar sesión"
+    );
     let atts = list_attachments(&c, &id, U).unwrap();
     assert_eq!(atts.len(), 2);
     // Same contents, no new blob, and the result keeps its own attachments.

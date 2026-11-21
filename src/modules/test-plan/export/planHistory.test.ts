@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   changesText,
+  copyVersions,
   groupHistory,
   historyTable,
   localStamp,
@@ -331,5 +332,37 @@ describe("revision history of the exported plan (PLN-02)", () => {
     ]);
     const anonymous = historyTable(r, { names: {} }, t, UTC);
     expect(anonymous.rows[1][2]).toBe("testPlan.history.unknownAuthor");
+  });
+});
+
+describe("the plan version of each revision copy (FIX-49)", () => {
+  it("is the «before» of the save that wrote the copy, else what the last save left", () => {
+    const copy = (revision: number, createdAt: string) => ({
+      revision,
+      title: "Plan",
+      data: {},
+      createdAt,
+      createdBy: ANA,
+    });
+    const s = source(
+      [
+        create(ANA, "2026-11-05T09:00:00.000Z"),
+        update(ANA, "2026-11-05T10:00:00.400Z", {
+          version: ["1.0", "1.1"],
+          "data.summary": ["s", "t"],
+        }),
+        // A save that kept the version (in review): no «version» in the event.
+        update(ANA, "2026-11-05T11:00:00.200Z", { "data.risks": [[], [{}]] }),
+      ],
+      {
+        revisions: [
+          copy(1, "2026-11-05 10:00:00"),
+          copy(2, "2026-11-05 11:00:00"),
+        ],
+      },
+    );
+    const v = copyVersions(s);
+    expect(v.get(1)).toBe("1.0");
+    expect(v.get(2)).toBe("1.1");
   });
 });

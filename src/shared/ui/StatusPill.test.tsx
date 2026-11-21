@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { expectNoAxeViolations } from "@test/axe";
@@ -21,6 +24,16 @@ describe("StatusPill and PriorityFlag (SPEC §4)", () => {
     expect(screen.getByText("No ejecutado").parentElement?.querySelector(".pill__dot")).not.toBeNull();
     expect(screen.getByText("Obsoleto").parentElement).toHaveAttribute("data-strike", "true");
     await expectNoAxeViolations();
+  });
+
+  it("a struck pill keeps the darkest text, so «Obsoleto» reads under its line (FIX-49)", () => {
+    const css = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "pills.css"),
+      "utf8",
+    );
+    expect(css).toMatch(
+      /\.pill\[data-strike\] \{\s*--pill-text:\s*var\(--color-text-primary\);/,
+    );
   });
 
   it("a flag always names its priority, visibly or as a tooltip", async () => {

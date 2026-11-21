@@ -151,23 +151,45 @@ export function stepText(text: string): string {
   return m[1].charAt(0).toLowerCase() + m[1].slice(1) + m[2];
 }
 
+/** The keywords of an acceptance criterion in Spanish prose (the AI writes
+ *  «Dado … cuando … entonces …» for a Spanish user, FIX-49), as Gherkin's
+ *  own Spanish dialect spells them. */
+export const SPANISH_CRITERION_KEYWORDS = [
+  "Dado",
+  "Dada",
+  "Dados",
+  "Dadas",
+  "Cuando",
+  "Entonces",
+  "Y",
+  "Pero",
+] as const;
+
 export interface StepLine {
-  keyword: GherkinKeyword;
+  keyword: GherkinKeyword | (typeof SPANISH_CRITERION_KEYWORDS)[number];
   text: string;
 }
 
-const KW = new Map(GHERKIN_KEYWORDS.map((k) => [k.toLowerCase(), k]));
+const KW = new Map<string, StepLine["keyword"]>(
+  [...GHERKIN_KEYWORDS, ...SPANISH_CRITERION_KEYWORDS].map((k) => [
+    k.toLowerCase(),
+    k,
+  ]),
+);
 
 /** An acceptance criterion written as one sentence («Given a, when b, then
- *  c») as one line per keyword, or null when it is not in that form. «When»
- *  and «Then» split after a comma, a semicolon or a space; «And» and «But»
- *  only after a comma or a semicolon, so «usuario and contraseña» stays whole. */
+ *  c», or in Spanish «Dado a, cuando b, entonces c») as one line per keyword,
+ *  or null when it is not in that form. «When»/«cuando» and «Then»/«entonces»
+ *  split after a comma, a semicolon or a space; «And»/«y» and «But»/«pero»
+ *  only after a comma or a semicolon, so «usuario and contraseña» and
+ *  «usuario y contraseña» stay whole. */
 export function criterionLines(criterion: string): StepLine[] | null {
   const text = criterion.trim();
-  const head = text.match(/^(given|when|then)\s+/i);
+  const head = text.match(/^(given|when|then|dad[oa]s?|cuando|entonces)\s+/i);
   if (!head) return null;
   const parts: StepLine[] = [];
-  const splitter = /(?:[,;]\s*(given|when|then|and|but)|\s(when|then))\s+/gi;
+  const splitter =
+    /(?:[,;]\s*(given|when|then|and|but|dad[oa]s?|cuando|entonces|y|pero)|\s(when|then|cuando|entonces))\s+/gi;
   let keyword = KW.get(head[1].toLowerCase())!;
   let start = head[0].length;
   for (const m of text.matchAll(splitter)) {

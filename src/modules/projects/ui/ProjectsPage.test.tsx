@@ -111,6 +111,20 @@ describe("Proyectos (SPEC §8)", () => {
     await expectNoAxeViolations();
   });
 
+  it("a project not opened on this device reads «—», not «Nunca» (FIX-49)", async () => {
+    setViewportWidth(1440);
+    renderPage();
+    const table = await screen.findByRole("table", {
+      name: "Todos los proyectos",
+    });
+    await userEvent.type(screen.getByRole("searchbox"), "Proyecto 07");
+    await waitFor(() =>
+      expect(within(table).getAllByRole("row")).toHaveLength(2),
+    );
+    expect(within(table).queryByText("Nunca")).toBeNull();
+    expect(within(table).getAllByText("—").length).toBeGreaterThan(0);
+  });
+
   it("searches by name or prefix and says when nothing matches", async () => {
     setViewportWidth(1440);
     renderPage();
