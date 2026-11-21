@@ -2,7 +2,7 @@
 // The online path mocks the Tauri `invoke` (the Rust `ai_chat_online` command);
 // the offline path stubs `fetch` for Ollama.
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_AI_CONFIG, AI_TIMEOUT_MESSAGE } from "../model/types";
 import { saveConfig } from "./aiApi";
 import {
@@ -71,6 +71,15 @@ async function failure(p: Promise<unknown>) {
   }
   throw new Error("expected the call to fail");
 }
+
+// Outside the desktop, `aiStatus` loads `webAccess`, and with it the auth and
+// sync clients: about 5 s of first compile when this file runs alone, which
+// the first test without `__TAURI_INTERNALS__` used to pay inside its own 5 s
+// limit (FIX-51). It is loaded once here instead; the tests are about the
+// generators, not that compile.
+beforeAll(async () => {
+  await import("./webAccess");
+}, 30_000);
 
 // Braces matter: a function returned from beforeEach runs as a cleanup hook.
 beforeEach(() => {
