@@ -132,6 +132,80 @@ describe("«Cronograma» · fixed calendar and scrolling rows (UX-16)", () => {
   });
 });
 
+describe("«Cronograma» · the calendar keeps the month the person is looking at (FIX-50)", () => {
+  // One month on screen; the plan's last date (a milestone, 01/12) is in December.
+  const shown = () => screen.getByRole("grid").getAttribute("aria-label");
+  const NOV = "Calendario del cronograma · noviembre de 2026";
+  const DEC = "Calendario del cronograma · diciembre de 2026";
+  const named = (name: string) =>
+    milestoneRows().find((r) => within(r).getByRole<HTMLInputElement>("textbox", { name: "Hito" }).value.startsWith(name))!;
+
+  beforeEach(() => setViewportWidth(1000));
+
+  it("adding and naming a milestone in November does not jump to the December one", async () => {
+    renderStep();
+    await openSchedule();
+    expect(shown()).toBe(NOV);
+    await userEvent.click(screen.getByRole("radio", { name: "Hito" }));
+    await userEvent.click(day("2026-11-27"));
+    expect(shown()).toBe(NOV);
+    // The pointer crosses the December milestone's row on its way to the new one.
+    const december = named("Salida a producción");
+    fireEvent.pointerEnter(december);
+    fireEvent.pointerLeave(december);
+    expect(shown()).toBe(NOV);
+    const fresh = within(named("Hito 3")).getByRole("textbox", { name: "Hito" });
+    await userEvent.click(fresh);
+    await userEvent.keyboard("{Control>}a{/Control}Versión candidata");
+    expect(fresh).toHaveValue("Versión candidata");
+    expect(shown()).toBe(NOV);
+    expect(day("2026-11-27")).toHaveAccessibleName(/Hito: Versión candidata/);
+  });
+
+  it("a month chosen with the arrows holds while rows are pointed at, focused, named and removed", async () => {
+    renderStep();
+    await openSchedule();
+    await userEvent.click(screen.getByRole("button", { name: "Mes siguiente" }));
+    expect(shown()).toBe(DEC);
+    await userEvent.click(screen.getByRole("button", { name: "Mes anterior" }));
+    expect(shown()).toBe(NOV);
+    // Rename the December milestone and a sprint: the calendar stays on November.
+    const name = within(named("Salida a producción")).getByRole("textbox", { name: "Hito" });
+    fireEvent.pointerEnter(named("Salida a producción"));
+    await userEvent.click(name);
+    await userEvent.type(name, " 0.6.0");
+    expect(shown()).toBe(NOV);
+    // From November, look at January: pointing at November's rows keeps it.
+    await userEvent.click(screen.getByRole("button", { name: "Mes siguiente" }));
+    await userEvent.click(screen.getByRole("button", { name: "Mes siguiente" }));
+    const sprint = within(sprintRows()[0]).getByRole("textbox", { name: "Nombre del sprint" });
+    fireEvent.pointerEnter(sprintRows()[0]);
+    await userEvent.type(sprint, " +");
+    await userEvent.click(within(milestoneRows()[0]).getByRole("button", { name: /^Quitar: / }));
+    expect(shown()).toBe("Calendario del cronograma · enero de 2027");
+  });
+
+  it("a date typed in a row, in another month, takes the calendar there", async () => {
+    renderStep();
+    await openSchedule();
+    const date = within(named("Congelación de código")).getByRole("textbox", { name: /^Fecha/ });
+    await userEvent.clear(date);
+    await userEvent.type(date, "15/01/2027{Enter}");
+    expect(shown()).toBe("Calendario del cronograma · enero de 2027");
+    expect(day("2027-01-15")).toHaveAccessibleName(/Hito: Congelación de código/);
+  });
+
+  it("a milestone marked from the keyboard past the month's end shows that month", async () => {
+    renderStep();
+    await openSchedule();
+    await userEvent.click(screen.getByRole("radio", { name: "Hito" }));
+    day("2026-11-30").focus();
+    await userEvent.keyboard("{ArrowRight}{ArrowRight}{Enter}");
+    expect(shown()).toBe(DEC);
+    expect(day("2026-12-02")).toHaveAccessibleName(/Hito: Hito 3/);
+  });
+});
+
 describe("«Cronograma» · Cronograma (RED-W5)", () => {
   it("replaces the old step: no «Próximamente», no «Añadir fila», no native date inputs", async () => {
     renderStep();
