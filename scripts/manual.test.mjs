@@ -13,7 +13,7 @@ import { arrayLiteral, check, countDialogs, coversIn, hasViewSwitch, prerequisit
 import { findAiKey } from "./manual/ai-key.mjs";
 import { inline, leftoverTable, markdownToHtml, tableCells } from "./manual/markdown.mjs";
 import { printWithEdge, settled, sweepProfiles } from "./manual/edge-print.mjs";
-import { cutout, cutoutSvg, focusLayout, focusZone, focusZones, FOCUS_COLOR, groupInset, quietBand, sameFocusPixels } from "./manual/focus.mjs";
+import { cutoutSvg, focusCuts, focusLayout, focusPiece, FOCUS_COLOR, FOCUS_STROKE, frameGeometry, GAP, groupInset, MIN_FRAME_PX, outlineZones, sameFocusPixels } from "./manual/focus.mjs";
 import { acquireLock, lockMessage, pidAlive, releaseLock, UNREADABLE_GRACE_MS } from "./manual/run-lock.mjs";
 import { changedShare, decodePng, drawFocus, encodePng, quantize } from "./manual/png.mjs";
 import { needlesFor, scanForSecret } from "./manual/secret-scan.mjs";
@@ -249,81 +249,129 @@ test("drawFocus around several boxes draws one outline round their union (MAN-02
   assert.ok(!amber(45, 48), "no line inside the union");
 });
 
-test("focusZone: context by element kind, snapped to quiet pixels, inside the capture (MAN-02)", () => {
-  // A 34 px icon button grows to a readable zone; a panel gets a tight margin.
-  const icon = focusZone(1440, 900, { x: 700, y: 400, w: 34, h: 34 });
-  assert.ok(icon.w >= 150 && icon.h >= 72);
-  const panel = focusZone(1440, 900, { x: 300, y: 200, w: 400, h: 300 });
-  assert.equal(panel.x, 288, "12 px: the cut-out keeps 6 px of air");
-  // Near the capture's edge the margin moves to the other side: same size.
-  const corner = focusZone(1440, 900, { x: 1370, y: 13, w: 38, h: 38 });
-  assert.equal(corner.x + corner.w, 1440);
-  assert.equal(corner.y, 0);
-  assert.equal(corner.w, icon.w);
-  // Text a few px above the default top edge: the edge moves to quiet pixels.
-  const img = image(400, 200, (x, y) => (y >= 96 && y <= 99 && x % 3 === 0 ? [0, 0, 0, 255] : [255, 255, 255, 255]));
-  const snapped = focusZone(400, 200, { x: 100, y: 112, w: 200, h: 30 }, img);
-  assert.ok(quietBand(img, snapped.x, snapped.y, snapped.x + snapped.w, snapped.y + 7), "the top band is quiet");
-  assert.ok(snapped.y > 99 || snapped.y + 7 <= 96, "it does not run through the text");
-  assert.deepEqual(focusZones(1440, 900, null), []);
-  const parts = [
-    { x: 10, y: 10, w: 20, h: 20 },
-    { x: 40, y: 30, w: 170, h: 80 },
-  ];
-  assert.equal(focusZones(1440, 900, { x: 10, y: 10, w: 200, h: 100 }, parts).length, 2, "one zone per focused element");
-  // A menu 4 px above its trigger: the trigger's zone reaches into the menu's,
-  // so one outline goes round both (no two frames side by side).
-  const [menu, trigger] = focusZones(1440, 900, { x: 100, y: 100, w: 200, h: 134 }, [
-    { x: 100, y: 100, w: 200, h: 100 },
-    { x: 100, y: 204, w: 90, h: 30 },
-  ]);
-  assert.ok(trigger.y < menu.y + menu.h - 10, "the zones overlap past the rounded corners");
+/** Signed distance from a pixel centre to a rounded rectangle (< 0 inside). */
+function roundRectDistance(x, y, rect, r) {
+  const qx = Math.abs(x + 0.5 - (rect.x + rect.w / 2)) - (rect.w / 2 - r);
+  const qy = Math.abs(y + 0.5 - (rect.y + rect.h / 2)) - (rect.h / 2 - r);
+  return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r;
+}
+
+/** Paints a 1 px border of colour `c` round `rect` (corner radius `r`). */
+function paintBorder(img, rect, r, c, fill = null) {
+  for (let y = rect.y; y < rect.y + rect.h; y++) {
+    for (let x = rect.x; x < rect.x + rect.w; x++) {
+      const d = roundRectDistance(x, y, rect, r);
+      const i = (y * img.width + x) * 4;
+      if (d < 0 && d >= -1) img.data.set([...c, 255], i);
+      else if (d < -1 && fill) img.data.set([...fill, 255], i);
+    }
+  }
+}
+
+const GREY = [200, 205, 212];
+const WHITE = [255, 255, 255];
+const isGrey = (img, x, y) => GREY.every((v, c) => img.data[(y * img.width + x) * 4 + c] === v);
+
+test("an element with its own border is cut at that border: the frame lies over it, no second line (MAN-02)", () => {
+  const img = image(600, 300, () => [255, 255, 255, 255]);
+  const field = { x: 150, y: 120, w: 300, h: 44 };
+  paintBorder(img, field, 8, GREY);
+  const [piece] = focusCuts(600, 300, field, null, img);
+  assert.equal(piece.edge, true);
+  assert.deepEqual([piece.x, piece.y, piece.w, piece.h], [field.x, field.y, field.w, field.h], "cut exactly at the element's box");
+  // At any magnification the frame covers every border pixel the clip shows.
+  for (const unit of [3, 4.5, 9]) {
+    const { sw, r } = frameGeometry(piece, unit);
+    let bare = 0;
+    for (let y = field.y - 2; y < field.y + field.h + 2; y++) {
+      for (let x = field.x - 2; x < field.x + field.w + 2; x++) {
+        if (!isGrey(img, x, y)) continue;
+        const d = roundRectDistance(x, y, piece, r);
+        if (d < -sw + 0.5) bare++;
+      }
+    }
+    assert.equal(bare, 0, `at ${unit} px/mm no grey border shows inside the frame`);
+  }
 });
 
-test("focusLayout: a cut-out beside small zones, below wide strips, none for big areas (MAN-02)", () => {
-  const beside = focusLayout(1440, 900, focusZones(1440, 900, { x: 480, y: 820, w: 100, h: 30 }));
+test("a menu over other content: cut at its own box, nothing behind at its edges; its trigger joins it (MAN-02)", () => {
+  // Text everywhere behind (rows of dark dots), a white menu with a border on top.
+  const img = image(600, 400, (x, y) => (y % 14 < 4 && x % 3 === 0 ? [30, 30, 30, 255] : [255, 255, 255, 255]));
+  const menu = { x: 200, y: 100, w: 220, h: 120 };
+  paintBorder(img, menu, 10, GREY, WHITE);
+  const trigger = { x: 210, y: 226, w: 90, h: 30 };
+  paintBorder(img, trigger, 6, GREY, WHITE);
+  const cuts = focusCuts(600, 400, { x: 200, y: 100, w: 220, h: 156 }, [menu, trigger], img);
+  const m = cuts.find((c) => c.w === menu.w);
+  assert.deepEqual([m.x, m.y, m.w, m.h], [menu.x, menu.y, menu.w, menu.h], "the menu's own box");
+  const t = cuts.find((c) => c !== m);
+  assert.equal(t.edge, true);
+  assert.ok(t.y + MIN_FRAME_PX * 2 < m.y + m.h, "the pieces overlap inside their frame: one shape");
+  // A button inside a field (the password's eye) adds no frame of its own.
+  const eye = { x: menu.x + menu.w - 40, y: menu.y + 2, w: 36, h: 36 };
+  assert.equal(focusCuts(600, 400, menu, [menu, eye], img).length, 1);
+  // The outline (GAP outside the pieces) never enters the cut-out.
+  const drawn = image(600, 400, () => [255, 255, 255, 255]);
+  drawFocus(drawn, outlineZones(cuts), { color: FOCUS_COLOR, stroke: FOCUS_STROKE, pad: 0, radius: 10 });
+  let amber = 0;
+  for (let y = 80; y < 280; y++) {
+    for (let x = 180; x < 440; x++) {
+      // The clip, at its own corner radius, and the pixel smoothing reads past it.
+      const inside = cuts.some((c) => roundRectDistance(x, y, c, frameGeometry(c, 4.5).r) < 1);
+      if (inside && FOCUS_COLOR.every((v, k) => drawn.data[(y * 600 + x) * 4 + k] === v)) amber++;
+    }
+  }
+  assert.equal(amber, 0);
+});
+
+test("an element without a border gets air, and no edge slices a line of text (MAN-02)", () => {
+  // Lines of text 10 px tall every 22 px, all across.
+  const ink = (y) => y % 22 >= 6 && y % 22 < 16;
+  const img = image(800, 600, (x, y) => (ink(y) && x % 4 !== 0 ? [20, 20, 20, 255] : [255, 255, 255, 255]));
+  const block = { x: 200, y: 160, w: 300, h: 80 };
+  const [piece] = focusCuts(800, 600, block, null, img);
+  assert.equal(piece.edge, false);
+  assert.ok(piece.x < block.x && piece.y < block.y && piece.x + piece.w > block.x + block.w, "air around it");
+  for (const y of [piece.y, piece.y + piece.h - 1]) assert.ok(!ink(y), `the edge at y=${y} runs between lines`);
+  for (let y = piece.y - GAP; y < piece.y; y++) assert.ok(!ink(y), "the outline above runs between lines");
+  // Lines closer than the outline is wide (5 px apart): the cut-out's edge
+  // still falls between two of them.
+  const tight = (y) => y % 15 >= 5;
+  const dense = image(800, 600, (x, y) => (tight(y) && x % 4 !== 0 ? [20, 20, 20, 255] : [255, 255, 255, 255]));
+  const [close] = focusCuts(800, 600, { x: 200, y: 155, w: 300, h: 40 }, null, dense);
+  for (const y of [close.y, close.y + close.h - 1]) assert.ok(!tight(y), `the edge at y=${y} runs between close lines`);
+  // A lone small control gets context; near the capture's edge, still its size.
+  const icon = focusPiece(1440, 900, { x: 700, y: 400, w: 34, h: 34 });
+  assert.ok(icon.w >= 138 && icon.h >= 60);
+  const corner = focusPiece(1440, 900, { x: 1370, y: 13, w: 38, h: 38 });
+  assert.equal(corner.x + corner.w, 1440);
+  assert.ok(Math.abs(corner.w - icon.w) <= 4);
+  assert.deepEqual(focusCuts(1440, 900, null), []);
+});
+
+test("focusLayout: a cut-out beside small pieces, below wide strips, none for big areas (MAN-02)", () => {
+  const beside = focusLayout(1440, 900, focusCuts(1440, 900, { x: 480, y: 820, w: 100, h: 30 }));
   assert.equal(beside.mode, "beside");
   assert.ok(beside.crop.y + beside.crop.h <= 900, "the crop stays inside the capture");
   assert.ok(beside.mag >= 1.4 && beside.mag <= 3, "enlarged, never blown up");
   assert.ok(beside.topMm > 0, "level with its zone, low in the capture");
-  assert.equal(focusLayout(1440, 900, focusZones(1440, 900, { x: 300, y: 10, w: 640, h: 40 })).mode, "below");
-  assert.equal(focusLayout(1440, 900, focusZones(1440, 900, { x: 100, y: 100, w: 900, h: 600 })), null, "a whole panel needs none");
+  assert.equal(focusLayout(1440, 900, focusCuts(1440, 900, { x: 300, y: 10, w: 640, h: 40 })).mode, "below");
+  assert.equal(focusLayout(1440, 900, focusCuts(1440, 900, { x: 100, y: 100, w: 900, h: 600 })), null, "a whole panel needs none");
   assert.equal(focusLayout(1440, 900, []), null);
-});
-
-test("the cut-out stays clear of the outline: one frame, no second line (MAN-02)", () => {
-  const zone = { x: 100, y: 50, w: 300, h: 80 };
-  const img = image(600, 300, () => [255, 255, 255, 255]);
-  drawFocus(img, zone, { color: FOCUS_COLOR, stroke: 4, pad: 0, radius: 10 });
-  const cut = cutout(zone);
-  // Every pixel the rounded clip can show, plus the ring image smoothing reads.
-  const near = (x, y) => {
-    const cx = Math.min(Math.max(x + 0.5, cut.x + cut.r), cut.x + cut.w - cut.r);
-    const cy = Math.min(Math.max(y + 0.5, cut.y + cut.r), cut.y + cut.h - cut.r);
-    return Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= cut.r + 1;
-  };
-  let amber = 0;
-  let seen = 0;
-  for (let y = cut.y - 2; y <= cut.y + cut.h + 1; y++) {
-    for (let x = cut.x - 2; x <= cut.x + cut.w + 1; x++) {
-      if (!near(x, y)) continue;
-      seen++;
-      if (FOCUS_COLOR.every((v, c) => img.data[(y * 600 + x) * 4 + c] === v)) amber++;
-    }
-  }
-  assert.ok(seen > cut.w * cut.h);
-  assert.equal(amber, 0);
-  const layout = focusLayout(1440, 900, [zone]);
-  const svg = cutoutSvg("file:///a.png", 1440, 900, layout, { id: "cut-x", label: "Detalle: x" });
-  assert.ok(svg.includes(`viewBox="${cut.x} ${cut.y} ${cut.w} ${cut.h}"`), "cropped in capture pixels");
+  const svg = cutoutSvg("file:///a.png", 1440, 900, beside, { id: "cut-x", label: "Detalle: x" });
+  const c = beside.crop;
+  assert.ok(svg.includes(`viewBox="${c.x} ${c.y} ${c.w} ${c.h}"`), "cropped in capture pixels");
   assert.match(svg, /<clipPath id="cut-x"><rect [^>]*rx="[\d.]+"\/><\/clipPath>/);
   assert.equal((svg.match(/<image /g) ?? []).length, 1);
   // A committed capture whose outline moved is not «unchanged».
-  const moved = image(600, 300, () => [255, 255, 255, 255]);
-  drawFocus(moved, { ...zone, y: 52 }, { color: FOCUS_COLOR, stroke: 4, pad: 0, radius: 10 });
-  assert.equal(sameFocusPixels(img, moved), false);
-  assert.equal(sameFocusPixels(img, img), true);
+  const a = image(600, 300, () => [255, 255, 255, 255]);
+  const b = image(600, 300, () => [255, 255, 255, 255]);
+  drawFocus(a, { x: 100, y: 50, w: 300, h: 80 }, { color: FOCUS_COLOR, pad: 0 });
+  drawFocus(b, { x: 100, y: 52, w: 300, h: 80 }, { color: FOCUS_COLOR, pad: 0 });
+  assert.equal(sameFocusPixels(a, b), false);
+  assert.equal(sameFocusPixels(a, a), true);
 });
+
 
 test("routePaths refuses a <Route> it cannot read", () => {
   const app = '<Route path="/" element={<Home />} />\n<Route path="/old" element={<Navigate to="/" />} />\n<Route path="*" element={<X />} />';
@@ -515,7 +563,7 @@ test("prerequisites: built on earlier ones, made on screen before every chapter 
 
 test("groupInset: a wide control keeps a column-wide cut-out under its half-width capture (MAN-02)", () => {
   // At full width this strip needs no cut-out of its own; in a column it does.
-  const inset = groupInset(1440, 900, focusZones(1440, 900, { x: 56, y: 411, w: 460, h: 52 }), 85);
+  const inset = groupInset(1440, 900, focusCuts(1440, 900, { x: 56, y: 411, w: 460, h: 52 }), 85);
   assert.equal(inset.mode, "below");
   assert.ok(inset.insetMm > 80 && inset.insetMm <= 85, "about the column's width");
   assert.ok(inset.mag >= 2.5, "readable: at least 2.5× the capture");

@@ -38,18 +38,27 @@ tener una explicación.
       contraseña, mover una tarjeta): dos pasos con el mismo `group`, que el PDF
       imprime uno junto a otro.
 - [ ] **Énfasis** (MAN-02): un paso sobre un control pequeño en una pantalla
-      grande lleva `focus`; un solo contorno ámbar marca su zona en la
-      captura (el control y un margen; con varios elementos, p. ej. un botón y
-      su menú, el contorno rodea su unión) y el PDF añade debajo o al lado el
-      recorte «Detalle»: esa misma zona ampliada, con **un solo borde**. Nunca
-      se ve una doble raya (el borde del recorte y, dentro, el contorno de la
-      captura), ni el recorte corta a medias palabras o tarjetas vecinas que
-      un margen algo distinto habría dejado fuera, ni el recorte queda en otra
-      página que su captura. Ningún paso de la ejecución avisa de «focus not
+      grande lleva `focus`; un solo contorno ámbar lo marca en la captura (con
+      varios elementos, p. ej. un botón y su menú, el contorno rodea su unión)
+      y el PDF añade debajo o al lado el recorte «Detalle», con **un solo
+      borde**. La regla: un elemento con borde propio (campo, tarjeta, botón,
+      menú o tooltip sobre otro contenido) se recorta justo en su caja, de
+      modo que el marco ámbar cae sobre su borde y es la única línea, sin nada
+      de lo que hay detrás en los bordes; uno sin borde (un panel de texto, un
+      icono, una fila de valores) lleva aire alrededor, con cada borde del
+      recorte entre dos líneas de texto; un control pequeño lleva contexto, con
+      su borde bien dentro. Nunca se ve una doble raya (el marco y, a pocos
+      píxeles, el borde gris del elemento o el contorno de la captura), ni el
+      recorte corta una línea de texto, ni queda en otra página que su
+      captura. Si el recorte amplía algo que no es lo que cuenta el texto, se
+      corrige el `focus` del tour. Ningún paso de la ejecución avisa de «focus not
       displayed» (lo lista `build-manual`). En GitHub el Markdown muestra solo
       la captura con su contorno: el «Detalle» es del PDF (un SVG que recorta
       la misma imagen por dentro del contorno, sin archivos de más; ver
       `scripts/manual/focus.mjs`).
+      Para mirar páginas reales del PDF sin instalar nada: Edge sin interfaz
+      abre el PDF con su visor y se captura por el protocolo de depuración
+      (`#page=N` en la URL).
 - [ ] Ningún paso repite la captura de otro (p. ej. iniciar sesión y la
       primera pantalla de entrada).
 

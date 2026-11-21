@@ -4,8 +4,13 @@
 //   node scripts/build-manual.mjs              rebuild from docs/manual/pasos.json (no app run)
 //   … --no-pdf                                 Markdown only
 //   … --allow-failed                           build even if some tour steps failed
+//   … --from-run <dir>                         take a tour run kept elsewhere (a frozen copy)
+//   … --out <dir>                              write the manual there instead of docs/manual/
+//                                              (prose still from docs/manual/fuentes/; a
+//                                              previous pasos.json and images there, if any,
+//                                              else docs/manual/'s, are the baseline)
 //
-// Output, all in docs/manual/:
+// Output, all in docs/manual/ (or --out):
 //   README.md, NN-<capitulo>.md   Spanish chapters (generated: edit fuentes/)
 //   img/<capitulo>/<paso>.png     screenshots, re-encoded deterministically
 //   pasos.json                    the step data, so the manual rebuilds offline
@@ -15,6 +20,7 @@
 // MANUAL_DIFF_THRESHOLD (default 0.5 %) of its pixels changed.
 import { execFileSync } from "node:child_process";
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
@@ -23,21 +29,30 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { changedShare, decodePng, drawFocus, encodePng } from "./manual/png.mjs";
 import { escapeHtml, leftoverTable, markdownToHtml } from "./manual/markdown.mjs";
 import { AFTER_STEPS, keyboardAppendix, parseSource, pdfNamedDests, pdfPageCount } from "./manual/sources.mjs";
 import { printWithEdge, sweepProfiles } from "./manual/edge-print.mjs";
-import { cutoutSvg, focusLayout, focusZones, FOCUS_COLOR, FOCUS_RADIUS, FOCUS_STROKE, groupInset, sameFocusPixels } from "./manual/focus.mjs";
+import { cutoutSvg, focusCuts, focusLayout, FOCUS_COLOR, FOCUS_RADIUS, FOCUS_STROKE, groupInset, outlineZones, sameFocusPixels } from "./manual/focus.mjs";
 import { foreignNames } from "./manual/persona.mjs";
 
 const repoDir = join(dirname(fileURLToPath(import.meta.url)), "..");
-const manualDir = join(repoDir, "docs", "manual");
-const sourcesDir = join(manualDir, "fuentes");
+const argv = process.argv.slice(2);
+const args = new Set(argv);
+/** The value after `flag`, when it is not another flag. */
+const argValue = (flag) => {
+  const i = argv.indexOf(flag);
+  return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--") ? resolve(argv[i + 1]) : null;
+};
+/** The committed manual: prose sources and the links the PDF points at. */
+const repoManualDir = join(repoDir, "docs", "manual");
+const manualDir = argValue("--out") ?? repoManualDir;
+const sourcesDir = join(repoManualDir, "fuentes");
 const imgDir = join(manualDir, "img");
 const buildDir = join(manualDir, ".build");
-const runDir = join(repoDir, "e2e", "results", "tours");
+const runDir = argValue("--from-run") ?? join(repoDir, "e2e", "results", "tours");
 export const PDF_NAME = "Pharos-manual-de-usuario.pdf";
 const REPO_URL = "https://github.com/shift3385/Pharos/blob/main";
 const THRESHOLD = Number(process.env.MANUAL_DIFF_THRESHOLD ?? 0.005);
@@ -47,7 +62,6 @@ const pkg = JSON.parse(readFileSync(join(repoDir, "package.json"), "utf8"));
 // Printed in menu order (`number`), not in the order the tours run (MAN-03).
 const MANUAL_CHAPTERS = MANUAL_ORDER;
 
-const args = new Set(process.argv.slice(2));
 
 function fail(message) {
   console.error(`✖ build-manual: ${message}`);
@@ -79,17 +93,27 @@ function importImages(steps) {
   let kept = 0;
   for (const s of steps) {
     // A step kept from the previous manual (skipped in this run) has no new capture.
-    if (!s.image || s.keptFromBefore) continue;
+    if (!s.image) continue;
+    if (s.keptFromBefore) {
+      // Into a fresh --out folder: the committed capture comes along.
+      const target = join(imgDir, s.image);
+      const committed = join(repoManualDir, "img", s.image);
+      if (!existsSync(target) && existsSync(committed)) {
+        mkdirSync(dirname(target), { recursive: true });
+        copyFileSync(committed, target);
+      }
+      continue;
+    }
     // Compared as it would be committed (palette PNG), so the quantisation
     // itself never counts as a change.
-    // A step about one control gets the outline of its zones (the control,
-    // or each focused element, with some quiet context: focus.mjs) drawn into
-    // the capture (MAN-02), in one exact colour the palette keeps as it is.
-    // The zones are kept in the step: the PDF's cut-out crops inside them.
+    // A step about one control gets its cut-out pieces (focus.mjs: each
+    // element at its own edge, or with quiet air) and one outline round them
+    // drawn into the capture (MAN-02), in one exact colour the palette keeps
+    // as it is. The pieces are kept in the step for the PDF's cut-out.
     const pixels = decodePng(readFileSync(join(runDir, "img", s.image)));
     if (s.focus) {
-      s.zones = focusZones(pixels.width, pixels.height, s.focus, s.focusParts, pixels);
-      drawFocus(pixels, s.zones, { color: FOCUS_COLOR, stroke: FOCUS_STROKE, pad: 0, radius: FOCUS_RADIUS });
+      s.cuts = focusCuts(pixels.width, pixels.height, s.focus, s.focusParts, pixels);
+      drawFocus(pixels, outlineZones(s.cuts), { color: FOCUS_COLOR, stroke: FOCUS_STROKE, pad: 0, radius: FOCUS_RADIUS });
     }
     const encoded = encodePng(pixels, { reserve: [FOCUS_COLOR] });
     const fresh = decodePng(encoded);
@@ -132,7 +156,8 @@ function loadSteps() {
   }
   // A step this run skipped (the AI chapter without a key) keeps what the
   // committed manual had for it, capture included, instead of losing it.
-  const previous = existsSync(pasosFile) ? JSON.parse(readFileSync(pasosFile, "utf8")).steps : [];
+  const baseline = existsSync(pasosFile) ? pasosFile : join(repoManualDir, "pasos.json");
+  const previous = existsSync(baseline) ? JSON.parse(readFileSync(baseline, "utf8")).steps : [];
   const before = new Map(previous.map((s) => [`${s.chapter}/${s.id}`, s]));
   const steps = readRun().map((s) => {
     const old = before.get(`${s.chapter}/${s.id}`);
@@ -144,7 +169,7 @@ function loadSteps() {
   const order = new Map(CHAPTERS.map((c) => [c.id, c.number]));
   const clean = steps
     .filter((s) => s.status !== "failed")
-    .map(({ chapter, n, id, title, caption, covers, image, viewport, status, reason, focus, zones, group }) => ({
+    .map(({ chapter, n, id, title, caption, covers, image, viewport, status, reason, focus, cuts, group }) => ({
       chapter,
       n,
       id,
@@ -156,7 +181,7 @@ function loadSteps() {
       status,
       ...(reason ? { reason } : {}),
       ...(focus ? { focus } : {}),
-      ...(zones?.length ? { zones } : {}),
+      ...(cuts?.length ? { cuts } : {}),
       ...(group ? { group } : {}),
     }))
     .sort((a, b) => order.get(a.chapter) - order.get(b.chapter) || a.n - b.n);
@@ -386,7 +411,7 @@ function htmlDocument(body) {
  *  PDF (a `file:` URL is a capture: the cut-outs' SVG `<image href>`). */
 function absoluteLinks(html) {
   return html.replace(/href="(?!https?:|#|mailto:|file:)([^"]+)"/g, (_, href) => {
-    const target = relative(repoDir, join(manualDir, href)).replaceAll("\\", "/");
+    const target = relative(repoDir, join(repoManualDir, href)).replaceAll("\\", "/");
     return `href="${REPO_URL}/${target}"`;
   });
 }
@@ -411,13 +436,13 @@ function stepHtml(c, s, src, { grouped = false } = {}) {
     const mobile = s.viewport?.width && s.viewport.width < 768;
     const { w, h } = pngSize(file);
     const alt = escapeHtml(s.title);
-    // A step about one control of a big screen: the capture, with its zones
+    // A step about one control of a big screen: the capture, with its pieces
     // outlined in the PNG, then the «Detalle» cut-out: the same file seen
-    // through a clip inside that outline, with one frame of its own
-    // (focus.mjs). Only with the zones the outline was drawn around: without
-    // them (an old step) a crop could catch the outline: a second line.
+    // through those pieces, with one frame (focus.mjs). Only with the pieces
+    // the outline was drawn round: without them (an old step) a crop could
+    // catch the outline, a second line.
     const layout =
-      !mobile && w >= 1440 && s.zones ? (grouped ? groupInset(w, h, s.zones, GROUP_COLUMN_MM) : focusLayout(w, h, s.zones)) : null;
+      !mobile && w >= 1440 && s.cuts ? (grouped ? groupInset(w, h, s.cuts, GROUP_COLUMN_MM) : focusLayout(w, h, s.cuts)) : null;
     if (layout) {
       const url = fileUrl(file);
       const svg = cutoutSvg(escapeHtml(url), w, h, layout, { id: `cut-${c.id}-${s.id}`, label: `Detalle: ${alt}` });
@@ -560,7 +585,7 @@ function buildPdf(data, byChapter) {
   const moved = [...pages].filter(([id, p]) => final.get(id) + 1 !== p).map(([id]) => id);
   if (moved.length > 0) fail(`contents page numbers moved between passes: ${moved.slice(0, 5).join(", ")}`);
   const total = pdfPageCount(readFileSync(pdf));
-  console.log(`› PDF: docs/manual/${PDF_NAME} (${total} pages, ${Math.round(statSync(pdf).size / 1024)} KB)`);
+  console.log(`› PDF: ${relative(repoDir, pdf).replaceAll("\\", "/")} (${total} pages, ${Math.round(statSync(pdf).size / 1024)} KB)`);
   for (const f of readdirSync(buildDir)) if (f.endsWith(".pdf")) rmSync(join(buildDir, f));
 }
 
@@ -596,6 +621,6 @@ for (const c of MANUAL_CHAPTERS) {
 }
 writeFileSync(join(manualDir, APPENDIX.file), appendixMarkdown());
 writeFileSync(join(manualDir, "README.md"), indexMarkdown(data, byChapter));
-console.log(`› Markdown: docs/manual/ (${MANUAL_CHAPTERS.length} chapters, ${data.steps.length} steps)`);
+console.log(`› Markdown: ${relative(repoDir, manualDir).replaceAll("\\", "/")}/ (${MANUAL_CHAPTERS.length} chapters, ${data.steps.length} steps)`);
 
 if (!args.has("--no-pdf")) buildPdf(data, byChapter);

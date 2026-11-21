@@ -147,17 +147,23 @@ step("nuevo", {
 - **`focus`** (one selector or several): the tour records, in capture pixels,
   the union box (`focus`) and, with several elements, each one's box
   (`focusParts`, e.g. a trigger and the menu it opened). At build time
-  (`scripts/manual/focus.mjs`) the manual turns them into *zones* (the
-  element plus a margin by kind: room for a small icon button, tight for a
-  panel or popover, each edge snapped to quiet pixels so it does not cut a
-  word), draws one amber outline (Faro Nocturno's accent) round their union
-  into the PNG and keeps the zones in `docs/manual/pasos.json`. In the PDF
-  only, a «Detalle» cut-out follows the capture (beside it, level with the
-  zone, or below it for a wide strip; none when the zone is already big): an
-  inline SVG that shows the same file through a clip inside that outline,
-  with a single amber frame of its own, so no second line ever shows. Use it
-  when a step is about one control in a big screen. A focus not displayed at
-  capture time is a warning (`focusMissing`), listed by the manual build.
+  (`scripts/manual/focus.mjs`) the manual turns each element into a cut-out
+  *piece*: an element with a visible edge of its own (an input, a card, a
+  button, a menu or tooltip over other content) is cut exactly at its box, so
+  the cut-out's single amber frame lies over its own border; one without an
+  edge gets air, each side snapped between lines of text; a small control
+  gets context. Pieces a few px apart join into one shape. The manual draws
+  one amber outline (Faro Nocturno's accent) round the pieces into the PNG
+  and keeps them in `docs/manual/pasos.json` (`cuts`). In the PDF only, a
+  «Detalle» cut-out follows the capture (beside it, level with the zone, or
+  below it for a wide strip; none when the zone is already big): an inline
+  SVG that shows the same file through the pieces, with one frame, so no
+  second line ever shows. Use it when a step is about one control in a big
+  screen, and focus what the text is about (the value with its label, the
+  line with its «Copiar» button): the cut-out shows exactly that. A focus not
+  displayed at capture time is a warning (`focusMissing`), listed by the
+  manual build. `node scripts/build-manual.mjs --from-run <dir> --out <dir>`
+  builds from a frozen run into a private folder.
 - **`group`**: a before/after pair (e.g. the password hidden, then shown). With
   a `focus`, each column gets its own «Detalle» under the capture.
 - **`after`**: capture the state *before* an action and still assert the
