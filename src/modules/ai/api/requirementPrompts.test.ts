@@ -43,7 +43,7 @@ describe("req-extract@2", () => {
   });
 });
 
-describe("req-synthesis@3", () => {
+describe("req-synthesis@4", () => {
   const existing = [{ key: "REQ-001", title: "Sign in", description: "x".repeat(900), priority: "high" }];
   const candidates = [{ title: "Sign out", description: "The system shall sign out.", basis: "stated" as const }];
 
@@ -52,11 +52,28 @@ describe("req-synthesis@3", () => {
     expect(user.content).toContain('never write them in "reason", "title" or "description"');
     // @2's example reason cited «C3 and C7», and the model copied it.
     expect(user.content).not.toContain("C3 and C7");
-    expect(user.content).toContain('(e.g. "two candidates describe sign-in;');
+  });
+
+  it("writes for the end user, never in the pipeline's own words (FIX-52)", () => {
+    const [, es] = buildRequirementSynthesisMessages(candidates, existing, "es");
+    expect(es.content).toContain(
+      "Write every text value for the end user who reviews it in the application, in Spanish: " +
+        "cite the material by what that person knows (the words of the material in quotes, " +
+        "the screen or the capability it describes, and an existing requirement by its key; " +
+        "the source of each proposal is shown next to it). Never mention how this request " +
+        'works: no "candidate", "batch", "label", "item", the numbers or ids of this request, ' +
+        '"the model", "the prompt", "the AI" or "the analysis".',
+    );
+    // @3's own example reason said «two candidates describe…», and the model
+    // wrote «la candidata dice…».
+    expect(es.content).not.toMatch(/e\.g\. "[^"]*candidate/);
+    expect(es.content).toContain('(e.g. "the material shows sign-in twice;');
+    const [, en] = buildRequirementSynthesisMessages(candidates, existing, "en");
+    expect(en.content).toContain("for the end user who reviews it in the application, in English");
   });
 
   it("numbers candidates C1… and lists the existing ones by key, clipped", () => {
-    expect(REQ_SYNTHESIS_PROMPT).toBe("req-synthesis@3");
+    expect(REQ_SYNTHESIS_PROMPT).toBe("req-synthesis@4");
     const [, user] = buildRequirementSynthesisMessages(candidates, existing, "en");
     expect(user.content).toContain("C1 [stated] Sign out: The system shall sign out.");
     expect(user.content).toContain("REQ-001 [high] Sign in: ");

@@ -4,7 +4,7 @@
 //
 //   req-extract@2    one batch of project files → candidate requirements, each
 //                    with the files and lines it rests on.
-//   req-synthesis@3  every candidate (of any source: a project here, images
+//   req-synthesis@4  every candidate (of any source: a project here, images
 //                    and designs in IA-18) + the existing requirements →
 //                    proposals: new, improve, merge (possible duplicate),
 //                    remove (redundant).
@@ -33,7 +33,22 @@ export const REQ_EXTRACT_PROMPT = "req-extract@2";
 // @3 (FIX-51, ADR-0036 note): the candidates' labels (C1, C4) are for "from"
 // only and never written in the texts the person reads; @2's own example
 // reason cited «C3 and C7», and the model copied the labels into «Motivo».
-export const REQ_SYNTHESIS_PROMPT = "req-synthesis@3";
+// @4 (FIX-52, ADR-0036 note): every text is written for the end user and
+// never names the pipeline's notions; @3's example reason itself said «two
+// candidates describe…», and the model wrote «la candidata dice…».
+export const REQ_SYNTHESIS_PROMPT = "req-synthesis@4";
+
+/** The pipeline's own notions, which the person never sees (FIX-52). */
+const PIPELINE_WORDS =
+  `"candidate", "batch", "label", "item", the numbers or ids of this request, ` +
+  `"the model", "the prompt", "the AI" or "the analysis"`;
+
+/** The rule for every text the person reads, shared by the prompts that
+ *  write them (FIX-52). `cite` says how this prompt's material is named. */
+export const forTheEndUser = (lang: string, cite: string) =>
+  `Write every text value for the end user who reviews it in the application, in ` +
+  `${languageOf(lang)}: cite the material by what that person knows (${cite}). Never ` +
+  `mention how this request works: no ${PIPELINE_WORDS}.`;
 
 const languageOf = (lang: string) =>
   lang.startsWith("es") ? "Spanish" : "English";
@@ -229,10 +244,15 @@ export function buildRequirementSynthesisMessages(
     `- ${removal}`,
     `- At most one proposal per existing requirement. Never invent keys: use only the keys ` +
       `listed. Never write file names or paths: "from" says where it comes from.`,
-    `- "reason" names the concrete defect or evidence in at most 20 words (e.g. "two ` +
-      `candidates describe sign-in; REQ-004 says only 'secure'"). The labels C1, C2… are only ` +
+    `- "reason" names the concrete defect or evidence in at most 20 words (e.g. "the ` +
+      `material shows sign-in twice; REQ-004 says only 'secure'"). The labels C1, C2… are only ` +
       `for "from": the person never sees them, so never write them in "reason", "title" or ` +
-      `"description"; name a candidate by what it says, and an existing requirement by its key.`,
+      `"description".`,
+    `- ${forTheEndUser(
+      lang,
+      `the words of the material in quotes, the screen or the capability it describes, and ` +
+        `an existing requirement by its key; the source of each proposal is shown next to it`,
+    )}`,
     `- Propose only what improves the list: do not pad. At most 100 proposals.`,
     ``,
     `Return exactly this shape:`,

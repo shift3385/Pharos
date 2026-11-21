@@ -32,7 +32,7 @@ import {
   type ScanFile,
   type ScanInventory,
 } from "../proposals/fromProject";
-import { usableRequirementProposals } from "../proposals/proposals";
+import { readableReason, usableRequirementProposals } from "../proposals/proposals";
 import type {
   ApplyResult,
   CandidateRequirement,
@@ -262,7 +262,9 @@ export function ProjectRequirementsModal({
       );
       if (!proposals.length) {
         setEmptyReason(
-          r.value.reason ?? t("traceability.fromProject.nothingToChange"),
+          r.value.reason
+            ? readableReason(r.value.reason, candidates)
+            : t("traceability.fromProject.nothingToChange"),
         );
         return setPhase("empty");
       }
