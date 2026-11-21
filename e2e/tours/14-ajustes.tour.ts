@@ -52,7 +52,8 @@ chapter("ajustes", () => {
     caption:
       "Dos proyectos no pueden usar prefijos que se solapen: iguales (sin contar el guion o el guion bajo final, ni mayúsculas) o uno que empiece por el otro, como «PH-» y «PHA-», porque «PHA-001» también empieza por «PH». Si escribes uno así, el campo dice con qué proyecto choca (en este ejemplo, «API-» es el de «API de sincronización») y «Guardar» no guarda hasta que lo cambies. Liomar vuelve a «PH-» y guarda.",
     covers: ["action:project-settings-save"],
-    focus: "#pj-prefix",
+    // The field with the message under it.
+    focus: '//*[@id="pj-prefix"]/ancestor::*[contains(concat(" ", @class, " "), " tp-field ")][1]',
     run: async () => {
       await $("#pj-prefix").setValue(`${PROJECT_B.prefix}-`);
       await waitForText(es.projects.prefix.overlap.split("{{")[0]);

@@ -171,7 +171,8 @@ chapter("integraciones", () => {
     // The GitHub instructions alone: the page cannot scroll past the card,
     // so a page shot would repeat the step before.
     shot: { element: "ol.int-ci__steps" },
-    focus: '[data-testid="ci-url"]',
+    // The PHAROS_URL line with its «Copiar» button.
+    focus: '//*[@data-testid="ci-url"]/ancestor::li[1]',
     mask: ['[data-testid="ci-url"]'],
     run: async () => {
       await byTestId("ci-url").scrollIntoView({ block: "center" });

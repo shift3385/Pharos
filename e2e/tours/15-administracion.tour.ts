@@ -209,7 +209,8 @@ chapter("administracion", () => {
     caption:
       "«General» reúne los ajustes de la aplicación en este equipo. El tema (claro, oscuro o según el sistema), el idioma y la carpeta de las exportaciones se guardan al momento. El fondo viene con una imagen predeterminada que puedes cambiar o quitar; al mover su opacidad ves el resultado detrás de la página antes de pulsar «Guardar ajustes», y un aviso dice qué queda «Por guardar». También eliges la retención de los elementos borrados.",
     covers: ["admin:general"],
-    focus: "#adm-opacity",
+    // The slider with its «40 %» value.
+    focus: ".adm-range",
     run: async () => {
       await clickButton(es.common.confirmDelete, '[role="alertdialog"]');
       await $('[role="alertdialog"]').waitForExist({ reverse: true });

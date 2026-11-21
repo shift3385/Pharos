@@ -287,13 +287,13 @@ chapter("equipo", () => {
   step("cambios-guardados", {
     title: "Hacer los cambios",
     caption:
-      "Liomar añade la comprobación que pidió Jorge («+ Añadir paso» en «Comprobaciones») y guarda. El caso sigue «En revisión», y el aviso pasa a «Cambios guardados tras la petición de Jorge L. Meneses Yero», con su comentario; debajo, «Cambios desde el …», con la fecha de la revisión que Jorge vio, enseña la comprobación añadida, para que Jorge sepa qué mirar.",
+      "Liomar añade la comprobación que pidió Jorge («+ Añadir comprobación» en «Comprobaciones») y guarda. El caso sigue «En revisión», y el aviso pasa a «Cambios guardados tras la petición de Jorge L. Meneses Yero», con su comentario; debajo, «Cambios desde el …», con la fecha de la revisión que Jorge vio, enseña la comprobación añadida, para que Jorge sepa qué mirar.",
     focus: ".tc-review",
     run: async () => {
       const group = $(`[role="group"][aria-label="${C.checklist.items}"]`);
       await group.scrollIntoView({ block: "center" });
       const before = (await group.$$('[aria-label^="Paso "]')).length;
-      await group.$(`.//button[contains(normalize-space(.),"${C.addStep}")]`).click();
+      await group.$(`.//button[contains(normalize-space(.),"${C.checklist.add}")]`).click();
       const item = group.$(`[aria-label="${tf("testCase.stepN", { n: before + 1 })}"]`);
       await item.setValue(CASE.newItem);
       await clickButton(C.save, ".tc-nav");
@@ -406,7 +406,8 @@ chapter("equipo", () => {
     title: "Otra persona aprueba el plan",
     caption:
       "Jorge, ya Test Manager, aprueba el plan desde la web. Tras sincronizar, «Estado del plan» muestra «Aprobado» con su nombre y la fecha, sin «aprobación propia»; el «Historial» y los exportes del plan lo recogen también.",
-    focus: '[data-testid="plan-approved-by"]',
+    // The facts as one zone: «Aprobado por» and «Aprobado el» whole, with their labels.
+    focus: 'section[aria-labelledby="tpw-status-title"] dl.tpw-facts',
     run: async () => {
       await jorgeApprovesPlan(PROJECT_A.name);
       await sync();
@@ -422,7 +423,7 @@ chapter("equipo", () => {
 
   step("asignar", {
     title: "Asignar trabajo a Jorge",
-    caption: `En un workspace compartido, «Asignado a» de un defecto elige entre los miembros activos del workspace (o «Sin asignar»). Liomar abre «${DEFECTS[TEAM.assignedDefect].title}» en «Defectos», elige «Jorge L. Meneses Yero» y guarda. Jorge recibe en su Pharos el aviso «Liomar QA te asignó…», con la clave y el título del defecto; en la campana de Liomar no aparece, porque el aviso es para quien recibe el trabajo. Del mismo modo, «Asignar a», al añadir casos a un ciclo, reparte su ejecución.`,
+    caption: `En un workspace compartido, «Asignado a» de un defecto elige entre los miembros activos del workspace (o «Sin asignar»). Liomar abre «${DEFECTS[TEAM.assignedDefect].title}» en «Defectos», elige «Jorge L. Meneses Yero» y guarda. Jorge recibe en su Pharos el aviso «Liomar Rodríguez te asignó…», con la clave y el título del defecto; en la campana de Liomar no aparece, porque el aviso es para quien recibe el trabajo. Del mismo modo, «Asignar a», al añadir casos a un ciclo, reparte su ejecución.`,
     focus: ASSIGNEE_LABEL,
     run: async () => {
       await openProject(PROJECT_A.name);
@@ -475,7 +476,8 @@ chapter("equipo", () => {
   step("auditoria", {
     title: "La auditoría del equipo",
     caption: `En «Administración › Auditoría», el Test Manager de un workspace compartido ve también lo que hicieron los demás miembros, con su nombre. Liomar busca «${CASE.key}»: cada paso de la revisión del caso sale por su nombre, «Enviado a revisión» (Liomar), «Cambios pedidos» y «Aprobado» (Jorge L. Meneses Yero), con los campos que cambió («Aprobación, Revisión, Estado»).`,
-    focus: ['[data-testid="audit-search"]', '(//*[starts-with(@data-testid,"audit-row-")])[position()<=4]'],
+    // The list as one zone (the rows and their action cells together).
+    focus: '(//*[starts-with(@data-testid,"audit-row-")])[1]/ancestor::*[self::table or self::ul or self::ol][1]',
     run: async () => {
       await openAdminTab("audit");
       await byTestId("audit-search").setValue(CASE.key);

@@ -118,7 +118,8 @@ chapter("trazabilidad", () => {
     caption:
       "«Orden» decide cómo se listan los requisitos. Por defecto, «Riesgo»: primero los de más riesgo (probabilidad × impacto, capítulo 7), para que lo más arriesgado se revise antes; los que no tienen riesgo evaluado van al final. «ID de requisito» los ordena por su clave: en este ejemplo, Liomar lo elige para encontrar REQ-001, arriba del todo, y después vuelve a «Riesgo».",
     covers: ["action:matrix-sort"],
-    focus: '[data-testid="trace-sort"]',
+    // The sort control with its «Orden» label, room around it.
+    focus: '//*[@data-testid="trace-sort"]/..',
     run: async () => {
       const sort = $('[data-testid="trace-sort"]');
       await chooseOption(sort, { value: "key" });

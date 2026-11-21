@@ -78,7 +78,8 @@ async function fillSteps(label: string, steps: string[]) {
   for (const [i, text] of steps.entries()) {
     let input = group.$(`[aria-label="${tf("testCase.stepN", { n: i + 1 })}"]`);
     if (!(await input.isExisting())) {
-      await group.$(".//button[contains(normalize-space(.),'" + C.addStep + "')]").click();
+      // «Añadir paso», or «Añadir comprobación» in a checklist.
+      await group.$(".//button[contains(normalize-space(.),'" + C.addStep + "') or contains(normalize-space(.),'" + C.checklist.add + "')]").click();
       input = group.$(`[aria-label="${tf("testCase.stepN", { n: i + 1 })}"]`);
     }
     await input.setValue(text);
@@ -240,7 +241,8 @@ chapter("casos", () => {
     caption:
       "«Vista dividida» pone el formulario y el Gherkin uno junto a otro, y es la forma más cómoda de ver cómo cada campo se traduce en el escenario mientras escribes; «Sincronizado», sobre el Gherkin, confirma que ambos coinciden. El botón de copiar, arriba a la derecha del Gherkin, lo lleva al portapapeles («Gherkin copiado») para pegarlo en tu proyecto de automatización.",
     covers: ["action:case-gherkin-copy"],
-    focus: "button[aria-label=\"Copiar el Gherkin\"]",
+    // The button with the .feature bar it sits in, so the cut-out has room.
+    focus: '//button[@aria-label="Copiar el Gherkin"]/..',
     run: async () => {
       await $('[role="radiogroup"]').$('button[data-value="split"]').click();
       await $(`button[aria-label="${C.gherkin.copy}"]`).click();
