@@ -1,8 +1,8 @@
 // Chapter 14 — Ajustes del proyecto (manual v2, MAN-03): the name and case
 // numbering, custom fields of cases and defects, configurations, and copying
 // fields to a second project. It runs right after chapter 4 (which makes the
-// projects): the prefix, the fields and the configurations are what the next
-// chapters use.
+// projects with their prefixes): the fields and the configurations are what
+// the next chapters use.
 import { $, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
 import {
@@ -10,7 +10,6 @@ import {
   PROJECT_B,
   acceptConfirm,
   button,
-  chooseOption,
   clickButton,
   dialog,
   es,
@@ -19,63 +18,69 @@ import {
   menuItem,
   openProject,
   openSection,
+  pointerAway,
+  scrollToTop,
   selectOption,
   tf,
   waitForText,
   waitForToast,
 } from "./helpers";
 
-async function setPrefix(prefix: string) {
-  await openSection("settings");
-  await $("#pj-prefix").setValue(prefix);
-  await chooseOption($("#pj-digits"), { value: "3" });
-  await button(es.projects.save).click();
-  await waitForToast(es.projects.savedToast);
-}
+const GENERAL = 'section[aria-labelledby="pj-general-title"]';
 
 chapter("ajustes", () => {
   step("ajustes", {
     title: "Ajustes del proyecto: prefijo de los casos",
     caption:
-      "«Ajustes del proyecto», en el menú lateral, permite cambiar el nombre y cómo se numeran sus casos: el prefijo (en este ejemplo, Liomar acorta a «PH-» el «PHA-» que Pharos sugirió al crearlo) y el número de dígitos. La vista previa muestra cómo quedará el ID del siguiente caso (PH-001). Elige el prefijo pronto: es el que verás en informes, defectos y exportaciones. «Guardar» lo confirma con «Ajustes actualizados».",
-    toast: true,
-    covers: ["section:settings", "action:project-settings-save"],
+      "«Ajustes del proyecto», en el menú lateral, permite cambiar el nombre y cómo se numeran sus casos: el prefijo (en este ejemplo, «PH-», el que Liomar eligió al crear el proyecto en el capítulo 4) y el número de dígitos. La vista previa muestra el formato de los IDs (PH-001, PH-002…). Elige el prefijo pronto: es el que verás en informes, defectos y exportaciones. «Guardar» confirma cada cambio con «Ajustes actualizados».",
+    covers: ["section:settings"],
     focus: ".pj-settings__preview",
     run: async () => {
       await openProject(PROJECT_A.name);
-      await setPrefix(`${PROJECT_A.prefix}-`);
+      await openSection("settings");
+      await expect($("#pj-prefix")).toHaveValue(`${PROJECT_A.prefix}-`);
       await expect($(".pj-settings__preview")).toHaveText(expect.stringContaining(`${PROJECT_A.prefix}-`));
-      // FIX-11: the sidebar switcher shows the new prefix at once, without navigating.
-      await expect($(".sidebar__project-badge")).toHaveText(`${PROJECT_A.prefix}-`);
+      // The settings, not the project header: this chapter runs right after
+      // chapter 4, before the plan, requirements and cases of chapters 5–8
+      // exist, while the manual prints it after them.
+      await scrollToTop(GENERAL);
     },
   });
 
   step("prefijo-solapado", {
     title: "Un prefijo que se solapa",
     caption:
-      "Dos proyectos no pueden usar prefijos que se solapen: iguales (sin contar el guion o el guion bajo final, ni mayúsculas) o uno que empiece por el otro, como «PH-» y «PHA-», porque «PHA-001» también empieza por «PH». Si escribes uno así, el campo dice con qué proyecto choca (en este ejemplo, «API-» es el de «API de sincronización») y «Guardar» no guarda hasta que lo cambies. Los proyectos que ya compartían prefijo de una versión anterior (todos empezaban con «ATS_») pueden seguir guardando su nombre; el aviso solo aparece al cambiar el prefijo.",
-    focus: "#pj-prefix",
+      "Dos proyectos no pueden usar prefijos que se solapen: iguales (sin contar el guion o el guion bajo final, ni mayúsculas) o uno que empiece por el otro, como «PH-» y «PHA-», porque «PHA-001» también empieza por «PH». Si escribes uno así, el campo dice con qué proyecto choca (en este ejemplo, «API-» es el de «API de sincronización») y «Guardar» no guarda hasta que lo cambies. Liomar vuelve a «PH-» y guarda.",
+    covers: ["action:project-settings-save"],
+    // The field with the message under it.
+    focus: '//*[@id="pj-prefix"]/ancestor::*[contains(concat(" ", @class, " "), " tp-field ")][1]',
     run: async () => {
       await $("#pj-prefix").setValue(`${PROJECT_B.prefix}-`);
       await waitForText(es.projects.prefix.overlap.split("{{")[0]);
+      await scrollToTop(GENERAL);
     },
     after: async () => {
       await $("#pj-prefix").setValue(`${PROJECT_A.prefix}-`);
+      await button(es.projects.save).click();
+      await waitForToast(es.projects.savedToast);
+      // FIX-11: the sidebar switcher shows the prefix at once.
+      await expect($(".sidebar__project-badge")).toHaveText(PROJECT_A.prefix);
     },
   });
 
   step("historial-plan", {
     title: "El historial en el plan exportado",
     caption:
-      "«Historial en el plan exportado» decide qué llevan del historial el .xlsx y el .pdf del plan (capítulo 5), tanto al exportarlo desde el asistente como en el ZIP del proyecto. «Solo la versión vigente», la opción de partida, pone en la cabecera la versión, la fecha, el autor y el estado actuales. «Historial de revisiones» añade una tabla con una fila por persona y día: su último guardado, el estado y las secciones que cambió. Se guarda al elegirlo, sin pulsar «Guardar» («Ajuste del historial guardado.»). En este ejemplo, Liomar elige el historial: el plan de Pharos pasa por revisiones y quiere que se vean al firmarlo.",
+      "«Historial en el plan exportado» decide qué llevan del historial el .xlsx y el .pdf del plan (capítulo 5), tanto al exportarlo desde el asistente como en el ZIP del proyecto. «Solo la versión vigente», la opción de partida, pone en la cabecera la versión, la fecha, el autor y el estado actuales. «Historial de revisiones» añade una tabla con una fila por persona y día: su último guardado, el estado y las secciones que cambió. Se guarda al elegirlo, sin pulsar «Guardar» (un aviso lo confirma). En este ejemplo, Liomar deja «Solo la versión vigente», la opción con la que creó el proyecto en el capítulo 4: es la que lleva el plan que exportó en el capítulo 5.",
     covers: ["action:plan-export-history"],
-    toast: true,
     focus: "fieldset.pj-choice",
     run: async () => {
-      const option = $(`label.pj-choice__option*=${es.testPlan.historyMode.revisions}`);
+      // One choice for the whole story: chapter 4 creates «Pharos» with
+      // «Solo la versión vigente» and chapter 5 exports the plan with it.
+      const option = $(`label.pj-choice__option*=${es.testPlan.historyMode.current}`);
       await option.scrollIntoView({ block: "center" });
-      await option.click();
-      await waitForToast(es.projects.settings.planHistorySaved);
+      await expect(option.$("input")).toBeSelected();
+      await pointerAway();
     },
   });
 
@@ -127,9 +132,10 @@ chapter("ajustes", () => {
   step("campo-creado", {
     title: "El campo, en la lista",
     caption:
-      "«Crear campo» lo guarda y aparece en la lista; desde ese momento, los casos del proyecto pueden usarlo (capítulo 8). Se reordena arrastrando o con el menú de cada campo: ese es el orden en que se ve en el editor.",
+      "«Crear campo» lo guarda y aparece en la lista; desde ese momento, los casos del proyecto pueden usarlo (capítulo 8). Liomar crea también «Regresión crítica», un campo sí/no para marcar los casos de la regresión imprescindible. Se reordena arrastrando o con el menú de cada campo: ese es el orden en que se ve en el editor.",
     toast: true,
     covers: ["action:custom-field-create"],
+    focus: '[data-testid="custom-fields-card"]',
     run: async () => {
       await dialog().$(`button=${es.customFields.dialog.create}`).click();
       await waitForToast(tf("customFields.savedToast", { label: "Navegador" }));
@@ -139,15 +145,16 @@ chapter("ajustes", () => {
       await selectOption(es.customFields.dialog.type, es.customFields.type.boolean, '[role="dialog"]');
       await dialog().$(`button=${es.customFields.dialog.create}`).click();
       await waitForToast(tf("customFields.savedToast", { label: "Regresión crítica" }));
-      await $('[data-testid="custom-fields-card"]').scrollIntoView();
+      await $('[data-testid="custom-fields-card"]').scrollIntoView({ block: "center" });
     },
   });
 
   step("campo-archivar", {
     title: "Archivar un campo",
     caption:
-      "Un campo no se borra, para no perder lo que ya se escribió en él: se archiva desde su menú («Archivar») y sus valores se conservan. «Mostrar archivados» lo enseña y «Desarchivar» lo recupera.",
+      "Un campo no se borra, para no perder lo que ya se escribió en él: se archiva desde su menú («Archivar») y sus valores se conservan. «Mostrar archivados» lo enseña y «Desarchivar» lo recupera. En este ejemplo, Liomar crea «Sprint antiguo» solo para probarlo y lo archiva: no lo necesita.",
     covers: ["action:custom-field-archive"],
+    focus: '[data-testid="custom-fields-card"]',
     run: async () => {
       const card = $('[data-testid="custom-fields-card"]');
       await card.$(`button=${es.customFields.new}`).click();
@@ -159,7 +166,7 @@ chapter("ajustes", () => {
       await waitForToast(tf("customFields.archivedToast", { label: "Sprint antiguo" }));
       await card.$(`label*=${es.customFields.showArchived}`).click();
       await expect(card.$(hasText(es.customFields.archived))).toBeDisplayed();
-      await card.scrollIntoView();
+      await card.scrollIntoView({ block: "center" });
     },
   });
 
@@ -184,6 +191,7 @@ chapter("ajustes", () => {
     caption:
       "El selector «Casos / Defectos» de la tarjeta elige de qué entidad son los campos. Con «Defectos», «Nuevo campo» crea un campo que aparece en el editor de cada defecto (en este ejemplo, «Sistema operativo»). Los campos de casos y de defectos son independientes, y «Copiar de otro proyecto» copia los de la entidad elegida.",
     covers: ["action:custom-field-defect"],
+    focus: '[data-testid="custom-fields-card"]',
     run: async () => {
       const card = $('[data-testid="custom-fields-card"]');
       await card.scrollIntoView();
@@ -194,7 +202,7 @@ chapter("ajustes", () => {
       await dialog().$(`button=${es.customFields.dialog.create}`).click();
       await waitForToast(tf("customFields.savedToast", { label: "Sistema operativo" }));
       await expect(card.$(hasText("Sistema operativo"))).toBeDisplayed();
-      await card.scrollIntoView();
+      await card.scrollIntoView({ block: "center" });
     },
   });
 
@@ -228,18 +236,22 @@ chapter("ajustes", () => {
     caption:
       "«Guardar» la añade a la lista. En este ejemplo hay dos activas (Chrome y Edge); una tercera se archivó desde su menú y solo se ve con «Mostrar archivadas»: así deja de ofrecerse en ciclos nuevos sin perder su historia.",
     covers: ["action:configuration-create", "action:configuration-archive"],
+    focus: '[data-testid="configurations-card"]',
     run: async () => {
       await dialog().$(`button=${es.configurations.save}`).click();
       await waitForToast(tf("configurations.savedToast", { name: "Chrome · Windows 11" }));
       const card = $('[data-testid="configurations-card"]');
-      for (const [name, browserName, label] of [
-        ["Edge · Windows 11", "Edge", "msedge"],
-        ["Safari · macOS", "Safari", "webkit"],
+      for (const [name, browserName, os, label] of [
+        ["Edge · Windows 11", "Edge", "Windows 11", "msedge"],
+        ["Safari · macOS", "Safari", "macOS", "webkit"],
       ]) {
         await card.$(`button=${es.configurations.new}`).click();
         const d = '[role="dialog"]';
         await (await field(es.configurations.name, d)).setValue(name);
         await (await field(es.configurations.attr.browser, d)).setValue(browserName);
+        await (await field(es.configurations.attr.os, d)).setValue(os);
+        await (await field(es.configurations.attr.device, d)).setValue("Escritorio");
+        await (await field(es.configurations.attr.locale, d)).setValue("es-ES");
         await (await field(es.configurations.labels, d)).click();
         await browser.keys([...label, "Enter"]);
         await dialog().$(`button=${es.configurations.save}`).click();
@@ -248,7 +260,7 @@ chapter("ajustes", () => {
       await card.$(`button[aria-label="${tf("configurations.actions", { name: "Safari · macOS" })}"]`).click();
       await menuItem(es.configurations.archive).click();
       await waitForToast(tf("configurations.archivedToast", { name: "Safari · macOS" }));
-      await card.scrollIntoView();
+      await card.scrollIntoView({ block: "center" });
     },
   });
 
@@ -260,7 +272,8 @@ chapter("ajustes", () => {
     shot: { element: '[role="dialog"]' },
     run: async () => {
       await openProject(PROJECT_B.name);
-      await setPrefix(`${PROJECT_B.prefix}-`);
+      await openSection("settings");
+      await expect($("#pj-prefix")).toHaveValue(`${PROJECT_B.prefix}-`);
       const card = $('[data-testid="custom-fields-card"]');
       await card.scrollIntoView();
       await card.$(`button=${es.customFields.copy}`).click();

@@ -10,8 +10,10 @@ Tablero (capítulo 6), en la ejecución manual (capítulo 11), en los defectos
 Las **evidencias** son los archivos que adjuntas: capturas, vídeos, registros
 y trazas de las tarjetas del Tablero, de los defectos, de los resultados y de
 los informes importados. Pharos los guarda **cifrados** en la carpeta
-`evidence`, junto a la base de datos, en este equipo. Todavía no se
-sincronizan con tus otros equipos.
+`evidence`, junto a la base de datos, y, con un servidor, los comparte con tu
+workspace: cada archivo viaja una sola vez por su contenido y llega cifrado a
+tus otros equipos y a los de tus compañeros. Los informes que sube un CI o el
+CLI `pharos` se guardan también como evidencia de su run.
 
 «Administración › Evidencias» (solo en la app de escritorio) tiene tres
 partes:
@@ -41,7 +43,7 @@ acorta los registros y limpia un archivo huérfano.
 | Tecla | Dónde | Qué hace |
 | --- | --- | --- |
 | Tab | Retención por proyecto | Recorre los tipos y su plazo |
-| ↑ ↓ | Selector de plazo de un tipo | Cambian entre «Por defecto», «Siempre» y «Días…» |
+| ↑ ↓ | Selector de plazo de un tipo | Cambian entre «Por defecto», «Siempre» y «Número de días» |
 | Esc | Confirmación de acortar la retención o de borrar huérfanos | No la cierra: usa «Cancelar» |
 
 ## Si algo no sale
@@ -52,8 +54,12 @@ acorta los registros y limpia un archivo huérfano.
 - **«No se pudo leer el almacén de evidencias…».** Comprueba que la carpeta de
   datos está en su sitio y vuelve a abrir la pestaña.
 - **Un adjunto dice «Este archivo no está en este equipo…».** Caducó por
-  retención, o la carpeta de datos se copió sin su carpeta `evidence`.
-  «Verificar evidencias» dice qué falta y dónde se usa.
+  retención, la carpeta de datos se copió sin su carpeta `evidence`, o aún
+  no ha llegado de otro equipo de tu workspace: se descarga en la siguiente
+  sincronización. «Verificar evidencias» dice qué falta y dónde se usa.
+- **Un huérfano sigue ahí tras «Borrar seleccionados».** Otro programa lo
+  tiene abierto (por ejemplo, otra ventana de Pharos con los mismos datos):
+  ciérralo y vuelve a verificar.
 - **Un huérfano no se puede marcar.** Tiene menos de 24 horas: puede ser un
   archivo que se está guardando. Vuelve a verificar mañana.
 - **«Por guardar: …».** Hay plazos cambiados sin guardar: pulsa «Guardar».
@@ -66,8 +72,10 @@ acorta los registros y limpia un archivo huérfano.
 
 - Verifica las evidencias después de restaurar una copia o de mover la carpeta
   de datos: el informe dice qué falta o está dañado y dónde se usa.
-- Incluye la carpeta `evidence` en tus copias: las evidencias todavía no se
-  sincronizan.
+- Tu copia de seguridad completa es `pharos.db` (copiada con Pharos cerrado),
+  la carpeta `evidence` y tu clave de recuperación: guárdalas juntas. Con un
+  servidor, las evidencias también viajan a él, pero la copia local te
+  protege de lo que aún no se ha sincronizado.
 - Antes de acortar un plazo, mira cuántos archivos caducarían: la confirmación
   lo dice, y los caducados no se recuperan.
 - La retención es un ajuste de cada equipo: si trabajas en varios,

@@ -19,7 +19,9 @@ describe("workspace selector in the strip (FIX-40)", () => {
   it("uses the strip's label size and the whole width", () => {
     const compact = rule(".ws-switcher[data-compact]");
     expect(compact).toMatch(/font-size:\s*10\.5px/);
-    expect(compact).toMatch(/padding:\s*6px 2px/);
+    // FIX-46: as wide as the strip entries, with room around «Personal».
+    expect(compact).toMatch(/width:\s*66px/);
+    expect(compact).toMatch(/padding:\s*6px 4px/);
   });
 
   it("lets the name take two lines before cutting it", () => {

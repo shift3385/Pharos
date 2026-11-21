@@ -13,10 +13,9 @@ registrado quién hizo cada cambio y tus proyectos llegan a tus otros equipos.
 
 Tu cuenta tiene dos nombres:
 
-- El **alias** es como te ve el resto de la aplicación: el menú lateral, el
-  menú de usuario, los cambios que haces.
-- El **nombre oficial** (nombre y apellidos) firma los documentos que exportas,
-  como el plan de pruebas («Elaborado por»).
+- El **alias** es el nombre con el que Pharos te nombra: el menú lateral, el
+  menú de usuario, los miembros de un workspace, las revisiones y los avisos.
+- El **nombre oficial** (nombre y apellidos) queda guardado en tu perfil.
 
 Si olvidas la contraseña, entras con uno de tus **códigos de recuperación de
 la cuenta**: diez códigos de un solo uso que Pharos te enseña una sola vez, al
@@ -28,7 +27,8 @@ sirve para abrir tus datos en un equipo nuevo (capítulo 15).
 **El servidor.** En la app de escritorio, encima del correo aparece
 «Servidor: …», el servidor al que se envían tu correo y tu contraseña.
 
-- Si trabajas solo en tu equipo, dice «Este equipo (localhost:3000)».
+- Si trabajas solo en tu equipo, dice «Este equipo» y la dirección del servidor
+  que corre en él.
 - Para trabajar con tu equipo, pulsa **«Cambiar»** y escribe la dirección que
   te dé quien administra Pharos, por ejemplo `https://pharos.miempresa.com`.
   - Pharos comprueba el servidor antes de guardarlo. Si algo falla, el
@@ -111,6 +111,14 @@ los tuyos.
   entró antes en este equipo a través de otro servidor. Para no mezclar sus
   datos, Pharos no la deja entrar aquí: vuelve a ese servidor o usa otra
   cuenta.
+- **«Esta cuenta está desactivada. Habla con el administrador del servidor para
+  reactivarla.»** Quien administra el servidor desactivó tu cuenta (capítulo
+  15, «Usuarios»). Tus datos se conservan: cuando la reactive, entras como
+  siempre.
+- **«Actualizando el formato de tus datos»** u **«Otro Pharos está
+  actualizando tus datos»**, al abrir la app. Pharos prepara tus datos locales
+  para la versión nueva o espera a otra ventana suya. Lo explica el capítulo
+  19, «Si algo sale mal».
 - **«Sin conexión»**, en una pastilla de la barra superior. Pharos no llega al
   servidor, pero puedes seguir trabajando: tus cambios se guardan en el equipo
   y se envían solos cuando vuelve la conexión (capítulo 15, «Sincronización»).
@@ -137,11 +145,13 @@ los tuyos.
 - Si dos personas usan el mismo equipo y las dos son miembros de un mismo
   workspace compartido, sus proyectos se ven en este equipo desde la cuenta
   que los sincronizó primero. La otra los ve en sus otros equipos y en la web.
-- Escribe bien tu nombre y tus apellidos antes de exportar documentos: son los
-  que firman el plan de pruebas.
+- Elige un alias que tus compañeros reconozcan: es el nombre con el que te
+  ven en el workspace.
 - El idioma también se puede cambiar después, desde el menú de usuario o desde
-  el perfil; el tema, desde el perfil, la barra superior o «Administración ›
-  General» (capítulo 15), donde además puedes elegir «Según el sistema».
+  «Mi perfil › Preferencias»; el tema, desde «Mi perfil › Preferencias», la
+  barra superior o «Administración › General» (capítulo 15). En el perfil y en
+  Administración puedes elegir además «Según el sistema», que sigue el ajuste
+  de Windows.
 - Guarda los códigos de recuperación en un gestor de contraseñas o en papel,
   nunca junto a la contraseña. Cuando te queden pocos, genera otros en «Mi
   perfil › Seguridad de la cuenta».
@@ -150,6 +160,9 @@ los tuyos.
 - El idioma, el tema y tus nombres viajan con tu cuenta: si los cambias en un
   equipo, tus otros equipos los toman al sincronizar («Se aplica en todos tus
   equipos», en el perfil). Gana el cambio más reciente.
+- La cuenta que administra el servidor lleva en su perfil la etiqueta
+  «Administrador del servidor». Liomar no la tiene: en este manual, el
+  servidor lo administra la cuenta «Administrador» (capítulo 15, «Usuarios»).
 - La clave de recuperación, que sirve para abrir tus datos en un equipo nuevo,
   ya no está en el perfil: está en «Administración › Seguridad» (capítulo 15).
 

@@ -21,6 +21,14 @@ import "@shared/ui/ConfirmDialog.css";
 import "./Gate.css";
 
 const STATE_TONE = { met: "success", notMet: "error", noData: "neutral", manual: "info" } as const;
+/** When the signature is taken: day, month, a 4-digit year and the time. */
+const SIGN_FORMAT: Intl.DateTimeFormatOptions = {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+};
 
 /** «Cerrar ciclo» (DOC-02, boceto A): the quality gate over the cycle's own
  *  summary. A failing mandatory criterion («No cumple» or «Sin datos», D3)
@@ -247,7 +255,8 @@ export function CloseCycleDialog({
         <span className="gate-who">
           {t("gate.signs", {
             name: personName(user) || "—",
-            at: new Date().toLocaleString(i18n.resolvedLanguage, { dateStyle: "short", timeStyle: "short" }),
+            // A 4-digit year, as every date of the app («20/11/2026, 11:03», FIX-45).
+            at: new Date().toLocaleString(i18n.resolvedLanguage, SIGN_FORMAT),
           })}
         </span>
         <button

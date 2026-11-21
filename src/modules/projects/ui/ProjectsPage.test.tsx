@@ -111,6 +111,20 @@ describe("Proyectos (SPEC §8)", () => {
     await expectNoAxeViolations();
   });
 
+  it("a project not opened on this device reads «—», not «Nunca» (FIX-49)", async () => {
+    setViewportWidth(1440);
+    renderPage();
+    const table = await screen.findByRole("table", {
+      name: "Todos los proyectos",
+    });
+    await userEvent.type(screen.getByRole("searchbox"), "Proyecto 07");
+    await waitFor(() =>
+      expect(within(table).getAllByRole("row")).toHaveLength(2),
+    );
+    expect(within(table).queryByText("Nunca")).toBeNull();
+    expect(within(table).getAllByText("—").length).toBeGreaterThan(0);
+  });
+
   it("searches by name or prefix and says when nothing matches", async () => {
     setViewportWidth(1440);
     renderPage();
@@ -129,7 +143,7 @@ describe("Proyectos (SPEC §8)", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Orden: Último acceso · Descendente" }));
     // NC-021: the execution progress has data now.
     expect(screen.getByRole("menuitemradio", { name: "Progreso de ejecución" })).toBeEnabled();
-    expect(screen.getByRole("menuitemradio", { name: "Cierre del ciclo" })).toBeDisabled();
+    expect(screen.getByRole("menuitemradio", { name: "Fin del plan" })).toBeDisabled();
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Nombre (A–Z)" }));
     await userEvent.click(screen.getByRole("button", { name: "Orden: Nombre (A–Z) · Descendente" }));
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Ascendente" }));

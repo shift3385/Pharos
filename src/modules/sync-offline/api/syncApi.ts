@@ -32,7 +32,9 @@ import { drainLegacyWebData } from "../web/legacyWebData";
 export interface SyncResult {
   pushed: number;
   pulled: number;
-  /** Deltas the server rejected in this cycle (now open conflicts). */
+  /** Conflicts this cycle opened (of version, of key, or refusals waiting
+   *  for the user). A stale write the desktop merged without asking is not
+   *  one (SYNC-02, FIX-47). */
   conflicts: number;
   /** Deltas the server refused for their content (too large, invalid); they
    *  stay pending and are reported to the user. */
@@ -319,6 +321,10 @@ async function pushLww(
   let conflicts = 0;
   let skipped = 0;
   const lost: string[] = [];
+  // Entities the server turned down as stale: each counts as a conflict
+  // unless the desktop merges it field by field without asking (SYNC-02);
+  // `syncNow` takes those back out (`stillOpen`).
+  const stale: string[] = [];
   for (const [ws, group] of groupBy(deltas, route, (d) => d.workspaceId)) {
     const send = pushTo<{ conflicts?: RemoteDoc[]; keyConflicts?: KeyConflictDoc[]; rejected?: RefusedDoc[] }>(
       request,
@@ -343,6 +349,7 @@ async function pushLww(
           // overwriting.
           if (rejected.length > 0) {
             await invoke("apply_remote", { userId, docs: rejected, workspaceId: ws ?? null });
+            stale.push(...rejected.map(entityKey));
           }
           // A key another document already has (DAT-01): the row gets a
           // provisional key and waits for the user in the conflict panel.
@@ -361,7 +368,32 @@ async function pushLww(
       lost.push(ws);
     }
   }
-  return { pushed, conflicts, skipped, lost };
+  return { pushed, conflicts, skipped, lost, stale };
+}
+
+const entityKey = (d: { entity: string; entityId: string }) => `${d.entity}:${d.entityId}`;
+
+/** How many of the conflicts a sync counted are still open (pure,
+ *  testable). The server turns down every stale write (`stale`), but the
+ *  desktop then merges field by field the ones whose changes do not collide
+ *  and opens no conflict for them (SYNC-02, ADR-0051): those (`merged`, from
+ *  `sync_auto_merged_take`) are neither a conflict to review nor a reason for
+ *  the «…conflicto por revisar» notice. A clash in another field of the same
+ *  item does open one, and still counts. */
+export function stillOpen(
+  counted: number,
+  stale: readonly string[],
+  merged: readonly unknown[],
+): number {
+  const done = new Set(
+    merged.flatMap((m) => {
+      const r = m as { entity?: unknown; entityId?: unknown } | null;
+      return r && typeof r.entity === "string" && typeof r.entityId === "string"
+        ? [entityKey({ entity: r.entity, entityId: r.entityId })]
+        : [];
+    }),
+  );
+  return Math.max(0, counted - stale.filter((k) => done.has(k)).length);
 }
 
 /** A workspace of the account as `GET /workspaces` lists it. */
@@ -444,7 +476,7 @@ export async function syncNow(): Promise<SyncResult> {
   await leaseKeyBlocks(request, userId, invoke, route);
 
   // Push.
-  let { pushed, conflicts, skipped } = await pushLww(request, userId, invoke, route);
+  let { pushed, conflicts, skipped, stale } = await pushLww(request, userId, invoke, route);
 
   // Pull: one cursor per workspace (or one for the account). The cursors
   // live in the local DB (wiped with the data), so an empty DB re-pulls
@@ -507,6 +539,7 @@ export async function syncNow(): Promise<SyncResult> {
     pushed += late.pushed;
     conflicts += late.conflicts;
     skipped += late.skipped;
+    stale = [...stale, ...late.stale];
   }
 
   // Append-only documents (audit events, AUD-01; case revisions, DAT-02) go last, and only to a
@@ -524,19 +557,24 @@ export async function syncNow(): Promise<SyncResult> {
   if (revoked.length > 0) {
     window.dispatchEvent(new CustomEvent("pharos:workspaces-revoked", { detail: { workspaces: revoked } }));
   }
-  // Tell open pages to reload from the (now updated) local DB.
-  if (pulled > 0) window.dispatchEvent(new CustomEvent("pharos:synced"));
   if (skipped > 0) {
     window.dispatchEvent(
       new CustomEvent("pharos:sync-skipped", { detail: { count: skipped } }),
     );
   }
   // Conflicts merged field by field without asking (SYNC-02): one notice
-  // per sync, however many there were. Each is in the audit log.
-  const merged = await invoke<unknown[]>("sync_auto_merged_take", { userId }).catch(() => []);
-  if (Array.isArray(merged) && merged.length > 0) {
+  // per sync, however many there were. Each is in the audit log. They are
+  // not conflicts to review (FIX-47): only what is still open counts.
+  const taken = await invoke<unknown[]>("sync_auto_merged_take", { userId }).catch(() => []);
+  const merged = Array.isArray(taken) ? taken : [];
+  // Tell open pages to reload from the (now updated) local DB: after what
+  // was pulled and after what was combined here (FIX-48: a merged item
+  // changes this device's copy even when nothing new was pulled for it).
+  if (pulled > 0 || merged.length > 0) window.dispatchEvent(new CustomEvent("pharos:synced"));
+  if (merged.length > 0) {
     window.dispatchEvent(new CustomEvent("pharos:sync-merged", { detail: { count: merged.length } }));
   }
+  conflicts = stillOpen(conflicts, stale, merged);
 
   // A sync that went through compacts the oplog rows the server already
   // has, at most once a day (SYNC-10). Never fatal: it only frees space.

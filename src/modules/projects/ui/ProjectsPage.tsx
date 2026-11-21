@@ -167,6 +167,9 @@ function ProjectList() {
   }
 
   const lang = i18n.resolvedLanguage ?? "es";
+  // The last access is kept per device (lastAccess.ts): with no record here
+  // it reads «—», not «Nunca», which a project just shared or used on another
+  // device contradicted (FIX-49).
   const access = (row: ProjectRow) =>
     row.lastAccess
       ? formatAccess(row.lastAccess, lang, {

@@ -4,7 +4,12 @@
 // on a phone. Example: Liomar checks his Pharos project from a phone.
 import { $, browser, expect } from "@wdio/globals";
 import { DESKTOP, MOBILE, chapter, step, setViewport } from "./tour";
-import { PROJECT_A, byTestId, clickButton, es } from "./helpers";
+import { PROJECT_A, byTestId, clickButton, es, scrollToTop } from "./helpers";
+
+/** Moves the pointer to the sheet's grip, so no row of a sheet is shot hovered. */
+async function restMouse() {
+  await browser.action("pointer").move({ origin: "viewport", x: 195, y: 58 }).perform();
+}
 
 chapter("movil", () => {
   step("movil-inicio", {
@@ -16,12 +21,17 @@ chapter("movil", () => {
       await setViewport(MOBILE);
       await byTestId("nav-dashboard").click();
       await expect($("nav.bottom-nav")).toBeDisplayed();
+      // Inicio from its top: the KPI tiles whole under the top bar.
+      await browser.execute(() => {
+        window.scrollTo(0, 0);
+        for (const el of document.querySelectorAll("main, .app-main, [data-scroll-root]")) (el as HTMLElement).scrollTop = 0;
+      });
     },
   });
 
   step("movil-busqueda", {
     title: "Buscar en el móvil",
-    caption: "La lupa convierte la barra superior en un campo de búsqueda; la flecha (o Esc) la cierra.",
+    caption: "La lupa convierte la barra superior en un campo de búsqueda; la flecha (o Esc) la cierra. La búsqueda global de casos, requisitos y proyectos llega en una próxima versión, y el campo lo avisa.",
     covers: ["platform:mobile-search"],
     run: async () => {
       await byTestId("search-trigger").click();
@@ -32,7 +42,7 @@ chapter("movil", () => {
   step("movil-notificaciones", {
     title: "Notificaciones en el móvil",
     caption:
-      "En el móvil, la campana de la barra superior abre las notificaciones como una hoja desde abajo, con los mismos días, el filtro «Sin leer» y la acción de cada una. La ✕ o un toque fuera la cierran.",
+      "En el móvil, la campana de la barra superior abre las notificaciones como una hoja desde abajo, con lo mismo que en el escritorio: los avisos agrupados por día, el filtro «Sin leer», «Marcar todo como leído» y la acción de cada aviso. Sin avisos, la hoja dice qué aparecerá en ella. La ✕ o un toque fuera la cierran.",
     covers: ["dialogs:src/app/layout/TopbarControls.tsx"],
     run: async () => {
       await browser.keys("Escape");
@@ -41,15 +51,46 @@ chapter("movil", () => {
     },
   });
 
+  step("movil-avatar", {
+    title: "Tu avatar: workspace y cuenta",
+    caption:
+      "En el móvil no hay menú lateral: tu avatar, en la barra superior, abre una hoja con lo que en el escritorio está en el selector de workspace y en el menú de usuario. Arriba, tu correo y el estado de la sincronización, con «Sincronizar ahora». Después, «Workspace» lista tus workspaces con tu rol en cada uno (aquí, «Personal», donde Liomar es Test Manager) y ofrece «Crear workspace», «Unirse con un código…» y «Miembros y roles». Debajo, «Mi perfil», «Administración», el tema y el idioma; al pie, «Conectado a» con el servidor (en las capturas, difuminado: es el servidor de pruebas de este manual) y «Cerrar sesión».",
+    covers: ["platform:mobile-user-sheet"],
+    mask: [".menu__label-value"],
+    run: async () => {
+      await browser.keys("Escape");
+      await $(".user-menu--mobile").$('[data-testid="user-menu-trigger"]').click();
+      await expect($(".bs")).toBeDisplayed();
+      await expect($(".bs").$('[data-testid="workspace-members"]')).toBeDisplayed();
+      // The section label is upper-cased by CSS.
+      await expect($(".bs")).toHaveText(expect.stringContaining(es.workspaces.switcher.label), { ignoreCase: true });
+      await restMouse();
+    },
+  });
+
   step("movil-proyecto", {
     title: "Secciones del proyecto en el móvil",
-    caption: "Dentro de un proyecto, sus secciones (Plan, Tablero, Requisitos, Casos, Ciclos, Ejecuciones, Defectos, Trazabilidad y Ajustes) se recorren con las píldoras bajo el título, que se desplazan de lado; la flecha de la barra superior vuelve a Proyectos.",
+    caption: "Dentro de un proyecto, sus diez secciones (Plan, Tablero, Requisitos, Casos, Biblioteca, Ciclos, Ejecuciones, Defectos, Trazabilidad y Ajustes) se recorren con las píldoras bajo el título, que se desplazan de lado; la flecha de la barra superior vuelve a Proyectos. En este ejemplo, Liomar abre «Trazabilidad»: en el móvil, cada requisito es una tarjeta con sus casos.",
     covers: ["platform:mobile-project-pills"],
     run: async () => {
       await browser.keys("Escape");
+      await $(".bs").waitForExist({ reverse: true });
       await byTestId("nav-projects").click();
       await $(`a*=${PROJECT_A.name}`).click();
       await expect($("nav.project-pills")).toBeDisplayed();
+      const pill = $("nav.project-pills").$('[data-testid="nav-project-traceability"]');
+      await pill.click();
+      await expect(pill).toHaveAttribute("aria-current", "page");
+      await $(".tz-cards").waitForDisplayed();
+      // The pills scrolled sideways to the open section; the page at its
+      // first requirement card.
+      await browser.execute(() => {
+        const nav = document.querySelector<HTMLElement>("nav.project-pills");
+        const cur = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+        if (nav && cur) nav.scrollLeft += cur.getBoundingClientRect().left - nav.getBoundingClientRect().left - (nav.clientWidth - cur.offsetWidth) / 2;
+      });
+      // No sliver of the block above: the list starts on a whole card.
+      await scrollToTop(".tz-cards", 2);
     },
   });
 
@@ -62,6 +103,7 @@ chapter("movil", () => {
       await $("nav.project-pills").$('[data-testid="nav-project-cases"]').click();
       await clickButton(es.testCase.list.filters);
       await expect($(".bs")).toBeDisplayed();
+      await restMouse();
     },
   });
 
@@ -74,6 +116,7 @@ chapter("movil", () => {
       await $("nav.project-pills").$('[data-testid="nav-project-plan"]').click();
       await clickButton(es.testPlan.nav.showSteps);
       await expect($(".bs")).toBeDisplayed();
+      await restMouse();
     },
   });
 

@@ -41,8 +41,16 @@ regresión de acceso.
   una tarjeta ya guardada: guárdala y vuelve a abrirla.
 - **«… supera el límite de 200 MB.»** Ese archivo no se adjunta. Comprímelo o
   enlaza dónde está en la descripción.
-- **«Por ahora solo está disponible en la app de escritorio.»** En la versión
-  web, las tarjetas no admiten adjuntos.
+- **«Por ahora solo está disponible en la app de escritorio.»** Los adjuntos
+  se añaden desde la app de escritorio.
+- **«Este archivo no está en este equipo…».** El adjunto aún no ha llegado de
+  otro equipo del workspace: se vuelve a intentar en la siguiente
+  sincronización.
+- **No puedo crear tarjetas ni adjuntar archivos.** Tu rol en ese workspace es
+  Viewer: solo puedes ver el tablero (capítulo 20).
+- **Eliminé una tarjeta por error.** En la app de escritorio está en la
+  Papelera de «Administración › General» (capítulo 15): «Restaurar» la
+  devuelve con sus adjuntos.
 - **No encuentro una tarjeta.** Revisa los filtros: el tipo, la prioridad y el
   buscador solo cambian lo que ves. Elige «Todas», desmarca las prioridades y
   borra la búsqueda.
@@ -61,12 +69,13 @@ regresión de acceso.
 ## Consejos
 
 - Usa las **etiquetas** para agrupar tarjetas de una misma versión o área
-  (por ejemplo, «0.3.0» o «sincronización»): el buscador también busca en
+  (por ejemplo, «0.6.0» o «sincronización»): el buscador también busca en
   ellas.
 - Pon los **datos de prueba** en tarjetas de tipo «Datos de prueba» con su
   archivo adjunto: así el equipo sabe dónde están y quién los preparó.
-- Los adjuntos se guardan cifrados en el equipo, junto con los datos de
-  Pharos: inclúyelos en tus copias (capítulo 16, «Evidencias»).
+- Los adjuntos se guardan cifrados, junto con los datos de Pharos, y llegan a
+  los demás equipos de tu workspace al sincronizar: inclúyelos en tus copias
+  (capítulo 16, «Evidencias»).
 
 ## Véase también
 

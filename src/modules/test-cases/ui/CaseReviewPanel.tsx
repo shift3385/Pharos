@@ -60,7 +60,7 @@ export function CaseReviewPanel({
   const [comment, setComment] = useState("");
   const [commentError, setCommentError] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [base, setBase] = useState<{ title: string; data: unknown; revision: number; status: string } | null>(null);
+  const [base, setBase] = useState<{ title: string; data: unknown; at: string; status: string } | null>(null);
 
   // May this account approve it? Asked again when the case changes.
   useEffect(() => {
@@ -87,7 +87,7 @@ export function CaseReviewPanel({
     let live = true;
     void testCaseApi
       .reviewBase(testCase.id, userId)
-      .then((r) => live && setBase(r ? { title: r.title, data: r.data, revision: r.revision, status: r.status } : null))
+      .then((r) => live && setBase(r ? { title: r.title, data: r.data, at: r.createdAt, status: r.status } : null))
       .catch(() => live && setBase(null));
     return () => {
       live = false;
@@ -189,11 +189,14 @@ export function CaseReviewPanel({
         </Alert>
       )}
 
-      {status === "reviewed" && base && (
+      {/* What changed since the state the reviewer compares with, named by
+          its date (the internal revision number means nothing to a person),
+          and only when something did change (FIX-44). */}
+      {status === "reviewed" && base && changes.length > 0 && (
         <div className="tc-review__changes">
           <h4 className="tc-review__cap">
             {t("testCase.review.changesSince", {
-              revision: base.revision,
+              date: date(base.at),
               status: t(`testCase.statusLabel.${base.status}`),
             })}
           </h4>

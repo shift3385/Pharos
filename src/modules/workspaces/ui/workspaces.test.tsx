@@ -158,7 +158,7 @@ describe("members and roles", () => {
       "PATCH /workspaces/ws-t/members/marta": { body: { members: [] } },
     });
     withWorkspaces(<WorkspaceMembersPage />, "/workspaces/members?id=ws-t");
-    expect(await screen.findByRole("heading", { name: "Miembros · Equipo QA" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Equipo QA" })).toBeInTheDocument();
     expect(await screen.findByTestId("member-luis")).toHaveTextContent("Luis");
     expect(await screen.findByText("jorge@pharos.dev")).toBeInTheDocument();
     expect(screen.queryByText("Luis, ya dentro")).toBeNull();

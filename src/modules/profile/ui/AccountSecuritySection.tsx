@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { KeyRound } from "lucide-react";
+import { Eye, EyeOff, KeyRound } from "lucide-react";
 import {
   accountApi,
   ApiError,
@@ -88,14 +88,17 @@ function PasswordInput({
           required
           disabled={disabled}
         />
+        {/* The same eye toggle as the sign-in screen (FIX-46). */}
         <button
           type="button"
           className="account-security__reveal"
           aria-pressed={shown}
           aria-controls={id}
+          aria-label={t("auth.showPassword")}
+          title={t("auth.showPassword")}
           onClick={() => setShown((s) => !s)}
         >
-          {shown ? t("account.hide") : t("account.show")}
+          {shown ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
         </button>
       </div>
     </div>

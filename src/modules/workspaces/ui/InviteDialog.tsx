@@ -68,7 +68,7 @@ export function InviteDialog({
   }
 
   if (created) {
-    const date = new Date(created.expiresAt).toLocaleDateString(i18n.language);
+    const date = new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date(created.expiresAt));
     return (
       <Dialog labelledBy={`${id}-done`} describedBy={`${id}-hint`} onClose={onDone}>
         <h3 id={`${id}-done`} className="cd__title">

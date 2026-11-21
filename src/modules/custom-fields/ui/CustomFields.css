@@ -79,8 +79,10 @@
   border-radius: 0 0 10px 10px;
 }
 
+/* An archived field keeps a readable name (FIX-45): the «Archivado» pill
+   marks it; only the name turns secondary, not muted. */
 .cf-row[data-archived] .cf-row__label {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .cf-row__handle {

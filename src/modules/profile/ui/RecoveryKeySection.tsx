@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog } from "@shared/ui/Dialog";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { recoveryKeyApi } from "../api/recoveryKeyApi";
 import "./RecoveryKeySection.css";
 
@@ -50,10 +51,17 @@ export function RecoveryKeySection() {
 
   return (
     <section className="recovery" aria-labelledby="recovery-title">
-      <h2 id="recovery-title" className="recovery__title">
-        {t("recoveryKey.title")}
-      </h2>
-      <p className="recovery__text">{t("recoveryKey.intro")}</p>
+      {/* One short line; the whole explanation behind the «?» (FIX-49: a
+          standing three-line paragraph). */}
+      <div className="ui-title-row">
+        <h2 id="recovery-title" className="recovery__title">
+          {t("recoveryKey.title")}
+        </h2>
+        <InfoTip id="recovery-help" label={t("recoveryKey.title")}>
+          {t("recoveryKey.intro")}
+        </InfoTip>
+      </div>
+      <p className="recovery__text">{t("recoveryKey.introShort")}</p>
       {shownAt && (
         <p className="recovery__meta">
           {t("recoveryKey.lastShown", {
@@ -133,7 +141,6 @@ export function RecoveryKeySection() {
           </ol>
           <ul className="recovery-dialog__guidance">
             <li>{t("recoveryKey.guidePaper")}</li>
-            <li>{t("recoveryKey.guideManager")}</li>
             <li>{t("recoveryKey.guideRisk")}</li>
             <li>{t("recoveryKey.guideBackup")}</li>
           </ul>

@@ -9,11 +9,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { arrayLiteral, check, countDialogs, coversIn, hasViewSwitch, routePaths, secretScan, stepsIn } from "./check-manual.mjs";
+import { arrayLiteral, check, countDialogs, coversIn, hasViewSwitch, prerequisiteErrors, routePaths, secretScan, stepsIn } from "./check-manual.mjs";
 import { findAiKey } from "./manual/ai-key.mjs";
 import { inline, leftoverTable, markdownToHtml, tableCells } from "./manual/markdown.mjs";
 import { printWithEdge, settled, sweepProfiles } from "./manual/edge-print.mjs";
-import { focusLayout, FOCUS_COLOR, groupInset, insetStyle } from "./manual/focus.mjs";
+import { cutoutSvg, focusCuts, focusLayout, focusPiece, FOCUS_COLOR, FOCUS_STROKE, frameGeometry, GAP, groupInset, MIN_SEPARATION, outlineZones, sameFocusPixels } from "./manual/focus.mjs";
 import { acquireLock, lockMessage, pidAlive, releaseLock, UNREADABLE_GRACE_MS } from "./manual/run-lock.mjs";
 import { changedShare, decodePng, drawFocus, encodePng, quantize } from "./manual/png.mjs";
 import { needlesFor, scanForSecret } from "./manual/secret-scan.mjs";
@@ -74,7 +74,14 @@ test("the Markdown subset renders lists, notes, links and code, and escapes HTML
 
 test("parseSource splits a chapter source into its parts", () => {
   const src = parseSource("# T\n\nintro ignorada\n\n## Para qué sirve\n\nA.\n\n## Consejos\n\n- B\n\n## Véase también\n\nC\n\n### Paso nuevo\n\nNota.");
-  assert.deepEqual(src, { purpose: "A.", extra: [], keys: "", trouble: "", mobile: "", tips: "- B", seeAlso: "C", notes: { nuevo: "Nota." } });
+  assert.deepEqual(src, { purpose: "A.", extra: [], keys: "", trouble: "", mobile: "", tips: "- B", seeAlso: "C", notes: { nuevo: "Nota." }, before: {} });
+});
+
+test("parseSource keeps a lead-in for the step it comes before", () => {
+  const src = parseSource("## Para qué sirve\n\nA.\n\n### Antes del paso cierre\n\n**Más adelante.** Texto.\n\n### Paso cierre\n\nNota.");
+  assert.deepEqual(src.before, { cierre: "**Más adelante.** Texto." });
+  assert.deepEqual(src.notes, { cierre: "Nota." });
+  assert.equal(src.purpose, "A.");
 });
 
 test("parseSource reads the manual v2 sections: keyboard, problems and mobile (MAN-03)", () => {
@@ -149,6 +156,16 @@ test("foreignNames: other people and accounts are hits, ordinary words are not (
   assert.deepEqual(foreignNames("ana minúscula, Perezoso, Romeros"), []);
 });
 
+test("foreignNames: exactly three accounts are allowed, Jorge and «Administrador» included (NC-052 amended)", () => {
+  assert.deepEqual(
+    foreignNames("Jorge L. Meneses Yero · jorge.meneses@pharos.test · Administrador · admin@pharos.test · Liomar QA · liomar.qa@pharos.test"),
+    [],
+  );
+  // Synthetic accounts are not people; another person's address is.
+  assert.deepEqual(foreignNames("qa.web@pharos.test · nadie@pharos.test"), []);
+  assert.deepEqual(foreignNames("lucia.romero@pharos.test · ana@pharos.test"), ["lucia.romero@pharos.test", "ana@pharos.test"]);
+});
+
 test("the chapter sources and the tour captions name only the manual's person (NC-052)", () => {
   const files = [
     ...readdirSync(join(repoDir, "docs", "manual", "fuentes")).map((f) => join(repoDir, "docs", "manual", "fuentes", f)),
@@ -221,18 +238,152 @@ test("drawFocus outlines a box in one exact colour that the palette keeps (MAN-0
   assert.ok(encodePng(again).equals(encodePng(drawFocus(image(120, 80, () => [0, 0, 0, 255]), { x: 40, y: 30, w: 30, h: 20 }))));
 });
 
-test("focusLayout: an inset beside small controls, below wide strips, none for big areas (MAN-02)", () => {
-  const beside = focusLayout(1440, 900, { x: 480, y: 820, w: 100, h: 30 });
+test("drawFocus around several boxes draws one outline round their union (MAN-02)", () => {
+  const img = image(200, 120, () => [255, 255, 255, 255]);
+  // A trigger and the menu it opened, overlapping.
+  drawFocus(img, [{ x: 20, y: 20, w: 40, h: 30 }, { x: 40, y: 40, w: 120, h: 60 }], { color: FOCUS_COLOR, stroke: 4, pad: 0, radius: 10 });
+  const amber = (x, y) => FOCUS_COLOR.every((v, c) => img.data[(y * 200 + x) * 4 + c] === v);
+  assert.ok(amber(40, 21), "the trigger's top edge");
+  assert.ok(amber(100, 41), "the menu's top edge, right of the trigger");
+  assert.ok(!amber(50, 41), "no line inside the union, where the two overlap");
+  assert.ok(!amber(45, 48), "no line inside the union");
+});
+
+/** Signed distance from a pixel centre to a rounded rectangle (< 0 inside). */
+function roundRectDistance(x, y, rect, r) {
+  const qx = Math.abs(x + 0.5 - (rect.x + rect.w / 2)) - (rect.w / 2 - r);
+  const qy = Math.abs(y + 0.5 - (rect.y + rect.h / 2)) - (rect.h / 2 - r);
+  return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r;
+}
+
+/** Paints a 1 px border of colour `c` round `rect` (corner radius `r`). */
+function paintBorder(img, rect, r, c, fill = null) {
+  for (let y = rect.y; y < rect.y + rect.h; y++) {
+    for (let x = rect.x; x < rect.x + rect.w; x++) {
+      const d = roundRectDistance(x, y, rect, r);
+      const i = (y * img.width + x) * 4;
+      if (d < 0 && d >= -1) img.data.set([...c, 255], i);
+      else if (d < -1 && fill) img.data.set([...fill, 255], i);
+    }
+  }
+}
+
+const GREY = [200, 205, 212];
+const WHITE = [255, 255, 255];
+const isGrey = (img, x, y) => GREY.every((v, c) => img.data[(y * img.width + x) * 4 + c] === v);
+
+test("an element with its own border is cut at that border: the frame lies over it, no second line (MAN-02)", () => {
+  const img = image(600, 300, () => [255, 255, 255, 255]);
+  const field = { x: 150, y: 120, w: 300, h: 44 };
+  paintBorder(img, field, 8, GREY);
+  const [piece] = focusCuts(600, 300, field, null, img);
+  assert.equal(piece.edge, true);
+  assert.deepEqual([piece.x, piece.y, piece.w, piece.h], [field.x, field.y, field.w, field.h], "cut exactly at the element's box");
+  // At any magnification the frame covers every border pixel the clip shows.
+  for (const unit of [3, 4.5, 9]) {
+    const { sw, r } = frameGeometry(piece, unit);
+    let bare = 0;
+    for (let y = field.y - 2; y < field.y + field.h + 2; y++) {
+      for (let x = field.x - 2; x < field.x + field.w + 2; x++) {
+        if (!isGrey(img, x, y)) continue;
+        const d = roundRectDistance(x, y, piece, r);
+        if (d < -sw + 0.5) bare++;
+      }
+    }
+    assert.equal(bare, 0, `at ${unit} px/mm no grey border shows inside the frame`);
+  }
+});
+
+test("a menu over other content: cut at its own box, nothing behind; its trigger a separate cut-out (MAN-02)", () => {
+  // Text everywhere behind (rows of dark dots), a white menu with a border on top.
+  const img = image(600, 400, (x, y) => (y % 14 < 4 && x % 3 === 0 ? [30, 30, 30, 255] : [255, 255, 255, 255]));
+  const menu = { x: 200, y: 100, w: 220, h: 120 };
+  paintBorder(img, menu, 10, GREY, WHITE);
+  const trigger = { x: 210, y: 226, w: 90, h: 30 };
+  paintBorder(img, trigger, 6, GREY, WHITE);
+  const cuts = focusCuts(600, 400, { x: 200, y: 100, w: 220, h: 156 }, [menu, trigger], img);
+  const m = cuts.find((c) => c.w === menu.w);
+  assert.deepEqual([m.x, m.y, m.w, m.h], [menu.x, menu.y, menu.w, menu.h], "the menu's own box");
+  const t = cuts.find((c) => c !== m);
+  assert.equal(t.edge, true);
+  assert.deepEqual([t.x, t.y, t.w, t.h], [trigger.x, trigger.y, trigger.w, trigger.h], "the button's own box too");
+  // 6 px apart: never one stepped shape, nor two frames side by side; two
+  // cut-outs moved apart in the «Detalle».
+  assert.notEqual(t.unit, m.unit);
+  assert.ok(t.y + t.dy - (m.y + m.dy + m.h) >= MIN_SEPARATION, "clearly two boxes");
+  // A card half under the popover that explains it: one shape, the card's
+  // hidden part left out, the frame on both borders.
+  const card = { x: 240, y: 60, w: 140, h: 80 };
+  paintBorder(img, card, 8, GREY, WHITE);
+  paintBorder(img, menu, 10, GREY, WHITE);
+  const pair = focusCuts(600, 400, { x: 200, y: 60, w: 220, h: 160 }, [card, menu], img);
+  assert.equal(new Set(pair.map((p) => p.unit)).size, 1, "one shape");
+  assert.ok(pair.every((p) => p.edge && p.dx === 0 && p.dy === 0));
+  // A button inside a field (the password's eye) adds no frame of its own.
+  const eye = { x: menu.x + menu.w - 40, y: menu.y + 2, w: 36, h: 36 };
+  assert.equal(focusCuts(600, 400, menu, [menu, eye], img).length, 1);
+  // The outline (GAP outside the pieces) never enters the cut-out.
+  const drawn = image(600, 400, () => [255, 255, 255, 255]);
+  drawFocus(drawn, outlineZones(cuts), { color: FOCUS_COLOR, stroke: FOCUS_STROKE, pad: 0, radius: 10 });
+  let amber = 0;
+  for (let y = 80; y < 280; y++) {
+    for (let x = 180; x < 440; x++) {
+      // The clip, at its own corner radius, and the pixel smoothing reads past it.
+      const inside = cuts.some((c) => roundRectDistance(x, y, c, frameGeometry(c, 4.5).r) < 1);
+      if (inside && FOCUS_COLOR.every((v, k) => drawn.data[(y * 600 + x) * 4 + k] === v)) amber++;
+    }
+  }
+  assert.equal(amber, 0);
+});
+
+test("an element without a border gets air, and no edge slices a line of text (MAN-02)", () => {
+  // Lines of text 10 px tall every 22 px, all across.
+  const ink = (y) => y % 22 >= 6 && y % 22 < 16;
+  const img = image(800, 600, (x, y) => (ink(y) && x % 4 !== 0 ? [20, 20, 20, 255] : [255, 255, 255, 255]));
+  const block = { x: 200, y: 160, w: 300, h: 80 };
+  const [piece] = focusCuts(800, 600, block, null, img);
+  assert.equal(piece.edge, false);
+  assert.ok(piece.x < block.x && piece.y < block.y && piece.x + piece.w > block.x + block.w, "air around it");
+  for (const y of [piece.y, piece.y + piece.h - 1]) assert.ok(!ink(y), `the edge at y=${y} runs between lines`);
+  for (let y = piece.y - GAP; y < piece.y; y++) assert.ok(!ink(y), "the outline above runs between lines");
+  // Lines closer than the outline is wide (5 px apart): the cut-out's edge
+  // still falls between two of them.
+  const tight = (y) => y % 15 >= 5;
+  const dense = image(800, 600, (x, y) => (tight(y) && x % 4 !== 0 ? [20, 20, 20, 255] : [255, 255, 255, 255]));
+  const [close] = focusCuts(800, 600, { x: 200, y: 155, w: 300, h: 40 }, null, dense);
+  for (const y of [close.y, close.y + close.h - 1]) assert.ok(!tight(y), `the edge at y=${y} runs between close lines`);
+  // A lone small control gets context; near the capture's edge, still its size.
+  const icon = focusPiece(1440, 900, { x: 700, y: 400, w: 34, h: 34 });
+  assert.ok(icon.w >= 138 && icon.h >= 60);
+  const corner = focusPiece(1440, 900, { x: 1370, y: 13, w: 38, h: 38 });
+  assert.equal(corner.x + corner.w, 1440);
+  assert.ok(Math.abs(corner.w - icon.w) <= 4);
+  assert.deepEqual(focusCuts(1440, 900, null), []);
+});
+
+test("focusLayout: a cut-out beside small pieces, below wide strips, none for big areas (MAN-02)", () => {
+  const beside = focusLayout(1440, 900, focusCuts(1440, 900, { x: 480, y: 820, w: 100, h: 30 }));
   assert.equal(beside.mode, "beside");
   assert.ok(beside.crop.y + beside.crop.h <= 900, "the crop stays inside the capture");
-  assert.ok(beside.mag >= 1.4);
-  assert.equal(focusLayout(1440, 900, { x: 300, y: 10, w: 640, h: 40 }).mode, "below");
-  assert.equal(focusLayout(1440, 900, { x: 100, y: 100, w: 900, h: 600 }), null, "a whole panel needs no inset");
-  assert.equal(focusLayout(1440, 900, null), null);
-  const style = insetStyle(1440, 900, beside);
-  assert.match(style, /background-size:\d+\.\d{3}% auto/);
-  assert.match(style, /^width:\d+mm;height:[\d.]+mm;/);
+  assert.ok(beside.mag >= 1.4 && beside.mag <= 3, "enlarged, never blown up");
+  assert.ok(beside.topMm > 0, "level with its zone, low in the capture");
+  assert.equal(focusLayout(1440, 900, focusCuts(1440, 900, { x: 300, y: 10, w: 640, h: 40 })).mode, "below");
+  assert.equal(focusLayout(1440, 900, focusCuts(1440, 900, { x: 100, y: 100, w: 900, h: 600 })), null, "a whole panel needs none");
+  assert.equal(focusLayout(1440, 900, []), null);
+  const svg = cutoutSvg("file:///a.png", 1440, 900, beside, { id: "cut-x", label: "Detalle: x" });
+  const c = beside.crop;
+  assert.ok(svg.includes(`viewBox="${c.x} ${c.y} ${c.w} ${c.h}"`), "cropped in capture pixels");
+  assert.match(svg, /<clipPath id="cut-x"><rect [^>]*rx="[\d.]+"\/><\/clipPath>/);
+  assert.equal((svg.match(/<image /g) ?? []).length, 1);
+  // A committed capture whose outline moved is not «unchanged».
+  const a = image(600, 300, () => [255, 255, 255, 255]);
+  const b = image(600, 300, () => [255, 255, 255, 255]);
+  drawFocus(a, { x: 100, y: 50, w: 300, h: 80 }, { color: FOCUS_COLOR, pad: 0 });
+  drawFocus(b, { x: 100, y: 52, w: 300, h: 80 }, { color: FOCUS_COLOR, pad: 0 });
+  assert.equal(sameFocusPixels(a, b), false);
+  assert.equal(sameFocusPixels(a, a), true);
 });
+
 
 test("routePaths refuses a <Route> it cannot read", () => {
   const app = '<Route path="/" element={<Home />} />\n<Route path="/old" element={<Navigate to="/" />} />\n<Route path="*" element={<X />} />';
@@ -390,31 +541,44 @@ test("printWithEdge waits for a PDF Edge writes after returning (MAN-04)", () =>
     assert.ok(settled(pdf, 10_000));
   }));
 
-test("selectTours adds what a partial run needs, in run order, and refuses a bad filter (MAN-02)", async () => {
+test("selectTours runs only the preparation and the asked chapters, in run order, and refuses a bad filter (MAN-03)", async () => {
   const { CHAPTERS, selectTours } = await import("../e2e/tours/manifest.ts");
-  const order = new Map(CHAPTERS.map((c, i) => [c.id, i]));
-  for (const c of CHAPTERS) {
-    for (const id of c.needs ?? []) assert.ok(order.get(id) < order.get(c.id), `${c.id} needs ${id}, which must run first`);
-  }
   assert.equal(selectTours(null).files.length, CHAPTERS.filter((c) => c.file).length);
-  assert.deepEqual(selectTours(null).added, []);
-  const defects = selectTours("^12");
-  // Chapter 1 always runs: it creates the account (NC-052).
-  assert.deepEqual(defects.files, ["00-preparacion.tour.ts", "01-acceso.tour.ts", "04-proyectos.tour.ts", "14-ajustes.tour.ts", "07-requisitos.tour.ts", "08-casos.tour.ts", "09-ciclos.tour.ts", "10-ejecuciones.tour.ts", "12-defectos.tour.ts"]);
-  assert.deepEqual(defects.added, ["01-acceso.tour.ts", "04-proyectos.tour.ts", "14-ajustes.tour.ts", "07-requisitos.tour.ts", "08-casos.tour.ts", "09-ciclos.tour.ts", "10-ejecuciones.tour.ts"]);
-  assert.deepEqual(selectTours("^16").added, ["01-acceso.tour.ts"], "a chapter that reads nothing adds only the account");
-  assert.deepEqual(selectTours("^01").added, [], "chapter 1 asked for is not added twice");
+  assert.deepEqual(selectTours(null).asked, []);
+  // No chapter is added any more, not even chapter 1: each prepares its data.
+  assert.deepEqual(selectTours("^13").files, ["00-preparacion.tour.ts", "13-trazabilidad.tour.ts"]);
+  assert.deepEqual(selectTours("^1[23]").asked, ["12-defectos.tour.ts", "13-trazabilidad.tour.ts"], "run order, not number order");
+  assert.deepEqual(selectTours("^01").files, ["00-preparacion.tour.ts", "01-acceso.tour.ts"]);
   assert.throws(() => selectTours("["), /not a valid regular expression/);
   assert.throws(() => selectTours("^99"), /matches no tour file/);
   assert.throws(() => selectTours("^00"), /matches no tour file/, "the preparation alone is not a run");
 });
 
-test("groupInset: a wide control keeps a column-wide inset under its half-width capture (MAN-02)", () => {
-  // At full width this strip needs no inset of its own; in a column it does.
-  const inset = groupInset(1440, 900, { x: 56, y: 411, w: 460, h: 52 }, 85);
+test("prerequisites: built on earlier ones, made on screen before every chapter that uses them (MAN-03)", async () => {
+  const { CHAPTERS, PREREQUISITES, prerequisiteClosure } = await import("../e2e/tours/manifest.ts");
+  assert.deepEqual(prerequisiteErrors(CHAPTERS, PREREQUISITES, prerequisiteClosure), []);
+  // The closure brings what a prerequisite is built on, in preparation order.
+  assert.deepEqual(
+    prerequisiteClosure(["casos-base"]).map((p) => p.id),
+    ["cuenta-liomar", "proyectos", "prefijos", "ajustes", "requisitos", "casos-base"],
+  );
+  assert.throws(() => prerequisiteClosure(["nada"]), /unknown prerequisite/);
+  // A chapter that uses data made by a later chapter is refused.
+  const chapters = [
+    { id: "a", uses: ["p"] },
+    { id: "b", uses: [] },
+  ];
+  const prereqs = [{ id: "p", madeBy: "b", after: [] }];
+  assert.match(prerequisiteErrors(chapters, prereqs, prerequisiteClosure).join(), /made on screen by b, which must run before it/);
+  assert.match(prerequisiteErrors([{ id: "a", uses: ["x"] }], prereqs, prerequisiteClosure).join(), /unknown prerequisite x/);
+});
+
+test("groupInset: a wide control keeps a column-wide cut-out under its half-width capture (MAN-02)", () => {
+  // At full width this strip needs no cut-out of its own; in a column it does.
+  const inset = groupInset(1440, 900, focusCuts(1440, 900, { x: 56, y: 411, w: 460, h: 52 }), 85);
   assert.equal(inset.mode, "below");
-  assert.equal(inset.insetMm, 85);
+  assert.ok(inset.insetMm > 80 && inset.insetMm <= 85, "about the column's width");
   assert.ok(inset.mag >= 2.5, "readable: at least 2.5× the capture");
   assert.ok(inset.crop.x >= 0 && inset.crop.x + inset.crop.w <= 1440);
-  assert.equal(groupInset(1440, 900, null, 85), null);
+  assert.equal(groupInset(1440, 900, [], 85), null);
 });

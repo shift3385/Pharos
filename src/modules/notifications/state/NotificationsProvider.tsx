@@ -18,6 +18,10 @@ import { NotificationsContext, type NotificationsValue } from "./notificationsCo
 /** How often the shell asks the server, while signed in, online and visible. */
 const PULL_EVERY_MS = 60_000;
 
+/** How long a new sync conflict must stay open before it is notified: more
+ *  than one read of the sync state (every 5 s). */
+const CONFIRM_MS = 6_000;
+
 
 /**
  * Mounted once in the shell, inside `SyncStatusProvider`. It keeps the list,
@@ -86,21 +90,49 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // New sync conflicts → a notification of this device. Only an increase
-  // seen while the app runs counts; the first value is where we start.
+  // seen while the app runs counts; the first count read is where we start
+  // (FIX-49: the 0 shown before it was read made a conflict already open at
+  // start-up look new, and each start added a notification).
   const conflicts = sync?.conflicts ?? 0;
+  const known = sync?.conflictsKnown !== false;
+  // The count also counts key clashes and refused changes, which a sync can
+  // open and close within seconds: a notice is written only for a rise still
+  // there CONFIRM_MS later, so none is ever written for a conflict that is
+  // no longer open (FIX-49: «1 conflicto…, este minuto» with none open).
   const seen = useRef<number | null>(null);
+  const latest = useRef(conflicts);
+  latest.current = conflicts;
   useEffect(() => {
+    if (!known) return;
     const before = seen.current;
     seen.current = conflicts;
     if (before === null || conflicts <= before || !userId) return;
-    const at = new Date().toISOString();
-    void addLocalNotification(userId, {
-      kind: "sync.conflict",
-      subject: { entity: "sync", id: at, title: "" },
-      data: { count: conflicts - before },
-      dedupeKey: `sync.conflict:${at}`,
-    });
-  }, [conflicts, userId]);
+    const timer = window.setTimeout(() => {
+      if (latest.current <= before) return;
+      const at = new Date().toISOString();
+      void addLocalNotification(userId, {
+        kind: "sync.conflict",
+        subject: { entity: "sync", id: at, title: "" },
+        data: { count: latest.current - before },
+        dedupeKey: `sync.conflict:${at}`,
+      });
+    }, CONFIRM_MS);
+    return () => window.clearTimeout(timer);
+  }, [conflicts, known, userId]);
+
+  // No conflict open (FIX-47, FIX-49): nothing is left to review, so their
+  // notifications stop counting on the bell. Whenever the count read is zero,
+  // not only on a drop seen while the app runs: FIX-47's drop missed a
+  // notification still being written when the conflict was resolved («Me
+  // quedo con la mía» right after it appeared), and one left by an earlier
+  // session, so it stayed unread on the bell.
+  useEffect(() => {
+    if (!known || conflicts > 0 || !userId) return;
+    const ids = items
+      .filter((n) => n.kind === "sync.conflict" && !n.readAt)
+      .map((n) => n.id);
+    if (ids.length) void markNotificationsRead(userId, ids);
+  }, [conflicts, known, items, userId]);
 
   const markRead = useCallback(
     (ids: string[]) => {
@@ -112,8 +144,8 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const openConflicts = useCallback(() => sync?.openConflicts(), [sync]);
 
   const value = useMemo<NotificationsValue>(
-    () => ({ items, unread: unreadCount(items), refresh, markRead, markAllRead, openConflicts }),
-    [items, refresh, markRead, markAllRead, openConflicts],
+    () => ({ items, unread: unreadCount(items), refresh, markRead, markAllRead, openConflicts, conflicts }),
+    [items, refresh, markRead, markAllRead, openConflicts, conflicts],
   );
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
 }

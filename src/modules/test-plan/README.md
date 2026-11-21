@@ -39,7 +39,10 @@ the shape can evolve without a migration.
 - `ScheduleStep`: how to mark sprints and milestones is in the step's «?»
   help (`stepDesc.schedule`, UX-36); only the range being marked is
   announced, in a visually hidden live region, so the calendar sits right
-  under its bar. The month grid's geometry and keys are shared with the
+  under its bar. Pointing at or focusing a row only highlights it: the
+  calendar keeps the month the person is looking at, and moves only with
+  ‹ ›, the keyboard past the visible month, «Siguiente sprint» or a date
+  typed in a row (FIX-50). The month grid's geometry and keys are shared with the
   `DatePicker` (`@shared/ui/monthGrid`), and the day helpers
   (`isoOf`, `parseIso`, `toDisplay`, `fromDisplay`, `addDays`) live in
   `@shared/time/isoDay` (re-exported by `model/schedule`).

@@ -12,7 +12,7 @@ import {
   type MetricOp,
 } from "@shared/metrics/catalog";
 import { decisionSection, type DecisionSection } from "../decisionSection";
-import { autoSummary, type ReportTable } from "../statusReport";
+import { autoSummary, runKeyList, type ReportTable } from "../statusReport";
 
 // The test completion report of a closed cycle (DOC-01, ISO/IEC/IEEE
 // 29119-3 «Test Completion Report», ADR-0044): eleven sections built from
@@ -105,12 +105,24 @@ export function draftFor(
   return { texts, summaryEdited: summaryEdited === true, approval: stale ? null : approval, stale };
 }
 
+/** The keys of a cycle's free-form `data`. The audit names each one in
+ *  «Cambios», so a new key is added here and gets a label in
+ *  `admin.audit.fields` (FIX-51: `completionReport` showed raw; the test
+ *  `auditFieldLabels.test.ts` reads this type). */
+export interface CycleData {
+  /** The gate's record of each closing (DOC-02), written by the core. */
+  closures?: unknown[];
+  /** The closure report's texts and approval (DOC-01). */
+  completionReport?: StoredCompletion;
+  [key: string]: unknown;
+}
+
 /** The cycle's `data` with the report saved in it: every other key (the
  *  gate's `closures` among them) as it was. */
 export function withCompletion(
   data: Record<string, unknown> | null | undefined,
   stored: StoredCompletion,
-): Record<string, unknown> {
+): CycleData {
   return { ...(data ?? {}), completionReport: stored };
 }
 
@@ -235,8 +247,11 @@ const dayOf = (iso: string) => new Date(`${iso}T00:00:00`);
 
 /** The numbers as a first summary, with the verdict. */
 export function completionAutoSummary(s: ExecutionSummary, closure: CycleClosure, t: Translate): string {
+  // The criteria as the gate closed them: a manual one marked «Cumple» is
+  // met, as in the table of section 4 (FIX-45).
+  const met = closure.criteria.filter((c) => (c.state === "manual" ? c.manualMet === true : c.state === "met")).length;
   return [
-    autoSummary(s, t),
+    autoSummary(s, t, undefined, { met, all: closure.criteria.length }),
     t("completionReport.autoVerdict", { verdict: t(`gate.verdict.${closure.verdict}`) }),
   ].join(" ");
 }
@@ -288,7 +303,7 @@ export function buildCompletionReport(
       t("completionReport.field.buildEnv"),
       [ctx.cycle.build, ctx.cycle.environment].filter(Boolean).join(" · ") || "—",
     ],
-    [t("statusReport.field.runs"), s.runs.length ? s.runs.map((r) => r.runKey).join(", ") : "—"],
+    [t("statusReport.field.runs"), runKeyList(s.runs)],
     [t("statusReport.field.generated"), ctx.generatedAt.toLocaleString(lang)],
   ];
 
@@ -407,7 +422,7 @@ export function buildCompletionReport(
     });
   if (s.runs.length)
     items.push({
-      label: t("completionReport.deliverable.runs", { count: s.runs.length, keys: s.runs.map((r) => r.runKey).join(", ") }),
+      label: t("completionReport.deliverable.runs", { count: s.runs.length, keys: runKeyList(s.runs) }),
       key: null,
       fromPlan: false,
       delivered: true,
@@ -503,6 +518,7 @@ export function buildCompletionReport(
       s.findings,
       (id) => s.cases.find((c) => c.caseId === id)?.scenarioId ?? id,
       t,
+      lang,
     ),
     risksNote: ctx.texts.risks,
     deliverables: {

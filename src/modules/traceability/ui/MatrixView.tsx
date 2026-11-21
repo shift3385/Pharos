@@ -93,15 +93,23 @@ function WeightedKpi({ coverage }: { coverage: CoverageSummary | null }) {
           <span className="tz-weighted-tip">
             <strong>{t("traceability.matrix.weightedTitle")}</strong>
             <span>{t("traceability.matrix.weightedHow")}</span>
+            {/* One equation per line, each whole (FIX-49: «… = 0 / 20 =» / «0 %»). */}
             {has && (
               <span className="tz-weighted-tip__calc">
-                {t("traceability.matrix.weightedCalc", {
-                  covered: w.coveredWeight,
-                  passed: w.passedWeight,
-                  total: w.totalWeight,
-                  coveredPct: percent(w.coverageRatio),
-                  passedPct: percent(w.passedRatio),
-                })}
+                <span className="tz-weighted-tip__eq">
+                  {t("traceability.matrix.weightedCalcCovered", {
+                    covered: w.coveredWeight,
+                    total: w.totalWeight,
+                    coveredPct: percent(w.coverageRatio),
+                  })}
+                </span>
+                <span className="tz-weighted-tip__eq">
+                  {t("traceability.matrix.weightedCalcPassed", {
+                    passed: w.passedWeight,
+                    total: w.totalWeight,
+                    passedPct: percent(w.passedRatio),
+                  })}
+                </span>
               </span>
             )}
             {coverage && (
@@ -360,7 +368,7 @@ export function MatrixView({
       width: "minmax(128px,1.6fr)",
       cell: (l) =>
         l.first && (
-          <span className="tz-clamp" title={l.row.requirementTitle}>
+          <span className="tz-title" title={l.row.requirementTitle}>
             {l.row.requirementTitle}
           </span>
         ),
@@ -383,7 +391,7 @@ export function MatrixView({
       width: "minmax(128px,1.7fr)",
       cell: (l) =>
         l.row.caseId ? (
-          <span className="tz-clamp" title={l.row.caseTitle}>
+          <span className="tz-title" title={l.row.caseTitle}>
             {l.row.caseTitle}
           </span>
         ) : (
@@ -589,11 +597,11 @@ export function MatrixView({
           </div>
           <div className="tz-gaps__grid">
             <GapTile
-              label={t("traceability.gaps.casesWithoutRequirement")}
+              label={t("traceability.gaps.casesWithoutRequirement", { count: gaps.casesWithoutRequirement.length })}
               items={gaps.casesWithoutRequirement.map((c) => ({ id: c.id, code: c.scenarioId, text: c.title }))}
             />
             <GapTile
-              label={t("traceability.gaps.unknownLinks")}
+              label={t("traceability.gaps.unknownLinks", { count: gaps.unknownLinks.length })}
               items={gaps.unknownLinks.map((l) => ({
                 id: `${l.caseId}-${l.requirementKey}`,
                 code: l.scenarioId,
@@ -601,7 +609,7 @@ export function MatrixView({
               }))}
             />
             <GapTile
-              label={t("traceability.gaps.defectsWithoutCase")}
+              label={t("traceability.gaps.defectsWithoutCase", { count: gaps.defectsWithoutCase.length })}
               items={gaps.defectsWithoutCase.map((d) => ({ id: d.id, code: defectLabel(d), text: d.title }))}
             />
           </div>

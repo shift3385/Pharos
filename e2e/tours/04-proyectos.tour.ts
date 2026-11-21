@@ -7,6 +7,7 @@
 // creates «Pharos» (the app under test) and «API de sincronización».
 import { $, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
+import { TEMP_PROJECT } from "./data/pharos";
 import {
   PROJECT_A,
   PROJECT_B,
@@ -21,7 +22,6 @@ import {
   waitForToast,
 } from "./helpers";
 
-const TEMP_PROJECT = "Proyecto de prueba";
 const SEARCH = `input[placeholder="${es.projects.list.search}"]`;
 const WIZARD = ".pj-wizard";
 const W = es.projects.wizard;
@@ -58,7 +58,7 @@ chapter("proyectos", () => {
   step("nombre-obligatorio", {
     title: "El nombre es obligatorio",
     caption:
-      "Un proyecto en blanco pasa directamente a «Datos generales»: el nombre, el prefijo de las claves de sus casos y los dígitos del número, los mismos campos que en «Ajustes del proyecto». Si pulsas «Crear proyecto» sin escribir el nombre, Pharos lo indica arriba y bajo el campo («Este campo es obligatorio.») y no crea nada. «Cancelar» o Esc cierran el asistente; si ya habías escrito o elegido algo, antes preguntan si quieres descartarlo.",
+      "Un proyecto en blanco pasa directamente a «Datos generales»: el nombre, el prefijo de las claves de sus casos y los dígitos del número, los mismos campos que en «Ajustes del proyecto». Si pulsas «Crear proyecto» sin escribir el nombre, Pharos lo indica bajo el campo («Este campo es obligatorio.») y en un resumen al pie, y no crea nada. «Cancelar» o Esc cierran el asistente; si ya habías escrito o elegido algo, antes preguntan si quieres descartarlo.",
     covers: ["state:project-create-required"],
     shot: { element: WIZARD },
     run: async () => {
@@ -72,26 +72,31 @@ chapter("proyectos", () => {
   step("crear-proyecto", {
     title: "Crear un proyecto",
     caption:
-      "Escribe el nombre del producto que vas a probar y pulsa «Crear proyecto». En este ejemplo, Liomar crea «Pharos»: el equipo de QA prueba la propia aplicación. A la vez que escribes, Pharos sugiere el prefijo de las claves de sus casos, sacado del nombre y libre entre tus proyectos («✓ Libre»), y muestra cómo se numerarán (aquí, «PHA-», así que los casos serán PHA-001, PHA-002…); puedes cambiarlo antes de crear o después, en sus ajustes. Dos proyectos no pueden tener prefijos que se solapen: iguales, o uno que empiece por el otro (como «PH-» y «PHA-»). Si escribes uno así, Pharos dice con qué proyecto choca y no lo crea. Un proyecto recién creado se abre en su «Plan de pruebas», todavía vacío, porque es lo primero que conviene escribir (capítulo 5).",
+      "Escribe el nombre del producto que vas a probar. En este ejemplo, Liomar crea «Pharos»: el equipo de QA prueba la propia aplicación. A la vez que escribes, Pharos sugiere el prefijo de las claves de sus casos, sacado del nombre y libre entre tus proyectos (para «Pharos», «PHA-»). Puedes cambiarlo antes de crear, como hace Liomar, que lo acorta a «PH-», o después, en sus ajustes (capítulo 14): «✓ Libre» confirma que ningún otro proyecto lo usa, y sus casos serán PH-001, PH-002… Dos proyectos no pueden tener prefijos que se solapen: iguales, o uno que empiece por el otro (como «PH-» y «PHA-»). Si escribes uno así, Pharos dice con qué proyecto choca y no lo crea.",
     covers: ["action:project-create"],
+    shot: { element: WIZARD },
+    focus: ["#pj-new-name", "#pj-new-prefix"],
     run: async () => {
       await $("#pj-new-name").setValue(PROJECT_A.name);
-      await expect($("#pj-new-prefix")).toHaveValue(`${PROJECT_A.prefix}A-`);
+      await expect($("#pj-new-prefix")).toHaveValue(`${PROJECT_A.suggestedPrefix}-`);
+      await $("#pj-new-prefix").setValue(`${PROJECT_A.prefix}-`);
+      await expect($("#pj-new-prefix")).toHaveValue(`${PROJECT_A.prefix}-`);
       await expect($(`${WIZARD} .pj-free`)).toBeDisplayed();
-      await button(W.create).click();
-      await expect($(`h1=${PROJECT_A.name}`)).toBeDisplayed();
-      await urlEndsWith("plan");
-      await expect(byTestId("nav-project-plan")).toHaveAttribute("aria-current", "page");
     },
   });
 
   step("cabecera", {
     title: "La cabecera del proyecto",
     caption:
-      "Todas las secciones del proyecto comparten su cabecera: la insignia con el prefijo de sus claves (aquí «PHA», el que Pharos sugirió; Liomar lo acorta a «PH» en el capítulo 14), el nombre, el estado de su plan («Sin plan», «Plan borrador», «Plan aprobado»…) y una línea con sus casos, sus requisitos y la fecha de cierre del ciclo, cuando el plan la tiene. A la derecha van los botones de la sección abierta (aquí, los del plan). En el móvil solo quedan los botones, para ganar espacio.",
+      "«Crear proyecto» lo crea y lo abre en su «Plan de pruebas», todavía sin guardar y con los valores por defecto de algunos pasos, porque es lo primero que conviene escribir (capítulo 5). Todas las secciones del proyecto comparten su cabecera: la insignia con el prefijo de sus claves (aquí «PH»), el nombre, el estado de su plan («Sin plan», «Plan borrador», «Plan en revisión», «Plan aprobado» o «Plan obsoleto»; el plan cuenta en cuanto se guarda, aunque el panel ya diga «Borrador») y una línea con sus casos, sus requisitos y «Fin del plan», la última fecha del calendario del plan, cuando el plan la tiene. A la derecha van los botones de la sección abierta (aquí, los del plan). En el móvil solo quedan los botones, para ganar espacio.",
     covers: ["screen:project-header"],
-    focus: "header.pj-header",
+    // The header alone: the empty plan it opens on is chapter 5's first picture.
+    shot: { element: "header.pj-header" },
     run: async () => {
+      await button(W.create).click();
+      await expect($(`h1=${PROJECT_A.name}`)).toBeDisplayed();
+      await urlEndsWith("plan");
+      await expect(byTestId("nav-project-plan")).toHaveAttribute("aria-current", "page");
       await expect($("header.pj-header .pj-header__badge")).toBeDisplayed();
       await expect($("header.pj-header")).toHaveText(expect.stringContaining(es.projects.header.plan.none));
     },
@@ -102,10 +107,15 @@ chapter("proyectos", () => {
     caption:
       "Para ir más rápido, en «Datos generales» escribe el nombre y pulsa Intro en lugar de «Crear proyecto». En este ejemplo, el segundo proyecto es «API de sincronización», el servidor con el que se sincroniza Pharos. Como el primero, se abre en su «Plan de pruebas».",
     covers: ["keyboard:project-create-enter"],
+    shot: { element: '[role="dialog"]' },
     run: async () => {
       await byTestId("nav-projects").click();
       await expect($(`h1=${es.projects.title}`)).toBeDisplayed();
       await startBlankProject(PROJECT_B.name);
+    },
+    after: async () => {
+      // The capture took the focus away from the name: back to it, then Intro.
+      await $("#pj-new-name").click();
       await browser.keys("Enter");
       await expect($(`h1=${PROJECT_B.name}`)).toBeDisplayed();
       await urlEndsWith("plan");
@@ -131,7 +141,7 @@ chapter("proyectos", () => {
   step("copiar-ajustes", {
     title: "A partir de otro proyecto: qué copiar",
     caption:
-      "Con «A partir de uno existente», el asistente tiene un paso más, «Qué copiar». Eliges el «Proyecto de origen» (con su prefijo y sus casos) y, debajo, lo que quieres llevarte, todo marcado: los campos personalizados, los dígitos del número de caso, el «Historial en el plan exportado», las «Bandas de riesgo» y la retención de evidencias. Cada casilla muestra el valor que tiene el origen (por ejemplo, «3 · PHA-001» para los dígitos). Desmarca lo que no quieras. Nunca se copian el nombre, el prefijo ni los datos: plan, casos, requisitos, ciclos, ejecuciones, defectos y tablero. En la web, la retención de evidencias aparece desactivada, porque es un ajuste de la app de escritorio.",
+      "Con «A partir de uno existente», el asistente tiene un paso más, «Qué copiar». Eliges el «Proyecto de origen» (con su prefijo y sus casos) y, debajo, lo que quieres llevarte, todo marcado: los campos personalizados, los dígitos del número de caso, el «Historial en el plan exportado», las «Bandas de riesgo» y la retención de evidencias. Cada casilla muestra el valor que tiene el origen (por ejemplo, «3 · PH-001» para los dígitos). Desmarca lo que no quieras. Nunca se copian el nombre, el prefijo ni los datos: plan, casos, requisitos, ciclos, ejecuciones, defectos y tablero. En la web, la retención de evidencias aparece desactivada, porque es un ajuste de la app de escritorio.",
     covers: ["action:project-create-copy-settings"],
     shot: { element: WIZARD },
     run: async () => {
@@ -150,11 +160,13 @@ chapter("proyectos", () => {
   step("copiar-datos-generales", {
     title: "A partir de otro proyecto: datos generales",
     caption:
-      "«Siguiente» lleva a «Datos generales» con lo copiado ya puesto: los dígitos del origen aparecen marcados «copiado de Pharos» y se pueden cambiar. El nombre y el prefijo son los del proyecto nuevo, y debajo un resumen dice qué más se copiará. «Atrás» vuelve a «Qué copiar» sin perder lo elegido.",
+      `«Siguiente» lleva a «Datos generales» con lo copiado ya puesto: los dígitos del origen aparecen marcados «copiado de Pharos» y se pueden cambiar. El nombre y el prefijo son los del proyecto nuevo (en este ejemplo, Liomar prepara «${TEMP_PROJECT.name}», la siguiente versión de Pharos, con el prefijo «${TEMP_PROJECT.prefix}-»), y debajo un resumen dice qué más se copiará. «Atrás» vuelve a «Qué copiar» sin perder lo elegido.`,
     shot: { element: WIZARD },
     run: async () => {
       await button(W.next).click();
-      await $("#pj-new-name").setValue(TEMP_PROJECT);
+      await $("#pj-new-name").setValue(TEMP_PROJECT.name);
+      await $("#pj-new-prefix").setValue(`${TEMP_PROJECT.prefix}-`);
+      await expect($(`${WIZARD} .pj-free`)).toBeDisplayed();
       await expect($(`${WIZARD} .pj-copied`)).toBeDisplayed();
       await expect(byTestId("pj-new-summary")).toHaveText(expect.stringContaining(PROJECT_A.name));
     },
@@ -167,7 +179,7 @@ chapter("proyectos", () => {
     shot: false,
     run: async () => {
       await button(W.create).click();
-      await expect($(`h1=${TEMP_PROJECT}`)).toBeDisplayed();
+      await expect($(`h1=${TEMP_PROJECT.name}`)).toBeDisplayed();
       await waitForToast(es.projects.copySettings.copiedToast.split("{{")[0]);
     },
   });
@@ -175,7 +187,7 @@ chapter("proyectos", () => {
   step("lista-proyectos", {
     title: "Todos los proyectos",
     caption:
-      "Con proyectos, la lista muestra arriba los «Recientes» (los últimos que abriste) y debajo la tabla de todos: el estado del plan, los casos, la cobertura de requisitos y el último acceso. Busca por nombre o prefijo (en este ejemplo, «sincro» deja solo «API de sincronización») y cambia el orden con el menú de orden: último acceso, nombre, última modificación, cierre del ciclo o cobertura. Con muchos proyectos, la tabla se pagina de 5, 10 o 20.",
+      "Con proyectos, la lista muestra arriba los «Recientes» (los últimos que abriste) y debajo la tabla de todos: el estado del plan, los casos, «Ejecutado» (los casos con resultado), la cobertura de requisitos y el último acceso. Son los proyectos del workspace elegido en el menú lateral (capítulo 2): aquí, los de «Personal». Encima de la tabla, «Todos», «En curso» y «Cerrados» filtran por estado. Busca por nombre o prefijo (en este ejemplo, «sincro» deja solo «API de sincronización») y cambia el orden con el menú de orden: «Último acceso», «Nombre (A–Z)», «Última modificación», «Fin del plan», «Progreso de ejecución», «Cobertura de requisitos» o «Defectos abiertos». Con muchos proyectos, la tabla se pagina de 5, 10 o 20.",
     covers: ["action:projects-search", "action:projects-sort"],
     focus: [SEARCH, ".pj-table"],
     run: async () => {
@@ -205,7 +217,7 @@ chapter("proyectos", () => {
   step("menu-fila", {
     title: "Acciones de un proyecto",
     caption:
-      "El menú «⋯» de cada fila reúne las acciones del proyecto: «Abrir», «Ajustes del proyecto» (capítulo 14) y «Exportar proyecto (ZIP)». Se recorre con ↑ ↓ y se cierra con Esc.",
+      "El menú «⋯» de cada fila reúne las acciones del proyecto: «Abrir», «Ajustes del proyecto» (capítulo 14) y «Exportar proyecto (ZIP)». Cuando eres Test Manager de un workspace compartido, aparece además «Compartir con un workspace…», que lo lleva entero a ese workspace para trabajarlo con tu equipo (capítulo 20). Se recorre con ↑ ↓ y se cierra con Esc.",
     covers: ["action:projects-row-menu"],
     focus: '[role="menu"]',
     run: async () => {
@@ -218,7 +230,7 @@ chapter("proyectos", () => {
   step("exportar-zip", {
     title: "Exportar un proyecto",
     caption:
-      "«Exportar proyecto (ZIP)» reúne en un solo archivo el plan en PDF, los casos en .xlsx y .feature y la matriz de trazabilidad: sirve como copia o para entregar el trabajo a alguien que no usa Pharos. Una ventana muestra el progreso («Generando archivos…», «Comprimiendo el ZIP…») y no se puede cerrar hasta que termina; al acabar, un aviso dice cuántos archivos se exportaron y en qué carpeta (la carpeta de descarga de «Administración › General»).",
+      "«Exportar proyecto (ZIP)» reúne en un solo archivo el plan de pruebas (.pdf y .xlsx) y cada caso de prueba (.xlsx y .pdf): sirve como copia o para entregar el trabajo a alguien que no usa Pharos. Una ventana muestra el progreso («Generando archivos…», «Comprimiendo el ZIP…») y no se puede cerrar hasta que termina; al acabar, un aviso dice cuántos archivos se exportaron y en qué carpeta (la carpeta de descarga de «Administración › General»).",
     covers: ["dialogs:src/modules/projects/ui/ExportProgressModal.tsx"],
     shot: false, // the toast shows a local path
     run: async () => {
@@ -242,30 +254,30 @@ chapter("proyectos", () => {
   step("eliminar-proyecto", {
     title: "Eliminar un proyecto",
     caption:
-      "«Eliminar proyecto», al pie de sus ajustes, borra el proyecto con todo lo que contiene. Por eso el diálogo cuenta antes lo que se perderá (planes, casos, requisitos, tarjetas) y, para evitar un borrado por error, pide escribir el prefijo (o el nombre) antes de habilitar «Sí, eliminar todo». Esc no lo cierra: solo «Cancelar». Si quieres conservar una copia, exporta antes el ZIP.",
+      `«Eliminar proyecto», al pie de sus ajustes, borra el proyecto con todo lo que contiene. Por eso el diálogo cuenta antes lo que se perderá (planes, casos, requisitos, tarjetas) y, para evitar un borrado por error, pide escribir el prefijo (o el nombre) antes de habilitar «Sí, eliminar todo». Esc no lo cierra: solo «Cancelar». En la app de escritorio, el proyecto va a la Papelera (Administración › General, capítulo 15) y se puede restaurar con todo lo que se borró con él hasta que se cumpla su plazo; en la web no se recupera. Para una copia fuera de Pharos, exporta antes el ZIP. En este ejemplo, Liomar elimina «${TEMP_PROJECT.name}»: lo creó antes de tiempo y lo creará cuando empiece esa versión.`,
     covers: ["dialogs:src/modules/projects/ui/ProjectSettings.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
-      await $(`a.pj-row__link*=${TEMP_PROJECT}`).click();
-      await expect($(`h1=${TEMP_PROJECT}`)).toBeDisplayed();
+      await $(`a.pj-row__link*=${TEMP_PROJECT.name}`).click();
+      await expect($(`h1=${TEMP_PROJECT.name}`)).toBeDisplayed();
       await openSection("settings");
       await button(es.projects.deleteTitle).click();
       await expect($('[role="alertdialog"]')).toBeDisplayed();
-      // The word to type is in the dialog: «Escribe «PRO» para confirmar».
+      // The word to type is in the dialog: «Escribe «V07» para confirmar».
       const prompt = await $('[role="alertdialog"]').getText();
-      const word = /«([^»]+)»[^«]*confirmar/.exec(prompt)?.[1] ?? TEMP_PROJECT;
+      const word = /«([^»]+)»[^«]*confirmar/.exec(prompt)?.[1] ?? TEMP_PROJECT.name;
       await $('[role="alertdialog"] input').setValue(word);
     },
   });
 
   step("eliminado", {
     title: "Proyecto eliminado",
-    caption: "Al confirmar, Pharos vuelve a la lista de proyectos, que ya no lo muestra, y avisa de que se eliminó.",
+    caption: "Al confirmar, Pharos vuelve a la lista de proyectos, que ya no lo muestra, y avisa de que se eliminó. Mientras esté en la Papelera, se puede restaurar.",
     shot: false,
     run: async () => {
       await button(es.projects.deleteConfirm).click();
       await expect($(`h1=${es.projects.title}`)).toBeDisplayed();
-      await expect($(`a.pj-row__link*=${TEMP_PROJECT}`)).not.toBeExisting();
+      await expect($(`a.pj-row__link*=${TEMP_PROJECT.name}`)).not.toBeExisting();
     },
   });
 });

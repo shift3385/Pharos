@@ -277,8 +277,8 @@ describe("Ajustes · Campos personalizados", () => {
       name: "Copiar campos de otro proyecto",
     });
     expect(copy).toHaveTextContent("campos de defectos");
-    // The shared project selector, with the prefix, never a native select.
-    expect(await within(copy).findByRole("button", { name: /Otro$/ })).toHaveTextContent("OT_Otro");
+    // The shared project selector, with the prefix (without its separator, FIX-46), never a native select.
+    expect(await within(copy).findByRole("button", { name: /Otro$/ })).toHaveTextContent("OTOtro");
     expect(within(copy).queryByRole("combobox")).not.toBeInTheDocument();
     await userEvent.click(
       await within(copy).findByRole("button", { name: "Copiar campos" }),

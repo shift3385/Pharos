@@ -11,14 +11,21 @@ La IA de Pharos es **opcional**. Con tu propia clave de un proveedor online
 (Gemini, OpenAI, Claude, OpenRouter o un servicio compatible), o sin internet
 con Ollama, puede:
 
-- redactar borradores de los campos del plan y sugerir sus riesgos
-  (capítulo 5);
+- redactar borradores de los campos del plan y sugerir sus riesgos, las
+  responsabilidades de sus roles, sus supuestos, sus criterios de entrada y
+  de cierre (capítulo 5);
 - proponer casos a partir de un requisito (capítulo 7) o del plan
   (capítulo 8);
 - sugerir y revisar las listas de un caso: precondiciones, pasos,
   postcondiciones y criterios (capítulo 8);
 - proponer requisitos a partir de la carpeta de un proyecto o de capturas,
   bocetos y diseños (capítulo 7).
+
+En este manual, la IA trabaja con material del propio Pharos: un extracto de
+su API de sincronización como carpeta de proyecto y un boceto de su panel de
+notificaciones como diseño. Lo que propone cambia de una vez a otra: las
+capturas muestran qué tipo de propuesta sale, no un texto que vayas a ver
+igual.
 
 **Nada se aplica sin que lo aceptes**, y lo aceptado queda marcado como
 generado por IA hasta que alguien lo revisa.
@@ -48,6 +55,7 @@ En este manual, Liomar trabaja con **Claude** (Anthropic).
 | --- | --- | --- |
 | Tab, Intro | Botón ✨ de un campo o de una lista | Lo alcanza y pide la propuesta |
 | Espacio | Casilla de una propuesta | La marca o la desmarca |
+| Ctrl+V | Material de «Requisitos desde diseños» | Pega una captura |
 | Esc | Diálogos de propuestas («Generar casos», «Sugerir casos») | Los cierran sin crear nada |
 
 ## Si algo no sale
@@ -68,6 +76,10 @@ En este manual, Liomar trabaja con **Claude** (Anthropic).
   pedirla otra vez.
 - **«Requisitos desde diseños» no lee las imágenes.** El modelo no ve
   imágenes: elige uno con visión.
+- **Una propuesta habla de personas o datos que no existen.** La IA rellena
+  huecos. Escribe en el contexto qué es el producto (y, si quieres, «sin
+  nombres de personas») y descarta lo inventado: nada se aplica sin tu
+  marca.
 
 ## En la web
 

@@ -38,14 +38,27 @@ nivel de todos los evaluados; los requisitos sin riesgo evaluado quedan fuera
 y se cuentan aparte. La **aprobada** hace la misma cuenta con los requisitos
 que tienen todos sus casos ejecutados y en Pasa.
 
-En este manual, Liomar revisa qué está probado de Pharos 0.3.0 cuando ya
-tiene la importación de JUnit, la ejecución manual y los dos defectos.
+Un caso con **dataset** (capítulo 8) se ejecuta una vez por fila y pasa solo
+si pasan todas sus filas. Un resultado importado cae en su fila por la
+propiedad `example_row` (capítulo 10).
+
+Los **hallazgos** de los análisis de seguridad y accesibilidad (capítulo 10)
+también llegan a la matriz: un caso con hallazgos abiertos en el último
+análisis de cada herramienta lleva una insignia con cuántos son, en el color
+del peor, y el interruptor **«Con hallazgos abiertos»** deja solo los
+requisitos con algún caso así. Un hallazgo triado (falso positivo, riesgo
+aceptado o corregido) ya no cuenta. Un umbral de k6 incumplido en una métrica
+vinculada a un caso lo marca como fallido.
+
+En este manual, Liomar revisa qué está probado de Pharos 0.6.0 cuando ya
+tiene los informes importados y los análisis del capítulo 10, la ejecución
+manual del capítulo 11 y los defectos del capítulo 12.
 
 ## Paso a paso
 
 ### 13.1. La matriz de trazabilidad
 
-«Trazabilidad», al final del menú del proyecto, responde a «¿está probado cada requisito?». Arriba, las cifras: cuántos requisitos hay, cuántos están cubiertos (con al menos un caso), cuántos no y la cobertura. Debajo, la matriz: cada requisito con su prioridad, los casos que lo verifican, el estado de prueba de cada caso y sus defectos. Un requisito sin ningún caso sale en rojo. Va al final del menú porque mide el resultado de todo lo anterior: es la vista que enseñar cuando alguien pregunta qué se ha probado. En este ejemplo, Liomar revisa la 0.3.0 de Pharos después de la importación del capítulo 10, la ejecución manual del capítulo 11 y los defectos del capítulo 12.
+«Trazabilidad», al final del menú del proyecto, responde a «¿está probado cada requisito?». Arriba, las cifras: cuántos requisitos hay, cuántos están cubiertos (con al menos un caso), cuántos no y la cobertura. Debajo, la matriz: cada requisito con su prioridad, los casos que lo verifican, el estado de prueba de cada caso y sus defectos. Un requisito sin ningún caso sale en rojo. Va al final del menú porque mide el resultado de todo lo anterior: es la vista que enseñar cuando alguien pregunta qué se ha probado. En este ejemplo, Liomar revisa la 0.6.0 de Pharos después de las importaciones del capítulo 10, la ejecución manual del capítulo 11 y los defectos del capítulo 12.
 
 ![La matriz de trazabilidad](img/trazabilidad/01-matriz.png)
 
@@ -55,41 +68,51 @@ tiene la importación de JUnit, la ejecución manual y los dos defectos.
 
 ![El último resultado de cada caso](img/trazabilidad/02-resultados.png)
 
-### 13.3. Filtrar los resultados
+### 13.3. Un caso con dataset en la matriz
 
-Sobre la matriz, los filtros de resultados limitan el estado de prueba a las ejecuciones de un ciclo, una configuración, una build o un entorno: la foto de una ronda concreta. Los requisitos y los casos no cambian; solo qué resultados cuentan. Los filtros quedan en la dirección de la página, así que se pueden guardar o compartir, y «Quitar filtros» vuelve a todos. En este ejemplo, Liomar mira solo la build 0.3.0-rc1.
+Un caso con dataset (capítulo 8) se ejecuta una vez por fila, y en la matriz pasa solo si pasan todas sus filas. En este ejemplo, «Acceso con usuarios de prueba» (PH-005) verifica REQ-001 junto a los otros dos casos de acceso y falla: en la ejecución manual del capítulo 11, la tercera cuenta no entra.
 
-![Filtrar los resultados](img/trazabilidad/03-filtros.png)
+### 13.4. Filtrar los resultados
 
-### 13.4. Del resultado a su run
+Sobre la matriz, los filtros de resultados limitan el estado de prueba a las ejecuciones de un ciclo, una configuración, una build o un entorno: la foto de una ronda concreta. Los requisitos y los casos no cambian; solo qué resultados cuentan. Los filtros quedan en la dirección de la página, así que se pueden guardar o compartir, y «Quitar filtros» vuelve a todos. En este ejemplo, Liomar mira solo el ciclo «Regresión 0.6.0»: cuenta el informe importado en el ciclo (capítulo 10), y PH-005, que no se ejecutó en él, queda «No ejecutado».
+
+![Filtrar los resultados](img/trazabilidad/04-filtros.png)
+
+### 13.5. Del resultado a su run
 
 La clave del run (RUN-…) de un resultado abre la pantalla de ese run, con todos sus elementos e intentos (capítulos 10 y 11). «Atrás» vuelve a la matriz.
 
-### 13.5. Ordenar por riesgo
+### 13.6. Ordenar por riesgo
 
-«Orden» decide cómo se listan los requisitos. Por defecto, «Riesgo»: primero los de más riesgo (probabilidad × impacto, capítulo 7), para que lo más arriesgado se revise antes; los que no tienen riesgo evaluado van al final. «ID de requisito» los ordena por su clave.
+«Orden» decide cómo se listan los requisitos. Por defecto, «Riesgo»: primero los de más riesgo (probabilidad × impacto, capítulo 7), para que lo más arriesgado se revise antes; los que no tienen riesgo evaluado van al final. «ID de requisito» los ordena por su clave: en este ejemplo, Liomar lo elige para encontrar REQ-001, arriba del todo, y después vuelve a «Riesgo».
 
-![Ordenar por riesgo](img/trazabilidad/05-orden.png)
+![Ordenar por riesgo](img/trazabilidad/06-orden.png)
 
-### 13.6. Cobertura ponderada por riesgo
+### 13.7. Cobertura ponderada por riesgo
 
 «Cobertura ponderada» pesa cada requisito por su nivel de riesgo (probabilidad × impacto): cubrir uno de nivel 20 cuenta cinco veces más que uno de nivel 4, así un hueco en lo más arriesgado se nota más que en lo trivial. Debajo pone la «aprobada» (los requisitos con todos sus casos ejecutados y en Pasa) y cuántos requisitos sin evaluar quedan fuera; el ⓘ enseña la cuenta y las bandas del proyecto (capítulo 14). Bajo las cifras, una barra por banda —alto, medio, bajo y sin evaluar— dice cuántos requisitos de cada una tienen caso. Sigue los filtros de ciclo, configuración, build y entorno, como el informe de estado.
 
-![Cobertura ponderada por riesgo](img/trazabilidad/06-ponderada.png)
+![Cobertura ponderada por riesgo](img/trazabilidad/07-ponderada.png)
 
-### 13.7. Solo los huecos
+### 13.8. Solo los huecos
 
-«Mostrar solo huecos» deja los requisitos sin ningún caso, lo primero que conviene resolver antes de cerrar un ciclo. Debajo, «Huecos de trazabilidad» reúne lo que rompe la cadena requisito ↔ caso ↔ defecto: casos sin requisito, casos que enlazan un requisito inexistente y defectos sin caso vinculado.
+«Mostrar solo huecos» deja los requisitos sin ningún caso, lo primero que conviene resolver antes de cerrar un ciclo. En este ejemplo quedan 9, empezando por los de más riesgo; desde cada uno, «Generar casos con IA» propone sus casos (capítulo 17).
 
-![Solo los huecos](img/trazabilidad/07-huecos.png)
+![Solo los huecos](img/trazabilidad/08-huecos.png)
 
-### 13.8. Migrar referencias escritas a mano
+### 13.9. Casos con hallazgos abiertos
+
+Un caso con hallazgos abiertos en el último análisis de cada herramienta (capítulo 10) lleva una insignia con cuántos son, en el color del peor; al pasar el puntero dice su severidad. «Con hallazgos abiertos» deja solo los requisitos con algún caso así. En este ejemplo, el análisis de Semgrep vinculó a PH-002 un hallazgo de severidad media: la respuesta de /auth/login delata si un correo tiene cuenta. El que Liomar triajó como falso positivo ya no cuenta. Bajo la matriz, «Huecos de trazabilidad» reúne lo que rompe la cadena requisito ↔ caso ↔ defecto: casos sin requisito, casos que enlazan un requisito inexistente y defectos sin caso vinculado.
+
+![Casos con hallazgos abiertos](img/trazabilidad/09-hallazgos.png)
+
+### 13.10. Migrar referencias escritas a mano
 
 Si un caso menciona un ID de requisito en su texto libre («Otras referencias (texto libre)»), la matriz no lo cuenta. «Migrar trazabilidad» propone convertirlo en un vínculo real: marca los que quieras y pulsa «Aplicar». En este ejemplo, la checklist de humo (PH-004) citaba REQ-006 en el capítulo 8.
 
-![Migrar referencias escritas a mano](img/trazabilidad/08-migrar.png)
+![Migrar referencias escritas a mano](img/trazabilidad/10-migrar.png)
 
-### 13.9. Exportar la matriz
+### 13.11. Exportar la matriz
 
 «Exportar matriz (.xlsx)», en la cabecera, guarda la matriz en un libro de Excel: requisitos, casos, estados y defectos, más la hoja «Resultados» con el run, la fecha y los defectos de cada caso, y anotados los filtros que estaban activos. Sirve para compartirla con quien no usa Pharos o adjuntarla a una auditoría. El archivo va a tu carpeta de descarga y un aviso dice su nombre.
 

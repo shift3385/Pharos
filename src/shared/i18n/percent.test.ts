@@ -47,4 +47,15 @@ describe("keys never break", () => {
     expect(pdfWholeKeys("Todo el periodo")).toBe("Todo el periodo");
     expect(pdfWholeKeys("PH-001 falla")).toEqual([{ text: "PH-001", noWrap: true }, { text: " falla" }]);
   });
+
+  // FIX-46: «TP-/PH-0600» and «0.6.0-/beta.1» broke in the closure report and
+  // the runs list.
+  it("keeps keys with several prefixes and versions whole", () => {
+    const keys = (s: string) => keyPieces(s).filter((p) => p.key).map((p) => p.text);
+    expect(keys("Plan de Pharos 0.6.0 · TP-PH-0600 · v0.7")).toEqual(["0.6.0", "TP-PH-0600"]);
+    expect(keys("Importado · pharos-e2e · build 0.6.0-beta.1.")).toEqual(["0.6.0-beta.1"]);
+    expect(keys("Quedan fuera: PH-005, PH-012")).toEqual(["PH-005", "PH-012"]);
+    expect(keys("La primera clave será PHA-001; el run, RUN-001.")).toEqual(["PHA-001", "RUN-001"]);
+    expect(pdfWholeKeys("TP-PH-0600 · v0.7")).toEqual([{ text: "TP-PH-0600", noWrap: true }, { text: " · v0.7" }]);
+  });
 });

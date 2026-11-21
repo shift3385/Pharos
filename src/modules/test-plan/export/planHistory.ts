@@ -43,7 +43,14 @@ export interface PlanSave {
    *  before, which the revision copies leave without them). */
   versionBefore?: string | null;
   statusBefore?: string | null;
+  /** It asked the author for changes (the review went to
+   *  `changesRequested`): the Historial names it (FIX-51). */
+  returned?: boolean;
 }
+
+/** The review state written in a `data.review` value of a change. */
+const reviewState = (v: unknown): unknown =>
+  v && typeof v === "object" ? (v as { state?: unknown }).state : undefined;
 
 /** One row of the history: the last save of one person on one day. */
 export interface HistoryRow {
@@ -266,6 +273,11 @@ export function planSaves(
       status: text(status?.[1]),
       versionBefore: created ? null : text(version?.[0]),
       statusBefore: created ? null : text(status?.[0]),
+      ...(!created &&
+      reviewState(changes["data.review"]?.[1]) === "changesRequested" &&
+      reviewState(changes["data.review"]?.[0]) !== "changesRequested"
+        ? { returned: true }
+        : {}),
     });
   }
   saves.sort((a, b) => a.at.getTime() - b.at.getTime());
@@ -282,6 +294,31 @@ export function planSaves(
     saves[i].status ??= saves[i - 1].status;
   }
   return saves;
+}
+
+/** The plan version each revision copy holds (revision number → version):
+ *  the copy is the state its save overwrote, so its version is the «before»
+ *  of that save's event (same transaction, same second), else the version the
+ *  last earlier save left. A copy no source dates is left out (FIX-49: the
+ *  «Revisiones» list named copies «rev. N» next to the Historial's «v0.7»). */
+export function copyVersions(source: PlanHistorySource): Map<number, string> {
+  const saves = planSaves(source, { title: "", data: {} });
+  const out = new Map<number, string>();
+  for (const copy of source.revisions) {
+    const at = parseStamp(copy.createdAt);
+    if (!valid(at)) continue;
+    const second = Math.floor(at.getTime() / 1000) * 1000;
+    const own = saves.find(
+      (s) =>
+        !s.created &&
+        s.versionBefore &&
+        Math.floor(s.at.getTime() / 1000) * 1000 === second,
+    );
+    const earlier = saves.filter((s) => s.at.getTime() < second).pop();
+    const version = own?.versionBefore ?? earlier?.version ?? null;
+    if (version) out.set(copy.revision, version);
+  }
+  return out;
 }
 
 /** Whether a save changed the plan (a save without changes only bumps the

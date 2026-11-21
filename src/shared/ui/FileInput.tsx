@@ -26,7 +26,7 @@ export function FileInput({
   const [chosen, setChosen] = useState<string[]>([]);
   const summary =
     chosen.length === 0
-      ? t("common.noFileChosen")
+      ? t(folder ? "common.noFolderChosen" : "common.noFileChosen")
       : chosen.length === 1
         ? chosen[0]
         : t("common.filesChosen", { count: chosen.length });

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { Fragment, useContext, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 import { Plus, Upload } from "lucide-react";
@@ -15,6 +15,7 @@ import {
 import { StatusPill } from "@shared/ui/StatusPill";
 import { TabPanel, Tabs } from "@shared/ui/Tabs";
 import { useToast } from "@shared/ui/Toast";
+import { useOnSynced } from "@shared/ui/useSynced";
 import { runsApi } from "../api/runsApi";
 import type { LinkableItem } from "@modules/defects";
 import { instantOf, statusTone, type LinkableCase } from "../model/types";
@@ -38,6 +39,8 @@ type Origin = "all" | "import";
 export function RunsPage({
   projectId,
   projectName = "",
+  caseIdPrefix = "",
+  caseIdDigits = 3,
   runId,
   cases,
   requirements = [],
@@ -45,6 +48,9 @@ export function RunsPage({
   projectId: string;
   /** For the status report's identification and file names (EJE-03). */
   projectName?: string;
+  /** The project's case keys, for the import help's example (FIX-45). */
+  caseIdPrefix?: string;
+  caseIdDigits?: number;
   runId?: string;
   cases: LinkableCase[];
   /** The project's requirements, for a defect created from the executor (NC-007). */
@@ -53,17 +59,27 @@ export function RunsPage({
   return runId ? (
     <RunDetail key={runId} projectId={projectId} runId={runId} cases={cases} requirements={requirements} />
   ) : (
-    <RunsList projectId={projectId} projectName={projectName} cases={cases} />
+    <RunsList
+      projectId={projectId}
+      projectName={projectName}
+      caseIdPrefix={caseIdPrefix}
+      caseIdDigits={caseIdDigits}
+      cases={cases}
+    />
   );
 }
 
 function RunsList({
   projectId,
   projectName,
+  caseIdPrefix,
+  caseIdDigits,
   cases,
 }: {
   projectId: string;
   projectName: string;
+  caseIdPrefix: string;
+  caseIdDigits: number;
   cases: LinkableCase[];
 }) {
   const { t, i18n } = useTranslation();
@@ -104,6 +120,8 @@ function RunsList({
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, userId]);
+  // A sync that brought or combined changes (FIX-48).
+  useOnSynced(() => void refresh());
 
   const inHeader = useContext(HeaderActionsContext) !== null;
   const actions = (
@@ -162,13 +180,20 @@ function RunsList({
         <span className="rn-test">
           <span>{r.title}</span>
           <span className="tp-field__hint">
+            {/* Each fragment stays whole: «build 0.6.0-beta.1» never breaks
+                at its hyphen (FIX-45). */}
             {[
               t(`runs.trigger.${r.trigger}`),
               r.sourceTool,
               r.build && t("runs.list.build", { build: r.build }),
             ]
               .filter(Boolean)
-              .join(" · ")}
+              .map((part, i) => (
+                <Fragment key={i}>
+                  {i > 0 && " · "}
+                  <span className="rn-nowrap">{part}</span>
+                </Fragment>
+              ))}
           </span>
         </span>
       ),
@@ -346,6 +371,8 @@ function RunsList({
       {importing && (
         <ImportReportDialog
           projectId={projectId}
+          caseIdPrefix={caseIdPrefix}
+          caseIdDigits={caseIdDigits}
           userId={userId}
           runs={runs ?? []}
           onClose={() => setImporting(false)}

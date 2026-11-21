@@ -43,8 +43,15 @@
   text-overflow: ellipsis;
 }
 
+/* «Obsoleto» is neutral and struck through (SPEC §4); its text is the
+   darkest one, so the word stays readable under the line (FIX-49). */
+.pill[data-strike] {
+  --pill-text: var(--color-text-primary);
+}
+
 .pill[data-strike] .pill__text {
   text-decoration: line-through;
+  text-decoration-color: var(--color-text-secondary);
 }
 
 .pill__dot {

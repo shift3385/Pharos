@@ -31,8 +31,12 @@ export function TransitionDialog({
   const [build, setBuild] = useState(defect.fixedInBuild ?? "");
   const needs = needsResolution(status);
   const ready = !needs || resolution !== "";
+  // A drop on «Otros» offers two states: the title follows the chosen one
+  // instead of saying «Rechazar» while «Aplazado» is picked (FIX-44).
   const title =
-    status === "rejected"
+    statuses.length > 1
+      ? t("defects.resolutionDialog.moveTitle", { key: defect.defectKey, status: t(`defects.status.${status}`) })
+      : status === "rejected"
       ? t("defects.resolutionDialog.rejectTitle", { key: defect.defectKey })
       : status === "closed"
         ? t("defects.resolutionDialog.title", { key: defect.defectKey })
@@ -44,7 +48,7 @@ export function TransitionDialog({
         {title}
       </h3>
       <p id={`${id}-msg`} className="cd__msg">
-        {t("defects.resolutionDialog.message", {
+        {t(needs ? "defects.resolutionDialog.message" : "defects.resolutionDialog.messagePlain", {
           title: defect.title,
           status: t(`defects.status.${status}`),
         })}

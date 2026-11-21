@@ -22,12 +22,14 @@ beforeEach(async () => {
 });
 
 describe("AssistButton", () => {
-  it("is only the icon, named and explained", async () => {
+  // FIX-46: the label shows, as the manual names the button.
+  it("shows its icon and its label", async () => {
     show();
     const button = screen.getByRole("button", { name: "Asistir con IA" });
     expect(button).toHaveAttribute("title", "Asistir con IA");
     expect(button.querySelector("svg")).toBeInTheDocument();
-    expect(button.querySelector(".sr-only")).toHaveTextContent("Asistir con IA");
+    expect(button).toHaveTextContent("Asistir con IA");
+    expect(button.querySelector(".sr-only")).toBeNull();
     expect(button.querySelector(".assist__spark")).not.toBeInTheDocument();
     await expectNoAxeViolations();
   });

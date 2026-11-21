@@ -47,8 +47,11 @@ let heldLock: number | null = null;
 chapter("errores", () => {
   step("base-de-datos", {
     title: "Si la base de datos local no abre",
-    caption: "Si los datos locales no se pueden abrir, Pharos lo dice al arrancar y no modifica ningún archivo. La pantalla cambia según la causa: «Otro Pharos está actualizando tus datos» (otra ventana de Pharos o el CLI los está actualizando, como en este ejemplo), «Estos datos son de una versión más nueva de Pharos» (instala esa versión o una posterior), «Falta la clave de la base de datos local» (un equipo nuevo o Windows reinstalado), que ofrece escribir la clave de recuperación (56 caracteres en grupos de 4), o, al actualizar desde la 0.5, «Falta espacio para actualizar tus datos». Cuando la causa puede pasar sola, ofrece «Reintentar».",
+    caption:
+      "Si los datos locales no se pueden abrir, Pharos lo dice al arrancar, en lugar de la aplicación, y no modifica ningún archivo. La pantalla cambia según la causa: «Otro Pharos está actualizando tus datos» (otra ventana de Pharos o el CLI los está convirtiendo o actualizando, como en este ejemplo), «Estos datos son de una versión más nueva de Pharos» (instala esa versión o una posterior), «Falta la clave de la base de datos local» (un equipo nuevo o Windows reinstalado), que ofrece escribir la clave de recuperación, o, al actualizar desde la 0.5, «Falta espacio para actualizar tus datos». Cuando la causa puede pasar sola, ofrece «Reintentar»; «Detalles técnicos» despliega el error exacto para el informe.",
     covers: ["state:db-error"],
+    // The message, readable on paper as a «Detalle» of the whole window.
+    focus: [".app-splash__title", ".app-splash__text"],
     run: async () => {
       const db = profileFile("pharos.db");
       if (!existsSync(db)) throw new Error(`no database at ${db}`);
@@ -80,9 +83,9 @@ chapter("errores", () => {
   });
 
   step("restaurar", {
-    title: "Restaurar la copia",
+    title: "Cuando el otro Pharos termina",
     caption:
-      "En cuanto el otro Pharos termina, «Reintentar» abre los datos sin reiniciar y Liomar vuelve a su Inicio. Si el archivo está dañado, se restaura una copia (pharos.db o pharos.db.bak-…): por eso conviene guardar la clave de recuperación y hacer copias (capítulo 15).",
+      "En cuanto el otro Pharos termina, «Reintentar» abre los datos sin reiniciar y Liomar vuelve a su Inicio, con todo como estaba. Si en cambio el archivo estuviera dañado, la salida es restaurar una copia de pharos.db: por eso conviene guardar la clave de recuperación y hacer copias (capítulo 15).",
     shot: false,
     run: async () => {
       if (heldLock !== null) closeSync(heldLock);

@@ -56,7 +56,12 @@ export const splitLines = (v: string): string[] =>
 export const splitItems = (v: string): string[] =>
   v.split(/\r?\n|[,;]/).map((s) => s.trim()).filter(Boolean);
 
-export const preview = (s: string, n = 48): string =>
+/** A value of the import report, whole up to `n` characters: the report
+ *  wraps it on as many lines as it needs (FIX-49: cut at 120 characters and
+ *  two lines, «…de gestión de pruebas que…» and «Ciclos,…» lost what was
+ *  detected). Only a longer one ends in «…», with all of it in its tooltip. */
+export const PREVIEW_MAX = 600;
+export const preview = (s: string, n = PREVIEW_MAX): string =>
   s.length > n ? `${s.slice(0, n).trim()}…` : s;
 
 /** Builds a normalized-label → key map from one or more i18n label dictionaries. */
@@ -90,7 +95,8 @@ export function cellText(cell: ExcelJS.Cell): string {
   if (v == null) return "";
   if (typeof v === "string") return v;
   if (typeof v === "number" || typeof v === "boolean") return String(v);
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  // ExcelJS reads a date cell as UTC midnight of the day typed.
+  if (v instanceof Date) return v.toISOString().slice(0, 10); // utc-day-ok
   if (typeof v === "object") {
     const o = v as Record<string, unknown>;
     if (Array.isArray(o.richText)) return (o.richText as { text: string }[]).map((t) => t.text).join("");

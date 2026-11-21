@@ -4,8 +4,13 @@
 //   node scripts/build-manual.mjs              rebuild from docs/manual/pasos.json (no app run)
 //   … --no-pdf                                 Markdown only
 //   … --allow-failed                           build even if some tour steps failed
+//   … --from-run <dir>                         take a tour run kept elsewhere (a frozen copy)
+//   … --out <dir>                              write the manual there instead of docs/manual/
+//                                              (prose still from docs/manual/fuentes/; a
+//                                              previous pasos.json and images there, if any,
+//                                              else docs/manual/'s, are the baseline)
 //
-// Output, all in docs/manual/:
+// Output, all in docs/manual/ (or --out):
 //   README.md, NN-<capitulo>.md   Spanish chapters (generated: edit fuentes/)
 //   img/<capitulo>/<paso>.png     screenshots, re-encoded deterministically
 //   pasos.json                    the step data, so the manual rebuilds offline
@@ -15,6 +20,7 @@
 // MANUAL_DIFF_THRESHOLD (default 0.5 %) of its pixels changed.
 import { execFileSync } from "node:child_process";
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
@@ -23,21 +29,30 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { changedShare, decodePng, drawFocus, encodePng } from "./manual/png.mjs";
 import { escapeHtml, leftoverTable, markdownToHtml } from "./manual/markdown.mjs";
 import { AFTER_STEPS, keyboardAppendix, parseSource, pdfNamedDests, pdfPageCount } from "./manual/sources.mjs";
 import { printWithEdge, sweepProfiles } from "./manual/edge-print.mjs";
-import { focusLayout, FOCUS_COLOR, groupInset, insetStyle } from "./manual/focus.mjs";
+import { cutoutSvg, focusCuts, focusLayout, FOCUS_COLOR, FOCUS_RADIUS, FOCUS_STROKE, groupInset, outlineZones, sameFocusPixels } from "./manual/focus.mjs";
 import { foreignNames } from "./manual/persona.mjs";
 
 const repoDir = join(dirname(fileURLToPath(import.meta.url)), "..");
-const manualDir = join(repoDir, "docs", "manual");
-const sourcesDir = join(manualDir, "fuentes");
+const argv = process.argv.slice(2);
+const args = new Set(argv);
+/** The value after `flag`, when it is not another flag. */
+const argValue = (flag) => {
+  const i = argv.indexOf(flag);
+  return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--") ? resolve(argv[i + 1]) : null;
+};
+/** The committed manual: prose sources and the links the PDF points at. */
+const repoManualDir = join(repoDir, "docs", "manual");
+const manualDir = argValue("--out") ?? repoManualDir;
+const sourcesDir = join(repoManualDir, "fuentes");
 const imgDir = join(manualDir, "img");
 const buildDir = join(manualDir, ".build");
-const runDir = join(repoDir, "e2e", "results", "tours");
+const runDir = argValue("--from-run") ?? join(repoDir, "e2e", "results", "tours");
 export const PDF_NAME = "Pharos-manual-de-usuario.pdf";
 const REPO_URL = "https://github.com/shift3385/Pharos/blob/main";
 const THRESHOLD = Number(process.env.MANUAL_DIFF_THRESHOLD ?? 0.005);
@@ -47,7 +62,6 @@ const pkg = JSON.parse(readFileSync(join(repoDir, "package.json"), "utf8"));
 // Printed in menu order (`number`), not in the order the tours run (MAN-03).
 const MANUAL_CHAPTERS = MANUAL_ORDER;
 
-const args = new Set(process.argv.slice(2));
 
 function fail(message) {
   console.error(`✖ build-manual: ${message}`);
@@ -79,23 +93,36 @@ function importImages(steps) {
   let kept = 0;
   for (const s of steps) {
     // A step kept from the previous manual (skipped in this run) has no new capture.
-    if (!s.image || s.keptFromBefore) continue;
+    if (!s.image) continue;
+    if (s.keptFromBefore) {
+      // Into a fresh --out folder: the committed capture comes along.
+      const target = join(imgDir, s.image);
+      const committed = join(repoManualDir, "img", s.image);
+      if (!existsSync(target) && existsSync(committed)) {
+        mkdirSync(dirname(target), { recursive: true });
+        copyFileSync(committed, target);
+      }
+      continue;
+    }
     // Compared as it would be committed (palette PNG), so the quantisation
     // itself never counts as a change.
-    // A step about one control gets its outline drawn into the capture
-    // (MAN-02), in one exact colour the palette keeps as it is.
+    // A step about one control gets its cut-out pieces (focus.mjs: each
+    // element at its own edge, or with quiet air) and one outline round them
+    // drawn into the capture (MAN-02), in one exact colour the palette keeps
+    // as it is. The pieces are kept in the step for the PDF's cut-out.
     const pixels = decodePng(readFileSync(join(runDir, "img", s.image)));
-    if (s.focus) drawFocus(pixels, s.focus, { color: FOCUS_COLOR });
+    if (s.focus) {
+      s.cuts = focusCuts(pixels.width, pixels.height, s.focus, s.focusParts, pixels);
+      drawFocus(pixels, outlineZones(s.cuts), { color: FOCUS_COLOR, stroke: FOCUS_STROKE, pad: 0, radius: FOCUS_RADIUS });
+    }
     const encoded = encodePng(pixels, { reserve: [FOCUS_COLOR] });
     const fresh = decodePng(encoded);
     const target = join(imgDir, s.image);
     if (existsSync(target)) {
       const old = decodePng(readFileSync(target));
-      // An outline around a small control is below the threshold: the committed
-      // image must already have it where this run draws it.
-      const ring = s.focus ? (Math.round(s.focus.y) - 5) * old.width + Math.round(s.focus.x + s.focus.w / 2) : -1;
-      const hasOutline = !s.focus || FOCUS_COLOR.every((v, c) => old.data[ring * 4 + c] === v);
-      if (hasOutline && changedShare(old, fresh) <= THRESHOLD) {
+      // An outline is below the threshold: the committed image must have it
+      // exactly where this run draws it (and nowhere else).
+      if (sameFocusPixels(old, fresh) && changedShare(old, fresh) <= THRESHOLD) {
         kept++;
         continue;
       }
@@ -129,7 +156,8 @@ function loadSteps() {
   }
   // A step this run skipped (the AI chapter without a key) keeps what the
   // committed manual had for it, capture included, instead of losing it.
-  const previous = existsSync(pasosFile) ? JSON.parse(readFileSync(pasosFile, "utf8")).steps : [];
+  const baseline = existsSync(pasosFile) ? pasosFile : join(repoManualDir, "pasos.json");
+  const previous = existsSync(baseline) ? JSON.parse(readFileSync(baseline, "utf8")).steps : [];
   const before = new Map(previous.map((s) => [`${s.chapter}/${s.id}`, s]));
   const steps = readRun().map((s) => {
     const old = before.get(`${s.chapter}/${s.id}`);
@@ -141,7 +169,7 @@ function loadSteps() {
   const order = new Map(CHAPTERS.map((c) => [c.id, c.number]));
   const clean = steps
     .filter((s) => s.status !== "failed")
-    .map(({ chapter, n, id, title, caption, covers, image, viewport, status, reason, focus, group }) => ({
+    .map(({ chapter, n, id, title, caption, covers, image, viewport, status, reason, focus, cuts, group }) => ({
       chapter,
       n,
       id,
@@ -153,6 +181,7 @@ function loadSteps() {
       status,
       ...(reason ? { reason } : {}),
       ...(focus ? { focus } : {}),
+      ...(cuts?.length ? { cuts } : {}),
       ...(group ? { group } : {}),
     }))
     .sort((a, b) => order.get(a.chapter) - order.get(b.chapter) || a.n - b.n);
@@ -210,6 +239,7 @@ function chapterMarkdown(c, steps) {
   if (steps.length > 0) {
     lines.push("## Paso a paso", "");
     for (const s of steps) {
+      if (src.before[s.id]) lines.push(...src.before[s.id].split("\n").map((l) => (l ? `> ${l}` : ">")), "");
       lines.push(`### ${c.number}.${s.n}. ${s.title}`, "", s.caption, "");
       if (s.status === "skipped") lines.push(`> **Pendiente:** ${s.reason ?? "sin captura en esta versión"}.`, "");
       if (s.image) {
@@ -243,8 +273,10 @@ function indexMarkdown(data, byChapter) {
     "",
     "Este manual explica, pantalla a pantalla, cómo se usa Pharos. Cada paso es también una prueba automática: si la aplicación cambia, `npm run manual` vuelve a recorrerla, rehace las capturas y regenera el manual (Markdown y PDF).",
     "",
+    "**El ejemplo.** Liomar Rodríguez, responsable de QA, prueba la propia aplicación Pharos: su proyecto «Pharos» recorre todo el manual, desde el plan de pruebas hasta los defectos. En los capítulos de equipo aparece su compañero de QA Jorge L. Meneses Yero y, en la administración del servidor, la cuenta «Administrador». Las tres cuentas (`liomar.qa@pharos.test`, `jorge.meneses@pharos.test` y `admin@pharos.test`) son de prueba.",
+    "",
     `- **PDF:** \`docs/manual/${PDF_NAME}\` tras \`npm run manual\` o \`npm run manual:build\` (no se versiona); en el CI, el artefacto \`manual\` de \`main\` y, en cada versión, el artefacto del instalador (flujo «Installer»), que lo incluye.`,
-    "- **Guía de pruebas de la beta:** [guia-beta.md](../guia-beta.md) · **Glosario:** [GLOSARIO.md](../GLOSARIO.md)",
+    "- **Guía de pruebas de la beta:** [guia-beta.md](../guia-beta.md) · **Glosario:** [GLOSARIO.md](../GLOSARIO.md) · **Línea de comandos:** [cli.md](../cli.md) · **API:** [api-v1.md](../api-v1.md)",
     "- **Revisión de cada regeneración:** [REVIEW.md](REVIEW.md)",
     "",
     "## Contenido",
@@ -345,18 +377,22 @@ p, li { orphans: 3; widows: 3; }
 .focus { display: flex; gap: 3mm; align-items: flex-start; justify-content: center; }
 .focus.below { flex-direction: column; align-items: center; gap: 2.5mm; }
 .focus .shot { max-width: none; margin: 0; }
-.inset { flex: none; border: 0.6mm solid var(--color-accent); border-radius: 2mm; background-repeat: no-repeat;
-  box-shadow: 0 1mm 2.5mm rgba(16,24,40,.14); }
-.inset-wrap { display: flex; flex-direction: column; gap: 1mm; }
-.inset-label { font-size: 8pt; font-weight: 600; color: var(--color-navy-500); text-transform: uppercase; letter-spacing: 0.4pt; }
+/* The «Detalle» cut-out: an SVG with its one frame inside (focus.mjs); no
+   CSS border or shadow, which would not follow a cut-out of two pieces. */
+.cutout-box { flex: none; line-height: 0; }
+.cutout { display: block; }
+.inset-wrap { flex: none; display: flex; flex-direction: column; gap: 1mm; align-items: flex-start; }
+.inset-label { font-size: 8pt; line-height: 3.5mm; height: 3.5mm; font-weight: 600; color: var(--color-navy-500); text-transform: uppercase; letter-spacing: 0.4pt; }
 .group { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; break-inside: avoid; margin: 0 0 7mm; }
 .group .step { margin: 0; }
 .group .shot { max-width: 100%; }
 .group .focus.below { gap: 1.5mm; }
 .group .focus .shot { width: 100% !important; box-sizing: border-box; }
-.group .inset-wrap { width: 100%; }
+.group .inset-wrap { align-self: center; }
 .endblock { break-inside: avoid; }
 .note { background: var(--color-navy-100); border-left: 1.2mm solid var(--color-navy-500); padding: 2mm 3mm; border-radius: 1mm; margin: 2mm 0; }
+/* A lead-in (fuentes «### Antes del paso <id>») stays with its step. */
+.note.lead { break-inside: avoid; break-after: avoid; margin: 0 0 4mm; }
 .pending { background: #fdf3e2; border-left: 1.2mm solid var(--color-accent); padding: 2mm 3mm; border-radius: 1mm; margin: 2mm 0; }
 .tips { background: var(--color-surface-2); padding: 1mm 4mm; border-radius: 2mm; }
 .md-table { width: 100%; border-collapse: collapse; margin: 2mm 0 3mm; font-size: 9.5pt; break-inside: avoid; }
@@ -371,10 +407,11 @@ function htmlDocument(body) {
 <style>${fontFaces()}\n${tokens()}\n${STYLE}</style></head><body>${body}</body></html>`;
 }
 
-/** Rewrites a relative Markdown link of a source (from docs/manual/) for the PDF. */
+/** Rewrites a relative Markdown link of a source (from docs/manual/) for the
+ *  PDF (a `file:` URL is a capture: the cut-outs' SVG `<image href>`). */
 function absoluteLinks(html) {
-  return html.replace(/href="(?!https?:|#|mailto:)([^"]+)"/g, (_, href) => {
-    const target = relative(repoDir, join(manualDir, href)).replaceAll("\\", "/");
+  return html.replace(/href="(?!https?:|#|mailto:|file:)([^"]+)"/g, (_, href) => {
+    const target = relative(repoDir, join(repoManualDir, href)).replaceAll("\\", "/");
     return `href="${REPO_URL}/${target}"`;
   });
 }
@@ -387,8 +424,8 @@ function pngSize(file) {
 
 const stepAnchor = (c, s) => `paso-${c.id}-${s.id}`;
 
-/** One column of a `.group`: the text width minus the 5 mm gap, halved, minus
- *  the inset's own border. */
+/** One column of a `.group`: the text width minus the 5 mm gap, halved, with
+ *  a little room to spare. */
 const GROUP_COLUMN_MM = 85;
 
 function stepHtml(c, s, src, { grouped = false } = {}) {
@@ -399,13 +436,18 @@ function stepHtml(c, s, src, { grouped = false } = {}) {
     const mobile = s.viewport?.width && s.viewport.width < 768;
     const { w, h } = pngSize(file);
     const alt = escapeHtml(s.title);
-    // A step about one control of a big screen: the capture (its outline is
-    // drawn into the PNG) plus a magnified inset cropped from the same file.
+    // A step about one control of a big screen: the capture, with its pieces
+    // outlined in the PNG, then the «Detalle» cut-out: the same file seen
+    // through those pieces, with one frame (focus.mjs). Only with the pieces
+    // the outline was drawn round: without them (an old step) a crop could
+    // catch the outline, a second line.
     const layout =
-      !mobile && w >= 1440 && s.focus ? (grouped ? groupInset(w, h, s.focus, GROUP_COLUMN_MM) : focusLayout(w, h, s.focus)) : null;
+      !mobile && w >= 1440 && s.cuts ? (grouped ? groupInset(w, h, s.cuts, GROUP_COLUMN_MM) : focusLayout(w, h, s.cuts)) : null;
     if (layout) {
       const url = fileUrl(file);
-      const inset = `<div class="inset-wrap"><span class="inset-label">Detalle</span><div class="inset" role="img" aria-label="Detalle: ${alt}" style="background-image:url(&quot;${url}&quot;);${insetStyle(w, h, layout)}"></div></div>`;
+      const svg = cutoutSvg(escapeHtml(url), w, h, layout, { id: `cut-${c.id}-${s.id}`, label: `Detalle: ${alt}` });
+      const top = layout.topMm ? ` style="margin-top:${layout.topMm}mm"` : "";
+      const inset = `<div class="inset-wrap"${top}><span class="inset-label">Detalle</span><div class="cutout-box">${svg}</div></div>`;
       parts.push(`<div class="focus ${layout.mode}"><img class="shot" style="width:${layout.imageMm}mm" src="${url}" alt="${alt}">${inset}</div>`);
     } else {
       // An element capture (a dialog) keeps its proportion to the 1440 px
@@ -428,6 +470,8 @@ function chapterHtml(c, steps) {
   // Consecutive steps of one `group` (a before/after pair) print side by side.
   for (let i = 0; i < steps.length; i++) {
     const s = steps[i];
+    // A lead-in where the story jumps ahead, right before its step.
+    if (src.before[s.id]) parts.push(`<div class="note lead">${markdownToHtml(src.before[s.id])}</div>`);
     if (s.group && steps[i + 1]?.group === s.group) {
       const members = [];
       while (steps[i]?.group === s.group) members.push(steps[i++]);
@@ -541,7 +585,7 @@ function buildPdf(data, byChapter) {
   const moved = [...pages].filter(([id, p]) => final.get(id) + 1 !== p).map(([id]) => id);
   if (moved.length > 0) fail(`contents page numbers moved between passes: ${moved.slice(0, 5).join(", ")}`);
   const total = pdfPageCount(readFileSync(pdf));
-  console.log(`› PDF: docs/manual/${PDF_NAME} (${total} pages, ${Math.round(statSync(pdf).size / 1024)} KB)`);
+  console.log(`› PDF: ${relative(repoDir, pdf).replaceAll("\\", "/")} (${total} pages, ${Math.round(statSync(pdf).size / 1024)} KB)`);
   for (const f of readdirSync(buildDir)) if (f.endsWith(".pdf")) rmSync(join(buildDir, f));
 }
 
@@ -577,6 +621,6 @@ for (const c of MANUAL_CHAPTERS) {
 }
 writeFileSync(join(manualDir, APPENDIX.file), appendixMarkdown());
 writeFileSync(join(manualDir, "README.md"), indexMarkdown(data, byChapter));
-console.log(`› Markdown: docs/manual/ (${MANUAL_CHAPTERS.length} chapters, ${data.steps.length} steps)`);
+console.log(`› Markdown: ${relative(repoDir, manualDir).replaceAll("\\", "/")}/ (${MANUAL_CHAPTERS.length} chapters, ${data.steps.length} steps)`);
 
 if (!args.has("--no-pdf")) buildPdf(data, byChapter);

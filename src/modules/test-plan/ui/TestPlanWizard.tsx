@@ -18,6 +18,7 @@ import { unlessReported } from "@shared/ui/notify";
 import { useToast } from "@shared/ui/Toast";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { useUnsavedChangesGuard } from "@shared/ui/useUnsavedChangesGuard";
+import { useOnSynced } from "@shared/ui/useSynced";
 import { FormSkeleton } from "@shared/ui/Skeleton";
 import { required } from "@shared/validation";
 import { testPlanApi } from "../api/testPlanApi";
@@ -180,6 +181,22 @@ export function TestPlanWizard({
   }, [planId, userId, loadAttempt]);
 
   const dirty = form !== null && JSON.stringify(form) !== initialRef.current;
+  // A sync that brought or combined changes to the plan (FIX-48): shown at
+  // once while nothing is being edited; with unsaved changes the form keeps
+  // what is typed (saving then goes through the sync's merge).
+  const busyRef = useRef(false);
+  busyRef.current = dirty || saving;
+  useOnSynced(() => {
+    const id = loadedId.current;
+    if (!id || busyRef.current) return;
+    void testPlanApi
+      .get(id, userId)
+      .then((p) => {
+        // Typing may have started while it loaded: then the form wins.
+        if (p && loadedId.current === id && !busyRef.current) load(p);
+      })
+      .catch((e: unknown) => logClientError(e, "test plan wizard"));
+  });
   // Leaving with unsaved changes asks first (sidebar, pills, «Atrás», closing
   // the window). Saving keeps the wizard on screen, so there is never a
   // navigation of its own to let through (no `bypass`).
@@ -329,6 +346,7 @@ export function TestPlanWizard({
           onImport={() => fileInputRef.current?.click()}
           onExportPdf={() => void exportPdf()}
           onExportXlsx={() => void exportXlsx()}
+          exportHistory={exportHistory}
         />
         <button type="button" className="header-action" data-primary="" onClick={trySave} disabled={saving}>
           <Check size={16} aria-hidden="true" />

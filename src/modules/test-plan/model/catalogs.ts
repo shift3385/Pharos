@@ -76,7 +76,7 @@ export const TOOL_NAMES: Record<string, string> = {
   jmeter: "JMeter",
   k6: "k6",
   cucumber: "Cucumber",
-  jira: "JIRA",
+  jira: "Jira",
   "github-actions": "GitHub Actions",
   webdriverio: "WebdriverIO",
   puppeteer: "Puppeteer",

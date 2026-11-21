@@ -214,7 +214,7 @@ export function DefectsPage({
     {
       id: "cases",
       header: t("defects.column.cases"),
-      width: "minmax(0,1fr)",
+      width: "minmax(0,0.8fr)",
       minView: "desktop",
       cell: (d) => (
         <span className="df-cases">{d.caseIds.map((id) => caseKey.get(id) ?? "—").join(", ") || "—"}</span>

@@ -2,35 +2,38 @@
 
 # Manual de usuario de Pharos
 
-Versión **0.6.0-beta.1** · generado el 19 de noviembre de 2026 a partir de las pruebas guiadas (`e2e/tours/`).
+Versión **0.6.0-beta.1** · generado el 21 de noviembre de 2026 a partir de las pruebas guiadas (`e2e/tours/`).
 
 Este manual explica, pantalla a pantalla, cómo se usa Pharos. Cada paso es también una prueba automática: si la aplicación cambia, `npm run manual` vuelve a recorrerla, rehace las capturas y regenera el manual (Markdown y PDF).
 
+**El ejemplo.** Liomar Rodríguez, responsable de QA, prueba la propia aplicación Pharos: su proyecto «Pharos» recorre todo el manual, desde el plan de pruebas hasta los defectos. En los capítulos de equipo aparece su compañero de QA Jorge L. Meneses Yero y, en la administración del servidor, la cuenta «Administrador». Las tres cuentas (`liomar.qa@pharos.test`, `jorge.meneses@pharos.test` y `admin@pharos.test`) son de prueba.
+
 - **PDF:** `docs/manual/Pharos-manual-de-usuario.pdf` tras `npm run manual` o `npm run manual:build` (no se versiona); en el CI, el artefacto `manual` de `main` y, en cada versión, el artefacto del instalador (flujo «Installer»), que lo incluye.
-- **Guía de pruebas de la beta:** [guia-beta.md](../guia-beta.md) · **Glosario:** [GLOSARIO.md](../GLOSARIO.md)
+- **Guía de pruebas de la beta:** [guia-beta.md](../guia-beta.md) · **Glosario:** [GLOSARIO.md](../GLOSARIO.md) · **Línea de comandos:** [cli.md](../cli.md) · **API:** [api-v1.md](../api-v1.md)
 - **Revisión de cada regeneración:** [REVIEW.md](REVIEW.md)
 
 ## Contenido
 
-1. [Acceso y cuenta](01-acceso.md) (13 pasos)
+1. [Acceso y cuenta](01-acceso.md) (21 pasos)
 2. [La aplicación de un vistazo](02-navegacion.md) (11 pasos)
 3. [Inicio](03-inicio.md) (20 pasos)
 4. [Proyectos](04-proyectos.md) (17 pasos)
-5. [Plan de pruebas](05-plan.md) (31 pasos)
+5. [Plan de pruebas](05-plan.md) (34 pasos)
 6. [Tablero](06-tablero.md) (11 pasos)
 7. [Requisitos](07-requisitos.md) (11 pasos)
-8. [Casos de prueba](08-casos.md) (46 pasos)
-9. [Ciclos de prueba](09-ciclos.md) (19 pasos)
-10. [Ejecuciones e importación de resultados](10-ejecuciones.md) (11 pasos)
-11. [Ejecución manual](11-ejecucion-manual.md) (19 pasos)
-12. [Defectos](12-defectos.md) (16 pasos)
-13. [Trazabilidad](13-trazabilidad.md) (9 pasos)
+8. [Casos de prueba](08-casos.md) (45 pasos)
+9. [Ciclos de prueba](09-ciclos.md) (21 pasos)
+10. [Ejecuciones e importación de resultados](10-ejecuciones.md) (23 pasos)
+11. [Ejecución manual](11-ejecucion-manual.md) (21 pasos)
+12. [Defectos](12-defectos.md) (17 pasos)
+13. [Trazabilidad](13-trazabilidad.md) (11 pasos)
 14. [Ajustes del proyecto](14-ajustes.md) (12 pasos)
-15. [Administración](15-administracion.md) (19 pasos)
+15. [Administración](15-administracion.md) (36 pasos)
 16. [Evidencias](16-evidencias.md) (7 pasos)
-17. [Asistente de IA](17-ia.md) (19 pasos)
-18. [Pantallas estrechas y móvil](18-movil.md) (6 pasos)
+17. [Asistente de IA](17-ia.md) (18 pasos)
+18. [Pantallas estrechas y móvil](18-movil.md) (8 pasos)
 19. [Si algo sale mal](19-errores.md) (4 pasos)
-20. [Integraciones](20-integraciones.md) (16 pasos)
+20. [Trabajo en equipo](20-equipo.md) (23 pasos)
+21. [Integraciones](21-integraciones.md) (14 pasos)
 
 - [Apéndice. Atajos de teclado](A-atajos-de-teclado.md)

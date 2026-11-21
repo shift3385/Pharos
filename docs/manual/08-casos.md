@@ -32,7 +32,12 @@ En este manual, Liomar escribe los casos de acceso y de proyectos de Pharos:
 - «Rechazar credenciales no válidas» (PH-002, Outline con dos ejemplos);
 - «Crear un proyecto» (PH-003, avanzado, con el flujo alterno «Nombre
   vacío»);
-- la checklist «Humo de la versión 0.3.0» (PH-004).
+- la checklist «Humo de la versión 0.6.0» (PH-004);
+- «Acceso con usuarios de prueba» (PH-005), que usa la biblioteca: el paso
+  compartido «Iniciar sesión» y el dataset «Usuarios válidos».
+
+Liomar envía PH-001 a revisión y, en su espacio personal, lo aprueba él mismo.
+La revisión por otra persona, con Jorge, está en el capítulo 20.
 
 ## Paso a paso
 
@@ -56,15 +61,15 @@ El título es lo único obligatorio (y los campos personalizados que el proyecto
 
 ### 8.4. Un caso básico
 
-Rellena el caso: el título (en este ejemplo, «Iniciar sesión con credenciales válidas»), las precondiciones, los pasos (cada uno con «+ Añadir paso»; la papelera de un paso lo quita, tras confirmarlo si tiene texto) y el resultado esperado, los que muestra la captura. Más arriba se clasifica: prioridad, tipo de caso, automatización, nivel y versión. El estado (borrador, en revisión, aprobado u obsoleto) no se elige aquí: lo mueve la revisión, más adelante en este capítulo. En «Requisitos vinculados», «Vincular un requisito…» lo enlaza con lo que comprueba (en este ejemplo, REQ-001): el caso lleva el tag @REQ-001 en su Gherkin y la matriz lo cuenta como cubierto. Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, PH-001).
+Arriba del formulario se clasifica el caso: prioridad (aquí, «Alta»), tipo de caso, automatización, nivel y versión. El estado (borrador, en revisión, aprobado u obsoleto) no se elige aquí: lo mueve la revisión, más adelante en este capítulo. Debajo va el título (en este ejemplo, «Iniciar sesión con credenciales válidas») y, en «Requisitos vinculados», «Vincular un requisito…» lo enlaza con lo que comprueba (aquí, REQ-001): el caso lleva el tag @REQ-001 en su Gherkin y la matriz lo cuenta como cubierto. Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, PH-001).
 
 ![Un caso básico](img/casos/04-caso-basico.png)
 
-### 8.5. Campos personalizados en el caso
+### 8.5. Campos personalizados, pasos y resultado
 
-Los campos personalizados del proyecto (capítulo 14) aparecen al final del editor, en «Campos personalizados». Sirven para clasificar los casos con lo que tu equipo necesite y luego filtrar por ello (en este ejemplo, «Navegador», una selección, y «Regresión crítica», un sí/no). Si uno es obligatorio, el caso no se guarda sin él. «Guardar» confirma con «Caso de prueba guardado» y la cabecera del proyecto pasa a «1 caso».
+Más abajo, en «Campos personalizados», van los campos propios del proyecto (capítulo 14): sirven para clasificar los casos con lo que tu equipo necesite y luego filtrar por ello (en este ejemplo, «Navegador», una selección, y «Regresión crítica», un sí/no); si uno es obligatorio, el caso no se guarda sin él. Después, el cuerpo del caso: las precondiciones, lo que debe cumplirse antes de empezar (aquí, que la cuenta de prueba exista); los pasos, cada uno con «+ Añadir paso» (la papelera de un paso lo quita, tras confirmarlo si tiene texto), y el resultado esperado. «Guardar» confirma con «Caso de prueba guardado» y la cabecera del proyecto pasa a «1 caso».
 
-![Campos personalizados en el caso](img/casos/05-campos-personalizados.png)
+![Campos personalizados, pasos y resultado](img/casos/05-campos-personalizados.png)
 
 ### 8.6. La vista Gherkin
 
@@ -86,221 +91,215 @@ Un caso «Básico avanzado» (Scenario Outline) prueba el mismo escenario con va
 
 ### 8.9. Un caso «Avanzado» con flujos alternos
 
-El nivel «Avanzado» añade precondiciones compartidas (Background), que se cumplen antes de cada flujo, y flujos alternativos además del principal, cada uno con su nombre, sus pasos y su resultado (en este ejemplo, el caso «Crear un proyecto» con el flujo alterno «Nombre vacío»). En Gherkin, cada flujo es un Scenario. «+ Añadir flujo alterno» crea otro y la papelera junto al nombre lo quita. Cada flujo puede llevar su propia tabla de ejemplos.
+El nivel «Avanzado» añade precondiciones compartidas (Background), que se cumplen antes de cada flujo (aquí, que haya una sesión iniciada), y flujos alternativos además del principal, cada uno con su nombre, sus pasos y su resultado (en este ejemplo, PH-003: el flujo principal y, al pie de la captura, el alterno «Nombre vacío»). En Gherkin, cada flujo es un Scenario. Al final de los flujos, «+ Añadir flujo alterno» crea otro; la papelera junto al nombre de un flujo lo quita. Cada flujo puede llevar su propia tabla de ejemplos.
 
 ![Un caso «Avanzado» con flujos alternos](img/casos/09-flujos.png)
 
 ### 8.10. Un caso de tipo checklist
 
-Con «Tipo de caso: Checklist», los pasos se convierten en una lista de comprobaciones sin Given/When/Then y sin Gherkin. Es útil para revisiones rápidas, como una prueba de humo o una revisión de accesibilidad, donde lo que importa es no olvidar nada (en este ejemplo, «Humo de la versión 0.3.0»). Los pasos y el Gherkin que tuviera se conservan, ocultos, por si vuelves a «Estándar». En «Otras referencias (texto libre)» se puede citar algo sin vincularlo (aquí, REQ-006): el capítulo 13 enseña a convertirlo en un vínculo.
+Con «Tipo de caso: Checklist», los pasos se convierten en una lista de comprobaciones sin Given/When/Then y sin Gherkin. Es útil para revisiones rápidas, como una prueba de humo o una revisión de accesibilidad, donde lo que importa es no olvidar nada (en este ejemplo, «Humo de la versión 0.6.0»). Los pasos y el Gherkin que tuviera se conservan, ocultos, por si vuelves a «Estándar». En «Otras referencias (texto libre)» se puede citar algo sin vincularlo (aquí, REQ-006): el capítulo 13 enseña a convertirlo en un vínculo.
 
 ![Un caso de tipo checklist](img/casos/10-checklist.png)
 
-### 8.11. Reordenar con el teclado
+### 8.11. Las comprobaciones
+
+Más abajo, las comprobaciones ocupan el lugar de los pasos: una comprobación por fila, con su asa para reordenarla y su papelera (aquí, las tres de la prueba de humo: que la app arranca sin errores, que se puede iniciar sesión y que el Inicio muestra los proyectos).
+
+![Las comprobaciones](img/casos/11-checklist-items.png)
+
+### 8.12. Reordenar con el teclado
 
 Para cambiar el orden de los pasos (o de las comprobaciones de una checklist), arrastra el asa (⠿) que tiene cada uno. Con el teclado: lleva el foco al asa con Tab, pulsa Espacio o Intro para cogerlo, muévelo con ↑ ↓ y suéltalo con Espacio o Intro; Esc cancela. Un lector de pantalla anuncia cada movimiento («Paso 1 movido a la posición 2»).
 
-### 8.12. La lista de casos
-
-Con casos, la tabla muestra ID, título, requisito, prioridad, estado, «Ejecución» y fecha de la última edición. «Ejecución» es el último resultado de cada caso, el mismo que la matriz (capítulo 13): «Pasa», «Falla», «Bloqueado», «Omitido» o «Por confirmar»; «—» si aún no tiene ninguno. Si un caso tiene contenido sugerido por IA que nadie ha revisado, su estado (normalmente «Borrador») lleva un ✨ y un borde discontinuo, y al pasar el puntero lo explica. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, resultado («Ejecución», con «Sin resultados» para los que aún no se han ejecutado), tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta. Haz clic en la cabecera de una columna para ordenar por ella. En este ejemplo, «credenciales» deja los dos casos de acceso.
-
-![La lista de casos](img/casos/12-lista.png)
-
-### 8.13. Ningún caso coincide
-
-Si la búsqueda o los filtros no dejan ningún caso, la lista lo dice y ofrece «Quitar filtros» para volver a verlos todos.
-
-![Ningún caso coincide](img/casos/13-sin-coincidencias.png)
-
-### 8.14. Editar y recorrer los casos
-
-Con un caso abierto, la barra superior indica su posición en la lista (por ejemplo, «2 de 3») y sus flechas pasan al anterior o al siguiente respetando el filtro activo, para revisar varios casos seguidos sin volver a la lista. El orden del recorrido se fija al abrir el caso, aunque la lista cambie. A la derecha, el estado de guardado avisa si hay cambios sin guardar; si sales con cambios, Pharos pregunta antes de perderlos.
-
-![Editar y recorrer los casos](img/casos/14-recorrer.png)
-
-### 8.15. Ir a un caso (Ctrl+P)
-
-«Ir a un caso…» (o Ctrl+P, ⌘P en Mac, desde el editor) abre un buscador: escribe parte del ID, del título o de un requisito, muévete con ↑ ↓ y pulsa Intro para abrirlo sin pasar por la lista; Esc lo cierra. En este ejemplo, «credenciales» encuentra los dos casos de acceso.
-
-![Ir a un caso (Ctrl+P)](img/casos/15-ir-a-caso.png)
-
-### 8.16. Revisiones y exportación de un caso
-
-El menú «⋯» del caso reúne sus revisiones y la exportación a .xlsx, .pdf o .feature (este último no aparece en una checklist). Al exportar, un aviso dice dónde se guardó el archivo.
-
-![Revisiones y exportación de un caso](img/casos/16-mas-acciones.png)
-
-### 8.17. Las revisiones de un caso
-
-Cada guardado crea una revisión, una copia fechada del caso. «⋯ → Revisiones» las lista con su número, su título y su fecha; la vigente dice «Actual» (en este ejemplo, Liomar añadió «(v2)» al título y guardó, así que hay dos). La clave del caso nunca cambia entre revisiones. En la versión web todavía no se guardan revisiones.
-
-![Las revisiones de un caso](img/casos/17-revisiones.png)
-
-### 8.18. Restaurar una revisión
-
-«Restaurar», junto a una revisión anterior, pregunta antes y carga su contenido en el editor, todavía sin guardar y con la misma clave: revísalo y, si es lo que buscabas, pulsa «Guardar». Se crea una revisión nueva y las anteriores se conservan, así que restaurar nunca borra el historial. Esc o «Cancelar» lo dejan todo como estaba.
-
-### 8.19. Importar un caso desde .xlsx
-
-Para traer un caso escrito en Excel, «Importar / Exportar → Importar .xlsx» lee una plantilla rellenada o un caso exportado antes. El informe enseña qué campos se reconocieron y «Aplicar» abre el editor con esos datos, todavía sin guardar.
-
-![Importar un caso desde .xlsx](img/casos/19-importar.png)
-
-### 8.20. Caso importado
-
-Revisa el caso importado y guárdalo: entra en la lista con el siguiente ID libre del proyecto.
-
-### 8.21. Exportar todos los .feature
-
-«Importar / Exportar › Exportar .feature» genera un ZIP con un archivo .feature por caso, listo para un proyecto de automatización con playwright-bdd o Cucumber; cada escenario lleva el tag de su ID (@PH-001) y de sus requisitos. Las checklists se omiten porque no tienen Gherkin, y el aviso lo dice.
-
-### 8.22. Acciones con varios casos
-
-Marca uno o varios casos con su casilla (en este ejemplo, la copia importada): aparece una barra con el número de casos seleccionados (también los de otras páginas) y lo que puedes hacer con todos a la vez: exportarlos a .feature, eliminarlos o «Quitar selección».
-
-![Acciones con varios casos](img/casos/22-seleccion.png)
-
-### 8.23. Eliminar casos
-
-«Eliminar» pide confirmación antes de quitar los casos del proyecto («¿Eliminar 1 caso?», con sus IDs); «Cancelar» los deja como estaban. Esc no cierra este aviso.
-
-![Eliminar casos](img/casos/23-eliminar.png)
-
-### 8.24. Casos eliminados
-
-Al confirmar, un aviso dice cuántos casos se eliminaron y la lista deja de mostrarlos.
-
-### 8.25. Enviar un caso a revisión
-
-Bajo la cabecera de un caso guardado están las acciones de su revisión. «Enviar a revisión» pide una nota opcional para quien revise y pasa el caso a «En revisión». Si alguien edita el contenido antes de aprobarlo, vuelve a Borrador. Con cambios sin guardar, las acciones esperan a que guardes.
-
-![Enviar un caso a revisión](img/casos/25-enviar-revision.png)
-
-### 8.26. Aprobar un caso
-
-Quien revisa ve quién envió el caso y su nota, y, si había una versión anterior aprobada o enviada, qué cambió desde entonces. «Pedir cambios…» deja un comentario obligatorio y el caso sigue en revisión. «Aprobar versión N» pide confirmación y deja quién aprobó, cuándo y qué versión. Liomar trabaja en su espacio personal, que no pide aprobación independiente, así que aprueba su propio caso y queda como «aprobación propia»; en un espacio compartido con la regla activada, lo aprobaría un Test Manager o un Test Analyst que no sea el autor.
-
-![Aprobar un caso](img/casos/26-aprobar-caso.png)
-
-### 8.27. Pedir cambios en un caso
-
-Si el caso no está listo, «Pedir cambios…» deja un comentario y el caso sigue en revisión: Borrador es solo el principio. El comentario es obligatorio: sin él, el diálogo dice «Escribe qué hay que cambiar.». Quien escribió el caso lo verá en un aviso «Cambios pedidos por…», y en la lista el caso lleva la marca «Cambios pedidos». Cuando guarde los cambios, el aviso pasa a «Cambios guardados tras la petición de…» y el caso se puede aprobar.
-
-![Pedir cambios en un caso](img/casos/27-devolver-caso.png)
-
-### 8.28. Marcar un caso como obsoleto
-
-«Marcar obsoleto» pide confirmación: el caso se conserva en el histórico, pero deja de usarse y, si estaba aprobado, pierde la aprobación.
-
-![Marcar un caso como obsoleto](img/casos/28-obsoleto.png)
-
-### 8.29. Reactivar un caso obsoleto
-
-Un caso obsoleto se puede «Reactivar»: vuelve a Borrador y, para aprobarlo otra vez, hay que enviarlo a revisión.
-
-![Reactivar un caso obsoleto](img/casos/29-reactivar.png)
-
-### 8.30. Congelar una baseline
-
-«Baselines», en la lista de casos, congela un conjunto de casos tal como están: cada uno con su revisión exacta y su estado. «Nueva baseline» pide un nombre y qué casos entran: todos, los del filtro de la lista o los seleccionados («Congelar en baseline» en la barra de selección). «Solo los casos aprobados» viene marcado, y el diálogo dice cuáles se quedan fuera. Una baseline no se edita ni se borra.
-
-![Congelar una baseline](img/casos/30-baseline-nueva.png)
-
-### 8.31. Comparar una baseline
-
-«Comparar» enfrenta una baseline con el «Estado actual» o con otra baseline. Arriba, los recuentos: añadidos, quitados, contenido cambiado, solo estado cambiado y sin cambios. Debajo, un caso por fila; al pulsar su título se ven los cambios campo a campo, con lo quitado tachado y lo añadido resaltado.
-
-![Comparar una baseline](img/casos/31-baseline-comparar.png)
-
-### 8.32. El Gherkin en el móvil
-
-En el móvil, el editor del caso tiene dos vistas, «Editor» y «Gherkin» (no hay vista dividida). El Gherkin se lee sin editar; desliza el código de lado para las líneas largas. «Editar» lo abre a pantalla completa con una barra de teclas sobre el teclado del móvil (Given, When, Then, And, But, Scenario, Examples, |, <>, @tag y sangrar) y «Listo» vuelve. Abajo, «‹ Anterior · N de M · Siguiente ›» recorre los casos.
-
-<img src="img/casos/32-gherkin-movil.png" alt="El Gherkin en el móvil" width="280">
-
-### 8.33. La Biblioteca del proyecto
+### 8.13. La Biblioteca del proyecto
 
 «Biblioteca», en el menú lateral después de «Casos de prueba», guarda lo que se repite en muchos casos. Tiene dos pestañas: «Pasos compartidos», unos pasos con nombre que se insertan en los casos, y «Datasets», tablas de datos con nombre que se vinculan a la tabla de ejemplos de un caso. Cada pestaña tiene su buscador, su botón «Nuevo…» y «Mostrar obsoletos». Mientras está vacía, la pestaña lo dice.
 
-![La Biblioteca del proyecto](img/casos/33-biblioteca.png)
+![La Biblioteca del proyecto](img/casos/13-biblioteca.png)
 
-### 8.34. Un paso compartido con parámetros
+### 8.14. Un paso compartido con parámetros
 
 «Nuevo paso compartido» pide el nombre (en este ejemplo, «Iniciar sesión»), una descripción opcional y los pasos, cada uno con su resultado esperado opcional; las flechas los reordenan y la papelera quita uno. Lo que cambia de un caso a otro se escribe entre ángulos, como en un Outline: `<usuario>` y `<clave>`. Pharos los lista a la derecha, en «Parámetros», donde se les puede dar un valor que se propone al insertarlos. «Guardar» lo crea como v1.
 
-![Un paso compartido con parámetros](img/casos/34-paso-compartido.png)
+![Un paso compartido con parámetros](img/casos/14-paso-compartido.png)
 
-### 8.35. Salir con cambios sin guardar
+### 8.15. Salir con cambios sin guardar
 
 Si vuelves a la lista («← Biblioteca») con cambios sin guardar, Pharos pregunta antes de perderlos: «Descartar» los tira y «Cancelar» te deja seguir editando.
 
-![Salir con cambios sin guardar](img/casos/35-descartar-cambios.png)
+![Salir con cambios sin guardar](img/casos/15-descartar-cambios.png)
 
-### 8.36. Un dataset importado de un CSV
+### 8.16. Un dataset importado de un CSV
 
 En la pestaña «Datasets», «Nuevo dataset» abre una rejilla: una columna por parámetro y una fila por cada juego de datos. Se escribe en ella, se pega un bloque copiado de una hoja de cálculo (Ctrl+V; en un dataset vacío, la primera fila da los nombres de las columnas) o se importa con «Importar CSV o xlsx…». En este ejemplo, «Usuarios válidos» trae de un CSV las columnas `usuario` y `clave` y tres cuentas de prueba. Un dataset no es un almacén de secretos: usa cuentas de prueba, nunca contraseñas reales.
 
-![Un dataset importado de un CSV](img/casos/36-dataset-importar.png)
+![Un dataset importado de un CSV](img/casos/16-dataset-importar.png)
 
-### 8.37. Reemplazar los datos al importar
+### 8.17. Reemplazar los datos al importar
 
 Si la rejilla ya tiene filas, importar otro archivo pregunta antes de reemplazarlas. Las filas conservan su identificador por posición, así que los casos que eligieron filas concretas siguen apuntando a las mismas. «Cancelar» deja la rejilla como estaba.
 
-![Reemplazar los datos al importar](img/casos/37-dataset-reemplazar.png)
+![Reemplazar los datos al importar](img/casos/17-dataset-reemplazar.png)
 
-### 8.38. Eliminar un elemento de la biblioteca
+### 8.18. Eliminar un elemento de la biblioteca
 
 «Eliminar» quita de la biblioteca un paso compartido o un dataset con todas sus versiones, después de confirmarlo. Solo se puede mientras ningún caso lo use; si alguno lo usa, el botón queda desactivado y la alternativa es «Marcar obsoleto», que lo deja de ofrecer al insertar sin tocar los casos. En este ejemplo, Liomar cancela: va a usar el dataset.
 
-![Eliminar un elemento de la biblioteca](img/casos/38-eliminar-elemento.png)
+![Eliminar un elemento de la biblioteca](img/casos/18-eliminar-elemento.png)
 
-### 8.39. Insertar un paso compartido en un caso
+### 8.19. Insertar un paso compartido en un caso
 
 En un caso básico o «Básico avanzado», «Insertar paso compartido…», bajo los pasos, abre la lista de la biblioteca. Tras «Elegir», el diálogo muestra sus pasos y un campo por parámetro. Un argumento vacío deja el parámetro tal cual, y su valor sale de la tabla de datos del caso; un literal (una cuenta concreta) se escribe en la copia del caso; otro parámetro entre ángulos lo renombra. «Dónde va» elige entre los pasos y las precondiciones. En este ejemplo, el caso «Acceso con usuarios de prueba» deja los dos argumentos vacíos.
 
-![Insertar un paso compartido en un caso](img/casos/39-insertar-paso.png)
+![Insertar un paso compartido en un caso](img/casos/19-insertar-paso.png)
 
-### 8.40. Vincular un dataset al caso
+### 8.20. Vincular un dataset al caso
 
 En la tabla de ejemplos, «Vincular dataset…» ofrece los datasets activos del proyecto, con sus filas y sus columnas. Al vincular uno, sus filas pasan a ser la tabla de datos del caso: una fila, una ejecución. Las columnas se emparejan con los parámetros por su nombre.
 
-![Vincular un dataset al caso](img/casos/40-vincular-dataset.png)
+![Vincular un dataset al caso](img/casos/20-vincular-dataset.png)
 
-### 8.41. Elegir las filas del dataset
+### 8.21. Elegir las filas del dataset
 
 «Elegir filas…», en la tabla vinculada, deja ejecutar solo algunas filas del dataset (por ejemplo, una sola cuenta para una prueba de humo). En este ejemplo se usan las tres.
 
-![Elegir las filas del dataset](img/casos/41-elegir-filas.png)
+![Elegir las filas del dataset](img/casos/21-elegir-filas.png)
 
-### 8.42. El caso con su paso compartido y su dataset
+### 8.22. El caso con su paso compartido y su dataset
 
-El caso muestra los pasos insertados como un bloque («Paso compartido · Iniciar sesión», con su versión) y la tabla vinculada, de solo lectura, con «Dataset · Usuarios válidos». Un bloque nuevo sigue la última versión: si alguien cambia el paso o el dataset en la biblioteca, el caso se actualiza solo. «Fijar en vN» lo deja en esa versión, «Abrir en la biblioteca» lleva a editarlo y «Desvincular» convierte los pasos o las filas en propios del caso. «Guardar» guarda el caso.
+El caso muestra los pasos insertados como un bloque («Paso compartido · Iniciar sesión», con su versión) y la tabla vinculada, de solo lectura, con «Dataset · Usuarios válidos». Un bloque nuevo sigue la última versión: si alguien cambia el paso o el dataset en la biblioteca, el caso se actualiza solo. «Fijar en vN» lo deja en esa versión, «Abrir en la biblioteca» lleva a editarlo y «Desvincular» convierte los pasos o las filas en propios del caso. Liomar lo vincula a REQ-001, como los otros casos de acceso; al guardarlo recibe la clave PH-005, que nombra el aviso de impacto del paso siguiente.
 
-![El caso con su paso compartido y su dataset](img/casos/42-caso-con-biblioteca.png)
+![El caso con su paso compartido y su dataset](img/casos/22-caso-con-biblioteca.png)
 
-### 8.43. Cambiar un paso compartido: el aviso de impacto
+### 8.23. Cambiar un paso compartido: el aviso de impacto
 
-Al guardar un cambio de un paso compartido o de un dataset que usan casos, Pharos avisa antes: «Guardar «Iniciar sesión» como v2», cuántos casos se actualizan, por estado, y cuáles. Los casos aprobados vuelven a «En revisión», como al editarlos a mano; los fijados en una versión no cambian. En este ejemplo, Liomar completa el resultado esperado del paso 3 y se actualiza un caso en borrador.
+Al guardar un cambio de un paso compartido o de un dataset que usan casos, Pharos avisa antes: «Guardar «Iniciar sesión» como v2», cuántos casos se actualizan, por estado, y cuáles. Los casos aprobados vuelven a «En revisión», como al editarlos a mano; los fijados en una versión no cambian. En este ejemplo, Liomar precisa el resultado esperado del paso 3 (añade «con el nombre de la cuenta») y se actualiza un caso en borrador.
 
-![Cambiar un paso compartido: el aviso de impacto](img/casos/43-aviso-impacto.png)
+![Cambiar un paso compartido: el aviso de impacto](img/casos/23-aviso-impacto.png)
 
-### 8.44. Dónde se usa y sus versiones
+### 8.24. Dónde se usa y sus versiones
 
 Cada elemento tiene tres pestañas: «Pasos» (o «Datos»), su contenido; «Usado en», los casos que lo usan, separados entre los que siguen la última versión y los fijados; y «Versiones», cada versión guardada, que se puede abrir para ver qué tenía. Cada cambio del contenido sube la versión (v1, v2…).
 
-![Dónde se usa y sus versiones](img/casos/44-usado-en.png)
+![Dónde se usa y sus versiones](img/casos/24-usado-en.png)
 
-### 8.45. Un caso con dataset en un run
+### 8.25. La lista de casos
 
-Al añadir el caso a un run, el selector de casos dice cuántas filas trae y de qué dataset: «3 filas · Usuarios válidos (v1)». Cada fila será una ejecución propia.
+Con casos, la tabla muestra ID, título, requisito, prioridad, nivel, estado, «Ejecución» y fecha de la última edición. «Ejecución» es el último resultado de cada caso, el mismo que la matriz (capítulo 13): «Pasa», «Falla», «Bloqueado», «Omitido» o «Por confirmar»; «—» si aún no tiene ninguno. Si un caso tiene contenido sugerido por IA que nadie ha revisado, su estado (normalmente «Borrador») lleva un ✨ y un borde discontinuo, y al pasar el puntero lo explica. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, resultado («Ejecución», con «Sin resultados» para los que aún no se han ejecutado), tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta. El filtro «Por revisar» deja los casos en revisión que puedes aprobar, y un caso al que le pidieron cambios lleva la marca «Cambios pedidos». Haz clic en la cabecera de una columna para ordenar por ella. En este ejemplo, «credenciales» deja los dos casos con «credenciales» en el título.
 
-![Un caso con dataset en un run](img/casos/45-run-con-dataset.png)
+![La lista de casos](img/casos/25-lista.png)
 
-### 8.46. Ejecutar cada fila del dataset
+### 8.26. Ningún caso coincide
 
-En el ejecutor, cada fila es una ejecución con su propio resultado: «Flujo principal · Fila 1 de 3», «Fila 2 de 3»… con el primer valor de la fila al lado. Los valores de la fila aparecen resaltados en los pasos, y los pasos insertados llevan encima «Paso compartido · Iniciar sesión · v2». En este ejemplo pasan las dos primeras cuentas y la tercera falla al pulsar «Entrar». Cada resultado recuerda el dataset y la versión de cada paso compartido; el progreso del run cuenta el caso una vez.
+Si la búsqueda o los filtros no dejan ningún caso, la lista lo dice y ofrece «Quitar filtros» para volver a verlos todos. En este ejemplo, Liomar ordena la lista por «Título» y busca «exportar a pdf»: Pharos aún no tiene ningún caso sobre eso.
 
-![Ejecutar cada fila del dataset](img/casos/46-ejecutar-filas.png)
+![Ningún caso coincide](img/casos/26-sin-coincidencias.png)
+
+### 8.27. Editar y recorrer los casos
+
+Con un caso abierto (aquí, PH-003 en la vista «Editor», al que Liomar acaba de rellenar «Caso de uso mapeado»), la barra superior indica su posición en la lista («N de M») y sus flechas pasan al anterior o al siguiente respetando el filtro y el orden de la lista (aquí, por «Título», como Liomar la dejó en el paso anterior), para revisar varios casos seguidos sin volver a la lista. El orden del recorrido se fija al abrir el caso, aunque la lista cambie. A la derecha, el estado de guardado avisa si hay cambios sin guardar; si sales con cambios, Pharos pregunta antes de perderlos.
+
+![Editar y recorrer los casos](img/casos/27-recorrer.png)
+
+### 8.28. Ir a un caso (Ctrl+P)
+
+«Ir a un caso…» (o Ctrl+P, ⌘P en Mac, desde el editor) abre un buscador: escribe parte del ID, del título o de un requisito, muévete con ↑ ↓ y pulsa Intro para abrirlo sin pasar por la lista; Esc lo cierra. En este ejemplo, «credenciales no» encuentra el caso «Rechazar credenciales no válidas».
+
+![Ir a un caso (Ctrl+P)](img/casos/28-ir-a-caso.png)
+
+### 8.29. Revisiones y exportación de un caso
+
+El menú «⋯» del caso reúne sus revisiones y la exportación a .xlsx, .pdf o .feature (este último no aparece en una checklist). Al exportar, un aviso dice dónde se guardó el archivo.
+
+![Revisiones y exportación de un caso](img/casos/29-mas-acciones.png)
+
+### 8.30. Las revisiones de un caso
+
+Cada guardado crea una revisión, una copia fechada del caso. «⋯ → Revisiones» las lista con su número, su título y su fecha; la vigente dice «Actual» (en este ejemplo, Liomar añadió «(v2)» al título y guardó, así que hay dos). La clave del caso nunca cambia entre revisiones. En la versión web todavía no se guardan revisiones.
+
+![Las revisiones de un caso](img/casos/30-revisiones.png)
+
+### 8.31. Restaurar una revisión
+
+«Restaurar», junto a una revisión anterior, pregunta antes y carga su contenido en el editor, todavía sin guardar y con la misma clave: revísalo y, si es lo que buscabas, pulsa «Guardar». Se crea una revisión nueva y las anteriores se conservan, así que restaurar nunca borra el historial. Esc o «Cancelar» lo dejan todo como estaba. En este ejemplo, Liomar restaura la revisión 1 y guarda: el título vuelve a «Rechazar credenciales no válidas».
+
+### 8.32. Importar un caso desde .xlsx
+
+Para traer un caso escrito en Excel, «Importar / Exportar → Importar .xlsx» lee una plantilla rellenada o un caso exportado antes. El informe enseña qué campos se reconocieron, con la prioridad y el estado en tu idioma («Alta», «Borrador»), y «Aplicar al formulario» abre el editor con esos datos, todavía sin guardar. La «Fecha» del caso es el día en que se escribió. Las claves de «Trazabilidad» que son requisitos del proyecto vuelven como vínculos, no como texto libre.
+
+![Importar un caso desde .xlsx](img/casos/32-importar.png)
+
+### 8.33. Caso importado
+
+Revisa el caso importado y guárdalo: entra en la lista con el siguiente ID libre del proyecto.
+
+### 8.34. Exportar todos los .feature
+
+«Importar / Exportar › Exportar .feature» genera un ZIP con un archivo .feature por caso, listo para un proyecto de automatización con playwright-bdd o Cucumber; cada escenario lleva el tag de su ID (@PH-001) y de sus requisitos. Un caso que usa la biblioteca lleva sus pasos y sus filas completos, con un comentario que nombra su origen («# Paso compartido: Iniciar sesión (v2)», «# Dataset: Usuarios válidos (v1)»). Las checklists se omiten porque no tienen Gherkin, y el aviso lo dice.
+
+### 8.35. Acciones con varios casos
+
+Marca uno o varios casos con su casilla (en este ejemplo, la copia importada): aparece una barra con el número de casos seleccionados (también los de otras páginas) y lo que puedes hacer con todos a la vez: exportarlos a .feature, enviarlos a revisión («Enviar a revisión» envía los que están en borrador), congelarlos en una baseline («Congelar en baseline»), eliminarlos o «Quitar selección».
+
+![Acciones con varios casos](img/casos/35-seleccion.png)
+
+### 8.36. Eliminar casos
+
+«Eliminar» pide confirmación antes de quitar los casos del proyecto («¿Eliminar 1 caso?», con sus IDs); «Cancelar» los deja como estaban. Esc no cierra este aviso.
+
+![Eliminar casos](img/casos/36-eliminar.png)
+
+### 8.37. Casos eliminados
+
+Al confirmar, un aviso dice cuántos casos se eliminaron y la lista deja de mostrarlos. Los casos eliminados pasan a la Papelera (Administración › General, capítulo 15), desde donde se restauran con su clave y su historial mientras dure la retención.
+
+### 8.38. Enviar un caso a revisión
+
+Bajo la cabecera de un caso guardado están las acciones de su revisión. «Enviar a revisión» pide una nota opcional para quien revise y pasa el caso a «En revisión». Si alguien edita el título o el contenido antes de aprobarlo, el caso sigue «En revisión» con una versión nueva. Con cambios sin guardar, las acciones esperan a que guardes. En este ejemplo, Liomar envía PH-001 con una nota.
+
+![Enviar un caso a revisión](img/casos/38-enviar-revision.png)
+
+### 8.39. Aprobar un caso
+
+Quien revisa ve quién envió el caso y su nota, y, si había una versión anterior aprobada o enviada, qué cambió desde entonces. «Pedir cambios…» deja un comentario obligatorio y el caso sigue en revisión. «Aprobar versión N» pide confirmación y deja quién aprobó, cuándo y qué versión. Liomar trabaja en su espacio personal, que no pide aprobación independiente, así que puede aprobar su propio caso y queda como «aprobación propia». En un espacio compartido con «Aprobación independiente» lo aprueba otra persona: el capítulo 20 enseña a Jorge revisando y aprobando los casos de Liomar.
+
+![Aprobar un caso](img/casos/39-aprobar-caso.png)
+
+### 8.40. Pedir cambios en un caso
+
+Si el caso no está listo, «Pedir cambios…» deja un comentario y el caso sigue en revisión. El comentario es obligatorio: sin él, el diálogo dice «Escribe qué hay que cambiar.». Quien escribió el caso lo verá en un aviso «Cambios pedidos por…», y en la lista el caso lleva la marca «Cambios pedidos». Cuando guarde los cambios, el aviso pasa a «Cambios guardados tras la petición de…» y el caso se puede aprobar.
+
+![Pedir cambios en un caso](img/casos/40-devolver-caso.png)
+
+### 8.41. Marcar un caso como obsoleto
+
+«Marcar obsoleto» pide confirmación: el caso se conserva en el histórico, pero deja de usarse y, si estaba aprobado, pierde la aprobación.
+
+![Marcar un caso como obsoleto](img/casos/41-obsoleto.png)
+
+### 8.42. Reactivar un caso obsoleto
+
+Al confirmar, la cabecera del caso dice «Obsoleto» y sus acciones de revisión se reducen a «Reactivar». Reactivarlo pide confirmación y lo devuelve a «En revisión» (a Borrador si nunca se envió); hay que aprobarlo otra vez. En este ejemplo, PH-002 ya se había enviado, así que vuelve a «En revisión».
+
+![Reactivar un caso obsoleto](img/casos/42-reactivar.png)
+
+### 8.43. Congelar una baseline
+
+«Baselines», en la lista de casos, congela un conjunto de casos tal como están: cada uno con su revisión exacta y su estado. «Nueva baseline» pide un nombre y qué casos entran: todos, los del filtro de la lista o los seleccionados («Congelar en baseline» en la barra de selección). «Solo los casos aprobados» viene marcado, y el diálogo dice cuáles se quedan fuera. Una baseline no se edita ni se borra.
+
+![Congelar una baseline](img/casos/43-baseline-nueva.png)
+
+### 8.44. Comparar una baseline
+
+«Comparar» enfrenta una baseline con el «Estado actual» o con otra baseline. Arriba, los recuentos: añadidos, quitados, contenido cambiado, solo estado cambiado y sin cambios. Debajo, un caso por fila; al pulsar su título se ven los cambios campo a campo, con lo quitado tachado y lo añadido resaltado.
+
+![Comparar una baseline](img/casos/44-baseline-comparar.png)
+
+### 8.45. El Gherkin en el móvil
+
+En el móvil, el editor del caso tiene dos vistas, «Editor» y «Gherkin» (no hay vista dividida). El Gherkin se lee sin editar; desliza el código de lado para las líneas largas. «Editar» lo abre a pantalla completa con una barra de teclas sobre el teclado del móvil (Given, When, Then, And, But, Scenario, Examples, |, <>, @tag y sangrar) y «Listo» vuelve. Abajo, «‹ Anterior · N de M · Siguiente ›» recorre los casos.
+
+<img src="img/casos/45-gherkin-movil.png" alt="El Gherkin en el móvil" width="280">
 
 ## Revisión y aprobación
 
@@ -316,7 +315,7 @@ revisión, con estas acciones bajo la cabecera del caso.
 | Obsoleto | «Reactivar» | El caso vuelve a «En revisión» (a Borrador si nunca se envió). Hay que aprobarlo de nuevo. |
 
 - Primero se guarda: con cambios sin guardar, las acciones esperan.
-- Quien revisa ve «Cambios desde la revisión N», con lo que cambió campo a
+- Quien revisa ve «Cambios desde el …» (la fecha de la última revisión), con lo que cambió campo a
   campo desde la última versión aprobada o enviada. Lo quitado aparece
   tachado y lo añadido, resaltado.
 - **Borrador es solo el principio**, como en el plan (capítulo 5): un caso
@@ -395,8 +394,8 @@ revisión** y sube su versión. Antes de guardar el cambio en la biblioteca, un
 aviso dice cuántos casos se actualizan y cuántos aprobados volverán a revisión.
 Si un caso no debe moverse, fíjalo en su versión antes.
 
-**Un dataset de 3 filas da 3 resultados.** Al añadir el caso a un run, el
-diálogo muestra «3 filas · Usuarios válidos (v1)». En la ejecución, cada fila
+**Un dataset de 3 filas da 3 resultados.** Al añadir el caso a un run
+(capítulo 11), el diálogo muestra «3 filas · Usuarios válidos (v1)». En la ejecución, cada fila
 es una ejecución propia («Flujo principal · Fila 2 de 3», con el primer valor
 de la fila, qa.web@pharos.test), con sus valores resaltados en los pasos, y los
 pasos insertados aparecen bajo «Paso compartido · Iniciar sesión · v2». Cada
@@ -477,6 +476,8 @@ filas completos, y nombran su origen: «Paso compartido: Iniciar sesión (v2)» 
   cuando añades casos sin aprobar (capítulo 9).
 - Antes de una versión, congela su regresión en una baseline. Después,
   «Comparar» con el estado actual dice qué casos cambiaron desde entonces.
+- Un caso eliminado va a la Papelera (Administración › General, capítulo 15)
+  y se restaura con su clave y su historial mientras dure la retención.
 - Exporta los .feature para tu proyecto de automatización: cada escenario
   lleva el tag de su caso, y los resultados importados se vinculan solos por
   ese tag o por la propiedad `test_id` (capítulo 10).
@@ -485,7 +486,10 @@ filas completos, y nombran su origen: «Paso compartido: Iniciar sesión (v2)» 
 
 - Capítulo 7, «Requisitos».
 - Capítulo 9, «Ciclos de prueba»: añadir casos a un ciclo.
+- Capítulo 11, «Ejecución manual»: ejecutar un caso fila por fila.
 - Capítulo 13, «Trazabilidad».
+- Capítulo 20, «Trabajo en equipo»: la revisión y la aprobación por otra
+  persona.
 - Capítulo 17, «Asistente de IA»: sugerir casos y revisar las listas de un
   caso.
 - [Guía de pruebas de la beta](../guia-beta.md), apartado 4.3.

@@ -144,7 +144,7 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Hola, Quality" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Jueves, 29 de octubre")).toHaveClass("home-header__date");
+    expect(screen.getByText("jueves, 29 de octubre")).toHaveClass("home-header__date");
     await waitFor(() => expect(screen.getByTestId("kpi-pending")).toHaveTextContent("2de 3"));
     // No summary sentences any more.
     const greeting = document.querySelector(".home-header__text")!;
@@ -168,7 +168,7 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     renderHome();
     const projects = await screen.findByTestId("kpi-projects");
     await waitFor(() => expect(projects).toHaveTextContent("3"));
-    expect(projects).toHaveTextContent("1 cierra este mes");
+    expect(projects).toHaveTextContent("1 plan termina este mes");
     const pending = screen.getByTestId("kpi-pending");
     await waitFor(() => expect(pending).toHaveTextContent("2de 3"));
     expect(pending).toHaveTextContent("1 bloqueada");
@@ -183,7 +183,8 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(rate).toHaveAttribute("href", "/projects");
     expect(rate).toHaveTextContent("75,0%");
     // By case (NC-029): unlinked tests stay out, in a note under the card.
-    expect(rate).toHaveTextContent("de 4 casos ejecutados · últimos 14 días");
+    // On the desktop board the short form, whole (FIX-46).
+    expect(rate).toHaveTextContent(/de 4 casos$/);
     expect(rate.getAttribute("title")).toMatch(/últimos 14 días/);
     expect(rate.getAttribute("title")).toMatch(/Los tests sin vincular no cuentan/);
     const unlinked = screen.getByTestId("kpi-rate-unlinked");
@@ -229,9 +230,16 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(
       within(menu).getByRole("menuitemradio", { name: "Últimos 14 días" }),
     ).toHaveAttribute("aria-checked", "true");
+    // Not available yet, and it says so on screen (FIX-49).
     expect(
-      within(menu).getByRole("menuitem", { name: "Ciclo actual" }),
+      within(menu).getByRole("menuitem", {
+        name: /^Ciclo actual ?, Próximamente$/,
+      }),
     ).toBeDisabled();
+    // FIX-51: the chip is beside the text, never inside its ellipsis.
+    const custom = within(menu).getByRole("menuitem", { name: /^Rango personalizado… ?, Próximamente$/ });
+    expect(custom.querySelector(".menu__text .menu__soon")).toBeNull();
+    expect(custom.querySelector(":scope > .menu__soon")).not.toBeNull();
     // RED-W4: the comparison is an on/off item, off until turned on.
     const compare = within(menu).getByRole("menuitemcheckbox", {
       name: "Comparar con el periodo anterior",
@@ -292,7 +300,10 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     renderHome();
     const picker = await screen.findByTestId("exit-picker");
     await waitFor(() => expect(picker).toHaveTextContent("App Móvil Banca"));
-    expect(screen.getByText("Cierre: 31 oct")).toBeInTheDocument();
+    expect(screen.getByText("Fin del plan: 31 oct")).toBeInTheDocument();
+    // The same words as the project header (FIX-45, FIX-48), in both languages.
+    for (const lng of ["es", "en"])
+      expect(i18n.t("dashboard.exit.close", { date: "d", lng })).toBe(i18n.t("projects.header.closesOn", { date: "d", lng }));
     expect(
       screen.getByText(
         "El plan de este proyecto no define criterios de salida.",
@@ -649,6 +660,8 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(trigger).toHaveAccessibleName(
       "Periodo de los datos: Últimos 14 días",
     );
+    // FIX-46: on a phone the visible label is the short one, whole.
+    expect(trigger.querySelector(".home-btn__text")).toHaveTextContent(/^14 días$/);
     // It sits above the chart it changes.
     expect(
       trigger.compareDocumentPosition(screen.getByTestId("home-daily")) &

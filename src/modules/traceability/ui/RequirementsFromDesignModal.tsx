@@ -1,3 +1,5 @@
+import { formatBytes } from "@shared/i18n/numbers";
+import { localClock } from "@shared/time/isoDay";
 import {
   useEffect,
   useId,
@@ -28,7 +30,7 @@ import type {
   CandidateRequirement,
   RequirementProposal,
 } from "../proposals/types";
-import { usableRequirementProposals } from "../proposals/proposals";
+import { readableReason, usableRequirementProposals } from "../proposals/proposals";
 import { RequirementProposalsReview } from "./RequirementProposalsReview";
 import { DesignSourceLabel } from "./DesignSourceLabel";
 import { useAuth } from "@modules/auth";
@@ -67,13 +69,12 @@ interface Extracted {
 const ACCEPT =
   ".png,.jpg,.jpeg,.webp,.gif,.svg,.pdf,.zip,.excalidraw,.html,.htm,.md,image/*,application/pdf";
 
-const mb = (base64: number) => (base64 * 0.75) / (1024 * 1024);
 
 /** «Requisitos desde diseños» (IA-18, ADR-0037). The person drops, pastes or
  *  picks screenshots, sketches, PDF exports, an Excalidraw sketch or a Claude
  *  Design folder or ZIP; sees what will be sent, where, and its rough cost; and
  *  starts the analysis. Nothing leaves the machine before «Analizar». Two calls:
- *  the images are read once (`requirements-from-design@1`), then the common
+ *  the images are read once (`requirements-from-design@3`), then the common
  *  synthesis of IA-17 compares the candidates with the project's requirements,
  *  as partial material (nothing is removed for not being shown). The proposals
  *  open in the common review. */
@@ -168,7 +169,7 @@ export function RequirementsFromDesignModal({
     );
     if (!files.length || phase !== "material") return;
     e.preventDefault();
-    const stamp = new Date().toISOString().slice(11, 19).replace(/:/g, "");
+    const stamp = localClock();
     void add(
       files.map((f, n) => ({
         path:
@@ -225,7 +226,9 @@ export function RequirementsFromDesignModal({
         setExtracted(done);
         if (!done.candidates.length) {
           setEmptyReason(
-            value.reason ?? t("traceability.fromDesign.noCandidates"),
+            value.reason
+              ? readableReason(value.reason, [])
+              : t("traceability.fromDesign.noCandidates"),
           );
           return setPhase("empty");
         }
@@ -250,7 +253,9 @@ export function RequirementsFromDesignModal({
       );
       if (!proposals.length) {
         setEmptyReason(
-          r.value.reason ?? t("traceability.fromDesign.nothingToChange"),
+          r.value.reason
+            ? readableReason(r.value.reason, done.candidates)
+            : t("traceability.fromDesign.nothingToChange"),
         );
         return setPhase("empty");
       }
@@ -521,7 +526,8 @@ export function RequirementsFromDesignModal({
               {t("traceability.fromDesign.summary", {
                 count: summary.attachments,
                 max: MAX_ATTACHMENTS,
-                mb: mb(summary.base64).toFixed(1),
+                // base64 carries 4 characters for every 3 bytes.
+                size: formatBytes(summary.base64 * 0.75),
                 tokens: summary.tokens.toLocaleString(i18n.resolvedLanguage),
               })}
             </p>

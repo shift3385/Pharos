@@ -20,11 +20,8 @@ asistente de **22 pasos** que sigue la norma ISO/IEC/IEEE 29119-3 y el apartado
 | 17–20 | Comunicación; entrada, suspensión y reanudación; métricas y objetivos medibles; criterios de cierre |
 | 21–22 | Propósito y conclusión |
 
-Hasta la versión 0.2 el asistente tenía 19 pasos: «Título» y «Versión, fecha y
-autor» son ahora el paso 1, y «Tipos de prueba» y «Niveles de prueba» el
-paso 5. En la 0.3 tenía 17: los pasos 4, 6, 14, 18 y 19 son nuevos en la 0.4.
-Un plan guardado entonces se abre con todos sus datos y los pasos nuevos por
-completar.
+Un plan guardado con una versión anterior de Pharos se abre con todos sus
+datos y los pasos nuevos por completar.
 
 **Niveles y tipos de prueba** (paso 5) responde, como propone ISTQB, a qué se
 prueba, en qué nivel y con qué tipo. Los niveles dicen dónde: unitarias (un
@@ -117,7 +114,7 @@ las acciones de **«Estado del plan»**, igual que en los casos (capítulo 8).
 | --- | --- | --- |
 | Borrador | «Enviar a revisión» | Pide una nota opcional para quien revise. El plan pasa a «En revisión». |
 | En revisión | «Aprobar versión N» | Pide confirmación. Queda quién aprobó, cuándo y qué versión. Aprobar no sube la versión. |
-| En revisión | «Pedir cambios…» | Pide un comentario obligatorio. El plan sigue en revisión, con el aviso «Cambios pedidos por…». |
+| En revisión | «Pedir cambios…» | Lo usa quien revisa (capítulo 20). Pide un comentario obligatorio. El plan sigue en revisión, con el aviso «Cambios pedidos por…». |
 | Cualquiera | «Marcar obsoleto» | El plan se conserva, pero deja de usarse y pierde la aprobación. |
 | Obsoleto | «Reactivar» | El plan vuelve a «En revisión» (a Borrador si nunca se envió). Hay que aprobarlo de nuevo. |
 
@@ -143,8 +140,17 @@ Excel. El panel **«Historial»** muestra los últimos cambios de estado y
 versión, quién los hizo y qué pasos tocó, con «pierde la aprobación» cuando
 toca; «Revisiones» abre la lista para restaurar una.
 
-En este manual, Liomar escribe el «Plan de pruebas de Pharos 0.3.0»: qué se
-prueba de la propia aplicación en esta versión.
+En este manual, Liomar no escribe el plan paso a paso: lo tiene en Excel y lo
+importa. Es el «Plan de pruebas de Pharos 0.6.0», qué se prueba de la propia
+aplicación en esta versión. Después repasa cada sección, completa el alcance y
+el cronograma, lo guarda, lo envía a revisión y lo aprueba en su workspace
+personal. Cuando comparte el proyecto con su equipo, su compañero de QA pide
+cambios y lo aprueba (capítulo 20).
+
+**En un workspace compartido**, editan el plan el Test Manager y el Test
+Analyst; un Viewer o un Product Owner solo lo ven y lo exportan. Si dos
+personas cambian el plan a la vez, los cambios en pasos o campos distintos se
+combinan solos; solo el mismo campo pide elegir (capítulo 15, «Conflictos»).
 
 ## Atajos de teclado
 
@@ -173,7 +179,7 @@ prueba de la propia aplicación en esta versión.
 
 - **Las acciones de «Estado del plan» están en gris.** Debajo dice por qué:
   guarda los cambios antes de seguir con la revisión.
-- **«No puedes aprobar este plan».** El espacio de trabajo pide aprobación
+- **«No puedes aprobar este plan».** El workspace pide aprobación
   independiente: lo aprueba un Test Manager que no sea quien creó el plan. Si
   trabajas solo, el plan va en tu espacio personal, donde puedes aprobarlo tú.
 - **«Sin cambios: no hay nada que guardar».** El plan no ha cambiado desde el
@@ -232,7 +238,9 @@ prueba de la propia aplicación en esta versión.
 - La duración del sprint (paso 7) se usa en el cronograma: si un sprint dura
   otra cosa, Pharos lo avisa en su fila.
 - Para empezar un plan desde Excel, descarga una plantilla en «Administración ›
-  Plantillas», rellénala e impórtala con «Importar .xlsx».
+  Plantillas», rellénala e impórtala con «Importar .xlsx». Un plan exportado
+  desde Pharos también se importa: así lo hace Liomar en este capítulo. El
+  título del plan importado sale del nombre del archivo.
 - «Restaurar» una revisión no guarda nada hasta que pulses «Guardar».
 - El plan en PDF mantiene cada título de sección junto al inicio de su
   contenido; si una tabla sigue en otra página, su título y sus columnas se
@@ -240,9 +248,10 @@ prueba de la propia aplicación en esta versión.
   («Funcionales: …», «Confirmación y regresión: …», «Propios: …»), antes de la
   Metodología, que muestra una entrada por línea y los rangos del
   cronograma se leen «2026-11-09 – 2026-11-22». Los hitos aparecen bajo el
-  cronograma y los ciclos, al final. Los apartados nuevos de la 0.4 van donde
+  cronograma y los ciclos, al final. Los apartados de estrategia van donde
   los pide el asistente; en el Excel, en las hojas «Estrategia 29119-3»,
-  «Métricas» y «Criterios de salida», que «Importar .xlsx» vuelve a leer.
+  «Métricas», «Criterios de salida» e «Hitos», que «Importar .xlsx» vuelve a
+  leer.
 - Si el documento debe llevar su historial, elige «Historial de revisiones» en
   «Ajustes del proyecto › Historial en el plan exportado» (capítulo 14). El
   .pdf y el .xlsx (también los del ZIP del proyecto) añaden entonces la tabla

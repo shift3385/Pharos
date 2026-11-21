@@ -297,6 +297,7 @@ function KindRow({
     <SettingsRow
       label={name}
       hint={t("admin.evidence.retention.current", { days: label(kind.days) })}
+      hintInline
       htmlFor={id}
     >
       <span className="adm-inline">

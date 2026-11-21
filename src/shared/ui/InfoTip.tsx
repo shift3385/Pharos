@@ -50,6 +50,8 @@ export function InfoTip({
   /** After a click closes the tip, hovering does not reopen it until the
    *  pointer has left the button (L4). */
   const hoverBlocked = useRef(false);
+  /** Where the trigger was when the bubble was last placed. */
+  const anchorAt = useRef("");
 
   const later = (fn: () => void, ms: number) => {
     window.clearTimeout(timer.current);
@@ -77,7 +79,11 @@ export function InfoTip({
     };
     const first = measure();
     Object.assign(b.style, { left: `${first.left}px`, top: `${first.top}px`, bottom: "" });
-    const second = { ...measure(), maxHeight: undefined };
+    // The width is the stylesheet's (`max-width` of `.infotip__bubble`, FIX-47):
+    // the window-wide `maxWidth` popovers get would let a long list of
+    // formats stretch the bubble across the screen.
+    const second = { ...measure(), maxHeight: undefined, maxWidth: undefined };
+    anchorAt.current = `${anchor.left},${anchor.top}`;
     setStyle(second);
   };
 
@@ -112,7 +118,19 @@ export function InfoTip({
     document.addEventListener("pointerdown", onDown, true);
     window.addEventListener("scroll", follow, true);
     window.addEventListener("resize", follow);
+    // The trigger can also move without a scroll or resize: a dialog that
+    // grows while it loads re-centres itself, and its [?] goes with it. The
+    // bubble stays anchored to it (FIX-47): every frame it is open, it
+    // checks where the trigger is and moves only when it moved.
+    let frame = 0;
+    const track = () => {
+      const r = btn.current?.getBoundingClientRect();
+      if (r && `${r.left},${r.top}` !== anchorAt.current) place();
+      frame = window.requestAnimationFrame(track);
+    };
+    frame = window.requestAnimationFrame(track);
     return () => {
+      window.cancelAnimationFrame(frame);
       document.removeEventListener("keydown", onKey, true);
       document.removeEventListener("pointerdown", onDown, true);
       window.removeEventListener("scroll", follow, true);

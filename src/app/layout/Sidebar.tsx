@@ -8,6 +8,7 @@ import { SyncIndicator } from "@modules/sync-offline";
 import { WorkspaceSwitcher } from "@modules/workspaces";
 import { Logo } from "@shared/ui/Logo";
 import { MenuItem } from "@shared/ui/Menu";
+import { prefixLabel } from "@shared/ui/prefixLabel";
 import { ProjectMenu } from "@shared/ui/ProjectPicker";
 import { usePopover } from "@shared/ui/usePopover";
 import { AboutDialog } from "./AboutDialog";
@@ -67,7 +68,7 @@ function ProjectSwitcher({ active }: { active: ActiveProject }) {
         data-testid="project-switcher"
       >
         <span className="sr-only">{t("shell.switchProjectMenu")}: </span>
-        <span className="sidebar__project-badge t-id">{active.project?.caseIdPrefix ?? ""}</span>
+        <span className="sidebar__project-badge t-id">{prefixLabel(active.project?.caseIdPrefix)}</span>
         <span className="sidebar__project-name">{name}</span>
         <ChevronsUpDown size={14} aria-hidden="true" />
       </button>
@@ -155,7 +156,7 @@ export function Sidebar({
           )}
         </button>
 
-        <nav className="sidebar__nav" aria-label={t("a11y.mainNav")}>
+        <nav className="sidebar__nav u-scroll-fade" aria-label={t("a11y.mainNav")}>
           {/* The workspace that filters the projects (SYNC-07). */}
           <div className="sidebar__group sidebar__group--workspace">
             <WorkspaceSwitcher compact={rail} />

@@ -6,10 +6,8 @@
 // so every card has real data; the empty Home is shown in chapter 1.
 import { $, $$, browser, expect } from "@wdio/globals";
 import { DESKTOP, LAPTOP, MOBILE, chapter, setViewport, step } from "./tour";
-import { byTestId, es, goHome } from "./helpers";
+import { PROJECT_A, byTestId, chooseOption, es, goHome, openInfoTip } from "./helpers";
 
-const EXEC = "section.home-exec";
-const EXIT = "section.home-exit";
 const UPCOMING = 'section[aria-labelledby="home-upcoming-title"]';
 const KPIS = '[data-gadget^="kpi"]';
 
@@ -41,7 +39,7 @@ chapter("inicio", () => {
   step("resumen", {
     title: "Tu Inicio",
     caption:
-      "«Inicio» es lo primero que ves al entrar: un resumen de todos tus proyectos abiertos. Arriba, en una sola línea, el saludo y la fecha; a la derecha, el periodo de los datos, «Nuevo proyecto» y el engranaje para personalizarlo. Debajo, cuatro tarjetas con las cifras clave y cuatro paneles: la ejecución por proyecto, las próximas pruebas, los criterios de salida y las ejecuciones diarias. Ningún panel se desplaza por dentro: una lista muestra las filas que caben y termina en «+N más». Se actualiza solo cada vez que llegan datos de otro equipo.",
+      "«Inicio» es lo primero que ves al entrar: un resumen de todos tus proyectos abiertos. Arriba, en una sola línea, el saludo y la fecha; a la derecha, el periodo de los datos, «Nuevo proyecto» y el engranaje para personalizarlo. Debajo, cuatro tarjetas con las cifras clave y cinco paneles: la ejecución por proyecto, las próximas pruebas, los criterios de salida, las ejecuciones diarias y la tendencia de ciclos. Ningún panel se desplaza por dentro: una lista muestra las filas que caben y termina en «+N más». Se actualiza solo cuando llegan datos de otro equipo, de otra ventana de Pharos o del CLI `pharos`. Las capturas de este capítulo muestran el Inicio de Liomar con el trabajo de los capítulos siguientes ya hecho: los proyectos del capítulo 4 y, en «Pharos», su plan, sus casos, sus ejecuciones y sus defectos (capítulos 5 a 12).",
     covers: ["route:/", "state:home-metrics"],
     run: async () => {
       await goHome();
@@ -59,18 +57,23 @@ chapter("inicio", () => {
   step("tarjetas", {
     title: "Las cuatro cifras clave",
     caption:
-      "«Proyectos abiertos» (y cuántos cierran este mes), «Pruebas pendientes» (casos sin ejecutar o bloqueados, sobre el total), «Tasa de éxito» (casos que pasan sobre los casos ejecutados en el periodo; un caso con varios flujos, filas o configuraciones pasa solo si pasan todos, y los tests importados sin vincular no cuentan: si los hay, debajo pone «Además, N tests sin vincular», con enlace a Ejecuciones) y «Defectos abiertos» (con los críticos aparte, en rojo). Cada tarjeta es un enlace: lleva a la lista de proyectos o, si solo tienes un proyecto, directamente a sus casos, sus ejecuciones o sus defectos.",
+      "«Proyectos abiertos» (y cuántos cierran este mes), «Pruebas pendientes» (casos sin ejecutar o bloqueados, sobre el total), «Tasa de éxito» (casos que pasan sobre los casos ejecutados en el periodo; un caso con varios flujos, filas o configuraciones pasa solo si pasan todos, y los tests importados sin vincular no cuentan: si los hay, la tarjeta lo dice con «+N sin vincular», un enlace a Ejecuciones) y «Defectos abiertos» (con los críticos aparte, en rojo). Cada tarjeta es un enlace (al pasar el ratón se resalta, como «Tasa de éxito» en la captura): lleva a la lista de proyectos o, si solo tienes un proyecto, directamente a sus casos, sus ejecuciones o sus defectos.",
     covers: ["action:home-kpi"],
     focus: KPIS,
     run: async () => {
       for (const id of ["kpi-projects", "kpi-pending", "kpi-rate", "kpi-defects"]) await expect(byTestId(id)).toBeDisplayed();
+      // The pointer on a card: its link state shows.
+      await byTestId("kpi-rate").moveTo();
+    },
+    after: async () => {
+      await $("h1").moveTo();
     },
   });
 
   step("periodo", {
     title: "El periodo de los datos",
     caption:
-      "El selector de periodo («Últimos 14 días», por defecto) decide qué días cuentan para la tasa de éxito y para «Ejecuciones diarias»: hoy, los últimos 7, 14 o 30 días, o el mes en curso. Las demás cifras son el estado actual de cada proyecto. Pharos recuerda el periodo en este equipo. Las opciones por ciclo y el rango personalizado llegan en una próxima versión.",
+      "El selector de periodo («Últimos 14 días», por defecto) decide qué días cuentan para la tasa de éxito y para «Ejecuciones diarias»: hoy, los últimos 7, 14 o 30 días, o el mes en curso. Las demás cifras son el estado actual de cada proyecto. Pharos recuerda el periodo en este equipo. Las opciones por ciclo y el rango personalizado, en gris con la etiqueta «Próximamente», llegan en una próxima versión.",
     covers: ["action:home-period"],
     focus: ['[data-testid="home-period"]', '[role="menu"]'],
     run: async () => {
@@ -88,19 +91,24 @@ chapter("inicio", () => {
   step("comparar", {
     title: "Comparar con el periodo anterior",
     caption:
-      "Al final del menú del periodo, «Comparar con el periodo anterior» enfrenta el periodo con otro de la misma duración justo antes: los 7 días con los 7 anteriores, «Hoy» con ayer y «Este mes» con los mismos días antes del día 1; debajo del interruptor ves sus fechas. Encendido, el botón del periodo dice «vs anterior», la «Tasa de éxito» muestra la diferencia en puntos (▲ en verde si sube, ▼ en rojo si baja) y «Ejecuciones diarias» suma una línea gris de puntos con el total de cada día del periodo anterior, su diferencia en % junto al total y una columna «Anterior» en «Ver los datos». Las demás cifras son el estado de ahora y no cambian. El interruptor no cierra el menú, y Pharos lo recuerda en este equipo, como el periodo.",
+      "Al final del menú del periodo, «Comparar con el periodo anterior» enfrenta el periodo con otro de la misma duración justo antes: los 7 días con los 7 anteriores, «Hoy» con ayer y «Este mes» con los mismos días antes del día 1; debajo del interruptor ves sus fechas. Encendido, el botón del periodo dice «vs anterior», la «Tasa de éxito» muestra la diferencia en puntos (▲ en verde si sube, ▼ en rojo si baja) y «Ejecuciones diarias» suma una línea gris de puntos con el total de cada día del periodo anterior, su diferencia en % junto al total y una columna «Anterior» en «Ver los datos». Las demás cifras son el estado de ahora y no cambian. El interruptor no cierra el menú (Esc lo cierra), y Pharos lo recuerda en este equipo, como el periodo. En este ejemplo la semana anterior no tiene datos: cada intento lleva la fecha en que entró en Pharos (el de un informe importado, la de la importación) y todos son de esta semana. Los dos paneles lo dicen con «sin datos antes» y la línea gris queda en cero.",
     covers: ["action:home-compare"],
-    focus: ['[data-testid="home-period"]', '[role="menu"]', '[data-gadget="kpiRate"]', "section.home-daily"],
+    focus: ['[data-testid="home-period"]', '[data-gadget="kpiRate"]', "section.home-daily"],
     run: async () => {
       await byTestId("home-period").click();
       const compare = byTestId("period-compare");
       await expect(compare).toBeDisplayed();
       await compare.click();
       await expect(compare).toHaveAttribute("aria-checked", "true");
+      // The menu closed: the cards it covered show the comparison.
+      await browser.keys("Escape");
+      await expect(byTestId("period-compare")).not.toBeDisplayed();
       await expect(byTestId("home-period-compare")).toBeDisplayed();
+      await $("h1").moveTo();
     },
     after: async () => {
       // Back off, so the next pictures show the board as it was.
+      await byTestId("home-period").click();
       await byTestId("period-compare").click();
       await browser.keys("Escape");
       await expect(byTestId("home-period-compare")).not.toBeExisting();
@@ -112,7 +120,7 @@ chapter("inicio", () => {
     caption:
       "Una barra por proyecto abierto con el último resultado de cada uno de sus casos: «Pasa», «Falla», «Bloqueado», «Otro» y «No ejecutado». Así ves de un vistazo cuánto falta por probar y dónde están los fallos. Pasa el ratón por un tramo para ver la cifra; el nombre del proyecto lo abre en su «Tablero».",
     covers: ["screen:home-exec"],
-    focus: EXEC,
+    shot: { element: '[data-gadget="byProject"]' },
     run: async () => {
       await expect(byTestId("home-exec")).toBeDisplayed();
     },
@@ -121,14 +129,12 @@ chapter("inicio", () => {
   step("ayuda", {
     title: "La ayuda de cada panel",
     caption:
-      "Junto al título de cada panel, el botón «?» explica qué muestra: «Ejecución por proyecto», el último resultado de cada caso en cada proyecto abierto; «Próximas pruebas», qué ejecutar según su último resultado y por prioridad; «Criterios de salida», los definidos en el plan de pruebas; y «Ejecuciones diarias», qué cuenta como intento. Se abre al pasar el ratón, con un clic o con el teclado (Tab), y se cierra con Esc.",
+      "Junto al título de cada panel, el botón «?» explica qué muestra: «Ejecución por proyecto», el último resultado de cada caso en cada proyecto abierto; «Próximas pruebas», qué ejecutar según su último resultado y por prioridad; «Criterios de salida», los definidos en el plan de pruebas; «Ejecuciones diarias», qué cuenta como intento; y «Tendencia de ciclos», qué métrica sigue. Se abre al pasar el ratón, con un clic o con el teclado (Tab), y se cierra con Esc.",
     covers: ["action:home-gadget-help"],
     focus: ['[aria-label="Más información: Ejecución por proyecto"]', '[role="tooltip"]'],
     run: async () => {
-      // Keyboard focus opens it (a click would toggle what hovering opened).
-      await browser.execute(() =>
-        (document.querySelector('[aria-label="Más información: Ejecución por proyecto"]') as HTMLElement | null)?.focus(),
-      );
+      // Open and kept open for the capture (the capture blurs the focus).
+      await openInfoTip(es.dashboard.exec.title);
       await expect($('[role="tooltip"]')).toBeDisplayed();
       await expect($('[role="tooltip"]')).toHaveText(expect.stringContaining(es.dashboard.exec.subtitle));
     },
@@ -144,9 +150,9 @@ chapter("inicio", () => {
   step("criterios", {
     title: "Criterios de salida",
     caption:
-      "«Criterios de salida» evalúa los criterios de cierre del plan de pruebas de un proyecto (capítulo 5): el anillo da el porcentaje ejecutado y cada criterio dice «Cumple», «No cumple» o «Sin datos» (los que Pharos no puede medir solo). El titular resume si el proyecto está «Listo para cerrar» o si «Hay criterios que no se cumplen». Si el plan no define criterios, se usan los de por defecto; «Abrir el plan» lleva a él.",
+      "«Criterios de salida» evalúa los criterios de cierre del plan de pruebas de un proyecto (capítulo 5): el anillo da el porcentaje ejecutado y cada criterio dice «Cumple», «No cumple» o «Sin datos» (los que Pharos no puede medir solo). El titular resume si el proyecto está «Listo para cerrar» o si «Hay criterios que no se cumplen». Son cifras del proyecto entero, no de un ciclo: en «Pharos», 3 de sus 5 casos tienen resultado (PH-003 y PH-004 no se han ejecutado), por eso el anillo marca menos que el cierre del ciclo «Regresión 0.6.0» (capítulo 9), que solo cuenta PH-001 y PH-002. Si el plan no define criterios, se usan los de por defecto; «Abrir el plan» lleva a él.",
     covers: ["action:home-exit-criteria"],
-    focus: EXIT,
+    shot: { element: '[data-gadget="exitCriteria"]' },
     run: async () => {
       await expect(byTestId("exit-ring")).toBeDisplayed();
       await expect(byTestId("home-criteria")).toBeDisplayed();
@@ -201,8 +207,13 @@ chapter("inicio", () => {
       // 30 days of data stretch nothing: no page scroll, no gadget scroll.
       await browser.waitUntil(noScroll, { timeoutMsg: "Inicio scrolls at 1440 × 900 with 30 days" });
       await expect(await innerScrolls()).toEqual([]);
-      // A tap on the chart: the bubble shows that day's date and values.
-      await $(".home-lines").click();
+      // The pointer on the last day (today): the line and the bubble show its date
+      // and values (a click would leave the focus, which the capture blurs).
+      const box = await browser.execute(() => {
+        const r = document.querySelector(".home-lines")!.getBoundingClientRect();
+        return { x: Math.round(r.right - 6), y: Math.round(r.top + r.height / 2) };
+      });
+      await browser.action("pointer").move({ origin: "viewport", x: box.x, y: box.y }).perform();
       await expect(byTestId("home-daily-tip")).toBeDisplayed();
     },
     after: async () => {
@@ -239,12 +250,15 @@ chapter("inicio", () => {
   step("tendencia", {
     title: "Tendencia de ciclos",
     caption:
-      "«Tendencia de ciclos» sigue una métrica a lo largo de los últimos ciclos cerrados del proyecto (con las cifras congeladas al cerrarlos) y del ciclo activo, en vivo y punteado: la tasa de éxito, la densidad de defectos, los escapes, el tiempo de corrección, la reapertura o el flaky. La línea verde es el objetivo del plan y el punto bajo cada ciclo, su veredicto (Go, Go con riesgos o No-go). Si una métrica empeora dos ciclos seguidos o se sale del objetivo, el gadget lo avisa. Mientras ningún ciclo se haya cerrado con «Cerrar ciclo…» (capítulo 9), dice cómo empezar.",
+      "«Tendencia de ciclos» sigue una métrica a lo largo de los últimos ciclos cerrados del proyecto (con las cifras congeladas al cerrarlos) y del ciclo activo, en vivo y punteado: la tasa de éxito, la densidad de defectos, los escapes, el tiempo de corrección, la reapertura o el flaky. La línea verde es el objetivo del plan y el punto bajo cada ciclo, su veredicto (Go, Go con riesgos o No-go). Si una métrica empeora dos ciclos seguidos o se sale del objetivo, el gadget lo avisa. El selector de la cabecera elige el proyecto. Aquí, «Pharos» tiene un ciclo cerrado, la «Regresión 0.6.0» del capítulo 9 (CYC-001): su tasa de éxito, 50 %, con el punto rojo de su «No-go» debajo; a la derecha, «Último cerrado» con su cifra y el aviso «fuera del objetivo», porque el plan pide al menos un 90 %. La línea se completa a medida que se cierran más ciclos con «Cerrar ciclo…». Un proyecto sin ningún ciclo dice cómo empezar.",
     covers: ["action:home-trend"],
-    focus: '[data-testid="home-trend"]',
+    shot: { element: '[data-gadget="trend"]' },
     run: async () => {
       await expect(byTestId("home-trend")).toBeDisplayed();
       await expect(byTestId("home-trend-metric")).toBeDisplayed();
+      // «Pharos», the project with the cycle (chapter 9).
+      if (await byTestId("home-trend-project").isExisting()) await chooseOption(byTestId("home-trend-project"), { text: PROJECT_A.name });
+      await $("h1").moveTo();
     },
   });
 
@@ -298,7 +312,7 @@ chapter("inicio", () => {
   step("ocultar", {
     title: "Ocultar un gadget",
     caption:
-      "El ojo tachado de cada gadget lo oculta y los demás suben a ocupar su sitio. Aquí se ha ocultado «Criterios de salida». Los gadgets ocultos no se pierden: se cuentan en «Gadgets ocultos», arriba.",
+      "El ojo tachado de cada gadget lo oculta. Aquí se ha ocultado «Criterios de salida»: su sitio queda libre, y un gadget de debajo sube a ocuparlo solo si cabe en él (si no, puedes llevar otro allí o agrandarlo). Los gadgets ocultos no se pierden: se cuentan en «Gadgets ocultos», arriba.",
     covers: ["action:home-gadget-hide"],
     focus: '[data-testid="home-hidden-gadgets"]',
     run: async () => {

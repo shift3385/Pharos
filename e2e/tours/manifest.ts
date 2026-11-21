@@ -1,11 +1,19 @@
 // Manifest of the guided tours and the user manual (MAN-01).
 //
 // - CHAPTERS: one per area of the app, in RUN order: the tours share one app
-//   session and each reads the data the earlier ones made (`needs`). The
-//   manual prints them in `number` order instead (MANUAL_ORDER), the order of
-//   the app's menu and of the test process (manual v2, MAN-03); a tour file
-//   starts with its chapter's number. Each chapter names the routes / project
-//   sections / admin tabs / plan steps it covers.
+//   session, and in a full run each chapter finds the data the earlier ones
+//   made on screen. The manual prints them in `number` order instead
+//   (MANUAL_ORDER), the order of the app's menu and of the test process
+//   (manual v2, MAN-03); a tour file starts with its chapter's number. Each
+//   chapter names the routes / project sections / admin tabs / plan steps it
+//   covers.
+// - PREREQUISITES: the named data a chapter reads (`uses`) without being its
+//   subject. Before a chapter runs, e2e/tours/prepare.ts makes sure each one
+//   holds (an idempotent loader per prerequisite: the app's own importers
+//   first, else the server's web API as Liomar followed by a sync). In a full
+//   run the chapter that makes it on screen (`madeBy`) runs earlier, so the
+//   loaders find everything and do nothing; `npm run manual -- --spec 13`
+//   runs only chapter 13 after a short silent setup.
 // - INVENTORY: every screen, tab, dialog and main action (create, edit, delete
 //   with confirmation, import, export, filter, sort, keyboard, empty and error
 //   states, desktop vs web). Each item must be exercised by a tour step
@@ -31,6 +39,7 @@ export type ChapterId =
   | "trazabilidad"
   | "ajustes"
   | "ciclos"
+  | "ciclos-cierre"
   | "defectos"
   | "ejecuciones"
   | "administracion"
@@ -39,7 +48,183 @@ export type ChapterId =
   | "ejecucion-manual"
   | "evidencias"
   | "errores"
-  | "integraciones";
+  | "integraciones"
+  | "equipo";
+
+export type Prereq =
+  | "cuenta-liomar"
+  | "proyectos"
+  | "prefijos"
+  | "ajustes"
+  | "plan"
+  | "requisitos"
+  | "casos-base"
+  | "caso-dataset"
+  | "ciclo"
+  | "resultados"
+  | "hallazgos"
+  | "ejecucion-manual"
+  | "defectos"
+  | "ciclo-ejecutado"
+  | "ciclo-cerrado"
+  | "requisitos-api"
+  | "cuenta-jorge"
+  | "equipo-qa"
+  | "jorge-en-equipo";
+
+export interface Prerequisite {
+  id: Prereq;
+  /** What must hold (the contract its loader checks and brings in). */
+  contract: string;
+  /** The chapter that makes it on screen (none: only its loader makes it). */
+  madeBy?: ChapterId;
+  /** Prerequisites it is built on (prepared first). */
+  after: Prereq[];
+  /** How its loader brings it in when it is missing. */
+  loader: string;
+}
+
+/** In the order they are prepared (the run order of the chapters that make
+ *  them): a loader may rely on every prerequisite above it. The values come
+ *  from e2e/tours/data/pharos.ts. */
+export const PREREQUISITES: Prerequisite[] = [
+  {
+    id: "cuenta-liomar",
+    contract: "Liomar's account exists on the tour server and the app is signed in with it",
+    madeBy: "acceso",
+    after: [],
+    loader: "API /auth/register (if needed), then the sign-in form, without captures",
+  },
+  {
+    id: "proyectos",
+    contract: "projects «Pharos» and «API de sincronización»",
+    madeBy: "proyectos",
+    after: ["cuenta-liomar"],
+    loader: "web API POST /api/projects + sync",
+  },
+  {
+    id: "prefijos",
+    contract: "prefixes PH- and API- (3 digits)",
+    madeBy: "proyectos",
+    after: ["proyectos"],
+    loader: "web API PUT /api/projects/:id + sync",
+  },
+  {
+    id: "ajustes",
+    contract:
+      "custom fields «Navegador» and «Regresión crítica» (cases) and «Sistema operativo» (defects); configurations «Chrome · Windows 11» and «Edge · Windows 11» in «Pharos»",
+    madeBy: "ajustes",
+    after: ["prefijos"],
+    loader: "web API /api/custom-fields and /api/configurations + sync",
+  },
+  {
+    id: "plan",
+    contract: "a saved test plan in «Pharos»",
+    madeBy: "plan",
+    after: ["prefijos"],
+    loader: "the plan's «Importar .xlsx» with fixtures/pharos/«Plan de pruebas de Pharos 0.6.0.xlsx», then «Guardar»",
+  },
+  {
+    id: "requisitos",
+    contract: "REQ-001…REQ-012 in «Pharos» (REQ-007 deleted), REQ-005 with its risk assessed",
+    madeBy: "requisitos",
+    after: ["prefijos"],
+    loader: "«Importar requisitos (.csv)» with requisito-acceso.csv and requisitos-pharos.csv; REQ-007 deleted and REQ-005's risk set with the web API",
+  },
+  {
+    id: "casos-base",
+    contract: "cases PH-001…PH-004 in «Pharos» (PH-001 and PH-002 linked to REQ-001, PH-003 to REQ-002)",
+    madeBy: "casos",
+    after: ["ajustes", "requisitos"],
+    loader: "«Importar .xlsx» of each fixtures/pharos/casos/*.xlsx, link its requirement, «Guardar»",
+  },
+  {
+    id: "caso-dataset",
+    contract:
+      "the library of «Pharos» (the shared step «Iniciar sesión» at v2, the dataset «Usuarios válidos» with 3 rows) and the case «Acceso con usuarios de prueba» (PH-005, Outline, linked to REQ-001) that uses both",
+    madeBy: "casos",
+    after: ["casos-base"],
+    loader: "the library's own screens and «Nuevo caso» (insert the shared step, bind the dataset, link REQ-001), without captures",
+  },
+  {
+    id: "ciclo",
+    contract: "the cycle «Regresión 0.6.0» with PH-001 and PH-002, executed into one run per configuration",
+    madeBy: "ciclos",
+    after: ["casos-base", "ajustes"],
+    loader: "web API /api/cycles, /items and /execute + sync",
+  },
+  {
+    id: "resultados",
+    contract: "the imported run «Tests de acceso · con capturas» (PH-001 fails with a capture, PH-002 passes) in the cycle",
+    madeBy: "ejecuciones",
+    after: ["ciclo"],
+    loader: "«Importar informe» of fixtures/informe-adjuntos/junit.xml with its captures, into the cycle",
+  },
+  {
+    id: "hallazgos",
+    contract:
+      "the scans of chapter 10 in «Pharos»: «Análisis Semgrep · servidor» (a finding linked to PH-002 open, one triaged as a false positive), «Accesibilidad · diálogo «Nuevo requisito»» (axe) and «Carga · API de Pharos, 5 usuarios» (k6, one threshold failed)",
+    madeBy: "ejecuciones",
+    after: ["casos-base"],
+    loader: "«Importar informe» of fixtures/pharos/informes/semgrep-servidor.sarif (then its triage), the axe sample and k6-api-pharos.json",
+  },
+  {
+    id: "ejecucion-manual",
+    contract:
+      "the completed manual run «Regresión manual · 0.6.0-beta.1» (PH-001 fails, PH-002 passes, PH-005 passes its first two dataset rows and fails the third)",
+    madeBy: "ejecucion-manual",
+    after: ["casos-base", "caso-dataset"],
+    loader: "web API /api/runs, /api/results and /close + sync",
+  },
+  {
+    id: "defectos",
+    contract: "the prefix defect (PH-003, REQ-002, «Sistema operativo») and the login defect (PH-001)",
+    madeBy: "defectos",
+    after: ["casos-base", "requisitos", "ajustes"],
+    loader: "web API POST /api/defects with its links + sync",
+  },
+  {
+    id: "ciclo-ejecutado",
+    contract:
+      "the cycle's two runs (Chrome and Edge) completed: PH-001 fails at its last step («Pulsar «Entrar»») and PH-002 passes (each example row) in both",
+    after: ["ciclo"],
+    loader: "web API /api/results and /close on each run of the cycle + sync",
+  },
+  {
+    id: "ciclo-cerrado",
+    contract:
+      "the cycle «Regresión 0.6.0» closed with its quality gate (verdict No-go), its closure report saved and approved",
+    madeBy: "ciclos-cierre",
+    after: ["ciclo-ejecutado", "resultados", "defectos"],
+    loader: "«Cerrar ciclo…» and «Informe de cierre» on screen, without captures",
+  },
+  {
+    id: "requisitos-api",
+    contract: "the requirements of «API de sincronización» (fixtures/pharos/requisitos-api-sincronizacion.csv)",
+    after: ["prefijos"],
+    loader: "«Importar requisitos (.csv)» in «API de sincronización»",
+  },
+  {
+    id: "cuenta-jorge",
+    contract: "Jorge's account exists on the tour server, registered after Liomar's (so not an administrator)",
+    after: ["cuenta-liomar"],
+    loader: "API /auth/register as Jorge (people.ts)",
+  },
+  {
+    id: "equipo-qa",
+    contract: "the shared workspace «Equipo QA» (Liomar its Test Manager) with «Pharos» in it",
+    madeBy: "equipo",
+    after: ["prefijos"],
+    loader: "API POST /workspaces and /move-project as Liomar + sync",
+  },
+  {
+    id: "jorge-en-equipo",
+    contract: "Jorge is a member of «Equipo QA», a Test Manager (invited as Test Analyst, raised for the plan's review in chapter 20)",
+    madeBy: "equipo",
+    after: ["equipo-qa", "cuenta-jorge"],
+    loader: "an invitation made as Liomar and accepted through the API as Jorge, then his role set to Test Manager + sync",
+  },
+];
 
 export interface Chapter {
   id: ChapterId;
@@ -50,43 +235,74 @@ export interface Chapter {
   status: "active" | "pending";
   /** Why the chapter has no tour yet (shown in the manual and by the check). */
   pending?: string;
-  /** False for the preparation tour (seed data), which is not a chapter. */
+  /** False for the preparation tour, which is not a chapter, and for the
+   *  second part of a chapter (`partOf`). */
   inManual?: boolean;
-  /** In every run, also a partial one: chapter 1 creates the account every
-   *  other chapter signs in with (NC-052). */
-  always?: boolean;
-  /** Chapters whose data this one reads (direct ones; they run first). A
-   *  partial run (`--spec`) adds them, see selectTours. Each must come earlier
-   *  in CHAPTERS. */
-  needs?: ChapterId[];
+  /** The second part of a chapter that must run later than the first one
+   *  (it needs data later chapters make): its steps print in that chapter,
+   *  numbered after the first part's, with its captures in its folder. */
+  partOf?: ChapterId;
+  /** The prerequisites this chapter reads and is not about, prepared before
+   *  it starts (PREREQUISITES). Each one's `madeBy` chapter must run
+   *  earlier, so a full run loads nothing. */
+  uses?: Prereq[];
 }
 
 export const CHAPTERS: Chapter[] = [
   { id: "preparacion", number: 0, title: "Preparación de los datos", file: "00-preparacion.tour.ts", status: "active", inManual: false },
-  // Creates the tour account on screen (NC-052): every run includes it.
-  { id: "acceso", number: 1, title: "Acceso y cuenta", file: "01-acceso.tour.ts", status: "active", always: true },
-  { id: "proyectos", number: 4, title: "Proyectos", file: "04-proyectos.tour.ts", status: "active" },
-  { id: "ajustes", number: 14, title: "Ajustes del proyecto", file: "14-ajustes.tour.ts", status: "active", needs: ["proyectos"] },
-  { id: "navegacion", number: 2, title: "La aplicación de un vistazo", file: "02-navegacion.tour.ts", status: "active", needs: ["proyectos", "ajustes"] },
-  { id: "plan", number: 5, title: "Plan de pruebas", file: "05-plan.tour.ts", status: "active", needs: ["acceso", "proyectos", "ajustes"] },
-  { id: "requisitos", number: 7, title: "Requisitos", file: "07-requisitos.tour.ts", status: "active", needs: ["proyectos"] },
-  { id: "casos", number: 8, title: "Casos de prueba", file: "08-casos.tour.ts", status: "active", needs: ["proyectos", "ajustes", "requisitos"] },
-  { id: "tablero", number: 6, title: "Tablero", file: "06-tablero.tour.ts", status: "active", needs: ["proyectos"] },
-  { id: "ciclos", number: 9, title: "Ciclos de prueba", file: "09-ciclos.tour.ts", status: "active", needs: ["proyectos", "casos", "ajustes"] },
-  { id: "ejecuciones", number: 10, title: "Ejecuciones e importación de resultados", file: "10-ejecuciones.tour.ts", status: "active", needs: ["casos", "ciclos"] },
-  { id: "defectos", number: 12, title: "Defectos", file: "12-defectos.tour.ts", status: "active", needs: ["ejecuciones"] },
-  { id: "ejecucion-manual", number: 11, title: "Ejecución manual", file: "11-ejecucion-manual.tour.ts", status: "active", needs: ["proyectos", "casos"] },
+  // Liomar creates his account on screen. In a run without this chapter, the
+  // first chapter that needs the account signs in silently (prepare.ts).
+  { id: "acceso", number: 1, title: "Acceso y cuenta", file: "01-acceso.tour.ts", status: "active" },
+  { id: "proyectos", number: 4, title: "Proyectos", file: "04-proyectos.tour.ts", status: "active", uses: ["cuenta-liomar"] },
+  { id: "ajustes", number: 14, title: "Ajustes del proyecto", file: "14-ajustes.tour.ts", status: "active", uses: ["proyectos"] },
+  { id: "navegacion", number: 2, title: "La aplicación de un vistazo", file: "02-navegacion.tour.ts", status: "active", uses: ["prefijos"] },
+  { id: "plan", number: 5, title: "Plan de pruebas", file: "05-plan.tour.ts", status: "active", uses: ["prefijos"] },
+  // Right after the plan, before requirements and cases exist: the project
+  // header shows what chapter 5 left (no requirements, no cases).
+  { id: "tablero", number: 6, title: "Tablero", file: "06-tablero.tour.ts", status: "active", uses: ["prefijos"] },
+  { id: "requisitos", number: 7, title: "Requisitos", file: "07-requisitos.tour.ts", status: "active", uses: ["prefijos"] },
+  { id: "casos", number: 8, title: "Casos de prueba", file: "08-casos.tour.ts", status: "active", uses: ["ajustes", "requisitos"] },
+  { id: "ciclos", number: 9, title: "Ciclos de prueba", file: "09-ciclos.tour.ts", status: "active", uses: ["plan", "casos-base", "ajustes"] },
+  { id: "ejecuciones", number: 10, title: "Ejecuciones e importación de resultados", file: "10-ejecuciones.tour.ts", status: "active", uses: ["casos-base", "ciclo", "caso-dataset"] },
+  { id: "defectos", number: 12, title: "Defectos", file: "12-defectos.tour.ts", status: "active", uses: ["casos-base", "requisitos", "resultados", "ajustes"] },
+  { id: "ejecucion-manual", number: 11, title: "Ejecución manual", file: "11-ejecucion-manual.tour.ts", status: "active", uses: ["casos-base", "ajustes", "caso-dataset", "hallazgos"] },
   // After the runs, the imports and the defects: the matrix shows their
   // results and defects (MAN-03).
-  { id: "trazabilidad", number: 13, title: "Trazabilidad", file: "13-trazabilidad.tour.ts", status: "active", needs: ["casos", "requisitos", "defectos", "ejecucion-manual"] },
-  { id: "administracion", number: 15, title: "Administración", file: "15-administracion.tour.ts", status: "active", needs: ["plan", "trazabilidad"] },
-  { id: "ia", number: 17, title: "Asistente de IA", file: "17-ia.tour.ts", status: "active", needs: ["plan", "trazabilidad"] },
-  { id: "movil", number: 18, title: "Pantallas estrechas y móvil", file: "18-movil.tour.ts", status: "active", needs: ["plan", "casos"] },
-  { id: "inicio", number: 3, title: "Inicio", file: "03-inicio.tour.ts", status: "active", needs: ["plan", "defectos", "ejecucion-manual"] },
-  { id: "evidencias", number: 16, title: "Evidencias", file: "16-evidencias.tour.ts", status: "active" },
-  { id: "errores", number: 19, title: "Si algo sale mal", file: "19-errores.tour.ts", status: "active" },
-  // INT-02/INT-03/INT-04 (ADR-0052): tokens, Conectar CI, webhooks.
-  { id: "integraciones", number: 20, title: "Integraciones", file: "20-integraciones.tour.ts", status: "active" },
+  {
+    id: "trazabilidad",
+    number: 13,
+    title: "Trazabilidad",
+    file: "13-trazabilidad.tour.ts",
+    status: "active",
+    uses: ["requisitos", "casos-base", "caso-dataset", "resultados", "hallazgos", "ejecucion-manual", "defectos"],
+  },
+  // The closing of the cycle of chapter 9 (its quality gate and closure
+  // report), on the results of chapters 10 and 11 and the defects of 12:
+  // nobody closes a cycle before running it. Printed in chapter 9.
+  {
+    id: "ciclos-cierre",
+    number: 9,
+    title: "Ciclos de prueba (cierre)",
+    file: "09-ciclos-cierre.tour.ts",
+    status: "active",
+    inManual: false,
+    partOf: "ciclos",
+    uses: ["plan", "ciclo-ejecutado", "resultados", "hallazgos", "ejecucion-manual", "defectos"],
+  },
+  { id: "administracion", number: 15, title: "Administración", file: "15-administracion.tour.ts", status: "active", uses: ["plan", "requisitos", "cuenta-jorge"] },
+  { id: "ia", number: 17, title: "Asistente de IA", file: "17-ia.tour.ts", status: "active", uses: ["plan", "requisitos", "casos-base", "requisitos-api"] },
+  { id: "movil", number: 18, title: "Pantallas estrechas y móvil", file: "18-movil.tour.ts", status: "active", uses: ["plan", "casos-base"] },
+  { id: "inicio", number: 3, title: "Inicio", file: "03-inicio.tour.ts", status: "active", uses: ["plan", "resultados", "ejecucion-manual", "defectos", "ciclo-cerrado"] },
+  { id: "evidencias", number: 16, title: "Evidencias", file: "16-evidencias.tour.ts", status: "active", uses: ["resultados", "ejecucion-manual", "defectos"] },
+  { id: "errores", number: 19, title: "Si algo sale mal", file: "19-errores.tour.ts", status: "active", uses: ["cuenta-liomar"] },
+  // Team work with Jorge (decision D-1): it creates «Equipo QA», shares
+  // «Pharos» into it, invites Jorge, and shows members, roles, review and
+  // approval by another person. It runs, and prints, before chapter 21, which
+  // needs the shared workspace and Jorge's Test Manager role.
+  { id: "equipo", number: 20, title: "Trabajo en equipo", file: "20-equipo.tour.ts", status: "active", uses: ["cuenta-jorge", "plan", "casos-base", "defectos"] },
+  // INT-02/INT-03/INT-04 (ADR-0052): tokens, Conectar CI, webhooks, on the
+  // «Pharos» that chapter 20 shares into «Equipo QA».
+  { id: "integraciones", number: 21, title: "Integraciones", file: "21-integraciones.tour.ts", status: "active", uses: ["equipo-qa", "jorge-en-equipo"] },
 ];
 
 /** The chapters as the manual prints them (by `number`), without the preparation. */
@@ -97,13 +313,14 @@ export const TOUR_FILES: string[] = CHAPTERS.filter((c) => c.file).map((c) => c.
 
 /**
  * The tours of a partial run (`npm run manual -- --spec <regex on file names>`),
- * in run order: the preparation tour, the matching ones and, transitively, the
- * chapters they read data from (`needs`). `added` lists those prerequisites.
- * No filter: every tour. Throws on an invalid expression or one matching nothing.
+ * in run order: the preparation tour and the matching ones, nothing more:
+ * each chapter prepares its own prerequisites (prepare.ts). `asked` lists the
+ * matching ones. No filter: every tour. Throws on an invalid expression or one
+ * matching nothing.
  */
-export function selectTours(only?: string | null, chapters: Chapter[] = CHAPTERS): { files: string[]; added: string[] } {
+export function selectTours(only?: string | null, chapters: Chapter[] = CHAPTERS): { files: string[]; asked: string[] } {
   const withFile = chapters.filter((c) => c.file);
-  if (!only) return { files: withFile.map((c) => c.file as string), added: [] };
+  if (!only) return { files: withFile.map((c) => c.file as string), asked: [] };
   let filter: RegExp;
   try {
     filter = new RegExp(only);
@@ -113,22 +330,22 @@ export function selectTours(only?: string | null, chapters: Chapter[] = CHAPTERS
   const first = withFile[0];
   const asked = withFile.filter((c) => c !== first && filter.test(c.file as string));
   if (asked.length === 0) throw new Error(`--spec «${only}» matches no tour file`);
-  const chosen = new Set<ChapterId>([first.id, ...withFile.filter((c) => c.always).map((c) => c.id)]);
-  const visit = (c: Chapter) => {
-    if (chosen.has(c.id)) return;
-    chosen.add(c.id);
-    for (const id of c.needs ?? []) {
-      const dep = withFile.find((d) => d.id === id);
-      if (!dep) throw new Error(`chapter ${c.id} needs ${id}, which has no tour`);
-      visit(dep);
-    }
+  return { files: [first, ...asked].map((c) => c.file as string), asked: asked.map((c) => c.file as string) };
+}
+
+/** The prerequisites `ids` and everything they are built on, in the order
+ *  they are prepared. Throws on an unknown id. */
+export function prerequisiteClosure(ids: Prereq[], list: Prerequisite[] = PREREQUISITES): Prerequisite[] {
+  const want = new Set<Prereq>();
+  const visit = (id: Prereq) => {
+    if (want.has(id)) return;
+    const p = list.find((x) => x.id === id);
+    if (!p) throw new Error(`unknown prerequisite ${id}`);
+    want.add(id);
+    p.after.forEach(visit);
   };
-  asked.forEach(visit);
-  const files = withFile.filter((c) => chosen.has(c.id));
-  return {
-    files: files.map((c) => c.file as string),
-    added: files.filter((c) => c !== first && !asked.includes(c)).map((c) => c.file as string),
-  };
+  ids.forEach(visit);
+  return list.filter((p) => want.has(p.id));
 }
 
 export type ItemKind = "route" | "section" | "tab" | "wizard-step" | "screen" | "dialog" | "upload" | "action" | "keyboard" | "state" | "platform";
@@ -157,12 +374,12 @@ const I = (chapter: ChapterId, kind: ItemKind, id: string, label: string, extra:
 
 const WEB_ONLY = "Solo existe en la versión web; los tours recorren la app de escritorio.";
 
-const WORKSPACES_PENDING =
-  "necesita una segunda cuenta y un servidor con workspaces: lo cubre la validación de 0.5.0 con dos personas (SYNC-07); el flujo lo prueban los tests de la UI y del servidor";
-
 export const INVENTORY: Item[] = [
   // ---- 1 · Acceso y cuenta ------------------------------------------------------
   I("acceso", "screen", "screen:login", "Pantalla «Iniciar sesión»"),
+  // The server line and panel of the desktop sign-in (SEC-10, 0.5.0).
+  I("acceso", "screen", "screen:server-line", "Línea «Servidor: …» de la pantalla de entrada (escritorio)"),
+  I("acceso", "dialog", "dialogs:src/modules/server-picker/ui/ServerPanel.tsx", "«Servidor»: cambiar el servidor al que te conectas"),
   I("acceso", "state", "state:login-error", "Error de credenciales al entrar"),
   I("acceso", "action", "action:show-password", "Mostrar u ocultar la contraseña"),
   I("acceso", "action", "action:login-language", "Idioma desde la entrada"),
@@ -206,6 +423,7 @@ export const INVENTORY: Item[] = [
   I("navegacion", "screen", "screen:shell", "Estructura de la pantalla: menú lateral, barra superior y contenido"),
   I("navegacion", "action", "action:project-nav", "Secciones del proyecto en el orden del proceso de prueba (UX-21)"),
   I("navegacion", "action", "action:project-switcher", "Cambiar de proyecto desde el menú lateral"),
+  I("navegacion", "action", "action:workspace-switcher", "Selector de workspace del menú lateral: workspace, rol, crear, unirse y miembros (SYNC-07)"),
   I("navegacion", "action", "action:breadcrumbs", "Migas de pan de la barra superior"),
   I("navegacion", "dialog", "dialogs:src/app/layout/TopbarControls.tsx", "Búsqueda, panel de notificaciones y su hoja en el móvil"),
   I("navegacion", "keyboard", "keyboard:ctrl-k", "Ctrl+K abre la búsqueda"),
@@ -428,6 +646,7 @@ export const INVENTORY: Item[] = [
   I("ejecuciones", "upload", "upload:src/modules/runs/ui/ImportReportDialog.tsx", "Elegir el informe (y la carpeta de adjuntos)"),
   I("ejecuciones", "action", "action:runs-filter", "Filtrar runs por origen"),
   I("ejecuciones", "screen", "screen:unlinked-tray", "Bandeja «Sin vincular»"),
+  I("ejecuciones", "screen", "screen:run-imported-results", "La pantalla de un run importado: «Resultados importados» (FIX-42)"),
   I("ejecuciones", "tab", "tabs:src/modules/runs/ui/RunsPage.tsx", "Pestañas de Ejecuciones (Runs / Sin vincular)"),
   I("ejecuciones", "tab", "tabs:src/modules/runs/ui/RunDetail.tsx", "Pestañas de un run: Casos / Hallazgos / Métricas (ING-06)"),
   I("ejecuciones", "dialog", "dialogs:src/modules/runs/ui/TriageDialog.tsx", "Triaje de un hallazgo (ING-06)"),
@@ -461,31 +680,25 @@ export const INVENTORY: Item[] = [
 
   // ---- 10 · Administración --------------------------------------------------------------
   I("administracion", "route", "route:/admin", "Administración"),
-  // Workspaces with roles (SYNC-07, ADR-0042). The tours run one account
-  // against a server they start themselves; members, invitations and a
-  // shared project need a second account, which the 0.5.0 validation with
-  // two people and two computers covers (ROADMAP §6).
-  I("administracion", "route", "route:/workspaces/members", "Miembros y roles de un workspace", { pending: WORKSPACES_PENDING }),
-  I("administracion", "route", "route:/workspaces/join", "Unirse a un workspace con un código", { pending: WORKSPACES_PENDING }),
-  I("integraciones", "dialog", "dialogs:src/modules/workspaces/ui/CreateWorkspaceDialog.tsx", "Crear workspace"),
-  I("administracion", "dialog", "dialogs:src/modules/workspaces/ui/InviteDialog.tsx", "Invitar a un workspace (código de un solo uso)", { pending: WORKSPACES_PENDING }),
-  I("integraciones", "dialog", "dialogs:src/modules/workspaces/ui/ShareProjectDialog.tsx", "Compartir un proyecto con un workspace"),
-  I("administracion", "dialog", "dialogs:src/modules/workspaces/ui/WorkspaceMembersPage.tsx", "Quitar a un miembro o salir de un workspace", { pending: WORKSPACES_PENDING }),
+  // Workspaces with roles (SYNC-07, ADR-0042). Members and invitations need a
+  // second account: Jorge's (people.ts), in chapter 20 «Trabajo en equipo».
+  I("equipo", "route", "route:/workspaces/members", "Miembros y roles de un workspace"),
+  I("equipo", "route", "route:/workspaces/join", "Unirse a un workspace con un código"),
+  I("equipo", "dialog", "dialogs:src/modules/workspaces/ui/CreateWorkspaceDialog.tsx", "Crear workspace"),
+  I("equipo", "dialog", "dialogs:src/modules/workspaces/ui/InviteDialog.tsx", "Invitar a un workspace (código de un solo uso)"),
+  I("equipo", "dialog", "dialogs:src/modules/workspaces/ui/ShareProjectDialog.tsx", "Compartir un proyecto con un workspace"),
+  I("equipo", "dialog", "dialogs:src/modules/workspaces/ui/WorkspaceMembersPage.tsx", "Quitar a un miembro o salir de un workspace"),
   // INT-02 (ADR-0052): API tokens. The manual chapter «Integraciones» comes
   // with track A's A4, together with the upload and its curl examples.
   I("integraciones", "tab", "tabs:src/modules/workspaces/ui/WorkspaceMembersPage.tsx", "Pestañas del workspace (Miembros / Integraciones)"),
-  I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/ProjectTokensSection.tsx", "Revocar o reasignar un token de proyecto", {
-    skip: "«Reasignar» solo aparece en el token de otra persona o en uno inactivo, y el manual solo muestra a su persona (NC-052); la tabla y «Revocar» salen en el capítulo 20. Lo cubren server/tests/api.tokens.test.ts y src/modules/integrations/ui/integrations.test.tsx.",
-  }),
+  I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/ProjectTokensSection.tsx", "Revocar o reasignar un token de proyecto"),
   I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/TokenDialogs.tsx", "Nuevo token, token creado (una sola vez) y rotar"),
   I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/PersonalTokensSection.tsx", "Revocar un token personal"),
   I("integraciones", "section", "section:connect-ci", "Conectar CI: el paso de GitHub Actions (INT-04)"),
   I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/WebhooksSection.tsx", "Nuevo y editar webhook, su secreto, entregas, rotar y borrar (INT-03)"),
-  I("integraciones", "dialog", "dialogs:src/modules/integrations/ui/AdminRevokeTokens.tsx", "Revocar todos los tokens de una cuenta (administrador)", {
-    skip: "Necesita una segunda cuenta con tokens, y el manual solo muestra a su persona (NC-052). Lo cubren server/tests/api.tokens.test.ts y src/modules/integrations/ui/integrations.test.tsx.",
-  }),
+  I("administracion", "dialog", "dialogs:src/modules/integrations/ui/AdminRevokeTokens.tsx", "Revocar todos los tokens de una cuenta (administrador)"),
   // PLN-08 (ADR-0049): «Aprobación independiente», seen from one account.
-  I("administracion", "action", "action:workspace-rules", "«Reglas»: aprobación independiente del workspace (PLN-08)"),
+  I("equipo", "action", "action:workspace-rules", "«Reglas»: aprobación independiente del workspace (PLN-08)"),
   I("administracion", "tab", "admin:ai", "Motor de IA"),
   I("administracion", "tab", "tabs:src/modules/admin/ui/AdminTabs.tsx", "Pestañas de Administración"),
   I("administracion", "dialog", "dialogs:src/modules/ai/ui/AiEngineTab.tsx", "Descartar o reemplazar la clave de IA (confirmaciones)"),
@@ -512,31 +725,17 @@ export const INVENTORY: Item[] = [
   }),
   // The server administrator (SEC-11) and reset by an administrator (SEC-09); ADR-0045.
   I("administracion", "tab", "admin:users", "Usuarios del servidor (solo administradores)"),
-  I("administracion", "dialog", "dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "Restablecer la contraseña de otra cuenta; nombrar o quitar administradores", {
-    skip: "Necesita una segunda cuenta en la lista, y el manual solo muestra a su persona (NC-052). Lo cubren server/tests/admin.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
-  }),
-  I("administracion", "action", "action:admin-reset", "Restablecer la contraseña de otra cuenta (enlace de un solo uso)", {
-    skip: "Necesita una segunda cuenta en la lista, y el manual solo muestra a su persona (NC-052). Lo cubren server/tests/admin.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
-  }),
+  I("administracion", "dialog", "dialogs:src/modules/admin/ui/tabs/UsersTab.tsx", "Restablecer la contraseña de otra cuenta; nombrar o quitar administradores"),
+  I("administracion", "action", "action:admin-reset", "Restablecer la contraseña de otra cuenta (enlace de un solo uso)"),
   I("administracion", "action", "action:admin-reset-email", "Enviar el enlace por correo (el administrador no lo ve)", {
     skip: "Necesita un servidor con SMTP; la API del tour no envía correo (el valor por defecto). Lo cubren server/tests/admin.test.ts con un buzón en memoria y src/modules/admin/ui/tabs/UsersTab.test.tsx.",
   }),
-  I("administracion", "action", "action:admin-grant", "Nombrar a otro administrador", {
-    skip: "Necesita una segunda cuenta en la lista, y el manual solo muestra a su persona (NC-052). Lo cubren server/tests/admin.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
-  }),
-  I("administracion", "action", "action:admin-revoke", "Quitar el rol de administrador", {
-    skip: "Necesita una segunda cuenta en la lista, y el manual solo muestra a su persona (NC-052). Lo cubren server/tests/admin.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
-  }),
+  I("administracion", "action", "action:admin-grant", "Nombrar a otro administrador"),
+  I("administracion", "action", "action:admin-revoke", "Quitar el rol de administrador"),
   // Disabling an account (SEC-12; ADR-0045 amendment B).
-  I("administracion", "dialog", "dialogs:src/modules/admin/ui/tabs/DisableAccountDialog.tsx", "Desactivar una cuenta: motivo, sucesor del último Test Manager y confirmación", {
-    skip: "Necesita una segunda cuenta en la lista, y el manual solo muestra a su persona (NC-052). Lo cubren server/tests/account-disable.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
-  }),
-  I("administracion", "action", "action:admin-disable", "Desactivar una cuenta", {
-    skip: "Necesita una segunda cuenta en la lista, y el manual solo muestra a su persona (NC-052). Lo cubren server/tests/account-disable.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
-  }),
-  I("administracion", "action", "action:admin-enable", "Reactivar una cuenta desactivada", {
-    skip: "Necesita una segunda cuenta en la lista, y el manual solo muestra a su persona (NC-052). Lo cubren server/tests/account-disable.test.ts y src/modules/admin/ui/tabs/UsersTab.test.tsx, y la revisión manual (docs/manual/REVIEW.md).",
-  }),
+  I("administracion", "dialog", "dialogs:src/modules/admin/ui/tabs/DisableAccountDialog.tsx", "Desactivar una cuenta: motivo, sucesor del último Test Manager y confirmación"),
+  I("administracion", "action", "action:admin-disable", "Desactivar una cuenta"),
+  I("administracion", "action", "action:admin-enable", "Reactivar una cuenta desactivada"),
   I("administracion", "tab", "admin:sync", "Sincronización"),
   I("administracion", "action", "action:sync-now", "Sincronizar ahora"),
   I("administracion", "action", "action:sync-auto", "Sincronización automática y su intervalo"),
@@ -579,6 +778,7 @@ export const INVENTORY: Item[] = [
   I("movil", "platform", "platform:mobile-project-pills", "Secciones del proyecto en móvil"),
   I("movil", "platform", "platform:mobile-search", "Búsqueda en móvil"),
   I("movil", "platform", "platform:mobile-filters", "Filtros en una hoja inferior"),
+  I("movil", "platform", "platform:mobile-user-sheet", "La hoja del avatar en el móvil: workspace y cuenta (FIX-39)"),
   I("movil", "platform", "platform:desktop-only-gates", "Funciones solo de escritorio en la versión web", {
     skip: `${WEB_ONLY} Lo cubren las pruebas unitarias de cada módulo con isTauri() = false y la revisión manual de la versión web (docs/manual/REVIEW.md).`,
   }),

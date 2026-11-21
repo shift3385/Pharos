@@ -3,7 +3,9 @@
 
 /** docs/manual/fuentes/<id>.md: «## Para qué sirve», «## Atajos de teclado»,
  *  «## Si algo no sale», «## En el móvil» (manual v2, MAN-03), «## Consejos»,
- *  «## Véase también» and per-step notes as «### Paso <id>». */
+ *  «## Véase también», per-step notes as «### Paso <id>» (printed after the
+ *  step) and lead-ins as «### Antes del paso <id>» (printed before it: a
+ *  callout where the story jumps ahead, e.g. a chapter's second part). */
 const SECTIONS = [
   ["para qué", "purpose"],
   ["atajos", "keys"],
@@ -32,13 +34,14 @@ export function keyboardAppendix(entries) {
 }
 
 export function parseSource(text) {
-  const out = { purpose: "", extra: [], keys: "", trouble: "", mobile: "", tips: "", seeAlso: "", notes: {} };
+  const out = { purpose: "", extra: [], keys: "", trouble: "", mobile: "", tips: "", seeAlso: "", notes: {}, before: {} };
   let key = null;
   let buf = [];
   const flush = () => {
     if (!key) return;
     const body = buf.join("\n").trim();
     if (key.startsWith("paso:")) out.notes[key.slice(5)] = body;
+    else if (key.startsWith("antes:")) out.before[key.slice(6)] = body;
     else if (key.startsWith("extra:")) {
       if (body) out.extra.push({ heading: key.slice(6), body });
     } else out[key] = body;
@@ -46,7 +49,12 @@ export function parseSource(text) {
   for (const line of text.split(/\r?\n/)) {
     const h2 = /^##\s+(.+?)\s*$/.exec(line);
     const h3 = /^###\s+Paso\s+(\S+)\s*$/.exec(line);
-    if (h3) {
+    const lead = /^###\s+Antes del paso\s+(\S+)\s*$/i.exec(line);
+    if (lead) {
+      flush();
+      key = `antes:${lead[1]}`;
+      buf = [];
+    } else if (h3) {
       flush();
       key = `paso:${h3[1]}`;
       buf = [];

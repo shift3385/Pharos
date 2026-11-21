@@ -51,7 +51,10 @@ html.auth-route body {
   padding: 32px 0;
 }
 
+/* The foot lines up with the form's right edge (FIX-46). */
 .auth-col__foot {
+  width: 100%;
+  max-width: 460px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -221,11 +224,12 @@ html.auth-route body {
   font: inherit;
   font-weight: var(--fw-semibold);
   color: var(--color-navy-500);
-  cursor: pointer;
-}
-
-.auth-form__link:hover {
+  /* Always underlined, so a link in a sentence is told from the text by more
+     than its colour (WCAG 1.4.1) and «Regístrate» and «Inicia sesión» look
+     the same whether or not the pointer rests on them (FIX-49). */
   text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
 }
 
 .auth-form__fields {

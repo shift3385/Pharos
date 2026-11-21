@@ -111,6 +111,9 @@ export function ProjectHeader({
         >
           {info.name}
         </h1>
+        {/* The clip hides the «·» of an item that wraps to a new line
+            (FIX-45): no line starts with a dangling separator. */}
+        <div className="pj-header__meta-clip">
         <div className="pj-header__meta">
           {status && (
             <StatusPill
@@ -126,6 +129,7 @@ export function ProjectHeader({
               {m}
             </span>
           ))}
+        </div>
         </div>
       </div>
       {actions && <div className="pj-header__actions">{actions}</div>}

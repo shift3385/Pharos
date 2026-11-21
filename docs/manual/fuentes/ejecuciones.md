@@ -21,12 +21,22 @@ Al importar, Pharos enlaza cada test con su caso por la clave del caso. Los
 que no la llevan esperan en la bandeja **«Sin vincular»**: vinculándolos una
 sola vez, sus resultados pasados y futuros cuentan para el caso.
 
-En este manual, la automatización de Pharos deja dos informes:
+En este manual, la automatización de Pharos deja estos informes:
 
 - la regresión nocturna con Playwright, cuyos 4 tests no llevan clave y van a
   la bandeja;
 - un JUnit de los tests de acceso, ya vinculados a PH-001 y PH-002, con la
-  captura de un fallo, importado en el ciclo «Regresión 0.3.0».
+  captura de un fallo, importado en el ciclo «Regresión 0.6.0»;
+- un JUnit con `example_row` del caso con dataset PH-005, una fila por test;
+- la vista previa de un `.zip` de Allure (los tests de acceso, con un
+  reintento) y de un TRX de .NET (las pruebas de la API v1);
+- un análisis de Semgrep del servidor (SARIF), con un hallazgo vinculado a
+  PH-002 y otro que Liomar marca como falso positivo;
+- la auditoría de accesibilidad (axe) del diálogo «Nuevo requisito»;
+- una prueba de carga de la API con k6, con un umbral incumplido.
+
+Los runs que suben tu CI con `pharos upload` o «Conectar CI» (capítulo 21)
+llegan a la misma lista, sin importar nada a mano.
 
 ## Hallazgos y métricas
 
@@ -119,6 +129,8 @@ su tag.
   adjuntos.»** Para guardarlos como evidencias, elige la «Carpeta de
   adjuntos» antes de pulsar «Importar».
 - **«El archivo supera…».** El límite es 200 MB (50 MB si es JSON o XML).
+- **«El archivo no es un XML válido».** Desde la 0.6.0, un XML con una
+  declaración DTD se rechaza: quítala del informe.
 - **«Run abierto» está en gris.** No hay ningún run en curso en el proyecto.
 - **«No se pudieron cargar los runs.»** Pulsa «Reintentar».
 - **Un run dice «Sin resultados».** Todavía no se ha ejecutado nada en él:
@@ -147,7 +159,9 @@ su tag.
 
 - Capítulo 9, «Ciclos de prueba».
 - Capítulo 11, «Ejecución manual» y el informe de estado.
-- Capítulo 13, «Trazabilidad»: el último resultado de cada caso.
+- Capítulo 13, «Trazabilidad»: el último resultado de cada caso y sus
+  hallazgos.
+- Capítulo 21, «Integraciones»: subir los informes desde el CI.
 - [Guía de pruebas de la beta](../guia-beta.md), apartado 4.4c «Importar
   resultados de pruebas automáticas».
 - [Formatos de importación](../formats/importers.md).

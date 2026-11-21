@@ -2,9 +2,9 @@
 // the "skill" — and their calls. Two steps, as the other generators: a strict
 // prompt, then the answer validated whole against its schema (ADR-0023).
 //
-//   req-extract@1    one batch of project files → candidate requirements, each
+//   req-extract@2    one batch of project files → candidate requirements, each
 //                    with the files and lines it rests on.
-//   req-synthesis@1  every candidate (of any source: a project here, images
+//   req-synthesis@4  every candidate (of any source: a project here, images
 //                    and designs in IA-18) + the existing requirements →
 //                    proposals: new, improve, merge (possible duplicate),
 //                    remove (redundant).
@@ -24,23 +24,51 @@ import type { AiResult } from "./aiApi";
 import { asData } from "./generators";
 import { aiJson } from "./structured";
 
-export const REQ_EXTRACT_PROMPT = "req-extract@1";
-export const REQ_SYNTHESIS_PROMPT = "req-synthesis@1";
+// @2 (FIX-47, ADR-0036 note of 2026-11-20): the requirement is worded in the
+// user's language («El sistema deberá …», FIX-45); @1 always asked for the
+// English «The system shall …», which made the model write «el sistema
+// shall …» inside Spanish text. Requirements written before keep `@1` in
+// their provenance: both ids stay valid there and nothing is migrated.
+export const REQ_EXTRACT_PROMPT = "req-extract@2";
+// @3 (FIX-51, ADR-0036 note): the candidates' labels (C1, C4) are for "from"
+// only and never written in the texts the person reads; @2's own example
+// reason cited «C3 and C7», and the model copied the labels into «Motivo».
+// @4 (FIX-52, ADR-0036 note): every text is written for the end user and
+// never names the pipeline's notions; @3's example reason itself said «two
+// candidates describe…», and the model wrote «la candidata dice…».
+export const REQ_SYNTHESIS_PROMPT = "req-synthesis@4";
+
+/** The pipeline's own notions, which the person never sees (FIX-52). */
+const PIPELINE_WORDS =
+  `"candidate", "batch", "label", "item", the numbers or ids of this request, ` +
+  `"the model", "the prompt", "the AI" or "the analysis"`;
+
+/** The rule for every text the person reads, shared by the prompts that
+ *  write them (FIX-52). `cite` says how this prompt's material is named. */
+export const forTheEndUser = (lang: string, cite: string) =>
+  `Write every text value for the end user who reviews it in the application, in ` +
+  `${languageOf(lang)}: cite the material by what that person knows (${cite}). Never ` +
+  `mention how this request works: no ${PIPELINE_WORDS}.`;
 
 const languageOf = (lang: string) =>
   lang.startsWith("es") ? "Spanish" : "English";
 
+/** The opening of a requirement in the user's language. */
+const shallOf = (lang: string) =>
+  lang.startsWith("es") ? "El sistema deberá …" : "The system shall …";
+
 /** What makes a good requirement, after ISO/IEC/IEEE 29148 and EARS, in our
  *  own words. Shared by both prompts. */
-const GOOD_REQUIREMENT =
+const goodRequirement = (lang: string) =>
   `A good requirement is necessary (the product or its users depend on it), singular ` +
   `(one capability or constraint), unambiguous (no vague words such as "fast", "easy", ` +
   `"user-friendly", "etc." or "and/or"), verifiable (a tester can decide pass or fail) ` +
-  `and feasible. State it as "The system shall …"; use an EARS pattern when it fits: ` +
-  `"When <trigger>, the system shall …", "While <state>, …", "If <unwanted condition>, ` +
-  `then the system shall …", "Where <feature is included>, …". Write it at the level of ` +
-  `a capability of the user or of the system, never of an internal function, class or ` +
-  `variable.`;
+  `and feasible. State it in ${languageOf(lang)} as "${shallOf(lang)}"; use an EARS ` +
+  `pattern when it fits ("When <trigger>, the system shall …", "While <state>, …", ` +
+  `"If <unwanted condition>, then the system shall …", "Where <feature is included>, …"), ` +
+  `always written in ${languageOf(lang)}, with no English word such as "shall" in it. ` +
+  `Write it at the level of a capability of the user or of the system, never of an ` +
+  `internal function, class or variable.`;
 
 function system(role: string, lang: string): AiMessage {
   return {
@@ -78,7 +106,7 @@ export function buildRequirementExtractMessages(
       `do (functional), the qualities it must have (non-functional: performance, security, ` +
       `usability, compatibility…) and the constraints it must respect.`,
     ``,
-    GOOD_REQUIREMENT,
+    goodRequirement(lang),
     ``,
     `Rules:`,
     `- Rest every requirement on the material: cite the file path exactly as written after ` +
@@ -94,7 +122,7 @@ export function buildRequirementExtractMessages(
       `several sources. At most 40 requirements; prefer fewer, well-founded ones.`,
     ``,
     `Return exactly this shape:`,
-    `{"candidates":[{"title":"short name","description":"The system shall …",` +
+    `{"candidates":[{"title":"short name","description":"${shallOf(lang)}",` +
       `"priority":"low|medium|high","kind":"functional|non-functional|constraint",` +
       `"basis":"stated|inferred","acceptance":["observable criterion"],` +
       `"sources":[{"path":"docs/spec.md","startLine":12,"endLine":20}],"evidence":"short quote"}]}`,
@@ -203,7 +231,7 @@ export function buildRequirementSynthesisMessages(
     `Compare the candidates with each other and with the requirements already in the ` +
       `project, as in a formal requirements review, and propose changes to the project's list.`,
     ``,
-    GOOD_REQUIREMENT,
+    goodRequirement(lang),
     ``,
     `Rules:`,
     `- "add": a capability no existing requirement covers. Merge candidates that say the ` +
@@ -216,13 +244,20 @@ export function buildRequirementSynthesisMessages(
     `- ${removal}`,
     `- At most one proposal per existing requirement. Never invent keys: use only the keys ` +
       `listed. Never write file names or paths: "from" says where it comes from.`,
-    `- "reason" names the concrete defect or evidence in at most 20 words (e.g. "C3 and C7 ` +
-      `describe sign-in; REQ-004 says only 'secure'").`,
+    `- "reason" names the concrete defect or evidence in at most 20 words (e.g. "the ` +
+      `material shows sign-in twice; REQ-004 says only 'secure'"). The labels C1, C2… are only ` +
+      `for "from": the person never sees them, so never write them in "reason", "title" or ` +
+      `"description".`,
+    `- ${forTheEndUser(
+      lang,
+      `the words of the material in quotes, the screen or the capability it describes, and ` +
+        `an existing requirement by its key; the source of each proposal is shown next to it`,
+    )}`,
     `- Propose only what improves the list: do not pad. At most 100 proposals.`,
     ``,
     `Return exactly this shape:`,
     `{"proposals":[`,
-    `{"action":"add","from":["C1","C4"],"title":"…","description":"The system shall …","priority":"low|medium|high","reason":"…","similarTo":"REQ-007"},`,
+    `{"action":"add","from":["C1","C4"],"title":"…","description":"${shallOf(lang)}","priority":"low|medium|high","reason":"…","similarTo":"REQ-007"},`,
     `{"action":"improve","key":"REQ-003","from":["C2"],"title":"…","description":"…","priority":"high","reason":"…"},`,
     `{"action":"merge","keys":["REQ-009","REQ-012"],"keep":"REQ-009","title":"…","description":"…","reason":"…"},`,
     `{"action":"remove","key":"REQ-015","coveredBy":"REQ-002","reason":"…"}]}`,

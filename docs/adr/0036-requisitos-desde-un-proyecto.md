@@ -176,3 +176,43 @@
   - El contenido del proyecto puede intentar dar órdenes al modelo (prompt injection).
     Va siempre entre etiquetas `<data>` neutralizadas, la salida se valida con un
     esquema, el modelo no tiene herramientas y nada se aplica sin la persona.
+
+## Versión 2 de los prompts (FIX-47, 2026-11-20)
+
+Aprobado por el usuario el 2026-11-20. Precisión sobre el «prompt versionado»,
+sin cambiar la decisión.
+
+- **Qué cambió.** `req-extract@2` y `req-synthesis@2` piden el requisito en el
+  idioma de la persona: en español, «El sistema deberá …»; en inglés, «The system
+  shall …». La versión 1 pedía siempre «The system shall …», y el modelo escribía
+  «el sistema shall …» dentro de un texto en español (FIX-45).
+- **Por qué sube la versión.** FIX-45 cambió el texto y dejó el identificador `@1`.
+  La procedencia de cada requisito guarda el identificador para saber con qué
+  instrucciones salió, así que un mismo identificador no puede nombrar dos textos.
+  Lo generado desde FIX-45 hasta esta versión lleva `@1` aunque siguió el texto
+  nuevo; no hay forma de distinguirlo y se deja así.
+- **Datos.** No hay migración: lo generado antes conserva `@1` en su procedencia.
+  Quien lee la procedencia (la marca «IA · pendiente de revisión», el formulario
+  del requisito, `applyRequirementProposals`) acepta cualquier versión. Las
+  menciones de `@1` de las secciones anteriores describen la versión 1.
+- La importación desde diseños (IA-18) guarda `requirements-from-design@1+req-synthesis@2`.
+
+## Nota (FIX-49, 2026-11-20): `requirements-from-design@2`
+
+- **Qué cambió.** El prompt de diseños pide el requisito y sus criterios de aceptación en el idioma de la persona: en español, «El sistema deberá …» y «Dado … cuando … entonces …» (con «Y» y «Pero»); en inglés, «The system shall …» y «Given … when … then …». La versión 1 pedía siempre las palabras clave inglesas, y salían «Given/When/Then» dentro de criterios en español. Son criterios en prosa de un requisito, no un `.feature`: un `.feature` sigue con las palabras clave inglesas salvo `# language: es`.
+- **Por qué sube la versión.** La regla de la nota anterior: un identificador no nombra dos textos. Lo generado antes conserva `@1`; la importación desde diseños guarda ahora `requirements-from-design@2+req-synthesis@2`.
+- **Lectura.** `criterionLines` reconoce también «Dado/Dada/Dados/Dadas», «Cuando», «Entonces», «Y» y «Pero» para mostrar cada palabra clave en su línea y en negrita.
+
+## Nota (FIX-51, 2026-11-20): `req-synthesis@3`
+
+- **Qué cambió.** El prompt de síntesis dice que las etiquetas de los candidatos (C1, C2…) solo sirven para «from» y nunca van en «reason», «title» ni «description»: un candidato se nombra por lo que dice y un requisito por su clave. El ejemplo de «reason» de la versión 2 citaba «C3 and C7», y el modelo copiaba esas etiquetas en el «Motivo» que lee la persona («C1 no tiene cobertura»).
+- **Además.** `readableReason` (`traceability/proposals/proposals.ts`) quita del «Motivo» una etiqueta entre paréntesis y cambia una suelta por el título del candidato entre «», por si el modelo las escribe igual.
+- **Por qué sube la versión.** La regla de las notas anteriores. Lo generado antes conserva `@2`; la importación desde un proyecto guarda `req-synthesis@3` y la de diseños `requirements-from-design@2+req-synthesis@3`.
+
+## Nota (FIX-52, 2026-11-21): `req-synthesis@4` y `requirements-from-design@3`
+
+- **Qué cambió.** Los dos prompts cuyos textos lee la persona (la síntesis y la lectura de diseños) llevan una regla común, `forTheEndUser` (`ai/api/requirementPrompts.ts`): cada texto se escribe para quien lo revisa en la aplicación, en su idioma, citando el material por lo que esa persona conoce (en la síntesis, las palabras del material entre comillas, la pantalla o la capacidad que describe y un requisito por su clave; en diseños, la imagen o el archivo por su nombre, la pantalla por su nombre y el texto visible entre comillas), y nunca nombra lo que es de la petición: «candidate», «batch», «label», «item», números o ids de la petición, «the model», «the prompt», «the AI», «the analysis». El ejemplo de «reason» de la versión 3 decía «two candidates describe sign-in», y el modelo escribía «la candidata dice «pendientes»». Ahora dice «the material shows sign-in twice».
+- **La síntesis sigue sin nombrar archivos.** No ve las rutas (van con quien llama) y la «Fuente» se muestra junto a cada propuesta: citar un archivo desde ella sería inventarlo.
+- **`req-extract@2` no cambia.** Su único texto libre fuera del requisito es el «reason» de un lote vacío, que la aplicación no muestra.
+- **Además.** `readableReason` cambia «la candidata», «el candidato», «los candidatos», «requisito candidato» por «la fuente», «las fuentes» (y «candidate(s)» por «source(s)»), salvo si el material habla él mismo de candidatos (un producto de selección de personal). También se aplica al «reason» de una respuesta vacía, que se muestra en lugar de las propuestas.
+- **Por qué sube la versión.** La regla de las notas anteriores. Lo generado antes conserva `@3` y `@2`; la importación desde un proyecto guarda `req-synthesis@4` y la de diseños `requirements-from-design@3+req-synthesis@4`.

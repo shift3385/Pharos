@@ -30,14 +30,55 @@
   margin: 0;
   color: var(--color-text-secondary);
 }
+/* Name, owner, workspace scope and status read whole on one line (FIX-46:
+   «CI de / Pharos», «Liomar / QA»); the scopes give way instead, their chips
+   wrapping. A narrow window scrolls the table. */
+.int-nowrap,
+.int-pill {
+  white-space: nowrap;
+}
+/* The token tables fit their card at 1440 px with several rows and long
+   names (FIX-51: a second member's token pushed «Reasignar a mí», «Rotar» and
+   «Revocar» out of the card). The table's own text is the caption size, the
+   cells are tighter, the scopes stack, the last use and a «Revocado el …»
+   pill may take two lines, and the buttons stack in their column. */
+.int-table {
+  font-size: var(--fs-caption);
+}
+.int-table th,
+.int-table td {
+  padding: 8px;
+}
+.int-scopes-cell {
+  min-width: 0;
+}
+.int-scopes-cell .int-chip {
+  display: block;
+  width: max-content;
+}
 .int-num {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+.int-num.int-when {
+  min-width: 7em;
+  white-space: normal;
+}
+.int-table .int-pill--mute {
+  white-space: normal;
 }
 .int-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+.int-actions-cell .int-actions {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+.int-actions-cell .ui-btn {
+  white-space: nowrap;
 }
 .int-pill {
   display: inline-block;
@@ -73,11 +114,20 @@
   font-weight: 600;
   margin-bottom: 4px;
 }
+/* Checkbox, label and chip on one row: a long label wraps within its own
+   column and the chip stays beside it (FIX-49: «runs:write» dropped alone
+   under «Subir resultados y cerrar ejecuciones»). */
 .int-scope {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+}
+.int-scope > span {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.int-scope > :is(input, .int-chip) {
+  flex: none;
 }
 .int-issue {
   color: var(--color-error-text);
@@ -226,6 +276,18 @@
   padding-left: 1.3em;
   display: grid;
   gap: 6px;
+}
+/* An address or a placeholder inside a sentence: the look of the code boxes
+   (size and surface of `.int-snippet`, as «Usar en el CLI»), whole on one
+   line (FIX-49: at the text's size «http: //localhost» showed a gap after
+   the colon, and «<SHA-de-40-» / «caracteres>» broke in two). */
+.int-code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--color-surface-2);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  white-space: nowrap;
 }
 .int-cli {
   display: grid;

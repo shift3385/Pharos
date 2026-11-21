@@ -1,0 +1,89 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Semgrep",
+          "fullName": "Semgrep OSS",
+          "informationUri": "https://semgrep.dev",
+          "semanticVersion": "1.95.0",
+          "rules": [
+            {
+              "id": "pharos.auth.enumeracion-de-cuentas",
+              "name": "pharos.auth.enumeracion-de-cuentas",
+              "shortDescription": { "text": "La respuesta de /auth/login delata si el correo existe" },
+              "fullDescription": {
+                "text": "Si la respuesta al iniciar sesión cambia según exista o no la cuenta, quien ataca puede averiguar qué correos tienen cuenta. La respuesta y su tiempo deben ser iguales en los dos casos."
+              },
+              "defaultConfiguration": { "level": "warning" },
+              "helpUri": "https://cwe.mitre.org/data/definitions/204.html",
+              "properties": {
+                "precision": "medium",
+                "security-severity": "5.3",
+                "tags": ["security", "CWE-204: Observable Response Discrepancy", "OWASP-A07:2021"]
+              }
+            },
+            {
+              "id": "javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring",
+              "name": "unsafe-formatstring",
+              "shortDescription": { "text": "Cadena de formato construida con una variable" },
+              "fullDescription": {
+                "text": "Una cadena de formato de console.log o util.format se construye con una variable: si viene de la entrada del usuario, puede falsear el registro."
+              },
+              "defaultConfiguration": { "level": "note" },
+              "helpUri": "https://cwe.mitre.org/data/definitions/134.html",
+              "properties": {
+                "precision": "low",
+                "security-severity": "2.1",
+                "tags": ["security", "CWE-134: Use of Externally-Controlled Format String"]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "pharos.auth.enumeracion-de-cuentas",
+          "ruleIndex": 0,
+          "level": "warning",
+          "message": {
+            "text": "Con un correo sin cuenta, /auth/login responde antes que con uno que existe: el tiempo de respuesta permite adivinar las cuentas."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "server/src/modules/auth/auth.routes.ts", "uriBaseId": "%SRCROOT%" },
+                "region": { "startLine": 58, "startColumn": 5, "endLine": 61, "endColumn": 6 }
+              }
+            }
+          ],
+          "properties": { "tags": ["@PH-002"] }
+        },
+        {
+          "ruleId": "javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring",
+          "ruleIndex": 1,
+          "level": "note",
+          "message": {
+            "text": "La cadena de formato de este registro se construye con una variable."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "server/src/modules/sync/log.ts", "uriBaseId": "%SRCROOT%" },
+                "region": { "startLine": 21, "startColumn": 3, "endLine": 21, "endColumn": 48 }
+              }
+            }
+          ]
+        }
+      ],
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "endTimeUtc": "2026-11-18T07:15:00Z"
+        }
+      ]
+    }
+  ]
+}

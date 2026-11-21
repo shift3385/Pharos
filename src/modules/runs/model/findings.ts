@@ -170,6 +170,70 @@ export function formatMetric(
   }
 }
 
+/** k6's comparison operators, as a reader writes them. */
+const OPERATORS: Record<string, string> = {
+  "<": "<",
+  "<=": "≤",
+  ">": ">",
+  ">=": "≥",
+  "==": "=",
+  "===": "=",
+  "!=": "≠",
+};
+
+/** One k6 threshold: `aggregation operator number` (`rate<0.01`,
+ *  `p(95) < 500`, `count>=10`). */
+const THRESHOLD = /^\s*([a-z]+(?:\(\s*[\d.]+\s*\))?)\s*(===|==|!=|<=|>=|<|>)\s*(-?\d+(?:\.\d+)?(?:e[-+]?\d+)?)\s*$/i;
+
+const bareAggregation = (a: string) => a.replace(/[\s()]/g, "").toLowerCase();
+
+/** A metric's threshold in the same form as its value (FIX-48): `rate<0.01`
+ *  of a rate → «< 1 %», `p(95)<500` of a duration → «< 500 ms». The
+ *  aggregation is the metric's own (shown beside it), so only the operator
+ *  and the number remain. An expression of another aggregation of the
+ *  metric (a counter's `rate`, per second) or one this does not read is
+ *  shown as written: the run's «Métricas» keeps k6's own expression. */
+export function formatThreshold(
+  m: Pick<MetricView, "value" | "unit" | "aggregation"> & { threshold: string | null },
+  locale: string,
+): string {
+  const raw = m.threshold ?? "";
+  const parsed = THRESHOLD.exec(raw);
+  if (!parsed) return raw;
+  const [, aggregation, operator, number] = parsed;
+  if (m.aggregation && bareAggregation(m.aggregation) !== bareAggregation(aggregation)) return raw;
+  return `${OPERATORS[operator]} ${formatMetric({ value: Number(number), unit: m.unit }, locale)}`;
+}
+
+type Translate = (key: string, opts?: Record<string, unknown>) => string;
+
+/** k6's aggregation («rate», «count») in the user's language («tasa»,
+ *  «total»); percentiles (p95) read the same in both (FIX-45). Shared by the
+ *  run's «Métricas» and the reports (FIX-51: the report said «· rate»). */
+export function aggregationLabel(a: string | null | undefined, t: Translate): string {
+  return !a ? "" : t(`findings.metric.aggregations.${a}`, { defaultValue: a });
+}
+
+/** The k6 tags a metric is scoped to (`case:PH-001`,
+ *  `expected_response:true`, several joined by «,»), as a reader says them:
+ *  «Caso PH-001», «Respuestas esperadas», «Escenario: login» (FIX-51). A tag
+ *  with no name of its own keeps it: «tag: value». */
+export function scopeLabel(scope: string | null | undefined, t: Translate): string {
+  if (!scope) return "";
+  return scope
+    .split(",")
+    .map((part) => {
+      const at = part.indexOf(":");
+      if (at < 0) return part.trim();
+      const tag = part.slice(0, at).trim();
+      const value = part.slice(at + 1).trim();
+      if (tag === "expected_response" && (value === "true" || value === "false"))
+        return t(`findings.metric.scopes.expected_response_${value}`);
+      return t(`findings.metric.scopes.${tag}`, { value, defaultValue: `${tag}: ${value}` });
+    })
+    .join(" · ");
+}
+
 /** Checks: the per-check rates (a scope), apart from the other metrics. */
 export const isCheck = (m: MetricView) => m.name === "checks" && !!m.scope;
 

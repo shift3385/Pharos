@@ -16,7 +16,10 @@
 //     covers nothing);
 //   - a file opens more dialogs than tour steps cover it;
 //   - a step covers an unknown id, or an active chapter lacks its tour or its
-//     prose (docs/manual/fuentes/<id>.md).
+//     prose (docs/manual/fuentes/<id>.md);
+//   - a chapter uses an unknown prerequisite, or one (or one it is built on)
+//     whose chapter (`madeBy`) does not run before it, so a full run would
+//     load data instead of showing it being made (PREREQUISITES).
 // The AI chapter counts as pending unless PHAROS_TOURS_AI_KEY is set in the
 // environment (this check never reads `.env`).
 //
@@ -126,6 +129,36 @@ export function stepsIn(source) {
 /** Ids in `covers: [...]` of a tour file (string literals only). */
 export const coversIn = (source) => stepsIn(source).flatMap((s) => s.ids);
 
+/** Problems of the chapters' prerequisites (manifest.ts): unknown ids, a
+ *  prerequisite built on a later one, a `madeBy` chapter that is unknown or
+ *  runs after a chapter using it. */
+export function prerequisiteErrors(chapters, prerequisites, closure) {
+  const errors = [];
+  const at = new Map(chapters.map((c, i) => [c.id, i]));
+  prerequisites.forEach((p, i) => {
+    for (const dep of p.after) {
+      const j = prerequisites.findIndex((x) => x.id === dep);
+      if (j < 0) errors.push(`prerequisite ${p.id} is built on unknown ${dep}`);
+      else if (j >= i) errors.push(`prerequisite ${p.id} is built on ${dep}, which must come before it`);
+    }
+    if (p.madeBy && !at.has(p.madeBy)) errors.push(`prerequisite ${p.id} is made by unknown chapter ${p.madeBy}`);
+  });
+  for (const c of chapters) {
+    for (const id of c.uses ?? []) {
+      if (!prerequisites.some((p) => p.id === id)) {
+        errors.push(`chapter ${c.id} uses unknown prerequisite ${id}`);
+        continue;
+      }
+      for (const p of closure([id], prerequisites)) {
+        if (p.madeBy && at.get(p.madeBy) >= at.get(c.id)) {
+          errors.push(`chapter ${c.id} uses ${p.id}, made on screen by ${p.madeBy}, which must run before it`);
+        }
+      }
+    }
+  }
+  return errors;
+}
+
 /** The last run's steps (e2e/results/tours/steps.jsonl), or null. */
 function runSteps() {
   const file = join(repoDir, "e2e", "results", "tours", "steps.jsonl");
@@ -134,7 +167,7 @@ function runSteps() {
 }
 
 export async function check({ fromRun = false, env = process.env } = {}) {
-  const { CHAPTERS, INVENTORY } = await import(pathToFileURL(join(repoDir, "e2e", "tours", "manifest.ts")).href);
+  const { CHAPTERS, INVENTORY, PREREQUISITES, prerequisiteClosure } = await import(pathToFileURL(join(repoDir, "e2e", "tours", "manifest.ts")).href);
   const errors = [];
   const toursDir = join(repoDir, "e2e", "tours");
 
@@ -157,12 +190,25 @@ export async function check({ fromRun = false, env = process.env } = {}) {
   // chapter's number (`--spec 08` finds chapter 8).
   const numbers = new Map();
   for (const c of CHAPTERS) {
-    if (numbers.has(c.number)) errors.push(`chapters ${numbers.get(c.number)} and ${c.id} share number ${c.number}`);
-    numbers.set(c.number, c.id);
+    // The second part of a chapter (`partOf`) shares its number and prints in it.
+    if (c.partOf) {
+      const parent = CHAPTERS.find((p) => p.id === c.partOf);
+      if (!parent) errors.push(`chapter ${c.id} is part of unknown chapter ${c.partOf}`);
+      else if (parent.number !== c.number) errors.push(`chapter ${c.id} is part of ${parent.id} but has number ${c.number}`);
+      else if (CHAPTERS.indexOf(parent) > CHAPTERS.indexOf(c)) errors.push(`chapter ${c.id} must run after ${parent.id}, its first part`);
+      if (c.inManual !== false) errors.push(`chapter ${c.id} is part of ${c.partOf}: set inManual: false`);
+    } else {
+      if (numbers.has(c.number)) errors.push(`chapters ${numbers.get(c.number)} and ${c.id} share number ${c.number}`);
+      numbers.set(c.number, c.id);
+    }
     if (c.file && !c.file.startsWith(`${String(c.number).padStart(2, "0")}-`)) {
       errors.push(`chapter ${c.id} is number ${c.number} but its tour file is ${c.file}`);
     }
   }
+
+  // Prerequisites (MAN-03): each is built only on earlier ones, and the
+  // chapter that makes one on screen runs before every chapter that uses it.
+  errors.push(...prerequisiteErrors(CHAPTERS, PREREQUISITES, prerequisiteClosure));
 
   const covered = new Map(); // id → number of steps covering it
   for (const c of CHAPTERS) {

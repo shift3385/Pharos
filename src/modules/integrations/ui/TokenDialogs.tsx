@@ -252,7 +252,7 @@ export function RotateTokenDialog({
         <button type="button" className="cd__cancel" onClick={onCancel} disabled={busy}>
           {t("common.cancel")}
         </button>
-        <button type="button" className="ui-btn" onClick={() => void go(24)} disabled={busy} data-testid="token-rotate-overlap">
+        <button type="button" className="cd__cancel" onClick={() => void go(24)} disabled={busy} data-testid="token-rotate-overlap">
           {t("integrations.tokens.rotateOverlap")}
         </button>
         <button type="button" className="cd__confirm" onClick={() => void go(0)} disabled={busy} data-testid="token-rotate-now">

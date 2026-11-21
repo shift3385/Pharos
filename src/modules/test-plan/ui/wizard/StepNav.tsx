@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Check, ListOrdered } from "lucide-react";
 import { BottomSheet, MenuItem } from "@shared/ui/Menu";
 import { STEP_IDS } from "./steps";
+import { railScrollFor } from "./railScroll";
 
 interface NavProps {
   current: number;
@@ -36,8 +37,16 @@ function stateText(t: (k: string) => string, done: boolean, current: boolean) {
 export function StepRail({ current, completion, onGo }: NavProps) {
   const { t, title } = useStepText();
   const done = completion.filter(Boolean).length;
+  const railRef = useRef<HTMLElement>(null);
+  // The current step is always in view in the list's own scroll (FIX-44: at
+  // step 22 it was below the fold), without scrolling the page.
+  useLayoutEffect(() => {
+    const rail = railRef.current;
+    const step = rail?.querySelector<HTMLElement>("[aria-current='step']");
+    if (rail && step) rail.scrollTop = railScrollFor(rail, step);
+  }, [current]);
   return (
-    <nav className="tpw-rail" aria-label={t("testPlan.nav.label")}>
+    <nav ref={railRef} className="tpw-rail" aria-label={t("testPlan.nav.label")}>
       <div className="tpw-rail__head">
         <span className="tpw-rail__title">{t("testPlan.nav.wizard")}</span>
         <span className="tpw-rail__meta">

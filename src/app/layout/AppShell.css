@@ -25,6 +25,14 @@
   overflow-y: auto;
 }
 
+/* On a phone the scrollbar takes no room, as the system's overlay one does:
+   a classic one (a desktop window at phone width) left a strip of the
+   background photo beside the cards that span the screen (FIX-49,
+   Trazabilidad in movil/05). Touch scrolling is unchanged. */
+[data-viewport="mobile"] .app-shell__content {
+  scrollbar-width: none;
+}
+
 .app-shell__page {
   width: 100%;
   max-width: 1600px;
@@ -335,12 +343,18 @@
   border-radius: var(--radius-sm);
 }
 
+/* A long name takes two lines before it is cut («API de sincronización»,
+   FIX-46); the tooltip always has it. */
 .sidebar__project-name {
   flex: 1;
   min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  line-height: 1.25;
+  overflow-wrap: break-word;
   font-size: var(--fs-caption);
   font-weight: var(--fw-medium);
 }
@@ -361,6 +375,77 @@
   width: 100%;
   margin-top: 6px;
   padding-top: 8px;
+}
+
+/* The rules below come after every sidebar rule above, which they adjust. */
+/* The nav's lower edge fades while there is more below: the shared
+   `u-scroll-fade` (base.css, FIX-46), set on the nav in Sidebar.tsx. */
+
+/* FIX-46: at the manual's 1440 × 900 (and any window up to 960 px high) the
+   whole sidebar fits with a project open, «Configuración › Administración»
+   included: shorter entries and tighter gaps, nothing hidden. */
+@media (max-height: 960px) {
+  .sidebar:not([data-mode="rail"]) {
+    gap: 12px;
+  }
+
+  .sidebar:not([data-mode="rail"]) .sidebar__nav {
+    gap: 10px;
+  }
+
+  .sidebar:not([data-mode="rail"]) .sidebar__link {
+    height: 34px;
+  }
+
+  .sidebar:not([data-mode="rail"]) .sidebar__link[aria-current="page"]::before {
+    top: 8px;
+    bottom: 8px;
+  }
+
+  .sidebar:not([data-mode="rail"]) .sidebar__project {
+    margin-bottom: 2px;
+    padding: 6px 10px;
+  }
+}
+
+/* The strip (a tablet at 1024 × 768, or the sidebar collapsed at 900 px of
+   height): shorter entries, so all of them, «Admin» included, fit above the
+   foot; in a lower window the fade above marks the rest (FIX-46). */
+@media (max-height: 960px) {
+  .sidebar[data-mode="rail"] .sidebar__link {
+    gap: 2px;
+    padding: 5px 0 4px;
+  }
+
+  .sidebar[data-mode="rail"] .sidebar__nav,
+  .sidebar[data-mode="rail"] .sidebar__group {
+    gap: 2px;
+  }
+
+  .sidebar[data-mode="rail"] .sidebar__brand {
+    padding-bottom: 6px;
+  }
+
+  .sidebar[data-mode="rail"] .sidebar__icon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* A tablet at 768 px of height with a project open: twelve entries plus the
+   workspace chip and the foot. Tighter still, so «Admin» fits too instead of
+   scrolling out of the strip with nothing to say it is there (FIX-49). Each
+   entry stays above 24 px (WCAG 2.5.8). */
+@media (max-height: 800px) {
+  .sidebar[data-mode="rail"] .sidebar__link {
+    gap: 1px;
+    padding: 3px 0 2px;
+  }
+
+  .sidebar[data-mode="rail"] .sidebar__nav,
+  .sidebar[data-mode="rail"] .sidebar__group {
+    gap: 0;
+  }
 }
 
 .sidebar :focus-visible {

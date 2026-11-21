@@ -90,9 +90,35 @@
   color: var(--color-error-text);
 }
 
+/* A disabled entry keeps its label readable (FIX-46: «Requisitos desde
+   diseños» at half opacity was about 2:1); the faded icon and the cursor say
+   it is off. */
 .menu__item:disabled {
-  opacity: 0.5;
+  color: var(--color-text-secondary);
   cursor: not-allowed;
+}
+
+.menu__item:disabled :is(.menu__icon, svg) {
+  opacity: 0.45;
+}
+
+/* «Próximamente» after an option that is not available yet (FIX-49), in the
+   look of the sign-in screen's chip. It is the item's `badge`, beside the
+   text, and never shrinks (FIX-51: inside the text it was cut to «Próximam»
+   and the label showed «……»). */
+.menu__soon {
+  display: inline-block;
+  flex: none;
+  margin-left: auto;
+  padding: 1px 7px;
+  font-size: 10.5px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  vertical-align: 1px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
 }
 
 .menu__icon {
@@ -124,6 +150,13 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-text-muted);
+}
+
+/* A value inside a label (a server address) keeps its own case (FIX-46):
+   «CONECTADO A localhost:3146», not «LOCALHOST:3146». */
+.menu__label-value {
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .menu__sep {

@@ -132,6 +132,9 @@ export interface ResultCandidate {
   attempt: number;
   status: string;
   createdAt: string;
+  /** When the attempt ran: its end or start, else its run's start (an
+   *  imported report's time), else `createdAt` (FIX-51). */
+  executedAt: string;
 }
 
 export interface DefectAttachment {

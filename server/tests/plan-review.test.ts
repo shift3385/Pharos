@@ -201,6 +201,26 @@ describe("«Aprobación independiente» (PLN-08)", () => {
     expect(typeof changes === "string" ? JSON.parse(changes) : changes).toEqual({ independentApproval: [true, false] });
   });
 
+  it("a plan made before sharing and edited after keeps its author for another member's review (FIX-48)", async () => {
+    // The review answer's `createdBy` is who the web notifies of «Pedir
+    // cambios» and «Aprobar»: the plan's creator, never the reviewer nor the
+    // last editor.
+    const ana = await register("ana@pharos.dev");
+    const luis = await register("luis@pharos.dev");
+    const ws = (await call(ana, "POST", "/workspaces", { name: "QA Tienda" })).body.id as string;
+    const inv = await call(ana, "POST", `/workspaces/${ws}/invitations`, { role: "test_manager" });
+    await call(luis, "POST", "/invitations/accept", { code: inv.body.code });
+    const { projectId, plan } = await newPlan(ana);
+    expect((await call(ana, "POST", `/workspaces/${ws}/move-project`, { projectId })).status).toBe(200);
+    await save(luis, plan.id, planInput(projectId, { data: { summary: "Pagos y p95" } }));
+    await review(ana, plan.id, { action: "send" });
+    const asked = await review(luis, plan.id, { action: "return", comment: "Falta el alcance" });
+    expect(asked.body).toMatchObject({ createdBy: ana.userId, workspaceId: ws });
+    await save(ana, plan.id, planInput(projectId, { data: { summary: "Pagos, p95 y alcance" } }));
+    const ok = await review(luis, plan.id, { action: "approve" });
+    expect(ok.body).toMatchObject({ status: "approved", createdBy: ana.userId, workspaceId: ws, data: { approval: { selfApproved: false } } });
+  });
+
   it("applies to cases too", async () => {
     const { ana, luis, sara, ws, plan } = await team();
     const c = (

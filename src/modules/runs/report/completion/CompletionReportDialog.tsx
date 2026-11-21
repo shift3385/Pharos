@@ -291,13 +291,18 @@ export function CompletionReportDialog({
   return (
     <Dialog className="cd sr-modal" labelledBy={`${id}-title`} onClose={onClose} dismissable={!busy}>
       <div data-testid="completion-report" className="sr">
+        {/* Only this part scrolls; the buttons stay below it, as in the
+            status report (FIX-51: FIX-49 made `.sr-modal` clip and gave only
+            the status report this wrapper, so this body could not scroll and
+            its buttons fell out of the dialog). */}
+        <div className="sr-scroll">
         <header className="sr-head">
           <h3 id={`${id}-title`} className="cd__title">
             <FileCheck2 size={18} aria-hidden="true" /> {t("completionReport.title")}
           </h3>
           <p className="cd__msg">
             {t("completionReport.subtitle")}
-            {report && <> · {report.documentId}</>}
+            {report && <> · <span className="t-key">{report.documentId}</span></>}
           </p>
         </header>
 
@@ -441,6 +446,7 @@ export function CompletionReportDialog({
             </section>
           </div>
         )}
+        </div>
 
         <div className="cd__actions sr-actions">
           <button type="button" className="cd__cancel" onClick={onClose} disabled={busy}>

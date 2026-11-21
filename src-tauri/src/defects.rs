@@ -207,6 +207,11 @@ pub struct ResultCandidate {
     pub attempt: i64,
     pub status: String,
     pub created_at: String,
+    /// When the attempt ran: its end, else its start, else its run's start
+    /// (an imported report's own time), and only then when it was recorded
+    /// (FIX-51: the picker showed the import time of a report from days
+    /// before).
+    pub executed_at: String,
 }
 
 #[cfg_attr(test, derive(TS), ts(export))]
@@ -420,6 +425,19 @@ pub(crate) fn result_link(
     Ok(result_links(conn, &[result_id.to_string()])?.remove(result_id))
 }
 
+/// The label of a result link that reaches a case: its run, then the case's
+/// key and title, then the attempt («RUN-001 · ATS_001 · Pagar #2») from the
+/// stored label «RUN-001 · <case key or test> #2».
+pub(crate) fn result_label(stored: &str, key: &str, title: &str) -> String {
+    let run = stored.split(" · ").next().unwrap_or(stored);
+    let attempt = stored
+        .rsplit_once(" #")
+        .filter(|(_, n)| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()))
+        .map(|(_, n)| format!(" #{n}"))
+        .unwrap_or_default();
+    format!("{run} · {key} · {title}{attempt}")
+}
+
 /// Attaches their links to defects and derives the cases each reaches:
 /// direct case links, and the case of each linked result (`result_links`),
 /// in link order, once each. Two queries for any number of defects.
@@ -438,8 +456,34 @@ fn attach_links<'c>(
         .map(|l| l.target_id.clone())
         .collect();
     let resolved = result_links_using(conn, &result_ids, resolvers)?;
+    let mut facts: HashMap<String, Option<(String, String)>> = HashMap::new();
     for d in defects.iter_mut() {
         d.links = links.remove(&d.id).unwrap_or_default();
+        // A result that reaches a case is named by it, «RUN-004 · PH-001 ·
+        // Iniciar sesión…», not by its test path (FIX-49: the unlink
+        // confirmation said «RUN-004 · specs/acceso.spec.ts::…»).
+        for l in d.links.iter_mut().filter(|l| l.target_kind == "result") {
+            let Some(case) = resolved.get(&l.target_id).and_then(|r| r.case_id.clone()) else {
+                continue;
+            };
+            let Some(label) = l.label.as_deref() else {
+                continue;
+            };
+            if !facts.contains_key(&case) {
+                let found = conn
+                    .query_row(
+                        "SELECT scenario_id, title FROM test_cases WHERE id = ?1 AND deleted_at IS NULL",
+                        params![case],
+                        |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
+                    )
+                    .optional()
+                    .map_err(err)?;
+                facts.insert(case.clone(), found);
+            }
+            if let Some(Some((key, title))) = facts.get(&case) {
+                l.label = Some(result_label(label, key, title));
+            }
+        }
         let mut cases: Vec<String> = Vec::new();
         for l in &d.links {
             let case = match l.target_kind.as_str() {
@@ -528,7 +572,8 @@ pub(crate) fn result_candidates(
     let mut stmt = conn
         .prepare(&format!(
             "SELECT x.id, x.run_id, coalesce(r.run_key, ''), coalesce(r.title, ''),
-                    NULL, x.case_key, x.test_key, x.attempt, x.status, x.created_at
+                    NULL, x.case_key, x.test_key, x.attempt, x.status, x.created_at,
+                    coalesce(x.finished_at, x.started_at, r.started_at, x.created_at)
                FROM results x LEFT JOIN runs r ON r.id = x.run_id
               WHERE x.project_id = ?1 AND x.status IN ('failed', 'blocked', 'other')
                 AND (r.id IS NULL OR r.deleted_at IS NULL) AND {}
@@ -549,6 +594,7 @@ pub(crate) fn result_candidates(
                 attempt: r.get(7)?,
                 status: r.get(8)?,
                 created_at: r.get(9)?,
+                executed_at: r.get(10)?,
             })
         })
         .map_err(err)?;

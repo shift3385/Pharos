@@ -23,12 +23,41 @@ modifica tus datos.
     abre la base de datos local»:** pasa en un equipo nuevo o tras reinstalar
     Windows. Escribe la clave de recuperación (56 caracteres en grupos de 4;
     dan igual mayúsculas, espacios o guiones) y pulsa «Abrir con la clave».
+  - **«Otro Pharos está actualizando tus datos»:** otra ventana de Pharos o
+    el CLI `pharos` están convirtiendo o actualizando la carpeta de datos (por
+    ejemplo, al instalar una versión nueva). Pharos espera unos segundos antes
+    de decirlo; cuando el otro termina, pulsa «Reintentar».
+  - **«Falta espacio para actualizar tus datos»:** para convertir tus datos
+    con seguridad, Pharos necesita sitio para una copia y para la base nueva.
+    La pantalla dice cuánto; libéralo y pulsa «Reintentar». No se ha tocado
+    nada.
+  - **«Falta el archivo de tus datos»:** tus datos ya están en `pharos.db`,
+    pero ese archivo no está en la carpeta de datos. Vuelve a ponerlo allí (o
+    una copia `pharos.db.bak-…`); Pharos no crea una base vacía en su lugar.
+
+  Todas tienen «Detalles técnicos», con el error exacto para el informe.
+- **«Actualizando el formato de tus datos».** La primera vez que abres la
+  0.6 con datos de una versión anterior, Pharos los convierte a su nuevo
+  formato (`pharos.db`) y antes guarda una copia del archivo anterior
+  (`pharos.db.enc.bak-…`). Pasa una sola vez: espera y no cierres la app; si
+  se cierra, la próxima vez sigue donde se quedó. Si la conversión falla,
+  «No se pudieron actualizar tus datos» lo dice: el original sigue intacto y
+  puedes reintentarlo.
 - **«Algo salió mal».** Una vista ha fallado, pero la aplicación sigue
   abierta y tus datos, a salvo. Ofrece «Reintentar», «Recargar» y «Exportar
   diagnóstico»; «Detalles técnicos» enseña el error para el informe.
 
-En este manual, el tour daña a propósito una copia de la base de datos de
-Liomar y simula un fallo de una vista; después todo vuelve a la normalidad.
+En este manual, otro Pharos tiene ocupados los datos de Liomar justo cuando
+abre la app, y después se simula el fallo de una vista; todo vuelve a la
+normalidad.
+
+## Varias ventanas y el CLI
+
+Puedes tener dos ventanas de Pharos abiertas y usar el CLI `pharos` a la vez
+sobre los mismos datos: no se pisan. Lo que guarda una aparece en la otra en
+unos segundos, sin recargar y sin tocar lo que estés escribiendo. Solo
+mientras una de ellas convierte o actualiza los datos, la otra espera
+(«Otro Pharos está actualizando tus datos»).
 
 ## Atajos de teclado
 
@@ -43,7 +72,8 @@ Liomar y simula un fallo de una vista; después todo vuelve a la normalidad.
   caracteres y vuelve a intentarlo.
 - **«La clave es válida, pero no abre esta base de datos…».** Es la clave de
   otro equipo, o el archivo está dañado. Comprueba que sea la de este equipo;
-  si lo es, prueba con una copia `pharos.db.enc.bak-…`.
+  si lo es, prueba con una copia `pharos.db.bak-…` (o, de antes de la 0.6,
+  `pharos.db.enc.bak-…`).
 - **«Algo salió mal» vuelve a salir tras «Reintentar».** Pulsa «Recargar»; si
   se repite, exporta el diagnóstico e informa del fallo.
 
@@ -54,10 +84,14 @@ Liomar y simula un fallo de una vista; después todo vuelve a la normalidad.
   la pantalla de entrada o en «Acerca de Pharos» (un clic en el logotipo del
   menú lateral).
 - Guarda la clave de recuperación el primer día (capítulo 15) y haz copias de
-  `pharos.db.enc` y de su carpeta `evidence`: son lo único que devuelve tus
-  datos en otro equipo.
-- Nunca adjuntes a un informe `pharos.db.enc`, tu clave de recuperación ni
-  claves de IA. El diagnóstico ya los excluye.
+  `pharos.db` (con Pharos cerrado) y de su carpeta `evidence`: con la clave,
+  son lo único que devuelve tus datos en otro equipo.
+- Para volver a la 0.5 tras actualizar, restaura la copia
+  `pharos.db.enc.bak-…` que guardó la conversión. Lo que cambiaste en la 0.6
+  y no llegó a sincronizarse no viaja con ella (README, «Local data
+  backups»).
+- Nunca adjuntes a un informe `pharos.db`, tu clave de recuperación ni claves
+  de IA. El diagnóstico ya los excluye.
 
 ## Véase también
 

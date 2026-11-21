@@ -3,8 +3,9 @@
 //   npm run manual                  isolated DB + API + tour build + tours + manual
 //   E2E_SKIP_BUILD=1 npm run manual reuse the last tour build
 //   npm run manual -- --spec 04     the preparation tour + the tours whose file name
-//                                   matches (a regular expression) + the chapters
-//                                   they read data from; no manual
+//                                   matches (a regular expression), each after a
+//                                   silent setup of the data it reads
+//                                   (e2e/tours/prepare.ts); no manual
 //   npm run manual -- --no-manual   all the tours, no manual (CI on pull requests)
 //
 // Isolation (e2e/README.md → Tours). Everything runs apart from the user's own
@@ -30,16 +31,18 @@ import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, openSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { createConnection } from "node:net";
-import { homedir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { owners } from "../../scripts/api-port.mjs";
 import { findAiKey, readDotenv } from "../../scripts/manual/ai-key.mjs";
-import { PERSONA } from "../../scripts/manual/persona.mjs";
+import { ADMIN, PERSONA, TEAMMATE } from "../../scripts/manual/persona.mjs";
 import { acquireLock, lockMessage, releaseLock } from "../../scripts/manual/run-lock.mjs";
 import { scanForSecret } from "../../scripts/manual/secret-scan.mjs";
 import { driverVersion, major, webview2Version } from "../scripts/edge-driver.mjs";
 import { selectTours } from "./manifest.ts";
+import { REFERENCE_DAY, RUN_DAY, daysBetween } from "./data/pharos.ts";
+import { prepareRunFixtures } from "./run-fixtures.mjs";
 
 const toursDir = fileURLToPath(new URL(".", import.meta.url));
 const repoDir = join(toursDir, "..", "..");
@@ -51,8 +54,11 @@ const isWindows = process.platform === "win32";
 
 export const TOURS_DB = "pharos_test_db_tours";
 const port = Number(process.env.PHAROS_TOURS_PORT || 3100);
-/** Liomar's password on the tour database (dropped after the run). */
+/** The passwords of the three accounts on the tour database (dropped after
+ *  the run): test values, never a real one. */
 const TOURS_PASSWORD = "faro-liomar-2026";
+const TEAMMATE_PASSWORD = "faro-jorge-2026";
+const ADMIN_PASSWORD = "faro-admin-2026";
 const apiUrl = `http://localhost:${port}`;
 
 const args = process.argv.slice(2);
@@ -109,13 +115,13 @@ if (!lock.ok) {
 }
 process.on("exit", () => releaseLock());
 
-// A partial run adds the chapters its tours read data from; a bad filter stops
-// here, before the database and the long build.
+// A partial run runs only the matching tours: each prepares the data it reads
+// (e2e/tours/prepare.ts). A bad filter stops here, before the database and
+// the long build.
 if (specFilter) {
   try {
-    const { files, added } = selectTours(specFilter);
-    console.log(`› --spec "${specFilter}": ${files.length - 1} tour(s) after the preparation`);
-    if (added.length > 0) console.log(`› Added because the others read their data: ${added.join(", ")}`);
+    const { asked } = selectTours(specFilter);
+    console.log(`› --spec "${specFilter}": ${asked.join(", ")} after the preparation (prerequisites loaded silently)`);
   } catch (err) {
     fail(err.message);
   }
@@ -218,7 +224,7 @@ const checkInterrupted = () => {
 
 /** Names of the files the tours export (projects, plans, cases, the matrix,
  *  templates, diagnostics): what the Downloads guard looks for. */
-export const TOUR_OUTPUT = /Banca|Portal Clientes|Proyecto de prueba|pharos|Plan de pruebas|BM-\d|PC-\d|matriz|trazabilidad|plantilla|\.feature$/i;
+export const TOUR_OUTPUT = /Pharos|Proyecto de prueba|API de sincroni|Plan de pruebas|PH-\d|API-\d|matriz|trazabilidad|plantilla|\.feature$/i;
 
 /** The user's real Downloads folder (Known Folder FOLDERID_Downloads). */
 function userDownloadsDir() {
@@ -295,6 +301,11 @@ const childEnv = {
   // https://ci.ejemplo.test/…, never resolves (.test is reserved), so
   // «Enviar prueba» shows a failed delivery and nothing leaves the machine.
   WEBHOOK_SECRETS_KEY: randomBytes(32).toString("base64"),
+  // Three accounts sign in many times a minute (the app, the loaders and the
+  // API sessions of people.ts; chapter 15 switches to «Administrador» and
+  // back): the default 10 sign-ins per minute per IP made later chapters fail
+  // with HTTP 429. No tour exercises the limit itself.
+  LOGIN_RATE_LIMIT_MAX: "1000",
 };
 let exitCode = 1;
 
@@ -302,13 +313,31 @@ try {
   rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
 
+  // The story's dates follow the run day (data/pharos.ts): the fixtures'
+  // dates move with it, in a copy the tours read (PHAROS_TOURS_FIXTURES).
+  const shift = daysBetween(REFERENCE_DAY, RUN_DAY);
+  console.log(`› Story day ${RUN_DAY} (fixtures moved ${shift} days from ${REFERENCE_DAY})`);
+  const runFixtures = await prepareRunFixtures({
+    repoDir,
+    source: join(toursDir, "fixtures"),
+    out: join(tmpdir(), "pharos-tours-fixtures"),
+    days: shift,
+    runDay: RUN_DAY,
+  });
+  checkInterrupted();
+
   console.log(`› Creating the tour database ${TOURS_DB} (${dbUrl.hostname}:${dbUrl.port || 5432})`);
   await dropDatabase();
   await admin(`CREATE DATABASE ${TOURS_DB}`);
   if (run("npm", ["--prefix", "server", "run", "migrate"], { env: childEnv }) !== 0) throw new Error("the migrations failed on the tour database.");
   checkInterrupted();
-  // No seeded account (NC-052): Liomar creates his own in chapter 1, on
-  // screen, and every chapter uses it. The tours always run chapter 1.
+  // No seeded person (NC-052): Liomar creates his own account in chapter 1,
+  // on screen. A run without chapter 1 registers him through the API and
+  // signs in silently (prerequisite «cuenta-liomar», e2e/tours/prepare.ts);
+  // Jorge registers through the API when a chapter needs him
+  // («cuenta-jorge»). The server administrator, «Administrador», is
+  // registered below, before any tour: the first account of a server is its
+  // administrator, so neither Liomar nor Jorge is one.
 
   console.log(`› Starting the tour API on ${apiUrl}`);
   const log = openSync(join(outDir, "api.log"), "w");
@@ -329,6 +358,15 @@ try {
   }
   checkInterrupted();
   if (!up) throw new Error(`the tour API did not answer on ${apiUrl} (see e2e/results/tours/api.log).`);
+
+  const registered = await fetch(`${apiUrl}/auth/register`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email: ADMIN.email, password: ADMIN_PASSWORD, displayName: ADMIN.alias, firstName: ADMIN.first, lastName: ADMIN.last }),
+  });
+  if (!registered.ok) throw new Error(`could not register the server administrator (HTTP ${registered.status}).`);
+  if (!(await registered.json()).user?.isAdmin) throw new Error("the server administrator is not the first account of the tour server.");
+  console.log(`› Registered the server administrator («${ADMIN.alias}», the first account)`);
 
   const targetDir = toursTargetDir();
   const binary = join(targetDir, "debug", "pharos.exe");
@@ -374,12 +412,21 @@ try {
         PHAROS_E2E_PROFILE: profile,
         PHAROS_TOURS_DOWNLOADS: downloads,
         PHAROS_TOURS_API: apiUrl,
+        // The run's day and fixtures: a run that crosses midnight keeps its day.
+        PHAROS_TOURS_DAY: RUN_DAY,
+        PHAROS_TOURS_FIXTURES: runFixtures,
         // «Requisitos desde un proyecto»: the folder the debug build picks
         // instead of Windows' own picker (project_scan.rs, MAN-03).
-        PHAROS_E2E_PICK_FOLDER: join(toursDir, "fixtures", "proyecto-billetera"),
-        // The one account of the manual (a test address, never a real one).
+        PHAROS_E2E_PICK_FOLDER: join(toursDir, "fixtures", "pharos", "proyecto-api-sincronizacion"),
+        // The accounts of the manual (test addresses, never real ones):
+        // Liomar's, the app's; Jorge's, used only through the API.
         TEST_USER_EMAIL: PERSONA.email,
         TEST_USER_PASSWORD: TOURS_PASSWORD,
+        TEAMMATE_EMAIL: TEAMMATE.email,
+        TEAMMATE_PASSWORD,
+        // The server administrator: the API helpers and chapter 15's
+        // administration block (people.ts).
+        ADMIN_PASSWORD,
         ...(specFilter ? { PHAROS_TOURS_ONLY: specFilter } : {}),
       },
     });

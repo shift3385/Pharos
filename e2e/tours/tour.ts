@@ -16,13 +16,14 @@
 // `covers` names the inventory items of e2e/tours/manifest.ts the step
 // exercises; `npm run check:manual` reads them statically, so they must be
 // string literals.
-import { appendFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { foreignNames } from "../../scripts/manual/persona.mjs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { $, $$, browser } from "@wdio/globals";
 import { recordToasts } from "./helpers";
 import { CHAPTERS, type ChapterId } from "./manifest";
+import { ensure, verifyMade } from "./prepare";
 import { es, setAppWindow } from "../support";
 
 const resultsDir = join(dirname(fileURLToPath(import.meta.url)), "..", "results", "tours");
@@ -57,9 +58,11 @@ export interface StepSpec {
   /** Keep the newest toast in the capture (it is what the step shows). By
    *  default toasts are hidden: they carry stale messages and local paths. */
   toast?: boolean;
-  /** The control the step is about (MAN-02): CSS/WDIO selector(s), their
-   *  union box. The manual outlines it in the capture and, in the PDF, adds a
-   *  magnified inset when it is small in a big screen. */
+  /** The control the step is about (MAN-02): CSS/WDIO selector(s). The
+   *  manual outlines its zone in the capture and, in the PDF, adds a «Detalle»
+   *  cut-out when it is small in a big screen (scripts/manual/focus.mjs). With
+   *  several elements (a trigger and its menu), each one is outlined and the
+   *  cut-out shows their union. */
   focus?: string | string[];
   /** Consecutive steps with the same key print side by side in the PDF (a
    *  before/after pair). */
@@ -92,6 +95,8 @@ export interface StepRecord {
   status: "passed" | "failed" | "skipped";
   reason?: string;
   focus?: FocusBox;
+  /** With several focused elements, each one's box (`focus` is their union). */
+  focusParts?: FocusBox[];
   /** The step declared a focus that was not displayed at capture time. */
   focusMissing?: boolean;
   /** Other people or accounts the capture showed (NC-052; only in report mode). */
@@ -99,10 +104,11 @@ export interface StepRecord {
   group?: string;
 }
 
-/** The union box of `selectors` in the capture's pixels: relative to the
+/** The boxes of `selectors` in the capture's pixels: relative to the
  *  viewport (page shots) or to `origin` (element shots), times the device
- *  pixel ratio. Null when none is displayed. */
-async function focusBox(selectors: string[], origin: string | null): Promise<FocusBox | null> {
+ *  pixel ratio. `box` is their union; `parts` each displayed element's box
+ *  when there are several. Null when none is displayed. */
+async function focusBox(selectors: string[], origin: string | null): Promise<{ box: FocusBox; parts: FocusBox[] } | null> {
   const boxes: FocusBox[] = [];
   for (const sel of selectors) {
     for (const el of await $$(sel)) {
@@ -120,19 +126,34 @@ async function focusBox(selectors: string[], origin: string | null): Promise<Foc
     const r = o ? document.querySelector(o)?.getBoundingClientRect() : null;
     return { dpr: window.devicePixelRatio || 1, ox: r?.left ?? 0, oy: r?.top ?? 0 };
   }, origin);
-  const x0 = Math.min(...boxes.map((b) => b.x));
-  const y0 = Math.min(...boxes.map((b) => b.y));
-  const x1 = Math.max(...boxes.map((b) => b.x + b.w));
-  const y1 = Math.max(...boxes.map((b) => b.y + b.h));
-  return {
+  const px = (x0: number, y0: number, x1: number, y1: number): FocusBox => ({
     x: Math.round((x0 - ox) * dpr),
     y: Math.round((y0 - oy) * dpr),
     w: Math.round((x1 - x0) * dpr),
     h: Math.round((y1 - y0) * dpr),
-  };
+  });
+  const box = px(
+    Math.min(...boxes.map((b) => b.x)),
+    Math.min(...boxes.map((b) => b.y)),
+    Math.max(...boxes.map((b) => b.x + b.w)),
+    Math.max(...boxes.map((b) => b.y + b.h)),
+  );
+  return { box, parts: boxes.length > 1 ? boxes.map((b) => px(b.x, b.y, b.x + b.w, b.y + b.h)) : [] };
 }
 
-let current: { id: ChapterId; n: number; failed: string | null } | null = null;
+let current: { id: ChapterId; n: number; failed: string | null; prepError: string | null } | null = null;
+
+/** Where a chapter's steps go: its own id and numbering, or, for the second
+ *  part of a chapter (`partOf`), that chapter's id with the numbers after
+ *  the steps of its first part's tour file (also in a run without it). */
+export function stepTarget(id: ChapterId): { chapter: ChapterId; offset: number } {
+  const meta = CHAPTERS.find((c) => c.id === id);
+  if (!meta?.partOf) return { chapter: id, offset: 0 };
+  const parent = CHAPTERS.find((c) => c.id === meta.partOf);
+  if (!parent?.file) throw new Error(`chapter ${id} is part of ${meta.partOf}, which has no tour file`);
+  const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), parent.file), "utf8");
+  return { chapter: parent.id, offset: (source.match(/^\s*step\("/gm) ?? []).length };
+}
 /** The window size the next captures must have (setViewport changes it). */
 let target: Viewport = DESKTOP;
 
@@ -259,19 +280,34 @@ async function closeLeftovers(id: ChapterId, failed: string | null) {
 }
 
 /** A chapter of the manual: a mocha `describe` whose steps stop after the
- *  first failure (the next steps would only fail for the same reason). */
+ *  first failure (the next steps would only fail for the same reason).
+ *  Before its first step, its prerequisites (`uses` in the manifest) are
+ *  prepared silently (prepare.ts); one that cannot be fails the first step.
+ *  After a chapter that passed, what it makes on screen is compared with
+ *  its loaders' contract (a warning on drift). */
 export function chapter(id: ChapterId, body: () => void) {
   const meta = CHAPTERS.find((c) => c.id === id);
   if (!meta) throw new Error(`chapter ${id} is not in e2e/tours/manifest.ts`);
   describe(`Tour ${meta.number} · ${meta.title}`, () => {
     before(async () => {
-      current = { id, n: 0, failed: null };
+      const target = stepTarget(id);
+      current = { id: target.chapter, n: target.offset, failed: null, prepError: null };
+      await stabilise();
+      await setViewport(DESKTOP);
+      try {
+        await ensure(meta.uses ?? [], id);
+      } catch (err) {
+        current.prepError = (err as Error).message;
+        console.error(`✖ ${id}: ${current.prepError}`);
+      }
+      // A loader may have left the app on another screen or size.
       await stabilise();
       await setViewport(DESKTOP);
     });
     body();
     after(async () => {
       await closeLeftovers(id, current?.failed ?? null);
+      if (current && !current.failed && !current.prepError) await verifyMade(id);
     });
   });
 }
@@ -298,11 +334,17 @@ export function step(id: string, spec: StepSpec) {
       this.skip();
     }
     try {
+      if (ch.prepError) {
+        const message = ch.prepError;
+        ch.prepError = null;
+        throw new Error(message);
+      }
       await stabilise();
       await spec.run();
       const shot = spec.shot ?? "page";
       let image: string | null = null;
       let focus: FocusBox | null = null;
+      let focusParts: FocusBox[] = [];
       let focusMissing = false;
       let foreign: string[] = [];
       if (shot !== false) {
@@ -316,7 +358,9 @@ export function step(id: string, spec: StepSpec) {
           await browser.execute(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
           if (spec.focus) {
             const selectors = Array.isArray(spec.focus) ? spec.focus : [spec.focus];
-            focus = await focusBox(selectors, shot === "page" ? null : shot.element);
+            const found = await focusBox(selectors, shot === "page" ? null : shot.element);
+            focus = found?.box ?? null;
+            focusParts = found?.parts ?? [];
             // Not fatal: the step still proves its action. The manual build
             // lists these steps so the selector gets fixed.
             if (!focus) {
@@ -342,6 +386,7 @@ export function step(id: string, spec: StepSpec) {
         viewport: size,
         status: "passed",
         ...(focus ? { focus } : {}),
+        ...(focusParts.length ? { focusParts } : {}),
         ...(focusMissing ? { focusMissing } : {}),
         ...(foreign.length ? { foreignNames: foreign } : {}),
       });

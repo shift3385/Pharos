@@ -57,6 +57,7 @@
     "chooseFile": "Elegir archivo…",
     "chooseFolder": "Elegir carpeta…",
     "noFileChosen": "Ningún archivo elegido",
+    "noFolderChosen": "Ninguna carpeta elegida",
     "filesChosen_one": "{{count}} archivo elegido",
     "filesChosen_other": "{{count}} archivos elegidos",
     "retry": "Reintentar",
@@ -99,6 +100,10 @@
     "kind": {
       "plan": "Planes de prueba",
       "case": "Casos de prueba"
+    },
+    "kindOne": {
+      "plan": "Plan de pruebas",
+      "case": "Caso de prueba"
     },
     "builtin": "Incluida",
     "shared": "Compartida",
@@ -598,7 +603,7 @@
       "cardShadow": "Sombra en las tarjetas",
       "cardShadowHint": "Una sombra ligera que separa las tarjetas del fondo.",
       "retention": "Retención de elementos borrados (días)",
-      "retentionHint": "Lo que borras se elimina definitivamente de este equipo tras estos días. Un borrado aún sin sincronizar espera al siguiente sync. El servidor tiene su propio plazo y conserva una marca de lo borrado.",
+      "retentionHint": "Lo que borras se elimina definitivamente de este equipo tras estos días. Un borrado aún sin sincronizar espera a la siguiente sincronización. El servidor tiene su propio plazo y conserva una marca de lo borrado.",
       "download": "Carpeta de descarga",
       "downloadCurrent": "Carpeta actual",
       "downloadDefault": "Descargas del sistema",
@@ -793,7 +798,7 @@
         "noProjects": "Todavía no tienes proyectos.",
         "current": "Ahora: {{days}}",
         "default": "Por defecto ({{days}})",
-        "days": "Días…",
+        "days": "Número de días",
         "daysLabel": "Días de retención de {{kind}}",
         "exceptions": "Nunca caduca",
         "exceptionsText": "La evidencia de la ejecución manual, la de un resultado final fallido o bloqueado, y la de un resultado vinculado a un defecto abierto. Tampoco caducan los adjuntos del tablero, de los defectos ni de los borradores.",
@@ -832,7 +837,7 @@
       },
       "check": {
         "title": "Verificar evidencias",
-        "desc": "Comprueba que cada archivo está y se descifra, y busca archivos que ninguna fila conoce. No borra nada por sí sola.",
+        "desc": "Comprueba que cada archivo está y se descifra, y busca archivos que ningún elemento usa. No borra nada por sí sola.",
         "action": "Verificación",
         "actionHint": "Lee y descifra cada archivo, así que puede tardar con muchas evidencias. Puedes seguir trabajando mientras tanto.",
         "run": "Verificar evidencias",
@@ -895,7 +900,7 @@
         "title": "No se pudieron comprobar ({{count}})",
         "desc": "Otro programa los tenía bloqueados, falta un permiso o cambiaron mientras se comprobaban (por ejemplo, al volver a adjuntarlos). Vuelve a verificar. No se marcan."
       },
-      "file": "Archivo {{id}}",
+      "file": "Archivo sin nombre ({{id}})",
       "noUses": "Sin adjuntos vigentes.",
       "useIn": "En {{project}}",
       "open": "Abrir {{section}}"
@@ -981,6 +986,7 @@
         "risks": "Riesgos",
         "lifecycle": "Ciclo de vida",
         "closures": "Cierres",
+        "completionReport": "Informe de cierre",
         "links": "Vínculos",
         "review": "Revisión",
         "approval": "Aprobación",
@@ -1565,7 +1571,7 @@
         "planner": "Tablero",
         "requirements": "Requisitos",
         "traceability": "Trazab.",
-        "settings": "Proyecto",
+        "settings": "Ajustes",
         "defects": "Defectos",
         "runs": "Ejec.",
         "library": "Biblio."
@@ -1609,7 +1615,8 @@
       "runs": "Ejecuciones"
     },
     "deleteTitle": "Eliminar proyecto",
-    "deleteWarning": "Se eliminará «{{name}}» y TODO su contenido: el plan de pruebas, los casos de prueba y el tablero. Esta acción no se puede deshacer fácilmente.",
+    "deleteWarning": "Se eliminará «{{name}}» y todo su contenido: planes, casos, requisitos y tarjetas. Queda en la Papelera (Administración › General) hasta que se cumpla su plazo.",
+    "deleteWarningWeb": "Se eliminará «{{name}}» y todo su contenido: planes, casos, requisitos y tarjetas. Desde la web no se puede restaurar.",
     "deleteConfirm": "Sí, eliminar todo",
     "savedToast": "Ajustes actualizados",
     "header": {
@@ -1624,7 +1631,7 @@
       "cases_other": "{{count}} casos",
       "requirements_one": "1 requisito",
       "requirements_other": "{{count}} requisitos",
-      "closesOn": "Cierre del ciclo: {{date}}"
+      "closesOn": "Fin del plan: {{date}}"
     },
     "list": {
       "loadFailed": "No se pudo cargar la lista de proyectos.",
@@ -1644,13 +1651,13 @@
         "access": "Último acceso",
         "name": "Nombre (A–Z)",
         "updated": "Última modificación",
-        "closure": "Cierre del ciclo",
+        "closure": "Fin del plan",
         "execution": "Progreso de ejecución",
         "coverage": "Cobertura de requisitos",
         "defects": "Defectos abiertos"
       },
       "sortSoon": {
-        "closure": "Ningún plan tiene fechas de cierre todavía.",
+        "closure": "Ningún plan tiene fecha de fin todavía.",
         "defects": "Próximamente."
       },
       "col": {
@@ -1667,7 +1674,7 @@
       "coverageShort": "{{value}} % cob.",
       "today": "Hoy",
       "yesterday": "Ayer",
-      "never": "Nunca",
+      "never": "—",
       "summary": "Mostrando <b>{{from}}–{{to}}</b> de <b>{{total}}</b> proyectos",
       "noMatch": "Ningún proyecto coincide con «{{query}}».",
       "rowMenu": "Más acciones de {{name}}",
@@ -1702,14 +1709,15 @@
       "planHistoryFailed": "No se pudo guardar el ajuste del historial.",
       "riskBands": {
         "title": "Bandas de riesgo",
-        "desc": "El nivel de riesgo de un requisito es probabilidad × impacto (1–25), según ISTQB. Elige hasta qué nivel es bajo y hasta cuál es medio; el resto es alto. Cambiarlas no toca ningún dato: cambia cómo se leen la matriz, su orden por riesgo y el informe.",
+        "desc": "El nivel de riesgo de un requisito es probabilidad × impacto (1–25).",
+        "help": "Según ISTQB. Elige hasta qué nivel es bajo y hasta cuál es medio; el resto es alto. Cambiarlas no toca ningún dato: cambia cómo se leen la matriz, su orden por riesgo y el informe.",
         "lowUpTo": "Bajo: hasta",
         "mediumUpTo": "Medio: hasta",
         "high": "Alto",
         "highRange": "{{from}} a {{to}}",
-        "impactShort": "I",
-        "likelihoodShort": "P",
-        "cells": "Impacto (I) por probabilidad (P). Con estas bandas: {{low}} celdas bajas, {{medium}} medias y {{high}} altas.",
+        "impactAxis": "Impacto",
+        "likelihoodAxis": "Probabilidad",
+        "cells": "Impacto por probabilidad. Con estas bandas: {{low}} celdas bajas, {{medium}} medias y {{high}} altas.",
         "reset": "Restablecer ({{low}} y {{medium}})",
         "saved": "Bandas de riesgo guardadas.",
         "failed": "No se pudieron guardar las bandas de riesgo.",
@@ -1726,7 +1734,7 @@
       "required": "Escribe un prefijo, por ejemplo «PHA-».",
       "overlap": "Se solapa con «{{prefix}}» de {{name}}: dos prefijos no pueden ser iguales ni empezar uno por el otro.",
       "placeholder": "Prefijo",
-      "suggestedHint": "Prefijo de las claves de los casos (PHA-001…), sugerido a partir del nombre y libre en tus proyectos. Puedes cambiarlo ahora o en Ajustes del proyecto.",
+      "suggestedHint": "Prefijo de las claves de los casos, sugerido a partir del nombre y libre en tus proyectos. Puedes cambiarlo ahora o en Ajustes del proyecto.",
       "free": "Libre"
     },
     "copySettings": {
@@ -1782,7 +1790,7 @@
         "desktopOnly": "Solo en la app de escritorio: en la web no hay retención de evidencias",
         "riskBands": "Bajo hasta {{low}} · medio hasta {{medium}}"
       },
-      "never": "Nunca se copian el nombre, el prefijo ni los datos (plan, casos, requisitos, ejecuciones).",
+      "never": "Nunca se copian el nombre, el prefijo ni los datos: plan, casos, requisitos, ciclos, ejecuciones, defectos y tablero.",
       "copiedFrom": "copiado de {{name}}",
       "summary": "Se copiarán de «{{name}}»: {{parts}}.",
       "summaryNothing": "No se copiará nada de «{{name}}»: el proyecto empieza con los ajustes por defecto.",
@@ -2036,7 +2044,7 @@
       "statusReports": "Informes de estado",
       "summaryReports": "Informes de resumen/finalización",
       "defectReports": "Informes de defectos",
-      "uatSignoff": "Sign-off de UAT",
+      "uatSignoff": "Acta de aceptación (UAT)",
       "testData": "Datos de prueba",
       "incidentReports": "Informes de incidentes",
       "testDesignSpec": "Especificación de diseño de pruebas",
@@ -2088,7 +2096,7 @@
       "schedule": "Sprints e hitos del ciclo de pruebas. Haz clic en el día de inicio y después en el de fin para crear un sprint (Esc cancela). Selecciona un sprint y arrastra sus extremos para cambiar las fechas, o edítalas en su fila. En «Hito», haz clic en un día para añadir un hito.",
       "risks": "Riesgos que pueden afectar a las pruebas y cómo se mitigan.",
       "communication": "Cómo y cuándo se informa del avance.",
-      "closure": "Condiciones que deben cumplirse para cerrar el ciclo.",
+      "closure": "Condiciones que deben cumplirse para cerrar el ciclo. Los criterios medidos por una métrica se evalúan solos al cerrar un ciclo; su texto se escribe desde la métrica.",
       "purpose": "Objetivos de prueba que persigue el plan y para qué sirve.",
       "conclusion": "Valoración frente a objetivos y criterios de salida, riesgos abiertos y decisión.",
       "assumptions": "Lo que se da por hecho al planificar y los límites que el equipo no puede cambiar (plazos, personas, normas). Si un supuesto deja de cumplirse, revisa el plan.",
@@ -2125,7 +2133,8 @@
       "exportPdf": "Exportar .pdf",
       "exportPdfDesc": "Documento listo para firmar",
       "exportXlsx": "Exportar .xlsx",
-      "exportXlsxDesc": "Editable en Excel"
+      "exportXlsxDesc": "Editable en Excel",
+      "history": "Historial en el documento: {{mode}}"
     },
     "panel": {
       "title": "Estado del plan",
@@ -2387,11 +2396,11 @@
     "metricsNone": "Todavía no hay métricas. Añade una del catálogo o una propia.",
     "closureLink": {
       "label": "Medido por",
+      "target": "Objetivo",
       "none": "Sin métrica · se marca a mano",
       "blocking": "Bloqueante",
       "advisory": "Orientativo",
-      "blockingTip": "Un criterio bloqueante en «No cumple» pide justificación para cerrar el ciclo; uno orientativo solo se informa.",
-      "hint": "Los criterios medidos por una métrica se evalúan solos al cerrar un ciclo. El texto se escribe desde la métrica."
+      "blockingTip": "Un criterio bloqueante en «No cumple» pide justificación para cerrar el ciclo; uno orientativo solo se informa."
     },
     "approval": {
       "by": "Aprobado por",
@@ -2407,6 +2416,8 @@
       "title": "Historial",
       "created": "Creación del plan",
       "approved": "Aprobado por {{name}}",
+      "sent": "Enviado a revisión por {{name}}",
+      "returned": "Cambios pedidos por {{name}}",
       "lostApproval": "pierde la aprobación",
       "none": "Aún no hay cambios guardados.",
       "someone": "Otra cuenta"
@@ -2429,7 +2440,7 @@
       "approveTitle": "Aprobar la versión {{version}}",
       "approveMessage": "Quedará como aprobada por {{name}} el {{date}}. Si después se edita el contenido, el plan vuelve a «En revisión» y habrá que aprobarlo de nuevo.",
       "approveAction": "Aprobar",
-      "selfApprovalNote": "Eres quien creó este plan. Este espacio de trabajo no pide aprobación independiente, así que puedes aprobarlo y quedará como aprobación propia en el plan, el historial y los exportes.",
+      "selfApprovalNote": "Eres quien creó este plan. Este workspace no pide aprobación independiente, así que puedes aprobarlo y quedará como aprobación propia en el plan, el historial y los exportes.",
       "return": "Pedir cambios…",
       "returnTitle": "Pedir cambios en el plan",
       "returnMessage": "El plan sigue en revisión. Quien lo creó verá tu comentario en «Estado del plan» y en el historial.",
@@ -2441,12 +2452,12 @@
       "obsoleteApproved": "El plan pierde la aprobación y deja de usarse. Si lo reactivas, vuelve a revisión y hay que aprobarlo de nuevo.",
       "reactivate": "Reactivar",
       "reactivateTitle": "Reactivar el plan",
-      "reactivateMessage": "El plan vuelve a «En revisión» (o a Borrador si nunca se envió). No recupera la aprobación anterior.",
+      "reactivateMessage": "El plan vuelve a «En revisión» (o a «Borrador» si nunca se envió). No recupera la aprobación anterior.",
       "saveFirst": "Guarda los cambios antes de seguir con la revisión.",
       "notAllowed": {
-        "author": "Este espacio de trabajo pide aprobación independiente: aprueba un Test Manager que no sea el autor del plan.",
-        "role": "Solo un Test Manager aprueba planes en este espacio de trabajo.",
-        "notMember": "No eres miembro de este espacio de trabajo."
+        "author": "Este workspace pide aprobación independiente: aprueba un Test Manager que no sea el autor del plan.",
+        "role": "Solo un Test Manager aprueba planes en este workspace.",
+        "notMember": "No eres miembro de este workspace."
       },
       "banner": {
         "sent": "Enviado a revisión por {{name}} · {{date}}",
@@ -2529,10 +2540,11 @@
     "suggest": {
       "button": "✨ Sugerir pruebas",
       "disabled": "Necesitas IA configurada y un plan en el proyecto",
-      "title": "Sugerir pruebas con IA",
+      "title": "Sugerir casos con IA",
       "loading": "Generando sugerencias a partir del plan…",
       "empty": "No se generaron sugerencias. Revisa que el plan tenga tipos/niveles y que la IA responda.",
-      "create": "Crear {{count}}",
+      "create_one": "Crear {{count}} caso",
+      "create_other": "Crear {{count}} casos",
       "creating": "Creando…"
     },
     "exportDone": "Guardado en {{name}}",
@@ -2581,21 +2593,21 @@
       "advanced": {
         "name": "Avanzado",
         "keywords": "Background · Rule · varios Scenario",
-        "desc": "Un Feature completo con varios escenarios. Se escribe directamente en el editor Gherkin."
+        "desc": "Un Feature completo: precondiciones comunes y varios flujos, en el formulario o en Gherkin."
       },
       "includes": "Incluye"
     },
     "examples": {
       "title": "Examples (tabla de datos)",
-      "hint": "Cada columna es un <placeholder> que puedes usar en los pasos; cada fila es una ejecución.",
+      "hint": "Cada columna es un marcador (<nombre>) que puedes usar en los pasos; cada fila es una ejecución.",
       "emptyHint": "Aún no hay columnas. Añade la primera para empezar la tabla.",
       "columnName": "nombre_columna",
       "addColumn": "+ Columna",
       "addRow": "+ Fila",
       "removeColumn": "Quitar columna",
       "removeRow": "Quitar fila",
-      "placeholders": "Placeholders detectados en los pasos",
-      "orphanColumns": "Columnas sin placeholder en los pasos: {{cols}}",
+      "placeholders": "Marcadores detectados en los pasos",
+      "orphanColumns": "Columnas sin marcador en los pasos: {{cols}}",
       "columnN": "Columna {{n}}",
       "actions": "Acciones"
     },
@@ -2808,6 +2820,7 @@
     },
     "checklist": {
       "items": "Comprobaciones",
+      "add": "Añadir comprobación",
       "hint": "Una checklist se ejecuta marcando cada punto; no tiene pasos Gherkin.",
       "kept": "Los pasos y el Gherkin de este caso se conservan, ocultos mientras sea una checklist.",
       "noGherkin": "Una checklist no tiene vista Gherkin."
@@ -2829,7 +2842,7 @@
       "approveTitle": "Aprobar la versión {{version}}",
       "approveMessage": "Quedará como aprobada por {{name}} el {{date}}.",
       "approveAction": "Aprobar",
-      "selfApprovalNote": "Eres quien escribió este caso. Este espacio de trabajo no pide aprobación independiente, así que puedes aprobarlo y quedará como aprobación propia.",
+      "selfApprovalNote": "Eres quien escribió este caso. Este workspace no pide aprobación independiente, así que puedes aprobarlo y quedará como aprobación propia.",
       "return": "Pedir cambios…",
       "returnTitle": "Pedir cambios en {{key}}",
       "returnMessage": "El caso sigue en revisión. Quien lo escribió verá tu comentario hasta que guarde los cambios.",
@@ -2841,12 +2854,12 @@
       "obsoleteApproved": "El caso pierde la aprobación y deja de usarse. Si lo reactivas, vuelve a revisión y hay que aprobarlo de nuevo.",
       "reactivate": "Reactivar",
       "reactivateTitle": "Reactivar {{key}}",
-      "reactivateMessage": "El caso vuelve a «En revisión» (o a Borrador si nunca se envió). Hay que aprobarlo de nuevo.",
+      "reactivateMessage": "El caso vuelve a «En revisión» (o a «Borrador» si nunca se envió). Hay que aprobarlo de nuevo.",
       "saveFirst": "Guarda los cambios antes de seguir con la revisión.",
       "notAllowed": {
-        "author": "Este espacio de trabajo pide aprobación independiente: lo tiene que aprobar otra persona.",
+        "author": "Este workspace pide aprobación independiente: lo tiene que aprobar otra persona.",
         "role": "Tu rol no puede aprobar casos.",
-        "notMember": "No eres miembro de este espacio de trabajo."
+        "notMember": "No eres miembro de este workspace."
       },
       "banner": {
         "sent": "Enviado a revisión por {{name}} · {{date}}",
@@ -2860,7 +2873,7 @@
       },
       "editingReviewed": "Este caso está en revisión. Si guardas cambios en el contenido, sigue en revisión.",
       "editingApproved": "Este caso está aprobado. Si guardas cambios en el contenido, vuelve a revisión con una versión nueva y hay que aprobarlo de nuevo.",
-      "changesSince": "Cambios desde la revisión {{revision}} ({{status}})",
+      "changesSince": "Cambios desde el {{date}} ({{status}})",
       "toast": {
         "send": "{{key}} enviado a revisión",
         "approve": "Versión {{version}} de {{key}} aprobada",
@@ -3022,9 +3035,9 @@
     "kpi": {
       "projects": "Proyectos abiertos",
       "projectsTitle": "Ir a Proyectos",
-      "closing_one": "{{count}} cierra este mes",
-      "closing_other": "{{count}} cierran este mes",
-      "noneClosing": "Ninguno cierra este mes",
+      "closing_one": "{{count}} plan termina este mes",
+      "closing_other": "{{count}} planes terminan este mes",
+      "noneClosing": "Ningún plan termina este mes",
       "pending": "Pruebas pendientes",
       "pendingOf": "de {{total}}",
       "pendingTitle": "Casos sin ejecutar o bloqueados en todos los proyectos abiertos",
@@ -3040,6 +3053,8 @@
       "noneBlocked": "Ninguna bloqueada",
       "rateOf_one": "de {{count}} caso ejecutado · {{period}}",
       "rateOf_other": "de {{count}} casos ejecutados · {{period}}",
+      "rateOfShort_one": "de {{count}} caso",
+      "rateOfShort_other": "de {{count}} casos",
       "rateEmpty": "Sin ejecuciones: {{period}}",
       "rateError": "No disponible",
       "unlinked_one": "Además, {{count}} test sin vincular",
@@ -3062,7 +3077,15 @@
       "cyclePrevious": "Ciclo anterior",
       "custom": "Rango personalizado…",
       "soonTitle": "Próximamente: usará los ciclos y rangos del plan",
+      "soon": "Próximamente",
       "compare": "Comparar con el periodo anterior",
+      "short": {
+        "today": "Hoy",
+        "7d": "7 días",
+        "14d": "14 días",
+        "30d": "30 días",
+        "month": "Este mes"
+      },
       "lower": {
         "today": "hoy",
         "7d": "últimos 7 días",
@@ -3098,9 +3121,9 @@
       "all": "Todos",
       "risk": "En riesgo",
       "ok": "Cumplen",
-      "byClose": "Por fecha de cierre",
-      "closes": "Cierra {{date}}",
-      "noDate": "Sin fecha de cierre",
+      "byClose": "Por fin del plan",
+      "closes": "Fin del plan: {{date}}",
+      "noDate": "Sin fecha de fin del plan",
       "noMatch": "Ningún proyecto coincide con «{{query}}».",
       "viewAll_one": "Ver el proyecto en Proyectos",
       "viewAll_other": "Ver los {{count}} en Proyectos",
@@ -3108,7 +3131,7 @@
       "ringLabel": "Porcentaje ejecutado: sin datos",
       "headline": "Aún no hay ejecuciones",
       "sub": "Los criterios se evaluarán cuando registres ejecuciones.",
-      "close": "Cierre: {{date}}",
+      "close": "Fin del plan: {{date}}",
       "noData": "Sin datos",
       "noCriteria": "El plan de este proyecto no define criterios de salida.",
       "noPlan": "Este proyecto aún no tiene plan de pruebas.",
@@ -3170,6 +3193,7 @@
     "upcoming": {
       "title": "Próximas pruebas",
       "subtitle": "Según su último resultado, por prioridad",
+      "noProjects": "Crea un proyecto para ver sus próximas pruebas.",
       "viewAll": "Ver todas",
       "filters": "Estado de las pruebas",
       "notRun": "No ejecutadas",
@@ -3241,6 +3265,7 @@
       "help": "Una métrica en los últimos ciclos cerrados del proyecto, con las cifras congeladas al cerrar, y en el ciclo activo, en vivo (punteado). La línea verde es el objetivo del plan; el punto bajo cada ciclo es su veredicto. Avisa cuando la métrica empeora dos ciclos seguidos o se sale del objetivo.",
       "project": "Proyecto de la tendencia",
       "metric": "Métrica de la tendencia",
+      "noProjects": "Crea un proyecto para ver la tendencia de sus ciclos.",
       "empty": "Este proyecto aún no tiene ciclos cerrados ni activos. La tendencia aparece al cerrar el primero con «Cerrar ciclo…».",
       "chartLabel_one": "{{metric}} en {{count}} ciclo",
       "chartLabel_other": "{{metric}} en {{count}} ciclos",
@@ -3424,7 +3449,7 @@
       "delete": "Eliminar {{key}}",
       "deleteTitle": "Eliminar requisito",
       "deleteWarning": "Se eliminará {{key}}. Su ID no se reutilizará: los casos que lo enlazan lo mostrarán como requisito desconocido.",
-      "deleteConfirm": "Eliminar",
+      "deleteConfirm": "Sí, eliminar",
       "deletedToast": "{{key}} eliminado",
       "cases": "Casos",
       "actions": "Acciones",
@@ -3504,7 +3529,8 @@
       "weighted": "Cobertura ponderada",
       "weightedTitle": "Cobertura ponderada por riesgo",
       "weightedHow": "Suma del nivel de riesgo (probabilidad × impacto) de los requisitos cubiertos entre la suma del nivel de todos los requisitos evaluados. «Aprobada» cuenta los que tienen todos sus casos ejecutados y en Pasa.",
-      "weightedCalc": "cubierta = {{covered}} / {{total}} = {{coveredPct}} · aprobada = {{passed}} / {{total}} = {{passedPct}}",
+      "weightedCalcCovered": "cubierta = {{covered}} / {{total}} = {{coveredPct}}",
+      "weightedCalcPassed": "aprobada = {{passed}} / {{total}} = {{passedPct}}",
       "weightedBands_one": "1 requisito sin evaluar no entra. Bandas del proyecto: bajo hasta {{low}}, medio hasta {{medium}}.",
       "weightedBands_other": "{{count}} requisitos sin evaluar no entran. Bandas del proyecto: bajo hasta {{low}}, medio hasta {{medium}}.",
       "weightedHint_one": "aprobada {{passed}} · 1 sin evaluar",
@@ -3544,24 +3570,27 @@
     },
     "gaps": {
       "title": "Huecos de trazabilidad",
-      "casesWithoutRequirement": "Casos sin requisito",
-      "unknownLinks": "Casos que enlazan un requisito inexistente",
-      "defectsWithoutCase": "Defectos sin caso vinculado",
+      "casesWithoutRequirement_one": "Caso sin requisito",
+      "casesWithoutRequirement_other": "Casos sin requisito",
+      "unknownLinks_one": "Caso que enlaza un requisito inexistente",
+      "unknownLinks_other": "Casos que enlazan un requisito inexistente",
+      "defectsWithoutCase_one": "Defecto sin caso vinculado",
+      "defectsWithoutCase_other": "Defectos sin caso vinculado",
       "subtitle": "Lo que rompe la cadena requisito ↔ caso ↔ defecto",
-      "migrateHint_one": "{{count}} ID aparece en el texto libre de Trazabilidad de tus casos y puede convertirse en vínculo.",
-      "migrateHint_other": "{{count}} IDs aparecen en el texto libre de Trazabilidad de tus casos y pueden convertirse en vínculos."
+      "migrateHint_one": "{{count}} ID aparece en el texto libre de «Otras referencias» de tus casos y puede convertirse en vínculo.",
+      "migrateHint_other": "{{count}} IDs aparecen en el texto libre de «Otras referencias» de tus casos y pueden convertirse en vínculos."
     },
     "migrate": {
       "button": "Migrar trazabilidad ({{count}})",
-      "title": "Migrar el campo Trazabilidad a vínculos",
-      "intro": "Estos IDs aparecen en el texto libre de Trazabilidad de tus casos. Elige cuáles convertir en vínculos con requisitos. El texto libre se conserva.",
+      "title": "Migrar «Otras referencias» a vínculos",
+      "intro": "Estos IDs aparecen en el texto libre de «Otras referencias» de tus casos. Elige cuáles convertir en vínculos con requisitos. El texto libre se conserva.",
       "include": "Incluir",
       "found": "Encontrado",
       "willCreate": "se creará",
-      "summary": "Se crearán {{links}} vínculos y {{creates}} requisitos nuevos.",
+      "summary": "Vínculos que se crearán: {{links}} · requisitos nuevos: {{creates}}.",
       "apply": "Aplicar",
       "applying": "Aplicando…",
-      "doneToast": "Migración aplicada: {{links}} vínculos, {{creates}} requisitos nuevos"
+      "doneToast": "Migración aplicada · vínculos: {{links}} · requisitos nuevos: {{creates}}"
     },
     "fromDesign": {
       "open": "Requisitos desde diseños",
@@ -3587,7 +3616,7 @@
       "remove": "Quitar {{name}}",
       "context": "Contexto del producto (opcional)",
       "contextPlaceholder": "Ej.: portal de clientes de un banco, rol cliente",
-      "summary": "{{count}} de {{max}} imágenes o PDF · {{mb}} MB · ≈ {{tokens}} tokens de entrada (estimación)",
+      "summary": "{{count}} de {{max}} imágenes o PDF · {{size}} · ≈ {{tokens}} tokens de entrada (estimación)",
       "over": {
         "attachments": "Como mucho {{max}} imágenes o PDF por análisis: desmarca algunas.",
         "size": "Las imágenes y los PDF pesan demasiado para un análisis: desmarca algunos.",
@@ -3743,7 +3772,7 @@
         "config": "Configuración",
         "other": "Otros"
       },
-      "sendWhat": "Se enviarán {{files}} archivos (≈ {{tokens}} tokens) en {{calls}} llamadas.",
+      "sendWhat": "Se enviarán {{files}} archivos (≈ {{tokens}} tokens, contados sobre el texto ya leído) en {{calls}} llamadas.",
       "neverSent": "Nunca se envían dependencias, builds, archivos ocultos, binarios ni archivos con secretos (.env, claves, certificados).",
       "redacted_one": "{{count}} línea con aspecto de secreto se sustituye por «[secreto omitido]» ({{files}} archivos)",
       "redacted_other": "{{count}} líneas con aspecto de secreto se sustituyen por «[secreto omitido]» ({{files}} archivos)",
@@ -3829,6 +3858,7 @@
   },
   "recoveryKey": {
     "title": "Clave de recuperación",
+    "introShort": "La base de datos de este equipo está cifrada.",
     "intro": "La base de datos local está cifrada y su clave vive solo en el almacén de credenciales de este equipo. Si lo pierdes (PC nuevo, Windows reinstalado), solo la clave de recuperación junto con tu copia de pharos.db y de la carpeta evidence devuelve tus datos.",
     "lastShown": "Mostrada por última vez: {{date}}",
     "desktopOnly": "Disponible solo en la app de escritorio.",
@@ -3838,8 +3868,7 @@
     "confirmBody": "Quien tenga esta clave y una copia de tus datos puede leerlos. Muéstrala solo cuando nadie mire tu pantalla.",
     "confirm": "Mostrar",
     "shownTitle": "Guarda esta clave ahora",
-    "guidePaper": "Escríbela en papel y guárdala en un lugar seguro, o",
-    "guideManager": "guárdala en un gestor de contraseñas.",
+    "guidePaper": "Escríbela en papel y guárdala en un lugar seguro, o guárdala en un gestor de contraseñas.",
     "guideRisk": "No la envíes por correo ni chat y no la guardes junto a la copia de tus datos.",
     "guideBackup": "Para restaurar en otro equipo necesitas esta clave y una copia de pharos.db (hecha con Pharos cerrado) y de la carpeta evidence. Pharos no puede recuperarla por ti.",
     "copy": "Copiar al portapapeles",
@@ -3943,9 +3972,10 @@
   },
   "customFields": {
     "title": "Campos personalizados",
-    "desc": "Campos propios del proyecto para sus casos de prueba. La clave y el tipo no cambian una vez creados; un campo se archiva, nunca se borra, y sus valores se conservan.",
+    "desc": "Campos propios del proyecto para sus casos de prueba.",
+    "rules": "La clave y el tipo no cambian una vez creados; un campo se archiva, nunca se borra, y sus valores se conservan.",
     "empty": "Aún no hay campos personalizados. Crea uno para registrar, por ejemplo, el navegador o el sprint de cada caso.",
-    "descDefect": "Campos propios del proyecto para sus defectos. La clave y el tipo no cambian una vez creados; un campo se archiva, nunca se borra, y sus valores se conservan.",
+    "descDefect": "Campos propios del proyecto para sus defectos.",
     "emptyDefect": "Aún no hay campos de defectos. Crea uno para registrar, por ejemplo, el cliente afectado o la versión corregida.",
     "entity": {
       "label": "Campos de",
@@ -4065,7 +4095,8 @@
   },
   "configurations": {
     "title": "Configuraciones",
-    "desc": "Dónde se ejecutan los ciclos: navegador, sistema, dispositivo e idioma. Las etiquetas son los textos con los que una importación reconoce cada configuración (p. ej. chromium o el nombre de un proyecto de Playwright).",
+    "desc": "Dónde se ejecutan los ciclos: navegador, sistema, dispositivo e idioma.",
+    "labelsHelp": "Las etiquetas son los textos con los que una importación reconoce cada configuración (p. ej. chromium o el nombre de un proyecto de Playwright).",
     "new": "Nueva configuración",
     "newTitle": "Nueva configuración",
     "editTitle": "Editar configuración",
@@ -4169,9 +4200,9 @@
     "clonedToast": "Ciclo clonado como {{key}}",
     "deletedToast": "Ciclo {{key}} eliminado",
     "deleteTitle": "Eliminar {{key}}",
-    "deleteMessage_zero": "Se eliminan el ciclo y sus elementos. No tiene runs.",
-    "deleteMessage_one": "Se eliminan el ciclo y sus elementos. Su run se conserva, sin ciclo.",
-    "deleteMessage_other": "Se eliminan el ciclo y sus elementos. Sus {{count}} runs se conservan, sin ciclo.",
+    "deleteMessage_zero": "El ciclo pasa a la Papelera con sus elementos. No tiene runs.",
+    "deleteMessage_one": "El ciclo pasa a la Papelera con sus elementos. Su run se conserva, sin ciclo.",
+    "deleteMessage_other": "El ciclo pasa a la Papelera con sus elementos. Sus {{count}} runs se conservan, sin ciclo.",
     "deleteConfirm": "Sí, eliminar",
     "notApproved": "No aprobado",
     "noConfigurations": "El proyecto no tiene configuraciones. Créalas en Ajustes del proyecto.",
@@ -4439,7 +4470,9 @@
     "resolutionDialog": {
       "title": "Cerrar {{key}}",
       "rejectTitle": "Rechazar {{key}}",
+      "moveTitle": "Mover {{key}} a «{{status}}»",
       "message": "«{{title}}» pasa a «{{status}}». Indica la resolución.",
+      "messagePlain": "«{{title}}» pasa a «{{status}}».",
       "fixedInBuild": "Corregido en la build (opcional)",
       "confirm": "Aplicar",
       "cancel": "Cancelar"
@@ -4461,6 +4494,7 @@
       "actual": "Resultado obtenido",
       "severity": "Severidad",
       "severityHint": "Impacto en el sistema. La prioridad es la urgencia del arreglo.",
+      "priorityHint": "Urgencia del arreglo. La severidad es el impacto en el sistema.",
       "priority": "Prioridad",
       "status": "Estado",
       "foundInBuild": "Build",
@@ -4472,7 +4506,7 @@
       "externalUrl": "Enlace externo",
       "externalHint": "Para anotar la incidencia en otra herramienta. La sincronización con Jira llegará en una próxima versión.",
       "labels": "Etiquetas",
-      "escaped": "Encontrado fuera de las pruebas (escape)",
+      "escaped": "Encontrado fuera de las pruebas",
       "escapedHint": "Por ejemplo, en producción. Cuenta como escape del último ciclo cerrado antes de darlo de alta.",
       "unassigned": "Sin asignar"
     },
@@ -4495,7 +4529,8 @@
     "results": {
       "loadFailed": "No se pudieron cargar los resultados.",
       "title": "Resultados que no pasaron",
-      "pickToCreate": "Elige el intento fallido del que nace el defecto: se rellenan los pasos de la revisión ejecutada, lo obtenido, la build y el entorno, y se añaden sus evidencias.",
+      "pickToCreate": "Elige el intento fallido del que nace el defecto.",
+      "pickToCreateHelp": "El defecto nuevo se rellena con los pasos de la revisión ejecutada, lo obtenido, la build y el entorno, y se añaden sus evidencias.",
       "pickToLink": "Elige el intento que quieres vincular a este defecto.",
       "empty": "No hay resultados fallidos en los runs de este proyecto.",
       "search": "Buscar por run, caso o test…",
@@ -4595,7 +4630,7 @@
     "import": {
       "open": "Importar informe",
       "title": "Importar un informe de resultados",
-      "intro": "Trae los resultados de tu automatización: tests, hallazgos y métricas. Un test que lleva la clave de un caso (por ejemplo, @PRJ-001) se vincula a él; el resto queda en «Sin vincular».",
+      "intro": "Trae los resultados de tu automatización: tests, hallazgos y métricas. Un test que lleva la clave de un caso (por ejemplo, @{{key}}) se vincula a él; el resto queda en «Sin vincular».",
       "formats": "Tests: JUnit XML, CTRF, JSON de Playwright, Cucumber Messages (NDJSON), Pharos Run JSON, TRX (.NET), Allure (la carpeta allure-results en un .zip) y Xcode (el JSON de xcresulttool). Hallazgos: SARIF (seguridad) y axe (accesibilidad). Métricas: el resumen de k6.",
       "file": "Informe",
       "fileHint": "El formato se detecta por el contenido. Hasta 200 MB (50 MB si es JSON o XML).",
@@ -4609,7 +4644,7 @@
       "existingRun": "Run abierto",
       "noOpenRuns": "No hay runs en curso en este proyecto",
       "run": "Run",
-      "keepOpen": "Dejar el run abierto para importar más shards",
+      "keepOpen": "Dejar el run abierto para añadir más informes de la misma ejecución",
       "cycle": "Ciclo",
       "noCycle": "Sin ciclo",
       "cycleHint": "Sus resultados cuentan en el progreso del ciclo. Los ciclos cerrados no aparecen.",
@@ -4755,6 +4790,7 @@
     "paramValue": "Valor de <{{name}}>",
     "inDraft": "Borrador",
     "notRun": "Sin ejecutar",
+    "partial": "{{done}} de {{total}} ejecutadas",
     "rowValues": "Datos de la fila: {{row}}",
     "steps": "Pasos",
     "unmarked_one": "({{count}} sin marcar)",
@@ -4811,6 +4847,7 @@
       "paste": "Pegar una captura en el paso o el resultado",
       "save": "Guardar el resultado",
       "nextItem": "Siguiente elemento sin ejecutar",
+      "shift": "Mayús",
       "help": "Ver esta lista"
     },
     "discardTitle": "¿Descartar el borrador?",
@@ -4834,6 +4871,7 @@
     },
     "evidenceLocal": "Las evidencias se guardan cifradas en este equipo y se sincronizan como el resto de los datos.",
     "run": {
+      "evidenceInfo": "Dónde se guardan las evidencias",
       "addCases": "Añadir casos",
       "edit": "Editar datos",
       "close": "Cerrar run",
@@ -4887,8 +4925,8 @@
       "deleteMessage": "{{key}} «{{title}}» desaparecerá de las listas y del progreso, en este equipo y en los que sincronicen. Se ocultan:",
       "deleteItems_one": "{{count}} elemento del run",
       "deleteItems_other": "{{count}} elementos del run",
-      "deleteResults_one": "{{count}} resultado registrado (no se borra a mano)",
-      "deleteResults_other": "{{count}} resultados registrados (no se borran a mano)",
+      "deleteResults_one": "{{count}} resultado registrado",
+      "deleteResults_other": "{{count}} resultados registrados",
       "deleteImports_one": "de {{count}} importación",
       "deleteImports_other": "de {{count}} importaciones",
       "deleteAttachments_one": "{{count}} evidencia de esos resultados",
@@ -4898,7 +4936,7 @@
       "deleteCycle": "El progreso del ciclo {{key}} «{{title}}» dejará de contar este run",
       "deleteDefects_one": "{{count}} resultado está vinculado a un defecto: el defecto conserva el vínculo hasta la purga",
       "deleteDefects_other": "{{count}} resultados están vinculados a defectos: los defectos conservan el vínculo hasta la purga",
-      "deletePurge": "Los resultados se conservan ocultos y la purga se los lleva con el run pasados {{days}} días (Administración → General).",
+      "deletePurge": "El run y sus resultados van a la Papelera (Administración › General) y la purga se los lleva pasados {{days}} días.",
       "deleteCycleClosed": "El ciclo {{key}} está cerrado: un run de un ciclo cerrado no se puede eliminar. Reabre el ciclo primero.",
       "deleted": "Run {{key}} eliminado.",
       "deletedNotice": "Este run se eliminó (quizá en otro equipo)."
@@ -4906,7 +4944,7 @@
     "picker": {
       "dataset_one": "{{count}} fila · {{name}} (v{{version}})",
       "dataset_other": "{{count}} filas · {{name}} (v{{version}})",
-      "search": "Buscar por ID o título",
+      "search": "Buscar por clave o título",
       "cases": "Casos",
       "inRun": "ya en el run",
       "chosen_one": "{{count}} caso elegido",
@@ -4969,7 +5007,7 @@
     },
     "unit": {
       "case": "casos",
-      "cell": "celdas del ciclo (caso × configuración)"
+      "cell": "celdas del ciclo, caso × configuración"
     },
     "progress": {
       "executed": "Ejecutados",
@@ -5005,13 +5043,21 @@
       "tool": "Herramienta",
       "new": "Nuevos",
       "triaged": "Triados",
+      "review": "A revisar",
       "metric": "Métrica",
       "threshold": "Umbral",
       "value": "Valor"
     },
     "findings": {
-      "line_one": "{{count}} hallazgo abierto ({{bySeverity}}) · {{new}} nuevos · {{triaged}} triados · {{review}} a revisar",
-      "line_other": "{{count}} hallazgos abiertos ({{bySeverity}}) · {{new}} nuevos · {{triaged}} triados · {{review}} a revisar",
+      "line_one": "{{count}} hallazgo abierto ({{bySeverity}})",
+      "line_other": "{{count}} hallazgos abiertos ({{bySeverity}})",
+      "new_one": "{{count}} nuevo desde el run anterior",
+      "new_other": "{{count}} nuevos desde el run anterior",
+      "newNone": "nuevos: sin run anterior con el que comparar",
+      "triaged_one": "{{count}} triado",
+      "triaged_other": "{{count}} triados",
+      "review_one": "{{count}} a revisar (la herramienta no pudo decidir)",
+      "review_other": "{{count}} a revisar (la herramienta no pudo decidir)",
       "thresholds": "Umbrales: {{passed}} de {{total}} cumplidos",
       "noFailed": "Todos los umbrales se cumplen."
     },
@@ -5035,7 +5081,13 @@
     "summaryHint": "Se rellena con las cifras; puedes cambiarlo.",
     "recommendationsLabel": "Recomendaciones",
     "recommendationsPlaceholder": "Qué propones: seguir, cerrar el ciclo, repetir pruebas…",
-    "autoSummary": "Se han ejecutado {{executed}} de {{total}} {{unit}} ({{pct}}), con una tasa de éxito de {{rate}}. Hay {{open}} defectos abiertos, {{critical}} críticos. Criterios de salida: {{met}} de {{all}} cumplidos.",
+    "autoSummary": "Se han ejecutado {{executed}} de {{total}} {{unit}}: {{pct}}, {{rate}}. {{defects}}, {{critical}}. Criterios de salida: {{met}} de {{all}} cumplidos.",
+    "openDefects_one": "Hay {{count}} defecto abierto",
+    "openDefects_other": "Hay {{count}} defectos abiertos",
+    "openCritical_one": "{{count}} crítico",
+    "openCritical_other": "{{count}} críticos",
+    "withRate": "con una tasa de éxito de {{rate}}",
+    "noRate": "sin tasa de éxito todavía",
     "sheet": {
       "summary": "Resumen",
       "results": "Resultados",
@@ -5328,24 +5380,24 @@
         "received": "{{actor}} te invitó a {{title}}"
       },
       "case": {
-        "review_requested": "{{actor}} envió a revisión {{key}} {{title}}",
-        "approved": "{{actor}} aprobó {{key}} {{title}}",
-        "changes_requested": "{{actor}} devolvió {{key}} {{title}} con cambios"
+        "review_requested": "{{actor}} envió a revisión {{key}} «{{title}}»",
+        "approved": "{{actor}} aprobó {{key}} «{{title}}»",
+        "changes_requested": "{{actor}} devolvió {{key}} «{{title}}» con cambios"
       },
       "defect": {
-        "assigned": "{{actor}} te asignó {{key}} {{title}}"
+        "assigned": "{{actor}} te asignó {{key}} «{{title}}»"
       },
       "cycle": {
-        "closed": "{{actor}} cerró el ciclo {{key}} {{title}}"
+        "closed": "{{actor}} cerró el ciclo {{key}} «{{title}}»"
       },
       "sync": {
         "conflict_one": "{{count}} conflicto de sincronización por revisar",
         "conflict_other": "{{count}} conflictos de sincronización por revisar"
       },
       "member": {
-        "joined": "{{actor}} se unió a {{title}}",
-        "removed": "Ya no eres miembro de {{title}}",
-        "disabled": "{{actor}} desactivó la cuenta de {{title}}: ya no tiene acceso a {{workspaceName}}"
+        "joined": "{{actor}} se unió a «{{title}}»",
+        "removed": "Ya no eres miembro de «{{title}}»",
+        "disabled": "{{actor}} desactivó la cuenta de {{title}}: ya no tiene acceso a «{{workspaceName}}»"
       },
       "account": {
         "reset_issued": "{{actor}} (administrador del servidor) generó un enlace para restablecer tu contraseña. Si no lo pediste, avísale.",
@@ -5361,8 +5413,8 @@
         "inactive": "El token {{title}} de {{owner}} ha dejado de funcionar: su dueño salió del workspace o se desactivó su cuenta. Reasígnalo o revócalo en «Integraciones»."
       },
       "plan": {
-        "approved": "{{actor}} aprobó el plan {{title}}",
-        "changes_requested": "{{actor}} pidió cambios en el plan {{title}}"
+        "approved": "{{actor}} aprobó el plan «{{title}}»",
+        "changes_requested": "{{actor}} pidió cambios en el plan «{{title}}»"
       }
     },
     "action": {
@@ -5409,7 +5461,6 @@
       "created": "Workspace «{{name}}» creado"
     },
     "members": {
-      "title": "Miembros · {{name}}",
       "invite": "Invitar",
       "person": "Persona",
       "email": "Correo",
@@ -5421,9 +5472,9 @@
       "leave": "Salir",
       "lastManager": "Hace falta otro Test Manager antes",
       "removeTitle": "Quitar a {{name}}",
-      "removeConfirm": "{{name}} dejará de ver «{{workspace}}». Su copia en sus equipos se borrará en su próximo sync. Lo que no haya sincronizado se pierde.",
+      "removeConfirm": "{{name}} dejará de ver «{{workspace}}». Su copia en sus equipos se borrará en su próxima sincronización. Lo que no haya sincronizado se pierde.",
       "leaveTitle": "Salir de «{{workspace}}»",
-      "leaveConfirm": "Dejarás de ver sus proyectos. La copia de este equipo se borrará en tu próximo sync, cuando lo confirmes.",
+      "leaveConfirm": "Dejarás de ver sus proyectos. La copia de este equipo se borrará en tu próxima sincronización, cuando lo confirmes.",
       "roleChanged": "Rol de {{name}}: {{role}}",
       "removed": "{{name}} ya no es miembro",
       "personal": "Tu workspace personal no admite otros miembros. Crea uno compartido para trabajar en equipo.",
@@ -5471,7 +5522,7 @@
       "code": "Código de invitación",
       "check": "Comprobar",
       "preview": "Te unes a «{{name}}» como {{role}}, invitado por {{by}}.",
-      "note": "Sus proyectos se descargarán a este equipo en el próximo sync. Tu workspace Personal no cambia.",
+      "note": "Sus proyectos se descargarán a este equipo en la próxima sincronización. Tu workspace Personal no cambia.",
       "submit": "Unirme",
       "joined": "Te has unido a «{{name}}»",
       "invalid": "Este código ya se usó o caducó. Pide otro a quien te invitó.",
@@ -5518,7 +5569,7 @@
       "independentHint": "Activada, quien aprueba un plan o un caso necesita el rol (Test Manager para planes; Test Manager o Test Analyst para casos) y no puede ser su autor. Desactivada, aprueba cualquiera que pueda editarlo, también el autor, y queda como aprobación propia.",
       "personalHint": "Trabajas solo: apruebas tus propios planes y casos, y quedan como aprobación propia. Para que apruebe otra persona, mueve el proyecto a un espacio compartido.",
       "personalLocked": "No se puede activar en tu espacio personal.",
-      "onlyManager": "Solo un Test Manager cambia las reglas del espacio de trabajo.",
+      "onlyManager": "Solo un Test Manager cambia las reglas del workspace.",
       "disableTitle": "¿Desactivar la aprobación independiente?",
       "disableConfirm": "En «{{workspace}}», cualquiera que pueda editar un plan o un caso podrá aprobarlo, también su autor, y quedará como aprobación propia. Las aprobaciones que ya existen no cambian.",
       "disable": "Desactivar",
@@ -5534,7 +5585,7 @@
   "integrations": {
     "tokens": {
       "projectTitle": "Tokens de proyecto",
-      "projectHint": "Sirven para que CI suba resultados a un proyecto. Un token nunca puede hacer más que la persona dueña de él.",
+      "projectHint": "Sirven para que el CI suba resultados a un proyecto. Un token nunca puede hacer más que la persona dueña de él.",
       "personalTitle": "Tokens personales",
       "personalHint": "Sirven para usar el CLI en tu equipo. Un token personal actúa como tú en los workspaces que elijas, con los permisos que tengas en cada uno.",
       "new": "Nuevo token…",
@@ -5583,19 +5634,19 @@
       "revoked": "«{{name}}» revocado",
       "rotate": "Rotar",
       "rotateTitle": "Rotar «{{name}}»",
-      "rotateBody": "Se crea un token nuevo con el mismo nombre, los mismos permisos y la misma caducidad. El anterior deja de funcionar ahora, o dentro de 24 horas para que dé tiempo a cambiarlo en CI.",
+      "rotateBody": "Se crea un token nuevo con el mismo nombre, los mismos permisos y la misma caducidad. El anterior deja de funcionar ahora, o dentro de 24 horas para que dé tiempo a cambiarlo en el CI.",
       "rotateNow": "Rotar ahora",
       "rotateOverlap": "Mantener el anterior 24 h",
       "reassign": "Reasignar",
       "reassignToMe": "Reasignar a mí",
       "reassignTitle": "Reasignarte «{{name}}»",
-      "reassignBody": "El token pasará a actuar con tus permisos en vez de con los de {{owner}}. El secreto no cambia, así que CI sigue funcionando.",
+      "reassignBody": "El token pasará a actuar con tus permisos en vez de con los de {{owner}}. El secreto no cambia, así que el CI sigue funcionando.",
       "reassigned": "«{{name}}» ahora es tuyo"
     },
     "scopes": {
       "projects_read": "Leer el proyecto",
-      "runs_read": "Leer runs y resultados",
-      "runs_write": "Subir resultados y cerrar runs",
+      "runs_read": "Leer ejecuciones y resultados",
+      "runs_write": "Subir resultados y cerrar ejecuciones",
       "cases_read": "Leer casos",
       "cycles_read": "Leer ciclos",
       "defects_read": "Leer defectos",
@@ -5678,6 +5729,13 @@
       "attempt": "intento {{n}}",
       "next": "Próximo intento",
       "answer": "Respuesta",
+      "deliveryError": {
+        "notFound": "No se encontró el servidor de destino ({{code}})",
+        "refused": "El servidor de destino rechazó la conexión ({{code}})",
+        "timeout": "El servidor de destino no respondió a tiempo ({{code}})",
+        "certificate": "El certificado del servidor de destino no es válido ({{code}})",
+        "reset": "El servidor de destino cortó la conexión ({{code}})"
+      },
       "redeliver": "Reintentar ahora",
       "requeued": "En cola para enviar de nuevo",
       "statuses": {
@@ -5693,9 +5751,9 @@
         "private": "Este servidor no permite enviar a direcciones de la red privada ni a sí mismo."
       },
       "events": {
-        "run_created": "Run creado",
+        "run_created": "Ejecución creada",
         "run_results_uploaded": "Resultados subidos",
-        "run_completed": "Run cerrado",
+        "run_completed": "Ejecución cerrada",
         "cycle_closed": "Ciclo cerrado",
         "defect_created": "Defecto creado",
         "defect_status_changed": "Defecto cambia de estado",
@@ -5778,12 +5836,12 @@
       "title": "Triaje · {{rule}}",
       "state": "Estado",
       "reason": "Motivo",
-      "scope": "Se aplica a esta huella en todos los runs del proyecto. Queda en el historial.",
+      "scope": "Se aplica a este hallazgo en todos los runs del proyecto. Queda en el historial.",
       "history": "Decisiones anteriores",
       "save": "Guardar triaje",
       "error": "No se pudo guardar el triaje. Revisa el motivo e inténtalo de nuevo.",
       "help": {
-        "open": "Cuenta en la matriz, en el informe y en las gates.",
+        "open": "Cuenta en la matriz, en el informe y en los criterios de salida.",
         "false_positive": "La regla no aplica aquí.",
         "accepted_risk": "Se conoce y se asume. Conviene enlazar una decisión o un defecto.",
         "fixed": "Se espera que desaparezca en el próximo análisis."
@@ -5801,7 +5859,29 @@
       "passed": "Cumplido",
       "failed": "Incumplido",
       "thresholdsMet": "Umbrales cumplidos: {{passed}} de {{total}}.",
-      "failedList": "Incumplidos: {{list}}.",
+      "failedList": "Incumplidos:",
+      "aggregations": {
+        "avg": "media",
+        "min": "mínimo",
+        "med": "mediana",
+        "max": "máximo",
+        "count": "total",
+        "rate": "tasa",
+        "value": "valor"
+      },
+      "scopes": {
+        "case": "Caso {{value}}",
+        "expected_response_true": "Respuestas esperadas",
+        "expected_response_false": "Respuestas no esperadas",
+        "scenario": "Escenario: {{value}}",
+        "group": "Grupo: {{value}}",
+        "name": "Petición: {{value}}",
+        "method": "Método: {{value}}",
+        "status": "Estado HTTP: {{value}}",
+        "url": "URL: {{value}}",
+        "check": "Comprobación: {{value}}"
+      },
+      "rawThreshold": "Expresión de k6: {{expression}}",
       "empty": "No hay métricas.",
       "all": "Ver todas ({{shown}} de {{total}})",
       "fewer": "Ver solo las principales"
@@ -5926,8 +6006,8 @@
     },
     "impact": {
       "title": "Guardar «{{name}}» como v{{version}}",
-      "message_one": "Este cambio actualiza {{count}} caso que sigue la última versión. Guarda una revisión nueva con la causa «{{name}} v{{version}}».",
-      "message_other": "Este cambio actualiza {{count}} casos que siguen la última versión. Cada uno guarda una revisión nueva con la causa «{{name}} v{{version}}».",
+      "message_one": "Este cambio actualiza {{count}} caso que sigue la última versión. Guarda una revisión nueva con el motivo «{{name}} v{{version}}».",
+      "message_other": "Este cambio actualiza {{count}} casos que siguen la última versión. Cada uno guarda una revisión nueva con el motivo «{{name}} v{{version}}».",
       "draft": "En Borrador · siguen igual",
       "reviewed": "En revisión · siguen en revisión",
       "approved": "Aprobados · vuelven a En revisión",
@@ -5983,7 +6063,7 @@
       "imported": "Importadas {{rows}} filas y {{columns}} columnas. Revisa y guarda.",
       "exported": "Exportado: {{name}}",
       "replaceTitle": "¿Reemplazar los datos?",
-      "replaceMessage": "Los datos de «{{name}}» sustituyen a los de la rejilla. Las filas conservan su id por posición.",
+      "replaceMessage": "Los datos de «{{name}}» sustituyen a los de la rejilla. Las filas conservan su ID por posición.",
       "replaceConfirm": "Reemplazar",
       "emptyColumn": "La columna {{n}} no tiene nombre.",
       "badColumn": "«{{name}}» no sirve como columna: sin espacios al principio o al final, sin < ni >, y hasta 40 caracteres.",
@@ -6002,7 +6082,7 @@
       "loadFailed": "No se pudo cargar la biblioteca.",
       "none": "La biblioteca no tiene pasos compartidos activos. Créalos en la sección Biblioteca.",
       "choose": "Elegir",
-      "argsHelp": "Vacío: el parámetro pasa al caso. Un literal (ana@acme.test) se escribe en la copia. Otro parámetro (<cliente>) lo renombra.",
+      "argsHelp": "Vacío: el parámetro pasa al caso. Un literal (liomar.qa@pharos.test) se escribe en la copia. Otro parámetro (<cliente>) lo renombra.",
       "noParams": "Este paso compartido no tiene parámetros.",
       "argPlaceholder": "Vacío: pasa al caso",
       "argOf": "Argumento de <{{name}}>",

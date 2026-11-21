@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FolderOpen } from "lucide-react";
 import { Dialog } from "@shared/ui/Dialog";
+import { TextArea } from "@shared/ui/TextArea";
 import {
   AiFailureNotice,
   AiSendNotice,
@@ -31,7 +32,7 @@ import {
   type ScanFile,
   type ScanInventory,
 } from "../proposals/fromProject";
-import { usableRequirementProposals } from "../proposals/proposals";
+import { readableReason, usableRequirementProposals } from "../proposals/proposals";
 import type {
   ApplyResult,
   CandidateRequirement,
@@ -261,7 +262,9 @@ export function ProjectRequirementsModal({
       );
       if (!proposals.length) {
         setEmptyReason(
-          r.value.reason ?? t("traceability.fromProject.nothingToChange"),
+          r.value.reason
+            ? readableReason(r.value.reason, candidates)
+            : t("traceability.fromProject.nothingToChange"),
         );
         return setPhase("empty");
       }
@@ -593,17 +596,20 @@ function Inventory({
       <div className="tz-scan__opts">
         <label className="tz-scan__field">
           {t("traceability.fromProject.budget")}
+          {/* Grouped as the summary writes it («300.000», FIX-44), not the
+              browser's «300000»; only the digits are read. */}
           <input
-            type="number"
-            min={10000}
-            step={10000}
-            value={budget}
-            onChange={(e) => onBudget(Number(e.target.value))}
+            type="text"
+            inputMode="numeric"
+            value={fmt(budget, lang)}
+            onChange={(e) => onBudget(Number(e.target.value.replace(/[^0-9]/g, "")))}
           />
         </label>
         <label className="tz-scan__field tz-scan__field--wide">
           {t("traceability.fromProject.context")}
-          <input
+          {/* A sentence or two: it wraps instead of being cut (FIX-44). */}
+          <TextArea
+            size="paste"
             value={context}
             maxLength={300}
             placeholder={t("traceability.fromProject.contextPlaceholder")}

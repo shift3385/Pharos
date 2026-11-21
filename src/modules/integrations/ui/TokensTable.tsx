@@ -57,25 +57,27 @@ export function TokensTable({
         <tbody>
           {tokens.map((tok) => (
             <tr key={tok.id} data-testid={`token-${tok.id}`}>
-              <td>
+              <td className="int-nowrap">
                 {tok.name}
                 <br />
                 <code className="int-prefix">{tok.displayPrefix}…</code>
               </td>
               {columns.project && <td>{tok.projectName ?? tok.projectId}</td>}
-              {columns.workspace && <td>{tok.workspaceName ?? t("integrations.tokens.allWorkspaces")}</td>}
-              <td>
+              {columns.workspace && <td className="int-nowrap">{tok.workspaceName ?? t("integrations.tokens.allWorkspaces")}</td>}
+              {/* Not `int-scopes`: that is the dialog's grid fieldset, and a grid
+                  cell broke the table (FIX-51). */}
+              <td className="int-scopes-cell">
                 {tok.scopes.map((s) => (
                   <code key={s} className="int-chip">
                     {s}
                   </code>
                 ))}
               </td>
-              {columns.owner && <td>{tok.owner.name}</td>}
+              {columns.owner && <td className="int-nowrap">{tok.owner.name}</td>}
               <td className="int-num">
                 {tok.status === "revoked" ? "—" : new Date(tok.expiresAt).toLocaleDateString(i18n.language, { dateStyle: "medium" })}
               </td>
-              <td className="int-num">
+              <td className="int-num int-when">
                 {date(tok.lastUsedAt)}
                 {columns.ip && tok.lastUsedIp && (
                   <>
@@ -95,7 +97,7 @@ export function TokensTable({
                   </>
                 )}
               </td>
-              {actions && <td>{tok.status === "revoked" || tok.status === "expired" ? null : actions(tok)}</td>}
+              {actions && <td className="int-actions-cell">{tok.status === "revoked" || tok.status === "expired" ? null : actions(tok)}</td>}
             </tr>
           ))}
         </tbody>

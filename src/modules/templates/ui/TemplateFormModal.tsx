@@ -94,8 +94,8 @@ export function TemplateFormModal({
               value={values.kind}
               onChange={(v) => set("kind", v)}
               options={[
-                { value: "plan", label: t("templates.kind.plan") },
-                { value: "case", label: t("templates.kind.case") },
+                { value: "plan", label: t("templates.kindOne.plan") },
+                { value: "case", label: t("templates.kindOne.case") },
               ]}
             />
           </label>

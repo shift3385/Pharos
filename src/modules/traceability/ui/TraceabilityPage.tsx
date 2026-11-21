@@ -16,6 +16,7 @@ import { MenuItem, ResponsiveMenu } from "@shared/ui/Menu";
 import { usePopover } from "@shared/ui/usePopover";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { useToast } from "@shared/ui/Toast";
+import { useOnSynced } from "@shared/ui/useSynced";
 import { unlessReported } from "@shared/ui/notify";
 import { ListSkeleton } from "@shared/ui/Skeleton";
 import { requirementApi } from "../api/requirementApi";
@@ -203,6 +204,8 @@ export function TraceabilityPage({
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, userId]);
+  // A sync that brought or combined changes (FIX-48): the list shows them.
+  useOnSynced(() => void refresh());
   useEffect(() => {
     void aiAvailable()
       .then(setAiReady)
@@ -539,7 +542,7 @@ function ImportMenu({
         id={menu.id}
         label={label}
         title={label}
-        className="cl-io"
+        className="cl-io tr-io"
       >
         <MenuItem icon={Upload} onSelect={onImport} description={t("traceability.io.importHint")}>
           {t("traceability.io.importCsv")}

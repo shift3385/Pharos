@@ -13,11 +13,16 @@ corrija y se pueda volver a probar. Cada defecto lleva:
   errata en la pantalla de entrada justo antes de una demostración.
 - **Reproducción:** pasos, resultado esperado y resultado obtenido, con la
   build y el entorno en que se encontró.
+- **Asignado a:** quién se ocupa de él, elegido entre los miembros activos
+  del workspace (o «Sin asignar»). En un workspace compartido, la persona
+  elegida recibe un aviso (capítulo 20). Un nombre escrito a mano en una
+  versión anterior se conserva hasta que eliges a un miembro.
 - **Vínculos** con los casos, los requisitos y los resultados de los que nace.
   La matriz de trazabilidad (capítulo 13), el informe de estado (capítulo 11)
   y el Inicio (capítulo 3) los cuentan.
-- **Evidencias:** capturas, vídeos o registros, guardados cifrados en este
-  equipo.
+- **Evidencias:** capturas, vídeos o registros, guardados cifrados y
+  sincronizados con los demás equipos del espacio de trabajo. Quien tiene el
+  rol Viewer no puede adjuntar.
 
 Su **ciclo de vida**: Nuevo → Abierto → En curso → Corregido → Por confirmar →
 Cerrado, y además Rechazado (con su resolución) o Aplazado. Rechazado y
@@ -38,14 +43,21 @@ marca «Encontrado fuera de las pruebas (escape)». Cuenta como escape del
 último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo
 dejó pasar.
 
-En este manual, Liomar registra dos defectos de Pharos:
+En este manual, Liomar registra tres defectos de Pharos:
 
 - **«El menú lateral sigue mostrando el prefijo anterior»** (mayor, media),
   escrito a mano, con su captura y vinculado al caso PH-003 y al requisito
-  REQ-002. Lo aplaza a la 0.4.0.
+  REQ-002. Lo aplaza a la versión siguiente.
 - **«Entrar con credenciales válidas muestra “Correo o contraseña
   incorrectos”»** (crítico), creado desde el resultado fallido de la prueba
-  automática de acceso que importó en el capítulo 10.
+  automática de acceso que importó en el capítulo 10. Es el mismo fallo que
+  encuentra a mano en el capítulo 11, así que allí no crea otro.
+- **«El enlace del correo de bienvenida abre la versión anterior»** (menor),
+  un escape que avisa un usuario de la beta; lo reabre al volver a probarlo.
+
+Un defecto registrado dos veces por error se elimina: va a la Papelera
+(Administración › General, capítulo 15), desde donde se restaura, sin sus
+adjuntos, mientras dure la retención.
 
 ## Paso a paso
 
@@ -63,83 +75,89 @@ Un defecto registra algo que no funciona como se esperaba, para que se corrija y
 
 ### 12.3. Rellenar el defecto
 
-Un buen defecto permite reproducir el fallo sin preguntar a nadie. Rellena el título, la severidad (el impacto en el sistema) y la prioridad (la urgencia del arreglo), los pasos para reproducirlo, el resultado esperado y el obtenido, y dónde se encontró (build y entorno). En «Vínculos», marca los casos y los requisitos afectados: la matriz de trazabilidad (capítulo 13) los mostrará junto al defecto. Los campos propios del proyecto aparecen al final (aquí, «Sistema operativo», creado en el capítulo 14). En este ejemplo, Liomar registra que, al cambiar el prefijo en los ajustes, el menú lateral sigue mostrando el anterior: severidad mayor, prioridad media, build 0.3.0-rc1, vinculado al caso «Crear un proyecto» (PH-003) y al requisito REQ-002.
+Un buen defecto permite reproducir el fallo sin preguntar a nadie. En «Detalles», rellena el título, la severidad (el impacto en el sistema) y la prioridad (la urgencia del arreglo); en «Reproducción», los pasos para reproducirlo, el resultado esperado y el obtenido. En este ejemplo, Liomar registra que, al cambiar el prefijo en los ajustes, el menú lateral sigue mostrando el anterior: severidad mayor, prioridad media, y los tres pasos que lo provocan.
 
 ![Rellenar el defecto](img/defectos/03-nuevo.png)
 
-### 12.4. Evidencias
+### 12.4. Asignado a
 
-Una vez guardado el defecto, «Evidencias» admite capturas, vídeos o registros que muestran el fallo, de hasta 200 MB cada uno: «Adjuntar archivos» abre el selector de archivos (en este ejemplo, una captura del menú lateral). Se guardan cifrados en este equipo; un clic en el nombre descarga una copia.
+Debajo, «Dónde se encontró» lleva la build y el entorno (en este ejemplo, 0.6.0-beta.1 en staging), y «Asignado a» dice quién se ocupa del defecto: se elige entre los miembros activos del workspace, o «Sin asignar». En «Personal» el único miembro eres tú, así que Liomar se lo asigna a sí mismo; en un workspace compartido, la persona elegida recibe un aviso con el defecto (capítulo 20). En «Vínculos», marca los casos y los requisitos afectados: la matriz de trazabilidad (capítulo 13) los mostrará junto al defecto. Liomar marca el caso «Crear un proyecto» (PH-003) y el requisito REQ-002.
 
-![Evidencias](img/defectos/04-evidencias.png)
+![Asignado a](img/defectos/04-asignado.png)
 
-### 12.5. Quitar una evidencia
+### 12.5. Evidencias
+
+Una vez guardado el defecto, «Evidencias» admite capturas, vídeos o registros que muestran el fallo, de hasta 200 MB cada uno: «Adjuntar archivos» abre el selector de archivos (en este ejemplo, una captura del menú lateral). Se guardan cifrados y llegan a los demás equipos del espacio de trabajo al sincronizar; un clic en el nombre descarga una copia. Quien tiene el rol Viewer no puede adjuntar. Encima, «Campos personalizados» trae los campos propios del proyecto: aquí, «Sistema operativo», creado en el capítulo 14, con Windows 11.
+
+![Evidencias](img/defectos/05-evidencias.png)
+
+### 12.6. Quitar una evidencia
 
 La papelera de cada archivo («Quitar: nombre») borra esa evidencia, y no se puede recuperar. Por eso Pharos pregunta con una confirmación crítica: Esc y el clic fuera no hacen nada; solo responden «Cancelar» o «Quitar», en rojo. En este ejemplo, Liomar cancela y la captura se queda.
 
-![Quitar una evidencia](img/defectos/05-quitar-evidencia.png)
+![Quitar una evidencia](img/defectos/06-quitar-evidencia.png)
 
-### 12.6. Un defecto desde un resultado fallido
+### 12.7. Un defecto desde un resultado fallido
 
-Cuando una prueba falla, lo más rápido es crear el defecto desde su resultado. «Desde un resultado» lista los intentos que no pasaron en los runs del proyecto (en este ejemplo, la prueba automática de acceso del informe JUnit importado en el capítulo 10). Al elegir uno, el editor se rellena con el error y el defecto queda vinculado a ese resultado y a su caso, así que la trazabilidad no depende de copiar y pegar.
+Cuando una prueba falla, lo más rápido es crear el defecto desde su resultado. «Desde un resultado» lista los intentos que no pasaron en los runs del proyecto, con su run y, si el resultado está vinculado a un caso, su clave y su título («clave · título»; si no, la ruta del test), y se buscan por run, caso o test (en este ejemplo, «con capturas» deja la prueba automática de acceso del informe JUnit importado en el capítulo 10). Al elegir uno, el editor se rellena con el error y el defecto queda vinculado a ese resultado y a su caso, así que la trazabilidad no depende de copiar y pegar.
 
-![Un defecto desde un resultado fallido](img/defectos/06-desde-resultado.png)
+![Un defecto desde un resultado fallido](img/defectos/07-desde-resultado.png)
 
-### 12.7. Prerrellenado desde el resultado
+### 12.8. Prerrellenado desde el resultado
 
-El aviso azul de arriba indica de qué resultado nace el defecto. Revisa el título y la severidad que propone y guarda. En este ejemplo, Liomar lo titula «Entrar con credenciales válidas muestra “Correo o contraseña incorrectos”» y lo marca como crítico: nadie puede entrar en la aplicación.
+El aviso azul de arriba indica de qué resultado nace el defecto, y el editor llega ya relleno: más abajo, en «Reproducción», trae el error como resultado obtenido y, como esperado, el del paso que falló o, si no tiene, el del caso. Revisa el título y la severidad que propone y guarda. En este ejemplo, Liomar lo titula «Entrar con credenciales válidas muestra «Correo o contraseña incorrectos»» y lo marca como crítico: con credenciales válidas, la cuenta de prueba de PH-001 no puede entrar, y lo mismo pasa con la tercera cuenta del dataset de PH-005; el acceso falla para parte de las cuentas.
 
-![Prerrellenado desde el resultado](img/defectos/07-prerrellenado.png)
+![Prerrellenado desde el resultado](img/defectos/08-prerrellenado.png)
 
-### 12.8. Quitar el vínculo con un resultado
+### 12.9. Quitar el vínculo con un resultado
 
 Una vez guardado, los resultados vinculados aparecen como fichas en «Vínculos»; la ✕ de una ficha quita el vínculo, tras preguntarlo. Es una confirmación normal, porque el resultado no se borra y se puede volver a vincular: Esc, un clic fuera o «Cancelar» lo dejan como estaba (en este ejemplo, Liomar cancela).
 
-![Quitar el vínculo con un resultado](img/defectos/08-quitar-vinculo.png)
+![Quitar el vínculo con un resultado](img/defectos/09-quitar-vinculo.png)
 
-### 12.9. Eliminar desde el editor
+### 12.10. Eliminar desde el editor
 
 El editor de un defecto guardado también tiene «Eliminar defecto», así que se puede borrar desde cualquier vista, también desde el tablero y el móvil, que abren el editor. Pide la misma confirmación crítica que la papelera de la tabla y, al confirmar, vuelve a la lista (en este ejemplo, Liomar cancela).
 
-### 12.10. La lista de defectos
+### 12.11. La lista de defectos
 
 La lista muestra ID, título, severidad, prioridad, estado, casos vinculados y fecha. Cambia entre abiertos, todos o cerrados, filtra por severidad o busca por texto (en este ejemplo, «prefijo» deja solo el del menú lateral). Un clic en el título abre el defecto.
 
-![La lista de defectos](img/defectos/10-lista.png)
+![La lista de defectos](img/defectos/11-lista.png)
 
-### 12.11. El tablero de defectos
+### 12.12. El tablero de defectos
 
 «Tablero» agrupa los defectos por estado, una columna por cada etapa de su ciclo de vida: nuevo, abierto, en curso, corregido, por confirmar, cerrado y «Otros» (rechazado o aplazado). Para avanzar un defecto, arrastra su tarjeta o, con el teclado, lleva el foco a su asa y usa Espacio y las flechas. Pharos solo permite los cambios de estado válidos, así que una columna que no admite el defecto no lo acepta. En este ejemplo, Liomar confirma el del menú lateral y lo pasa a «Abierto».
 
-![El tablero de defectos](img/defectos/11-tablero.png)
+![El tablero de defectos](img/defectos/12-tablero.png)
 
-### 12.12. Rechazar o aplazar un defecto
+### 12.13. Rechazar o aplazar un defecto
 
-Al soltar un defecto en «Otros», Pharos pregunta a qué estado pasa: «Rechazado» pide la resolución (duplicado, no reproducible, no se corregirá, funciona según el diseño…) y «Aplazado» lo deja abierto para más adelante. Al soltarlo en «Cerrado», pide la resolución y, si quieres, la build en la que se corrigió, para saber desde qué versión volver a probar. En este ejemplo, Liomar aplaza el del menú lateral a la 0.4.0: es molesto, pero no bloquea la entrega.
+Al soltar un defecto en «Otros», Pharos pregunta a qué estado pasa: «Rechazado» pide la resolución (duplicado, no reproducible, no se corregirá, funciona según el diseño…) y «Aplazado» lo deja abierto para más adelante. Al soltarlo en «Cerrado», pide la resolución y, si quieres, la build en la que se corrigió, para saber desde qué versión volver a probar. En este ejemplo, Liomar aplaza el del menú lateral a la versión siguiente: es molesto, pero no bloquea la entrega.
 
-![Rechazar o aplazar un defecto](img/defectos/12-otros.png)
+![Rechazar o aplazar un defecto](img/defectos/13-otros.png)
 
-### 12.13. Eliminar un defecto
+### 12.14. Eliminar un defecto
 
 Normalmente un defecto se cierra o se rechaza, no se borra. Si se creó por error (en este ejemplo, Liomar registró dos veces el fallo de acceso), la papelera de su fila (o «Eliminar defecto» en su editor, también desde el tablero y el móvil) lo borra tras una confirmación crítica: solo responden «Cancelar» y «Sí, eliminar». Su clave no se vuelve a usar.
 
-![Eliminar un defecto](img/defectos/13-eliminar.png)
+![Eliminar un defecto](img/defectos/14-eliminar.png)
 
-### 12.14. Defecto eliminado
+### 12.15. Defecto eliminado
 
-Al confirmar, el defecto desaparece de la lista. Si no se pudiera eliminar, un aviso lo dice y el defecto sigue ahí.
+Al confirmar, el defecto desaparece de la lista y pasa a la Papelera (Administración › General, capítulo 15): desde allí se restaura, sin sus adjuntos, mientras dure la retención. Si no se pudiera eliminar, un aviso lo dice y el defecto sigue ahí.
 
-### 12.15. Un defecto que se escapó de las pruebas
+### 12.16. Un defecto que se escapó de las pruebas
 
-Si el defecto se encontró fuera de las pruebas, por ejemplo en producción o en una demostración, marca «Encontrado fuera de las pruebas (escape)» en «Detalles». Cuenta como escape del último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo dejó pasar, y la recogen la tendencia de ciclos del Inicio (capítulo 3) y el informe de go/no-go (capítulo 9). En este ejemplo, un usuario de la beta avisa de que el enlace del correo de bienvenida abre la versión anterior, y Liomar lo registra como escape.
+Si el defecto se encontró fuera de las pruebas, por ejemplo en producción o en una demostración, marca «Encontrado fuera de las pruebas» en «Dónde se encontró». Cuenta como escape del último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo dejó pasar, y la recogen la tendencia de ciclos del Inicio (capítulo 3) y el informe de go/no-go (capítulo 9). En este ejemplo, un usuario de la beta avisa de que el enlace del correo de bienvenida abre la versión anterior, y Liomar lo registra como escape, con lo que vio el usuario y la build y el entorno de la beta. Como la «Regresión 0.6.0» aún no se ha cerrado (se cierra al final de la historia, capítulo 9), este escape no cuenta para ningún ciclo.
 
-![Un defecto que se escapó de las pruebas](img/defectos/15-escape.png)
+![Un defecto que se escapó de las pruebas](img/defectos/16-escape.png)
 
-### 12.16. Corregir, confirmar y reabrir
+### 12.17. Corregir, confirmar y reabrir
 
-El camino de un defecto corregido, en el tablero o con el campo «Estado» del editor (que solo ofrece los estados siguientes): «En curso» mientras se arregla, «Corregido» cuando el equipo de desarrollo lo da por resuelto y «Por confirmar» mientras QA vuelve a probarlo. Si la prueba pasa, va a «Cerrado»; si no, se reabre: vuelve a «Abierto» desde «Por confirmar» (o desde «Cerrado»). Pharos apunta la primera vez que llega a «Corregido» y cuántas veces se reabre, y con eso calcula el tiempo de corrección y la reapertura de cada ciclo (capítulos 3 y 9). En este ejemplo, Liomar comprueba el arreglo del enlace, sigue abriendo la versión anterior y lo reabre.
+El camino de un defecto corregido, en el tablero o con el campo «Estado» del editor (que solo ofrece los estados siguientes): «En curso» mientras se arregla, «Corregido» cuando el equipo de desarrollo lo da por resuelto y «Por confirmar» mientras QA vuelve a probarlo. Si la prueba pasa, va a «Cerrado»; si no, se reabre: vuelve a «Abierto» desde «Por confirmar» (o desde «Cerrado»). Pharos apunta la primera vez que llega a «Corregido» y cuántas veces se reabre, y con eso calcula el tiempo de corrección y la reapertura de cada ciclo (capítulos 3 y 9). En este ejemplo, Liomar lleva el defecto del enlace por esos estados desde el editor; al volver a probarlo, el enlace sigue abriendo la versión anterior, así que lo reabre y en el tablero está otra vez en «Abierto».
 
-![Corregir, confirmar y reabrir](img/defectos/16-reabrir.png)
+![Corregir, confirmar y reabrir](img/defectos/17-reabrir.png)
 
 ## Atajos de teclado
 

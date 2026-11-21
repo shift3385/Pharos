@@ -28,4 +28,37 @@ describe("a defect's link to a result (FIX-38)", () => {
     const out = withLinks(ctx, doc("defect", "d1", {})) as { links: { label: string | null }[] };
     expect(out.links.map((l) => l.label)).toEqual(["RUN-1 · PH-002", "RUN-1 · PH-002 #2"]);
   });
+
+  it("names an imported result by the case it reaches, not by its test path (FIX-49)", () => {
+    const run = doc("run", "r4", { runKey: "RUN-004" });
+    const tc = doc("test_case", "c1", {
+      scenarioId: "PH-001",
+      title: "Iniciar sesión con credenciales válidas",
+    });
+    const imported = doc("result", "x9", {
+      runId: "r4",
+      shardId: "s1",
+      testKey: "specs/acceso.spec.ts::Acceso › entra",
+      attempt: 0,
+    });
+    const ctx: LinkContext = {
+      links: [
+        doc("defect_link", "l9", {
+          defectId: "d1",
+          targetKind: "result",
+          targetId: "x9",
+        }),
+      ],
+      byId: new Map(
+        [run, tc, imported].map((d) => [`${d.entity}:${d.entityId}`, d]),
+      ),
+      derive: () => ({ caseId: "c1" }) as never,
+    };
+    const out = withLinks(ctx, doc("defect", "d1", {})) as {
+      links: { label: string | null }[];
+    };
+    expect(out.links[0].label).toBe(
+      "RUN-004 · PH-001 · Iniciar sesión con credenciales válidas",
+    );
+  });
 });

@@ -18,6 +18,11 @@ proyecto nuevo se abre en su **plan de pruebas**, el punto de partida natural.
 Uno que ya existe se abre en su **Tablero**, donde está el trabajo del día a
 día.
 
+«Proyectos» lista los proyectos del **workspace** elegido en el selector de la
+parte de arriba del menú lateral (capítulo 2). En «Personal», tu espacio
+propio, están los tuyos. Un proyecto se comparte con tu equipo llevándolo a un
+workspace compartido con «Compartir con un workspace…» (capítulo 20).
+
 En este manual, Liomar crea dos proyectos:
 
 - **Pharos** (prefijo `PH`): la propia aplicación.
@@ -40,19 +45,19 @@ Todo en Pharos vive dentro de un proyecto: el plan, los requisitos, los casos, l
 
 ### 4.3. El nombre es obligatorio
 
-Un proyecto en blanco pasa directamente a «Datos generales»: el nombre, el prefijo de las claves de sus casos y los dígitos del número, los mismos campos que en «Ajustes del proyecto». Si pulsas «Crear proyecto» sin escribir el nombre, Pharos lo indica arriba y bajo el campo («Este campo es obligatorio.») y no crea nada. «Cancelar» o Esc cierran el asistente; si ya habías escrito o elegido algo, antes preguntan si quieres descartarlo.
+Un proyecto en blanco pasa directamente a «Datos generales»: el nombre, el prefijo de las claves de sus casos y los dígitos del número, los mismos campos que en «Ajustes del proyecto». Si pulsas «Crear proyecto» sin escribir el nombre, Pharos lo indica bajo el campo («Este campo es obligatorio.») y en un resumen al pie, y no crea nada. «Cancelar» o Esc cierran el asistente; si ya habías escrito o elegido algo, antes preguntan si quieres descartarlo.
 
 ![El nombre es obligatorio](img/proyectos/03-nombre-obligatorio.png)
 
 ### 4.4. Crear un proyecto
 
-Escribe el nombre del producto que vas a probar y pulsa «Crear proyecto». En este ejemplo, Liomar crea «Pharos»: el equipo de QA prueba la propia aplicación. A la vez que escribes, Pharos sugiere el prefijo de las claves de sus casos, sacado del nombre y libre entre tus proyectos («✓ Libre»), y muestra cómo se numerarán (aquí, «PHA-», así que los casos serán PHA-001, PHA-002…); puedes cambiarlo antes de crear o después, en sus ajustes. Dos proyectos no pueden tener prefijos que se solapen: iguales, o uno que empiece por el otro (como «PH-» y «PHA-»). Si escribes uno así, Pharos dice con qué proyecto choca y no lo crea. Un proyecto recién creado se abre en su «Plan de pruebas», todavía vacío, porque es lo primero que conviene escribir (capítulo 5).
+Escribe el nombre del producto que vas a probar. En este ejemplo, Liomar crea «Pharos»: el equipo de QA prueba la propia aplicación. A la vez que escribes, Pharos sugiere el prefijo de las claves de sus casos, sacado del nombre y libre entre tus proyectos (para «Pharos», «PHA-»). Puedes cambiarlo antes de crear, como hace Liomar, que lo acorta a «PH-», o después, en sus ajustes (capítulo 14): «✓ Libre» confirma que ningún otro proyecto lo usa, y sus casos serán PH-001, PH-002… Dos proyectos no pueden tener prefijos que se solapen: iguales, o uno que empiece por el otro (como «PH-» y «PHA-»). Si escribes uno así, Pharos dice con qué proyecto choca y no lo crea.
 
 ![Crear un proyecto](img/proyectos/04-crear-proyecto.png)
 
 ### 4.5. La cabecera del proyecto
 
-Todas las secciones del proyecto comparten su cabecera: la insignia con el prefijo de sus claves (aquí «PHA», el que Pharos sugirió; Liomar lo acorta a «PH» en el capítulo 14), el nombre, el estado de su plan («Sin plan», «Plan borrador», «Plan aprobado»…) y una línea con sus casos, sus requisitos y la fecha de cierre del ciclo, cuando el plan la tiene. A la derecha van los botones de la sección abierta (aquí, los del plan). En el móvil solo quedan los botones, para ganar espacio.
+«Crear proyecto» lo crea y lo abre en su «Plan de pruebas», todavía sin guardar y con los valores por defecto de algunos pasos, porque es lo primero que conviene escribir (capítulo 5). Todas las secciones del proyecto comparten su cabecera: la insignia con el prefijo de sus claves (aquí «PH»), el nombre, el estado de su plan («Sin plan», «Plan borrador», «Plan en revisión», «Plan aprobado» o «Plan obsoleto»; el plan cuenta en cuanto se guarda, aunque el panel ya diga «Borrador») y una línea con sus casos, sus requisitos y «Fin del plan», la última fecha del calendario del plan, cuando el plan la tiene. A la derecha van los botones de la sección abierta (aquí, los del plan). En el móvil solo quedan los botones, para ganar espacio.
 
 ![La cabecera del proyecto](img/proyectos/05-cabecera.png)
 
@@ -70,13 +75,13 @@ Para ir más rápido, en «Datos generales» escribe el nombre y pulsa Intro en 
 
 ### 4.8. A partir de otro proyecto: qué copiar
 
-Con «A partir de uno existente», el asistente tiene un paso más, «Qué copiar». Eliges el «Proyecto de origen» (con su prefijo y sus casos) y, debajo, lo que quieres llevarte, todo marcado: los campos personalizados, los dígitos del número de caso, el «Historial en el plan exportado», las «Bandas de riesgo» y la retención de evidencias. Cada casilla muestra el valor que tiene el origen (por ejemplo, «3 · PHA-001» para los dígitos). Desmarca lo que no quieras. Nunca se copian el nombre, el prefijo ni los datos: plan, casos, requisitos, ciclos, ejecuciones, defectos y tablero. En la web, la retención de evidencias aparece desactivada, porque es un ajuste de la app de escritorio.
+Con «A partir de uno existente», el asistente tiene un paso más, «Qué copiar». Eliges el «Proyecto de origen» (con su prefijo y sus casos) y, debajo, lo que quieres llevarte, todo marcado: los campos personalizados, los dígitos del número de caso, el «Historial en el plan exportado», las «Bandas de riesgo» y la retención de evidencias. Cada casilla muestra el valor que tiene el origen (por ejemplo, «3 · PH-001» para los dígitos). Desmarca lo que no quieras. Nunca se copian el nombre, el prefijo ni los datos: plan, casos, requisitos, ciclos, ejecuciones, defectos y tablero. En la web, la retención de evidencias aparece desactivada, porque es un ajuste de la app de escritorio.
 
 ![A partir de otro proyecto: qué copiar](img/proyectos/08-copiar-ajustes.png)
 
 ### 4.9. A partir de otro proyecto: datos generales
 
-«Siguiente» lleva a «Datos generales» con lo copiado ya puesto: los dígitos del origen aparecen marcados «copiado de Pharos» y se pueden cambiar. El nombre y el prefijo son los del proyecto nuevo, y debajo un resumen dice qué más se copiará. «Atrás» vuelve a «Qué copiar» sin perder lo elegido.
+«Siguiente» lleva a «Datos generales» con lo copiado ya puesto: los dígitos del origen aparecen marcados «copiado de Pharos» y se pueden cambiar. El nombre y el prefijo son los del proyecto nuevo (en este ejemplo, Liomar prepara «Versión 0.7.0», la siguiente versión de Pharos, con el prefijo «V07-»), y debajo un resumen dice qué más se copiará. «Atrás» vuelve a «Qué copiar» sin perder lo elegido.
 
 ![A partir de otro proyecto: datos generales](img/proyectos/09-copiar-datos-generales.png)
 
@@ -86,7 +91,7 @@ Al pulsar «Crear proyecto», el proyecto se crea con los ajustes elegidos y un 
 
 ### 4.11. Todos los proyectos
 
-Con proyectos, la lista muestra arriba los «Recientes» (los últimos que abriste) y debajo la tabla de todos: el estado del plan, los casos, la cobertura de requisitos y el último acceso. Busca por nombre o prefijo (en este ejemplo, «sincro» deja solo «API de sincronización») y cambia el orden con el menú de orden: último acceso, nombre, última modificación, cierre del ciclo o cobertura. Con muchos proyectos, la tabla se pagina de 5, 10 o 20.
+Con proyectos, la lista muestra arriba los «Recientes» (los últimos que abriste) y debajo la tabla de todos: el estado del plan, los casos, «Ejecutado» (los casos con resultado), la cobertura de requisitos y el último acceso. Son los proyectos del workspace elegido en el menú lateral (capítulo 2): aquí, los de «Personal». Encima de la tabla, «Todos», «En curso» y «Cerrados» filtran por estado. Busca por nombre o prefijo (en este ejemplo, «sincro» deja solo «API de sincronización») y cambia el orden con el menú de orden: «Último acceso», «Nombre (A–Z)», «Última modificación», «Fin del plan», «Progreso de ejecución», «Cobertura de requisitos» o «Defectos abiertos». Con muchos proyectos, la tabla se pagina de 5, 10 o 20.
 
 ![Todos los proyectos](img/proyectos/11-lista-proyectos.png)
 
@@ -98,13 +103,13 @@ Haz clic en el nombre de un proyecto (en la tabla, en «Recientes» o en el Inic
 
 ### 4.13. Acciones de un proyecto
 
-El menú «⋯» de cada fila reúne las acciones del proyecto: «Abrir», «Ajustes del proyecto» (capítulo 14) y «Exportar proyecto (ZIP)». Se recorre con ↑ ↓ y se cierra con Esc.
+El menú «⋯» de cada fila reúne las acciones del proyecto: «Abrir», «Ajustes del proyecto» (capítulo 14) y «Exportar proyecto (ZIP)». Cuando eres Test Manager de un workspace compartido, aparece además «Compartir con un workspace…», que lo lleva entero a ese workspace para trabajarlo con tu equipo (capítulo 20). Se recorre con ↑ ↓ y se cierra con Esc.
 
 ![Acciones de un proyecto](img/proyectos/13-menu-fila.png)
 
 ### 4.14. Exportar un proyecto
 
-«Exportar proyecto (ZIP)» reúne en un solo archivo el plan en PDF, los casos en .xlsx y .feature y la matriz de trazabilidad: sirve como copia o para entregar el trabajo a alguien que no usa Pharos. Una ventana muestra el progreso («Generando archivos…», «Comprimiendo el ZIP…») y no se puede cerrar hasta que termina; al acabar, un aviso dice cuántos archivos se exportaron y en qué carpeta (la carpeta de descarga de «Administración › General»).
+«Exportar proyecto (ZIP)» reúne en un solo archivo el plan de pruebas (.pdf y .xlsx) y cada caso de prueba (.xlsx y .pdf): sirve como copia o para entregar el trabajo a alguien que no usa Pharos. Una ventana muestra el progreso («Generando archivos…», «Comprimiendo el ZIP…») y no se puede cerrar hasta que termina; al acabar, un aviso dice cuántos archivos se exportaron y en qué carpeta (la carpeta de descarga de «Administración › General»).
 
 ### 4.15. Exportar todos los proyectos
 
@@ -112,13 +117,13 @@ El menú «⋯» de cada fila reúne las acciones del proyecto: «Abrir», «Aju
 
 ### 4.16. Eliminar un proyecto
 
-«Eliminar proyecto», al pie de sus ajustes, borra el proyecto con todo lo que contiene. Por eso el diálogo cuenta antes lo que se perderá (planes, casos, requisitos, tarjetas) y, para evitar un borrado por error, pide escribir el prefijo (o el nombre) antes de habilitar «Sí, eliminar todo». Esc no lo cierra: solo «Cancelar». Si quieres conservar una copia, exporta antes el ZIP.
+«Eliminar proyecto», al pie de sus ajustes, borra el proyecto con todo lo que contiene. Por eso el diálogo cuenta antes lo que se perderá (planes, casos, requisitos, tarjetas) y, para evitar un borrado por error, pide escribir el prefijo (o el nombre) antes de habilitar «Sí, eliminar todo». Esc no lo cierra: solo «Cancelar». En la app de escritorio, el proyecto va a la Papelera (Administración › General, capítulo 15) y se puede restaurar con todo lo que se borró con él hasta que se cumpla su plazo; en la web no se recupera. Para una copia fuera de Pharos, exporta antes el ZIP. En este ejemplo, Liomar elimina «Versión 0.7.0»: lo creó antes de tiempo y lo creará cuando empiece esa versión.
 
 ![Eliminar un proyecto](img/proyectos/16-eliminar-proyecto.png)
 
 ### 4.17. Proyecto eliminado
 
-Al confirmar, Pharos vuelve a la lista de proyectos, que ya no lo muestra, y avisa de que se eliminó.
+Al confirmar, Pharos vuelve a la lista de proyectos, que ya no lo muestra, y avisa de que se eliminó. Mientras esté en la Papelera, se puede restaurar.
 
 ## Atajos de teclado
 
@@ -166,6 +171,11 @@ Al confirmar, Pharos vuelve a la lista de proyectos, que ya no lo muestra, y avi
 - **«Sí, eliminar todo» no se activa.** Escribe exactamente la palabra que
   pide el diálogo: el prefijo del proyecto sin su separador (por ejemplo, `PH`)
   o, si no tiene prefijo, su nombre.
+- **No veo un proyecto que sí existe.** Está en otro workspace: cámbialo en el
+  selector de la parte de arriba del menú lateral.
+- **Eliminé un proyecto por error.** En la app de escritorio está en la
+  Papelera de «Administración › General» (capítulo 15): «Restaurar» lo
+  devuelve con todo lo que se borró con él, hasta que se cumple su plazo.
 - **El proyecto que buscaba ha desaparecido.** Si se eliminó en otro equipo, al
   sincronizar desaparece también aquí. Si abres un enlace a un proyecto que ya
   no existe, Pharos te lleva a la lista.
@@ -183,7 +193,7 @@ Al confirmar, Pharos vuelve a la lista de proyectos, que ya no lo muestra, y avi
 ## Consejos
 
 - Crea un proyecto por producto o por versión importante que pruebes por
-  separado (por ejemplo, «Pharos 0.3» y «Pharos 0.4»), no uno por ciclo de
+  separado (por ejemplo, «Pharos 0.6» y «Pharos 0.7»), no uno por ciclo de
   pruebas: los ciclos van dentro del proyecto (capítulo 9).
 - Al crear un proyecto, Pharos sugiere un prefijo sacado del nombre y libre
   entre tus proyectos («Pharos» → `PHA-`). Ajústalo antes de crear casos, ahí
@@ -202,8 +212,9 @@ Al confirmar, Pharos vuelve a la lista de proyectos, que ya no lo muestra, y avi
   nombre, el prefijo ni los datos, y una sola vez: después, cada proyecto
   cambia por su cuenta. Como los proyectos se sincronizan entre tus equipos,
   no hace falta exportar los ajustes para usarlos en otro equipo.
-- Exporta el ZIP antes de eliminar un proyecto, o como copia periódica fuera de
-  Pharos.
+- Exporta el ZIP como copia periódica fuera de Pharos: lleva el plan (.pdf y
+  .xlsx) y cada caso (.xlsx y .pdf). La Papelera solo guarda lo eliminado en
+  este equipo y durante su plazo.
 
 ## Véase también
 

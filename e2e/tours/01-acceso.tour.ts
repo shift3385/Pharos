@@ -1,13 +1,14 @@
-// Chapter 1 — Acceso y cuenta (manual v2, MAN-03): the sign-in screen and its
-// errors, creating an account, the sign-in screen on a phone, signing in and
-// out, the user menu and the profile. The example: Liomar Rodríguez, QA lead
+// Chapter 1 — Acceso y cuenta (manual v2, MAN-03): the sign-in screen, its
+// server line and its errors, creating an account with its recovery codes,
+// the sign-in screen on a phone, account recovery, signing in and out, the
+// user menu and the profile (account security, preferences). The example: Liomar Rodríguez, QA lead
 // of Pharos, creates his own account here and tests Pharos itself with it in
 // every chapter (NC-052: the one person and account of the manual).
 import { $, browser, expect } from "@wdio/globals";
 import { email, signOut, userMenuTrigger } from "../support";
 import { PERSONA } from "../../scripts/manual/persona.mjs";
 import { DESKTOP, MOBILE, chapter, setViewport, step } from "./tour";
-import { button, byTestId, clearInput, dialog, es, waitForText } from "./helpers";
+import { button, byTestId, clearInput, dialog, es, pointerAway, scrollToTop, waitForText } from "./helpers";
 
 /** The tour account (run-tours passes its e-mail and password). Liomar types
  *  his surname without its accent when he registers and corrects it in his
@@ -21,6 +22,13 @@ export const LEAD = { alias: PERSONA.alias, first: PERSONA.first, last: PERSONA.
 const REVEAL = `button[aria-label="${es.auth.showPassword}"]`;
 const USER_MENU = '[data-testid="user-menu-trigger"]';
 const SAVED_CHECK = `label=${es.recoveryCodes.saved}`;
+
+/** The sidebar says «Sincronizado» (no «Sincronizando…» in the capture). */
+const syncIdle = () =>
+  browser.waitUntil(async () => (await $(".sidebar .sync").getText()).includes(es.sync.synced), {
+    timeout: 20_000,
+    timeoutMsg: "the sync never went idle",
+  });
 
 chapter("acceso", () => {
   step("pantalla-entrada", {
@@ -40,10 +48,29 @@ chapter("acceso", () => {
     },
   });
 
+  step("servidor", {
+    title: "El servidor al que te conectas",
+    caption:
+      "Encima del correo, la línea «Servidor» dice adónde van tu correo y tu contraseña; si trabajas solo en tu equipo, «Este equipo» y la dirección de tu servidor local. «Cambiar» abre «Servidor», donde escribes la dirección https:// que te dé quien administra Pharos y pulsas «Conectar»: Pharos comprueba el servidor antes de quedarse con él. Si ya entraste en otros, «Usados en este equipo» los lista para elegirlos con un clic. «Cancelar» o Esc vuelven sin cambiar nada. En la versión web no aparece: su servidor es el que la sirve.",
+    covers: ["screen:server-line", "dialogs:src/modules/server-picker/ui/ServerPanel.tsx"],
+    focus: '[data-testid="server-panel"]',
+    run: async () => {
+      await expect(byTestId("server-line")).toBeDisplayed();
+      await byTestId("server-change").click();
+      await expect(byTestId("server-panel")).toBeDisplayed();
+      await expect($("#server-address")).toBeDisplayed();
+    },
+    after: async () => {
+      await button(es.server.panel.cancel).click();
+      await expect(byTestId("server-panel")).not.toBeExisting();
+      await expect(byTestId("server-line")).toBeDisplayed();
+    },
+  });
+
   step("idioma-entrada", {
     title: "Elegir el idioma antes de entrar",
     caption:
-      "El selector de idioma, en la esquina inferior izquierda (muestra el idioma actual, «Español»), despliega los idiomas disponibles: español e inglés. Muévete por la lista con las flechas y elige con Intro, o haz clic. Toda la interfaz cambia al momento, también esta pantalla, y Pharos lo recuerda en este equipo. Una vez dentro, el idioma se cambia desde el menú de usuario o desde «Mi perfil».",
+      "El selector de idioma, en la esquina inferior izquierda (muestra el idioma actual, «Español»), despliega los idiomas disponibles: español e inglés. Muévete por la lista con las flechas y elige con Intro, o haz clic. Toda la interfaz cambia al momento, también esta pantalla, y Pharos lo recuerda en este equipo; una vez dentro, el idioma viaja con tu cuenta a tus otros equipos. Después se cambia desde el menú de usuario o desde «Mi perfil».",
     covers: ["action:login-language"],
     focus: ['[data-testid="login-language"]', '[role="menu"]'],
     run: async () => {
@@ -62,6 +89,8 @@ chapter("acceso", () => {
       await browser.keys("Escape");
       await $("#password").setValue(EXAMPLE_PASSWORD);
       await expect($("#password")).toHaveAttribute("type", "password");
+      // No hover left on the language selector of the step before.
+      await pointerAway();
     },
   });
 
@@ -102,7 +131,7 @@ chapter("acceso", () => {
   step("registro", {
     title: "Crear una cuenta",
     caption:
-      "Si es tu primera vez, «Regístrate» abre «Crear cuenta». Escribe tu alias, tu nombre, tus apellidos, tu correo y una contraseña de al menos 8 caracteres. En este ejemplo, Liomar Rodríguez, responsable de QA de Pharos, crea la cuenta con la que hará todas las pruebas del manual, con el alias «Liomar QA». El alias es como te ve el resto de la aplicación; el nombre y los apellidos forman tu nombre oficial, el que firma los documentos que exportas (el plan de pruebas, por ejemplo). Todos los campos son obligatorios: si falta uno, el formulario te lleva a él.",
+      "Si es tu primera vez, «Regístrate» abre «Crear cuenta». Escribe tu nombre, tus apellidos, tu alias, tu correo y una contraseña de al menos 8 caracteres. En este ejemplo, Liomar Rodríguez, responsable de QA de Pharos, crea la cuenta con la que hará todas las pruebas del manual, con el alias «Liomar QA» (escribe «Rodriguez» sin tilde, por descuido: lo corrige en «Mi perfil»). El alias es el nombre con el que Pharos te saluda en tu menú; el nombre y los apellidos forman tu nombre oficial, el que figura en los miembros de un workspace, las revisiones, las firmas y la auditoría. Todos los campos son obligatorios: si falta uno, el formulario te lleva a él.",
     covers: ["screen:register"],
     run: async () => {
       await $(`button=${es.auth.signUpLink}`).click();
@@ -132,25 +161,48 @@ chapter("acceso", () => {
   step("registro-hecho", {
     title: "Primera entrada con la cuenta nueva",
     caption:
-      "Con los códigos guardados, «Continuar» abre Pharos. Como la cuenta es nueva, «Inicio» aparece vacío: el saludo y la invitación a crear tu primer proyecto con «Nuevo proyecto» (capítulo 4). Tu alias y tu correo quedan al pie del menú lateral, junto al estado de la sincronización.",
+      "Con los códigos guardados, «Continuar» abre Pharos. Como la cuenta es nueva, «Inicio» aparece vacío: el saludo y la invitación a crear tu primer proyecto con «Nuevo proyecto» (capítulo 4). Arriba del menú lateral ya está el selector de workspace, con «Personal», tu espacio propio, y tu rol en él (capítulo 2). Tu alias y tu correo quedan al pie del menú lateral, junto al estado de la sincronización.",
     covers: ["state:home-empty"],
-    focus: USER_MENU,
+    focus: [USER_MENU, '[data-testid="workspace-switcher"]'],
     run: async () => {
       await $(SAVED_CHECK).click();
       await button(es.recoveryCodes.continue).click();
       await expect(userMenuTrigger()).toBeDisplayed();
+      // The first sync ends a moment later.
+      await syncIdle();
+      // FIX-40: the workspace selector is there from the first sign-in.
+      await expect(byTestId("workspace-switcher")).toHaveText(expect.stringContaining("Personal"));
+    },
+  });
+
+  step("menu-usuario", {
+    title: "El menú de usuario",
+    caption:
+      "Un clic en tu avatar, al pie del menú lateral, abre el menú de usuario. Reúne lo que es tuyo y no de un proyecto: «Mi perfil», «Administración» (la configuración de la aplicación, capítulo 15), el idioma de la interfaz (español o inglés, con una ✓ en el actual; se aplica al momento y viaja con tu cuenta) y «Cerrar sesión». En la app de escritorio, encima de «Cerrar sesión», «Conectado a …» dice a qué servidor está conectada tu sesión (aquí, el de este equipo). Se recorre con las flechas ↑ ↓ y se cierra con Esc.",
+    covers: ["screen:user-menu", "action:user-menu-language"],
+    focus: '[role="menu"]',
+    run: async () => {
+      await syncIdle();
+      await userMenuTrigger().click();
+      await expect($(`[role="menuitem"]*=${es.shell.myProfile}`)).toBeDisplayed();
+      // Shown in capitals (CSS): compare ignoring case.
+      const menuText = await browser.execute(() => document.querySelector('[role="menu"]')?.textContent ?? "");
+      expect(menuText).toContain(es.server.connectedTo.split("{{")[0].trim());
+      await expect(byTestId("lang-es")).toBeDisplayed();
+      await expect(button(es.auth.logout)).toBeDisplayed();
     },
   });
 
   step("cerrar-sesion", {
     title: "Cerrar sesión",
     caption:
-      "Para salir, abre el menú de usuario con un clic en tu avatar, al pie del menú lateral, y elige «Cerrar sesión». Pharos vuelve a la pantalla de entrada y borra de este equipo los datos en caché de tu cuenta; lo que ya está sincronizado sigue en el servidor. Ciérrala siempre si compartes el equipo: si no, la sesión sigue abierta la próxima vez que alguien abra la aplicación.",
-    covers: ["action:logout", "screen:user-menu"],
-    focus: `button=${es.auth.logout}`,
+      "Para salir, elige «Cerrar sesión» en ese mismo menú. Pharos vuelve a la pantalla de entrada y borra de este equipo los datos en caché de tu cuenta; lo que ya está sincronizado sigue en el servidor. Ciérrala siempre si compartes el equipo: si no, la sesión sigue abierta la próxima vez que alguien abra la aplicación.",
+    covers: ["action:logout"],
+    // The screen it returns to is the one of the first step.
+    shot: false,
     run: async () => {
-      await userMenuTrigger().click();
-      await expect(button(es.auth.logout)).toBeDisplayed();
+      await button(es.auth.logout).click();
+      await expect(button(es.auth.login)).toBeDisplayed();
     },
   });
 
@@ -160,8 +212,6 @@ chapter("acceso", () => {
       "En una pantalla estrecha (un móvil, o la ventana muy reducida), la foto queda arriba con el logotipo y el selector de idioma, y el formulario sube como una hoja desde abajo. Es el mismo formulario, con los mismos campos y errores; solo se desplaza la hoja, no la foto.",
     covers: ["platform:mobile-login"],
     run: async () => {
-      await button(es.auth.logout).click();
-      await expect(button(es.auth.login)).toBeDisplayed();
       await setViewport(MOBILE);
       await expect($(".auth--mobile .auth-sheet")).toBeDisplayed();
     },
@@ -187,7 +237,7 @@ chapter("acceso", () => {
   step("olvidaste-correo", {
     title: "Recuperar por correo",
     caption:
-      "En «Por correo» escribes tu correo y «Enviar enlace» te manda un enlace para elegir una contraseña nueva. Caduca en 30 minutos y sirve una vez; Pharos responde lo mismo exista o no la cuenta. Solo funciona si quien administra el servidor configuró el envío de correo: si no, como en este ejemplo, Pharos lo dice y te queda el código. En la app de escritorio, pega el enlace del correo en «¿Ya tienes el enlace?».",
+      "«Por correo» depende del servidor. Si no envía correo, como aquí, Pharos lo dice y te queda el código de recuperación; debajo siguen «¿Ya tienes el enlace?» y «Continuar», para quien ya recibió uno. En un servidor con correo configurado, esta pestaña pide tu correo y «Enviar enlace» te manda un enlace para elegir una contraseña nueva: caduca en 30 minutos y sirve una vez, y Pharos responde lo mismo exista o no la cuenta. En la app de escritorio, ese enlace se pega en «¿Ya tienes el enlace?».",
     covers: ["state:email-reset-off", "screen:reset-link"],
     focus: ".auth-form",
     run: async () => {
@@ -218,36 +268,25 @@ chapter("acceso", () => {
     },
   });
 
-  step("menu-usuario", {
-    title: "El menú de usuario",
-    caption:
-      "El menú de tu avatar reúne lo que es tuyo y no de un proyecto: «Mi perfil», «Administración» (la configuración de la aplicación, capítulo 15), el idioma de la interfaz (español o inglés, con una ✓ en el actual; se aplica al momento) y «Cerrar sesión». Se recorre con las flechas ↑ ↓ y se cierra con Esc.",
-    covers: ["action:user-menu-language"],
-    focus: '[role="menu"]',
-    run: async () => {
-      await userMenuTrigger().click();
-      await expect($(`[role="menuitem"]*=${es.shell.myProfile}`)).toBeDisplayed();
-      await expect(byTestId("lang-es")).toBeDisplayed();
-    },
-  });
-
   step("perfil", {
     title: "Tu perfil",
     caption:
-      "«Mi perfil» reúne tus datos: el alias y tu nombre oficial (nombre y apellidos), el estado de la sincronización con «Sincronizar ahora» y, en «Preferencias», el idioma y el tema (claro u oscuro), que se aplican al momento en este equipo. La cuenta de este ejemplo tiene los datos con los que Liomar la creó.",
-    covers: ["route:/profile", "action:profile-preferences"],
+      "«Mi perfil» reúne lo tuyo: arriba, el alias y tu nombre oficial (nombre y apellidos), con el estado de la sincronización y «Sincronizar ahora»; más abajo, «Seguridad de la cuenta», «Tokens personales» y «Preferencias». La cuenta de este ejemplo tiene los datos con los que Liomar la creó.",
+    covers: ["route:/profile"],
     run: async () => {
+      await syncIdle();
+      await userMenuTrigger().click();
       await $(`[role="menuitem"]*=${es.shell.myProfile}`).click();
       await expect($(`h1=${es.profile.title}`)).toBeDisplayed();
-      await expect(byTestId("profile-theme")).toBeDisplayed();
-      await expect(byTestId("profile-language")).toBeDisplayed();
+      await expect($("#displayName")).toBeEnabled(); // once the profile has loaded
+      await syncIdle();
     },
   });
 
   step("perfil-guardar", {
     title: "Cambiar el alias y el nombre",
     caption:
-      "Corrige lo que haga falta y pulsa «Guardar» (o Intro). En este ejemplo, Liomar escribió su apellido sin tilde al registrarse y lo corrige: «Rodríguez». Ese nombre oficial es el que firma el plan de pruebas que redacta en el capítulo 5. Junto al botón aparece «Guardado» (si cambias el alias, el avatar y el pie del menú lateral lo muestran al momento) y, debajo, cuándo se creó y se actualizó tu perfil y su número de revisión, que sube con cada cambio. Los cambios llegan a tus otros equipos con la siguiente sincronización.",
+      "Corrige lo que haga falta y pulsa «Guardar» (o Intro). En este ejemplo, Liomar escribió su apellido sin tilde al registrarse y lo corrige: «Rodríguez». Junto al botón aparece «Guardado» (si cambias el alias, el avatar y el pie del menú lateral lo muestran al momento) y, debajo, cuándo se creó y se actualizó tu perfil y su número de revisión, que sube con cada cambio. Los cambios llegan a tus otros equipos con la siguiente sincronización.",
     covers: ["action:profile-save"],
     focus: [".profile__audit", `button=${es.profile.save}`],
     run: async () => {
@@ -270,7 +309,8 @@ chapter("acceso", () => {
     covers: ["screen:account-security"],
     focus: ".account-security",
     run: async () => {
-      await $(".account-security").scrollIntoView();
+      // The card's title just below the top bar, not under it.
+      await scrollToTop(".account-security");
       await expect(byTestId("codes-remaining")).toHaveText(expect.stringContaining("10"));
     },
   });
@@ -300,6 +340,24 @@ chapter("acceso", () => {
       await dialog().$(SAVED_CHECK).click();
       await dialog().$(`button=${es.recoveryCodes.close}`).click();
       await expect(dialog()).not.toBeExisting();
+    },
+  });
+
+  step("perfil-preferencias", {
+    title: "Preferencias: idioma y tema",
+    caption:
+      "Al final de «Mi perfil», «Preferencias» guarda el idioma y el tema: claro, oscuro o «Según el sistema», que sigue el ajuste de Windows. Se aplican al momento y viajan con tu cuenta: tus otros equipos los toman al sincronizar («Se aplica en todos tus equipos»). Justo encima, «Tokens personales» crea los tokens para el CLI `pharos` y tus scripts (capítulo 21).",
+    covers: ["action:profile-preferences"],
+    focus: ".profile-prefs",
+    run: async () => {
+      // To the end of the page: the card keeps the page's bottom margin.
+      await browser.execute(() => {
+        const main = document.querySelector(".app-shell__content");
+        if (main) main.scrollTop = main.scrollHeight;
+      });
+      await expect(byTestId("profile-theme")).toBeDisplayed();
+      await expect(byTestId("profile-language")).toBeDisplayed();
+      await expect($(".profile-prefs")).toHaveText(expect.stringContaining(es.profile.synced));
     },
   });
 });

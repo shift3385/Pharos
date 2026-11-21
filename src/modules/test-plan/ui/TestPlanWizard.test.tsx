@@ -144,6 +144,14 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
     const other = within(own).getByRole("textbox", { name: "Otro entregable" });
     await userEvent.type(other, "Acta de cierre{Enter}");
     expect(within(own).getByText("Acta de cierre")).toBeInTheDocument();
+    // A version never wraps alone onto the last line (FIX-49).
+    await userEvent.type(other, "Informe WCAG 2.2{Enter}");
+    expect(
+      within(own).getByRole("list", { name: "Propios" }).textContent,
+    ).toContain("Informe WCAG\u00a02.2");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Quitar: Informe WCAG 2.2" }),
+    );
     // A catalog name ticks that entry instead of adding a copy.
     await userEvent.type(other, "matriz de trazabilidad");
     await userEvent.click(within(own).getByRole("button", { name: "Añadir" }));
@@ -652,7 +660,7 @@ describe("plan wizard · review flow (PLN-07, PLN-08)", () => {
       const approve = within(panel).getByRole("button", { name: "Aprobar versión 1.3" });
       await vi.waitFor(() => expect(approve).toBeDisabled());
       expect(approve).toHaveAccessibleDescription(
-        "Este espacio de trabajo pide aprobación independiente: aprueba un Test Manager que no sea el autor del plan.",
+        "Este workspace pide aprobación independiente: aprueba un Test Manager que no sea el autor del plan.",
       );
       expect(asked[0]).toMatchObject({ subject: "plan", caseId: PLAN.id, authorId: "test-user", approverId: "test-user" });
     } finally {
@@ -696,7 +704,13 @@ describe("plan wizard · review flow (PLN-07, PLN-08)", () => {
     await vi.waitFor(() =>
       expect(vi.mocked(testPlanApi.review).mock.calls[0][1]).toMatchObject({ action: "return", comment: "Falta el p95" }),
     );
-    expect(await within(panel).findByText("Cambios pedidos por Luis Pérez", { exact: false })).toBeInTheDocument();
+    const banner = await within(panel).findByText(
+      "Cambios pedidos por Luis Pérez",
+      { exact: false },
+    );
+    expect(banner).toBeInTheDocument();
+    // The date never breaks across lines in the narrow card (FIX-49).
+    expect(banner.textContent).toMatch(/· \d{1,2}\u00a0\S+\u00a02026,\u00a0\d{1,2}:\d{2}$/);
     expect(within(panel).getByText("En revisión")).toBeInTheDocument();
   });
 

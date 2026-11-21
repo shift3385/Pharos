@@ -67,13 +67,24 @@ export function PlanStatusPanel({
           <dd className="t-id">v{version}</dd>
           {status === "approved" && approval && (
             <>
-              <dt>{t("testPlan.approval.by")}</dt>
-              {/* Wraps, never cut: a name plus «aprobación propia» is wider
-                  than the panel at 1440 px (FIX-40). */}
-              <dd className="tpw-facts__wrap" data-testid="plan-approved-by">
-                {approval.byName}
-                {approval.selfApproved && ` · ${t("testPlan.review.banner.selfApproved")}`}
-              </dd>
+              {/* Never cut (FIX-40), the name never broken (FIX-44), and on
+                  the label's row when it fits, like every other fact; a name
+                  too long for it moves whole to the next line (FIX-49).
+                  «aprobación propia» goes under the name. */}
+              <div className="tpw-facts__pair">
+                <dt>{t("testPlan.approval.by")}</dt>
+                <dd className="tpw-facts__wrap" data-testid="plan-approved-by">
+                  <span className="tpw-facts__name">
+                    {approval.byName.replace(/ /g, "\u00a0")}
+                  </span>
+                  {approval.selfApproved && (
+                    <span className="tpw-facts__note">
+                      <span className="sr-only"> · </span>
+                      {t("testPlan.review.banner.selfApproved")}
+                    </span>
+                  )}
+                </dd>
+              </div>
               <dt>{t("testPlan.approval.at")}</dt>
               <dd>{approvedAt}</dd>
             </>
@@ -145,10 +156,14 @@ export function PlanIoMenu({
   onImport,
   onExportPdf,
   onExportXlsx,
+  exportHistory,
 }: {
   onImport: () => void;
   onExportPdf: () => void;
   onExportXlsx: () => void;
+  /** The project's «Historial en el plan exportado» (PLN-02), named at the
+   *  menu's foot so the person knows what the document carries. */
+  exportHistory: "current" | "revisions";
 }) {
   const { t } = useTranslation();
   const mobile = useBreakpoint() === "mobile";
@@ -183,6 +198,10 @@ export function PlanIoMenu({
         <MenuItem icon={FileSpreadsheet} onSelect={onExportXlsx} description={t("testPlan.io.exportXlsxDesc")}>
           {t("testPlan.io.exportXlsx")}
         </MenuItem>
+        <MenuSeparator />
+        <div className="tpw-io-menu__foot" role="presentation" data-testid="plan-io-history">
+          {t("testPlan.io.history", { mode: t(`testPlan.historyMode.${exportHistory}`) })}
+        </div>
       </ResponsiveMenu>
     </>
   );

@@ -20,8 +20,17 @@ import { isTauri } from "@shared/platform";
 
 /** The web's access to the desktop's key (IA-12), loaded only on the web: it
  *  brings in the auth and sync clients, which the AI layer does not need
- *  otherwise. */
-const webAccess = () => import("./webAccess");
+ *  otherwise. Every caller awaits the same load (FIX-51): a second
+ *  `import()` started while the first is still evaluating that large graph
+ *  can be handed the half-evaluated module by the dev and test loader, and
+ *  its first call then reads `cached` before its `let` has run («Cannot
+ *  access 'cached' before initialization»). A failed load is not kept. */
+let webAccessLoad: Promise<typeof import("./webAccess")> | null = null;
+const webAccess = () =>
+  (webAccessLoad ??= import("./webAccess").catch((e: unknown) => {
+    webAccessLoad = null;
+    throw e;
+  }));
 
 const CONFIG_KEY = "pharos.ai.config";
 

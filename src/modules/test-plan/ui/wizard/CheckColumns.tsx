@@ -121,7 +121,22 @@ function CheckRow({ option, checked, onToggle }: { option: CheckOption; checked:
   );
 }
 
-function OwnCell({ title, items, onRemove, onAdd, fieldLabel, placeholder, addLabel, span, testId }: OwnColumn) {
+/** A version number stays on the line of the word before it («WCAG 2.2»,
+ *  «Android 14»), never alone on the last line (FIX-49). */
+const keepVersions = (text: string) =>
+  text.replace(/ (?=\d+(?:[.,]\d+)*(?:\s|$))/g, "\u00a0");
+
+function OwnCell({
+  title,
+  items,
+  onRemove,
+  onAdd,
+  fieldLabel,
+  placeholder,
+  addLabel,
+  span,
+  testId,
+}: OwnColumn) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState("");
   const fieldId = useId();
@@ -146,7 +161,7 @@ function OwnCell({ title, items, onRemove, onAdd, fieldLabel, placeholder, addLa
           {items.map((v) => (
             <li key={v} className="tpw-check tpw-check--own">
               <Check size={16} className="tpw-check__icon" aria-hidden="true" />
-              <span className="tpw-check__text">{v}</span>
+              <span className="tpw-check__text">{keepVersions(v)}</span>
               <button
                 type="button"
                 className="tpw-icon-btn"

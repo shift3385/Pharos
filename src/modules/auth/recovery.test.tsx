@@ -256,9 +256,9 @@ describe("«¿Olvidaste tu contraseña?»", () => {
     expect(
       await screen.findByText(/Este servidor no envía correos/),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Enviar enlace" }),
-    ).toBeDisabled();
+    // FIX-46: without mail the send form is not offered at all.
+    expect(screen.queryByRole("button", { name: "Enviar enlace" })).toBeNull();
+    expect(document.getElementById("reset-email")).toBeNull();
 
     await user.type(
       screen.getByLabelText("¿Ya tienes el enlace?"),

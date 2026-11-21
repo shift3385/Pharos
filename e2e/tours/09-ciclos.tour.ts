@@ -1,7 +1,10 @@
 // Chapter 9 — Ciclos de prueba (manual v2, MAN-03): the cycle «Regresión
-// 0.3.0» of «Pharos» (what runs, where, against which build), adding cases one
+// 0.6.0» of «Pharos» (what runs, where, against which build), adding cases one
 // by one and by filter, assigning, reordering, executing it into runs (one per
-// configuration), its status report, cloning, deleting and the list on a phone.
+// configuration), cloning, deleting and the list on a phone. Its closing (the
+// status report on real results, the quality gate and the closure report) is
+// 09-ciclos-cierre.tour.ts, which runs after chapters 10 to 13 and prints at
+// the end of this chapter.
 import { $, $$, browser, expect } from "@wdio/globals";
 import { DESKTOP, MOBILE, chapter, setViewport, step } from "./tour";
 import {
@@ -14,12 +17,12 @@ import {
   openProject,
   openSection,
   pickDate,
-  selectOption,
   tf,
   typeDate,
   waitForText,
   waitForToast,
 } from "./helpers";
+import { CYCLE } from "./data/pharos";
 
 const Y = es.cycles;
 const D = '[role="dialog"]';
@@ -40,20 +43,20 @@ chapter("ciclos", () => {
   step("nuevo-ciclo", {
     title: "Nuevo ciclo",
     caption:
-      "«Nuevo ciclo» pide el título (obligatorio), la build y el entorno contra los que se prueba, el hito y el sprint del plan, las fechas (se escriben dd/mm/aaaa o se eligen en el calendario de Pharos, capítulo 5; el de «Termina» abre en el mes de «Empieza» y no deja elegir un día anterior) y las configuraciones en las que se ejecutará (las de «Ajustes del proyecto», capítulo 14). En este ejemplo, «Regresión 0.3.0» de la build 0.3.0-rc1 en staging, del 9 al 20 de noviembre, en Chrome y en Edge sobre Windows 11. Sin configuraciones, el ciclo se ejecuta como un único run. Intro en un campo crea el ciclo.",
+      "«Nuevo ciclo» pide el título (obligatorio), la build y el entorno contra los que se prueba, el hito y el sprint del plan, las fechas (se escriben dd/mm/aaaa o se eligen en el calendario de Pharos, capítulo 5; el de «Termina» abre en el mes de «Empieza» y no deja elegir un día anterior) y las configuraciones en las que se ejecutará (las de «Ajustes del proyecto», capítulo 14). En este ejemplo, «Regresión 0.6.0» de la build 0.6.0-beta.1 en staging, con las fechas del Sprint 1 del plan, en Chrome y en Edge sobre Windows 11. Sin configuraciones, el ciclo se ejecuta como un único run. Intro en un campo crea el ciclo.",
     covers: ["dialogs:src/modules/cycles/ui/CycleDialog.tsx"],
     shot: { element: D },
     run: async () => {
       await clickButton(Y.new);
       await expect(dialog()).toBeDisplayed();
-      await (await field(Y.field.title, D)).setValue("Regresión 0.3.0");
-      await (await field(Y.field.build, D)).setValue("0.3.0-rc1");
-      await (await field(Y.field.environment, D)).setValue("staging");
-      await (await field(Y.field.sprint, D)).setValue("Sprint 1");
+      await (await field(Y.field.title, D)).setValue(CYCLE.title);
+      await (await field(Y.field.build, D)).setValue(CYCLE.build);
+      await (await field(Y.field.environment, D)).setValue(CYCLE.environment);
+      await (await field(Y.field.sprint, D)).setValue(CYCLE.sprint);
       // The start typed, the end picked in the calendar (UX-36): it opens on
       // the start's month, with the days before it off.
-      await typeDate(await field(Y.field.startsOn, D), "2026-11-09");
-      await pickDate(await field(Y.field.endsOn, D), "2026-11-20");
+      await typeDate(await field(Y.field.startsOn, D), CYCLE.startsOn);
+      await pickDate(await field(Y.field.endsOn, D), CYCLE.endsOn);
       const checks = Array.from(await $(D).$$(".cy-check input[type=checkbox]"));
       if (checks.length === 0) throw new Error("the cycle dialog offers no configuration (chapter 2 creates them)");
       for (const c of checks.slice(0, 2)) await c.click();
@@ -63,7 +66,7 @@ chapter("ciclos", () => {
   step("detalle", {
     title: "El ciclo, recién creado",
     caption:
-      "«Crear ciclo» lo crea con su clave y abre su detalle: arriba, el estado, la build, el entorno, las fechas y el sprint; los botones «Ejecutar», «Informe de estado», «Editar» y el menú «⋯»; el resumen de resultados (pasa, falla, bloqueado, omitido, sin ejecutar) y las pestañas «Elementos», lo que hay que probar, y «Runs», las ejecuciones lanzadas. «← Ciclos» vuelve a la lista. Un ciclo vacío no se puede ejecutar todavía.",
+      "«Crear ciclo» lo crea con su clave y abre su detalle: arriba, el estado, la build, el entorno, las fechas y el sprint; los botones «Ejecutar», «Informe de estado», «Editar», «Cerrar ciclo…» (al final del capítulo) y el menú «⋯»; el resumen de resultados (pasa, falla, bloqueado, omitido, sin ejecutar) y las pestañas «Elementos», lo que hay que probar, y «Runs», las ejecuciones lanzadas. «← Ciclos» vuelve a la lista. Un ciclo vacío no se puede ejecutar todavía.",
     run: async () => {
       await clickButton(Y.create, D);
       await waitForToast(Y.createdToast.split("{{")[0]);
@@ -90,14 +93,14 @@ chapter("ciclos", () => {
       await expect(dialog()).toBeDisplayed();
       const picks = Array.from(await $("ul.cy-pick").$$("input[type=checkbox]"));
       for (const p of picks.slice(0, 2)) await p.click();
-      await (await field(Y.add.assignee, D)).setValue("Liomar Rodríguez");
+      await (await field(Y.add.assignee, D)).setValue(CYCLE.assignee);
     },
   });
 
   step("por-filtro", {
     title: "Añadir por filtro",
     caption:
-      "Para no marcar caso por caso, «Añadir por filtro» los elige por etiquetas, prioridad, estado del caso, requisitos o riesgo mínimo de sus requisitos (por ejemplo, «Alto (≥ 13)»). El recuento («N casos coinciden») se actualiza mientras marcas. Se añaden los que coinciden en ese momento: si después cambian, el ciclo no cambia.",
+      "Para no marcar caso por caso, «Añadir por filtro» los elige por etiquetas, prioridad, estado del caso, requisitos o riesgo mínimo de sus requisitos (por ejemplo, «Alto (≥ 13)»). El recuento («N casos coinciden») se actualiza mientras marcas. Se añaden los que coinciden en ese momento: si después cambian, el ciclo no cambia. En este ejemplo, Liomar marca la prioridad alta: solo coincide PH-001, que ya está en el ciclo, así que no se añade nada nuevo.",
     covers: ["dialogs:src/modules/cycles/ui/ItemDialogs.tsx"],
     run: async () => {
       await clickButton(tf("cycles.add.confirm_other", { count: 2 }), D);
@@ -119,11 +122,8 @@ chapter("ciclos", () => {
       await clickButton(Y.filter.confirm, D);
       await $(".cd-overlay").waitForExist({ reverse: true });
       const assignee = $(`input[aria-label^="${tf("cycles.items.assigneeOf", { key: "" })}"]`);
-      await assignee.setValue("Liomar Rodríguez");
+      await assignee.setValue(CYCLE.assignee);
       await browser.keys("Enter");
-      const menus = Array.from(await $$(`button[aria-label^="${tf("cycles.items.actions", { key: "" })}"]`));
-      await menus[menus.length - 1].click();
-      await expect(menuItem(Y.items.remove)).toBeDisplayed();
     },
   });
 
@@ -134,6 +134,8 @@ chapter("ciclos", () => {
     covers: ["dialogs:src/modules/cycles/ui/CycleDetail.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
+      const menus = Array.from(await $$(`button[aria-label^="${tf("cycles.items.actions", { key: "" })}"]`));
+      await menus[menus.length - 1].click();
       await menuItem(Y.items.remove).click();
       await expect($('[role="alertdialog"]')).toBeDisplayed();
     },
@@ -150,10 +152,6 @@ chapter("ciclos", () => {
     covers: ["dialogs:src/modules/cycles/ui/ExecuteDialog.tsx"],
     shot: { element: D },
     run: async () => {
-      // The row menu is gone before the click: a late Escape must not reach
-      // the dialog that opens next.
-      await browser.keys("Escape");
-      await menuItem(Y.items.remove).waitForDisplayed({ reverse: true });
       await clickButton(Y.execute.action);
       await expect(dialog()).toBeDisplayed();
     },
@@ -161,7 +159,7 @@ chapter("ciclos", () => {
 
   step("runs", {
     title: "Los runs del ciclo",
-    caption: "Los runs creados aparecen en la pestaña «Runs» (con su configuración, su estado y su inicio) y en «Ejecuciones» (capítulo 10), listos para registrar resultados. Un clic en su clave abre el run para ejecutarlo paso a paso (capítulo 11).",
+    caption: "Los runs creados aparecen en la pestaña «Runs» (con su configuración, su estado y su inicio) y en «Ejecuciones» (capítulo 10), listos para registrar resultados. Un clic en su clave abre el run para ejecutarlo paso a paso (capítulo 11). El ciclo sigue «Activo» mientras se ejecuta: se cierra cuando ya tiene resultados, como se ve al final de este capítulo.",
     covers: ["tabs:src/modules/cycles/ui/CycleDetail.tsx"],
     run: async () => {
       await clickButton(tf("cycles.execute.confirm_other", { count: 2 }), D);
@@ -171,124 +169,12 @@ chapter("ciclos", () => {
     },
   });
 
-  step("informe-ciclo", {
-    title: "Informe de estado de un ciclo",
-    caption: "«Informe de estado» en la cabecera del ciclo abre el informe con el alcance ya puesto en ese ciclo: el progreso cuenta cada caso en cada configuración, como la pestaña «Elementos». El informe completo, con sus exportaciones a Excel y PDF, se explica en el capítulo 11.",
-    covers: ["action:cycle-report"],
-    shot: { element: D },
-    run: async () => {
-      await $('[data-testid="cycle-report"]').click();
-      await expect($('[data-testid="status-report"]')).toBeDisplayed();
-      await waitForText(es.statusReport.section.identification);
-    },
-  });
-
-  step("cerrar-ciclo", {
-    title: "Cerrar el ciclo: el quality gate",
-    caption:
-      "Un ciclo se cierra con «Cerrar ciclo…», nunca desde «Editar». Pharos evalúa los criterios de salida del plan sobre los resultados del ciclo. Cada criterio obligatorio que no se cumple, o que no tiene datos, pide una justificación de al menos 20 caracteres: por qué se acepta el riesgo, quién lo asume y cuándo se resuelve. Los criterios manuales («Visto bueno del PO») se marcan a mano y los orientativos solo se muestran. Si algún obligatorio falla, eliges «Go con riesgos» (la versión puede salir) o «No-go» (no sale). Al pie se ve quién firma y cuándo: queda en Auditoría.",
-    covers: ["dialogs:src/modules/runs/gate/CloseCycleDialog.tsx"],
-    shot: { element: D },
-    run: async () => {
-      if (await $('[data-testid="status-report"]').isExisting()) {
-        await browser.keys("Escape");
-        await $(".cd-overlay").waitForExist({ reverse: true });
-      }
-      await $('[data-testid="cycle-close"]').click();
-      await $('[data-testid="gate-banner"]').waitForDisplayed();
-      for (const box of await $$(`${D} textarea`))
-        await box.setValue("Se acepta: los casos pendientes se ejecutan en la regresión de la semana que viene.");
-      for (const b of await $$(`${D} .gate-mark button`)) if ((await b.getText()) === es.gate.met) await b.click();
-      const risks = $('[data-testid="gate-verdict-goWithRisks"]');
-      if (await risks.isExisting()) await risks.click();
-    },
-  });
-
-  step("cierre-sin-guardar", {
-    title: "Salir del cierre sin cerrar",
-    caption:
-      "Si sales con Esc o «Cancelar» después de escribir una justificación o marcar un criterio, Pharos pregunta antes de descartarlo: «Seguir editando» vuelve al cierre tal como estaba.",
-    covers: ["dialogs:src/modules/runs/gate/CloseCycleDialog.tsx"],
-    shot: { element: '[role="alertdialog"]' },
-    run: async () => {
-      await browser.keys("Escape");
-      await expect($('[role="alertdialog"]')).toBeDisplayed();
-    },
-    after: async () => {
-      await $('[role="alertdialog"]').$(`button=${es.dialog.unsaved.keep}`).click();
-      await expect($('[role="alertdialog"]')).not.toBeExisting();
-      await expect($('[data-testid="gate-banner"]')).toBeDisplayed();
-    },
-  });
-
-  step("ciclo-cerrado", {
-    title: "El veredicto del ciclo",
-    caption:
-      "«Cerrar ciclo» guarda la decisión con las cifras de ese momento, congeladas: el ciclo queda «Cerrado», con su veredicto al lado, y ya no admite casos ni ejecuciones hasta que lo reabras desde «Editar». Su informe de estado empieza ahora por «Decisión de salida», con cada criterio, su justificación y las métricas frente al ciclo anterior, también en Excel y PDF. Inicio lo suma a «Tendencia de ciclos».",
-    covers: ["action:cycle-verdict"],
-    run: async () => {
-      await $('[data-testid="gate-close"]').click();
-      await waitForToast(es.gate.closedToast.split("{{")[0].trim());
-      await expect($('[data-testid="cycle-verdict"]')).toBeDisplayed();
-    },
-  });
-
-  step("informe-cierre", {
-    title: "El informe de cierre",
-    caption:
-      "En un ciclo cerrado, «Cerrar ciclo…» deja paso a «Informe de cierre»: el informe final de la ronda según ISO/IEC/IEEE 29119-3, con su ID (TCR-…). Pharos rellena lo que sabe del cierre: las desviaciones respecto al plan (fecha de fin, casos sin ejecutar, criterios que no se cumplen), la «Decisión de salida» con sus justificaciones, lo que bloqueó el avance, las métricas frente al ciclo anterior y al objetivo del plan, los defectos abiertos y los requisitos sin cubrir o sin pasar por riesgo, los entregables y los activos reutilizables. Tú escribes el resumen, las lecciones aprendidas y los comentarios de cada apartado, marcas los entregables del plan y pulsas «Guardar»: queda en el ciclo, se sincroniza y sale en Excel y PDF.",
-    covers: ["dialogs:src/modules/runs/report/completion/CompletionReportDialog.tsx"],
-    shot: { element: D },
-    run: async () => {
-      await $('[data-testid="cycle-completion-report"]').click();
-      await expect($('[data-testid="completion-report"]')).toBeDisplayed();
-      await waitForText(es.completionReport.section.deviations);
-      await $('[data-testid="completion-lessons"]').setValue(
-        "Pedir al equipo de plataforma el entorno de staging una semana antes de la regresión.",
-      );
-      await $('[data-testid="completion-save"]').click();
-      await waitForToast(es.completionReport.savedToast);
-    },
-  });
-
-  step("aprobar-informe-cierre", {
-    title: "Aprobar el informe de cierre",
-    caption:
-      "Con todo guardado, «Aprobar informe» pide confirmación y deja tu nombre y la fecha en el apartado «Aprobación», en la cabecera del PDF y en el Excel. Si después cambias un texto, el informe pierde la aprobación al guardar. Si reabres el ciclo y lo vuelves a cerrar, el informe sigue al cierre nuevo: conserva los textos, pero hay que aprobarlo otra vez.",
-    covers: ["dialogs:src/modules/runs/report/completion/CompletionReportDialog.tsx"],
-    shot: { element: '[role="alertdialog"]' },
-    run: async () => {
-      await $('[data-testid="completion-approve"]').click();
-      await expect($('[data-testid="completion-approve-confirm"]')).toBeDisplayed();
-    },
-    // The later chapters import into this cycle and record results in its
-    // runs (10, 11): approve, close the report and reopen the cycle, as
-    // «Editar» allows, so they find it open.
-    after: async () => {
-      await $('[data-testid="completion-approve-confirm"]').click();
-      await waitForToast(es.completionReport.approvedToast);
-      await browser.keys("Escape");
-      await $(".cd-overlay").waitForExist({ reverse: true });
-      await clickButton(Y.edit);
-      await expect(dialog()).toBeDisplayed();
-      await selectOption(Y.field.status, Y.status.active, D);
-      await clickButton(Y.save, D);
-      await $(D).waitForExist({ reverse: true });
-      await expect($('[data-testid="cycle-verdict"]')).not.toBeExisting();
-      await expect($('[data-testid="cycle-close"]')).toBeDisplayed();
-    },
-  });
-
   step("clonar", {
     title: "Clonar y eliminar un ciclo",
     caption:
       "El menú «⋯» del ciclo lo clona, con sus elementos y sin resultados, útil para repetir una regresión en la siguiente versión (el clon se abre solo); también lo elimina, tras confirmar.",
     covers: ["dialogs:src/modules/cycles/ui/CycleDetail.tsx"],
     run: async () => {
-      if (await $('[data-testid="status-report"]').isExisting()) {
-        await browser.keys("Escape");
-        await $(".cd-overlay").waitForExist({ reverse: true });
-      }
       await $(`button[aria-label="${Y.moreActions}"]`).click();
       await expect(menuItem(Y.clone)).toBeDisplayed();
     },
@@ -297,7 +183,7 @@ chapter("ciclos", () => {
   step("eliminar", {
     title: "Confirmar la eliminación",
     caption:
-      "Eliminar un ciclo pide confirmación, con cuántos runs tiene. Los resultados no se pierden: sus runs se conservan, sin ciclo, en «Ejecuciones». Esc no cierra este aviso: solo «Cancelar».",
+      "Eliminar un ciclo pide confirmación, con cuántos runs tiene. Los resultados no se pierden: sus runs se conservan, sin ciclo, en «Ejecuciones». El ciclo eliminado pasa a la Papelera (Administración › General, capítulo 15), desde donde se restaura mientras dure la retención. Esc no cierra este aviso: solo «Cancelar». En este ejemplo, Liomar elimina el clon que acaba de crear.",
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
       await menuItem(Y.clone).click();
@@ -327,7 +213,7 @@ chapter("ciclos", () => {
   step("movil", {
     title: "Los ciclos en el móvil",
     caption:
-      "En el móvil, cada ciclo es una tarjeta con su clave, su estado, su título, sus fechas y su progreso. Dentro de un ciclo, cada elemento es una tarjeta con su caso, su asignado y una pastilla por configuración; su menú «⋯» lo sube, lo baja o lo quita. El asignado se cambia en la propia tarjeta.",
+      "En el móvil, cada ciclo es una tarjeta con su clave, su estado, su título, sus fechas y su progreso; un toque lo abre.",
     covers: ["platform:mobile-cycles"],
     run: async () => {
       await setViewport(MOBILE);

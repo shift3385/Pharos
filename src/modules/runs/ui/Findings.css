@@ -136,12 +136,23 @@
   outline-offset: 2px;
 }
 
+/* «Umbrales cumplidos…» on its own surface, as the table under it: over the
+   background image it was drawn on the photo (FIX-45). The surface is the
+   shared `.ui-card` (FIX-47); this keeps it one line of text, not a column. */
 .fd-kpi {
+  display: block;
   margin: 0;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--fs-ui);
+  line-height: var(--lh-normal);
+  color: var(--color-text-primary);
 }
 
+/* The «Checks» heading is the shared `.ui-card`, like the thresholds line
+   above the metrics: never text on the background photo (FIX-51). */
 .fd-sub {
   margin: var(--space-2) 0 0;
+  padding: var(--space-3) var(--space-4);
   font-size: var(--fs-ui);
 }
 

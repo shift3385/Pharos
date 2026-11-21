@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { Bot, Download, Search, Settings2, User, X } from "lucide-react";
 import { useAuth } from "@modules/auth";
+import { todayIso } from "@shared/time/isoDay";
 import { DataTable, type DataColumn } from "@shared/ui/DataTable";
 import { DatePicker } from "@shared/ui/DatePicker";
 import { FilterMenuButton } from "@shared/ui/FilterMenuButton";
@@ -72,8 +73,24 @@ function changesText(row: AuditRow, labels: AuditLabels, t: (k: string, o?: Reco
   if (row.redactedAt) return t("admin.audit.redacted");
   const summary = summaryEntries(row.summary);
   const resolution = summary.find(([k]) => k === "resolution");
-  const lead = resolution ? `${t("admin.audit.summary.resolution")}: ${labels.summaryValue(resolution[1])}` : null;
-  const fields = changedFields(row);
+  const lead = resolution
+    ? `${t("admin.audit.summary.resolution")}: ${labels.summaryValue(resolution[1])}`
+    : null;
+  // A combined conflict also names the fields kept as they were («Título»
+  // kept from this device changes nothing, so the diff alone left it out,
+  // FIX-49): every field the merge decided, after the changed ones.
+  const decided = summary.find(([k]) => k === "fields")?.[1];
+  const fields = [
+    ...new Set([
+      ...changedFields(row),
+      ...(resolution &&
+      decided &&
+      typeof decided === "object" &&
+      !Array.isArray(decided)
+        ? Object.keys(decided)
+        : []),
+    ]),
+  ];
   const fieldsText =
     fields.length > 3
       ? t("admin.audit.fieldCount", { count: fields.length })
@@ -231,7 +248,7 @@ export function AuditTab() {
       const l = exportLabels();
       const rows = exportRows(events, l);
       const now = new Date();
-      const name = `pharos-auditoria-${now.toISOString().slice(0, 10)}.${format}`;
+      const name = `pharos-auditoria-${todayIso(now)}.${format}`;
       const path = format === "csv" ? await saveAuditCsv(name, rows) : await saveAuditXlsx(name, rows, verify, l, now);
       if (path) toast(t("downloads.saved", { path }));
       if (capped) toast(t("admin.audit.export.capped", { count: events.length }), "warning");
@@ -283,7 +300,14 @@ export function AuditTab() {
     {
       id: "changes",
       header: t("admin.audit.cols.changes"),
-      cell: (r) => <span className="aud-changes">{changesText(r, labels, t)}</span>,
+      cell: (r) => {
+        const text = changesText(r, labels, t);
+        return (
+          <span className="aud-changes" title={text}>
+            {text}
+          </span>
+        );
+      },
       width: "minmax(140px, 1.4fr)",
       minView: "desktop",
     },

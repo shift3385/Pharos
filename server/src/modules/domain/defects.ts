@@ -160,7 +160,15 @@ export function withLinks(ctx: LinkContext, doc: RemoteDoc): Payload {
       const run = ctx.byId.get(`run:${str(found.payload, "runId")}`);
       // A retry is numbered as the run shows it (attempt 0 is the first, unnumbered).
       const attempt = Number(found.payload.attempt ?? 0);
-      label = `${run ? str(run.payload, "runKey") : ""} · ${str(found.payload, "caseKey") || str(found.payload, "testKey")}${attempt > 0 ? ` #${attempt + 1}` : ""}`;
+      const retry = attempt > 0 ? ` #${attempt + 1}` : "";
+      const runKey = run ? str(run.payload, "runKey") : "";
+      // A result that reaches a case is named by it (`defects::result_label`,
+      // FIX-49), not by its test path.
+      const reached = caseId ? ctx.byId.get(`test_case:${caseId}`) : undefined;
+      label =
+        reached && str(reached.payload, "scenarioId")
+          ? `${runKey} · ${str(reached.payload, "scenarioId")} · ${str(reached.payload, "title")}${retry}`
+          : `${runKey} · ${str(found.payload, "caseKey") || str(found.payload, "testKey")}${retry}`;
     }
     if (caseId && !caseIds.includes(caseId)) caseIds.push(caseId);
     out.push({ id: l.entityId, targetKind: kind, targetId: target, label });

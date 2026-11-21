@@ -85,15 +85,21 @@ export function lastTwoClosed(series: readonly TrendPoint[]): [TrendPoint | null
 }
 
 /** The project the gadget opens on: the chosen one if it still exists, else
- *  the first with closed cycles, else the first. */
+ *  the first with closed cycles, else the first with any cycle (FIX-46: it
+ *  opened on a project with none, beside «Criterios de salida» showing
+ *  another), else the preferred one (the project of «Criterios de salida»),
+ *  else the first. */
 export function trendProject<T extends { id: string }>(
   projects: readonly T[],
   chosen: string | null,
   trendOf: (id: string) => readonly CycleTrendPoint[],
+  preferred: string | null = null,
 ): T | null {
   return (
     projects.find((p) => p.id === chosen) ??
     projects.find((p) => trendOf(p.id).some((c) => c.status === "closed")) ??
+    projects.find((p) => trendOf(p.id).length > 0) ??
+    projects.find((p) => p.id === preferred) ??
     projects[0] ??
     null
   );

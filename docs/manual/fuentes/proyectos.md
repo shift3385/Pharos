@@ -21,6 +21,11 @@ proyecto nuevo se abre en su **plan de pruebas**, el punto de partida natural.
 Uno que ya existe se abre en su **Tablero**, donde está el trabajo del día a
 día.
 
+«Proyectos» lista los proyectos del **workspace** elegido en el selector de la
+parte de arriba del menú lateral (capítulo 2). En «Personal», tu espacio
+propio, están los tuyos. Un proyecto se comparte con tu equipo llevándolo a un
+workspace compartido con «Compartir con un workspace…» (capítulo 20).
+
 En este manual, Liomar crea dos proyectos:
 
 - **Pharos** (prefijo `PH`): la propia aplicación.
@@ -73,6 +78,11 @@ En este manual, Liomar crea dos proyectos:
 - **«Sí, eliminar todo» no se activa.** Escribe exactamente la palabra que
   pide el diálogo: el prefijo del proyecto sin su separador (por ejemplo, `PH`)
   o, si no tiene prefijo, su nombre.
+- **No veo un proyecto que sí existe.** Está en otro workspace: cámbialo en el
+  selector de la parte de arriba del menú lateral.
+- **Eliminé un proyecto por error.** En la app de escritorio está en la
+  Papelera de «Administración › General» (capítulo 15): «Restaurar» lo
+  devuelve con todo lo que se borró con él, hasta que se cumple su plazo.
 - **El proyecto que buscaba ha desaparecido.** Si se eliminó en otro equipo, al
   sincronizar desaparece también aquí. Si abres un enlace a un proyecto que ya
   no existe, Pharos te lleva a la lista.
@@ -90,7 +100,7 @@ En este manual, Liomar crea dos proyectos:
 ## Consejos
 
 - Crea un proyecto por producto o por versión importante que pruebes por
-  separado (por ejemplo, «Pharos 0.3» y «Pharos 0.4»), no uno por ciclo de
+  separado (por ejemplo, «Pharos 0.6» y «Pharos 0.7»), no uno por ciclo de
   pruebas: los ciclos van dentro del proyecto (capítulo 9).
 - Al crear un proyecto, Pharos sugiere un prefijo sacado del nombre y libre
   entre tus proyectos («Pharos» → `PHA-`). Ajústalo antes de crear casos, ahí
@@ -109,8 +119,9 @@ En este manual, Liomar crea dos proyectos:
   nombre, el prefijo ni los datos, y una sola vez: después, cada proyecto
   cambia por su cuenta. Como los proyectos se sincronizan entre tus equipos,
   no hace falta exportar los ajustes para usarlos en otro equipo.
-- Exporta el ZIP antes de eliminar un proyecto, o como copia periódica fuera de
-  Pharos.
+- Exporta el ZIP como copia periódica fuera de Pharos: lleva el plan (.pdf y
+  .xlsx) y cada caso (.xlsx y .pdf). La Papelera solo guarda lo eliminado en
+  este equipo y durante su plazo.
 
 ## Véase también
 

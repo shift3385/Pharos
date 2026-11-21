@@ -45,7 +45,10 @@ resolution can be added without a schema change.
   (`pharos:sync-skipped`), and the other batches and the pull still run.
   Pulls page until `hasMore` is false and the cursor is saved after every
   page (FIX-02). The server serializes each user's writes (advisory lock), so
-  a cursor never skips a late commit.
+  a cursor never skips a late commit. When the pull brought documents or the
+  core merged a rejected push without asking (SYNC-02), the sync fires
+  `pharos:synced`; every page that shows synced entities reloads on it through
+  `useOnSynced` (`src/shared/ui/useSynced.ts`, FIX-48).
 - **Expired access token (`api/sessionRequest.ts`).** Every request of a sync
   goes through `sessionRequester`, which holds the token in use. On a 401 it
   calls `renewSession` (`@modules/auth`), the only place that spends a refresh

@@ -42,4 +42,17 @@ describe("profileApi", () => {
     expect(await profileApi.get()).toBeNull();
     expect(invoke).toHaveBeenCalledWith("profile_get", undefined);
   });
+
+  // FIX-46: the desktop keeps one local profile. Another account signing in
+  // does not see it; saving makes it that account's.
+  it("desktop: the local profile belongs to the account that saved it", async () => {
+    onDesktop();
+    localStorage.removeItem("pharos.profile.account");
+    invoke.mockResolvedValue({ id: "p", displayName: "Liomar QA" });
+    await profileApi.upsert({ displayName: "Liomar QA", firstName: "Liomar", lastName: "R" }, "liomar");
+    expect(await profileApi.get("liomar")).toMatchObject({ displayName: "Liomar QA" });
+    invoke.mockClear();
+    expect(await profileApi.get("admin")).toBeNull();
+    expect(invoke).not.toHaveBeenCalled();
+  });
 });

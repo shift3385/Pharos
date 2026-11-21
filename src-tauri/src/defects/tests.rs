@@ -273,11 +273,26 @@ fn a_defect_from_a_failed_result_is_prefilled_and_shares_its_evidence() {
     // Only the result is stored; its case is derived through it.
     assert_eq!(kinds, ["result"]);
     assert_eq!(d.case_ids, vec![case]);
-    assert!(d.links[0]
-        .label
-        .as_deref()
-        .unwrap()
-        .starts_with("RUN-001 · "));
+    // FIX-49: named by the case it reaches, «RUN-001 · <key> · <title>».
+    let label = d.links[0].label.as_deref().unwrap();
+    assert!(label.starts_with("RUN-001 · ATS_"), "{label}");
+    assert_eq!(label.matches(" · ").count(), 2, "{label}");
+    assert_eq!(
+        result_label(
+            "RUN-004 · specs/a.spec.ts::entra #2",
+            "PH-001",
+            "Iniciar sesión"
+        ),
+        "RUN-004 · PH-001 · Iniciar sesión #2"
+    );
+    assert_eq!(
+        result_label(
+            "RUN-004 · specs/a.spec.ts::entra",
+            "PH-001",
+            "Iniciar sesión"
+        ),
+        "RUN-004 · PH-001 · Iniciar sesión"
+    );
     let atts = list_attachments(&c, &id, U).unwrap();
     assert_eq!(atts.len(), 2);
     // Same contents, no new blob, and the result keeps its own attachments.
@@ -884,6 +899,47 @@ fn a_result_without_a_case_reaches_the_case_its_test_key_is_mapped_to() {
     );
     let candidates = result_candidates(&c, &p, U).unwrap();
     assert_eq!(candidates[0].test_case_id.as_deref(), Some(case.as_str()));
+}
+
+#[test]
+fn a_candidate_is_dated_by_when_the_attempt_ran_not_by_its_import() {
+    // FIX-51: an imported attempt showed the import time. Its own end, else
+    // its start, else its run's start (the report's), else when it was saved.
+    let c = device();
+    let p = new_project(&c);
+    c.execute(
+        "INSERT INTO runs (id, workspace_id, project_id, run_key, title, trigger, started_at,
+                created_by, updated_by, created_at, updated_at)
+         VALUES ('run-r', 'w', ?1, 'RUN-004', 'CI', 'ci', '2026-11-16T18:10:00', ?2, ?2,
+                '2026-11-20 23:53:00', '2026-11-20 23:53:00')",
+        rusqlite::params![p, U],
+    )
+    .unwrap();
+    for (id, run, finished) in [
+        ("own", "run-r", Some("2026-11-16T18:12:30")),
+        ("from-run", "run-r", None),
+        ("orphan", "run-gone", None),
+    ] {
+        c.execute(
+            "INSERT INTO results (id, workspace_id, project_id, run_id, shard_id, test_key, attempt,
+                    status, finished_at, executed_by, created_by, created_at, hlc)
+             VALUES (?1, 'w', ?2, ?3, 'shard-x', ?1, 0, 'failed', ?4, 'ci', ?5,
+                    '2026-11-20 23:53:00', 'h')",
+            rusqlite::params![id, p, run, finished, U],
+        )
+        .unwrap();
+    }
+    let at = |id: &str| {
+        result_candidates(&c, &p, U)
+            .unwrap()
+            .into_iter()
+            .find(|r| r.result_id == id)
+            .unwrap()
+            .executed_at
+    };
+    assert_eq!(at("own"), "2026-11-16T18:12:30");
+    assert_eq!(at("from-run"), "2026-11-16T18:10:00");
+    assert_eq!(at("orphan"), "2026-11-20 23:53:00");
 }
 
 // ---- review: limits, stale links, revived cards ----------------------------------

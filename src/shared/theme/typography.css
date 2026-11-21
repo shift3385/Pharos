@@ -88,6 +88,24 @@
   hyphens: manual;
 }
 
+/* A key («PH-005», «TP-PH-0600») or a version («0.6.0-beta.1») is one word:
+   a line never breaks at its hyphen (FIX-46). Lists of keys, reports and
+   headings wrap each key in this class, or render the text with WholeKeys. */
+.t-key {
+  white-space: nowrap;
+  hyphens: manual;
+  -webkit-hyphens: manual;
+}
+
+/* A key («PH-005», «TP-PH-0600») or a version («0.6.0-beta.1») is one word:
+   a line never breaks at its hyphen (FIX-46). A list of keys, a report or a
+   heading wraps each key in this class, or renders its text with WholeKeys. */
+.t-key {
+  white-space: nowrap;
+  hyphens: manual;
+  -webkit-hyphens: manual;
+}
+
 /* Numbers that line up in columns and counters. */
 .u-num {
   font-variant-numeric: tabular-nums;

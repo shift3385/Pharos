@@ -293,6 +293,33 @@ fn an_attempt_narrows_a_whole_case_item_to_its_flow_and_row() {
 }
 
 #[test]
+fn a_dataset_case_does_not_pass_while_a_row_is_still_to_run() {
+    // FIX-49: PH-005 read «Pasa» with row 3 of 3 still a draft.
+    let c = device();
+    let p = new_project(&c);
+    let case = advanced(&c, &p);
+    let data = case_data(&c, &case);
+    let row_b = id_at(&data, &["examples", "rows", "1"]);
+    let run = insert_run(&c, &run_input(&p, json!({}))).unwrap();
+    let item = add_items(&c, &run, U, &[whole(&case)]).unwrap().remove(0);
+    record_result(
+        &c,
+        &attempt(&item, "passed", json!({"exampleRowId": row_b})),
+    )
+    .unwrap();
+    let o = overview(&c, &run, U).unwrap().unwrap();
+    assert_eq!((o.items[0].done, o.items[0].targets), (1, 3));
+    assert_eq!(o.items[0].status, "not_run");
+    // The rule itself: complete, decided by a failure or block, or still open.
+    assert_eq!(item_status(vec!["passed", "passed"], 2), "passed");
+    assert_eq!(item_status(vec!["passed", "passed"], 3), "not_run");
+    assert_eq!(item_status(vec!["skipped"], 3), "not_run");
+    assert_eq!(item_status(vec!["passed", "failed"], 3), "failed");
+    assert_eq!(item_status(vec!["blocked"], 3), "blocked");
+    assert_eq!(item_status(vec![], 3), "not_run");
+}
+
+#[test]
 fn cycle_progress_counts_a_narrowed_attempt_against_its_exact_flow_and_row() {
     let c = device();
     let p = new_project(&c);

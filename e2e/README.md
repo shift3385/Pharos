@@ -30,12 +30,16 @@ smoke".
    (the tours never stop other programs). The database name is fixed to
    `pharos_test_db_tours`.
 2. **Database.** Drops and creates `pharos_test_db_tours` on the server of
-   `TEST_DATABASE_URL` (only its host and credentials are used), migrates it
-   and seeds the test account.
+   `TEST_DATABASE_URL` (only its host and credentials are used) and migrates
+   it. No person is seeded (NC-052): Liomar creates his account on screen in
+   chapter 1.
 3. **API.** Starts `tsx src/server.ts` with `PORT=3100` and that database
    (not `npm start`, whose `prestart` stops Pharos APIs on its port).
    `JWT_ACCESS_SECRET` comes from the environment, else `.env`, else a random
-   one for the run: its tokens only serve this throwaway database.
+   one for the run: its tokens only serve this throwaway database. Then it
+   registers «Administrador» (`admin@pharos.test`) through `/auth/register`:
+   the first account of a server is its administrator, so neither Liomar nor
+   Jorge is one (NC-052, amended).
 4. **Binary.** `tauri build --debug --no-bundle` with
    `VITE_API_URL=http://localhost:3100` and a `--config` override of the CSP
    (generated from `tauri.conf.json` with 3000 → 3100), into
@@ -52,10 +56,76 @@ smoke".
 
 `npm run manual -- --spec 04` runs the preparation tour plus the tours whose
 file name matches the regular expression (`"0[2-4]"`), and skips the manual.
-Some chapters read data the earlier ones make (custom fields, configurations,
-cases, an imported report): each declares them in `needs` (`manifest.ts`), and
-the runner **adds those chapters** and says which. An invalid expression, or
-one matching no tour, stops the run before the database and the build.
+Nothing else is added, not even chapter 1: each chapter prepares the data it
+reads (below). An invalid expression, or one matching no tour, stops the run
+before the database and the build.
+
+### Prerequisites: the data a chapter reads
+
+A chapter declares in `uses` (`manifest.ts`) the named data it reads and is
+not about: `cuenta-liomar`, `proyectos`, `prefijos`, `ajustes`, `plan`,
+`requisitos`, `casos-base`, `caso-dataset`, `ciclo`, `resultados`,
+`hallazgos`, `ejecucion-manual`, `defectos`, `ciclo-ejecutado` (the cycle's
+runs completed), `ciclo-cerrado` (the cycle closed with its gate and an
+approved closure report), `requisitos-api`, `cuenta-jorge`, `equipo-qa`,
+`jorge-en-equipo` (`PREREQUISITES`: each with its contract, the chapter that
+makes it on screen and how it is loaded). Before the chapter's first step,
+`ensure` (`prepare.ts`) syncs, checks each one against the server as Liomar
+and loads what is missing, idempotently:
+
+- through the **app's own importers**, driven without captures, when one
+  exists: the requirements CSV, the plan and case `.xlsx`, the results
+  report, the scans of chapter 10 (SARIF with its triage, axe, k6) and the
+  project library (shared step, dataset and the case that uses them);
+- else through the **server's web API as Liomar** («Pharos Web») or the
+  account API, then a sync: projects, prefixes, custom fields,
+  configurations, the cycle and its runs, the manual run, defects, Jorge's
+  account, the team workspace. Never a database write.
+
+The values come from `e2e/tours/data/pharos.ts` (the case study: Liomar tests
+Pharos 0.6.0), and the import fixtures from `e2e/tours/fixtures/pharos/`,
+made by Pharos's own exporters (`npm run manual:fixtures` checks them;
+`PHAROS_WRITE_FIXTURES=1 npm run manual:fixtures` rewrites them after a data
+or template change). The story's dates follow the day the tours run
+(`RUN_DAY` in the data module: `PHAROS_TOURS_DAY`, else today): the cycle
+is Sprint 1, from eleven days before to two days after it, so every date
+the app stamps «now» falls inside it, also when a run crosses midnight.
+The committed fixtures are made for `REFERENCE_DAY`; before the tours,
+`e2e/tours/run-fixtures.mjs` copies them to a temporary folder with their
+dates moved to the run day and makes the plan and case `.xlsx` again for it
+(the tours read that copy through `PHAROS_TOURS_FIXTURES`). Captions never
+quote a date. In a full run the chapter that makes each prerequisite
+runs earlier, so every check passes and nothing is loaded; `check:manual`
+fails when a chapter uses data made by a later one. Loaders never record
+steps: they log to `e2e/results/tours/prepare.jsonl` (prerequisite, outcome,
+time). One that fails fails the chapter's first step with «prerequisite … could
+not be prepared». After a chapter that passed, what it made on screen is
+compared with its loaders' contract (a warning on drift).
+
+A chapter may have a **second part** that has to run later than the first
+(it needs data later chapters make): a `CHAPTERS` entry with `partOf` (the
+chapter it belongs to), the same `number` and `inManual: false`. Its steps
+are recorded under that chapter, numbered after the steps of the first
+part's tour file, so the manual prints them at the end of it. Chapter 9 uses
+it: `09-ciclos-cierre.tour.ts` closes the cycle after chapters 10 to 13,
+because nobody closes a cycle before running it. `--spec 09` runs both
+parts.
+
+### The three accounts
+
+- **Liomar** (`liomar.qa@pharos.test`): the app's account in every chapter.
+- **Jorge L. Meneses Yero** (`jorge.meneses@pharos.test`): only through the
+  API (`people.ts`: `registerJorge`, `jorgeAcceptsInvitation`,
+  `jorgeApprovesCase`…), never signed in to the app. His case reviews also
+  send the notification his own Pharos would send (the server does not
+  notify a case review by itself), so Liomar's bell shows them. He appears
+  in chapter 20 «Trabajo en equipo», which runs before chapter 21 (it makes
+  the team workspace and Jorge's Test Manager role that chapter 21 uses)
+  although the manual prints it after.
+- **«Administrador»** (`admin@pharos.test`): the server administrator.
+  `people.ts` has its API helpers; `account-switch.ts` (`asAdmin`,
+  `signInAs`) signs the app in with it for chapter 15's administration block
+  and back to Liomar.
 
 At the end of each chapter, `closeLeftovers` (`tour.ts`) closes what is still
 open, so one failed step cannot block the next chapter: native dialogs are
@@ -82,13 +152,30 @@ step("nuevo", {
 });
 ```
 
-- **`focus`** (one selector or several, their union box): the tour records
-  the box in capture pixels; the manual draws an amber outline (Faro
-  Nocturno's accent) into the PNG and, in the PDF only, adds a magnified
-  «Detalle» inset cropped by CSS from the same file, beside the capture or
-  below it for a wide strip, and none when the control is already big. Use it
-  when a step is about one control in a big screen. A focus not displayed at
-  capture time is a warning (`focusMissing`), listed by the manual build.
+- **`focus`** (one selector or several): the tour records, in capture pixels,
+  the union box (`focus`) and, with several elements, each one's box
+  (`focusParts`, e.g. a trigger and the menu it opened). At build time
+  (`scripts/manual/focus.mjs`) the manual turns each element into a cut-out
+  *piece*: an element with a visible edge of its own (an input, a card, a
+  button, a menu or tooltip over other content) is cut exactly at its box, so
+  the cut-out's single amber frame lies over its own border; one without an
+  edge gets air, each side snapped between lines of text; a small control
+  gets context. Two bordered pieces that touch or overlap (a card and the
+  popover over it) form one shape; any other pair (a button and its menu, a
+  «?» and its tooltip) becomes two cut-outs set clearly apart, never one
+  stepped frame. Where text lines are too close for the outline, the piece
+  takes in the whole block. The manual draws
+  one amber outline (Faro Nocturno's accent) round the pieces into the PNG
+  and keeps them in `docs/manual/pasos.json` (`cuts`). In the PDF only, a
+  «Detalle» cut-out follows the capture (beside it, level with the zone, or
+  below it for a wide strip; none when the zone is already big): an inline
+  SVG that shows the same file through the pieces, with one frame, so no
+  second line ever shows. Use it when a step is about one control in a big
+  screen, and focus what the text is about (the value with its label, the
+  line with its «Copiar» button): the cut-out shows exactly that. A focus not
+  displayed at capture time is a warning (`focusMissing`), listed by the
+  manual build. `node scripts/build-manual.mjs --from-run <dir> --out <dir>`
+  builds from a frozen run into a private folder.
 - **`group`**: a before/after pair (e.g. the password hidden, then shown). With
   a `focus`, each column gets its own «Detalle» under the capture.
 - **`after`**: capture the state *before* an action and still assert the
@@ -121,18 +208,18 @@ a label), so assertions must be specific. Failure screenshots go to
 A few screens only appear when something "outside" happens; the tours make
 it happen inside the isolated run instead of skipping them:
 
-- **Sync conflict** (chapter 10): `other-device.ts` signs in to the tour API
-  (never port 3000) as a second Pharos and pushes a newer version of a
-  requirement; the app then edits the same requirement and syncs.
-- **Orphan evidence** (chapter 14): a stray `.pev` file, back-dated two days,
+- **Sync conflict** (chapter 15): `people.ts` (`editOnOtherDevice`) signs in
+  to the tour API (never port 3000) as a second Pharos and pushes a newer
+  version of a requirement; the app then edits the same requirement and syncs.
+- **Orphan evidence** (chapter 16): a stray `.pev` file, back-dated two days,
   in the tour profile's `evidence/` folder.
 - **Database that does not open** (chapter 19): the app is closed and the
   tour holds the profile's `pharos.lock` open, as a second Pharos would; the app
   restarts on «Otro Pharos está actualizando tus datos» once its 10-second wait
   runs out, the tour lets go and «Reintentar» opens the data (ADR-0050 §5).
-- **«Algo salió mal»** (chapter 15): date formatting is made to throw in the
+- **«Algo salió mal»** (chapter 19): date formatting is made to throw in the
   WebView, so a view fails and the error boundary catches it.
-- **Clipboard paste** (chapter 13) and the **attachments folder** of a report
+- **Clipboard paste** (chapter 11) and the **attachments folder** of a report
   (chapter 8): a synthetic paste event with an image, and msedgedriver's
   folder upload into the `webkitdirectory` input.
 
@@ -204,10 +291,12 @@ pending; they are never faked.
 
 **«Requisitos desde un proyecto» (MAN-04).** Windows' folder picker is
 outside the WebView, so the runner sets `PHAROS_E2E_PICK_FOLDER` to
-`e2e/tours/fixtures/proyecto-billetera` and the debug build, only with an e2e
-profile, scans it instead of opening the picker (`project_scan.rs`). A release
-build always asks the person. The chapter's other sample data (the wallet's
-CSV and the sketch `boceto-billetera.jpg`) sit in the same folder.
+`e2e/tours/fixtures/pharos/proyecto-api-sincronizacion` (a small excerpt
+about Pharos's own sync API) and the debug build, only with an e2e profile,
+scans it instead of opening the picker (`project_scan.rs`). A release build
+always asks the person. The sketch for «Requisitos desde diseños»
+(`boceto-notificaciones.png`, Pharos's notifications panel) and the CSV of
+«API de sincronización» sit in `fixtures/pharos/` too.
 
 **Fallback: `.env`.** When `PHAROS_TOURS_AI_KEY` is not set, the runner
 reads `ANTHROPIC_API_KEY` (and `ANTHROPIC_MODEL`, used as given) from the

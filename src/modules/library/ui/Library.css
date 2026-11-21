@@ -296,6 +296,14 @@
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--color-warning) 12%, transparent);
 }
+/* A one-line notice whose explanation is behind a «?». */
+.lb-callout--line {
+  flex-direction: row;
+  align-items: center;
+  justify-self: start;
+  width: fit-content;
+  max-width: 100%;
+}
 
 .lb-kv {
   display: grid;
@@ -364,6 +372,12 @@
   max-width: 560px;
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
+}
+/* The search of «Insertar paso compartido» and «Vincular dataset» takes the
+   dialog's width, not the toolbar's 360 px cap (FIX-44). */
+.lb-insert .ui-search {
+  flex: none;
+  max-width: none;
 }
 
 .lb-counts {

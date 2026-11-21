@@ -11,7 +11,7 @@ import {
   effectiveAutomation,
 } from "@modules/custom-fields";
 import { CASE_PRIORITIES, CASE_STATUSES } from "../model/caseList";
-import { automationTone, priorityTone, statusTone } from "./caseTones";
+import { priorityTone, statusTone } from "./caseTones";
 
 /** A labelled field whose value is chosen from a menu (a sheet on mobile),
  *  each option with its explanation (SPEC §8 «Prioridad y Estado con
@@ -133,9 +133,9 @@ export function AutomationField({
       label={t("testCase.automation")}
       sheetTitle={t("testCase.automationSheet")}
       value={current}
-      current={
-        <StatusPill tone={automationTone(current)}>{label(current)}</StatusPill>
-      }
+      // Plain text, as Prioridad and Nivel: a grey pill inside the field
+      // read as a chip, not as the field's value (FIX-44).
+      current={label(current)}
       options={AUTOMATION_STATUSES.map((s) => ({
         value: s,
         label: label(s),

@@ -7,7 +7,7 @@ import { evaluateExitCriteria, criterionValue } from "../model/exitCriteria";
 import { CLOSED, SUMMARY } from "./__fixtures__/summary";
 import { buildReportXlsx, type ReportLabels } from "./reportXlsx";
 import { reportDocDefinition } from "./reportPdf";
-import { autoSummary, buildStatusReport, pct, reportFileName } from "./statusReport";
+import { autoSummary, buildStatusReport, pct, reportFileName, runKeyList } from "./statusReport";
 
 const t = (k: string, o?: Record<string, unknown>) => i18n.t(k, o);
 const ctx = {
@@ -51,7 +51,7 @@ beforeEach(async () => {
 describe("status report model (EJE-03)", () => {
   it("builds the 29119-3 sections from the derivation", () => {
     const r = buildStatusReport(SUMMARY, ctx, t);
-    expect(r.identification).toContainEqual(["Ejecuciones incluidas", "RUN-002, RUN-001"]);
+    expect(r.identification).toContainEqual(["Ejecuciones incluidas", "RUN-001, RUN-002"]);
     expect(r.progress).toContainEqual(["% ejecutado", "75 %"]);
     expect(r.progress).toContainEqual(["Tasa de éxito", "33,3 %"]);
     expect(r.results.rows).toContainEqual(["Por confirmar", "1"]);
@@ -94,8 +94,18 @@ describe("status report model (EJE-03)", () => {
 
   it("prefills the summary from the numbers", () => {
     expect(autoSummary(SUMMARY, t)).toBe(
-      "Se han ejecutado 3 de 4 casos (75 %), con una tasa de éxito de 33,3 %. Hay 1 defectos abiertos, 1 críticos. Criterios de salida: 1 de 3 cumplidos.",
+      "Se han ejecutado 3 de 4 casos: 75 %, con una tasa de éxito de 33,3 %. Hay 1 defecto abierto, 1 crítico. Criterios de salida: 1 de 3 cumplidos.",
     );
+  });
+
+  it("says one and many defects in the singular and plural (FIX-47)", async () => {
+    const many = { ...SUMMARY, defects: { ...SUMMARY.defects, open: 3, openBySeverity: { ...SUMMARY.defects.openBySeverity, critical: 2 } } };
+    expect(autoSummary(many, t)).toContain("Hay 3 defectos abiertos, 2 críticos.");
+    const none = { ...SUMMARY, defects: { ...SUMMARY.defects, open: 0, openBySeverity: { ...SUMMARY.defects.openBySeverity, critical: 0 } } };
+    expect(autoSummary(none, t)).toContain("Hay 0 defectos abiertos, 0 críticos.");
+    await i18n.changeLanguage("en");
+    expect(autoSummary(SUMMARY, t)).toContain("There is 1 open defect, 1 critical.");
+    expect(autoSummary(many, t)).toContain("There are 3 open defects, 2 critical.");
   });
 
   it("shows default criteria in the user's language and the plan's as written", async () => {
@@ -124,10 +134,59 @@ describe("status report model (EJE-03)", () => {
   it("adds «Hallazgos y rendimiento» only when there are findings or thresholds (ING-06)", () => {
     expect(buildStatusReport(SUMMARY, ctx, t).findings).toBeNull();
     const f = buildStatusReport(CLOSED, ctx, t).findings!;
-    expect(f.findingsLine).toBe("3 hallazgos abiertos (Crítica: 1, Alta: 2) · 1 nuevos · 1 triados · 2 a revisar");
+    expect(f.findingsLine).toBe(
+      "3 hallazgos abiertos (Crítica: 1, Alta: 2) · 1 nuevo desde el run anterior · 1 triado · 2 a revisar (la herramienta no pudo decidir)",
+    );
     expect(f.thresholdsLine).toBe("Umbrales: 2 de 3 cumplidos");
-    expect(f.tools.rows).toEqual([["axe-core", "RUN-003", "1", "2", "0", "0", "0", "1", "1"]]);
-    expect(f.failed.rows).toEqual([["RUN-004", "http_req_duration · p(95)", "p(95)<500", "812 ms", "TC-002"]]);
+    expect(f.tools.headers.slice(-3)).toEqual(["Nuevos", "Triados", "A revisar"]);
+    expect(f.tools.rows).toEqual([["axe-core", "RUN-003", "1", "2", "0", "0", "0", "1", "1", "2"]]);
+    // The threshold in the value's form (FIX-48).
+    expect(f.failed.rows).toEqual([["RUN-004", "http_req_duration · p(95)", "< 500 ms", "812 ms", "TC-002"]]);
+  });
+
+  it("a first import has nothing to compare with: no «0 nuevos», and nothing «a revisar» when there is none (FIX-48)", () => {
+    // One untriaged axe violation of the tool's first run, as tour 13 imports it.
+    const first = {
+      ...CLOSED,
+      findings: {
+        ...CLOSED.findings!,
+        open: { critical: 0, high: 1, medium: 0, low: 0, info: 0 },
+        new: 0,
+        triaged: 0,
+        review: 0,
+        tools: [{ ...CLOSED.findings!.tools[0], open: { critical: 0, high: 1, medium: 0, low: 0, info: 0 }, compared: false, new: 0, triaged: 0, review: 0 }],
+      },
+    };
+    const f = buildStatusReport(first, ctx, t).findings!;
+    expect(f.findingsLine).toBe("1 hallazgo abierto (Alta: 1) · nuevos: sin run anterior con el que comparar · 0 triados");
+    expect(f.tools.rows[0].slice(-3)).toEqual(["—", "0", "0"]);
+  });
+
+  it("shows a failed threshold's value as the run's metrics do, not a raw ratio (FIX-47)", async () => {
+    const rate = {
+      ...CLOSED,
+      findings: {
+        ...CLOSED.findings!,
+        new: 2,
+        triaged: 0,
+        failedThresholds: [
+          { runId: "r8", runKey: "RUN-008", name: "http_req_failed", aggregation: "rate", scope: null, threshold: "rate<0.01", value: 0.0102, unit: "ratio", caseId: null },
+          { runId: "r8", runKey: "RUN-008", name: "http_req_duration", aggregation: "p(95)", scope: null, threshold: "p(95)<500", value: 1534.5, unit: "ms", caseId: null },
+        ],
+      },
+    };
+    const f = buildStatusReport(rate, ctx, t).findings!;
+    expect(f.findingsLine).toContain("· 2 nuevos desde el run anterior · 0 triados ·");
+    expect(f.failed.rows.map((r) => r[3])).toEqual(["1,02 %", "1,53 s"]);
+    // The threshold beside it in the same form (FIX-48).
+    expect(f.failed.rows.map((r) => r[2])).toEqual(["< 1 %", "< 500 ms"]);
+    // The aggregation as the run's «Métricas» says it (FIX-51: «· rate»).
+    expect(f.failed.rows.map((r) => r[1])).toEqual(["http_req_failed · tasa", "http_req_duration · p(95)"]);
+    // The completion report's residual risks use the same section.
+    await i18n.changeLanguage("en");
+    const en = buildStatusReport(rate, { ...ctx, lang: "en" }, t).findings!;
+    expect(en.failed.rows.map((r) => r[3])).toEqual(["1.02 %", "1.53 s"]);
+    expect(en.failed.rows.map((r) => r[2])).toEqual(["< 1 %", "< 500 ms"]);
   });
 
   it("names the files by project and day", () => {
@@ -228,5 +287,36 @@ describe("pct", () => {
   it("writes the decimal as the language does: a comma in Spanish, a point in English (FIX-43)", () => {
     expect(pct(1 / 3, "es")).toBe("33,3 %");
     expect(pct(1 / 3, "en")).toBe("33.3 %");
+  });
+});
+
+describe("status report wording (FIX-45)", () => {
+  const tr = (k: string, o?: Record<string, unknown>) => i18n.t(k, o);
+  beforeEach(async () => {
+    await i18n.changeLanguage("es");
+  });
+
+  it("says there is no pass rate yet instead of «de —», and no nested parentheses", () => {
+    const text = autoSummary(
+      { ...SUMMARY, passRate: null, progressUnit: "cell", progress: { ...SUMMARY.progress, executed: 0, total: 4 } },
+      tr,
+      "es",
+    );
+    expect(text).toContain(
+      "Se han ejecutado 0 de 4 celdas del ciclo, caso × configuración: 0 %, sin tasa de éxito todavía.",
+    );
+    expect(text).not.toContain("de —");
+    expect(text).not.toContain(") (");
+  });
+
+  it("counts the criteria it is given, as a closing does", () => {
+    expect(autoSummary(SUMMARY, tr, "es", { met: 2, all: 3 })).toContain("Criterios de salida: 2 de 3 cumplidos.");
+  });
+
+  it("lists the runs in key order, numerically", () => {
+    expect(runKeyList([{ runKey: "RUN-010" }, { runKey: "RUN-002" }, { runKey: "RUN-009" }])).toBe(
+      "RUN-002, RUN-009, RUN-010",
+    );
+    expect(runKeyList([])).toBe("—");
   });
 });

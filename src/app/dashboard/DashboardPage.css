@@ -124,9 +124,12 @@
   height: 44px;
 }
 
-/* Period menu: a bit wider than the default menu, and the drawn switch. */
+/* Period menu: a bit wider than the default menu, and the drawn switch.
+   Wide enough for «Rango personalizado…» and its «Próximamente» chip on one
+   line, in es and en (FIX-51: at 270px the label showed «……» and the chip was
+   cut to «Próximam»). */
 .home-period.menu {
-  width: 270px;
+  width: 310px;
 }
 
 .home-compare {
@@ -179,9 +182,24 @@
     box-shadow 150ms ease;
 }
 
-a.home-kpi:hover {
-  border-color: var(--color-navy-300);
-  box-shadow: var(--shadow-2);
+/* Only with a real pointer: on a phone a tap left the hover shadow on the
+   card (FIX-49). */
+@media (hover: hover) {
+  a.home-kpi:hover {
+    border-color: var(--color-navy-300);
+    box-shadow: var(--shadow-2);
+  }
+
+  /* «Tasa de éxito» with its note is one surface: the whole of it lights up,
+     never a shadowed card inside another (FIX-49, movil/01). */
+  .home-kpi-stack > a.home-kpi:has(~ .home-kpi__extra:not(.home-kpi__extra--badge)):hover {
+    box-shadow: none;
+  }
+
+  .home-kpi-stack:has(> .home-kpi__extra:not(.home-kpi__extra--badge)):has(> a.home-kpi:hover) {
+    border-color: var(--color-navy-300);
+    box-shadow: var(--shadow-2);
+  }
 }
 
 /* «Tasa de éxito» with its note on unlinked tests under it (NC-029). */
@@ -212,6 +230,34 @@ a.home-kpi:hover {
 
 .home-kpi__extra:hover {
   color: var(--color-text-primary);
+}
+
+/* Outside the desktop board (phone, tablet) the line sits inside the card
+   (FIX-46: a pill half over the photo, and a taller neighbour): the stack
+   takes the card surface, the indicator inside it loses its own. */
+.home-kpi-stack:has(> .home-kpi__extra:not(.home-kpi__extra--badge)) {
+  gap: 0;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+/* No shadow of its own either: with «Sombra en las tarjetas» on, the shadow
+   is the stack's, so it never reads as a raised card inside another (FIX-51,
+   movil/01; FIX-49 removed only the hover shadow). */
+.home-kpi-stack > .home-kpi:has(~ .home-kpi__extra:not(.home-kpi__extra--badge)) {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.home-kpi-stack > .home-kpi__extra:not(.home-kpi__extra--badge) {
+  margin: 0 clamp(12px, 1.4cqi, 16px) clamp(12px, 1.2cqi, 14px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .home-kpi__head {
@@ -965,11 +1011,24 @@ a.home-kpi:hover {
   border-bottom: 1px solid var(--color-border);
 }
 
-/* Mobile «Ejecución»: the period selector above «Ejecuciones diarias». */
+/* Mobile «Ejecución»: the period selector above «Ejecuciones diarias», on a
+   strip of its own with its name, never a lone button on the background
+   photo (FIX-49). */
 .home-period-row {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: -4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 8px 8px 16px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.home-period-row__label {
+  font-size: 13px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-secondary);
 }
 
 .home__panel {
@@ -1112,14 +1171,20 @@ a.home-kpi:hover {
 }
 
 /* One line per row on the board, so every row has the same height. */
-.home-board .home-exit__criteria li {
+/* A criterion's name takes two lines before it is cut (FIX-46: «% de casos
+   eje…»); target, value and verdict stay on one line. */
+.home-board .home-exit__criteria li > :not(.home-exit__criterion) {
   white-space: nowrap;
 }
 
 .home-board .home-exit__criterion {
   min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .home-board .home-exit .home-empty--left {
@@ -1149,8 +1214,15 @@ button.home-daily__data {
   cursor: pointer;
 }
 
-.home-daily__dialog {
+/* Wide enough for «viernes, 20 de noviembre» on one line (FIX-46): the
+   dialog class alone caps a dialog at 440 px. */
+.cd.home-daily__dialog {
   width: min(560px, calc(100vw - 32px));
+  max-width: min(560px, calc(100vw - 32px));
+}
+
+.home-daily__table th[scope="row"] {
+  white-space: nowrap;
 }
 
 .home-daily__dialog .home-daily__table {
@@ -1181,18 +1253,12 @@ button.home-daily__data {
   font-size: 20px;
 }
 
-/* Legends: the dots only, each name in its tooltip. */
+/* Legends keep their names, smaller (FIX-46: dots alone did not say which
+   colour is which); the tooltip still has each name. */
 .home-board[data-compact] .home-legend {
-  gap: 4px 8px;
-}
-
-.home-board[data-compact] .home-legend__label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
+  gap: 2px 10px;
+  font-size: 11px;
+  line-height: 14px;
 }
 
 .home-board[data-compact] .home-ring {
@@ -1305,10 +1371,11 @@ button.home-daily__data {
   outline-offset: 2px;
 }
 
+/* The gadgets stay opaque while customizing (FIX-46: at 88 % the photo showed
+   through their text); only the grid dots mark the mode. */
 .home-board[data-editing] .home-gadget__body {
   pointer-events: none;
   user-select: none;
-  opacity: 0.88;
 }
 
 .home-gadget__chrome {
@@ -1681,8 +1748,17 @@ button.home-daily__data {
   gap: 10px;
 }
 
+/* The title keeps its width; the two selects give way first (FIX-46: at
+   1280 × 820 the title read «Tendencia de ci…»). */
+.home-trend .home-card__titles {
+  flex: none;
+}
+
 .home-trend .home-card__head .ui-select,
 .home-trend .home-card__head [role="combobox"] {
+  flex: 0 1 200px;
+  width: auto;
+  min-width: 112px;
   max-width: 200px;
 }
 
@@ -1935,6 +2011,18 @@ button.home-daily__data {
 .home-daily__num {
   display: inline-flex;
   align-items: center;
+}
+
+/* The chip goes under the total, so the title keeps its width (FIX-46: with
+   «sin datos antes» beside the total it read «Ejecuciones diarias (intent…»). */
+.home-daily__num:has(.home-delta) {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.home-daily__num .home-delta {
+  margin-left: 0;
 }
 
 .home-btn__badge {

@@ -19,16 +19,26 @@ En el móvil:
   (en Inicio, el logotipo), la lupa, las notificaciones y tu avatar;
 - la **barra inferior** lleva Inicio, Proyectos, Admin (Administración) y
   Perfil;
-- dentro de un proyecto, sus nueve secciones se recorren con **píldoras** bajo
-  el título;
+- **tu avatar** abre una hoja con el apartado «Workspace» (tus workspaces
+  con tu rol, «Crear workspace», «Unirse con un código…» y «Miembros y
+  roles», como el selector del menú lateral), el estado de la sincronización
+  y, debajo, «Mi perfil», «Administración», el tema, el idioma y «Cerrar
+  sesión»;
+- las **notificaciones** (la campana de la barra superior) se abren como una
+  hoja desde abajo, con los mismos días, el filtro «Sin leer» y la acción de
+  cada una;
+- dentro de un proyecto, sus diez secciones (Plan, Tablero, Requisitos,
+  Casos, Biblioteca, Ciclos, Ejecuciones, Defectos, Trazabilidad y Ajustes)
+  se recorren con **píldoras** bajo el título;
 - las **tablas** pasan a tarjetas y ocultan las columnas menos importantes;
 - los **menús y filtros** se abren como hojas desde abajo, con la ✕ para
   cerrarlas.
 
 Es la misma aplicación, con los mismos datos: lo que se hace en el escritorio
 se puede hacer en el móvil, salvo lo que depende del equipo (adjuntar
-archivos, la clave de recuperación, las evidencias, «Listar modelos» de la IA
-o «Requisitos desde un proyecto»), que es de la app de escritorio.
+archivos, la clave de recuperación, la papelera, las evidencias, «Listar
+modelos» y «Usar esta clave también en la web» de la IA, «Requisitos desde
+un proyecto» o el CLI `pharos`), que es de la app de escritorio.
 
 En este manual, Liomar repasa su proyecto Pharos desde el móvil.
 
@@ -42,29 +52,41 @@ Por debajo de 600 px de ancho (aquí, 390 px, el de un móvil), Pharos usa una b
 
 ### 18.2. Buscar en el móvil
 
-La lupa convierte la barra superior en un campo de búsqueda; la flecha (o Esc) la cierra.
+La lupa convierte la barra superior en un campo de búsqueda; la flecha (o Esc) la cierra. La búsqueda global de casos, requisitos y proyectos llega en una próxima versión, y el campo lo avisa.
 
 <img src="img/movil/02-movil-busqueda.png" alt="Buscar en el móvil" width="280">
 
-### 18.3. Secciones del proyecto en el móvil
+### 18.3. Notificaciones en el móvil
 
-Dentro de un proyecto, sus secciones (Plan, Tablero, Requisitos, Casos, Ciclos, Ejecuciones, Defectos, Trazabilidad y Ajustes) se recorren con las píldoras bajo el título, que se desplazan de lado; la flecha de la barra superior vuelve a Proyectos.
+En el móvil, la campana de la barra superior abre las notificaciones como una hoja desde abajo, con lo mismo que en el escritorio: los avisos agrupados por día, el filtro «Sin leer», «Marcar todo como leído» y la acción de cada aviso. Sin avisos, la hoja dice qué aparecerá en ella. La ✕ o un toque fuera la cierran.
 
-<img src="img/movil/03-movil-proyecto.png" alt="Secciones del proyecto en el móvil" width="280">
+<img src="img/movil/03-movil-notificaciones.png" alt="Notificaciones en el móvil" width="280">
 
-### 18.4. Filtros en una hoja inferior
+### 18.4. Tu avatar: workspace y cuenta
+
+En el móvil no hay menú lateral: tu avatar, en la barra superior, abre una hoja con lo que en el escritorio está en el selector de workspace y en el menú de usuario. Arriba, tu correo y el estado de la sincronización, con «Sincronizar ahora». Después, «Workspace» lista tus workspaces con tu rol en cada uno (aquí, «Personal», donde Liomar es Test Manager) y ofrece «Crear workspace», «Unirse con un código…» y «Miembros y roles». Debajo, «Mi perfil», «Administración», el tema y el idioma; al pie, «Conectado a» con el servidor (en las capturas, difuminado: es el servidor de pruebas de este manual) y «Cerrar sesión».
+
+<img src="img/movil/04-movil-avatar.png" alt="Tu avatar: workspace y cuenta" width="280">
+
+### 18.5. Secciones del proyecto en el móvil
+
+Dentro de un proyecto, sus diez secciones (Plan, Tablero, Requisitos, Casos, Biblioteca, Ciclos, Ejecuciones, Defectos, Trazabilidad y Ajustes) se recorren con las píldoras bajo el título, que se desplazan de lado; la flecha de la barra superior vuelve a Proyectos. En este ejemplo, Liomar abre «Trazabilidad»: en el móvil, cada requisito es una tarjeta con sus casos.
+
+<img src="img/movil/05-movil-proyecto.png" alt="Secciones del proyecto en el móvil" width="280">
+
+### 18.6. Filtros en una hoja inferior
 
 En la lista de casos, «Filtros» abre una hoja desde abajo con los mismos filtros que en el escritorio, para que la lista conserve la pantalla.
 
-<img src="img/movil/04-movil-filtros.png" alt="Filtros en una hoja inferior" width="280">
+<img src="img/movil/06-movil-filtros.png" alt="Filtros en una hoja inferior" width="280">
 
-### 18.5. Los pasos del plan en el móvil
+### 18.7. Los pasos del plan en el móvil
 
 En el plan de pruebas, «Ver pasos» abre la lista de los 22 pasos en una hoja inferior.
 
-<img src="img/movil/05-movil-pasos-plan.png" alt="Los pasos del plan en el móvil" width="280">
+<img src="img/movil/07-movil-pasos-plan.png" alt="Los pasos del plan en el móvil" width="280">
 
-### 18.6. De vuelta al escritorio
+### 18.8. De vuelta al escritorio
 
 Al ensanchar la ventana, Pharos vuelve al menú lateral completo.
 

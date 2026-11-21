@@ -61,7 +61,7 @@ con los filtros activos arriba.
   - `fromProject.ts`: selección por presupuesto en orden de lectura, lotes
     por módulo y validación de las citas `ruta:línea`.
   - `proposals.ts`: `usableRequirementProposals` comprueba la respuesta
-    de `req-synthesis@1` contra lo enviado; parecido léxico y bloqueo por
+    de `req-synthesis@4` contra lo enviado; parecido léxico y bloqueo por
     casos vinculados.
   - `types.ts`: el contrato común con IA-18 (imágenes y diseños):
     `CandidateRequirement`, `RequirementProposal`, `ApplyResult`.
@@ -72,7 +72,7 @@ con los filtros activos arriba.
 - **`requirements.data`** (migración 0038, feature de sync
   `requirement-data`): objeto JSON libre; un cliente sin la feature lo conserva.
 - Prompts versionados en `@modules/ai` (`api/requirementPrompts.ts`):
-  `req-extract@1` (un lote de archivos) y `req-synthesis@1` (común).
+  `req-extract@2` (un lote de archivos) y `req-synthesis@4` (común).
 
 ## Requisitos desde diseños (IA-18, ADR-0037)
 
@@ -87,8 +87,8 @@ con los filtros activos arriba.
   - `limits.ts`: los límites y las estimaciones de tokens, iguales que en `ai.rs`.
   - `candidates.ts`: numera lo enviado y escribe las fuentes de cada candidato
     a partir del material, nunca del modelo.
-- **Dos llamadas:** `requirements-from-design@1` (`@modules/ai`, con las
-  imágenes) y `req-synthesis@1` con `partialMaterial: true`. Un fallo de la
+- **Dos llamadas:** `requirements-from-design@3` (`@modules/ai`, con las
+  imágenes) y `req-synthesis@4` con `partialMaterial: true`. Un fallo de la
   síntesis se reintenta sin volver a enviar las imágenes. La procedencia guarda
   los dos prompts.
 - **Fuente en la revisión:** `ui/DesignSourceLabel.tsx` pinta la miniatura con la

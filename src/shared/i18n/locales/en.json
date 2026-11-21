@@ -57,6 +57,7 @@
     "chooseFile": "Choose file…",
     "chooseFolder": "Choose folder…",
     "noFileChosen": "No file chosen",
+    "noFolderChosen": "No folder chosen",
     "filesChosen_one": "{{count}} file chosen",
     "filesChosen_other": "{{count}} files chosen",
     "retry": "Retry",
@@ -99,6 +100,10 @@
     "kind": {
       "plan": "Test plans",
       "case": "Test cases"
+    },
+    "kindOne": {
+      "plan": "Test plan",
+      "case": "Test case"
     },
     "builtin": "Included",
     "shared": "Shared",
@@ -598,7 +603,7 @@
       "opacity": "Background opacity",
       "opacityHint": "Lower = more transparent. Affects only the background, not the content. The change shows right away; it stays when you press “Save settings”.",
       "retention": "Retention of deleted items (days)",
-      "retentionHint": "What you delete is removed for good from this device after this many days. A deletion not yet synced waits for the next sync. The server has its own period and keeps a marker of what was deleted.",
+      "retentionHint": "What you delete is removed for good from this device after this many days. A deletion not yet synced waits for the next synchronisation. The server has its own period and keeps a marker of what was deleted.",
       "download": "Download folder",
       "downloadCurrent": "Current folder",
       "downloadDefault": "system Downloads",
@@ -793,7 +798,7 @@
         "noProjects": "You have no projects yet.",
         "current": "Now: {{days}}",
         "default": "Default ({{days}})",
-        "days": "Days…",
+        "days": "Number of days",
         "daysLabel": "Retention days of {{kind}}",
         "exceptions": "Never expires",
         "exceptionsText": "The evidence of manual execution, of a final failed or blocked result, and of a result linked to an open defect. Planner, defect and draft attachments never expire either.",
@@ -832,7 +837,7 @@
       },
       "check": {
         "title": "Verify evidence",
-        "desc": "Checks that every file is there and decrypts, and looks for files no row knows. It never deletes anything by itself.",
+        "desc": "Checks that every file is there and decrypts, and looks for files nothing uses. It never deletes anything by itself.",
         "action": "Verification",
         "actionHint": "It reads and decrypts every file, so it may take a while with a lot of evidence. You can keep working meanwhile.",
         "run": "Verify evidence",
@@ -895,7 +900,7 @@
         "title": "Could not be checked ({{count}})",
         "desc": "Another program had them locked, a permission is missing, or they changed while being checked (for example, attached again). Verify again. They are not marked."
       },
-      "file": "File {{id}}",
+      "file": "Unnamed file ({{id}})",
       "noUses": "No current attachments.",
       "useIn": "In {{project}}",
       "open": "Open {{section}}"
@@ -981,6 +986,7 @@
         "risks": "Risks",
         "lifecycle": "Lifecycle",
         "closures": "Closures",
+        "completionReport": "Completion report",
         "links": "Links",
         "review": "Review",
         "approval": "Approval",
@@ -1565,7 +1571,7 @@
         "planner": "Board",
         "requirements": "Reqs",
         "traceability": "Trace",
-        "settings": "Project",
+        "settings": "Settings",
         "defects": "Defects",
         "runs": "Runs",
         "library": "Library"
@@ -1609,7 +1615,8 @@
       "runs": "Runs"
     },
     "deleteTitle": "Delete project",
-    "deleteWarning": "“{{name}}” and ALL its content will be deleted: the test plan, the test cases and the board. This can't be easily undone.",
+    "deleteWarning": "“{{name}}” and all its content will be deleted: plans, cases, requirements and cards. It stays in the Trash (Administration › General) until its time is up.",
+    "deleteWarningWeb": "“{{name}}” and all its content will be deleted: plans, cases, requirements and cards. It cannot be restored from the web.",
     "deleteConfirm": "Yes, delete everything",
     "savedToast": "Settings updated",
     "header": {
@@ -1624,7 +1631,7 @@
       "cases_other": "{{count}} cases",
       "requirements_one": "1 requirement",
       "requirements_other": "{{count}} requirements",
-      "closesOn": "Cycle closes: {{date}}"
+      "closesOn": "Plan ends: {{date}}"
     },
     "list": {
       "loadFailed": "The project list could not be loaded.",
@@ -1644,13 +1651,13 @@
         "access": "Last opened",
         "name": "Name (A–Z)",
         "updated": "Last modified",
-        "closure": "Cycle close",
+        "closure": "Plan end",
         "execution": "Execution progress",
         "coverage": "Requirement coverage",
         "defects": "Open defects"
       },
       "sortSoon": {
-        "closure": "No plan has closing dates yet.",
+        "closure": "No plan has an end date yet.",
         "defects": "Coming soon."
       },
       "col": {
@@ -1667,7 +1674,7 @@
       "coverageShort": "{{value}} % cov.",
       "today": "Today",
       "yesterday": "Yesterday",
-      "never": "Never",
+      "never": "—",
       "summary": "Showing <b>{{from}}–{{to}}</b> of <b>{{total}}</b> projects",
       "noMatch": "No project matches “{{query}}”.",
       "rowMenu": "More actions for {{name}}",
@@ -1702,14 +1709,15 @@
       "planHistoryFailed": "The history setting could not be saved.",
       "riskBands": {
         "title": "Risk bands",
-        "desc": "A requirement's risk level is likelihood × impact (1–25), as in ISTQB. Choose up to which level it is low and up to which it is medium; the rest is high. Changing them touches no data: it changes how the matrix, its risk order and the report read.",
+        "desc": "A requirement's risk level is likelihood × impact (1–25).",
+        "help": "As in ISTQB. Choose up to which level it is low and up to which it is medium; the rest is high. Changing them touches no data: it changes how the matrix, its risk order and the report read.",
         "lowUpTo": "Low: up to",
         "mediumUpTo": "Medium: up to",
         "high": "High",
         "highRange": "{{from}} to {{to}}",
-        "impactShort": "I",
-        "likelihoodShort": "L",
-        "cells": "Impact (I) by likelihood (L). With these bands: {{low}} low cells, {{medium}} medium and {{high}} high.",
+        "impactAxis": "Impact",
+        "likelihoodAxis": "Likelihood",
+        "cells": "Impact by likelihood. With these bands: {{low}} low cells, {{medium}} medium and {{high}} high.",
         "reset": "Reset ({{low}} and {{medium}})",
         "saved": "Risk bands saved.",
         "failed": "The risk bands could not be saved.",
@@ -1726,7 +1734,7 @@
       "required": "Type a prefix, for example “PHA-”.",
       "overlap": "It overlaps “{{prefix}}” of {{name}}: two prefixes may not be equal or one start with the other.",
       "placeholder": "Prefix",
-      "suggestedHint": "Prefix of the case keys (PHA-001…), suggested from the name and free among your projects. Change it now or in the project settings.",
+      "suggestedHint": "Prefix of the case keys, suggested from the name and free among your projects. Change it now or in the project settings.",
       "free": "Free"
     },
     "copySettings": {
@@ -1782,7 +1790,7 @@
         "desktopOnly": "Desktop app only: the web has no evidence retention",
         "riskBands": "Low up to {{low}} · medium up to {{medium}}"
       },
-      "never": "The name, the prefix and the data (plan, cases, requirements, runs) are never copied.",
+      "never": "The name, the prefix and the data are never copied: plan, cases, requirements, cycles, runs, defects and board.",
       "copiedFrom": "copied from {{name}}",
       "summary": "Copied from «{{name}}»: {{parts}}.",
       "summaryNothing": "Nothing is copied from «{{name}}»: the project starts with the default settings.",
@@ -2088,7 +2096,7 @@
       "schedule": "Sprints and milestones of the test cycle. Click the start day and then the end day to create a sprint (Esc cancels). Select a sprint and drag its ends to change the dates, or edit them in its row. In «Milestone», click a day to add a milestone.",
       "risks": "Risks that can affect testing and how they are mitigated.",
       "communication": "How and when progress is reported.",
-      "closure": "Conditions to meet before closing the cycle.",
+      "closure": "Conditions to meet before closing the cycle. Criteria measured by a metric are evaluated by themselves when a cycle closes; their text is written from the metric.",
       "purpose": "The test objectives the plan pursues and what it is for.",
       "conclusion": "Evaluation against objectives and exit criteria, open risks and the decision.",
       "assumptions": "What planning takes for granted and the limits the team cannot change (deadlines, people, rules). If an assumption stops holding, review the plan.",
@@ -2125,7 +2133,8 @@
       "exportPdf": "Export .pdf",
       "exportPdfDesc": "A document ready to sign",
       "exportXlsx": "Export .xlsx",
-      "exportXlsxDesc": "Editable in Excel"
+      "exportXlsxDesc": "Editable in Excel",
+      "history": "History in the document: {{mode}}"
     },
     "panel": {
       "title": "Plan status",
@@ -2387,11 +2396,11 @@
     "metricsNone": "No metrics yet. Add one from the catalog or your own.",
     "closureLink": {
       "label": "Measured by",
+      "target": "Target",
       "none": "No metric · checked by hand",
       "blocking": "Blocking",
       "advisory": "Advisory",
-      "blockingTip": "A blocking criterion marked «Not met» needs a justification to close the cycle; an advisory one is only reported.",
-      "hint": "Criteria measured by a metric are evaluated by themselves when a cycle closes. Their text is written from the metric."
+      "blockingTip": "A blocking criterion marked «Not met» needs a justification to close the cycle; an advisory one is only reported."
     },
     "approval": {
       "by": "Approved by",
@@ -2407,6 +2416,8 @@
       "title": "History",
       "created": "Plan created",
       "approved": "Approved by {{name}}",
+      "sent": "Sent to review by {{name}}",
+      "returned": "Changes requested by {{name}}",
       "lostApproval": "loses its approval",
       "none": "No saved changes yet.",
       "someone": "Another account"
@@ -2529,10 +2540,11 @@
     "suggest": {
       "button": "✨ Suggest tests",
       "disabled": "You need AI configured and a plan in the project",
-      "title": "Suggest tests with AI",
+      "title": "Suggest cases with AI",
       "loading": "Generating suggestions from the plan…",
       "empty": "No suggestions were generated. Check the plan has types/levels and the AI responds.",
-      "create": "Create {{count}}",
+      "create_one": "Create {{count}} case",
+      "create_other": "Create {{count}} cases",
       "creating": "Creating…"
     },
     "exportDone": "Saved to {{name}}",
@@ -2581,7 +2593,7 @@
       "advanced": {
         "name": "Advanced",
         "keywords": "Background · Rule · multiple Scenario",
-        "desc": "A full Feature with several scenarios. Authored directly in the Gherkin editor."
+        "desc": "A full Feature: shared preconditions and several flows, in the form or in Gherkin."
       },
       "includes": "Includes"
     },
@@ -2808,6 +2820,7 @@
     },
     "checklist": {
       "items": "Checks",
+      "add": "Add check",
       "hint": "A checklist is run by ticking each item; it has no Gherkin steps.",
       "kept": "This case's steps and Gherkin are kept, hidden while it is a checklist.",
       "noGherkin": "A checklist has no Gherkin view."
@@ -2860,7 +2873,7 @@
       },
       "editingReviewed": "This case is in review. If you save changes to its content, it stays in review.",
       "editingApproved": "This case is approved. If you save changes to its content, it goes back to review with a new version and needs approving again.",
-      "changesSince": "Changes since revision {{revision}} ({{status}})",
+      "changesSince": "Changes since {{date}} ({{status}})",
       "toast": {
         "send": "{{key}} sent to review",
         "approve": "Version {{version}} of {{key}} approved",
@@ -3022,9 +3035,9 @@
     "kpi": {
       "projects": "Open projects",
       "projectsTitle": "Go to Projects",
-      "closing_one": "{{count}} closes this month",
-      "closing_other": "{{count}} close this month",
-      "noneClosing": "None closes this month",
+      "closing_one": "{{count}} plan ends this month",
+      "closing_other": "{{count}} plans end this month",
+      "noneClosing": "No plan ends this month",
       "pending": "Pending tests",
       "pendingOf": "of {{total}}",
       "pendingTitle": "Cases not yet run or blocked across all open projects",
@@ -3040,6 +3053,8 @@
       "noneBlocked": "None blocked",
       "rateOf_one": "of {{count}} case run · {{period}}",
       "rateOf_other": "of {{count}} cases run · {{period}}",
+      "rateOfShort_one": "of {{count}} case",
+      "rateOfShort_other": "of {{count}} cases",
       "rateEmpty": "No runs: {{period}}",
       "rateError": "Not available",
       "unlinked_one": "Also, {{count}} unlinked test",
@@ -3062,7 +3077,15 @@
       "cyclePrevious": "Previous cycle",
       "custom": "Custom range…",
       "soonTitle": "Coming soon: will use the plan’s cycles and ranges",
+      "soon": "Coming soon",
       "compare": "Compare with the previous period",
+      "short": {
+        "today": "Today",
+        "7d": "7 days",
+        "14d": "14 days",
+        "30d": "30 days",
+        "month": "This month"
+      },
       "lower": {
         "today": "today",
         "7d": "last 7 days",
@@ -3098,9 +3121,9 @@
       "all": "All",
       "risk": "At risk",
       "ok": "Met",
-      "byClose": "By closing date",
-      "closes": "Closes {{date}}",
-      "noDate": "No closing date",
+      "byClose": "By plan end",
+      "closes": "Plan ends: {{date}}",
+      "noDate": "No plan end date",
       "noMatch": "No project matches “{{query}}”.",
       "viewAll_one": "See the project in Projects",
       "viewAll_other": "See all {{count}} in Projects",
@@ -3108,7 +3131,7 @@
       "ringLabel": "Percentage run: no data",
       "headline": "No runs yet",
       "sub": "The criteria are evaluated once you record runs.",
-      "close": "Closes: {{date}}",
+      "close": "Plan ends: {{date}}",
       "noData": "No data",
       "noCriteria": "This project’s plan defines no exit criteria.",
       "noPlan": "This project has no test plan yet.",
@@ -3170,6 +3193,7 @@
     "upcoming": {
       "title": "Upcoming tests",
       "subtitle": "By their latest result, by priority",
+      "noProjects": "Create a project to see its upcoming tests.",
       "viewAll": "See all",
       "filters": "Test status",
       "notRun": "Not run",
@@ -3241,6 +3265,7 @@
       "help": "One metric over the project's last closed cycles, with the figures frozen at closing, and over the active cycle, live (dashed). The green line is the plan's target; the dot under each cycle is its verdict. It warns when the metric gets worse two cycles in a row or leaves its target.",
       "project": "Trend project",
       "metric": "Trend metric",
+      "noProjects": "Create a project to see the trend of its cycles.",
       "empty": "This project has no closed or active cycles yet. The trend appears once the first one is closed with «Close cycle…».",
       "chartLabel_one": "{{metric}} over {{count}} cycle",
       "chartLabel_other": "{{metric}} over {{count}} cycles",
@@ -3424,7 +3449,7 @@
       "delete": "Delete {{key}}",
       "deleteTitle": "Delete requirement",
       "deleteWarning": "{{key}} will be deleted. Its ID will not be reused: cases linking it will show it as an unknown requirement.",
-      "deleteConfirm": "Delete",
+      "deleteConfirm": "Yes, delete",
       "deletedToast": "{{key}} deleted",
       "cases": "Cases",
       "actions": "Actions",
@@ -3504,7 +3529,8 @@
       "weighted": "Weighted coverage",
       "weightedTitle": "Risk-weighted coverage",
       "weightedHow": "Sum of the risk level (likelihood × impact) of the covered requirements over the sum of the level of every assessed requirement. «Passed» counts those with every case executed and passed.",
-      "weightedCalc": "covered = {{covered}} / {{total}} = {{coveredPct}} · passed = {{passed}} / {{total}} = {{passedPct}}",
+      "weightedCalcCovered": "covered = {{covered}} / {{total}} = {{coveredPct}}",
+      "weightedCalcPassed": "passed = {{passed}} / {{total}} = {{passedPct}}",
       "weightedBands_one": "1 unassessed requirement is left out. The project's bands: low up to {{low}}, medium up to {{medium}}.",
       "weightedBands_other": "{{count}} unassessed requirements are left out. The project's bands: low up to {{low}}, medium up to {{medium}}.",
       "weightedHint_one": "passed {{passed}} · 1 unassessed",
@@ -3544,24 +3570,27 @@
     },
     "gaps": {
       "title": "Traceability gaps",
-      "casesWithoutRequirement": "Cases without a requirement",
-      "unknownLinks": "Cases linking a requirement that does not exist",
-      "defectsWithoutCase": "Defects without a linked case",
+      "casesWithoutRequirement_one": "Case without a requirement",
+      "casesWithoutRequirement_other": "Cases without a requirement",
+      "unknownLinks_one": "Case linking a requirement that does not exist",
+      "unknownLinks_other": "Cases linking a requirement that does not exist",
+      "defectsWithoutCase_one": "Defect without a linked case",
+      "defectsWithoutCase_other": "Defects without a linked case",
       "subtitle": "What breaks the requirement ↔ case ↔ defect chain",
-      "migrateHint_one": "{{count}} ID appears in the free-text Traceability of your cases and can become a link.",
-      "migrateHint_other": "{{count}} IDs appear in the free-text Traceability of your cases and can become links."
+      "migrateHint_one": "{{count}} ID appears in the free text of «Other references» of your cases and can become a link.",
+      "migrateHint_other": "{{count}} IDs appear in the free text of «Other references» of your cases and can become links."
     },
     "migrate": {
       "button": "Migrate traceability ({{count}})",
-      "title": "Migrate the Traceability field to links",
-      "intro": "These IDs appear in the free-text Traceability of your cases. Choose which become links to requirements. The free text is kept.",
+      "title": "Migrate «Other references» to links",
+      "intro": "These IDs appear in the free text of «Other references» of your cases. Choose which become links to requirements. The free text is kept.",
       "include": "Include",
       "found": "Found",
       "willCreate": "will be created",
-      "summary": "{{links}} links and {{creates}} new requirements will be created.",
+      "summary": "Links to create: {{links}} · new requirements: {{creates}}.",
       "apply": "Apply",
       "applying": "Applying…",
-      "doneToast": "Migration applied: {{links}} links, {{creates}} new requirements"
+      "doneToast": "Migration applied · links: {{links}} · new requirements: {{creates}}"
     },
     "fromDesign": {
       "open": "Requirements from designs",
@@ -3587,7 +3616,7 @@
       "remove": "Remove {{name}}",
       "context": "Product context (optional)",
       "contextPlaceholder": "E.g. a bank's customer portal, customer role",
-      "summary": "{{count}} of {{max}} images or PDF · {{mb}} MB · ≈ {{tokens}} input tokens (estimate)",
+      "summary": "{{count}} of {{max}} images or PDF · {{size}} · ≈ {{tokens}} input tokens (estimate)",
       "over": {
         "attachments": "At most {{max}} images or PDF per analysis: untick some.",
         "size": "The images and PDF are too large for one analysis: untick some.",
@@ -3743,7 +3772,7 @@
         "config": "Configuration",
         "other": "Other"
       },
-      "sendWhat": "{{files}} files (≈ {{tokens}} tokens) will be sent in {{calls}} calls.",
+      "sendWhat": "{{files}} files (≈ {{tokens}} tokens, counted on the text as read) will be sent in {{calls}} calls.",
       "neverSent": "Dependencies, builds, hidden files, binaries and files with secrets (.env, keys, certificates) are never sent.",
       "redacted_one": "{{count}} line that looks like a secret is replaced by “[secreto omitido]” ({{files}} files)",
       "redacted_other": "{{count}} lines that look like a secret are replaced by “[secreto omitido]” ({{files}} files)",
@@ -3829,6 +3858,7 @@
   },
   "recoveryKey": {
     "title": "Recovery key",
+    "introShort": "This computer's database is encrypted.",
     "intro": "The local database is encrypted and its key lives only in this computer's credential store. If you lose it (new PC, reinstalled Windows), only the recovery key together with your copy of pharos.db and of the evidence folder brings your data back.",
     "lastShown": "Last shown: {{date}}",
     "desktopOnly": "Only available in the desktop app.",
@@ -3838,8 +3868,7 @@
     "confirmBody": "Anyone with this key and a copy of your data can read it. Show it only when nobody is looking at your screen.",
     "confirm": "Show",
     "shownTitle": "Save this key now",
-    "guidePaper": "Write it on paper and keep it somewhere safe, or",
-    "guideManager": "store it in a password manager.",
+    "guidePaper": "Write it on paper and keep it somewhere safe, or store it in a password manager.",
     "guideRisk": "Do not send it by email or chat, and do not keep it next to the copy of your data.",
     "guideBackup": "To restore on another computer you need this key and a copy of pharos.db (made with Pharos closed) and of the evidence folder. Pharos cannot recover it for you.",
     "copy": "Copy to clipboard",
@@ -3943,9 +3972,10 @@
   },
   "customFields": {
     "title": "Custom fields",
-    "desc": "The project's own fields for its test cases. The key and the type never change once created; a field is archived, never deleted, and its values are kept.",
+    "desc": "The project's own fields for its test cases.",
+    "rules": "The key and the type never change once created; a field is archived, never deleted, and its values are kept.",
     "empty": "No custom fields yet. Create one to record, for example, the browser or the sprint of each case.",
-    "descDefect": "The project's own fields for its defects. The key and the type never change once created; a field is archived, never deleted, and its values are kept.",
+    "descDefect": "The project's own fields for its defects.",
     "emptyDefect": "No defect fields yet. Create one to record, for example, the affected customer or the fixed version.",
     "entity": {
       "label": "Fields of",
@@ -4065,7 +4095,8 @@
   },
   "configurations": {
     "title": "Configurations",
-    "desc": "Where cycles run: browser, OS, device and locale. Labels are the texts an import recognizes each configuration by (e.g. chromium or a Playwright project name).",
+    "desc": "Where cycles run: browser, OS, device and locale.",
+    "labelsHelp": "Labels are the texts an import recognizes each configuration by (e.g. chromium or a Playwright project name).",
     "new": "New configuration",
     "newTitle": "New configuration",
     "editTitle": "Edit configuration",
@@ -4169,9 +4200,9 @@
     "clonedToast": "Cycle cloned as {{key}}",
     "deletedToast": "Cycle {{key}} deleted",
     "deleteTitle": "Delete {{key}}",
-    "deleteMessage_zero": "The cycle and its items are deleted. It has no runs.",
-    "deleteMessage_one": "The cycle and its items are deleted. Its run is kept, without a cycle.",
-    "deleteMessage_other": "The cycle and its items are deleted. Its {{count}} runs are kept, without a cycle.",
+    "deleteMessage_zero": "The cycle goes to the Trash with its items. It has no runs.",
+    "deleteMessage_one": "The cycle goes to the Trash with its items. Its run is kept, without a cycle.",
+    "deleteMessage_other": "The cycle goes to the Trash with its items. Its {{count}} runs are kept, without a cycle.",
     "deleteConfirm": "Yes, delete",
     "notApproved": "Not approved",
     "noConfigurations": "The project has no configurations. Create them in Project settings.",
@@ -4439,7 +4470,9 @@
     "resolutionDialog": {
       "title": "Close {{key}}",
       "rejectTitle": "Reject {{key}}",
+      "moveTitle": "Move {{key}} to «{{status}}»",
       "message": "«{{title}}» moves to «{{status}}». Give the resolution.",
+      "messagePlain": "«{{title}}» moves to «{{status}}».",
       "fixedInBuild": "Fixed in build (optional)",
       "confirm": "Apply",
       "cancel": "Cancel"
@@ -4461,6 +4494,7 @@
       "actual": "Actual result",
       "severity": "Severity",
       "severityHint": "Impact on the system. Priority is how urgent the fix is.",
+      "priorityHint": "How urgent the fix is. Severity is the impact on the system.",
       "priority": "Priority",
       "status": "Status",
       "foundInBuild": "Build",
@@ -4472,7 +4506,7 @@
       "externalUrl": "External link",
       "externalHint": "To note the issue in another tool. Jira sync is coming in a future version.",
       "labels": "Labels",
-      "escaped": "Found outside the tests (escape)",
+      "escaped": "Found outside the tests",
       "escapedHint": "In production, for example. It counts as an escape of the last cycle closed before it was reported.",
       "unassigned": "Unassigned"
     },
@@ -4495,7 +4529,8 @@
     "results": {
       "loadFailed": "The results could not be loaded.",
       "title": "Results that did not pass",
-      "pickToCreate": "Choose the failed attempt the defect comes from: the steps of the executed revision, the actual result, the build and the environment are filled in, and its evidence is added.",
+      "pickToCreate": "Choose the failed attempt the defect comes from.",
+      "pickToCreateHelp": "The new defect is filled in with the steps of the executed revision, the actual result, the build and the environment, and its evidence is added.",
       "pickToLink": "Choose the attempt to link to this defect.",
       "empty": "No failed results in this project's runs.",
       "search": "Search by run, case or test…",
@@ -4595,7 +4630,7 @@
     "import": {
       "open": "Import report",
       "title": "Import a test report",
-      "intro": "Brings in the results of your automation: tests, findings and metrics. A test that carries a case's key (for example @PRJ-001) links to that case; the rest go to “Unlinked”.",
+      "intro": "Brings in the results of your automation: tests, findings and metrics. A test that carries a case's key (for example @{{key}}) links to that case; the rest go to “Unlinked”.",
       "formats": "Tests: JUnit XML, CTRF, Playwright JSON, Cucumber Messages (NDJSON), Pharos Run JSON, TRX (.NET), Allure (the allure-results folder in a .zip) and Xcode (the JSON from xcresulttool). Findings: SARIF (security) and axe (accessibility). Metrics: the k6 summary.",
       "file": "Report",
       "fileHint": "The format is detected from the content. Up to 200 MB (50 MB for JSON or XML).",
@@ -4609,7 +4644,7 @@
       "existingRun": "Open run",
       "noOpenRuns": "No runs in progress in this project",
       "run": "Run",
-      "keepOpen": "Keep the run open to import more shards",
+      "keepOpen": "Keep the run open to add more reports of the same execution",
       "cycle": "Cycle",
       "noCycle": "No cycle",
       "cycleHint": "Its results count in the cycle's progress. Closed cycles are not listed.",
@@ -4755,6 +4790,7 @@
     "paramValue": "Value of <{{name}}>",
     "inDraft": "Draft",
     "notRun": "Not run",
+    "partial": "{{done}} of {{total}} run",
     "rowValues": "Row data: {{row}}",
     "steps": "Steps",
     "unmarked_one": "({{count}} unmarked)",
@@ -4811,6 +4847,7 @@
       "paste": "Paste a capture into the step or the result",
       "save": "Save the result",
       "nextItem": "Next item not run",
+      "shift": "Shift",
       "help": "Show this list"
     },
     "discardTitle": "Discard the draft?",
@@ -4834,6 +4871,7 @@
     },
     "evidenceLocal": "Evidence is stored encrypted on this device and syncs like the rest of your data.",
     "run": {
+      "evidenceInfo": "Where evidence is kept",
       "addCases": "Add cases",
       "edit": "Edit details",
       "close": "Close run",
@@ -4887,8 +4925,8 @@
       "deleteMessage": "{{key}} “{{title}}” will disappear from the lists and the progress, on this device and on those that sync. Hidden:",
       "deleteItems_one": "{{count}} run item",
       "deleteItems_other": "{{count}} run items",
-      "deleteResults_one": "{{count}} recorded result (never deleted by hand)",
-      "deleteResults_other": "{{count}} recorded results (never deleted by hand)",
+      "deleteResults_one": "{{count}} recorded result",
+      "deleteResults_other": "{{count}} recorded results",
       "deleteImports_one": "from {{count}} import",
       "deleteImports_other": "from {{count}} imports",
       "deleteAttachments_one": "{{count}} evidence file of those results",
@@ -4898,7 +4936,7 @@
       "deleteCycle": "The progress of cycle {{key}} “{{title}}” will stop counting this run",
       "deleteDefects_one": "{{count}} result is linked to a defect: the defect keeps the link until the purge",
       "deleteDefects_other": "{{count}} results are linked to defects: the defects keep the link until the purge",
-      "deletePurge": "The results stay hidden and the purge takes them with the run after {{days}} days (Administration → General).",
+      "deletePurge": "The run and its results go to the Trash (Administration › General) and the purge takes them after {{days}} days.",
       "deleteCycleClosed": "Cycle {{key}} is closed: a run of a closed cycle cannot be deleted. Reopen the cycle first.",
       "deleted": "Run {{key}} deleted.",
       "deletedNotice": "This run was deleted (perhaps on another device)."
@@ -4906,7 +4944,7 @@
     "picker": {
       "dataset_one": "{{count}} row · {{name}} (v{{version}})",
       "dataset_other": "{{count}} rows · {{name}} (v{{version}})",
-      "search": "Search by ID or title",
+      "search": "Search by key or title",
       "cases": "Cases",
       "inRun": "already in the run",
       "chosen_one": "{{count}} case chosen",
@@ -4969,7 +5007,7 @@
     },
     "unit": {
       "case": "cases",
-      "cell": "cycle cells (case × configuration)"
+      "cell": "cycle cells, case × configuration"
     },
     "progress": {
       "executed": "Executed",
@@ -5005,13 +5043,21 @@
       "tool": "Tool",
       "new": "New",
       "triaged": "Triaged",
+      "review": "To review",
       "metric": "Metric",
       "threshold": "Threshold",
       "value": "Value"
     },
     "findings": {
-      "line_one": "{{count}} open finding ({{bySeverity}}) · {{new}} new · {{triaged}} triaged · {{review}} to review",
-      "line_other": "{{count}} open findings ({{bySeverity}}) · {{new}} new · {{triaged}} triaged · {{review}} to review",
+      "line_one": "{{count}} open finding ({{bySeverity}})",
+      "line_other": "{{count}} open findings ({{bySeverity}})",
+      "new_one": "{{count}} new since the previous run",
+      "new_other": "{{count}} new since the previous run",
+      "newNone": "new: no previous run to compare with",
+      "triaged_one": "{{count}} triaged",
+      "triaged_other": "{{count}} triaged",
+      "review_one": "{{count}} to review (the tool could not decide)",
+      "review_other": "{{count}} to review (the tool could not decide)",
       "thresholds": "Thresholds: {{passed}} of {{total}} met",
       "noFailed": "Every threshold is met."
     },
@@ -5035,7 +5081,13 @@
     "summaryHint": "Filled in from the numbers; you can change it.",
     "recommendationsLabel": "Recommendations",
     "recommendationsPlaceholder": "What you propose: continue, close the cycle, repeat tests…",
-    "autoSummary": "{{executed}} of {{total}} {{unit}} have been executed ({{pct}}), with a pass rate of {{rate}}. There are {{open}} open defects, {{critical}} critical. Exit criteria: {{met}} of {{all}} met.",
+    "autoSummary": "{{executed}} of {{total}} {{unit}} have been executed: {{pct}}, {{rate}}. {{defects}}, {{critical}}. Exit criteria: {{met}} of {{all}} met.",
+    "openDefects_one": "There is {{count}} open defect",
+    "openDefects_other": "There are {{count}} open defects",
+    "openCritical_one": "{{count}} critical",
+    "openCritical_other": "{{count}} critical",
+    "withRate": "with a pass rate of {{rate}}",
+    "noRate": "with no pass rate yet",
     "sheet": {
       "summary": "Summary",
       "results": "Results",
@@ -5328,24 +5380,24 @@
         "received": "{{actor}} invited you to {{title}}"
       },
       "case": {
-        "review_requested": "{{actor}} sent {{key}} {{title}} for review",
-        "approved": "{{actor}} approved {{key}} {{title}}",
-        "changes_requested": "{{actor}} returned {{key}} {{title}} with changes"
+        "review_requested": "{{actor}} sent {{key}} «{{title}}» for review",
+        "approved": "{{actor}} approved {{key}} «{{title}}»",
+        "changes_requested": "{{actor}} returned {{key}} «{{title}}» with changes"
       },
       "defect": {
-        "assigned": "{{actor}} assigned you {{key}} {{title}}"
+        "assigned": "{{actor}} assigned you {{key}} «{{title}}»"
       },
       "cycle": {
-        "closed": "{{actor}} closed the cycle {{key}} {{title}}"
+        "closed": "{{actor}} closed the cycle {{key}} «{{title}}»"
       },
       "sync": {
         "conflict_one": "{{count}} sync conflict to review",
         "conflict_other": "{{count}} sync conflicts to review"
       },
       "member": {
-        "joined": "{{actor}} joined {{title}}",
-        "removed": "You are no longer a member of {{title}}",
-        "disabled": "{{actor}} disabled {{title}}'s account: they no longer have access to {{workspaceName}}"
+        "joined": "{{actor}} joined «{{title}}»",
+        "removed": "You are no longer a member of «{{title}}»",
+        "disabled": "{{actor}} disabled {{title}}'s account: they no longer have access to «{{workspaceName}}»"
       },
       "account": {
         "reset_issued": "{{actor}} (server administrator) made a link to reset your password. If you did not ask for it, tell them.",
@@ -5361,8 +5413,8 @@
         "inactive": "{{owner}}'s token {{title}} stopped working: its owner left the workspace or their account was disabled. Reassign or revoke it in «Integrations»."
       },
       "plan": {
-        "approved": "{{actor}} approved the plan {{title}}",
-        "changes_requested": "{{actor}} asked for changes to the plan {{title}}"
+        "approved": "{{actor}} approved the plan «{{title}}»",
+        "changes_requested": "{{actor}} asked for changes to the plan «{{title}}»"
       }
     },
     "action": {
@@ -5409,7 +5461,6 @@
       "created": "Workspace “{{name}}” created"
     },
     "members": {
-      "title": "Members · {{name}}",
       "invite": "Invite",
       "person": "Person",
       "email": "Email",
@@ -5678,6 +5729,13 @@
       "attempt": "attempt {{n}}",
       "next": "Next attempt",
       "answer": "Answer",
+      "deliveryError": {
+        "notFound": "The target server was not found ({{code}})",
+        "refused": "The target server refused the connection ({{code}})",
+        "timeout": "The target server did not answer in time ({{code}})",
+        "certificate": "The target server's certificate is not valid ({{code}})",
+        "reset": "The target server closed the connection ({{code}})"
+      },
       "redeliver": "Retry now",
       "requeued": "Queued to be sent again",
       "statuses": {
@@ -5778,12 +5836,12 @@
       "title": "Triage · {{rule}}",
       "state": "State",
       "reason": "Reason",
-      "scope": "It applies to this fingerprint in every run of the project. It stays in the history.",
+      "scope": "It applies to this finding in every run of the project. It stays in the history.",
       "history": "Earlier decisions",
       "save": "Save triage",
       "error": "The triage could not be saved. Check the reason and try again.",
       "help": {
-        "open": "It counts in the matrix, the report and the gates.",
+        "open": "It counts in the matrix, the report and the exit criteria.",
         "false_positive": "The rule does not apply here.",
         "accepted_risk": "Known and accepted. Link a decision or a defect.",
         "fixed": "It should be gone in the next scan."
@@ -5801,7 +5859,29 @@
       "passed": "Met",
       "failed": "Failed",
       "thresholdsMet": "Thresholds met: {{passed}} of {{total}}.",
-      "failedList": "Failed: {{list}}.",
+      "failedList": "Failed:",
+      "aggregations": {
+        "avg": "average",
+        "min": "minimum",
+        "med": "median",
+        "max": "maximum",
+        "count": "total",
+        "rate": "rate",
+        "value": "value"
+      },
+      "scopes": {
+        "case": "Case {{value}}",
+        "expected_response_true": "Expected responses",
+        "expected_response_false": "Unexpected responses",
+        "scenario": "Scenario: {{value}}",
+        "group": "Group: {{value}}",
+        "name": "Request: {{value}}",
+        "method": "Method: {{value}}",
+        "status": "HTTP status: {{value}}",
+        "url": "URL: {{value}}",
+        "check": "Check: {{value}}"
+      },
+      "rawThreshold": "k6 expression: {{expression}}",
       "empty": "No metrics.",
       "all": "Show all ({{shown}} of {{total}})",
       "fewer": "Show only the main ones"
@@ -6002,7 +6082,7 @@
       "loadFailed": "The library could not be loaded.",
       "none": "The library has no active shared steps. Create them in the Library section.",
       "choose": "Choose",
-      "argsHelp": "Empty: the parameter passes to the case. A literal (ana@acme.test) is written in the copy. Another parameter (<customer>) renames it.",
+      "argsHelp": "Empty: the parameter passes to the case. A literal (liomar.qa@pharos.test) is written in the copy. Another parameter (<customer>) renames it.",
       "noParams": "This shared step has no parameters.",
       "argPlaceholder": "Empty: passes to the case",
       "argOf": "Argument for <{{name}}>",

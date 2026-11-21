@@ -5,12 +5,14 @@ import { fileURLToPath } from "node:url";
 import { $, $$, browser, expect } from "@wdio/globals";
 import { button, es, projectListLoaded, startBlankProject } from "../support";
 
-export const fixturesDir = join(fileURLToPath(new URL(".", import.meta.url)), "fixtures");
+/** The run's fixtures: the runner's copy with the dates of the run day
+ *  (run-fixtures.mjs), else the committed ones. */
+export const fixturesDir = process.env.PHAROS_TOURS_FIXTURES ?? join(fileURLToPath(new URL(".", import.meta.url)), "fixtures");
 export const repoDir = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
 
-/** The tour's projects (fixed names and prefixes: the manual shows them). */
-export const PROJECT_A = { name: "Pharos", prefix: "PH" };
-export const PROJECT_B = { name: "API de sincronización", prefix: "API" };
+/** The tour's projects (fixed names and prefixes: the manual shows them).
+ *  The case study lives in data/pharos.ts. */
+export { PROJECT_A, PROJECT_B } from "./data/pharos";
 
 /** Clicks the theme toggle until the app is in the light theme. */
 export async function switchToLightTheme() {
@@ -37,13 +39,12 @@ export async function goHome() {
   await byTestId("nav-dashboard").click();
 }
 
-/** Opens a project from «Todos los proyectos». When a chapter runs on its
- *  own (`npm run manual -- --spec 04`), the project chapter 2 makes may not
- *  exist yet: it is created then, so every chapter can run alone.
+/** Opens a project from «Todos los proyectos» of the current workspace.
+ *  It never creates one: a chapter that runs alone gets its projects from
+ *  its prerequisites (prepare.ts), and creating a missing one would hide a
+ *  missing prerequisite behind an empty twin.
  *  BASE-24: it waits for the loaded list, not its skeleton (which also has
- *  the class pj-table), and searches before deciding the project is missing;
- *  reading the skeleton made it create an empty twin of the project, whose
- *  requirements list then had nothing to click. */
+ *  the class pj-table), and searches before deciding the project is missing. */
 export async function openProject(name: string) {
   await byTestId("nav-projects").click();
   await expect($(`h1=${es.projects.title}`)).toBeDisplayed();
@@ -54,10 +55,8 @@ export async function openProject(name: string) {
     await $(".pj-search input").setValue(name);
     await row.waitForExist({ timeout: 5_000 }).catch(() => undefined);
   }
-  if (!(await row.isExisting())) {
-    await startBlankProject(name);
-    await button(es.projects.wizard.create).click();
-  } else await row.click();
+  await row.waitForExist({ timeout: 15_000, timeoutMsg: `no project «${name}» in this workspace` });
+  await row.click();
   await expect($(`h1=${name}`)).toBeDisplayed();
 }
 
@@ -212,6 +211,8 @@ export async function keyboardDrag(handle: ReturnType<typeof $>, { key = "ArrowR
 /** Sets a hidden <input type="file"> (WebDriver uploads the local file). */
 export async function chooseFile(selector: string, file: string) {
   const input = await $(selector);
+  // A page that is still rendering may not have its input yet.
+  await input.waitForExist({ timeout: 15_000 });
   const hidden = await browser.execute((el: HTMLElement) => {
     const was = { hidden: el.hasAttribute("hidden"), display: el.style.display };
     el.removeAttribute("hidden");
@@ -472,4 +473,72 @@ export async function clickButton(text: string, scopeSelector?: string) {
     },
     { timeout: 15_000, timeoutMsg: `no visible, enabled button «${text}»` },
   );
+}
+
+/** Picks a workspace in the sidebar's switcher once it lists it (the list
+ *  catches up with the server after a create or a move). «Personal» is the
+ *  personal workspace. */
+export async function switchWorkspace(name: string) {
+  await browser.waitUntil(
+    async () => {
+      if ((await byTestId("workspace-switcher").getAttribute("title"))?.startsWith(name)) return true;
+      await byTestId("workspace-switcher").click();
+      const item = $(`[role="menuitem"]*=${name}`);
+      if (await item.isExisting()) await item.click();
+      else await browser.keys("Escape");
+      return false;
+    },
+    { timeout: 30_000, interval: 1_000, timeoutMsg: `the switcher never offered «${name}»` },
+  );
+}
+
+/** Scrolls only vertically (never sideways, unlike scrollIntoView) so the
+ *  top of `target` sits `gap` px below the top of its scroller (the page
+ *  content, under the top bar, or a dialog's body). Horizontal scrollers
+ *  around it are put back to the left edge. */
+export async function scrollToTop(target: string | WebdriverIO.Element | ReturnType<typeof $>, gap = 16) {
+  const el = typeof target === "string" ? await $(target) : await target;
+  await el.waitForExist();
+  await browser.execute(
+    (node: HTMLElement, g: number) => {
+      const scrolls = (p: HTMLElement, axis: "Y" | "X") => {
+        const o = getComputedStyle(p)[axis === "Y" ? "overflowY" : "overflowX"];
+        return /(auto|scroll)/.test(o) && (axis === "Y" ? p.scrollHeight > p.clientHeight + 1 : p.scrollWidth > p.clientWidth + 1);
+      };
+      for (let p = node.parentElement; p; p = p.parentElement) if (scrolls(p, "X")) p.scrollLeft = 0;
+      let s = node.parentElement;
+      while (s && !scrolls(s, "Y")) s = s.parentElement;
+      const scroller = s ?? (document.scrollingElement as HTMLElement);
+      const top = s ? s.getBoundingClientRect().top : 0;
+      scroller.scrollTop += node.getBoundingClientRect().top - top - g;
+    },
+    el as unknown as HTMLElement,
+    gap,
+  );
+  await browser.execute(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
+}
+
+/** Opens the «?» tip (InfoTip) whose label contains `label`, inside `scope`,
+ *  and keeps it open for the capture: the bubble takes the focus, so the
+ *  capture's blur of the active element does not close it. */
+export async function openInfoTip(label: string, scope = "body") {
+  const tip = await $(scope).$(`button.infotip[aria-label*=${JSON.stringify(label)}]`);
+  await tip.click();
+  await browser.waitUntil(
+    async () =>
+      browser.execute((id: string | null) => {
+        const bubble = id ? document.getElementById(id) : null;
+        if (!bubble || bubble.hidden) return false;
+        bubble.focus();
+        return true;
+      }, await tip.getAttribute("aria-describedby")),
+    { timeoutMsg: `the «?» tip of «${label}» did not open` },
+  );
+}
+
+/** Moves the pointer onto the top bar, so no hover state stays in the
+ *  capture (unlike `moveTo`, it scrolls nothing). */
+export async function pointerAway() {
+  const width = await browser.execute(() => window.innerWidth);
+  await browser.action("pointer").move({ x: Math.round(width * 0.45), y: 30, origin: "viewport" }).perform();
 }

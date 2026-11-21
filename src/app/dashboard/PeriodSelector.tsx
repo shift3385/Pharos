@@ -18,6 +18,18 @@ import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { PERIODS, isoDay, shortDate, type Period } from "./model/homeData";
 import { previousRange } from "./model/compare";
 
+/** «Próximamente» after a menu option that is not available yet. Its words
+ *  join the option's name for screen readers («Ciclo actual, Próximamente»). */
+function SoonChip() {
+  const { t } = useTranslation();
+  return (
+    <span className="menu__soon">
+      <span className="sr-only">, </span>
+      {t("dashboard.period.soon")}
+    </span>
+  );
+}
+
 /** «Periodo» of the Home (SPEC §8): a menu on tablet/desktop and a bottom sheet
  *  «Periodo de los datos» on mobile. Test cycles and a custom range need the
  *  plan's sprints from a range (wave 5): they are shown disabled with the
@@ -45,7 +57,8 @@ export function PeriodSelector({
   const descId = useId();
   const range = { ...previousRange(value, today), days: 0 };
   range.days = Math.round((range.to.getTime() - range.from.getTime()) / 86_400_000) + 1;
-  const menu = usePopover(useBreakpoint() === "mobile" ? "dialog" : "menu");
+  const mobile = useBreakpoint() === "mobile";
+  const menu = usePopover(mobile ? "dialog" : "menu");
   const soon = t("dashboard.period.soonTitle");
 
   return (
@@ -60,7 +73,18 @@ export function PeriodSelector({
       >
         <Calendar size={16} className="home-btn__icon" aria-hidden="true" />
         <span className="sr-only">{t("dashboard.period.trigger")}: </span>
-        <span className="home-btn__text">{t(`dashboard.period.${value}`)}</span>
+        {/* On a phone the short label, whole (FIX-46: «Últimos 14 …»); the
+            full one stays for screen readers. */}
+        {mobile ? (
+          <>
+            <span className="home-btn__text" aria-hidden="true">
+              {t(`dashboard.period.short.${value}`)}
+            </span>
+            <span className="sr-only">{t(`dashboard.period.${value}`)}</span>
+          </>
+        ) : (
+          <span className="home-btn__text">{t(`dashboard.period.${value}`)}</span>
+        )}
         {compare && (
           <span className="home-btn__badge" data-testid="home-period-compare">
             {t("dashboard.compare.badge")}
@@ -96,10 +120,13 @@ export function PeriodSelector({
         ))}
         <MenuSeparator />
         <MenuLabel>{t("dashboard.period.cycles")}</MenuLabel>
-        <MenuItem icon={Flag} disabled title={soon} onSelect={() => {}}>
+        {/* Not yet available: the pale disabled look and a «Próximamente»
+            chip, as «Continuar con Google» (FIX-49: only a hover title said
+            so, and they looked like the live options). */}
+        <MenuItem icon={Flag} disabled title={soon} badge={<SoonChip />} onSelect={() => {}}>
           {t("dashboard.period.cycleCurrent")}
         </MenuItem>
-        <MenuItem icon={History} disabled title={soon} onSelect={() => {}}>
+        <MenuItem icon={History} disabled title={soon} badge={<SoonChip />} onSelect={() => {}}>
           {t("dashboard.period.cyclePrevious")}
         </MenuItem>
         <MenuSeparator />
@@ -107,6 +134,7 @@ export function PeriodSelector({
           icon={CalendarRange}
           disabled
           title={soon}
+          badge={<SoonChip />}
           onSelect={() => {}}
         >
           {t("dashboard.period.custom")}

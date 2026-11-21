@@ -14,6 +14,7 @@ import {
   acceptConfirm,
   byTestId,
   chooseFile,
+  chooseOption,
   clearInput,
   clickButton,
   dialog,
@@ -25,16 +26,19 @@ import {
   keyboardDrag,
   openProject,
   openSection,
+  scrollToTop,
   selectOption,
   tf,
   waitForSettled,
   waitForText,
   waitForToast,
 } from "./helpers";
+import { PERSONA } from "../../scripts/manual/persona.mjs";
+import { DEFECTS, RELEASE } from "./data/pharos";
 
 const F = es.defects;
-const PREFIX_BUG = "El menú lateral sigue mostrando el prefijo anterior";
-const LOGIN_BUG = "Entrar con credenciales válidas muestra «Correo o contraseña incorrectos»";
+const PREFIX_BUG = DEFECTS.prefix.title;
+const LOGIN_BUG = DEFECTS.login.title;
 const DUPLICATE = "Entrar falla con credenciales válidas (duplicado)";
 const ESCAPE = "El enlace del correo de bienvenida abre la versión anterior";
 const D = '[role="dialog"]';
@@ -91,19 +95,17 @@ chapter("defectos", () => {
   step("nuevo", {
     title: "Rellenar el defecto",
     caption:
-      "Un buen defecto permite reproducir el fallo sin preguntar a nadie. Rellena el título, la severidad (el impacto en el sistema) y la prioridad (la urgencia del arreglo), los pasos para reproducirlo, el resultado esperado y el obtenido, y dónde se encontró (build y entorno). En «Vínculos», marca los casos y los requisitos afectados: la matriz de trazabilidad (capítulo 13) los mostrará junto al defecto. Los campos propios del proyecto aparecen al final (aquí, «Sistema operativo», creado en el capítulo 14). En este ejemplo, Liomar registra que, al cambiar el prefijo en los ajustes, el menú lateral sigue mostrando el anterior: severidad mayor, prioridad media, build 0.3.0-rc1, vinculado al caso «Crear un proyecto» (PH-003) y al requisito REQ-002.",
+      "Un buen defecto permite reproducir el fallo sin preguntar a nadie. En «Detalles», rellena el título, la severidad (el impacto en el sistema) y la prioridad (la urgencia del arreglo); en «Reproducción», los pasos para reproducirlo, el resultado esperado y el obtenido. En este ejemplo, Liomar registra que, al cambiar el prefijo en los ajustes, el menú lateral sigue mostrando el anterior: severidad mayor, prioridad media, y los tres pasos que lo provocan.",
     covers: ["action:defect-create", "action:defect-links", "action:defect-custom-fields"],
     run: async () => {
       await (await field(F.field.title)).setValue(PREFIX_BUG);
       await selectOption(F.field.severity, F.severity.major);
       await selectOption(F.field.priority, F.priority.medium);
-      await (await field(F.field.steps)).setValue(
-        "1. Abrir «Ajustes del proyecto» de «Pharos».\n2. Cambiar el prefijo de «PHA-» a «PH-» y pulsar «Guardar».\n3. Mirar el selector de proyecto del menú lateral.",
-      );
-      await (await field(F.field.expected)).setValue("El selector muestra «PH-» al momento.");
-      await (await field(F.field.actual)).setValue("Sigue mostrando «PHA-» hasta cambiar de sección.");
-      await (await field(F.field.foundInBuild)).setValue("0.3.0-rc1");
-      await (await field(F.field.foundInEnvironment)).setValue("staging");
+      await (await field(F.field.steps)).setValue(DEFECTS.prefix.steps);
+      await (await field(F.field.expected)).setValue(DEFECTS.prefix.expected);
+      await (await field(F.field.actual)).setValue(DEFECTS.prefix.actual);
+      await (await field(F.field.foundInBuild)).setValue(RELEASE.build);
+      await (await field(F.field.foundInEnvironment)).setValue(RELEASE.environment);
       for (const label of ["Crear un proyecto", "REQ-002"]) {
         const box = $(`label*=${label}`);
         if (await box.isExisting()) {
@@ -114,16 +116,30 @@ chapter("defectos", () => {
       // The defect field created in chapter 14 (FLD-03).
       const os = await field("Sistema operativo");
       await os.scrollIntoView({ block: "center" });
-      await os.setValue("Windows 11");
-      // The capture shows the filled details, at the top of the editor.
-      await $(".tp-editor__back").scrollIntoView({ block: "start" });
+      await os.setValue(DEFECTS.prefix.os);
+      // The capture: from the «Detalles» heading down to the expected and
+      // obtained results.
+      await scrollToTop((await field(F.field.title)).parentElement(), 56);
+    },
+  });
+
+  step("asignado", {
+    title: "Asignado a",
+    caption:
+      `Debajo, «Dónde se encontró» lleva la build y el entorno (en este ejemplo, ${RELEASE.build} en ${RELEASE.environment}), y «Asignado a» dice quién se ocupa del defecto: se elige entre los miembros activos del workspace, o «Sin asignar». En «Personal» el único miembro eres tú, así que Liomar se lo asigna a sí mismo; en un workspace compartido, la persona elegida recibe un aviso con el defecto (capítulo 20). En «Vínculos», marca los casos y los requisitos afectados: la matriz de trazabilidad (capítulo 13) los mostrará junto al defecto. Liomar marca el caso «Crear un proyecto» (PH-003) y el requisito REQ-002.`,
+    focus: '//label[.//*[@data-testid="defect-assignee"]]',
+    run: async () => {
+      await chooseOption(byTestId("defect-assignee"), { text: `${PERSONA.first} ${PERSONA.last}` });
+      await expect(byTestId("defect-assignee")).toHaveText(expect.stringContaining(`${PERSONA.first} ${PERSONA.last}`));
+      // «Dónde se encontró» on top, «Vínculos» with the marked case below.
+      await scrollToTop('section.df-section:has([data-testid="defect-assignee"])');
     },
   });
 
   step("evidencias", {
     title: "Evidencias",
     caption:
-      "Una vez guardado el defecto, «Evidencias» admite capturas, vídeos o registros que muestran el fallo, de hasta 200 MB cada uno: «Adjuntar archivos» abre el selector de archivos (en este ejemplo, una captura del menú lateral). Se guardan cifrados en este equipo; un clic en el nombre descarga una copia.",
+      `Una vez guardado el defecto, «Evidencias» admite capturas, vídeos o registros que muestran el fallo, de hasta 200 MB cada uno: «Adjuntar archivos» abre el selector de archivos (en este ejemplo, una captura del menú lateral). Se guardan cifrados y llegan a los demás equipos del espacio de trabajo al sincronizar; un clic en el nombre descarga una copia. Quien tiene el rol Viewer no puede adjuntar. Encima, «Campos personalizados» trae los campos propios del proyecto: aquí, «Sistema operativo», creado en el capítulo 14, con ${DEFECTS.prefix.os}.`,
     covers: ["upload:src/modules/defects/ui/DefectEditor.tsx"],
     focus: ".pl-attach",
     run: async () => {
@@ -158,7 +174,7 @@ chapter("defectos", () => {
   step("desde-resultado", {
     title: "Un defecto desde un resultado fallido",
     caption:
-      "Cuando una prueba falla, lo más rápido es crear el defecto desde su resultado. «Desde un resultado» lista los intentos que no pasaron en los runs del proyecto (en este ejemplo, la prueba automática de acceso del informe JUnit importado en el capítulo 10). Al elegir uno, el editor se rellena con el error y el defecto queda vinculado a ese resultado y a su caso, así que la trazabilidad no depende de copiar y pegar.",
+      "Cuando una prueba falla, lo más rápido es crear el defecto desde su resultado. «Desde un resultado» lista los intentos que no pasaron en los runs del proyecto, con su run y, si el resultado está vinculado a un caso, su clave y su título («clave · título»; si no, la ruta del test), y se buscan por run, caso o test (en este ejemplo, «con capturas» deja la prueba automática de acceso del informe JUnit importado en el capítulo 10). Al elegir uno, el editor se rellena con el error y el defecto queda vinculado a ese resultado y a su caso, así que la trazabilidad no depende de copiar y pegar.",
     covers: ["dialogs:src/modules/defects/ui/ResultPickerDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -166,13 +182,18 @@ chapter("defectos", () => {
       await clickButton(F.fromResult);
       await expect(dialog()).toBeDisplayed();
       await expect($(D).$(`button*=${F.results.choose}`)).toBeDisplayed();
+      // The JUnit with captures (PH-001), not the dataset row that also failed.
+      await $(D).$("input").setValue("con capturas");
+      await browser.waitUntil(async () => (await $(D).$$(`button*=${F.results.choose}`)).length === 1, {
+        timeoutMsg: "the search did not leave the access test alone",
+      });
     },
   });
 
   step("prerrellenado", {
     title: "Prerrellenado desde el resultado",
     caption:
-      "El aviso azul de arriba indica de qué resultado nace el defecto. Revisa el título y la severidad que propone y guarda. En este ejemplo, Liomar lo titula «Entrar con credenciales válidas muestra “Correo o contraseña incorrectos”» y lo marca como crítico: nadie puede entrar en la aplicación.",
+      "El aviso azul de arriba indica de qué resultado nace el defecto, y el editor llega ya relleno: más abajo, en «Reproducción», trae el error como resultado obtenido y, como esperado, el del paso que falló o, si no tiene, el del caso. Revisa el título y la severidad que propone y guarda. En este ejemplo, Liomar lo titula «" + LOGIN_BUG + "» y lo marca como crítico: con credenciales válidas, la cuenta de prueba de PH-001 no puede entrar, y lo mismo pasa con la tercera cuenta del dataset de PH-005; el acceso falla para parte de las cuentas.",
     focus: ".df-banner",
     run: async () => {
       await $(D).$(`button*=${F.results.choose}`).click();
@@ -180,6 +201,11 @@ chapter("defectos", () => {
       await (await field(F.field.title)).setValue(LOGIN_BUG);
       await selectOption(F.field.severity, F.severity.critical);
       await selectOption(F.field.priority, F.priority.critical);
+      // The page from its top: the project head, the banner and the title.
+      await browser.execute(() => {
+        const content = document.querySelector(".app-shell__content");
+        if (content) content.scrollTop = 0;
+      });
     },
   });
 
@@ -253,15 +279,17 @@ chapter("defectos", () => {
   step("otros", {
     title: "Rechazar o aplazar un defecto",
     caption:
-      "Al soltar un defecto en «Otros», Pharos pregunta a qué estado pasa: «Rechazado» pide la resolución (duplicado, no reproducible, no se corregirá, funciona según el diseño…) y «Aplazado» lo deja abierto para más adelante. Al soltarlo en «Cerrado», pide la resolución y, si quieres, la build en la que se corrigió, para saber desde qué versión volver a probar. En este ejemplo, Liomar aplaza el del menú lateral a la 0.4.0: es molesto, pero no bloquea la entrega.",
+      "Al soltar un defecto en «Otros», Pharos pregunta a qué estado pasa: «Rechazado» pide la resolución (duplicado, no reproducible, no se corregirá, funciona según el diseño…) y «Aplazado» lo deja abierto para más adelante. Al soltarlo en «Cerrado», pide la resolución y, si quieres, la build en la que se corrigió, para saber desde qué versión volver a probar. En este ejemplo, Liomar aplaza el del menú lateral a la versión siguiente: es molesto, pero no bloquea la entrega.",
     covers: ["dialogs:src/modules/defects/ui/TransitionDialog.tsx"],
     shot: { element: D },
     run: async () => {
       await keyboardDrag(handleOf(PREFIX_BUG), { until: tf("defects.board.drag.over", { defect: PREFIX_BUG, column: F.status.other }) });
       await expect(dialog()).toBeDisplayed();
+      // Liomar's choice, in the picture.
+      await $(D).$(`label*=${F.status.deferred}`).click();
+      await expect($(D).$(`label*=${F.status.deferred}`).$("input")).toBeSelected();
     },
     after: async () => {
-      await $(D).$(`label*=${F.status.deferred}`).click();
       await clickButton(F.resolutionDialog.confirm, D);
       await $(".cd-overlay").waitForExist({ reverse: true });
     },
@@ -287,7 +315,8 @@ chapter("defectos", () => {
 
   step("eliminado", {
     title: "Defecto eliminado",
-    caption: "Al confirmar, el defecto desaparece de la lista. Si no se pudiera eliminar, un aviso lo dice y el defecto sigue ahí.",
+    caption:
+      "Al confirmar, el defecto desaparece de la lista y pasa a la Papelera (Administración › General, capítulo 15): desde allí se restaura, sin sus adjuntos, mientras dure la retención. Si no se pudiera eliminar, un aviso lo dice y el defecto sigue ahí.",
     shot: false,
     run: async () => {
       await acceptConfirm();
@@ -300,16 +329,25 @@ chapter("defectos", () => {
   step("escape", {
     title: "Un defecto que se escapó de las pruebas",
     caption:
-      "Si el defecto se encontró fuera de las pruebas, por ejemplo en producción o en una demostración, marca «Encontrado fuera de las pruebas (escape)» en «Detalles». Cuenta como escape del último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo dejó pasar, y la recogen la tendencia de ciclos del Inicio (capítulo 3) y el informe de go/no-go (capítulo 9). En este ejemplo, un usuario de la beta avisa de que el enlace del correo de bienvenida abre la versión anterior, y Liomar lo registra como escape.",
+      `Si el defecto se encontró fuera de las pruebas, por ejemplo en producción o en una demostración, marca «Encontrado fuera de las pruebas» en «Dónde se encontró». Cuenta como escape del último ciclo cerrado antes de darlo de alta: es la señal de lo que ese ciclo dejó pasar, y la recogen la tendencia de ciclos del Inicio (capítulo 3) y el informe de go/no-go (capítulo 9). En este ejemplo, un usuario de la beta avisa de que el enlace del correo de bienvenida abre la versión anterior, y Liomar lo registra como escape, con lo que vio el usuario y la build y el entorno de la beta. Como la «Regresión 0.6.0» aún no se ha cerrado (se cierra al final de la historia, capítulo 9), este escape no cuenta para ningún ciclo.`,
     focus: ".df-escaped",
     run: async () => {
       await clickButton(F.newDefect);
       await (await field(F.field.title)).setValue(ESCAPE);
       await selectOption(F.field.severity, F.severity.minor);
+      await (await field(F.field.expected)).setValue(`El enlace abre Pharos ${RELEASE.build}.`);
+      await (await field(F.field.actual)).setValue("El enlace «Abrir Pharos» del correo de bienvenida abre la versión 0.5.0.");
+      await (await field(F.field.foundInBuild)).setValue(RELEASE.build);
+      await (await field(F.field.foundInEnvironment)).setValue("beta pública");
       const escaped = byTestId("defect-escaped");
-      await escaped.scrollIntoView({ block: "center" });
       await escaped.click();
       await expect(escaped).toBeSelected();
+      // From the title down to the escape mark: the reader sees which defect.
+      await $(".df-escaped").scrollIntoView({ block: "end" });
+      await browser.execute(() => {
+        const content = document.querySelector(".app-shell__content");
+        if (content) content.scrollTop += 24;
+      });
     },
     after: async () => {
       await save();
@@ -320,8 +358,8 @@ chapter("defectos", () => {
   step("reabrir", {
     title: "Corregir, confirmar y reabrir",
     caption:
-      "El camino de un defecto corregido, en el tablero o con el campo «Estado» del editor (que solo ofrece los estados siguientes): «En curso» mientras se arregla, «Corregido» cuando el equipo de desarrollo lo da por resuelto y «Por confirmar» mientras QA vuelve a probarlo. Si la prueba pasa, va a «Cerrado»; si no, se reabre: vuelve a «Abierto» desde «Por confirmar» (o desde «Cerrado»). Pharos apunta la primera vez que llega a «Corregido» y cuántas veces se reabre, y con eso calcula el tiempo de corrección y la reapertura de cada ciclo (capítulos 3 y 9). En este ejemplo, Liomar comprueba el arreglo del enlace, sigue abriendo la versión anterior y lo reabre.",
-    focus: 'section.df-col[data-column="open"]',
+      "El camino de un defecto corregido, en el tablero o con el campo «Estado» del editor (que solo ofrece los estados siguientes): «En curso» mientras se arregla, «Corregido» cuando el equipo de desarrollo lo da por resuelto y «Por confirmar» mientras QA vuelve a probarlo. Si la prueba pasa, va a «Cerrado»; si no, se reabre: vuelve a «Abierto» desde «Por confirmar» (o desde «Cerrado»). Pharos apunta la primera vez que llega a «Corregido» y cuántas veces se reabre, y con eso calcula el tiempo de corrección y la reapertura de cada ciclo (capítulos 3 y 9). En este ejemplo, Liomar lleva el defecto del enlace por esos estados desde el editor; al volver a probarlo, el enlace sigue abriendo la versión anterior, así que lo reabre y en el tablero está otra vez en «Abierto».",
+    focus: 'section.df-col[data-column="open"] article.df-card',
     run: async () => {
       // Through the editor's «Estado», which offers only the next states: the
       // same lifecycle as the board, one save per change.

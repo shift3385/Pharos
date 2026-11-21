@@ -10,6 +10,7 @@ import { Select } from "@shared/ui/Select";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { TextArea } from "@shared/ui/TextArea";
 import { useToast } from "@shared/ui/Toast";
+import { WholeKeys } from "@shared/ui/WholeKeys";
 import "@shared/ui/buttons.css";
 import { baselineApi } from "../api/baselineApi";
 import {
@@ -287,14 +288,17 @@ function CreateBaselineDialog({
         ) : (
           left.length > 0 && (
             <Alert kind="warning" role="note">
-              {t("testCase.baselines.leftOut", {
-                count: left.length,
-                kept: kept.length,
-                keys: left
-                  .slice(0, 8)
-                  .map((c) => c.scenarioId)
-                  .join(", ") + (left.length > 8 ? "…" : ""),
-              })}
+              <WholeKeys
+                text={t("testCase.baselines.leftOut", {
+                  count: left.length,
+                  kept: kept.length,
+                  keys:
+                    left
+                      .slice(0, 8)
+                      .map((c) => c.scenarioId)
+                      .join(", ") + (left.length > 8 ? "…" : ""),
+                })}
+              />
             </Alert>
           )
         )}
@@ -376,7 +380,7 @@ function BaselineCompare({
       <div className="bl-head">
         <button type="button" className="ui-btn ui-btn--ghost" onClick={onBack}>
           <ArrowLeft size={16} aria-hidden="true" />
-          {t("testCase.baselines.title")}
+          {t("testCase.baselines.open")}
         </button>
         <h2 id="bl-cmp-title" className="bl-title">
           {t("testCase.baselines.compareTitle")}

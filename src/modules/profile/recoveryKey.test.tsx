@@ -30,6 +30,16 @@ describe("recovery key export (SEC-03)", () => {
     vi.mocked(recoveryKeyApi.markShown).mockReturnValue("2026-10-29T10:00:00Z");
   });
 
+  it("says it in one line and keeps the whole explanation behind the «?» (FIX-49)", () => {
+    renderWithProviders(<RecoveryKeySection />);
+    expect(
+      screen.getByText("La base de datos de este equipo está cifrada."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/almacén de credenciales/).closest(".infotip__bubble"),
+    ).not.toBeNull();
+  });
+
   it("asks before revealing, shows the key once and forgets it on close", async () => {
     const user = userEvent.setup();
     renderWithProviders(<RecoveryKeySection />);

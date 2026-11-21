@@ -60,7 +60,8 @@ const cellText = (row: ExcelJS.Row, col: number): string => {
   const v = row.getCell(col).value;
   if (v === null || v === undefined) return "";
   // A date Excel recognised (a milestone retyped in Excel): its ISO day.
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  // ExcelJS reads it as UTC midnight of the day typed, so its UTC day is that day.
+  if (v instanceof Date) return v.toISOString().slice(0, 10); // utc-day-ok
   if (typeof v === "object" && "richText" in v) return v.richText.map((r) => r.text).join("").trim();
   if (typeof v === "object" && "text" in v) return String(v.text).trim();
   return String(v).trim();

@@ -89,11 +89,22 @@ beforeEach(async () => {
 });
 
 describe("DefectEditor · links and evidence (MAN-03)", () => {
-  it("explains severity right under its own field (NC-051)", async () => {
+  it("explains severity, priority and escape behind a «?» each, still announced by the control (FIX-44)", async () => {
     render();
     const severity = await screen.findByRole("combobox", { name: /Severidad/ });
     expect(severity).toHaveAccessibleDescription("Impacto en el sistema. La prioridad es la urgencia del arreglo.");
-    expect(severity.closest("label")).toHaveTextContent("Impacto en el sistema");
+    const priority = screen.getByRole("combobox", { name: /Prioridad/ });
+    expect(priority).toHaveAccessibleDescription("Urgencia del arreglo. La severidad es el impacto en el sistema.");
+    expect(screen.getByRole("button", { name: /Severidad/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Prioridad/ })).toBeInTheDocument();
+    expect(screen.getByTestId("defect-escaped")).toHaveAccessibleDescription(/Por ejemplo, en producción/);
+    // No standing hint under the fields any more.
+    expect(document.querySelector(".tp-field__hint")?.textContent ?? "").not.toMatch(/Impacto en el sistema/);
+  });
+
+  it("writes an evidence size in the reader's language, never with a decimal point (FIX-44)", async () => {
+    render();
+    expect(await screen.findByText("2 KB")).toBeInTheDocument();
   });
 
   it("puts the external tracking help behind a «?» that both fields announce (FIX-37)", async () => {

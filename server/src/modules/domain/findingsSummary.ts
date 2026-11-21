@@ -20,6 +20,9 @@ export interface ToolFindings {
   runId: string;
   runKey: string;
   open: FindingSeverityCounts;
+  /** Whether the tool has a previous run to compare with: without one «new»
+   *  does not apply (FIX-48). */
+  compared: boolean;
   new: number;
   triaged: number;
   review: number;
@@ -154,6 +157,7 @@ export function findingsSummary(input: FindingsInput, runs: SummaryRun[]): Findi
         runId: run.id,
         runKey: run.runKey,
         open: zero(),
+        compared: previous !== null,
         new: 0,
         triaged: 0,
         review: 0,

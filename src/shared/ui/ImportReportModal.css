@@ -20,8 +20,11 @@
   color: var(--color-text-secondary);
 }
 .imp__list {
+  /* No browser gutter before the marks (FIX-46). */
+  margin: 0;
+  padding-left: 0;
   list-style: none;
-  max-height: 320px;
+  max-height: min(52vh, 460px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -30,9 +33,9 @@
 }
 .imp__row {
   display: grid;
-  grid-template-columns: 18px 1fr 1.2fr;
+  grid-template-columns: 18px minmax(0, 1fr) minmax(0, 1.4fr);
   gap: var(--space-2);
-  align-items: baseline;
+  align-items: start;
   padding: var(--space-1) 0;
   border-bottom: 1px solid var(--color-border);
   font-size: var(--fs-caption);
@@ -47,11 +50,13 @@
 .imp__label {
   color: var(--color-text-primary);
 }
+/* A value wraps on as many lines as it needs, never cut (FIX-46 cut it at
+   one line, then at two: «…de gestión de pruebas que…», FIX-49). The list
+   scrolls, and its lower edge fades when more rows follow. */
 .imp__value {
+  min-width: 0;
+  overflow-wrap: break-word;
   color: var(--color-text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .imp__row[data-status="notFound"] .imp__value {
   color: var(--color-text-muted);

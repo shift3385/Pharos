@@ -158,7 +158,7 @@ describe("Trazabilidad (RED-V3)", () => {
     // FIX-42: the notes get a readable minimum and wrap instead of ending in «Defect…».
     expect(tracks).toContain("minmax(112px,1fr)");
     expect(tracks).not.toContain("minmax(0,0.8fr)");
-    const titles = table.querySelectorAll(".tz-clamp");
+    const titles = table.querySelectorAll(".tz-title");
     expect(titles.length).toBeGreaterThan(0);
     titles.forEach((title) => expect(title).toHaveAttribute("title", title.textContent ?? ""));
     const notes = table.querySelectorAll(".tz-notes");
@@ -211,6 +211,26 @@ describe("Trazabilidad (RED-V3)", () => {
     expect(notes).not.toMatch(/text-overflow|nowrap/);
   });
 
+  it("the note of a design item has the whole row under the file (FIX-49)", () => {
+    const css = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "Traceability.css"),
+      "utf8",
+    ).replace(/\/\*[\s\S]*?\*\//g, "");
+    const block = (selector: string) => {
+      const at = css.indexOf(`\n${selector} {`);
+      expect(at, selector).toBeGreaterThan(-1);
+      return css.slice(at, css.indexOf("}", at));
+    };
+    expect(block(".tr-design__item")).toMatch(
+      /grid-template-columns:\s*minmax\(0, 1fr\) auto;/,
+    );
+    expect(block(".tr-design__note")).toMatch(/grid-column:\s*1 \/ -1/);
+    // The filters' «?» sits in the card's corner, never alone on a row of its own.
+    expect(block(".tz-filters__help")).toMatch(/position:\s*absolute/);
+    // Each equation of the weighted coverage on a line of its own, whole.
+    expect(block(".tz-weighted-tip__eq")).toMatch(/white-space:\s*nowrap/);
+  });
+
   it("«Mostrar solo huecos» counts and keeps only the uncovered requirements", async () => {
     setViewportWidth(1440);
     renderWithProviders(<TraceabilityPage projectId="p1" projectName="Portal" />);
@@ -252,7 +272,7 @@ describe("Trazabilidad (RED-V3)", () => {
     const dialog = screen.getByRole("alertdialog");
     await userEvent.keyboard("{Escape}");
     expect(dialog).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole("button", { name: "Eliminar" }));
+    await userEvent.click(within(dialog).getByRole("button", { name: "Sí, eliminar" }));
     await waitFor(() => expect(remove).toHaveBeenCalledWith("REQ-047", expect.any(String)));
   });
 
@@ -303,6 +323,22 @@ describe("Requisitos and Trazabilidad as two sections (UX-21)", () => {
     expect(screen.queryByRole("table", { name: "Matriz de trazabilidad" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Requisitos 3" })).not.toBeInTheDocument();
     expect(summary).not.toHaveBeenCalled();
+  });
+
+  it("the list shows what a sync brought or merged at once (FIX-48)", async () => {
+    setViewportWidth(1440);
+    renderWithProviders(<RequirementsPage projectId="p1" projectName="Portal" />);
+    const table = await screen.findByRole("table", { name: "Requisitos" });
+    expect(within(table).queryByText(/Si cambian el mismo campo/)).not.toBeInTheDocument();
+    // The other device's description, merged into this device's copy.
+    list.mockResolvedValue([
+      { ...req("REQ-031", "Pago con tarjeta guardada con el servidor", "high"), description: "Si cambian el mismo campo, Pharos pregunta cuál queda." },
+      req("REQ-047", "Exportar historial a CSV", "low"),
+      req("REQ-051", "Notificación de pago", "high"),
+    ]);
+    window.dispatchEvent(new CustomEvent("pharos:synced"));
+    expect(await within(table).findByText(/Si cambian el mismo campo/)).toBeInTheDocument();
+    expect(within(table).getByRole("button", { name: /con el servidor/ })).toBeInTheDocument();
   });
 
   it("«Trazabilidad» has the matrix and its export, and no requirement form", async () => {

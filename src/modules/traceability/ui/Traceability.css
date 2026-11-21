@@ -89,6 +89,13 @@
 .tr-table-wrap--matrix {
   max-height: none;
 }
+/* The import preview shows its few rows whole, no scroll of its own: the
+   rest are counted below it («…y 3 filas más», FIX-44). */
+.tr-table-wrap.tr-table-wrap--preview {
+  max-height: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
 .tr-table .tr-key,
 .tr-table .tr-mono {
   white-space: nowrap;
@@ -121,6 +128,10 @@
   display: flex;
   gap: var(--space-2);
   align-items: flex-start;
+}
+/* The app's checkbox (brand colour), not the browser's blue (FIX-44). */
+.tr-gen__check input {
+  accent-color: var(--color-navy-500);
 }
 .tr-gen__check > span {
   display: flex;
@@ -222,8 +233,10 @@
   border-radius: 10px;
 }
 
+/* An active filter, in the brand colour: red read as an error (FIX-44). */
 .tz-gaps-toggle[data-on] {
-  border-color: var(--color-error);
+  border-color: var(--color-navy-500);
+  box-shadow: inset 0 0 0 1px var(--color-navy-500);
 }
 
 .tz-caselink {
@@ -334,16 +347,24 @@
   hyphens: auto;
 }
 
-/* Matrix titles (NC-053): up to two lines before the ellipsis, so a title
-   reads whole at desktop widths; the full text stays in the tooltip. */
-.tz-clamp {
+/* Matrix titles: they wrap whole, never cut with «…» (FIX-44: a two-line
+   clamp hid «…desde un resultado fallido»); the tooltip keeps the text. */
+.tz-title {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+/* A requirement's description in «Requisitos»: up to two lines before the
+   «…» (FIX-44: one line cut it mid-word); the tooltip keeps the text. */
+.tz-desc {
   min-width: 0;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .tz-muted {
@@ -358,6 +379,17 @@
 .tz-ai {
   max-width: 100%;
   color: var(--color-navy-500);
+}
+
+/* In a matrix cell the button wraps its words when the column is narrower
+   than its label, instead of spilling into the next column and widening
+   the table past the panel (FIX-44: a horizontal scrollbar). */
+.tz-matrix .tz-ai {
+  height: auto;
+  min-height: 34px;
+  padding-block: 4px;
+  white-space: normal;
+  text-align: left;
 }
 
 .tz-danger {
@@ -643,12 +675,17 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: min(160px, 100%);
+  min-width: min(150px, 100%);
   max-width: 280px;
   flex: 1 1 140px;
   font-size: 12px;
   font-weight: var(--fw-medium);
   color: var(--color-text-secondary);
+}
+
+.tz-filter.tz-filter--wide {
+  flex: 3 1 240px;
+  max-width: 440px;
 }
 
 .tz-filter select,
@@ -675,11 +712,20 @@
   align-self: flex-end;
 }
 
-/* The filters' help behind a «?», level with the fields (FIX-37). */
+/* The filters' help behind a «?» (FIX-37), in the card's top-right corner,
+   level with the labels: in the row it wrapped alone onto a second line
+   when «Quitar filtros» appeared, leaving an empty band (FIX-49). */
+.tz-filters {
+  position: relative;
+  padding-right: 40px;
+}
+
 .tz-filters__help {
+  position: absolute;
+  top: 8px;
+  right: 10px;
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
 }
 
 .tz-result {
@@ -941,9 +987,12 @@
   display: flex;
   flex-direction: column;
 }
+/* The note takes its own row under the file, the whole width of the list
+   (FIX-49): beside the name, a 14rem field cut «campana y panel de
+   notificaci…» mid-word. */
 .tr-design__item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 14rem) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--space-2);
   align-items: center;
   padding: var(--space-2) 0;
@@ -975,26 +1024,17 @@
 }
 .tr-design__note {
   min-width: 0;
+  grid-column: 1 / -1;
 }
 .tr-design__remove {
   min-width: 2rem;
+  grid-row: 1;
+  grid-column: 2;
 }
 .tr-design__context {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-}
-@media (max-width: 599px) {
-  .tr-design__item {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-  .tr-design__note {
-    grid-column: 1 / -1;
-  }
-  .tr-design__remove {
-    grid-row: 1;
-    grid-column: 2;
-  }
 }
 .tr-design__source {
   display: inline-flex;
@@ -1152,6 +1192,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+.tz-weighted-tip__eq {
+  display: block;
+  white-space: nowrap;
+}
+
 /* On a card, as the KPIs above it (FIX-37): over the background image the
    strip was drawn on the photo and «Bajo 0/0» vanished in the beam. */
 .tz-bands {
@@ -1215,4 +1260,46 @@
 .tz-bands__count {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* «Importar»: an option that needs the AI stays readable while it is off
+   (FIX-44: the shared 50 % fade left its name and reason near 2:1). The
+   icon and the cursor say it is unavailable; the words keep their contrast. */
+.tr-io .menu__item:disabled {
+  opacity: 1;
+  color: var(--color-text-secondary);
+}
+.tr-io .menu__item:disabled .menu__icon {
+  opacity: 0.5;
+}
+
+/* The fields of the AI dialogs («Requisitos desde un proyecto», «desde
+   diseños») in the app's field look and body font, not the browser's
+   black-bordered input and monospace textarea (FIX-44). */
+.tz-scan__field input,
+.tz-scan__field textarea,
+.tr-design__note,
+.tr-design__context textarea {
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  font-size: var(--fs-ui);
+  color: var(--color-text-primary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+}
+.tz-scan__field input:focus,
+.tz-scan__field textarea:focus,
+.tr-design__note:focus,
+.tr-design__context textarea:focus {
+  outline: none;
+  border-color: var(--color-navy-500);
+  box-shadow: 0 0 0 2px var(--color-focus);
+}
+.tz-scan__group input[type="checkbox"],
+.tz-prop input[type="checkbox"],
+.tr-table input[type="checkbox"] {
+  accent-color: var(--color-navy-500);
 }

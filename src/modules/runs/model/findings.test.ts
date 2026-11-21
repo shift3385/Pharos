@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
+import i18n from "@shared/i18n";
 import type { FindingView, MetricView } from "@shared/contracts/contract";
 import {
+  aggregationLabel,
+  scopeLabel,
   formatMetric,
+  formatThreshold,
   groupByRule,
   keyMetrics,
   openBySeverity,
@@ -139,6 +143,25 @@ describe("findings model (F4)", () => {
     );
   });
 
+  it("writes a threshold in its value's form, for every k6 operator (FIX-48)", () => {
+    const rate = (threshold: string) =>
+      formatThreshold(metric({ aggregation: "rate", unit: "ratio", threshold }), "es");
+    expect(rate("rate<0.01")).toBe("< 1 %");
+    expect(rate("rate <= 0.015")).toBe("≤ 1,5 %");
+    expect(rate("rate>0.95")).toBe("> 95 %");
+    expect(rate("rate>=0.99")).toBe("≥ 99 %");
+    expect(rate("rate==0")).toBe("= 0 %");
+    expect(rate("rate===1")).toBe("= 100 %");
+    expect(rate("rate!=0")).toBe("≠ 0 %");
+    // A duration, with or without spaces and parentheses, in either language.
+    expect(formatThreshold(metric({ aggregation: "p95", threshold: "p(95) < 500" }), "es")).toBe("< 500 ms");
+    expect(formatThreshold(metric({ aggregation: "p(99)", threshold: "p(99)<1500" }), "en")).toBe("< 1.5 s");
+    expect(formatThreshold(metric({ aggregation: "count", unit: "count", threshold: "count>=10000" }), "es")).toBe("≥ 10.000");
+    // Another aggregation than the metric's, or something unreadable: as written.
+    expect(formatThreshold(metric({ aggregation: "count", unit: "count", threshold: "rate>10" }), "es")).toBe("rate>10");
+    expect(formatThreshold(metric({ aggregation: "rate", unit: "ratio", threshold: "rate<0.01 && x" }), "es")).toBe("rate<0.01 && x");
+  });
+
   it("shows thresholds and each metric's summary first, checks apart", () => {
     const ms = [
       metric({ id: "1", aggregation: "avg" }),
@@ -170,5 +193,25 @@ describe("findings model (F4)", () => {
       1,
       ["2"],
     ]);
+  });
+});
+
+describe("aggregation and scope labels (FIX-51)", () => {
+  const es = i18n.getFixedT("es");
+  const en = i18n.getFixedT("en");
+
+  it("say k6's tags as a reader does", () => {
+    expect(scopeLabel("case:PH-001", es)).toBe("Caso PH-001");
+    expect(scopeLabel("expected_response:true", es)).toBe("Respuestas esperadas");
+    expect(scopeLabel("expected_response:true", en)).toBe("Expected responses");
+    expect(scopeLabel("scenario:login,method:GET", es)).toBe("Escenario: login · Método: GET");
+    expect(scopeLabel("mytag:x", es)).toBe("mytag: x");
+    expect(scopeLabel(null, es)).toBe("");
+  });
+
+  it("say the aggregation in the user's language", () => {
+    expect(aggregationLabel("rate", es)).toBe("tasa");
+    expect(aggregationLabel("p95", es)).toBe("p95");
+    expect(aggregationLabel(null, es)).toBe("");
   });
 });

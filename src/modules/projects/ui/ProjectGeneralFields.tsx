@@ -79,15 +79,17 @@ export function ProjectGeneralFields({
           id={`${idPrefix}-prefix`}
           label={t("projects.caseIdPrefix")}
           issue={prefixIssue}
+          // The help is behind «?» (FIX-45): a standing paragraph under the
+          // field broke its sample key across lines; the preview below shows
+          // the keys of the prefix typed.
+          info={prefixHint}
           hint={
             !prefixIssue && prefixFree ? (
               <span className="pj-free">
                 <Check size={14} aria-hidden="true" />
                 {t("projects.prefix.free")}
               </span>
-            ) : (
-              prefixHint
-            )
+            ) : undefined
           }
         >
           {(p) => (

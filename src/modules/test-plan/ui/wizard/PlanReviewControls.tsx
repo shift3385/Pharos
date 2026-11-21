@@ -17,12 +17,16 @@ import {
 } from "../../model/review";
 import type { TestPlan } from "../../model/types";
 
+/** The date and time of a review step, kept whole on one line: in the narrow
+ *  state card «20 / nov 2026, 17:17» broke across lines (FIX-49). */
 function stamp(iso: string | undefined, lang: string): string {
   if (!iso) return "";
   const d = new Date(iso);
   return Number.isNaN(d.getTime())
     ? iso
-    : new Intl.DateTimeFormat(lang, { dateStyle: "medium", timeStyle: "short" }).format(d);
+    : new Intl.DateTimeFormat(lang, { dateStyle: "medium", timeStyle: "short" })
+        .format(d)
+        .replace(/\s/g, "\u00a0");
 }
 
 /**
@@ -226,7 +230,7 @@ export function PlanReviewControls({
           onConfirm={() => void run("send")}
           onCancel={() => setOpen(null)}
         >
-          <label className="tpw-review__field" htmlFor={commentId}>
+          <label className="tp-field tpw-review__field" htmlFor={commentId}>
             <span>{t("testPlan.review.noteLabel")}</span>
             <TextArea id={commentId} size="short" value={comment} onChange={(e) => setComment(e.target.value)} />
           </label>
@@ -241,7 +245,7 @@ export function PlanReviewControls({
           onConfirm={() => void run("return")}
           onCancel={() => setOpen(null)}
         >
-          <label className="tpw-review__field" htmlFor={commentId}>
+          <label className="tp-field tpw-review__field" htmlFor={commentId}>
             <span>{t("testPlan.review.commentLabel")}</span>
             <TextArea
               id={commentId}

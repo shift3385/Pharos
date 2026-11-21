@@ -27,36 +27,34 @@ Un ciclo pasa por tres estados: **Planificado**, **Activo** y **Cerrado**. Un
 ciclo cerrado no admite cambios ni ejecuciones hasta que se reabre (editarlo y
 cambiar su estado).
 
+En este manual, Liomar prepara la «Regresión 0.6.0» de Pharos, la del plan
+«Plan de pruebas de Pharos 0.6.0» (capítulo 5):
+
+- **Build y entorno:** 0.6.0-beta.1, en staging.
+- **Fechas:** las del Sprint 1 del plan.
+- **Configuraciones:** Chrome y Edge.
+- **Casos:** PH-001 y PH-002, añadidos a mano. El filtro de prioridad alta
+  solo encuentra PH-001, que ya está en el ciclo, así que no añade nada.
+
+El capítulo sigue el ciclo de principio a fin: lo crea, lo ejecuta y, más
+adelante en la historia, lo cierra.
+
 ## Cerrar un ciclo: el quality gate
 
-Un ciclo se cierra con **«Cerrar ciclo…»**, nunca desde «Editar». Cerrar es
-una decisión: ¿la versión puede salir? Pharos evalúa los **criterios de
-salida** del plan (capítulo 5) con los resultados del ciclo y te pide lo que
-falte:
+Los pasos del final del capítulo muestran el cierre. Además:
 
-- **Un criterio obligatorio que no se cumple**, o que no tiene datos para
-  medirse, pide una **justificación** de al menos 20 caracteres: por qué se
-  acepta el riesgo, quién lo asume y cuándo se resuelve.
-- **Un criterio manual** (por ejemplo, «Visto bueno del PO») se marca a mano:
-  «Cumple» o «No cumple».
 - **Un criterio orientativo** se muestra y queda en el informe, pero no
   bloquea.
-- **El veredicto.** Si todo lo obligatorio se cumple, es **Go**. Si algo
-  falla, eliges **Go con riesgos** (el ciclo se cierra y la versión puede
-  salir, con los riesgos justificados) o **No-go** (el ciclo se cierra, pero la
-  versión no sale: abre otro ciclo para repetir la prueba).
-
-Al cerrar, Pharos guarda la decisión con las cifras de ese momento,
-congeladas, y quién la tomó y cuándo (queda en Auditoría). El ciclo muestra su
-veredicto junto al estado. Su **informe de estado** empieza por «Decisión de
-salida»: cada criterio con su valor y su justificación, y las métricas del
-ciclo frente al ciclo cerrado anterior (tasa de éxito, densidad de defectos,
-escapes, tiempo de corrección, reapertura y flaky). También sale en la hoja
-«Decisión» del Excel y en el PDF. Inicio lo suma a «Tendencia de ciclos»
-(capítulo 3).
-
-Si reabres un ciclo y lo vuelves a cerrar, se guarda un cierre nuevo; los
-anteriores no se pierden.
+- **Go con riesgos** cierra el ciclo y deja salir la versión con los riesgos
+  justificados; **No-go** lo cierra sin que la versión salga: abre otro ciclo
+  para repetir la prueba.
+- La decisión queda con las cifras de ese momento, congeladas, y quién la
+  tomó y cuándo (Auditoría). Sale también en la hoja «Decisión» del Excel y
+  en el PDF del informe de estado, que compara las métricas del ciclo
+  (tasa de éxito, densidad de defectos, escapes, tiempo de corrección,
+  reapertura y flaky) con las del ciclo cerrado anterior.
+- Si reabres un ciclo y lo vuelves a cerrar, se guarda un cierre nuevo; los
+  anteriores no se pierden.
 
 ## El informe de cierre
 
@@ -77,32 +75,19 @@ proyecto y la clave del ciclo). Tiene once apartados:
    flaky o de una revisión anterior, más tus comentarios.
 6. **Medidas de prueba:** las métricas congeladas al cerrar, frente al ciclo
    anterior y al objetivo del plan (capítulo 5), y si se alcanza.
-7. **Riesgos residuales:** los defectos del ciclo que siguen abiertos hoy y
-   los requisitos sin cubrir o sin pasar, del riesgo más alto al más bajo.
+7. **Riesgos residuales:** los defectos del ciclo que siguen abiertos hoy,
+   los hallazgos abiertos y los umbrales de rendimiento incumplidos de los
+   runs del ciclo (capítulo 10), y los requisitos sin cubrir o que fallan en
+   el ciclo, del riesgo más alto al más bajo.
 8. **Entregables:** los que guarda Pharos y los del plan, que marcas como
    entregados.
 9. **Activos reutilizables:** casos, configuraciones y datos de prueba.
 10. **Lecciones aprendidas.**
 11. **Aprobación.**
 
-«Guardar» deja los textos y las marcas en el ciclo: se sincronizan con los
-demás equipos y quedan en Auditoría. Con todo guardado, **«Aprobar
-informe»** pide confirmación y registra tu nombre y la fecha. Si después
-cambias un texto y guardas, el informe pierde la aprobación. Si reabres el
-ciclo y lo vuelves a cerrar, el informe sigue al cierre nuevo: conserva los
-textos, pero hay que guardarlo y aprobarlo otra vez.
-
 «Exportar PDF» y «Exportar .xlsx» lo guardan en Descargas. El Excel trae el
 informe completo y las hojas «Decisión», «Medidas», «Riesgos residuales»,
 «Entregables» y «Casos».
-
-En este manual, Liomar prepara la «Regresión 0.3.0» de Pharos:
-
-- **Build y entorno:** 0.3.0-rc1, en staging.
-- **Fechas:** del 9 al 20 de noviembre.
-- **Configuraciones:** Chrome y Edge.
-- **Casos:** dos añadidos a mano y los de prioridad alta, añadidos por
-  filtro.
 
 ## Atajos de teclado
 
@@ -134,7 +119,7 @@ En este manual, Liomar prepara la «Regresión 0.3.0» de Pharos:
   «Ejecutar».
 - **«N configuraciones aún no han llegado a este equipo y se saltaron.»**
   Sincroniza y vuelve a ejecutar para crear sus runs.
-- **«No aprobado» en un elemento.** El caso está en borrador o revisado. Se
+- **«No aprobado» en un elemento.** El caso está en borrador o en revisión. Se
   ejecuta igual, pero conviene aprobarlo antes (capítulo 8).
 - **«No se pudieron cargar los ciclos.»** Pulsa «Reintentar».
 - **«Este ciclo ya no existe.»** Se eliminó, quizá en otro equipo. Vuelve a la
@@ -167,6 +152,11 @@ En este manual, Liomar prepara la «Regresión 0.3.0» de Pharos:
 - Aprueba los casos antes de añadirlos: el ciclo avisa de los que no lo están.
 - «Clonar» prepara la siguiente ronda con los mismos elementos y sin
   resultados.
+- Un ciclo eliminado va a la Papelera (Administración › General, capítulo
+  15) y se restaura mientras dure la retención; sus runs siguen en
+  «Ejecuciones».
+- Cerrar un ciclo avisa en las notificaciones del equipo y a los webhooks
+  del proyecto (capítulo 21).
 - Al importar un informe de la automatización (capítulo 10), elige el ciclo:
   sus resultados cuentan en el progreso sin editar nada después.
 - «Informe de estado», en la cabecera del ciclo, resume esa ronda (progreso
@@ -181,3 +171,14 @@ En este manual, Liomar prepara la «Regresión 0.3.0» de Pharos:
 - [Guía de pruebas de la beta](../guia-beta.md), apartado 4.4c.
 - [Glosario](../GLOSARIO.md), sección «Execution model identifiers»: ciclo,
   elemento de ciclo, run, configuración.
+
+### Antes del paso ciclo-ejecutado
+
+**Más adelante en la historia.** Los pasos siguientes, desde «El ciclo,
+ejecutado», ocurren después de los capítulos 10 a 13: un ciclo se cierra
+cuando ya se ha ejecutado. Para entonces, Liomar ha importado el informe de la
+automatización en el ciclo (capítulo 10), ha registrado los resultados de
+Chrome y Edge como en el capítulo 11, ha abierto el defecto crítico del acceso
+(capítulo 12) y ha vinculado REQ-006 a PH-004 (capítulo 13), un requisito más
+que cuenta como cubierto. Con esas cifras, las que muestran las capturas,
+cierra el ciclo con **No-go**: la versión no sale hasta corregir el acceso.

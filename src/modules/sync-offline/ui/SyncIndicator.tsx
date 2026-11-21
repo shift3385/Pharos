@@ -33,6 +33,7 @@ export function SyncStatusProvider({ children }: { children: ReactNode }) {
   const { status: authStatus, user } = useAuth();
   const [pending, setPending] = useState(0);
   const [conflicts, setConflicts] = useState(0);
+  const [conflictsKnown, setConflictsKnown] = useState(false);
   const [orphans, setOrphans] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
   const [online, setOnline] = useState(
@@ -56,9 +57,11 @@ export function SyncStatusProvider({ children }: { children: ReactNode }) {
   const failures = useRef(new SyncFailureLog()).current;
 
   async function refresh() {
+    let read = false;
     const s: LocalSyncState = await syncLocalState()
       .then((state) => {
         failures.clear("state");
+        read = true;
         return state;
       })
       .catch((e: unknown) => {
@@ -67,6 +70,7 @@ export function SyncStatusProvider({ children }: { children: ReactNode }) {
       });
     setPending(s.pending);
     setConflicts(s.conflicts);
+    if (read) setConflictsKnown(true);
     setOrphans(s.orphans ?? 0);
   }
 
@@ -233,6 +237,7 @@ export function SyncStatusProvider({ children }: { children: ReactNode }) {
     label,
     title,
     conflicts,
+    conflictsKnown,
     pending,
     syncing,
     runSync: () => void runSync(),

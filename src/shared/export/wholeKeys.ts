@@ -3,7 +3,10 @@
 // cut into pieces, the keys marked, so the screen wraps them in a no-wrap
 // span and the PDF in a `noWrap` inline.
 
-const KEY = /[A-Za-z][A-Za-z0-9]*-\d+/g;
+// A key of one or more prefixes («PH-005», «TP-PH-0600») or a version with
+// its pre-release («0.6.0-beta.1»), without a sentence's closing full stop
+// (FIX-46).
+const KEY = /[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z][A-Za-z0-9]*)*-\d+|\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?/g;
 
 export interface TextPiece {
   text: string;

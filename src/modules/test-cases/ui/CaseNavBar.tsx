@@ -66,7 +66,7 @@ export function CaseNavBar({
             >
               <ChevronLeft size={16} aria-hidden="true" />
               <span className="sr-only">{t("testCase.nav.prev")}: </span>
-              <span className="tc-nav__key">{nav.prev?.scenarioId ?? "—"}</span>
+              {nav.prev && <span className="tc-nav__key">{nav.prev.scenarioId}</span>}
             </button>
             <span className="tc-nav__pos">{t("testCase.nav.position", { n: nav.position, total: nav.total })}</span>
             <button
@@ -77,7 +77,7 @@ export function CaseNavBar({
               onClick={() => nav.next && onGo(nav.next.id)}
             >
               <span className="sr-only">{t("testCase.nav.next")}: </span>
-              <span className="tc-nav__key">{nav.next?.scenarioId ?? "—"}</span>
+              {nav.next && <span className="tc-nav__key">{nav.next.scenarioId}</span>}
               <ChevronRight size={16} aria-hidden="true" />
             </button>
           </div>

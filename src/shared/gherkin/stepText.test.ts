@@ -55,6 +55,28 @@ describe("criterionLines", () => {
     ]);
   });
 
+  it("reads the Spanish keywords the AI writes for a Spanish user (FIX-49)", () => {
+    expect(
+      criterionLines(
+        "Dado un usuario con 3 notificaciones sin leer, cuando carga la página, entonces la campana muestra 3, y el panel las lista",
+      ),
+    ).toEqual([
+      { keyword: "Dado", text: "un usuario con 3 notificaciones sin leer" },
+      { keyword: "Cuando", text: "carga la página" },
+      { keyword: "Entonces", text: "la campana muestra 3" },
+      { keyword: "Y", text: "el panel las lista" },
+    ]);
+    // «y» inside a step, without a comma, stays in the text.
+    expect(
+      criterionLines(
+        "Dado usuario y contraseña, cuando entra, entonces ve Inicio",
+      )?.[0],
+    ).toEqual({
+      keyword: "Dado",
+      text: "usuario y contraseña",
+    });
+  });
+
   it("is null for a criterion that is not Gherkin", () => {
     expect(criterionLines("El botón está visible")).toBeNull();
     expect(criterionText("El botón está visible")).toBe(

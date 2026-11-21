@@ -514,7 +514,7 @@ function Orphans({
                     setPicked((p) => (e.target.checked ? [...p, o.file] : p.filter((f) => f !== o.file)))
                   }
                 />
-                <span className="t-id">{name}</span>
+                <span>{name}</span>
               </label>
               <span className="adm-hint">{size(o.size)}</span>
               {o.recent && (
@@ -591,7 +591,7 @@ function Problems({
         {problems.map((p) => (
           <li key={p.file} className="adm-evidence-problem">
             <span className="adm-inline">
-              <span className="t-id">{t("admin.evidence.file", { id: shortId(p.file) })}</span>
+              <span>{t("admin.evidence.file", { id: shortId(p.file) })}</span>
               <span className="adm-hint">{size(p.size)}</span>
             </span>
             {p.uses.length === 0 ? (

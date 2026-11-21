@@ -5,6 +5,7 @@ import {
   accountApi,
   ApiError,
   NetworkError,
+  personName,
   useAuth,
   type AdminReset,
   type AdminUser,
@@ -110,16 +111,16 @@ export function UsersTab() {
         ? {
             title: self
               ? t("admin.users.revokeSelfTitle")
-              : t("admin.users.revokeTitle", { name: u.displayName }),
+              : t("admin.users.revokeTitle", { name: personName(u) }),
             message: self
               ? t("admin.users.revokeSelfBody")
-              : t("admin.users.revokeBody", { name: u.displayName }),
+              : t("admin.users.revokeBody", { name: personName(u) }),
             confirmLabel: t("admin.users.revokeConfirm"),
             danger: true,
           }
         : {
-            title: t("admin.users.grantTitle", { name: u.displayName }),
-            message: t("admin.users.grantBody", { name: u.displayName }),
+            title: t("admin.users.grantTitle", { name: personName(u) }),
+            message: t("admin.users.grantBody", { name: personName(u) }),
             confirmLabel: t("admin.users.grantConfirm"),
           },
     );
@@ -129,8 +130,8 @@ export function UsersTab() {
       await accountApi.setAdmin(u.id, !u.isAdmin);
       toast(
         u.isAdmin
-          ? t("admin.users.revoked", { name: u.displayName })
-          : t("admin.users.granted", { name: u.displayName }),
+          ? t("admin.users.revoked", { name: personName(u) })
+          : t("admin.users.granted", { name: personName(u) }),
         "success",
       );
       if (self) await updateUser({ isAdmin: false });
@@ -144,15 +145,15 @@ export function UsersTab() {
 
   async function enable(u: AdminUser) {
     const ok = await confirm({
-      title: t("admin.users.enableTitle", { name: u.displayName }),
-      message: t("admin.users.enableBody", { name: u.displayName }),
+      title: t("admin.users.enableTitle", { name: personName(u) }),
+      message: t("admin.users.enableBody", { name: personName(u) }),
       confirmLabel: t("admin.users.enableConfirm"),
     });
     if (!ok) return;
     setBusy(true);
     try {
       await accountApi.setDisabled(u.id, { disabled: false });
-      toast(t("admin.users.enabled", { name: u.displayName }), "success");
+      toast(t("admin.users.enabled", { name: personName(u) }), "success");
       await load();
     } catch (e) {
       toast(t(failureKey(e)), "error");
@@ -242,7 +243,7 @@ export function UsersTab() {
                       className={off ? "usr-row--off" : undefined}
                     >
                       <td>
-                        <span className="usr-name">{u.displayName}</span>{" "}
+                        <span className="usr-name">{personName(u)}</span>{" "}
                         {self && (
                           <span className="ui-badge">
                             {t("admin.users.you")}
@@ -255,8 +256,8 @@ export function UsersTab() {
                         )}
                       </td>
                       <td>{u.email}</td>
-                      <td>{date(u.createdAt)}</td>
-                      <td>
+                      <td className="usr-nowrap">{date(u.createdAt)}</td>
+                      <td className="usr-nowrap">
                         {u.recoveryCodes.total === 0
                           ? t("admin.users.noCodes")
                           : t("admin.users.codesLeft", {
@@ -356,7 +357,7 @@ export function UsersTab() {
                           )}
                           <AdminRevokeTokensButton
                             userId={u.id}
-                            name={u.displayName}
+                            name={personName(u)}
                             disabled={busy}
                           />
                         </div>
@@ -394,7 +395,7 @@ export function UsersTab() {
           onClose={() => setDisabling(null)}
           onDone={() => {
             toast(
-              t("admin.users.disabled", { name: disabling.displayName }),
+              t("admin.users.disabled", { name: personName(disabling) }),
               "success",
             );
             setDisabling(null);
@@ -474,7 +475,7 @@ function ResetDialog({
         ) : (
           <>
             <h3 id={`${id}-done`} className="cd__title">
-              {t("admin.users.resetLinkTitle", { name: target.displayName })}
+              {t("admin.users.resetLinkTitle", { name: personName(target) })}
             </h3>
             <p
               className="usr-code"
@@ -489,7 +490,7 @@ function ResetDialog({
             )}
             <Alert kind="warning">
               {t("admin.users.resetOnce", {
-                name: target.displayName,
+                name: personName(target),
                 date: when(result.expiresAt),
               })}
             </Alert>
@@ -521,7 +522,7 @@ function ResetDialog({
         dismissable={!busy}
       >
         <h3 id={`${id}-deliver`} className="cd__title">
-          {t("admin.users.deliverTitle", { name: target.displayName })}
+          {t("admin.users.deliverTitle", { name: personName(target) })}
         </h3>
         <p className="cd__msg">
           {t("admin.users.deliverBody", { email: target.email })}
@@ -552,15 +553,15 @@ function ResetDialog({
   return (
     <Dialog labelledBy={`${id}-title`} onClose={onClose} dismissable={!busy}>
       <h3 id={`${id}-title`} className="cd__title">
-        {t("admin.users.resetTitle", { name: target.displayName })}
+        {t("admin.users.resetTitle", { name: personName(target) })}
       </h3>
       <p className="cd__msg">
-        {t("admin.users.resetBody", { name: target.displayName })}
+        {t("admin.users.resetBody", { name: personName(target) })}
       </p>
       <ul className="usr-list">
         <li>{t("admin.users.resetPoint1")}</li>
-        <li>{t("admin.users.resetPoint2", { name: target.displayName })}</li>
-        <li>{t("admin.users.resetPoint3", { name: target.displayName })}</li>
+        <li>{t("admin.users.resetPoint2", { name: personName(target) })}</li>
+        <li>{t("admin.users.resetPoint3", { name: personName(target) })}</li>
       </ul>
       {error && <Alert kind="error">{error}</Alert>}
       <div className="cd__actions">

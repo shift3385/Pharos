@@ -165,9 +165,7 @@ export function DashboardPage() {
     weekday: "long",
     day: "numeric",
     month: "long",
-  })
-    .format(today)
-    .replace(/^./, (c) => c.toUpperCase());
+  }).format(today); // Lower-case weekday in Spanish, as in the data table (FIX-46).
 
   // ---- Customizing the board ----
 
@@ -468,7 +466,7 @@ export function DashboardPage() {
   const upcoming = (
     <UpcomingTests projects={list} state={metrics} onRetry={retry} />
   );
-  const trend = <TrendCard projects={list} state={metrics} onRetry={retry} />;
+  const trend = <TrendCard projects={list} state={metrics} onRetry={retry} preferredId={exitProject?.id ?? null} />;
 
   const content: Record<GadgetId, GadgetView["content"]> = {
     kpiProjects: <KpiCard id="kpiProjects" {...kpiProps} compact={view === "desktop"} />,
@@ -550,6 +548,10 @@ export function DashboardPage() {
               {/* The chart is the widget the period changes, so the selector
                   is here too (user's decision); same state as in Resumen. */}
               <div className="home-period-row">
+                {/* The button says it to screen readers already. */}
+                <span className="home-period-row__label" aria-hidden="true">
+                  {t("dashboard.period.label")}
+                </span>
                 <PeriodSelector
               value={period}
               onChange={choosePeriod}

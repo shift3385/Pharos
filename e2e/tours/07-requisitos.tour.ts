@@ -15,7 +15,6 @@ import {
   dialog,
   es,
   field,
-  fixturesDir,
   menuItem,
   openProject,
   openSection,
@@ -25,6 +24,7 @@ import {
   waitForToast,
   chooseOption,
 } from "./helpers";
+import { pharosFixtures } from "./prepare";
 
 const T = es.traceability;
 const D = '[role="dialog"]';
@@ -68,7 +68,7 @@ chapter("requisitos", () => {
     run: async () => {
       await clickButton(T.requirement.save, D);
       await waitForToast(T.requirement.savedToast);
-      await chooseFile('input[type="file"][accept=".csv,text/csv"]', join(fixturesDir, "requisitos.csv"));
+      await chooseFile('input[type="file"][accept=".csv,text/csv"]', join(pharosFixtures, "requisitos-pharos.csv"));
       await expect(dialog()).toBeDisplayed();
       await expect(dialog()).toHaveText(expect.stringContaining("REQ-007"));
     },
@@ -77,11 +77,10 @@ chapter("requisitos", () => {
   step("requisitos", {
     title: "La lista de requisitos",
     caption:
-      "«Importar 6» los añade. Cada fila muestra el ID, el requisito con su descripción, la prioridad, cuántos casos lo enlazan y si está «Cubierto» o «Sin cubrir» (las filas sin cubrir se tiñen, para verlas enseguida). A la derecha, ✨ genera casos con IA desde ese requisito (capítulo 17) y la papelera lo elimina. Haz clic en el título para editarlo.",
-    toast: true,
+      "«Importar 11» añade los once requisitos del CSV, de REQ-002 a REQ-012, y al importar un aviso lo confirma («Importados: 11 nuevos, 0 actualizados»); la captura muestra los primeros. Cada fila muestra el ID, el requisito con su descripción, la prioridad, cuántos casos lo enlazan y si está «Cubierto» o «Sin cubrir» (las filas sin cubrir se tiñen, para verlas enseguida). A la derecha, ✨ genera casos con IA desde ese requisito (capítulo 17) y la papelera lo elimina. Haz clic en el título para editarlo.",
     run: async () => {
-      await clickButton(tf("traceability.import.confirm", { count: 6 }), D);
-      await waitForToast(tf("traceability.import.doneToast", { created: 6, updated: 0 }));
+      await clickButton(tf("traceability.import.confirm", { count: 11 }), D);
+      await waitForToast(tf("traceability.import.doneToast", { created: 11, updated: 0 }));
       await expect($("button.tz-open*=Imprimir el plan")).toBeDisplayed();
     },
   });
@@ -149,7 +148,7 @@ chapter("requisitos", () => {
   step("eliminar-requisito", {
     title: "Eliminar un requisito",
     caption:
-      "La papelera de la fila pide confirmación (en este ejemplo, REQ-007, que queda fuera de la versión). El ID eliminado no se reutiliza: los casos que lo enlazaban lo muestran como «Requisito desconocido» y aparecen en los huecos de la trazabilidad. Esc no cierra este aviso: solo «Cancelar».",
+      "La papelera de la fila pide confirmación (en este ejemplo, REQ-007, que queda fuera de la versión). El ID eliminado no se reutiliza: los casos que lo enlazaban lo muestran como «requisito desconocido» y aparecen en los huecos de la trazabilidad. En la app de escritorio, el requisito queda en la Papelera (Administración › General, capítulo 15) y «Restaurar» lo devuelve con su mismo ID y su historial. Esc no cierra este aviso: solo «Cancelar».",
     covers: ["dialogs:src/modules/traceability/ui/TraceabilityPage.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
@@ -160,7 +159,7 @@ chapter("requisitos", () => {
 
   step("eliminado", {
     title: "Requisito eliminado",
-    caption: "Al confirmar aparece el aviso «REQ-007 eliminado» y la lista deja de mostrarlo.",
+    caption: "Al confirmar aparece el aviso «REQ-007 eliminado» y la lista deja de mostrarlo; mientras esté en la Papelera, se puede restaurar.",
     shot: false,
     run: async () => {
       await clickButton(T.requirement.deleteConfirm, '[role="alertdialog"]');

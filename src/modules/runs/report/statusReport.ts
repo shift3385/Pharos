@@ -89,23 +89,44 @@ const BANDS = ["high", "medium", "low", "unassessed"] as const;
  *  Spanish, «33.3 %» in English, but «0 %» and «100 %» (FIX-43). */
 export const pct = (ratio: number | null, lang?: string) => formatRatio(ratio, { lang });
 
+/** «RUN-001, RUN-002, RUN-010»: the runs in key order, not in the order the
+ *  query returned them (FIX-45); «—» when there are none. */
+export function runKeyList(runs: readonly { runKey: string }[]): string {
+  if (!runs.length) return "—";
+  return runs
+    .map((r) => r.runKey)
+    .sort((a, b) => a.localeCompare(b, "en", { numeric: true }))
+    .join(", ");
+}
+
 function when(at: string | null | undefined, lang?: string) {
   return at ? parseStamp(at).toLocaleString(lang) : "—";
 }
 
-/** The prefilled summary: the numbers in one paragraph (the user edits it). */
-export function autoSummary(s: ExecutionSummary, t: Translate, lang?: string): string {
-  const met = s.exitCriteria.filter((c) => c.met === true).length;
-  return t("statusReport.autoSummary", {
+/** The prefilled summary: the numbers in one paragraph (the user edits it).
+ *  `exit` counts the criteria of a closing, where the manual ones marked
+ *  «Cumple» at the gate are met too (FIX-45); without it, those the summary
+ *  measured. Nothing executed has no pass rate: it says so, not «de —». */
+export function autoSummary(
+  s: ExecutionSummary,
+  t: Translate,
+  lang?: string,
+  exit?: { met: number; all: number },
+): string {
+  const met = exit?.met ?? s.exitCriteria.filter((c) => c.met === true).length;  return t("statusReport.autoSummary", {
     executed: s.progress.executed,
     total: s.progress.total,
     unit: t(`statusReport.unit.${s.progressUnit}`),
     pct: pct(s.progress.total ? s.progress.executed / s.progress.total : null, lang),
-    rate: pct(s.passRate, lang),
-    open: s.defects.open,
-    critical: s.defects.openBySeverity.critical,
+    rate:
+      s.passRate === null
+        ? t("statusReport.noRate")
+        : t("statusReport.withRate", { rate: pct(s.passRate, lang) }),
+    // «Hay 1 defecto abierto, 1 crítico», «Hay 3 defectos abiertos, 2 críticos» (FIX-47).
+    defects: t("statusReport.openDefects", { count: s.defects.open }),
+    critical: t("statusReport.openCritical", { count: s.defects.openBySeverity.critical }),
     met,
-    all: s.exitCriteria.length,
+    all: exit?.all ?? s.exitCriteria.length,
   });
 }
 
@@ -163,7 +184,7 @@ export function buildStatusReport(
       [t("statusReport.field.author"), ctx.author || "—"],
       [
         t("statusReport.field.runs"),
-        s.runs.length ? s.runs.map((r) => r.runKey).join(", ") : "—",
+        runKeyList(s.runs),
       ],
     ],
     progress: [
@@ -278,7 +299,7 @@ export function buildStatusReport(
       ],
       rows: issues,
     },
-    findings: findingsSection(s.findings, (id) => cases.get(id)?.scenarioId ?? id, t),
+    findings: findingsSection(s.findings, (id) => cases.get(id)?.scenarioId ?? id, t, ctx.lang),
     cases: {
       headers: [
         t("statusReport.col.case"),

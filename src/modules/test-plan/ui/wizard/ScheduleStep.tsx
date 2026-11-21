@@ -142,7 +142,11 @@ export function ScheduleStep({ form, setForm }: StepProps) {
     updMilestones((all) => all.map((x) => (x.id === id ? { ...x, ...patch } : x)));
   const usedIds = () => new Set([...form.sprints, ...form.milestones].map((x) => x.id));
 
-  /** Shows the month(s) holding `day` if they are not on screen. */
+  /** Shows the month(s) holding `day` if they are not on screen. Only for a
+   *  day the person has just set (a typed date, «Siguiente sprint», the
+   *  keyboard moving past the visible month): pointing at or focusing a row
+   *  never moves the calendar, so a month chosen with ‹ › holds while rows are
+   *  named, edited or removed (FIX-50). */
   const reveal = (day: string) => {
     const target = viewOf(day);
     const first = monthIndex(view);
@@ -410,16 +414,10 @@ export function ScheduleStep({ form, setForm }: StepProps) {
                 aria-label={row}
                 className="tps-row"
                 data-active={active === s.id || undefined}
-                onPointerEnter={() => {
-                  setHl(s.id);
-                  if (isDrawable(s)) reveal(s.start);
-                }}
+                onPointerEnter={() => setHl(s.id)}
                 onPointerLeave={() => setHl(null)}
                 onFocus={() => {
-                  if (hl !== s.id) {
-                    setHl(s.id);
-                    if (isDrawable(s)) reveal(s.start);
-                  }
+                  if (hl !== s.id) setHl(s.id);
                 }}
                 onBlur={(e) => {
                   if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHl(null);
@@ -504,16 +502,10 @@ export function ScheduleStep({ form, setForm }: StepProps) {
                 aria-label={row}
                 className="tps-row"
                 data-active={active === m.id || undefined}
-                onPointerEnter={() => {
-                  setHl(m.id);
-                  if (isIsoDay(m.date)) reveal(m.date);
-                }}
+                onPointerEnter={() => setHl(m.id)}
                 onPointerLeave={() => setHl(null)}
                 onFocus={() => {
-                  if (hl !== m.id) {
-                    setHl(m.id);
-                    if (isIsoDay(m.date)) reveal(m.date);
-                  }
+                  if (hl !== m.id) setHl(m.id);
                 }}
                 onBlur={(e) => {
                   if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHl(null);

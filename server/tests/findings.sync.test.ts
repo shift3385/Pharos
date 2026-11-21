@@ -492,7 +492,9 @@ describe("the findings of the web's matrix and reports (F5b)", () => {
     const s = (await web("GET", `/api/execution/summary?projectId=${p}`)).findings;
     expect(s.open).toEqual({ critical: 1, high: 1, medium: 0, low: 1, info: 0 });
     expect([s.new, s.triaged, s.review]).toEqual([2, 1, 1]);
-    expect(s.tools.map((t: { tool: string; runId: string }) => [t.tool, t.runId])).toEqual([["axe-core", now]]);
+    expect(s.tools.map((t: { tool: string; runId: string; compared: boolean }) => [t.tool, t.runId, t.compared])).toEqual([
+      ["axe-core", now, true],
+    ]);
     expect(s.cases).toEqual([{ caseId: pay.id, open: 2, worst: "critical" }]);
     expect([s.thresholdsTotal, s.thresholdsPassed]).toEqual([2, 1]);
     expect(s.failedThresholds).toMatchObject([{ runId: load, name: "failed", caseId: pay.id }]);

@@ -145,7 +145,12 @@ describe("RequirementsFromDesignModal", () => {
       expect(api.create.mock.calls[0][0]).toMatchObject({
         title: "Recuperar la contraseña",
         data: {
-          aiProvenance: { requirement: { ...provenance, prompt: "requirements-from-design@1+req-synthesis@1" } },
+          aiProvenance: {
+            requirement: {
+              ...provenance,
+              prompt: "requirements-from-design@3+req-synthesis@4",
+            },
+          },
           sources: [{ kind: "image", name: "login.png", index: 1 }],
         },
       });
@@ -226,12 +231,16 @@ describe("RequirementsFromDesignModal", () => {
     "says so when the material holds no requirements",
     async () => {
       const user = userEvent.setup();
-      ai.extract.mockResolvedValue({ value: { screens: [], candidates: [], reason: "Solo es un logotipo." }, provenance });
+      // The reason is shown in the reader's words (FIX-52), not «candidatas».
+      ai.extract.mockResolvedValue({
+        value: { screens: [], candidates: [], reason: "Solo es un logotipo: ninguna candidata." },
+        provenance,
+      });
       open();
       await addFiles([png("logo.png")]);
       await screen.findByText("logo.png");
       await user.click(screen.getByRole("button", { name: "Analizar" }));
-      expect(await screen.findByText("Solo es un logotipo.")).toBeInTheDocument();
+      expect(await screen.findByText("Solo es un logotipo: ninguna fuente.")).toBeInTheDocument();
       expect(ai.synthesize).not.toHaveBeenCalled();
       await user.click(screen.getByRole("button", { name: "Volver al material" }));
       expect(screen.getByText("logo.png")).toBeInTheDocument();

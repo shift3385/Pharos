@@ -247,6 +247,9 @@ function EmailForm({ onReset }: { onReset: (token: string) => void }) {
       {enabled === false && (
         <Alert kind="info">{t("auth.recover.emailOff")}</Alert>
       )}
+      {/* Without mail on the server the send form is not offered at all
+          (FIX-46): the notice above says why. */}
+      {enabled !== false && (
       <form className="auth-form__fields" onSubmit={onSubmit}>
         <Field
           id="reset-email"
@@ -272,6 +275,7 @@ function EmailForm({ onReset }: { onReset: (token: string) => void }) {
           {t("auth.recover.sendLink")}
         </button>
       </form>
+      )}
       <form className="auth-form__fields auth-form__paste" onSubmit={openLink}>
         <Field
           id="reset-link"

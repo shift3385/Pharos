@@ -37,9 +37,14 @@ En las formas con IA, la IA solo **propone**. Tú revisas cada propuesta y
 decides qué se aplica.
 
 En este manual, Liomar escribe a mano el primer requisito de Pharos («Iniciar
-sesión con correo y contraseña») e importa los demás de un CSV: crear un
+sesión con correo y contraseña») e importa los otros once de un CSV: crear un
 proyecto, el historial del plan, importar JUnit, exportar la matriz, trabajar
-sin conexión e imprimir el plan, este último descartado después.
+sin conexión, imprimir el plan (descartado después, porque queda fuera de la
+versión), ejecutar paso a paso con evidencias, registrar un defecto, la
+aprobación independiente, recuperar la cuenta y los tokens de CI.
+
+En un workspace compartido, escriben requisitos el Test Manager, el Test
+Analyst y el Product Owner; un Viewer solo los ve (capítulo 20).
 
 ## Atajos de teclado
 
@@ -56,9 +61,10 @@ sin conexión e imprimir el plan, este último descartado después.
 
 Estos flujos necesitan un motor de IA configurado (capítulo 15). Sin él, sus
 entradas del menú y el botón ✨ aparecen en gris (apartado «Más formas de traer
-requisitos: la IA»). El capítulo 17 los muestra paso a paso con otro producto, la
-Billetera SafeGuard: «Las tres formas de traer requisitos», «Requisitos desde un
-proyecto» y «Requisitos desde diseños».
+requisitos: la IA»). El capítulo 17 los muestra paso a paso con material de Pharos:
+la documentación y el código de su «API de sincronización» y un boceto del
+panel de notificaciones («Las tres formas de traer requisitos», «Requisitos
+desde un proyecto» y «Requisitos desde diseños»).
 
 - **✨ Generar casos desde un requisito** (en cada fila, y en la matriz):
   - La IA propone escenarios con su Gherkin.
@@ -97,8 +103,9 @@ proyecto» y «Requisitos desde diseños».
   - Cada propuesta lleva su motivo y su fuente: el archivo y las líneas, o la
     imagen con la zona marcada.
   - Los criterios de aceptación van uno por bloque. Los que siguen Gherkin se
-    leen una palabra clave por línea, en negrita (Given, When, Then, And, But),
-    y el texto sigue en minúscula: «Given el campo vacío».
+    leen una palabra clave por línea, en negrita, en el idioma del requisito
+    (en español, Dado, Cuando, Entonces, Y, Pero), y el texto sigue en
+    minúscula: «Dado el campo vacío».
   - «Escrito en la fuente» significa que el texto está ahí. «Inferido» es una
     deducción, que llega con sus supuestos y sus preguntas abiertas, para que
     la confirmes. Lo deducido solo del código puede ser un defecto: confírmalo
@@ -123,6 +130,9 @@ proyecto» y «Requisitos desde diseños».
 - **«No se pudo guardar el requisito».** Vuelve a pulsar «Guardar»; en la web,
   comprueba la conexión.
 - **«No se pudo cargar la trazabilidad.»** Pulsa «Reintentar».
+- **Eliminé un requisito por error.** En la app de escritorio está en la
+  Papelera de «Administración › General» (capítulo 15): «Restaurar» lo
+  devuelve con su mismo ID y su historial.
 - **Las entradas de IA y ✨ están en gris.** Configura un motor de IA en
   Administración (capítulo 15). «Requisitos desde un proyecto» no aparece en la
   versión web.
