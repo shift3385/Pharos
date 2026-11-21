@@ -1,6 +1,6 @@
 [package]
 name = "pharos-cli"
-version = "0.6.0-beta.1"
+version = "0.6.0-beta.2"
 description = "Pharos command line: upload test reports and wrap test commands (INT-01, ADR-0054)"
 authors = ["Pharos"]
 edition = "2021"

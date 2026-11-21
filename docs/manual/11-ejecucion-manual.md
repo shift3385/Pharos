@@ -26,7 +26,7 @@ Desde aquí se sale también el **informe de estado** (ISO/IEC/IEEE 29119-3), el
 documento que resume una ronda de pruebas para quien decide.
 
 En este manual, Liomar repite a mano los casos de acceso de Pharos en el run
-«Regresión manual · 0.6.0-beta.1»:
+«Regresión manual · 0.6.0-beta.2»:
 
 - PH-001 falla en el último paso, «Pulsar «Entrar»»: Pharos se queda en la
   entrada con «Correo o contraseña incorrectos.». Ese fallo ya tiene su
@@ -48,7 +48,7 @@ equipos del espacio de trabajo.
 
 ### 11.1. Nuevo run manual
 
-Para las pruebas que se hacen a mano fuera de un ciclo, «Nuevo run manual», en «Ejecuciones», crea un run: el título (obligatorio; propone «Run manual» y la fecha), el entorno, la build, la configuración y los casos que entran, con buscador y el recuento de los elegidos. Cada caso entra con su revisión vigente, así que el resultado queda ligado a la versión del caso que se ejecutó. Un caso con dataset dice cuántas filas trae y de qué dataset («3 filas · Usuarios válidos (v1)»): cada fila será una ejecución propia. En este ejemplo, Liomar repite a mano los casos de acceso de Pharos en staging, con la build 0.6.0-beta.1. «Crear y abrir» lo crea y abre su pantalla.
+Para las pruebas que se hacen a mano fuera de un ciclo, «Nuevo run manual», en «Ejecuciones», crea un run: el título (obligatorio; propone «Run manual» y la fecha), el entorno, la build, la configuración y los casos que entran, con buscador y el recuento de los elegidos. Cada caso entra con su revisión vigente, así que el resultado queda ligado a la versión del caso que se ejecutó. Un caso con dataset dice cuántas filas trae y de qué dataset («3 filas · Usuarios válidos (v1)»): cada fila será una ejecución propia. En este ejemplo, Liomar repite a mano los casos de acceso de Pharos en staging, con la build 0.6.0-beta.2. «Crear y abrir» lo crea y abre su pantalla.
 
 ![Nuevo run manual](img/ejecucion-manual/01-nuevo-run.png)
 

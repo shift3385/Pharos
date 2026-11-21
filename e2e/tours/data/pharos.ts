@@ -10,7 +10,7 @@
 // generator (Vitest) and the scripts (Node's type stripping) all read it.
 
 /** The release under test. */
-export const RELEASE = { version: "0.6.0", build: "0.6.0-beta.1", environment: "staging" };
+export const RELEASE = { version: "0.6.0", build: "0.6.0-beta.2", environment: "staging" };
 
 // ---- The story's calendar ------------------------------------------------------
 // Every date of the story is relative to the day the tours run, so the

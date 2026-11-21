@@ -28,7 +28,7 @@ cambiar su estado).
 En este manual, Liomar prepara la «Regresión 0.6.0» de Pharos, la del plan
 «Plan de pruebas de Pharos 0.6.0» (capítulo 5):
 
-- **Build y entorno:** 0.6.0-beta.1, en staging.
+- **Build y entorno:** 0.6.0-beta.2, en staging.
 - **Fechas:** las del Sprint 1 del plan.
 - **Configuraciones:** Chrome y Edge.
 - **Casos:** PH-001 y PH-002, añadidos a mano. El filtro de prioridad alta
@@ -47,7 +47,7 @@ Un ciclo agrupa lo que se va a probar en una ronda concreta (una regresión, una
 
 ### 9.2. Nuevo ciclo
 
-«Nuevo ciclo» pide el título (obligatorio), la build y el entorno contra los que se prueba, el hito y el sprint del plan, las fechas (se escriben dd/mm/aaaa o se eligen en el calendario de Pharos, capítulo 5; el de «Termina» abre en el mes de «Empieza» y no deja elegir un día anterior) y las configuraciones en las que se ejecutará (las de «Ajustes del proyecto», capítulo 14). En este ejemplo, «Regresión 0.6.0» de la build 0.6.0-beta.1 en staging, con las fechas del Sprint 1 del plan, en Chrome y en Edge sobre Windows 11. Sin configuraciones, el ciclo se ejecuta como un único run. Intro en un campo crea el ciclo.
+«Nuevo ciclo» pide el título (obligatorio), la build y el entorno contra los que se prueba, el hito y el sprint del plan, las fechas (se escriben dd/mm/aaaa o se eligen en el calendario de Pharos, capítulo 5; el de «Termina» abre en el mes de «Empieza» y no deja elegir un día anterior) y las configuraciones en las que se ejecutará (las de «Ajustes del proyecto», capítulo 14). En este ejemplo, «Regresión 0.6.0» de la build 0.6.0-beta.2 en staging, con las fechas del Sprint 1 del plan, en Chrome y en Edge sobre Windows 11. Sin configuraciones, el ciclo se ejecuta como un único run. Intro en un campo crea el ciclo.
 
 ![Nuevo ciclo](img/ciclos/02-nuevo-ciclo.png)
 

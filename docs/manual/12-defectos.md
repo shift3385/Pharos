@@ -81,7 +81,7 @@ Un buen defecto permite reproducir el fallo sin preguntar a nadie. En «Detalles
 
 ### 12.4. Asignado a
 
-Debajo, «Dónde se encontró» lleva la build y el entorno (en este ejemplo, 0.6.0-beta.1 en staging), y «Asignado a» dice quién se ocupa del defecto: se elige entre los miembros activos del workspace, o «Sin asignar». En «Personal» el único miembro eres tú, así que Liomar se lo asigna a sí mismo; en un workspace compartido, la persona elegida recibe un aviso con el defecto (capítulo 20). En «Vínculos», marca los casos y los requisitos afectados: la matriz de trazabilidad (capítulo 13) los mostrará junto al defecto. Liomar marca el caso «Crear un proyecto» (PH-003) y el requisito REQ-002.
+Debajo, «Dónde se encontró» lleva la build y el entorno (en este ejemplo, 0.6.0-beta.2 en staging), y «Asignado a» dice quién se ocupa del defecto: se elige entre los miembros activos del workspace, o «Sin asignar». En «Personal» el único miembro eres tú, así que Liomar se lo asigna a sí mismo; en un workspace compartido, la persona elegida recibe un aviso con el defecto (capítulo 20). En «Vínculos», marca los casos y los requisitos afectados: la matriz de trazabilidad (capítulo 13) los mostrará junto al defecto. Liomar marca el caso «Crear un proyecto» (PH-003) y el requisito REQ-002.
 
 ![Asignado a](img/defectos/04-asignado.png)
 

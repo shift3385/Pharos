@@ -27,7 +27,7 @@ Desde aquí se sale también el **informe de estado** (ISO/IEC/IEEE 29119-3), el
 documento que resume una ronda de pruebas para quien decide.
 
 En este manual, Liomar repite a mano los casos de acceso de Pharos en el run
-«Regresión manual · 0.6.0-beta.1»:
+«Regresión manual · 0.6.0-beta.2»:
 
 - PH-001 falla en el último paso, «Pulsar «Entrar»»: Pharos se queda en la
   entrada con «Correo o contraseña incorrectos.». Ese fallo ya tiene su

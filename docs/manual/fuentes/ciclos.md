@@ -30,7 +30,7 @@ cambiar su estado).
 En este manual, Liomar prepara la «Regresión 0.6.0» de Pharos, la del plan
 «Plan de pruebas de Pharos 0.6.0» (capítulo 5):
 
-- **Build y entorno:** 0.6.0-beta.1, en staging.
+- **Build y entorno:** 0.6.0-beta.2, en staging.
 - **Fechas:** las del Sprint 1 del plan.
 - **Configuraciones:** Chrome y Edge.
 - **Casos:** PH-001 y PH-002, añadidos a mano. El filtro de prioridad alta
