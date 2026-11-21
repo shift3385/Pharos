@@ -1,6 +1,6 @@
 // FIX-45: layout rules of the runs screens that jsdom cannot measure, pinned
 // from the CSS (as the other layout tests do).
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -36,6 +36,21 @@ describe("«Informe de estado» never covers its last line (FIX-49)", () => {
     expect(report(".sr-actions")).toMatch(/flex:\s*none;/);
     expect(report(".sr-actions")).not.toMatch(/position:\s*sticky/);
   });
+
+  it("every dialog of class `sr-modal` has the scrolling body (FIX-51)", () => {
+    // FIX-49 changed the shared class but wrapped only one of its two users.
+    const srcRoot = join(here, "../../..");
+    const users = (readdirSync(srcRoot, { recursive: true }) as string[])
+      .filter((f) => f.endsWith(".tsx") && !f.endsWith(".test.tsx"))
+      .filter((f) => readFileSync(join(srcRoot, f), "utf8").includes('"cd sr-modal"'));
+    expect(users.length).toBeGreaterThanOrEqual(2);
+    for (const file of users) {
+      const src = readFileSync(join(srcRoot, file), "utf8");
+      const scroll = src.indexOf('className="sr-scroll"');
+      expect(scroll, file).toBeGreaterThan(src.indexOf('className="sr"'));
+      expect(src.indexOf("sr-actions"), file).toBeGreaterThan(scroll);
+    }
+  });
 });
 
 describe("runs surfaces and wrapping (FIX-45)", () => {
@@ -48,6 +63,8 @@ describe("runs surfaces and wrapping (FIX-45)", () => {
     expect(read("MetricsPanel.tsx")).toContain('className="ui-card fd-kpi"');
     expect(findings(".fd-kpi")).toMatch(/display:\s*block;/);
     expect(findings(".fd-kpi")).not.toMatch(/background:/);
+    // FIX-51: the «Checks» heading too, not text on the photo.
+    expect(read("MetricsPanel.tsx")).toContain('className="ui-card fd-sub"');
     expect(runs(".rn-tray__bar .infotip")).toMatch(/background:\s*var\(--color-surface-1\);/);
   });
 

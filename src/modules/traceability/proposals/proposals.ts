@@ -1,4 +1,4 @@
-// The answer of the common synthesis (`req-synthesis@2`), checked against
+// The answer of the common synthesis (`req-synthesis@3`), checked against
 // what was sent: the model is asked for all of this, but cannot be trusted to
 // (as `usableProposals` in IA-16). Pure — testable.
 
@@ -138,6 +138,35 @@ const priorityOf = (
   ) ??
   "medium";
 
+const LABEL = String.raw`C\d+`;
+const LABEL_LIST = String.raw`${LABEL}(?:\s*(?:,|y|e|and|&)\s*${LABEL})*`;
+
+/** The model's «Motivo» without the prompt's own candidate labels («C1»,
+ *  «(C4)», «C3 y C7»), which mean nothing to the reader (FIX-51: «C1 no tiene
+ *  cobertura»). A label in parentheses goes; one in the sentence becomes the
+ *  candidate's title in «», or «una propuesta» when the number is unknown.
+ *  `req-synthesis@3` already asks the model not to write them. */
+export function readableReason(
+  reason: string,
+  candidates: readonly Pick<CandidateRequirement, "title">[],
+): string {
+  const titleOf = (label: string) => {
+    const c = candidates[Number(label.slice(1)) - 1];
+    return c ? `«${c.title.trim()}»` : "";
+  };
+  return reason
+    .replace(new RegExp(String.raw`\s*\(\s*${LABEL_LIST}\s*\)`, "g"), "")
+    .replace(new RegExp(String.raw`\b${LABEL_LIST}\b`, "g"), (list) => {
+      const names = (list.match(new RegExp(LABEL, "g")) ?? []).map(titleOf).filter(Boolean);
+      return names.length ? names.join(", ") : "";
+    })
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([,.;:])/g, "$1")
+    .replace(/[,;:]+([.,;:])/g, "$1")
+    .replace(/^[\s,;:]+/, "")
+    .trim();
+}
+
 /** The proposals that can be shown and applied:
  *  - candidate numbers and keys must exist in what was sent;
  *  - at most one proposal touches each existing requirement;
@@ -176,7 +205,7 @@ export function usableRequirementProposals(
           title,
           description: p.description,
           priority: priorityOf(p.priority, from),
-          reason: p.reason,
+          reason: readableReason(p.reason, candidates),
           ...(similarTo ? { similarTo } : {}),
           ...supportOf(from),
         });
@@ -211,7 +240,7 @@ export function usableRequirementProposals(
           ...(title ? { title } : {}),
           ...(description ? { description } : {}),
           ...(priority ? { priority } : {}),
-          reason: p.reason,
+          reason: readableReason(p.reason, candidates),
           ...supportOf(fromOf(p.from)),
         });
         return;
@@ -229,7 +258,7 @@ export function usableRequirementProposals(
           keep: p.keep,
           ...(p.title ? { title: p.title } : {}),
           ...(p.description ? { description: p.description } : {}),
-          reason: p.reason,
+          reason: readableReason(p.reason, candidates),
         });
         return;
       }
@@ -243,7 +272,7 @@ export function usableRequirementProposals(
           action: "remove",
           key: p.key,
           ...(coveredBy ? { coveredBy } : {}),
-          reason: p.reason,
+          reason: readableReason(p.reason, candidates),
         });
         return;
       }

@@ -144,9 +144,12 @@ async function managedAlone(
       display_name: string;
       role: string;
     }>(
-      `SELECT o.user_id, u.display_name, o.role FROM workspace_members o JOIN users u ON u.id = o.user_id
+      // The candidate's name is the official one (FIX-51, `personNameSql`),
+      // under the key older clients read.
+      `SELECT o.user_id, ${personNameSql("u")} AS display_name, o.role
+         FROM workspace_members o JOIN users u ON u.id = o.user_id
         WHERE o.workspace_id = $1 AND o.user_id <> $2 AND o.removed_at IS NULL AND u.disabled_at IS NULL
-        ORDER BY lower(u.display_name), o.user_id`,
+        ORDER BY lower(${personNameSql("u")}), o.user_id`,
       [w.id, userId],
     );
     out.push({

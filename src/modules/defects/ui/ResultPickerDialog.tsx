@@ -141,8 +141,10 @@ export function ResultPickerDialog({
                 <StatusPill tone={r.status === "failed" ? "error" : "warning"} dot>
                   {t(`defects.resultStatus.${r.status}`, { defaultValue: r.status })}
                 </StatusPill>
-                <span className="df-muted">
-                  {t("defects.results.attempt", { n: r.attempt + 1 })} · {when(r.createdAt)}
+                {/* When the attempt ran, not when it was imported (FIX-51);
+                    small, like the case line above it. */}
+                <span className="df-muted df-picker__when">
+                  {t("defects.results.attempt", { n: r.attempt + 1 })} · {when(r.executedAt ?? r.createdAt)}
                 </span>
               </div>
               <button

@@ -6,6 +6,7 @@
 :where(:root[data-card-shadow])
   :is(
     .home-kpi,
+    .home-kpi-stack:has(> .home-kpi__extra:not(.home-kpi__extra--badge)),
     .home-card,
     .adm-card,
     .cy-summary,

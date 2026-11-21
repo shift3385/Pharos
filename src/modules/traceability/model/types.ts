@@ -30,7 +30,7 @@ export type RequirementSource =
     };
 
 /** The provenance of a requirement written by the AI, with the version of the
- *  instructions it followed (e.g. `req-synthesis@2`). */
+ *  instructions it followed (e.g. `req-synthesis@3`). */
 export type RequirementProvenance = AiProvenance & { prompt?: string };
 
 /** Free-form data of a requirement (`requirements.data`, IA-17). */

@@ -54,6 +54,8 @@ const DATA_TYPES: [string, string][] = [
   ["src/modules/defects/model/types.ts", "DefectData"],
   ["src/modules/traceability/model/types.ts", "RequirementData"],
   ["src/modules/planner/model/types.ts", "CardData"],
+  // FIX-51: a cycle's data is free-form JSON; its keys are listed here.
+  ["src/modules/runs/report/completion/completionReport.ts", "CycleData"],
 ];
 
 function dataKeys(): Map<string, string> {
@@ -73,8 +75,27 @@ function dataKeys(): Map<string, string> {
   return keys;
 }
 
+/** FIX-51: the keys the desktop core writes into an element's free-form
+ *  `data` (`data["closures"] = …`). FIX-43's version read only the payloads
+ *  and the typed data, and a cycle's `data` has no type, so «Cambios:
+ *  completionReport» slipped by; the web's keys are now the `CycleData` type. */
+function coreDataKeys(): Map<string, string> {
+  const keys = new Map<string, string>();
+  for (const file of rustFiles(join(ROOT, "src-tauri", "src"))) {
+    for (const m of readFileSync(file, "utf8").matchAll(/\bdata\["([a-z][A-Za-z0-9]*)"\]\s*=/g))
+      if (!keys.has(m[1])) keys.set(m[1], relative(ROOT, file));
+  }
+  return keys;
+}
+
 describe("audit field labels (FIX-43)", () => {
-  const fields = new Map([...payloadKeys(), ...dataKeys()].filter(([k]) => !BOOKKEEPING.has(k)));
+  const fields = new Map(
+    [...payloadKeys(), ...dataKeys(), ...coreDataKeys()].filter(([k]) => !BOOKKEEPING.has(k)),
+  );
+
+  it("reads the keys of a cycle's free-form data (FIX-51)", () => {
+    for (const k of ["closures", "completionReport"]) expect(fields.has(k), k).toBe(true);
+  });
 
   it("reads the fields from the payloads and the data types", () => {
     // The ones the manual showed raw are among them.

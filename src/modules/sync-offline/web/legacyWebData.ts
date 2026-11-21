@@ -23,6 +23,7 @@
 import i18n from "i18next";
 import { getSession } from "@modules/auth";
 import { saveFile } from "@shared/export/saveFile";
+import { todayIso } from "@shared/time/isoDay";
 import { notify } from "@shared/ui/notify";
 import { sessionRequester } from "../api/sessionRequest";
 import { batchDeltas, sendIsolating, withRetry, type SyncCaller } from "../api/transport";
@@ -207,7 +208,7 @@ export async function downloadLegacyLeftovers(): Promise<void> {
   const leftovers = session ? read<LegacyLeftovers | null>(unsentKey(session.userId), null) : null;
   if (!session || !leftovers) return;
   const { downloadedAt: _d, ...content } = leftovers;
-  const day = new Date().toISOString().slice(0, 10);
+  const day = todayIso();
   await saveFile(`pharos-web-unsent-${day}.json`, JSON.stringify(content, null, 2), "application/json");
   localStorage.setItem(unsentKey(session.userId), JSON.stringify({ ...leftovers, downloadedAt: new Date().toISOString() }));
   window.dispatchEvent(new CustomEvent("pharos:legacy-unsent"));

@@ -148,7 +148,7 @@ describe("RequirementsFromDesignModal", () => {
           aiProvenance: {
             requirement: {
               ...provenance,
-              prompt: "requirements-from-design@2+req-synthesis@2",
+              prompt: "requirements-from-design@2+req-synthesis@3",
             },
           },
           sources: [{ kind: "image", name: "login.png", index: 1 }],

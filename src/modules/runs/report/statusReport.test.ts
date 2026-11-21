@@ -180,6 +180,8 @@ describe("status report model (EJE-03)", () => {
     expect(f.failed.rows.map((r) => r[3])).toEqual(["1,02 %", "1,53 s"]);
     // The threshold beside it in the same form (FIX-48).
     expect(f.failed.rows.map((r) => r[2])).toEqual(["< 1 %", "< 500 ms"]);
+    // The aggregation as the run's «Métricas» says it (FIX-51: «· rate»).
+    expect(f.failed.rows.map((r) => r[1])).toEqual(["http_req_failed · tasa", "http_req_duration · p(95)"]);
     // The completion report's residual risks use the same section.
     await i18n.changeLanguage("en");
     const en = buildStatusReport(rate, { ...ctx, lang: "en" }, t).findings!;

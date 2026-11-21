@@ -3,4 +3,11 @@
 /**
  * A failed attempt a defect can be linked to or created from.
  */
-export type ResultCandidate = { resultId: string, runId: string, runKey: string, runTitle: string, testCaseId: string | null, caseKey: string | null, testKey: string, attempt: number, status: string, createdAt: string, };
+export type ResultCandidate = { resultId: string, runId: string, runKey: string, runTitle: string, testCaseId: string | null, caseKey: string | null, testKey: string, attempt: number, status: string, createdAt: string, 
+/**
+ * When the attempt ran: its end, else its start, else its run's start
+ * (an imported report's own time), and only then when it was recorded
+ * (FIX-51: the picker showed the import time of a report from days
+ * before).
+ */
+executedAt: string, };

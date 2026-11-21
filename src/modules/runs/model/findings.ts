@@ -205,6 +205,35 @@ export function formatThreshold(
   return `${OPERATORS[operator]} ${formatMetric({ value: Number(number), unit: m.unit }, locale)}`;
 }
 
+type Translate = (key: string, opts?: Record<string, unknown>) => string;
+
+/** k6's aggregation («rate», «count») in the user's language («tasa»,
+ *  «total»); percentiles (p95) read the same in both (FIX-45). Shared by the
+ *  run's «Métricas» and the reports (FIX-51: the report said «· rate»). */
+export function aggregationLabel(a: string | null | undefined, t: Translate): string {
+  return !a ? "" : t(`findings.metric.aggregations.${a}`, { defaultValue: a });
+}
+
+/** The k6 tags a metric is scoped to (`case:PH-001`,
+ *  `expected_response:true`, several joined by «,»), as a reader says them:
+ *  «Caso PH-001», «Respuestas esperadas», «Escenario: login» (FIX-51). A tag
+ *  with no name of its own keeps it: «tag: value». */
+export function scopeLabel(scope: string | null | undefined, t: Translate): string {
+  if (!scope) return "";
+  return scope
+    .split(",")
+    .map((part) => {
+      const at = part.indexOf(":");
+      if (at < 0) return part.trim();
+      const tag = part.slice(0, at).trim();
+      const value = part.slice(at + 1).trim();
+      if (tag === "expected_response" && (value === "true" || value === "false"))
+        return t(`findings.metric.scopes.expected_response_${value}`);
+      return t(`findings.metric.scopes.${tag}`, { value, defaultValue: `${tag}: ${value}` });
+    })
+    .join(" · ");
+}
+
 /** Checks: the per-check rates (a scope), apart from the other metrics. */
 export const isCheck = (m: MetricView) => m.name === "checks" && !!m.scope;
 

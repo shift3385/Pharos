@@ -1,4 +1,5 @@
 import { formatBytes } from "@shared/i18n/numbers";
+import { localClock } from "@shared/time/isoDay";
 import {
   useEffect,
   useId,
@@ -168,7 +169,7 @@ export function RequirementsFromDesignModal({
     );
     if (!files.length || phase !== "material") return;
     e.preventDefault();
-    const stamp = new Date().toISOString().slice(11, 19).replace(/:/g, "");
+    const stamp = localClock();
     void add(
       files.map((f, n) => ({
         path:

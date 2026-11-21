@@ -103,10 +103,13 @@
 }
 
 /* «Próximamente» after an option that is not available yet (FIX-49), in the
-   look of the sign-in screen's chip. */
+   look of the sign-in screen's chip. It is the item's `badge`, beside the
+   text, and never shrinks (FIX-51: inside the text it was cut to «Próximam»
+   and the label showed «……»). */
 .menu__soon {
   display: inline-block;
-  margin-left: 8px;
+  flex: none;
+  margin-left: auto;
   padding: 1px 7px;
   font-size: 10.5px;
   font-weight: var(--fw-semibold);

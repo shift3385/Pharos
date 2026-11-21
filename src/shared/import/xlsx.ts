@@ -95,7 +95,8 @@ export function cellText(cell: ExcelJS.Cell): string {
   if (v == null) return "";
   if (typeof v === "string") return v;
   if (typeof v === "number" || typeof v === "boolean") return String(v);
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  // ExcelJS reads a date cell as UTC midnight of the day typed.
+  if (v instanceof Date) return v.toISOString().slice(0, 10); // utc-day-ok
   if (typeof v === "object") {
     const o = v as Record<string, unknown>;
     if (Array.isArray(o.richText)) return (o.richText as { text: string }[]).map((t) => t.text).join("");

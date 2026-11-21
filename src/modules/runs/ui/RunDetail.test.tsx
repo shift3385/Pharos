@@ -1007,9 +1007,11 @@ describe("findings and metrics of a run (ING-06, F4)", () => {
     renderRun("/projects/p/runs/r1?tab=metrics");
     const panel = await screen.findByTestId("metrics-panel");
     expect(within(panel).getByTestId("metrics-thresholds")).toHaveTextContent("Umbrales cumplidos: 1 de 2.");
-    expect(within(panel).getByTestId("metrics-thresholds")).toHaveTextContent("http_req_duration p(95)<500: 742 ms");
-    // FIX-45: k6's expression in code style, the aggregations in Spanish.
-    expect(within(panel).getByTestId("metrics-thresholds").querySelector("code")).toHaveTextContent("p(95)<500");
+    // FIX-51: the threshold in the value's form, k6's expression in its
+    // tooltip (FIX-45 showed the expression itself); the aggregations in Spanish.
+    expect(within(panel).getByTestId("metrics-thresholds")).toHaveTextContent("http_req_duration (p95 < 500 ms): 742 ms");
+    expect(within(panel).getByTestId("metrics-thresholds")).not.toHaveTextContent("p(95)<500");
+    expect(within(panel).getAllByTitle("Expresión de k6: p(95)<500").length).toBeGreaterThan(0);
     expect(within(panel).getAllByText("tasa").length).toBeGreaterThan(0);
     expect(within(panel).queryByText("rate")).not.toBeInTheDocument();
     expect(within(panel).getAllByText("p95").length).toBeGreaterThan(0);

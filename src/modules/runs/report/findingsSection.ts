@@ -1,6 +1,6 @@
 import i18next from "i18next";
 import type { FindingsSummary } from "@shared/contracts/contract";
-import { formatMetric, formatThreshold } from "../model/findings";
+import { aggregationLabel, formatMetric, formatThreshold, scopeLabel } from "../model/findings";
 import type { ReportTable } from "./statusReport";
 
 // «Hallazgos y rendimiento» (ING-06, F5b): the findings and thresholds of
@@ -23,8 +23,10 @@ export interface FindingsSection {
 
 const SEVERITIES = ["critical", "high", "medium", "low", "info"] as const;
 
-const metricName = (m: { name: string; aggregation: string | null; scope: string | null }) =>
-  [m.name, m.aggregation, m.scope].filter(Boolean).join(" · ");
+/** «http_req_failed · tasa · Caso PH-001»: the aggregation and scope as the
+ *  run's «Métricas» says them (FIX-51: the report said «· rate»). */
+const metricName = (m: { name: string; aggregation: string | null; scope: string | null }, t: Translate) =>
+  [m.name, aggregationLabel(m.aggregation, t), scopeLabel(m.scope, t)].filter(Boolean).join(" · ");
 
 /** The section, or null when the scope has no findings and no thresholds. */
 export function findingsSection(
@@ -87,7 +89,7 @@ export function findingsSection(
       ],
       rows: f.failedThresholds.map((m) => [
         m.runKey,
-        metricName(m),
+        metricName(m, t),
         // In the value's own form (FIX-48): «< 1 %» beside «1,02 %», not
         // k6's «rate<0.01»; the run's «Métricas» keeps the expression.
         formatThreshold({ ...m, unit: m.unit ?? "" }, locale),

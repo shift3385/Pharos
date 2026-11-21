@@ -95,6 +95,7 @@ export function SortableSteps({
   label,
   start = 0,
   addable = true,
+  addLabel,
   actions,
 }: {
   steps: Step[];
@@ -104,6 +105,9 @@ export function SortableSteps({
   start?: number;
   /** False: no «Añadir paso» (a run of steps between two blocks). */
   addable?: boolean;
+  /** The add button's text when the items are not steps (FIX-51: a
+   *  checklist read «+ Añadir paso» under «Comprobaciones»). */
+  addLabel?: string;
   /** More buttons next to «Añadir paso» («Insertar paso compartido…»). */
   actions?: ReactNode;
 }) {
@@ -178,7 +182,7 @@ export function SortableSteps({
               onChange([...steps, { id: newStepId(new Set(ids)), text: "" }])
             }
           >
-            + {t("testCase.addStep")}
+            + {addLabel ?? t("testCase.addStep")}
           </button>
           {actions}
         </div>

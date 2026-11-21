@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { Bot, Download, Search, Settings2, User, X } from "lucide-react";
 import { useAuth } from "@modules/auth";
+import { todayIso } from "@shared/time/isoDay";
 import { DataTable, type DataColumn } from "@shared/ui/DataTable";
 import { DatePicker } from "@shared/ui/DatePicker";
 import { FilterMenuButton } from "@shared/ui/FilterMenuButton";
@@ -247,7 +248,7 @@ export function AuditTab() {
       const l = exportLabels();
       const rows = exportRows(events, l);
       const now = new Date();
-      const name = `pharos-auditoria-${now.toISOString().slice(0, 10)}.${format}`;
+      const name = `pharos-auditoria-${todayIso(now)}.${format}`;
       const path = format === "csv" ? await saveAuditCsv(name, rows) : await saveAuditXlsx(name, rows, verify, l, now);
       if (path) toast(t("downloads.saved", { path }));
       if (capped) toast(t("admin.audit.export.capped", { count: events.length }), "warning");

@@ -57,6 +57,7 @@
     "chooseFile": "Choose file…",
     "chooseFolder": "Choose folder…",
     "noFileChosen": "No file chosen",
+    "noFolderChosen": "No folder chosen",
     "filesChosen_one": "{{count}} file chosen",
     "filesChosen_other": "{{count}} files chosen",
     "retry": "Retry",
@@ -985,6 +986,7 @@
         "risks": "Risks",
         "lifecycle": "Lifecycle",
         "closures": "Closures",
+        "completionReport": "Completion report",
         "links": "Links",
         "review": "Review",
         "approval": "Approval",
@@ -2415,6 +2417,7 @@
       "created": "Plan created",
       "approved": "Approved by {{name}}",
       "sent": "Sent to review by {{name}}",
+      "returned": "Changes requested by {{name}}",
       "lostApproval": "loses its approval",
       "none": "No saved changes yet.",
       "someone": "Another account"
@@ -2817,6 +2820,7 @@
     },
     "checklist": {
       "items": "Checks",
+      "add": "Add check",
       "hint": "A checklist is run by ticking each item; it has no Gherkin steps.",
       "kept": "This case's steps and Gherkin are kept, hidden while it is a checklist.",
       "noGherkin": "A checklist has no Gherkin view."
@@ -3526,6 +3530,7 @@
       "weightedTitle": "Risk-weighted coverage",
       "weightedHow": "Sum of the risk level (likelihood × impact) of the covered requirements over the sum of the level of every assessed requirement. «Passed» counts those with every case executed and passed.",
       "weightedCalcCovered": "covered = {{covered}} / {{total}} = {{coveredPct}}",
+      "weightedCalcPassed": "passed = {{passed}} / {{total}} = {{passedPct}}",
       "weightedBands_one": "1 unassessed requirement is left out. The project's bands: low up to {{low}}, medium up to {{medium}}.",
       "weightedBands_other": "{{count}} unassessed requirements are left out. The project's bands: low up to {{low}}, medium up to {{medium}}.",
       "weightedHint_one": "passed {{passed}} · 1 unassessed",
@@ -5390,9 +5395,9 @@
         "conflict_other": "{{count}} sync conflicts to review"
       },
       "member": {
-        "joined": "{{actor}} joined {{title}}",
-        "removed": "You are no longer a member of {{title}}",
-        "disabled": "{{actor}} disabled {{title}}'s account: they no longer have access to {{workspaceName}}"
+        "joined": "{{actor}} joined «{{title}}»",
+        "removed": "You are no longer a member of «{{title}}»",
+        "disabled": "{{actor}} disabled {{title}}'s account: they no longer have access to «{{workspaceName}}»"
       },
       "account": {
         "reset_issued": "{{actor}} (server administrator) made a link to reset your password. If you did not ask for it, tell them.",
@@ -5864,6 +5869,19 @@
         "rate": "rate",
         "value": "value"
       },
+      "scopes": {
+        "case": "Case {{value}}",
+        "expected_response_true": "Expected responses",
+        "expected_response_false": "Unexpected responses",
+        "scenario": "Scenario: {{value}}",
+        "group": "Group: {{value}}",
+        "name": "Request: {{value}}",
+        "method": "Method: {{value}}",
+        "status": "HTTP status: {{value}}",
+        "url": "URL: {{value}}",
+        "check": "Check: {{value}}"
+      },
+      "rawThreshold": "k6 expression: {{expression}}",
       "empty": "No metrics.",
       "all": "Show all ({{shown}} of {{total}})",
       "fewer": "Show only the main ones"

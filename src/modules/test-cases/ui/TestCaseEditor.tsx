@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Columns2, FileCode, MoreHorizontal, PencilLine, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { personName, useAuth } from "@modules/auth";
+import { todayIso } from "@shared/time/isoDay";
 import { ListField } from "@shared/ui/fields";
 import { Select } from "@shared/ui/Select";
 import { ErrorSummary, FormField } from "@shared/ui/FormField";
@@ -193,7 +194,7 @@ function emptyForm(): FormState {
     status: "draft",
     priority: "medium",
     mappedUseCase: "",
-    caseDate: new Date().toISOString().slice(0, 10),
+    caseDate: todayIso(),
     description: "",
     preconditions: [],
     steps: [],
@@ -1099,6 +1100,7 @@ export function TestCaseEditor({
           >
             <SortableSteps
               label={t("testCase.checklist.items")}
+              addLabel={t("testCase.checklist.add")}
               steps={form.steps}
               onChange={(v) => update({ steps: v })}
             />

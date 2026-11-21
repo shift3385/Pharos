@@ -207,6 +207,11 @@ pub struct ResultCandidate {
     pub attempt: i64,
     pub status: String,
     pub created_at: String,
+    /// When the attempt ran: its end, else its start, else its run's start
+    /// (an imported report's own time), and only then when it was recorded
+    /// (FIX-51: the picker showed the import time of a report from days
+    /// before).
+    pub executed_at: String,
 }
 
 #[cfg_attr(test, derive(TS), ts(export))]
@@ -567,7 +572,8 @@ pub(crate) fn result_candidates(
     let mut stmt = conn
         .prepare(&format!(
             "SELECT x.id, x.run_id, coalesce(r.run_key, ''), coalesce(r.title, ''),
-                    NULL, x.case_key, x.test_key, x.attempt, x.status, x.created_at
+                    NULL, x.case_key, x.test_key, x.attempt, x.status, x.created_at,
+                    coalesce(x.finished_at, x.started_at, r.started_at, x.created_at)
                FROM results x LEFT JOIN runs r ON r.id = x.run_id
               WHERE x.project_id = ?1 AND x.status IN ('failed', 'blocked', 'other')
                 AND (r.id IS NULL OR r.deleted_at IS NULL) AND {}
@@ -588,6 +594,7 @@ pub(crate) fn result_candidates(
                 attempt: r.get(7)?,
                 status: r.get(8)?,
                 created_at: r.get(9)?,
+                executed_at: r.get(10)?,
             })
         })
         .map_err(err)?;

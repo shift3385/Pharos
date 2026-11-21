@@ -11,6 +11,7 @@ import {
   deletedKeys,
   describedWithAcceptance,
   mostSimilar,
+  readableReason,
   similarity,
   supportOf,
   usableRequirementProposals,
@@ -160,5 +161,27 @@ describe("helpers", () => {
     expect(describedWithAcceptance("Do it.", ["Given El campo vacío, when pulsa Ingresar, then no entra"], "Criterios:")).toBe(
       "Do it.\n\nCriterios:\n- Given el campo vacío\n  When pulsa Ingresar\n  Then no entra",
     );
+  });
+});
+
+describe("readableReason (FIX-51)", () => {
+  const cands = [{ title: "Ver conflictos" }, { title: "Resolver" }, { title: "Avisar" }, { title: "Fusionar por campo" }];
+
+  it("drops the prompt's candidate labels the reader cannot know", () => {
+    expect(readableReason("interacción con conflictos por delta (C4) sin definir", cands)).toBe(
+      "interacción con conflictos por delta sin definir",
+    );
+    expect(readableReason("C1 no tiene cobertura", cands)).toBe("«Ver conflictos» no tiene cobertura");
+    expect(readableReason("C1 y C3 describen lo mismo; REQ-004 es vago", cands)).toBe(
+      "«Ver conflictos», «Avisar» describen lo mismo; REQ-004 es vago",
+    );
+    expect(readableReason("C9 sin fuente, (C2, C3).", cands)).toBe("sin fuente.");
+    expect(readableReason("REQ-004 solo dice «seguro»", cands)).toBe("REQ-004 solo dice «seguro»");
+  });
+
+  it("is applied to every proposal", () => {
+    const candidate = { title: "Ver conflictos", description: "d", sources: [] } as unknown as CandidateRequirement;
+    const raw = [{ action: "add", from: [1], title: "Nuevo", description: "d", reason: "C1 sin requisito" }] as unknown as RawRequirementProposal[];
+    expect(usableRequirementProposals(raw, [candidate], [])[0].reason).toBe("«Ver conflictos» sin requisito");
   });
 });

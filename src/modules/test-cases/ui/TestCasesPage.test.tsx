@@ -573,6 +573,10 @@ describe("Casos · tipo, automatización y campos (FLD-01)", () => {
     expect(
       screen.getByRole("heading", { name: "Comprobaciones" }),
     ).toBeInTheDocument();
+    // FIX-51: a checklist adds checks, not steps.
+    const checks = screen.getByRole("group", { name: "Comprobaciones" });
+    expect(within(checks).getByRole("button", { name: "+ Añadir comprobación" })).toBeInTheDocument();
+    expect(within(checks).queryByRole("button", { name: "+ Añadir paso" })).toBeNull();
     expect(
       screen.queryByRole("radiogroup", { name: "Vista del caso" }),
     ).toBeNull();

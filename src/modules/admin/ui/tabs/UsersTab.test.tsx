@@ -45,12 +45,17 @@ const ME = person({
   id: "test-user",
   email: "qa@pharos.dev",
   displayName: "QA",
+  firstName: "QA",
+  lastName: "",
   isAdmin: true,
 });
 const ANA = person({
   id: "ana",
   email: "ana.perez@pharos.dev",
-  displayName: "Ana Pérez",
+  // FIX-51: named by the official name, never the alias.
+  displayName: "Ani",
+  firstName: "Ana",
+  lastName: "Pérez",
   recoveryCodes: { total: 0, remaining: 0 },
 });
 
@@ -99,6 +104,9 @@ describe("the Usuarios tab", () => {
       within(mine).getByRole("button", { name: "Quitar administrador" }),
     ).toBeDisabled();
     const ana = screen.getByTestId("user-ana");
+    // FIX-51: another account's row names its official name, not its alias.
+    expect(within(ana).getByText("Ana Pérez")).toBeInTheDocument();
+    expect(ana).not.toHaveTextContent("Ani");
     expect(within(ana).getByText("Sin códigos")).toBeInTheDocument();
     expect(
       within(ana).getByRole("button", { name: "Restablecer contraseña…" }),
@@ -281,6 +289,8 @@ describe("the Usuarios tab", () => {
       id: "marcos",
       email: "marcos@pharos.dev",
       displayName: "Marcos",
+      firstName: "Marcos",
+      lastName: "",
       disabled: { at: "2026-11-18T10:00:00Z", byName: "QA", reason: "baja" },
     });
     vi.mocked(accountApi.adminUsers).mockResolvedValue({

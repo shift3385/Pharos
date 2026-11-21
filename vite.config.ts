@@ -61,7 +61,12 @@ try {
 const build = {
   commit,
   actionSha,
-  date: new Date().toISOString().slice(0, 10),
+  // The build machine's local day (FIX-51): the UTC day is tomorrow in the
+  // evening west of Greenwich, so «Acerca de» showed a build from the future.
+  date: (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })(),
   stack: [
     { name: "Tauri", version: major(tauri) },
     { name: "Rust", version: "" },

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Copy, Download } from "lucide-react";
 import { Alert } from "@shared/ui/Alert";
 import { saveFile } from "@shared/export/saveFile";
+import { todayIso } from "@shared/time/isoDay";
 import { notify } from "@shared/ui/notify";
 import "./RecoveryCodesPanel.css";
 
@@ -32,7 +33,7 @@ export function RecoveryCodesPanel({
       t("recoveryCodes.fileTitle"),
       t("recoveryCodes.fileAccount", { email }),
       t("recoveryCodes.fileDate", {
-        date: new Date().toISOString().slice(0, 10),
+        date: todayIso(),
       }),
       "",
       ...codes.map((c, i) => `${String(i + 1).padStart(2, "0")}  ${c}`),

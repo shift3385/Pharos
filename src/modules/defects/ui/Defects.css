@@ -466,6 +466,12 @@
   white-space: nowrap;
 }
 
+/* «intento 1 · 16 nov 2026, 18:10» at the case line's size (FIX-51: it was
+   larger than the line above it). */
+.df-picker__when {
+  font-size: 13px;
+}
+
 /* «Encontrado fuera de las pruebas (escape)» (DOC-06, D4). */
 .df-escaped {
   grid-column: 1 / -1;

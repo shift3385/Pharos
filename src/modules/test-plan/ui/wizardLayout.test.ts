@@ -27,6 +27,18 @@ describe("plan wizard layout (FIX-40)", () => {
     expect(rule(".tpw-metrics__row", narrow)).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\) auto 38px/);
   });
 
+  it("the step list fades at its bottom edge instead of slicing a step (FIX-51)", () => {
+    const fade = rule(".tpw-rail::after");
+    expect(fade).toMatch(/position:\s*sticky/);
+    expect(fade).toMatch(/bottom:/);
+    expect(fade).toMatch(/linear-gradient\(to bottom, transparent, var\(--color-surface-1\)/);
+    expect(fade).toMatch(/pointer-events:\s*none/);
+  });
+
+  it("each independence option centres its label (FIX-51)", () => {
+    expect(rule(".tpw-scale__option span")).toMatch(/align-items:\s*center/);
+  });
+
   it("the step's footer is not held over the page, so no control is ever half under it (FIX-49)", () => {
     const foot = rule(".tpw__foot");
     expect(foot).toMatch(/display:\s*flex/);
